@@ -3508,7 +3508,15 @@ After a performed action's required tree settles, use
 provenance. `source.receipt()` is the action's receipt before output production;
 `root_receipt()` describes the root producer and may name a later publication.
 The provenance holder retains the action's exact original read occurrence with
-the settled tree. A tree started from a read returns `None` for
+the settled tree. `source.root_fulfillment()` borrows the actual required root's
+fulfillment of that action's output obligation. Its `source_commit()` names the
+action occurrence, `output_commit()` names the root's qualified output
+occurrence, and `posture()` preserves whether that output was performed, reused
+or recovered. Reuse and recovery do not imply that the producer ran again for
+this action. This fact describes the root; use ordinary settlement delivery to
+check the whole tree at the current observation.
+
+A tree started from a read returns `None` for
 `performed_source()`, including when its producer performs a new publication.
 The source receipt supplies descriptive evidence; inspecting it still requires
 fresh current access, and it grants no navigation or mutation permission.

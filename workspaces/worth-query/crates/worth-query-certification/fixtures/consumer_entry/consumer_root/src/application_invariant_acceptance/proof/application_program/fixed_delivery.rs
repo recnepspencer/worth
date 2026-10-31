@@ -85,6 +85,26 @@ fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_his
         .unwrap()
         .receipt()
         .clone();
+    let fulfillment = settled
+        .settlement()
+        .performed_source()
+        .unwrap()
+        .root_fulfillment();
+    assert!(fulfillment.matches_source(&source_receipt));
+    assert_eq!(
+        fulfillment.source_commit(),
+        source_receipt
+            .committed_product_publication()
+            .composite_commit()
+    );
+    assert_eq!(
+        fulfillment.output_commit(),
+        settled.settlement().root_observation().selected_commit()
+    );
+    assert_eq!(
+        fulfillment.posture(),
+        settled.settlement().root_settlement().posture()
+    );
     assert!(
         !source_receipt.is_same_authoritative_commit(settled.settlement().root_receipt().unwrap()),
         "performed action and output producer have distinct real receipts"

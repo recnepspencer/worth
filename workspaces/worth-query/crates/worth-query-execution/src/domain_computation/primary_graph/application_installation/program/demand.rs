@@ -15,6 +15,7 @@ use worth_query_declaration::facade::application_schema::{
 use super::WorthQueryProgramApplicationRuntime;
 mod dependent;
 mod discovered_roots;
+mod fulfillment;
 mod handle;
 mod read_close;
 mod required_affinity;

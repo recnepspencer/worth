@@ -360,6 +360,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutput
 }
 
 mod advance_admission;
+mod fulfillment;
+mod performed_join;
 pub(in crate::domain_computation::primary_graph) use advance_admission::WorthQueryOutputDemandAdvanceAdmission;
 
 pub use source_custody::WorthQueryDiscoveredRetentionControlDenial;

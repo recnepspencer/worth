@@ -2,7 +2,7 @@ use super::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandKey,
 };
 
-pub(super) fn prepare_performed_obligation_slots(
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prepare_performed_obligation_slots(
     state: &super::super::DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
 ) -> Result<Vec<super::super::PerformedOutputObligation>, WorthQueryOutputDemandDenial> {

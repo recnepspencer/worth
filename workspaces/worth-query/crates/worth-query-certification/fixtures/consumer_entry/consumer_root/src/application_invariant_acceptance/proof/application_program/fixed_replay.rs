@@ -1,4 +1,5 @@
 //! Ordinary fixed replay rejoins real registered output custody after reply loss.
+mod restored_fulfillment;
 use super::*;
 use crate::application_program::ConsumerFixedAction;
 use worth_query_host::facade::application_entry::{
@@ -183,6 +184,17 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         .expect("authored output graph settles");
     assert!(settled.handler_result().is_none());
     let carried_source = settled.settlement().performed_source().unwrap().receipt();
+    let fulfillment = settled
+        .settlement()
+        .performed_source()
+        .unwrap()
+        .root_fulfillment();
+    assert!(fulfillment.matches_source(&original_source_receipt));
+    assert!(!fulfillment.matches_source(settled.settlement().root_receipt().unwrap()));
+    assert_eq!(
+        fulfillment.output_commit(),
+        settled.settlement().root_observation().selected_commit()
+    );
     assert!(carried_source.is_same_authoritative_commit(&original_source_receipt));
     assert_eq!(
         carried_source.idempotency_binding(),

@@ -1,3 +1,4 @@
+mod fulfillment;
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,

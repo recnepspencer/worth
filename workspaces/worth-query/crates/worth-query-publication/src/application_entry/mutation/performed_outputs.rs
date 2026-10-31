@@ -1,5 +1,7 @@
+mod fulfillment;
 mod read_close;
 mod source;
+mod source_binding;
 mod unavailable;
 pub use unavailable::WorthQueryApplicationProgramOutputUnavailable;
 use worth_query_declaration::facade::application_program::{
@@ -54,7 +56,8 @@ where
         + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
-    source_validator: Option<source::RequiredSourceValidator<Schema, Program>>,
+    source_binding:
+        Option<source_binding::RequiredSourceBinding<Schema, Program, RootDemand<Schema, Root>>>,
     source_preparation: Option<
         worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
     >,
@@ -72,6 +75,8 @@ where
     pending_root_authority: Option<
         std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, RootDemand<Schema, Root>>>,
     >,
+    pending_root_fulfillment:
+        Option<worth_query_execution::facade::primary_graph::WorthQueryFulfilledRequiredRoot>,
     continuation: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
     controls: crate::application_entry::WorthQueryOutputDemandControls,
     complete: bool,
@@ -99,7 +104,7 @@ where
         Root: worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     {
         Self {
-            source_validator: Some(source::validate::<Schema, Program, Root>),
+            source_binding: Some(source_binding::RequiredSourceBinding::of::<Root>()),
             source_preparation: Some(preparation),
             source_receipt: Some(source_receipt),
             source_observation,
@@ -107,6 +112,7 @@ where
             root_demand,
             root_settlement: None,
             pending_root_authority: None,
+            pending_root_fulfillment: None,
             continuation: None,
             controls,
             complete: false,
@@ -120,7 +126,7 @@ where
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Self {
         Self {
-            source_validator: None,
+            source_binding: None,
             source_preparation: None,
             source_receipt: None,
             source_observation,
@@ -128,6 +134,7 @@ where
             root_demand,
             root_settlement: None,
             pending_root_authority: None,
+            pending_root_fulfillment: None,
             continuation: None,
             controls,
             complete: false,
@@ -260,8 +267,8 @@ where
         }
         let access = worth_query_execution::publication_boundary::program_publication_access();
         match (&self.source_receipt, &self.source_preparation) {
-            (Some(receipt), Some(prepared)) => match self.source_validator {
-                Some(validate) => validate(phase, application, prepared, receipt, &self.source_observation, request),
+            (Some(receipt), Some(prepared)) => match self.source_binding.as_ref() {
+                Some(binding) => (binding.validate)(phase, application, prepared, receipt, &self.source_observation, request),
                 None => return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery),
             },
             (None, None) => application.validate_initial_program_source::<Root>(phase, &access, &self.source_observation.retained, request.branch),
@@ -297,6 +304,7 @@ where
                 }
             }
         }
+        self.retain_root_fulfillment(phase, application)?;
         // A refused start keeps the original settled authority for retry.
         if let Some(authority) = self.pending_root_authority.as_ref() {
             let settlement = self
@@ -328,7 +336,7 @@ where
             ProgramOutputContinuationProgress::Settled { outputs, work, dependencies } => {
                 let performed_source = match (&self.source_receipt, &self.source_preparation) {
                     (Some(receipt), Some(_)) => Some(
-                        super::program_output_settlement::WorthQueryPerformedProgramOutputSource::capture(receipt.clone(), &self.source_observation)),
+                        super::program_output_settlement::WorthQueryPerformedProgramOutputSource::capture(receipt.clone(), self.pending_root_fulfillment.take().expect("a performed root seals fulfillment before descendants"))),
                     (None, None) => None,
                     _ => return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery),
                 };

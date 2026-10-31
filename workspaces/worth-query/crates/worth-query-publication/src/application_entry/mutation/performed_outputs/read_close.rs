@@ -17,7 +17,7 @@ where
     ) -> Result<(), Denial> {
         if self.source_receipt.is_some()
             || self.source_preparation.is_some()
-            || self.source_validator.is_some()
+            || self.source_binding.is_some()
         {
             return Err(Denial::ForeignDemand);
         }

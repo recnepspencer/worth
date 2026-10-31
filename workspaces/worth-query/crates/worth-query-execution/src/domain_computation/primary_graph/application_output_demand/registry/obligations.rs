@@ -219,16 +219,7 @@ impl super::WorthQueryAcceptedOutputAuthority {
                 left.is_same_authoritative_commit(right)
             }
             (Self::Stable(left), Self::Stable(right)) => left.same_publication(right),
-            (Self::Restored(left), Self::Restored(right)) => {
-                left.checkpoint == right.checkpoint
-                    && std::sync::Arc::ptr_eq(&left.correspondence, &right.correspondence)
-                    && left.observation == right.observation
-                    && left.source_scope == right.source_scope
-                    && left.source_identity == right.source_identity
-                    && left
-                        .observed_source_facts
-                        .same_backing(&right.observed_source_facts)
-            }
+            (Self::Restored(left), Self::Restored(right)) => left.same_authority(right),
             _ => false,
         }
     }

@@ -18,6 +18,7 @@ mod application_output_demand;
 pub(in crate::domain_computation::primary_graph) use application_output_demand::PreparedPrerequisiteClaims;
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputDemandContext;
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputExecution;
+pub use application_output_demand::WorthQueryFulfilledRequiredRoot;
 mod application_program;
 pub(crate) mod application_query;
 pub(crate) mod application_resource;
