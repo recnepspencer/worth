@@ -38,7 +38,13 @@ type Action = ApplicationActionReference<
 type Edit<'a, H = RetentionHistory, P = RetentionProgramP0> =
     WorthQueryHistoryEdit<'a, DocumentRetentionSchema, H, SetRetentionIntent, P, Action>;
 
-fn begin<'a>(host: &App, document: Document<'a>, identity: &str, days: u64, key: u64) -> Edit<'a> {
+pub(crate) fn begin<'a>(
+    host: &App,
+    document: Document<'a>,
+    identity: &str,
+    days: u64,
+    key: u64,
+) -> Edit<'a> {
     let scope = request_scope();
     let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
     document
@@ -54,7 +60,7 @@ fn begin<'a>(host: &App, document: Document<'a>, identity: &str, days: u64, key:
         .unwrap_or_else(|(_, cause)| panic!("declared action constructs: {cause:?}"))
 }
 
-fn ready<'a, H, P>(host: &Runtime, mut edit: Edit<'a, H, P>) -> Edit<'a, H, P>
+pub(crate) fn ready<'a, H, P>(host: &Runtime, mut edit: Edit<'a, H, P>) -> Edit<'a, H, P>
 where
     H: ApplicationHistoryBinding<DocumentRetentionSchema, Access = DocumentRetentionRead>,
     P: ApplicationProgramDefinition<DocumentRetentionSchema>,
@@ -71,7 +77,7 @@ where
     panic!("bounded ordinary source edit did not become ready")
 }
 
-fn finish<'a, H, P>(
+pub(crate) fn finish<'a, H, P>(
     host: &Runtime,
     edit: Edit<'a, H, P>,
     days: u64,
@@ -115,7 +121,7 @@ where
     (finished.document, step)
 }
 
-fn close<H: ApplicationHistoryBinding<DocumentRetentionSchema>>(
+pub(crate) fn close<H: ApplicationHistoryBinding<DocumentRetentionSchema>>(
     host: &Runtime,
     document: Document<'_, H>,
     heads: usize,

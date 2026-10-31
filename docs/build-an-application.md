@@ -1892,6 +1892,53 @@ the returned owner when cleanup refuses. This entry accepts declared
 source-completion actions with no source, workflow control or external effects.
 See [record an edit and retain its original outcome](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#record-an-edit-and-retain-its-original-outcome).
 
+This example uses the retention application's [installed history declaration](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs),
+[ordinary program installer](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/host.rs)
+and [head construction](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/mod.rs).
+`Action` names its declared `SetRetentionBinding` action with source-completion
+delivery. The original head and second document are retained here so the
+[complete executable journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/journeys.rs)
+can independently check isolation, advance the edit, inspect its exact result
+and dispose both documents.
+
+<!-- compiled: document_history_edit.rs -->
+```rust
+    let host = publish_on_first_program();
+    let owned = head(&host);
+    let original = owned.branch();
+    let untouched = attach(&host, head(&host), RELATED_DOCUMENT_IDENTITY);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
+    let document = host
+        .with_host_advancement(|phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .on_branch(owned.branch())
+                .attach_history::<RetentionHistory>(
+                    &phase,
+                    owned,
+                    DocumentRetentionRead {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                    },
+                )
+                .unwrap()
+        })
+        .unwrap();
+    let request = host.runtime().request(&principal, &scope);
+    let root = document.current_step(&request).unwrap();
+    let mut edit = document
+        .edit(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 3,
+            },
+        })
+        .idempotency_owned(&request, 0x9182_0400)
+        .unwrap()
+        .retain_in_program::<RetentionProgramP0, Action>(&host)
+        .unwrap_or_else(|(_, cause)| panic!("declared action constructs: {cause:?}"));
+```
+
 Closing a document releases its internal history pins and disposes all its
 owned heads. `Closing(owner)` retains unfinished disposal across multiple heads;
 retry `owner.retry(&phase)` after releasing blocking readers. A closing owner

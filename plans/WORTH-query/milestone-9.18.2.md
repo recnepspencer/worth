@@ -1,6 +1,6 @@
 # Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
 
-**Status:** in progress; all seven phases below remain open.
+**Status:** in progress; Phase 1 implemented and verified; Phases 2–7 remain open.
 **Public boundary:** process-local Decl/Host consumers.
 **Prerequisites:** qualified branch/correction owners from
 [9.18](./milestone-9.18.md) and retained-read, guarded adoption and history
@@ -16,6 +16,7 @@ phase. New API names describe the required implementation, not existing APIs.
 
 ## Phase 1: Install Document History And Record An Ordinary Edit
 
+**Status:** implemented and verified.
 **Depends on:** the named 9.18/9.18.1 public contracts.
 **Outcome:** a consumer declares document history, attaches its actual model
 head, executes one ordinary domain edit and receives one exact history step.

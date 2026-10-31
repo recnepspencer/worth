@@ -85,11 +85,11 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
     ) -> Self {
         // Drop every document-owned read pin before retiring any of its heads.
         // Native close/retry occurs only after these resource drops have finished.
-        drop(journal.nodes);
+        let past = journal.into_disposal();
         Self {
             application: current.application(),
             current: Some(current),
-            past: journal.past_heads.into_values(),
+            past,
             pending: None,
             opening_denial: None,
             closed: 0,

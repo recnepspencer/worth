@@ -13,7 +13,7 @@ impl HistoryInsertionAllocation {
         execution: &ExecutionRequest<'_, '_>,
         len: usize,
         additional_bytes: usize,
-    ) -> Result<Self, Cause> {
+    ) -> Result<(Self, u64), Cause> {
         let mut ticket = None;
         let mut bytes = u64::try_from(additional_bytes).map_err(|_| Cause::ChargedBytesOverflow)?;
         let reserved = execution.run_native_with_checkpoint(|context| {
@@ -29,6 +29,11 @@ impl HistoryInsertionAllocation {
             Ok((result, _)) => result?,
             Err(stop) => return Err(stop.into()),
         }
-        Ok(Self { _ticket: ticket })
+        Ok((Self { _ticket: ticket }, bytes))
+    }
+    pub(super) fn ticket_bytes(&self) -> u64 {
+        self._ticket
+            .as_ref()
+            .map_or(0, ExecutionMemoryReservation::bytes)
     }
 }

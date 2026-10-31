@@ -2,16 +2,42 @@ use super::*;
 
 #[test]
 fn ordinary_recording_keeps_candidate_private_then_selects_one_genuine_step() {
+    // compiled-example: begin
     let host = publish_on_first_program();
     let owned = head(&host);
     let original = owned.branch();
-    let document = attach(&host, owned, DOCUMENT_IDENTITY);
     let untouched = attach(&host, head(&host), RELATED_DOCUMENT_IDENTITY);
     let scope = request_scope();
     let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
+    let document = host
+        .with_host_advancement(|phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .on_branch(owned.branch())
+                .attach_history::<RetentionHistory>(
+                    &phase,
+                    owned,
+                    DocumentRetentionRead {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                    },
+                )
+                .unwrap()
+        })
+        .unwrap();
     let request = host.runtime().request(&principal, &scope);
     let root = document.current_step(&request).unwrap();
-    let mut edit = begin(&host, document, DOCUMENT_IDENTITY, 3, 0x9182_0400);
+    let mut edit = document
+        .edit(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 3,
+            },
+        })
+        .idempotency_owned(&request, 0x9182_0400)
+        .unwrap()
+        .retain_in_program::<RetentionProgramP0, Action>(&host)
+        .unwrap_or_else(|(_, cause)| panic!("declared action constructs: {cause:?}"));
+    // compiled-example: end
     for expected in [
         Posture::CreatingCandidate,
         Posture::Running,

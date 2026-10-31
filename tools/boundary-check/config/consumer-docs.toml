@@ -41,6 +41,12 @@ target = "src/main.rs"
 source = "src/application_invariant_acceptance/proof/application_program/fixed_action_instances.rs"
 
 [[compiled_sources]]
+name = "document_history_edit.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-court-decl-host"
+target = "tests/worth_query_court_decl_host.rs"
+source = "tests/worth_query_court_decl_host/certification/document_history/recording/journeys.rs"
+
+[[compiled_sources]]
 name = "owning_discovered.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"

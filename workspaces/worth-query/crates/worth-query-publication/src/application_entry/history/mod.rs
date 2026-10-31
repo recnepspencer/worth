@@ -77,6 +77,7 @@ mod close;
 mod denial;
 mod edit;
 mod edit_builder;
+mod observation;
 mod read;
 #[doc(hidden)]
 pub use edit::WorthQueryHistoryEditHandoffPauseForTest;

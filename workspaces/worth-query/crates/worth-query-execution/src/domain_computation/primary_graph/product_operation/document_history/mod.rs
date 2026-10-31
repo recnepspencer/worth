@@ -9,6 +9,7 @@ mod denial;
 mod disposal;
 mod journal;
 mod model;
+mod observation;
 mod operation_context;
 mod reservation;
 mod sealing;
@@ -32,6 +33,10 @@ pub use disposal::{
 };
 pub(in crate::domain_computation::primary_graph) use journal::HistoryJournal;
 pub(in crate::domain_computation::primary_graph) use model::HistoryModelIdentity;
+#[doc(hidden)]
+pub use observation::{
+    WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
+};
 pub use step::{WorthQueryHistoryNodeId, WorthQueryHistoryStep};
 
 use super::WorthQueryOwnedProductHead;

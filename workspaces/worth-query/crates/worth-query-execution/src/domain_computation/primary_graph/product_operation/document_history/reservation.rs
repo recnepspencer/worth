@@ -156,8 +156,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         &self,
         _access: &WorthQueryProgramPublicationAccess,
     ) -> &WorthQueryHistoryStep {
-        self.journal
-            .step(self.journal.current)
-            .expect("the selected user step completed")
+        self.journal.current_step()
     }
 }

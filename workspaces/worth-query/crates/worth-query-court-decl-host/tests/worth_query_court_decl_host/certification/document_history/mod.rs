@@ -2,7 +2,7 @@
 mod assessment;
 mod attachment;
 mod membership;
-mod recording;
+pub(crate) mod recording;
 
 use worth_query_host::facade::{
     application_entry::{WorthQueryApplicationHistoryDocument, WorthQueryApplicationRequestExt},
@@ -19,12 +19,12 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     retention_entry::{DocumentRetentionRead, DOCUMENT_IDENTITY, RELATED_DOCUMENT_IDENTITY},
 };
 
-type App = DocumentRetentionRuntime<RetentionProgramP0>;
-type Runtime = WorthQueryPrimaryGraphApplicationRuntime<DocumentRetentionSchema>;
-type Document<'a, H = RetentionHistory> =
+pub(crate) type App = DocumentRetentionRuntime<RetentionProgramP0>;
+pub(crate) type Runtime = WorthQueryPrimaryGraphApplicationRuntime<DocumentRetentionSchema>;
+pub(crate) type Document<'a, H = RetentionHistory> =
     WorthQueryApplicationHistoryDocument<'a, DocumentRetentionSchema, H>;
 
-fn head(host: &Runtime) -> WorthQueryOwnedProductHead<'_, DocumentRetentionSchema> {
+pub(crate) fn head(host: &Runtime) -> WorthQueryOwnedProductHead<'_, DocumentRetentionSchema> {
     head_from(host, host.current_world())
 }
 
@@ -45,7 +45,7 @@ fn head_from(
     .unwrap()
 }
 
-fn attach<'a>(
+pub(crate) fn attach<'a>(
     host: &'a Runtime,
     head: WorthQueryOwnedProductHead<'a, DocumentRetentionSchema>,
     identity: &str,
@@ -67,7 +67,7 @@ fn attach<'a>(
     .unwrap()
 }
 
-fn value(host: &Runtime, document: &Document<'_>) -> u64 {
+pub(crate) fn value(host: &Runtime, document: &Document<'_>) -> u64 {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     document

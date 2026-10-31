@@ -42,6 +42,10 @@ pub mod document_history {
         WorthQueryDocumentHistoryOperationConstraint, WorthQueryDocumentHistoryRecordPreparation,
         WorthQueryDocumentHistoryReservation, WorthQueryHistoryNodeId, WorthQueryHistoryStep,
     };
+    #[doc(hidden)]
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
+    };
 }
 
 pub mod recorded_correction {

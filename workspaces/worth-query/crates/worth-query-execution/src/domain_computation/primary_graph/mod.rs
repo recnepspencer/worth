@@ -80,6 +80,7 @@ pub use product_operation::document_history::{
     WorthQueryDocumentHistoryClosingDenial, WorthQueryDocumentHistoryDenial,
     WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
     WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
+    WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
     WorthQueryHistoryNodeId, WorthQueryHistoryStep,
 };
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
