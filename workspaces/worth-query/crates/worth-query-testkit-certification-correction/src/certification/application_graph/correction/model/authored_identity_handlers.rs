@@ -8,13 +8,10 @@ use worth_query_host::facade::primary_graph::*;
 pub struct Handler;
 #[macro_export]
 macro_rules! worlds_certification_application_graph_correction_model_authored_identity_handlers_rs_creation {
-    (@image $writer:ident, $target:ident, $image:ident) => {{
-        let parent = $writer
-            .projected_entity(&$target)
-            .map_err(HandlerExecutionDenial::new)?;
+    (@entity $writer:ident, $parent:ident, $image:ident) => {{
         let entity = $writer
             .create_entity_in_context(
-                &parent,
+                &$parent,
                 Number::reference(),
                 WorthQueryApplicationEntityKey::new(&$image.name)
                     .map_err(HandlerExecutionDenial::new)?,
@@ -33,6 +30,20 @@ macro_rules! worlds_certification_application_graph_correction_model_authored_id
         initialize!(ReadEnabled, $image.read_enabled);
         initialize!(Ceiling, $image.ceiling);
         initialize!(Calculated, $image.calculated);
+        entity
+    }};
+    (@image $writer:ident, $target:ident, $image:ident) => {{
+        let parent = $writer
+            .projected_entity(&$target)
+            .map_err(HandlerExecutionDenial::new)?;
+        if let Some(name) = $image.collateral.clone() {
+            let collateral = Restore { name, collateral: None, ..$image.clone() };
+            // Derived collateral has separate native lifecycle custody from the root.
+            let entity = creation!(@entity $writer, parent, collateral);
+            $writer.create_output::<CollateralCreated>(&entity)
+                .map_err(HandlerExecutionDenial::new)?;
+        }
+        let entity = creation!(@entity $writer, parent, $image);
         $writer
             .create_output::<Created>(&entity)
             .map_err(HandlerExecutionDenial::new)?;
@@ -86,6 +97,7 @@ macro_rules! worlds_certification_application_graph_correction_model_authored_id
     };
 }
 pub use crate::worlds_certification_application_graph_correction_model_authored_identity_handlers_rs_creation as creation;
+mod collateral;
 mod observed_clone;
 creation!(CreateBinding, Create, |input: &Create| Restore {
     key: input.key.clone(),
@@ -95,6 +107,7 @@ creation!(CreateBinding, Create, |input: &Create| Restore {
     read_enabled: true,
     ceiling: 1000,
     calculated: 0,
+    collateral: input.collateral.clone(),
 });
 creation!(RestoreBinding, Restore, |input: &Restore| input.clone());
 impl OperationHandler<NumericSchema, RetireBinding> for Handler {
@@ -102,7 +115,7 @@ impl OperationHandler<NumericSchema, RetireBinding> for Handler {
         &self,
         input: &Retire,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, RetireBinding>,
-    ) -> HandlerResult<Target, MissingValue> {
+    ) -> HandlerResult<Retirement, MissingValue> {
         let entity = match reader.resolve_entity(Key::reference(), input.target.clone()) {
             Ok(entity) => entity,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -125,23 +138,30 @@ impl OperationHandler<NumericSchema, RetireBinding> for Handler {
         if let Err(cause) = reader.entity(&entity, Number::reference()) {
             return HandlerResult::ExecutionDenied(cause);
         }
+        let collateral = match collateral::observe(reader, input.collateral.as_deref()) {
+            Ok(target) => target,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         match reader.mutation_target(&entity) {
-            Ok(target) => HandlerResult::Completed(target),
+            Ok(root) => HandlerResult::Completed(Retirement { root, collateral }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
     }
     fn build_candidate(
         &self,
         _: &Retire,
-        target: Target,
+        target: Retirement,
         writer: &mut CandidateWriter<'_, NumericSchema, RetireBinding>,
     ) -> HandlerResult<Edited, MissingValue> {
-        let entity = match writer.projected_entity(&target) {
+        let entity = match writer.projected_entity(&target.root) {
             Ok(entity) => entity,
             Err(cause) => {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
             }
         };
+        if let Err(cause) = collateral::delete(writer, target.collateral) {
+            return HandlerResult::ExecutionDenied(cause);
+        }
         match writer
             .delete_entity(Number::reference(), &entity)
             .and_then(|()| writer.retire_output::<Retired>(&entity))

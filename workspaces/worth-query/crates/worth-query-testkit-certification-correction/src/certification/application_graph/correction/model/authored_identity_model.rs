@@ -16,12 +16,14 @@ pub struct Create {
     pub name: String,
     pub payload: u64,
     pub inverse_target: Option<String>,
+    pub collateral: Option<String>,
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Retire {
     pub key: String,
     pub target: String,
     pub wrong_restore_key: bool,
+    pub collateral: Option<String>,
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Restore {
@@ -32,6 +34,7 @@ pub struct Restore {
     pub read_enabled: bool,
     pub ceiling: u64,
     pub calculated: u64,
+    pub collateral: Option<String>,
 }
 #[macro_export]
 macro_rules! worlds_certification_application_graph_correction_model_authored_identity_model_rs_input {
@@ -75,11 +78,14 @@ pub struct CreatedOutputs;
 pub struct RetiredOutputs;
 pub struct Created;
 pub struct Retired;
+pub struct CollateralCreated;
+pub struct CollateralRetired;
 #[macro_export]
 macro_rules! worlds_certification_application_graph_correction_model_authored_identity_model_rs_output {
-    ($Contract:ident, $Role:ident, $Action:ty, $name:literal) => {
+    ($Contract:ident, $Role:ident, $Action:ty, $name:literal, $Collateral:ty) => {
         impl ApplicationMutationOutputContract<NumericSchema> for $Contract {
-            const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[$Role::DESCRIPTOR];
+            const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+                &[$Role::DESCRIPTOR, <$Collateral>::DESCRIPTOR];
         }
         impl WorthQueryApplicationOutputRole for $Role {
             type Schema = NumericSchema;
@@ -96,23 +102,45 @@ output!(
     CreatedOutputs,
     Created,
     WorthQueryCreateOutput,
-    "authored-created"
+    "authored-created",
+    CollateralCreated
 );
 output!(
     RetiredOutputs,
     Retired,
     WorthQueryRetireOutput,
-    "authored-retired"
+    "authored-retired",
+    CollateralRetired
 );
+impl WorthQueryApplicationOutputRole for CollateralCreated {
+    type Schema = NumericSchema;
+    type Contract = CreatedOutputs;
+    type Entity = Number;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryAtMostOneOutput;
+    const NAME: &'static str = "collateral-created";
+}
+impl WorthQueryApplicationOutputRole for CollateralRetired {
+    type Schema = NumericSchema;
+    type Contract = RetiredOutputs;
+    type Entity = Number;
+    type Action = WorthQueryRetireOutput;
+    type Cardinality = WorthQueryAtMostOneOutput;
+    const NAME: &'static str = "collateral-retired";
+}
 pub type Target = WorthQueryInvariantMutationTarget<NumericSchema, Number>;
+pub struct Retirement {
+    pub root: Target,
+    pub collateral: Option<Target>,
+}
 #[macro_export]
 macro_rules! worlds_certification_application_graph_correction_model_authored_identity_model_rs_binding {
-    ($Binding:ident, $Input:ident, $Codec:ident, $Operation:ident, $Output:ty, $id:literal) => {
+    ($Binding:ident, $Input:ident, $Codec:ident, $Operation:ident, $Output:ty, $id:literal, $Decision:ty) => {
         worth_query_mutation_binding!(
             pub $Binding for $Input, schema NumericSchema,
             identity $id, input $Codec, operation $Operation, result ResultBinding,
             idempotency String, identity "authored-identity.command.v1",
-            decision Target, denial DenialBinding,
+            decision $Decision, denial DenialBinding,
             handler identity $id, outputs $Output,
             principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
             principal_identity u64, identity_binding U64ApplicationValueBinding,
@@ -128,7 +156,8 @@ binding!(
     CreateInput,
     CreateOperation,
     CreatedOutputs,
-    "authored-identity.create.v1"
+    "authored-identity.create.v1",
+    Target
 );
 binding!(
     RetireBinding,
@@ -136,7 +165,8 @@ binding!(
     RetireInput,
     RetireAuthoredEntity,
     RetiredOutputs,
-    "authored-identity.retire.v1"
+    "authored-identity.retire.v1",
+    Retirement
 );
 binding!(
     RestoreBinding,
@@ -144,7 +174,8 @@ binding!(
     RestoreInput,
     RestoreOperation,
     CreatedOutputs,
-    "authored-identity.restore.v1"
+    "authored-identity.restore.v1",
+    Target
 );
 
 #[macro_export]

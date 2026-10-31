@@ -16,6 +16,7 @@ fn seed_model(host: &host::Host) {
             name: "adjacency-model".into(),
             payload: 41,
             inverse_target: None,
+            collateral: None,
         })
         .without_source()
         .idempotency(&key)

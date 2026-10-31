@@ -14,6 +14,7 @@ pub(super) fn retire(application: &host::OutputHost) {
             key: "numeric".to_owned(),
             target: "observer".to_owned(),
             wrong_restore_key: false,
+            collateral: None,
         })
         .without_source()
         .idempotency(&"retire-produced-observer".to_owned())
@@ -42,6 +43,7 @@ pub(super) fn restore(application: &host::OutputHost, calculated: u64) {
             read_enabled: true,
             ceiling: 1000,
             calculated,
+            collateral: None,
         })
         .without_source()
         .idempotency(&"replace-produced-observer".to_owned())

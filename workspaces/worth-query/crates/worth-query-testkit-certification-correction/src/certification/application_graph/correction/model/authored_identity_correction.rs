@@ -66,6 +66,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoCreate {
             key: original.key.clone(),
             target: original.inverse_target.clone().unwrap_or(key),
             wrong_restore_key: false,
+            collateral: original.collateral.clone(),
         })
     }
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
@@ -156,10 +157,19 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
             read_enabled: field!(ReadEnabled, BoolApplicationValueBinding),
             ceiling: field!(Ceiling, U64ApplicationValueBinding),
             calculated: field!(Calculated, U64ApplicationValueBinding),
+            collateral: original.collateral.clone(),
         })
     }
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
         Ok(format!("undo-authored-retire:{key}"))
+    }
+    fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+        Ok(format!("reapply-authored-retire:{key}"))
+    }
+    fn visit_reapplication<V: ApplicationReapplicationVisitor<NumericSchema>>(
+        dispatch: ApplicationReapplicationDispatch<NumericSchema, Self, V>,
+    ) -> V::Output {
+        dispatch.conventional()
     }
     fn visit<V: ApplicationCorrectionVisitor<NumericSchema>>(
         dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, V>,

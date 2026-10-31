@@ -175,6 +175,7 @@ pub fn original_query_subject_refuses_replacement_generation_and_cancelled_inspe
             key: "numeric".to_owned(),
             target: seed::OBSERVER.to_owned(),
             wrong_restore_key: false,
+            collateral: None,
         })
         .without_source()
         .idempotency(&"retire-observer".to_owned())
@@ -197,6 +198,7 @@ pub fn original_query_subject_refuses_replacement_generation_and_cancelled_inspe
             read_enabled: true,
             ceiling: 1000,
             calculated: 0,
+            collateral: None,
         })
         .without_source()
         .idempotency(&"restore-observer".to_owned())

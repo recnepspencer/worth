@@ -15,6 +15,7 @@ use worth_relational::facade::transactions::{
     RecordRef, UpdateEntityFieldsIntent, WorkerIntentBatch,
 };
 
+mod common_record;
 mod owner_path_fixture;
 use owner_path_fixture::owner_path_fixture;
 
