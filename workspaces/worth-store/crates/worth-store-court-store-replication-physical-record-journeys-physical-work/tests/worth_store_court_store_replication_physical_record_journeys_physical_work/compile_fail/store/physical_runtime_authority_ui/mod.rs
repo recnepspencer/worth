@@ -108,8 +108,16 @@ fn external_consumers_cannot_forge_or_duplicate_runtime_authority() {
         "E0308",
         &["FrameWritebackCleanAuthority", "CandidateFrameCleanAuthority", "expected `&CandidateFrameCleanAuthority`, found `&FrameWritebackCleanAuthority`"],
     ).expect("prebuilt semantic compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_receipt_construction_is_sealed.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_work_identity_is_sealed.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_receipt_construction_is_sealed.rs"),
+        "E0451",
+        &["CompletedArtifactRangeWrite", "`owner`", "`store`", "`coordinate`", "`payload_digest`", "`completed_bytes`", "`operation`", "`durability`", "private"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_work_identity_is_sealed.rs"),
+        "E0451",
+        &["PhysicalWorkIdentity", "`store`", "`runtime`", "`generation`", "`operation`", "private"],
+    ).expect("prebuilt semantic compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/physical_work_progression_is_sealed.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/untyped_physical_work_basis_is_rejected.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/borrowed_physical_work_submission_is_rejected.rs")).expect("prebuilt compiler denial");
@@ -179,9 +187,21 @@ fn resident_admission_contracts_are_compile_sealed() {
 
 #[test]
 fn recovery_handoff_is_compile_sealed() {
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_handoff_constructor_is_sealed.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_handoff_rejects_report_conversion.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_operation_fact_cannot_mint_handoff.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_handoff_constructor_is_sealed.rs"),
+        "E0599",
+        &["`new`", "PhysicalDurabilityRecoveryHandoff"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_handoff_rejects_report_conversion.rs"),
+        "E0277",
+        &["PhysicalDurabilityRecoveryHandoff", "From<PhysicalDurabilityPerformanceSummary>"],
+    ).expect("prebuilt semantic compiler denial");
+    worth_testkit_compiler::certification_semantic_denial(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/sources/worth_store/physical_runtime_authority/c8_recovery_operation_fact_cannot_mint_handoff.rs"),
+        "E0277",
+        &["PhysicalDurabilityRecoveryHandoff", "From<PhysicalRecoveryOperationFact>"],
+    ).expect("prebuilt semantic compiler denial");
 }
 
 #[test]
