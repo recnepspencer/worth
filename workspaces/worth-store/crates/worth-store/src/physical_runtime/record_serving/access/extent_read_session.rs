@@ -69,6 +69,16 @@ pub(in crate::physical_runtime::record_serving) struct ExtentReadState {
 }
 
 impl ExtentReadState {
+    pub(in crate::physical_runtime::record_serving) fn try_retire_frame(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), worth_store_buffer_pool::PhysicalResidencyRetirementDenial> {
+        if let Some(frame) = self.frame.as_mut() {
+            frame.try_retire(request)?;
+        }
+        Ok(())
+    }
+
     pub(in crate::physical_runtime::record_serving) fn new(
         artifacts: super::super::residency::record_frame_reader::RecordFrameReader<'static>,
         artifact: RecordArtifactFile,

@@ -58,6 +58,7 @@ impl PoolInner {
             .pins += 1;
         state.accounting.pin(was_unpinned);
         Ok(PhysicalFrameLease {
+            armed: true,
             owner: Arc::clone(self),
             key,
             bytes,

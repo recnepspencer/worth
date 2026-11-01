@@ -96,6 +96,7 @@ impl PoolInner {
                         entry.loading_identity = None;
                     }
                     return Ok(PhysicalFrameLease {
+                        armed: true,
                         owner: Arc::clone(self),
                         key,
                         bytes,

@@ -11,6 +11,8 @@ mod frame;
 pub(crate) use frame::PhysicalFrameRemoval;
 #[path = "resource_accounting/lifecycle.rs"]
 mod lifecycle;
+#[path = "resource_accounting/retirement.rs"]
+mod retirement;
 #[path = "resource_accounting/speculative.rs"]
 mod speculative;
 
@@ -132,8 +134,7 @@ impl PhysicalResidencyAccounting {
         scope: PhysicalOperationAllocationScope,
         bytes: u64,
     ) {
-        self.counters.active_operation_bytes -= bytes;
-        self.counters.operation_scope_bytes[scope.index()] -= bytes;
+        self.release_operation_counters(scope, bytes);
         self.events
             .release_scoped(PhysicalResidencyDimension::OperationBytes, scope, bytes);
         self.events.release_scoped(

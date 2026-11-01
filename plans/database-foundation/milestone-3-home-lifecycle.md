@@ -205,6 +205,12 @@ declared durable-family roster or empty capability list is insufficient.
 Known supported nested operational sharing refuses Busy before seal. Unknown
 wrappers, opaque closures and externally mutable state without an authentic
 owner admission contract remain Unsupported.
+The first admitted family is the actual internal compiled-body registration
+origin. Opaque supplier registrations remain Unsupported even if they override
+the hooks and assert Complete. Only the concrete Host close consumer may invoke
+`begin_after_world_seal`; its exact caller is mechanically sealed as
+`query-home-retirement`. The prepared owner exposes no live clone between the
+unique original-owner preflight and that irreversible handoff.
 
 Run every actual handler/inventory preflight before World seal. A refusal
 preserves the same usable Query and its genuine pre-seal resume. Once sealed,
@@ -516,6 +522,16 @@ own lock and potentially growing certification trace: acquire that SAME lock
 nonwaitingly and establish lawful trace capacity before pool effects. No new
 ledger or dropped trace substitutes for those obligations. Retired table/data
 allocations and execution grants remain inert until explicit reclaim.
+The same recorder's certification trace uses owner-private fixed-size boxed
+pages rather than a history-sized growable vector. A controlled release funds
+one concrete page from its original request before acquiring the pool gate;
+the page retains that grant until its actual events are reclaimed. With the
+pool gate and SAME recorder gate held nonwaitingly, counter arithmetic,
+sequence space and page capacity are established before physical effects.
+Installing a prepared page links the original pages without copying history.
+Ordinary recording uses that same storage; explicit trace observation still
+copies the event history outside the bounded retirement claim. This is trace
+storage inside the existing owner, not another release ledger or scheduler.
 The committed destination is physical_runtime/anchored_records/read_membership/
 retirement.rs plus private release mechanics at existing session, C.10,
 lifecycle and pool owners. No empty placeholder is needed. Require shared and

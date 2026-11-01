@@ -3018,5 +3018,10 @@
 {"source":"workspaces/worth-store/crates/worth-store-relational/src/cold_source/initial_selection/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/merge/admission/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/nonmerge_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
-{"source":"crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/indexes/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+{"source":"crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/indexes/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"workspaces/worth-store/crates/worth-store-buffer-pool/src/physical_residency/pool/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"workspaces/worth-store/crates/worth-store-buffer-pool/src/physical_residency/observation/allocation_events/trace_storage/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"workspaces/worth-store/crates/worth-store/src/physical_runtime/stability/retention/registrations/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-runtime-world/src/lifecycle/close/admission/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
 ]

@@ -1246,6 +1246,14 @@ inside its PRIVATE shared allocation; no public Arc/Weak/unwrap exists.
 `head_position_from_read`, `describe_entry_from_read` and
 `open_payload_from_read` use the same private reader. No latest-root recapture
 or raw-reader getter participates. Generic disposal is unbudgeted.
+For request-aware release, consume that exact membership with `into_retirement`,
+then advance its `AnchoredRecordReadRetirement` against the ORIGINAL Serving
+owner and original request. Foreign affinity and Busy/stop preserve the same
+task. A nonlast local share releases only itself; a unique backing discharges
+its actual EOF frame, operation reservation, C.10 references and lifecycle
+counts in retained stages. `into_retired` yields inert original data and grants
+for explicit unbudgeted `reclaim`; retain them through actual physical close.
+This component does not retire another reader, Native, Query or a whole Home.
 Historical journal linkage uses protected physical identities and frame
 integrity, with no transitive journal-hash promise. Callers admit their own
 payload storage and perform I/O outside logical reservations. This physical

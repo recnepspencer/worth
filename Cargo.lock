@@ -2395,6 +2395,7 @@ dependencies = [
 name = "worth-store-buffer-pool"
 version = "0.1.0"
 dependencies = [
+ "worth-execution",
  "worth-store-contracts",
  "worth-store-physical-format",
  "worth-store-physical-integrity",

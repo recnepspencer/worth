@@ -9,6 +9,7 @@ use worth_store_physical_integrity::PhysicalIntegrityValidationRecord;
 
 #[derive(Debug)]
 pub struct PhysicalFrameLease {
+    pub(crate) armed: bool,
     pub(crate) owner: Arc<PoolInner>,
     pub(crate) key: PhysicalFrameKey,
     pub(crate) bytes: Arc<Vec<u8>>,
@@ -16,6 +17,29 @@ pub struct PhysicalFrameLease {
 }
 
 impl PhysicalFrameLease {
+    /// Relinquish only this actual pin under its original nonwaiting owner gates.
+    /// Refusal returns this SAME lease; success drops no last resident byte owner.
+    pub fn try_retire_for_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::RetiredPhysicalFrame, (Self, crate::PhysicalResidencyRetirementDenial)> {
+        let mut page = match super::super::observation::PreparedTracePage::new(request) {
+            Ok(page) => page,
+            Err(cause) => {
+                return Err((
+                    self,
+                    crate::PhysicalResidencyRetirementDenial::Execution(cause),
+                ))
+            }
+        };
+        let owner = Arc::clone(&self.owner);
+        let mut held = Some(self);
+        match owner.retire_frame(&mut held, request, &mut page) {
+            Ok(retired) => Ok(retired),
+            Err(cause) => Err((held.expect("refusal preserves original frame"), cause)),
+        }
+    }
+
     pub const fn key(&self) -> PhysicalFrameKey {
         self.key
     }
@@ -91,6 +115,8 @@ impl Deref for PhysicalFrameLease {
 
 impl Drop for PhysicalFrameLease {
     fn drop(&mut self) {
-        self.owner.release_pin(self.key);
+        if self.armed {
+            self.owner.release_pin(self.key);
+        }
     }
 }

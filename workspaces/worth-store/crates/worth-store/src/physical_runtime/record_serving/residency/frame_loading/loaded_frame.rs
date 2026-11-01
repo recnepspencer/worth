@@ -17,7 +17,8 @@ pub(in crate::physical_runtime::record_serving) enum PhysicalFrameAccessOrigin {
 }
 
 pub(in crate::physical_runtime::record_serving) struct LoadedPhysicalFrame {
-    lease: PhysicalFrameLease,
+    lease: Option<PhysicalFrameLease>,
+    retired_lease: Option<worth_store_buffer_pool::RetiredPhysicalFrame>,
     #[cfg(feature = "certification-test-authority")]
     origin: PhysicalFrameAccessOrigin,
     work: FrameWorkTrace,
@@ -46,7 +47,8 @@ impl LoadedPhysicalFrame {
             );
         }
         Ok(Self {
-            lease,
+            lease: Some(lease),
+            retired_lease: None,
             #[cfg(feature = "certification-test-authority")]
             origin: _origin,
             work,
@@ -68,11 +70,13 @@ impl LoadedPhysicalFrame {
     pub(in crate::physical_runtime::record_serving) const fn coordinate(
         &self,
     ) -> RecordFrameCoordinate {
-        self.lease.key().coordinate()
+        self.lease().key().coordinate()
     }
 
     pub(in crate::physical_runtime::record_serving) const fn lease(&self) -> &PhysicalFrameLease {
-        &self.lease
+        self.lease
+            .as_ref()
+            .expect("a readable frame owns its original lease")
     }
 
     pub(in crate::physical_runtime::record_serving) fn reject_projection_failure(mut self) {
@@ -86,12 +90,31 @@ impl LoadedPhysicalFrame {
         range: std::ops::Range<usize>,
         target: &mut [u8],
     ) {
-        self.lease.copy_range_into(range, target);
+        self.lease().copy_range_into(range, target);
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn try_retire(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), worth_store_buffer_pool::PhysicalResidencyRetirementDenial> {
+        let Some(lease) = self.lease.take() else {
+            return Ok(());
+        };
+        match lease.try_retire_for_request(request) {
+            Ok(retired) => {
+                self.retired_lease = Some(retired);
+                Ok(())
+            }
+            Err((lease, cause)) => {
+                self.lease = Some(lease);
+                Err(cause)
+            }
+        }
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime::record_serving) fn fill_dirty_candidate<F>(
-        self,
+        mut self,
         allocation: &ForegroundWriteAllocationGrant,
         fill: F,
     ) -> Result<(DirtyPhysicalFrame, FrameWorkTrace), PhysicalResidencyDenial>
@@ -100,6 +123,8 @@ impl LoadedPhysicalFrame {
     {
         let work = self.work;
         self.lease
+            .take()
+            .expect("readable frame owns its original lease")
             .begin_dirty_replacement(allocation)?
             .replace(|source, target| {
                 fill(source, target);
@@ -117,6 +142,6 @@ impl std::ops::Deref for LoadedPhysicalFrame {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        &self.lease
+        self.lease()
     }
 }

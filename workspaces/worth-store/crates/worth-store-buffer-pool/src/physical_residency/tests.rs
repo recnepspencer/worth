@@ -57,7 +57,7 @@ mod writeback_claim_exclusion;
 #[path = "tests/writeback_range_posture.rs"]
 mod writeback_range_posture;
 
-fn store(byte: u8) -> StableStoreIdentity {
+pub(super) fn store(byte: u8) -> StableStoreIdentity {
     StoreNamespaceIdentityRecord::new(
         StoreNamespaceVersion::CURRENT,
         ProposedStoreIdentity::from_nonzero_bytes([byte; 16]).unwrap(),
@@ -65,7 +65,7 @@ fn store(byte: u8) -> StableStoreIdentity {
     .published_identity()
 }
 
-fn coordinate(block: u64, length: u32) -> RecordFrameCoordinate {
+pub(super) fn coordinate(block: u64, length: u32) -> RecordFrameCoordinate {
     RecordFrameCoordinate::new(
         RecordArtifactFile::RootRoutingBlock {
             generation: 1,
@@ -77,7 +77,7 @@ fn coordinate(block: u64, length: u32) -> RecordFrameCoordinate {
     .unwrap()
 }
 
-fn limits(
+pub(super) fn limits(
     resident_bytes: u64,
     pinned_frames: u32,
     dirty_frames: u32,
@@ -124,7 +124,7 @@ fn nonzero_count(value: u32) -> NonZeroU32 {
     NonZeroU32::new(value).unwrap()
 }
 
-fn allocation(
+pub(super) fn allocation(
     pool: &PhysicalResidencyPool,
     scope: PhysicalOperationAllocationScope,
 ) -> OperationAllocationGrant {
@@ -180,7 +180,7 @@ fn writeback_claim(
     pool.claim_writeback(allocation, frames).unwrap()
 }
 
-fn expect_fault(
+pub(super) fn expect_fault(
     pool: &PhysicalResidencyPool,
     allocation: &OperationAllocationGrant,
     key: PhysicalFrameKey,
@@ -213,7 +213,7 @@ fn fill(bytes: &mut [u8], value: u8) -> Result<(), ()> {
     Ok(())
 }
 
-const READ_SCOPE: PhysicalOperationAllocationScope =
+pub(super) const READ_SCOPE: PhysicalOperationAllocationScope =
     PhysicalOperationAllocationScope::ForegroundRead;
 const WRITE_SCOPE: PhysicalOperationAllocationScope =
     PhysicalOperationAllocationScope::ForegroundWrite;

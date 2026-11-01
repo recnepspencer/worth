@@ -14,6 +14,7 @@ use crate::physical_runtime::{
 mod capture;
 mod reclaim_guard;
 mod retained_snapshot;
+mod retirement;
 mod terminal_head_hold;
 pub(in crate::physical_runtime) use terminal_head_hold::TerminalHeadNoReaderOrRecoveryHold;
 
@@ -115,6 +116,10 @@ impl RootProtectionRegistry {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        Self::release_registered(&mut state, slot, root);
+    }
+
+    fn release_registered(state: &mut Registrations, slot: usize, root: RootPublicationCell) {
         let entry = &mut state.slots[slot];
         assert_eq!(
             entry.root,

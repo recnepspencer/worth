@@ -17,5 +17,6 @@ pub use retention::{PhysicalReadProtectionObservation, PhysicalReadProtectionObs
 
 pub(in crate::physical_runtime) use lifecycle::PhysicalReadProtectionOwner;
 pub(in crate::physical_runtime) use retention::{
-    PhysicalRootReadLease, RootProtectionRegistry, TerminalHeadNoReaderOrRecoveryHold,
+    PhysicalRootReadLease, PhysicalRootReadRetirementDenial, RootProtectionRegistry,
+    TerminalHeadNoReaderOrRecoveryHold,
 };

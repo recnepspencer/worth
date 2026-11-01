@@ -50,7 +50,10 @@ pub use member_stream::AnchoredRecordMemberStream;
 mod payload_stream;
 pub use payload_stream::AnchoredRecordPayloadStream;
 mod read_membership;
-pub use read_membership::AnchoredRecordReadMembership;
+pub use read_membership::{
+    AnchoredRecordReadMembership, AnchoredRecordReadRetirement, AnchoredRecordReadRetirementDenial,
+    AnchoredRecordReadRetirementProgress, RetiredAnchoredRecordReadMembership,
+};
 mod protected_membership;
 pub use protected_membership::AnchoredRecordProtectedMembership;
 mod membership;

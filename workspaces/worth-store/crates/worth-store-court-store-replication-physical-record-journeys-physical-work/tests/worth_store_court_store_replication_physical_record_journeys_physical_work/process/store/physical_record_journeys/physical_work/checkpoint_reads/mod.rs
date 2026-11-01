@@ -6,6 +6,7 @@ mod admission;
 mod cut;
 mod damage;
 mod members;
+mod retirement;
 const JOURNALS: [&str; 3] = ["owner.first", "owner.second", "owner.third"];
 fn anchor() -> AnchoredRecordName {
     AnchoredRecordName::new("home.checkpoint").unwrap()

@@ -6,6 +6,12 @@ use crate::physical_runtime::{
 };
 use std::sync::Arc;
 
+mod retirement;
+pub use retirement::{
+    AnchoredRecordReadRetirement, AnchoredRecordReadRetirementDenial,
+    AnchoredRecordReadRetirementProgress, RetiredAnchoredRecordReadMembership,
+};
+
 /// A verified streamed read with its ORIGINAL reader and intrinsic admissions.
 /// Clone only shares the PRIVATE Arc; no Weak, Arc, unwrap, raw-reader getter,
 /// public constructor or owned-membership extraction escapes. No physical
@@ -25,6 +31,12 @@ struct ReadMembershipBacking {
     _shared_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl AnchoredRecordReadMembership {
+    /// Consume this actual local share. Generic task disposal is unbudgeted;
+    /// advance it to discharge physical obligations before retaining storage.
+    pub fn into_retirement(self) -> AnchoredRecordReadRetirement {
+        AnchoredRecordReadRetirement::new(self.backing)
+    }
+
     pub fn membership(&self) -> &AnchoredRecordMembership {
         &self.backing.membership
     }

@@ -32,7 +32,14 @@ impl RecordReadSession {
                 count
             }
             ReadPlacement::Extent(state) => {
-                match state.read_next(&self._allocation, target, &mut self.observation, identity) {
+                match state.read_next(
+                    self._allocation
+                        .as_ref()
+                        .expect("readable session owns allocation"),
+                    target,
+                    &mut self.observation,
+                    identity,
+                ) {
                     Ok(count) => count,
                     Err(failure) => {
                         runtime.health.observe_extent_stream_failure(&failure);
@@ -82,7 +89,13 @@ impl RecordReadSession {
                 }
             }
             ReadPlacement::Extent(state) => {
-                match state.next_chunk(&self._allocation, &mut self.observation, identity) {
+                match state.next_chunk(
+                    self._allocation
+                        .as_ref()
+                        .expect("readable session owns allocation"),
+                    &mut self.observation,
+                    identity,
+                ) {
                     Ok(Some(chunk)) => Some((chunk.bytes, chunk.frame, chunk.logical_range)),
                     Ok(None) => None,
                     Err(failure) => {

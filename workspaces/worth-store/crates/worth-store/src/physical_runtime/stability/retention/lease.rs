@@ -3,11 +3,18 @@ use std::sync::Arc;
 use super::super::{PhysicalProtectedRootObservation, PhysicalReadProtectionDenial};
 use super::RootProtectionRegistry;
 
+#[derive(Debug)]
+pub(in crate::physical_runtime) enum PhysicalRootReadRetirementDenial {
+    Busy,
+    Execution(worth_execution::WorkCeilingDenial),
+}
+
 /// Owns a reference to one registered reader acquisition, not to the runtime.
 pub(in crate::physical_runtime) struct PhysicalRootReadLease {
     registry: Arc<RootProtectionRegistry>,
     slot: usize,
     binding: PhysicalProtectedRootObservation,
+    armed: bool,
 }
 
 impl PhysicalRootReadLease {
@@ -20,6 +27,7 @@ impl PhysicalRootReadLease {
             registry,
             slot,
             binding,
+            armed: true,
         }
     }
 
@@ -40,21 +48,36 @@ impl PhysicalRootReadLease {
     ) -> PhysicalProtectedRootObservation {
         self.binding
     }
+
+    pub(in crate::physical_runtime) fn try_retire(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), PhysicalRootReadRetirementDenial> {
+        if self.armed {
+            self.registry
+                .try_release(self.slot, self.binding.root(), &mut self.armed, request)?;
+        }
+        Ok(())
+    }
 }
 
 impl Clone for PhysicalRootReadLease {
     fn clone(&self) -> Self {
+        assert!(self.armed, "retired read protection cannot be shared");
         self.registry.share(self.slot, self.binding.root());
         Self {
             registry: Arc::clone(&self.registry),
             slot: self.slot,
             binding: self.binding,
+            armed: true,
         }
     }
 }
 
 impl Drop for PhysicalRootReadLease {
     fn drop(&mut self) {
-        self.registry.release(self.slot, self.binding.root());
+        if self.armed {
+            self.registry.release(self.slot, self.binding.root());
+        }
     }
 }

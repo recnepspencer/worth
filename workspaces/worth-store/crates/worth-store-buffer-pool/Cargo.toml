@@ -10,6 +10,7 @@
 
 
 [dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
 worth-store-contracts.workspace = true
 worth-store-physical-integrity.workspace = true
 worth-store-physical-format.workspace = true

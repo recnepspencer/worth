@@ -18,6 +18,7 @@ pub(super) mod failure_classification;
 mod inline;
 #[cfg(feature = "certification-test-authority")]
 mod read_call_pause;
+mod retirement;
 mod selected_class;
 mod session;
 pub use cancellation::RecordReadCancellation;
@@ -26,6 +27,7 @@ pub(in crate::physical_runtime) use failure_classification::assert_actual_lifecy
 use failure_classification::manifest_failure;
 #[cfg(feature = "certification-test-authority")]
 pub use read_call_pause::CertificationPhysicalReadCallPauseGate;
+pub use retirement::PhysicalRecordReadRetirementDenial;
 
 #[allow(
     clippy::large_enum_variant,
@@ -57,7 +59,8 @@ pub struct RecordReadSession {
     runtime: std::sync::Weak<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
     health_permit: super::super::lifecycle::serving_health::ServingHealthPermit,
     _lifecycle: super::super::lifecycle::record_lifecycle::RecordReadSessionLease,
-    _allocation: worth_store_buffer_pool::OperationAllocationGrant,
+    _allocation: Option<worth_store_buffer_pool::OperationAllocationGrant>,
+    _retired_allocation: Option<worth_store_buffer_pool::RetiredOperationAllocation>,
 }
 
 /// Opens bounded record-read sessions through the serving Store.
