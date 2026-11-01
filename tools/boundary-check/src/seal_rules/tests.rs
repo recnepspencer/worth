@@ -151,6 +151,10 @@ fn certification_factory_callers_are_class_and_file_exact() {
             "native-recovered-inventory",
         ),
         ("query_runtime_handle", "query-registered-native"),
+        (
+            "capture_complete_checkpoint",
+            "native-home-complete-checkpoint",
+        ),
         ("prepare_home_program", "query-home-preparation"),
         ("install_home_native_schema", "query-home-preparation"),
         (

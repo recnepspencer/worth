@@ -15,6 +15,7 @@ application-home-owner-admission workspaces/worth-store/crates/worth-store-court
 # Recovery-affine inventory: one production consumer and one authentic admission court.
 native-recovered-inventory crates/worth-runtime-world/src/lifecycle/builder/home_readmission/associated_effects.rs
 native-recovered-inventory crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recovered_associated_effects.rs
+native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint.rs
 # D1/D17: only Host opening composes the consuming fresh-Home Query stages.
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
 query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
