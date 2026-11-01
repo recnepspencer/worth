@@ -652,7 +652,7 @@ retain existing target diagnostics; request/allocation interruption preserves th
 target's original state.
 
 Field-authoring lowering is the next bounded ownership slice. Its original
-Workspace/read-view ExecutionRequest pays before selected field/value copies,
+Workspace/read-view ExecutionRequest pays before selected success-path field/value copies,
 portable construction, endpoint suffix growth and Foundation readmission.
 Validate bindings in original input order, then use a borrowed ordinal roster
 instead of the three temporary BTreeMaps. AspectFieldPatch accepts mixed locator
@@ -685,6 +685,16 @@ refund using named owner leaves and the existing genuine field/endpoint journey.
 Upstream portable intent copies, supplemental projection, replay staging and
 Complete remain separate unqualified work; existing MaintenanceWork field-index
 preparation is not an assumed bypass of this lowering owner.
+
+Semantic refusal data remains a required unqualified successor: original typed
+locator/path/key copies, formatted details, returned error lifetime and later
+error Clone/Serde. The old first-error denial copies its full locator, including
+an accepted 1 MiB undeclared aspect key or a large nested path, before diagnostic
+admission. Preserve this concrete failure case for that successor. Compatibility
+denial tests prove original meaning/order only. A local charge that drops before
+the returned error is destroyed cannot witness diagnostic custody. Do not add a
+generic error footer or Arc wrapper to disguise that open boundary; this success-
+path predecessor cannot qualify whole replay or Complete.
 
 Replay copy custody is a separate bounded predecessor. Keep public
 WorkerIntentBatch, MergedCommitPlan and MergeCommitMutationPlan meaning and wire
