@@ -589,6 +589,24 @@ Native runtime, emitted publication or recovered authority. Memory budgets and
 cancellation tokens remain ordinary SDK values. Register only this exact leaf
 and the two runtime-root names, without hiding constructors in another helper.
 
+Apply that same ownership rule to the other concrete invoked shared leaves,
+without retaining an outer Semantic reservation for smaller clones:
+CustomInvariantRuleId keeps its existing new/as_str API with private intrinsic
+backing; CustomInvariantTouchedSummary uses three typed opaque entity/relation/
+partition ID-slice owners; shared SchemaElementRef/SchemaDiffDetail text uses
+the schema-domain SchemaChangeText owner; NativeMemberKey::Projected uses opaque
+ProjectedMemberStorage for its actual coordinate/domain/case backing. Preserve
+their existing wire, equality, ordering, hash and validation predicates. Their
+borrowed data surfaces expose no raw Arc/Weak/extraction. Ordinary construction
+keeps its explicit unbudgeted contract. Each decoded allocation pays its actual
+payload/private-control layout from original predecode reservations and retains
+only its own grant. Extend only the owner's one-decode transient handoff;
+do not introduce a shared resource registry or second semantic evaluator.
+Internal index/snapshot sharing requires the same treatment only where the
+actual invoked ownership path escapes. Trace that path rather than widening
+the scope to unrelated Arc uses. Keep these private storage owners at their
+existing validation/data, schema/data/continuity and graph_member domains.
+
 ### Selected canonical backing without covered-journal replay
 
 Actual root images alone are insufficient. Directory CHK17 omits complete
