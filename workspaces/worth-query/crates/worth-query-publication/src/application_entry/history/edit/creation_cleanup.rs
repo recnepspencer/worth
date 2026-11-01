@@ -3,7 +3,7 @@ use super::ForkRecovery;
 use worth_query_execution::facade::product::WorthQueryProductBranchCreationRecoveryReleaseFailure;
 
 impl ForkRecovery {
-    pub(super) fn release(self) -> Result<(), Self> {
+    pub(in crate::application_entry::history) fn release(self) -> Result<(), Self> {
         match self {
             Self::Creation(owner) => match owner.release_obligations(0) {
                 Ok(_) => Ok(()),

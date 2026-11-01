@@ -16,6 +16,7 @@ pub struct ApplicationHistoryBindingDescriptor {
     identity: String,
     history_type: WorthQueryPortableTypeIdentity,
     access: ApplicationQueryBindingDescriptor,
+    group_resources: super::ApplicationHistoryGroupResources,
     operations: Vec<ApplicationMutationBindingDescriptor>,
     navigation: Option<ApplicationHistoryNavigationBindingDescriptor>,
 }
@@ -27,6 +28,7 @@ impl ApplicationHistoryBindingDescriptor {
             identity: H::IDENTITY.to_owned(),
             history_type: H::PORTABLE_TYPE_IDENTITY,
             access: ApplicationHistoryAccessBinding::<S, H>::descriptor(),
+            group_resources: H::GROUP_RESOURCES,
             operations: Vec::new(),
             navigation: None,
         }
@@ -58,6 +60,9 @@ impl ApplicationHistoryBindingDescriptor {
     }
     pub fn access(&self) -> &ApplicationQueryBindingDescriptor {
         &self.access
+    }
+    pub const fn group_resources(&self) -> super::ApplicationHistoryGroupResources {
+        self.group_resources
     }
     pub fn operations(&self) -> &[ApplicationMutationBindingDescriptor] {
         &self.operations

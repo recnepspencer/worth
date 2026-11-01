@@ -13,6 +13,8 @@ pub trait ApplicationHistoryBinding<Schema: ApplicationSchema>:
 {
     type Access: ApplicationQueryIntent<Schema> + Clone;
     const IDENTITY: &'static str;
+    const GROUP_RESOURCES: super::ApplicationHistoryGroupResources =
+        super::ApplicationHistoryGroupResources::DEFAULT;
 }
 
 pub type ApplicationHistoryAccessBinding<Schema, History> =

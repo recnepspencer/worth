@@ -52,7 +52,7 @@ fn pending<'d, 'r>(host: &Runtime, owner: Owner<'d, 'r>) -> Owner<'d, 'r> {
     }
 }
 
-fn awaiting<'d, 'r>(host: &Runtime, mut owner: Owner<'d, 'r>) -> Owner<'d, 'r> {
+pub(super) fn awaiting<'d, 'r>(host: &Runtime, mut owner: Owner<'d, 'r>) -> Owner<'d, 'r> {
     for _ in 0..16 {
         if owner.posture() == Posture::AwaitingSelection {
             return owner;

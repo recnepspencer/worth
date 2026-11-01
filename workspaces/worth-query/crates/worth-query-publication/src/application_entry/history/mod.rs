@@ -78,6 +78,17 @@ mod context;
 mod denial;
 mod edit;
 mod edit_builder;
+mod group;
+pub use group::{
+    WorthQueryGroupedHistoryDocument, WorthQueryHistoryGroupCompletionIter,
+    WorthQueryHistoryGroupCompletionKind, WorthQueryHistoryGroupCompletions,
+    WorthQueryHistoryGroupDenial, WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish,
+    WorthQueryHistoryGroupPosture,
+};
+#[doc(hidden)]
+pub use group::{
+    WorthQueryHistoryGroupHandoffPauseForTest, WorthQueryHistoryGroupHandoffPointForTest,
+};
 mod metadata;
 mod navigation;
 pub use navigation::{
@@ -91,6 +102,7 @@ pub use navigation::{
 };
 mod observation;
 mod outputs;
+mod owner_handoff;
 pub use outputs::{
     WorthQueryHistoryNoOutputs, WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputsMode,
     WorthQueryHistoryWithOutputs,

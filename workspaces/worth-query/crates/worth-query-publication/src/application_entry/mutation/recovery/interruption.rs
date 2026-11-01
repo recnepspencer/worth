@@ -33,7 +33,9 @@ pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> 
                 | History::IntentDrift | History::ForeignRecording | History::UnsupportedOperation
                 | History::ReceiptMismatch | History::CandidateSelection(_) | History::Adoption(_)
                 | History::HeadAdmission(_) | History::Read(_) | History::MetadataCapabilityInstallation(_) | History::Paging(_)
-                | History::UnsupportedContextRefresh | History::ContextRefresh(_) => None,
+                | History::UnsupportedContextRefresh | History::ContextRefresh(_)
+                | History::EmptyGroup | History::GroupMemberLimitExceeded
+                | History::GroupResultLimitExceeded | History::GroupMemberMismatch | History::GroupNotComplete => None,
             }
         },
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::Execution(cause)) => Some(*cause),

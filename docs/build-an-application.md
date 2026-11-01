@@ -2062,6 +2062,62 @@ and preserves the document's output mode. Navigation selects an existing state;
 [semantic correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
 publishes a new inverse, compensation or reapplication under its own contract.
 
+For a gesture containing several ordinary source-completion actions, use an
+owning group. It keeps the original model selected until all members complete,
+then records one history edge:
+
+<!-- compiled: document_history_group_open.rs -->
+```rust
+    document.group_edits::<_, RetentionProgramP0, Action, 2>(
+        host,
+        request,
+        key,
+        [
+            (
+                SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 3,
+                    },
+                },
+                0x9182_5001,
+            ),
+            (
+                SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: second,
+                    },
+                },
+                0x9182_5002,
+            ),
+        ],
+    )
+```
+
+Advance the original group with fresh requests; this example uses `Posture` as
+an alias for `WorthQueryHistoryGroupPosture`:
+
+<!-- compiled: document_history_group_advance.rs -->
+```rust
+    let (document, execution) = group.parts();
+    let posture = execution.advance(document, request)?;
+    if posture == Posture::ReadyToComplete {
+        execution.complete(document, request)?;
+    }
+    Ok(group.posture())
+```
+
+The caller keeps `group` after every refusal. On a terminal member, inspect its
+original native outcome and abort the group; earlier candidate publications
+remain real effects with their own cleanup. After selection, finish the group
+to obtain its document, one history step and original source completions. Keep
+any returned cleanup owner on refusal. These calls support a homogeneous list
+of source-completion actions on an ordinary no-output document, bounded by the
+history binding's installed `GROUP_RESOURCES` (64 members/results by default,
+one unfinished group). See [group completion, retries and disposal](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step)
+for cancellation, competing navigation and partial effects.
+
 For a fixed required-output tree, configure the document with
 `document.with_outputs::<Program, Root>(&phase, &request, &application, demand, controls)`
 inside an advancement of its owning host. A refusal returns the original

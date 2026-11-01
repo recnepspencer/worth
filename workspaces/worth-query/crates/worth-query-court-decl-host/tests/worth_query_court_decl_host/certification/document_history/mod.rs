@@ -2,6 +2,7 @@
 mod assessment;
 mod attachment;
 mod context;
+mod group;
 mod membership;
 mod metadata;
 mod navigation;

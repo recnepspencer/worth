@@ -135,6 +135,8 @@ mod serial {
                 "document_history_edit.rs".to_owned(),
                 "document_history_navigation.rs".to_owned(),
                 "document_history_buttons.rs".to_owned(),
+                "document_history_group_open.rs".to_owned(),
+                "document_history_group_advance.rs".to_owned(),
                 "warehouse_inventory.rs".to_owned(),
                 "owning_entry.rs".to_owned(),
                 "owning_fixed.rs".to_owned(),

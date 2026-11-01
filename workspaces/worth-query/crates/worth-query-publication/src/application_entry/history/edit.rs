@@ -25,7 +25,7 @@ use worth_query_execution::{
 mod admission;
 mod capture_pause;
 mod creation_cleanup;
-mod discard;
+pub(super) mod discard;
 mod finish;
 mod fixed_outcome;
 pub use fixed_outcome::WorthQueryFixedHistoryEditOutcome;
@@ -194,7 +194,7 @@ pub struct WorthQueryHistoryEdit<
 {
     pub(super) document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     pub(super) phase: Option<Phase<'runtime, S, I, P, A>>,
-    handoff: Option<std::sync::Arc<handoff::AdoptionHandoff>>,
+    handoff: Option<std::sync::Arc<handoff::OwnerHandoff>>,
 }
 
 impl<

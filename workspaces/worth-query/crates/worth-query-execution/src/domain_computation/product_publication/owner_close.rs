@@ -13,6 +13,16 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::RuntimeWorldRecoveryDenial;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    /// Dispose this exact original partial without new business admission.
+    pub fn close_owned_product_publication_recovery(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        recovery: Recovery,
+    ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, Failure> {
+        self.close_product_publication_recovery_in_advancement(phase, recovery)
+    }
+
     /// Close original custody without adopting the failed publication or repeating effects.
     pub(in crate::domain_computation) fn close_product_publication_recovery_in_advancement(
         &self,

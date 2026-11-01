@@ -12,6 +12,8 @@ use crate::domain_computation::primary_graph::{
 };
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::ExecutionRequest;
+#[path = "journal/group.rs"]
+mod group;
 #[path = "journal/navigation.rs"]
 mod navigation;
 #[path = "journal/paging.rs"]
@@ -59,6 +61,19 @@ pub(super) struct ChildLink {
     _allocation: HistoryInsertionAllocation,
 }
 
+#[derive(Clone, Copy)]
+enum PendingRecord {
+    Ordinary(WorthQueryHistoryNodeId),
+    Group(WorthQueryHistoryNodeId),
+}
+impl PendingRecord {
+    fn node(self) -> WorthQueryHistoryNodeId {
+        match self {
+            Self::Ordinary(node) | Self::Group(node) => node,
+        }
+    }
+}
+
 pub(in crate::domain_computation::primary_graph) struct HistoryJournal<'runtime, S> {
     incarnation: DocumentIncarnation,
     current: WorthQueryHistoryNodeId,
@@ -66,7 +81,7 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal<'runtime,
     next_transition: u64,
     view_generation: u64,
     completed_end: u64,
-    pending: Option<WorthQueryHistoryNodeId>,
+    pending: Option<PendingRecord>,
     nodes: BTreeMap<u64, HistoryNode>,
     attempts: BTreeMap<[u8; 32], HistoryAttempt>,
     past_heads: BTreeMap<u64, PastHead<'runtime, S>>,
@@ -233,7 +248,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         );
         self.next = next;
         self.next_transition = next_transition;
-        self.pending = Some(node);
+        self.pending = Some(PendingRecord::Ordinary(node));
         Ok(ReservedHistoryRecord {
             node,
             parent: self.current,
@@ -305,7 +320,8 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
 
     pub(super) fn matches_reservation(&self, reserved: &ReservedHistoryRecord) -> bool {
         self.access(Access::Selection);
-        self.pending == Some(reserved.node)
+        self.pending
+            .is_some_and(|pending| pending.node() == reserved.node)
             && self.current == reserved.parent
             && matches!({ self.access(Access::Attempt); self.attempts.get(&reserved.key) },
                 Some(HistoryAttempt { binding: AttemptBinding::Reserved(node), .. }) if *node == reserved.node)

@@ -3,7 +3,7 @@ use super::*;
 use worth_query_declaration::facade::application_operation::NoApplicationMutationSource;
 use worth_query_execution::facade::product::WorthQueryOwnedProductHeadCloseFailure;
 
-pub(super) fn close_candidate<
+pub(in crate::application_entry::history) fn close_candidate<
     'runtime,
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,

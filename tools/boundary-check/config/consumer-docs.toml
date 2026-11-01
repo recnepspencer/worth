@@ -60,6 +60,18 @@ target = "src/main.rs"
 source = "src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/buttons.rs"
 
 [[compiled_sources]]
+name = "document_history_group_open.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-court-decl-host"
+target = "tests/worth_query_court_decl_host.rs"
+source = "tests/worth_query_court_decl_host/certification/document_history/group/guide/open.rs"
+
+[[compiled_sources]]
+name = "document_history_group_advance.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-court-decl-host"
+target = "tests/worth_query_court_decl_host.rs"
+source = "tests/worth_query_court_decl_host/certification/document_history/group/guide/advance.rs"
+
+[[compiled_sources]]
 name = "owning_discovered.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"

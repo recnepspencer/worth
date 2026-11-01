@@ -14,6 +14,8 @@ pub(super) use advancement::Step as SourceStep;
 pub(in crate::application_entry) use binding::sealed::Driver as SourceAssessmentDriver;
 pub use binding::WorthQuerySourceOperationBinding;
 mod completion;
+mod disposal;
+pub(in crate::application_entry) use disposal::WorthQueryClosingSourceOperation;
 mod handoff_control;
 #[doc(hidden)]
 pub use handoff_control::WorthQuerySourceCompletionHandoffPauseForTest;

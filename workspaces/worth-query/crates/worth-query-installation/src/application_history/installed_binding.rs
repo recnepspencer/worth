@@ -34,6 +34,12 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     pub fn definition(&self) -> &ErasedApplicationHistoryDefinition {
         &self.compiled.definition
     }
+    pub fn group_resources(
+        &self,
+    ) -> worth_query_declaration::facade::application_history::ApplicationHistoryGroupResources
+    {
+        self.compiled.descriptor.group_resources()
+    }
     pub fn access_binding(
         &self,
     ) -> &WorthQueryInstalledApplicationQueryBinding<S, ApplicationHistoryAccessBinding<S, H>> {
@@ -86,6 +92,7 @@ impl<S: ApplicationSchema> WorthQueryInstalledApplicationSchema<S> {
             .ok_or_else(|| Denial::new(Kind::NotInstalled, H::IDENTITY))?;
         if compiled.descriptor.binding_type() != TypeId::of::<H>()
             || compiled.descriptor.history_type() != &H::PORTABLE_TYPE_IDENTITY
+            || compiled.descriptor.group_resources() != H::GROUP_RESOURCES
         {
             return Err(Denial::new(Kind::BindingMeaningChanged, H::IDENTITY));
         }

@@ -33,7 +33,7 @@ impl<S> HistoryJournal<'_, S> {
         &self,
         node: WorthQueryHistoryNodeId,
     ) -> Result<u64, Denial> {
-        if self.pending.is_some() {
+        if matches!(self.pending, Some(PendingRecord::Ordinary(_))) {
             return Err(Denial::AttemptInFlight);
         }
         if !self.owns_node(node) {

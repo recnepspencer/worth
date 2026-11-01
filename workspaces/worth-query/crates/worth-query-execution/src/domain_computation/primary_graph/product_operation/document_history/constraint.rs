@@ -22,9 +22,25 @@ pub struct WorthQueryDocumentHistoryOperationConstraint {
     source: WorthQueryProductObservationLease,
     candidate: WorthQueryProductBranch,
     meaning: WorthQueryApplicationIdempotencyBinding,
+    candidate_predecessor: Option<crate::basis::WorthQueryProductBranchReadIdentity>,
 }
 
 impl WorthQueryDocumentHistoryOperationConstraint {
+    pub(super) fn for_group(
+        model: HistoryModelIdentity,
+        source: WorthQueryProductObservationLease,
+        candidate: WorthQueryProductBranch,
+        meaning: WorthQueryApplicationIdempotencyBinding,
+        candidate_predecessor: crate::basis::WorthQueryProductBranchReadIdentity,
+    ) -> Self {
+        Self {
+            model,
+            source,
+            candidate,
+            meaning,
+            candidate_predecessor: Some(candidate_predecessor),
+        }
+    }
     /// Descriptive targeting for the one initial admission's consuming transition.
     pub fn candidate(&self) -> WorthQueryProductBranch {
         self.candidate
@@ -55,11 +71,33 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             source: candidate.retained_expected_source(),
             candidate: candidate.branch(),
             meaning: reserved.meaning,
+            candidate_predecessor: None,
         })
     }
 }
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    /// Only fresh business execution needs the group predecessor. Original
+    /// outcome lookup/recovery must survive that member's own publication.
+    pub fn validate_history_execution_predecessor<SOp, Input, Model>(
+        &self,
+        _access: &WorthQueryProgramPublicationAccess,
+        restriction: &WorthQueryDocumentHistoryOperationConstraint,
+        admitted: &WorthQueryAdmittedApplicationOperation<S, SOp, Input, Model>,
+    ) -> Result<(), Denial> {
+        if let Some(expected) = &restriction.candidate_predecessor {
+            let actual = admitted
+                .graph_work()
+                .mutation_product()
+                .ok_or(Denial::ForeignRecording)?
+                .publication_binding();
+            if !expected.matches_observation(actual.observation()) {
+                return Err(Denial::HeadDiverged);
+            }
+        }
+        Ok(())
+    }
+
     pub fn validate_history_operation<SOp, Input, Model>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

@@ -27,6 +27,11 @@ pub enum WorthQueryDocumentHistoryDenial {
     IntentDrift,
     ForeignRecording,
     UnsupportedOperation,
+    EmptyGroup,
+    GroupMemberLimitExceeded,
+    GroupResultLimitExceeded,
+    GroupMemberMismatch,
+    GroupNotComplete,
     CandidateSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     ReceiptMismatch,
     Adoption(

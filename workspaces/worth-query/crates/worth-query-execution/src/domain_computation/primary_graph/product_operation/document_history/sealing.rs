@@ -51,11 +51,11 @@ impl<S> std::fmt::Debug for WorthQueryDocumentHistoryAdoptionFailure<'_, S> {
     }
 }
 
-struct PreparedBinding {
-    node: RecordedNode,
-    endpoint: WorthQueryProductBranchReadIdentity,
-    exact: WorthQueryProductObservationLease,
-    returned: WorthQueryHistoryStep,
+pub(super) struct PreparedBinding {
+    pub(super) node: RecordedNode,
+    pub(super) endpoint: WorthQueryProductBranchReadIdentity,
+    pub(super) exact: WorthQueryProductObservationLease,
+    pub(super) returned: WorthQueryHistoryStep,
 }
 
 enum RecordingCompletion<'a> {
@@ -181,6 +181,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 })
             }
         };
+        self.adopt_prepared_history(phase, reserved, candidate, prepared)
+    }
+
+    pub(super) fn adopt_prepared_history(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        reserved: WorthQueryDocumentHistoryReservation,
+        candidate: WorthQueryExpectedProductBranch<'runtime, S>,
+        prepared: PreparedBinding,
+    ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryAdoptionFailure<'runtime, S>> {
         if let Some(capture) = &self.capture_pause {
             capture.pause();
         }

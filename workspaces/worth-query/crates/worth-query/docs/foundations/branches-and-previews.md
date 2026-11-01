@@ -1278,3 +1278,89 @@ Look for:
 - [State and Readiness Surfaces](state.md)
 
 
+## Group ordinary edits into one step
+
+Group a homogeneous array of source-completion actions on an ordinary document
+without a configured output tree. The retention example uses its declared
+`RetentionProgramP0` and `Action`; each operation has its own original key, and
+`key` identifies the whole ordered group. Construction refusal returns the
+original document.
+
+<!-- compiled: document_history_group_open.rs -->
+```rust
+    document.group_edits::<_, RetentionProgramP0, Action, 2>(
+        host,
+        request,
+        key,
+        [
+            (
+                SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 3,
+                    },
+                },
+                0x9182_5001,
+            ),
+            (
+                SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: second,
+                    },
+                },
+                0x9182_5002,
+            ),
+        ],
+    )
+```
+
+The returned `WorthQueryGroupedHistoryDocument` owns the document, private
+candidate and every original operation. Keep that root across calls. Its
+`parts()` method lends the same document for reads/navigation and separately
+lends the group execution. Drop those borrows before finishing or aborting the
+owning root. In the advancement example, `Posture` aliases
+`WorthQueryHistoryGroupPosture`:
+
+<!-- compiled: document_history_group_advance.rs -->
+```rust
+    let (document, execution) = group.parts();
+    let posture = execution.advance(document, request)?;
+    if posture == Posture::ReadyToComplete {
+        execution.complete(document, request)?;
+    }
+    Ok(group.posture())
+```
+
+Call the advancement again while work remains. A refusal leaves `group`
+owned by the caller; preserve it and the original member list and keys.
+`ReadyToComplete` permits `execution.complete(document, request)`; successful
+selection creates one history edge at the final endpoint. Before selection,
+`document.read(request)` still reads the original head, while
+`execution.read_staged(document, request)` queries the actual private head under
+fresh READ.
+
+On `Terminal`, inspect `execution.terminal_source()` for the original operation's
+outcome and call `group.abort(request)`. A denied second edit does not undo an
+earlier private publication or select a partial group. Abort closes original
+partial-effect custody and the candidate; it never reruns a handler or presents
+cleanup as business rollback. Abort refusal returns the same owning root. Retry
+its close, or use `execution.resume_cleanup(document, request)` for a retained
+unresolved original fate; this route cannot start another business attempt.
+
+After `Selected` or `AlreadyRecorded`, call `group.finish(request)` to discharge
+each operation and recover the document, the one step, and original source
+completions. An equivalent whole-group retry returns the original step without
+moving today's selection or running members again; its completion vector is
+empty and `kind` is `AlreadyRecorded`. Changed membership or inputs under that key refuse. If delivery stops
+after selection, retry completion/finish on the original root. Competing
+navigation can make an unselected group stale; retain and abort its candidate.
+
+`ApplicationHistoryBinding::GROUP_RESOURCES` sets the installation's finite
+member and retained-result counts. Both default to 64; the document admits one
+unfinished group. Capacity refusal precedes candidate effects. Nested groups
+cannot consume the document through its shared borrow. Groups retain the
+ordinary operation's current authorization and invariants; workflow and external
+effects are ineligible. These calls accept source-completion actions on ordinary
+payload/no-output documents.
+

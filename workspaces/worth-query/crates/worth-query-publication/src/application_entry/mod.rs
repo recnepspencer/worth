@@ -48,13 +48,17 @@ pub use history::{
     WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
     WorthQueryDocumentHistoryClosingDenial, WorthQueryDocumentHistoryDenial,
     WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryFixedHistoryEditOutcome,
-    WorthQueryGovernedHistoryPayload, WorthQueryHistoryCheckoutDescription,
-    WorthQueryHistoryCheckoutTarget, WorthQueryHistoryClosingOutputs,
-    WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
-    WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder,
-    WorthQueryHistoryEditCaptureDenial, WorthQueryHistoryEditCaptureFailure,
-    WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish,
-    WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture, WorthQueryHistoryExpectedCheckout,
+    WorthQueryGovernedHistoryPayload, WorthQueryGroupedHistoryDocument,
+    WorthQueryHistoryCheckoutDescription, WorthQueryHistoryCheckoutTarget,
+    WorthQueryHistoryClosingOutputs, WorthQueryHistoryContextRefreshDenial,
+    WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance,
+    WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,
+    WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDenial,
+    WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome,
+    WorthQueryHistoryEditPosture, WorthQueryHistoryExpectedCheckout,
+    WorthQueryHistoryGroupCompletionIter, WorthQueryHistoryGroupCompletionKind,
+    WorthQueryHistoryGroupCompletions, WorthQueryHistoryGroupDenial,
+    WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish, WorthQueryHistoryGroupPosture,
     WorthQueryHistoryNavigation, WorthQueryHistoryNavigationAdvance,
     WorthQueryHistoryNavigationAdvanceDenial, WorthQueryHistoryNavigationBuilder,
     WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
@@ -67,6 +71,10 @@ pub use history::{
     WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
     WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
     WorthQueryHistoryWithOutputs,
+};
+#[doc(hidden)]
+pub use history::{
+    WorthQueryHistoryGroupHandoffPauseForTest, WorthQueryHistoryGroupHandoffPointForTest,
 };
 mod live;
 mod mandatory_review;

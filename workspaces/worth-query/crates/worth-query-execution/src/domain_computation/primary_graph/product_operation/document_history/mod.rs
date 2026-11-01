@@ -13,6 +13,13 @@ pub use context::{WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContex
 pub use context_pause::WorthQueryHistoryContextRefreshPauseForTest;
 mod denial;
 mod disposal;
+mod group;
+pub use group::{
+    WorthQueryDocumentHistoryGroupAborting, WorthQueryDocumentHistoryGroupAdoptionFailure,
+    WorthQueryDocumentHistoryGroupPreparation, WorthQueryDocumentHistoryGroupReservation,
+    WorthQueryDocumentHistoryIdentity, WorthQueryHistoryGroupCandidateCreation,
+    WorthQueryHistoryGroupMemberAdmission,
+};
 mod journal;
 mod model;
 mod navigation;

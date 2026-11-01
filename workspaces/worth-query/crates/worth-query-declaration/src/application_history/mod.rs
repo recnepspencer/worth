@@ -2,6 +2,7 @@
 mod binding;
 mod definition;
 mod descriptor;
+mod group_resources;
 mod navigation;
 
 pub use binding::{
@@ -13,6 +14,7 @@ pub use definition::{
     WorthQueryPortableApplicationHistoryParts,
 };
 pub use descriptor::ApplicationHistoryBindingDescriptor;
+pub use group_resources::ApplicationHistoryGroupResources;
 pub use navigation::{
     ApplicationHistoryNavigationBinding, ApplicationHistoryNavigationBindingDescriptor,
     ApplicationHistoryNavigationDeclaration, WorthQueryPortableApplicationHistoryNavigationParts,

@@ -58,18 +58,24 @@ pub mod document_history {
         WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
         WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryCloseReceipt,
         WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
-        WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryNavigation,
+        WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryGroupAborting,
+        WorthQueryDocumentHistoryGroupAdoptionFailure, WorthQueryDocumentHistoryGroupPreparation,
+        WorthQueryDocumentHistoryGroupReservation, WorthQueryDocumentHistoryNavigation,
         WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
         WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
         WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
-        WorthQueryHistoryContextRefreshPauseForTest, WorthQueryHistoryNavigationCompletion,
-        WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
-        WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPosture,
-        WorthQueryHistoryNodeId, WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource,
-        WorthQueryHistoryPage, WorthQueryHistoryPageAssemblyPauseForTest,
-        WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
-        WorthQueryHistoryPageRow, WorthQueryHistoryPreview, WorthQueryHistoryRedoChoice,
-        WorthQueryHistoryRedoChoices, WorthQueryHistorySelection, WorthQueryHistoryStep,
+        WorthQueryHistoryContextRefreshPauseForTest, WorthQueryHistoryGroupMemberAdmission,
+        WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
+        WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
+        WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId,
+        WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
+        WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
+        WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
+        WorthQueryHistoryPreview, WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
+        WorthQueryHistorySelection, WorthQueryHistoryStep,
+    };
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryDocumentHistoryIdentity, WorthQueryHistoryGroupCandidateCreation,
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{
