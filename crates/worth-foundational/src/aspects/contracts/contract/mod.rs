@@ -22,6 +22,14 @@ pub struct AspectContract {
 }
 
 impl AspectContract {
+    /// Checked heap allocated by Clone; excludes this inline contract.
+    pub fn clone_allocation_bytes(&self) -> Option<usize> {
+        self.key.as_str().len().checked_add(match &self.shape {
+            AspectShape::Struct(shape) => shape.clone_allocation_bytes()?,
+            _ => 0,
+        })
+    }
+
     pub fn key(&self) -> &AspectKey {
         &self.key
     }

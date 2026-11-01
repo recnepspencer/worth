@@ -27,6 +27,16 @@ impl StructAspectShape {
         Some(Self { fields })
     }
 
+    pub(crate) fn clone_allocation_bytes(&self) -> Option<usize> {
+        let mut bytes = std::alloc::Layout::array::<FieldDeclaration>(self.fields.len())
+            .ok()?
+            .size();
+        for field in &self.fields {
+            bytes = bytes.checked_add(field.key().as_str().len())?;
+        }
+        Some(bytes)
+    }
+
     pub fn fields(&self) -> &[FieldDeclaration] {
         &self.fields
     }
@@ -58,6 +68,18 @@ pub struct StructAspectValue {
 }
 
 impl StructAspectValue {
+    pub(crate) fn clone_allocation_bytes(&self) -> Option<usize> {
+        let mut bytes = std::alloc::Layout::array::<(FieldKey, AspectValue)>(self.fields.len())
+            .ok()?
+            .size();
+        for (key, value) in &self.fields {
+            bytes = bytes
+                .checked_add(key.as_str().len())?
+                .checked_add(value.clone_allocation_bytes()?)?;
+        }
+        Some(bytes)
+    }
+
     pub fn len(&self) -> usize {
         self.fields.len()
     }

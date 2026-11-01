@@ -21,6 +21,13 @@ impl From<StructAspectValue> for ContractValidationInput {
 }
 
 impl ContractValidationInput {
+    pub(crate) fn clone_allocation_bytes(&self) -> Option<usize> {
+        match self {
+            Self::Scalar(value) => value.clone_allocation_bytes(),
+            Self::Struct(value) => value.clone_allocation_bytes(),
+        }
+    }
+
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         match self {
             Self::Scalar(value) => value.owned_allocation_capacity_bytes(),

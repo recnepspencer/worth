@@ -187,28 +187,8 @@ impl FieldLevelAspectPatch {
 }
 
 fn contract_clone_bytes(contract: &AspectContract) -> Option<usize> {
-    let mut bytes = contract.key().as_str().len();
-    if let crate::aspects::AspectShape::Struct(shape) = contract.shape() {
-        bytes = bytes.checked_add(backing_bytes::<crate::aspects::FieldDeclaration>(
-            shape.fields().len(),
-        )?)?;
-        for field in shape.fields() {
-            bytes = bytes.checked_add(field.key().as_str().len())?;
-        }
-    }
-    Some(bytes)
+    contract.clone_allocation_bytes()
 }
 fn value_clone_bytes(value: &AspectValue) -> Option<usize> {
-    use crate::values::InternedString;
-    Some(match value {
-        AspectValue::Decimal(value) => value.as_str().len(),
-        AspectValue::BigInt(value) => value.as_str().len(),
-        AspectValue::Rational(value) => value
-            .numerator
-            .as_str()
-            .len()
-            .checked_add(value.denominator.as_str().len())?,
-        AspectValue::String(InternedString::Raw(value)) => value.len(),
-        _ => 0,
-    })
+    value.clone_allocation_bytes()
 }

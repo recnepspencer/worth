@@ -35,6 +35,22 @@ pub enum AspectValue {
 }
 
 impl AspectValue {
+    /// Checked heap allocated by this value's derived Clone, excluding inline storage.
+    /// String clones retain their length, not the source's spare capacity.
+    pub fn clone_allocation_bytes(&self) -> Option<usize> {
+        Some(match self {
+            Self::Decimal(value) => value.as_str().len(),
+            Self::BigInt(value) => value.as_str().len(),
+            Self::Rational(value) => value
+                .numerator
+                .as_str()
+                .len()
+                .checked_add(value.denominator.as_str().len())?,
+            Self::String(InternedString::Raw(value)) => value.len(),
+            _ => 0,
+        })
+    }
+
     pub fn value_family(&self) -> ScalarAspectType {
         match self {
             Self::Null => ScalarAspectType::Null,
