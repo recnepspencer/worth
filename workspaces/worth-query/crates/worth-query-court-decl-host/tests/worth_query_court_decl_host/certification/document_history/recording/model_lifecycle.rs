@@ -4,13 +4,20 @@ use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationHistoryDenial, WorthQueryApplicationMutationOutcome,
         WorthQueryDocumentHistoryDenial,
+        WorthQueryHistoryNavigationAdvanceDenial as NavigationFailure,
+        WorthQueryHistoryNavigationDenial as NavigationDenial,
     },
     application_installation::WorthQueryApplicationProgramRoster,
-    primary_graph::WorthQueryPrincipalResolutionMode,
+    primary_graph::{
+        WorthQueryOperationAuthorizationDenialKind as AuthorizationDenial,
+        WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal,
+        WorthQueryPrincipalResolutionMode,
+    },
     product::WorthQueryProductBranch,
     runtime::ExecutionAllocationPolicy,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::{
+    document_history::navigation::Navigation,
     host::{publish, DocumentRetentionRuntime},
     model_lifecycle::declaration::{ModelLifecycleChanged, ModelLifecycleDenial},
     model_lifecycle::{
@@ -89,6 +96,18 @@ fn recreated_same_name_model_refuses_the_old_document_and_admits_a_fresh_owned_h
     let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
     let old_root = document.current_step(&request).unwrap();
+    let navigation = document
+        .navigate::<Navigation>()
+        .checkout(old_root.id())
+        .expected_selection(document.selection(&request).unwrap())
+        .idempotency(0x9182_0498)
+        .prepare(&request)
+        .unwrap();
+    let completed = super::super::navigation::complete(&host, navigation);
+    assert_eq!(completed.requested_node(), old_root.id());
+    assert_eq!(value(&host, &document), 7);
+    let branch = completed.selection().physical_endpoint().product_branch();
+    let old_selection = document.selection(&request).unwrap();
     let refused = change(&host, branch, RELATED_DOCUMENT_IDENTITY, false, 0x9182_0499);
     assert!(
         matches!(
@@ -135,13 +154,30 @@ fn recreated_same_name_model_refuses_the_old_document_and_admits_a_fresh_owned_h
         "the same lookup name must not rebind the old model owner"
     );
 
+    let refused = document
+        .navigate::<Navigation>()
+        .checkout(old_root.id())
+        .expected_selection(old_selection)
+        .idempotency(0x9182_0503)
+        .prepare(&request)
+        .unwrap_err();
+    assert!(
+        matches!(
+            refused,
+            NavigationFailure::Navigation(NavigationDenial::Document(
+                WorthQueryDocumentHistoryDenial::ForeignModel
+            ))
+        ),
+        "navigation must not rebind the retired model by its reused name: {refused:?}"
+    );
+
     // Acquire the lawful replacement head before retiring the old document's
     // actual branch. The issued record descriptions above grant no custody.
     let fresh = attach(&host, head_from(&host, branch), DOCUMENT_IDENTITY);
     let fresh_root = fresh.current_step(&request).unwrap();
     assert_ne!(fresh_root.id(), old_root.id());
     assert_eq!(value(&host, &fresh), 7);
-    close(&host, document, 1);
+    close(&host, document, 2);
     let edit = fresh
         .edit(SetRetentionIntent {
             input: SetRetentionInput {
@@ -157,6 +193,20 @@ fn recreated_same_name_model_refuses_the_old_document_and_admits_a_fresh_owned_h
         });
     let (fresh, step) = finish(&host, ready(&host, edit), 3);
     assert_eq!(step.parent(), Some(fresh_root.id()));
+    let refused = fresh
+        .navigate::<Navigation>()
+        .checkout(fresh_root.id())
+        .expected_selection(fresh.selection(&request).unwrap())
+        .idempotency(0x9182_0504)
+        .prepare(&request)
+        .unwrap_err();
+    assert!(
+        matches!(refused, NavigationFailure::Navigation(
+            NavigationDenial::Authorization(ref cause)
+        ) if cause.kind() == AuthorizationDenial::Refused(AuthorizationRefusal::CapabilityGrantMissing)),
+        "the original grant cannot follow a recreated model by lookup name: {refused:?}"
+    );
+    assert_eq!(value(&host, &fresh), 3);
     assert_eq!(value(&host, &untouched), 7);
     close(&host, fresh, 2);
     close(&host, untouched, 1);

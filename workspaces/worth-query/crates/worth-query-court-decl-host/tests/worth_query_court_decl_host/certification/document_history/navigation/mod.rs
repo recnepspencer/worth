@@ -13,6 +13,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::do
 mod authority;
 mod cancellation;
 mod closing;
+mod eligibility;
 mod race;
 mod recovery;
 mod retries;
@@ -58,7 +59,10 @@ fn awaiting<'d, 'r>(host: &Runtime, mut owner: Owner<'d, 'r>) -> Owner<'d, 'r> {
     panic!("candidate publication did not finish")
 }
 
-fn complete(host: &Runtime, mut owner: Owner<'_, '_>) -> WorthQueryHistoryNavigationCompletion {
+pub(super) fn complete(
+    host: &Runtime,
+    mut owner: Owner<'_, '_>,
+) -> WorthQueryHistoryNavigationCompletion {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
