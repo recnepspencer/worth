@@ -783,6 +783,16 @@ Features can pass typed values to each other. A feature *provides* an output
 port; another feature *requires* an input port; a connection binds the two;
 the program's output graph says which connections produce settled outputs.
 
+For a generated child, keep its source and its realization in **separate
+records**, joined by a declared typed relation. The parent produces and owns the
+child's source record; the child produces its own realization and any next-level
+sources. Its `GeneratedBy` relation names its immediate parent. A parent's output
+witness covers the whole source entity, including absent aspects: a child writing
+its realization onto that source invalidates the parent's witness. Corrections
+to a generated source therefore go through its owning producer, from that
+producer's input. See the [generic split-record courts](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/dependent_dispatch/split_courts.rs)
+for installed roots, sealed dependent dispatch and current delivery.
+
 The block below is a **shape with illustrative names**. The compiled
 counterpart is the consumer fixture at
 `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/application_program.rs`
