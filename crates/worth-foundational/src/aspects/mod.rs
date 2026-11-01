@@ -38,8 +38,8 @@ pub use masks::{
     ProjectionMask,
 };
 pub use patches::{
-    AuthoritativePatchApplicationDenial, AuthoritativePatchConstructionDenial,
-    AuthoritativeRecordAspectPatch, FieldLevelAspectPatch,
+    AspectPatchStorageBounds, AuthoritativePatchApplicationDenial,
+    AuthoritativePatchConstructionDenial, AuthoritativeRecordAspectPatch, FieldLevelAspectPatch,
 };
 pub use portable::{
     export_portable_record_aspect_patch, export_portable_record_aspect_state,

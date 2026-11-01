@@ -43,7 +43,7 @@ pub(super) fn apply(
         .expect("merging canonical streams preserves strict field order")
 }
 
-fn selected_fields<'a>(
+pub(super) fn selected_fields<'a>(
     current: &'a StructAspectValue,
     patch: &'a FieldLevelAspectPatch,
 ) -> impl Iterator<Item = (&'a FieldKey, &'a AspectValue)> {

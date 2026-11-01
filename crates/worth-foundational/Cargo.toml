@@ -17,5 +17,8 @@ serde_stacker = "0.1.14"
 stacker = "0.1.24"
 sha2 = "0.10"
 
+[dev-dependencies]
+rmp-serde = "1.3"
+
 [lints]
 workspace = true
