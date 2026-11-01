@@ -12,10 +12,12 @@ use crate::validation::data::{StructuralAspectStateView, StructuralRelationView}
 use std::{any::Any, sync::Arc};
 
 mod projection_rows;
+mod row_read;
 mod rows;
 pub use projection_rows::{
     ManagedIndexSourceProjectionOccurrence, PreparedManagedIndexProjectionRead,
 };
+pub use row_read::PreparedManagedIndexSourceRowRead;
 pub use rows::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
 
 pub(crate) type RootPayload = Arc<dyn Any + Send + Sync>;

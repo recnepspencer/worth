@@ -61,6 +61,7 @@ impl SourceTree {
                 .filter(|edit| edit.region.is_some())
                 .map(|edit| edit.ordinal),
             node_count,
+            edits.len(),
             execution,
             control,
             |ordinal| self.parent(ordinal, control),

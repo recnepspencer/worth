@@ -43,6 +43,7 @@ pub use crate::validation::candidate_source::{
     ManagedIndexSourceScope, NativeSourceInterpretationIdentity,
     PreparedManagedIndexProjectionRead, PreparedManagedIndexRelationRead,
     PreparedManagedIndexSourceRead, PreparedManagedIndexSourceRoot,
+    PreparedManagedIndexSourceRowRead,
 };
 pub use crate::validation::DuplicateCustomInvariantRegistration;
 

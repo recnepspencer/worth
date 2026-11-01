@@ -76,23 +76,6 @@ impl ManagedInternerStorage<'_, '_, '_> {
             .ok_or(Cause::ChargedBytesOverflow)?;
         self.allocation.claim(self.execution, bytes)
     }
-
-    pub(super) fn prepare_container(
-        &self,
-        state: &mut WorthQueryObservedSourceMeaningRegistryState,
-        coordinate: &WorthQueryObservedSourceCoordinate,
-    ) -> Result<Option<CoordinateMeanings>, Cause> {
-        self.lookup(state.meanings.len())?;
-        let count = state.meanings.len();
-        if let Some(bucket) = state.meanings.get_mut(coordinate) {
-            bucket.reserve(self, count)?;
-            Ok(None)
-        } else {
-            let mut bucket = CoordinateMeanings::default();
-            bucket.reserve(self, count)?;
-            Ok(Some(bucket))
-        }
-    }
 }
 
 #[derive(Default)]
@@ -103,7 +86,7 @@ pub(super) struct CoordinateMeanings {
     allocations: Vec<Arc<SourceFactsAllocation>>,
 }
 impl CoordinateMeanings {
-    fn reserve(
+    pub(super) fn reserve(
         &mut self,
         storage: &ManagedInternerStorage<'_, '_, '_>,
         count: usize,

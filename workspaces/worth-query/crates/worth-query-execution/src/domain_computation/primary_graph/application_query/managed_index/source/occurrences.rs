@@ -104,7 +104,14 @@ impl PersistentSourceRows {
         let mut dependencies = OccurrencePostings::default();
         for occurrence in occurrences {
             let entity = occurrence.entity();
-            let entry = project(execution, rows.program(), rows, occurrence, graph)?;
+            let entry = project(
+                execution,
+                rows.program(),
+                rows,
+                occurrence,
+                graph,
+                Some(&support),
+            )?;
             if entries.contains_key(&entity) {
                 return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
             }
@@ -185,7 +192,14 @@ impl PersistentSourceRows {
             }
             if let Some(proposed) = proposed {
                 let entity = proposed.entity();
-                let entry = project(execution, &self.program, &after, proposed.clone(), graph)?;
+                let entry = project(
+                    execution,
+                    &self.program,
+                    &after,
+                    proposed.clone(),
+                    graph,
+                    None,
+                )?;
                 dependencies.insert_entry(entity, &entry.dependencies, execution)?;
                 entries
                     .insert_cloned_native_for_request(

@@ -13,6 +13,8 @@ use crate::validation::custom_rule::CustomPreparationBudget;
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
+mod allocations;
+mod incidence;
 mod physical;
 
 pub(super) struct AuthoredSourceInputs {
@@ -28,21 +30,13 @@ impl AuthoredSourceInputs {
         before: &InvariantStateView<'_>,
         after: &InvariantStateView<'_>,
     ) -> Result<Option<Self>, Denial> {
-        let mut result = Self {
-            records: ExecutionOrderedMap::default(),
-            incidence: ExecutionOrderedMap::default(),
-        };
-        for allocation in draft.identities.records.canonical() {
-            admission::work(budget, 1)?;
-            match allocation.record() {
-                record @ RecordRef::Entity(_) => {
-                    result.record(execution, budget, record, Use::LIFECYCLE)?
-                }
-                RecordRef::Relation(id) => {
-                    result.relation(execution, budget, *id, before, after)?
-                }
-            }
-        }
+        let mut result = Self::allocations(
+            execution,
+            budget,
+            draft.identities.records.canonical(),
+            before,
+            after,
+        )?;
         for intent in &plan.merged_intents {
             admission::work(budget, 1)?;
             match intent {
@@ -104,12 +98,11 @@ impl AuthoredSourceInputs {
         usage: Use,
     ) -> Result<(), Denial> {
         admission::ordered(budget, self.records.len(), size_of::<RecordRef>())?;
-        let usage = self
-            .records
-            .get(record)
-            .copied()
-            .unwrap_or_default()
-            .union(usage);
+        let previous = self.records.get(record).copied();
+        let usage = previous.unwrap_or_default().union(usage);
+        if previous == Some(usage) {
+            return admission::work(budget, 0);
+        }
         admission::ordered(budget, self.records.len(), size_of::<RecordRef>())?;
         self.records
             .insert_cloned_native_for_request(record, &usage, execution)
@@ -127,25 +120,7 @@ impl AuthoredSourceInputs {
         if self.incidence.contains_key(&id) {
             return Ok(());
         }
-        admission::work(budget, 2)?;
-        let old = before.relation_metadata(id);
-        let new = after.relation_metadata(id);
-        let kind = old
-            .as_ref()
-            .or(new.as_ref())
-            .ok_or(Denial::ForeignSource)?
-            .kind_id;
-        if old.as_ref().is_some_and(|value| value.kind_id != kind)
-            || new.as_ref().is_some_and(|value| value.kind_id != kind)
-        {
-            return Err(Denial::ForeignSource);
-        }
-        let incidence = AuthoredSourceIncidence {
-            relation: id,
-            kind,
-            before: old.map(|value| (value.source, value.target)),
-            after: new.map(|value| (value.source, value.target)),
-        };
+        let incidence = incidence::observe(id, before, after, budget)?;
         admission::ordered(
             budget,
             self.incidence.len(),

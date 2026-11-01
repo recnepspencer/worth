@@ -4,6 +4,7 @@ mod funding;
 mod iteration;
 pub(crate) mod node;
 mod request;
+mod sorted;
 use crate::{ChargedBytes, ExecutionAllocationDenial, ExecutionAllocationPolicy};
 use node::{Entry, Link};
 

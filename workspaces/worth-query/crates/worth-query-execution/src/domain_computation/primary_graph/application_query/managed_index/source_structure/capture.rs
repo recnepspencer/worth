@@ -73,12 +73,13 @@ where
     )?;
     drop(warm); // Exact dirty-key enumeration is complete before custody moves.
     let image = source.image();
-    let tree = match &step {
-        Step::Cold => SourceTree::empty(image.owner),
-        Step::Warm { before, .. } if before.owner == image.owner => (**before).clone(),
+    let mut tree = match &step {
+        Step::Cold => SourceTree::from_cold(edits.elements(), image, execution, control)?,
+        Step::Warm { before, .. } if before.owner == image.owner => (**before)
+            .clone()
+            .apply_edits(edits.elements(), image, execution, control)?,
         _ => return Err(control.refuse(Stop::ForeignSourceSlot).into()),
     };
-    let mut tree = tree.apply_edits(edits.elements(), image, execution, control)?;
     let root = nodes.root().map(|id| id.ordinal);
     match &step {
         Step::Cold => tree.admit_cold(

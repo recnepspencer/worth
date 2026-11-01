@@ -2430,3 +2430,32 @@ The boundary and implementation plan are recorded in
 Bank and actual topology discovery qualification remain open; this is not Phase5
 or Phase6 completion. [Final slice evidence](milestone-9.19-phase5-source-authorization-evidence.md)
 records854 distinct passes and the final independent review.
+
+
+### Phase5 Bank current-account progress (2026-11-01)
+
+Bank now exposes the distinct current-only current_accounts() Parent through its
+ordinary receiver over the unchanged v1 account-discovery Source and actual
+principal/DiscoverOwnAccounts admission. Genuine owner/authorized-user/business
+paths preserve union, order and pinned v1 reads; warm grant/revoke and real
+creation maintain stable Source slots. The original16M/128MiB policy and all
+160/192/250/265 receiving populations are preserved.
+
+The causal shared repairs retain actual Native row tickets, exact original-stage
+discovery custody, full named memo/anchor identity and guarded Source-meaning
+registry lifetime. Cold columns/postings and checked ordered birth seeding remove
+real persistent path copies, preserving arbitrary-order collection and every
+history fact.524 distinct tests pass across Bank, Native, consumer and scoped
+owners; the two established unrelated cleanup failures remain explicit. The
+paired1000/2000/+50000 geometry maintenance case passes unchanged thresholds.
+See the [boundary](milestone-9.19-phase5-bank-current-accounts-boundary-review.md),
+[plan](milestone-9.19-phase5-bank-current-accounts-plan.md) and
+[evidence](milestone-9.19-phase5-bank-current-accounts-evidence.md).
+
+Phase5 remains open for actual public topology face discovery and integrated
+public closure. Existing PlanarDiscoveryRead v1 follows authored membership;
+positive-turn preparation checks touched component/orbit triples. Neither is
+spatial discovery. The next boundary review must resolve genuine face/universe
+meaning and topology's full u64 metre/model-local numerical contract before
+adapting the generic provider. Phase6 still requires the single final private
+pin/adoption and integrated CAD acceptance.

@@ -1,20 +1,7 @@
 //! Exact lexical enclosure; Source coordinates retain distinct equal-name occurrences.
-use crate::{prefix_order, PrefixOrder};
+use crate::{prefix_order, PrefixOrder, PrefixSourceBounds};
 use std::cmp::Ordering;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct PrefixSourceBounds<Source> {
-    pub lower: Source,
-    pub upper: Source,
-}
-impl<Source: Copy> PrefixSourceBounds<Source> {
-    pub const fn point(source: Source) -> Self {
-        Self {
-            lower: source,
-            upper: source,
-        }
-    }
-}
 pub fn join_prefix_bounds<Source: Copy, E>(
     left: PrefixSourceBounds<Source>,
     right: PrefixSourceBounds<Source>,

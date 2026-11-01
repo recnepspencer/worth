@@ -23,7 +23,8 @@ use worth_relational::facade::{
     runtime::{
         DerivedRelationReadDenial, ManagedIndexSourceField, ManagedIndexSourceOccurrence,
         ManagedIndexSourceProgram, ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceRows,
-        PreparedManagedIndexProjectionRead,
+        PreparedManagedIndexProjectionRead, PreparedManagedIndexRelationRead,
+        PreparedManagedIndexSourceRowRead,
     },
     schema::DerivedRelationDenial,
     transactions::RelationalExecutionDenialCause as Storage,
@@ -58,8 +59,8 @@ struct Projector<'borrow, 'scope, 'authority> {
     dependencies: BTreeSet<ViewDependency>,
 }
 #[derive(Clone, Copy)]
-enum FieldSource<'a> {
-    Root(&'a ManagedIndexSourceOccurrence),
+enum FieldSource<'a, 'read, 'source> {
+    Root(&'a PreparedManagedIndexSourceRowRead<'read, 'source>),
     Endpoint(
         &'a PreparedManagedIndexProjectionRead,
         &'a ManagedIndexSourceProjectionOccurrence,
@@ -72,7 +73,12 @@ pub(super) fn project(
     rows: &ManagedIndexSourceRows<'_>,
     occurrence: ManagedIndexSourceOccurrence,
     graph: &WorthQueryInstalledGraphReadContract,
+    support: Option<&PreparedManagedIndexRelationRead>,
 ) -> Result<Entry, MaterialDenial> {
+    let row_read = match support {
+        Some(read) => rows.prepare_row_from_read(read, &occurrence)?,
+        None => rows.prepare_row(&occurrence)?,
+    };
     let mut projector = Projector {
         execution,
         rows,
@@ -81,7 +87,7 @@ pub(super) fn project(
         dependencies: BTreeSet::new(),
     };
     let fields = projector.fields(
-        FieldSource::Root(&occurrence),
+        FieldSource::Root(&row_read),
         occurrence.entity(),
         "root",
         program.fields(),
@@ -167,7 +173,7 @@ pub(super) fn project(
 impl Projector<'_, '_, '_> {
     fn fields(
         &mut self,
-        source: FieldSource<'_>,
+        source: FieldSource<'_, '_, '_>,
         entity: EntityId,
         path: &str,
         columns: &[ManagedIndexSourceField],
@@ -213,9 +219,7 @@ impl Projector<'_, '_, '_> {
                 }
             };
             let value = match source {
-                FieldSource::Root(occurrence) => {
-                    self.rows.with_field(occurrence, column, retain)??
-                }
+                FieldSource::Root(read) => read.with_field(column, retain)??,
                 FieldSource::Endpoint(read, occurrence) => self
                     .rows
                     .with_projected_field(read, occurrence, column, retain)??,
@@ -245,6 +249,6 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     occurrence: ManagedIndexSourceOccurrence,
     graph: &WorthQueryInstalledGraphReadContract,
 ) -> Result<(Tree, Arc<SourceFactsAllocation>), MaterialDenial> {
-    let entry = project(execution, program, rows, occurrence, graph)?;
+    let entry = project(execution, program, rows, occurrence, graph, None)?;
     Ok((entry.row, entry._allocation))
 }

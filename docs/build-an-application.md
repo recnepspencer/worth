@@ -6519,3 +6519,29 @@ an immutable original. Close reports and the final original holder when done.
 Follow [Explain original query results and source operations](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
 for contract setup, capability admission, supported shapes, materialized values,
 loss outcomes and retry handling.
+
+
+## Read Bank accounts through the installed managed provider
+
+Bank exposes `runtime.query(queries::current_accounts()).as_principal(actor)`
+through the same ordinary query receiver and `BankReadControls` as its existing
+reads. Supply current controls and call `execute()`; result rows remain
+`VisibleAccount` ordered by AccountId. The [compiled receiver journey](../workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_reads/current_accounts/mod.rs)
+compares these rows with the independent ordinary `queries::accounts()` Source.
+
+The Parent declares current-only basis support and references the unchanged
+principal-specific v1 account-discovery Source. Both reads admit the actual
+principal and `DiscoverOwnAccounts`; the managed root supplies no READ grant.
+Personal ownership, authorized-user and business-owner paths retain their real
+Bank definitions. Grant/revoke and actual account creation update the affected
+scope through Native maintenance. Stable SourceSlot order permits checked linear
+cold construction; warm changes use logarithmic tree insertion/removal. Returning
+all accounts still visits every returned Source row and pays the existing
+ordering and source-meaning bookkeeping costs.
+
+Use `queries::accounts()` for its existing pinned-read contract. Applying a
+retained basis to `current_accounts()` refuses as `BasisUnsupported`, including
+an equal-head retained basis. The managed Parent preserves the original result
+limit and cancellation controls. Pending-payments, activity ranking and cursor
+receivers keep their existing contracts; their behavior is covered by their
+ordinary Bank courts and is not supplied by this all-accounts index.

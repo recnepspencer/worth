@@ -12,13 +12,15 @@ pub use box_tree::{
 mod prefix_order;
 mod prefix_summary;
 mod prefix_watch;
-pub use prefix_summary::{join_prefix_bounds, prefix_bounds_may_match, PrefixSourceBounds};
+pub use prefix_summary::{join_prefix_bounds, prefix_bounds_may_match};
 pub use prefix_watch::prefix_watch_bounds_may_match;
 mod prefix_tree;
 pub use prefix_order::{compare_prefix_keys, prefix_order, PrefixOrder};
-pub use prefix_tree::{
-    build_prefix_tree, insert_prefix_source, query_prefix_tree, remove_prefix_source,
-    PrefixBuildStorage, PrefixIndexDenial, PrefixNode, PrefixQueryStorage,
+pub use prefix_tree::{query_prefix_tree, PrefixIndexDenial, PrefixQueryStorage};
+pub use worth_execution::{
+    build_ordered_tree as build_prefix_tree, insert_ordered_tree as insert_prefix_source,
+    remove_ordered_tree as remove_prefix_source, ExecutionOrderedTreeBounds as PrefixSourceBounds,
+    ExecutionOrderedTreeNode as PrefixNode, ExecutionOrderedTreeStorage as PrefixBuildStorage,
 };
 
 mod planar_operation;

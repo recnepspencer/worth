@@ -38,8 +38,12 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
                 exclude_self,
             } => {
                 let mut targets = BTreeSet::new();
-                self.memo_key_work(&source)?;
-                for endpoint in &self.values[&source] {
+
+                for endpoint in self
+                    .values
+                    .get(&source, self.read)?
+                    .expect("completed source memo")
+                {
                     member_work(self.read, endpoint, 1)?;
                     if !exclude_self || *endpoint != key.anchor {
                         insert_member(self.read, &mut targets, endpoint.clone())?;
@@ -48,15 +52,18 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
                 self.save(key, targets)
             }
             Frame::Compose { key, first, second } => {
-                self.memo_key_work(&first)?;
-                let count = self.values[&first].len();
+                let first_values = self
+                    .values
+                    .get(&first, self.read)?
+                    .expect("completed first memo");
+                let count = first_values.len();
                 self.read.retain(
                     count
                         .checked_mul(size_of::<Key>())
                         .ok_or(DefinitionDenial::WorkBudgetExceeded)?,
                 )?;
                 let mut sources = Vec::with_capacity(count);
-                for anchor in &self.values[&first] {
+                for anchor in first_values {
                     self.read.checkpoint(1)?;
                     sources.push(Key {
                         node: second,
@@ -73,17 +80,22 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
             } => {
                 let mut targets = BTreeSet::new();
                 if let Some(first) = sources.first() {
-                    self.memo_key_work(first)?;
-                    for endpoint in &self.values[first] {
+                    for endpoint in self
+                        .values
+                        .get(first, self.read)?
+                        .expect("completed first memo")
+                    {
                         insert_member(self.read, &mut targets, endpoint.clone())?;
                     }
                 }
                 for source in sources.iter().skip(1) {
-                    self.memo_key_work(source)?;
                     if intersection {
                         // Both source frames have completed, including empty
                         // adjacency reads, before set intersection begins.
-                        let right = &self.values[source];
+                        let right = self
+                            .values
+                            .get(source, self.read)?
+                            .expect("completed source memo");
                         let mut retained = BTreeSet::new();
                         for endpoint in targets {
                             member_work(self.read, &endpoint, right.len())?;
@@ -93,7 +105,11 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
                         }
                         targets = retained;
                     } else {
-                        for endpoint in &self.values[source] {
+                        for endpoint in self
+                            .values
+                            .get(source, self.read)?
+                            .expect("completed source memo")
+                        {
                             insert_member(self.read, &mut targets, endpoint.clone())?;
                         }
                     }
@@ -104,8 +120,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
     }
 
     fn enter(&mut self, key: Key) -> Result<(), Denial> {
-        self.memo_key_work(&key)?;
-        if self.values.contains_key(&key) {
+        if self.values.get(&key, self.read)?.is_some() {
             return Ok(());
         }
         let definition = std::sync::Arc::clone(&key.definition.entry);
@@ -131,11 +146,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
                     .registry
                     .derived_relation(identity)
                     .expect("registered named source");
-                let source = Key {
-                    node: target.parts().nodes.len() - 1,
-                    definition: target,
-                    ..key.clone()
-                };
+                let source = self.target_key(&key, target)?;
                 self.alias(key, source, false)
             }
             Node::Reverse { input } => {

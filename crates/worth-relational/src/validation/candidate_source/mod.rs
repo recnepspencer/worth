@@ -40,6 +40,7 @@ pub use preparation::{
     ManagedIndexSourceAvailability, ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
     ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceRows, ManagedIndexSourceScope,
     PreparedManagedIndexProjectionRead, PreparedManagedIndexSourceRoot,
+    PreparedManagedIndexSourceRowRead,
 };
 pub use program::{
     ManagedIndexSourceField, ManagedIndexSourceProgram, ManagedIndexSourceProjectionRoute,

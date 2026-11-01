@@ -28,6 +28,7 @@ mod history;
 mod journal;
 mod public_only;
 mod registry;
+mod row_read;
 pub(crate) use registry::registry;
 #[path = "managed_source/owner.rs"]
 pub(crate) mod owner;

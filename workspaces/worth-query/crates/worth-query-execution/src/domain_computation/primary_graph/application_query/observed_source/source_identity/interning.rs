@@ -87,77 +87,78 @@ impl WorthQueryObservedSourceMeaningRegistry {
             occurrence,
             root: footprint.root,
         };
+        // Both incoming and upgraded custody outlive the guard, including unwinding.
+        let mut incoming = Some(footprint);
+        let mut unmatched = Vec::new();
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        // Every upgraded Arc, including the current comparator operand, survives
-        // the guard. An early typed refusal must not run its reentrant Drop here.
-        let mut unmatched = Vec::new();
         let result = (|| {
+            use std::collections::btree_map::Entry;
+            let WorthQueryObservedSourceMeaningRegistryState {
+                next_ordinal,
+                meanings,
+            } = &mut *state;
+            let count = meanings.len();
             if let Some(storage) = &storage {
-                storage
-                    .lookup(state.meanings.len())
-                    .map_err(&mut *failure)?;
-                unmatched = storage
-                    .scratch(
-                        state
-                            .meanings
-                            .get(&coordinate)
-                            .map_or(0, |bucket| bucket.entries.len()),
-                    )
-                    .map_err(&mut *failure)?;
-                storage
-                    .lookup(state.meanings.len())
-                    .map_err(&mut *failure)?;
+                storage.lookup(count).map_err(&mut *failure)?;
             }
-            if let Some(meanings) = state.meanings.get_mut(&coordinate) {
+            let mut entry = meanings.entry(coordinate.clone());
+            if let Some(storage) = &storage {
+                let size = match &entry {
+                    Entry::Occupied(entry) => entry.get().entries.len(),
+                    Entry::Vacant(_) => 0,
+                };
+                unmatched = storage.scratch(size).map_err(&mut *failure)?;
+            }
+            if let Entry::Occupied(entry) = &mut entry {
+                let meanings = entry.get_mut();
                 meanings
                     .entries
                     .retain(|meaning| meaning.strong_count() > 0);
                 for existing in meanings.entries.iter().filter_map(Weak::upgrade) {
                     unmatched.push(existing);
-                    let existing = unmatched.last().expect("just retained comparator operand");
+                    let existing = unmatched.last().expect("retained comparator operand");
+                    let footprint = incoming.as_ref().expect("incoming until admitted");
                     if let Some(storage) = &storage {
                         storage
-                            .comparison(&existing.footprint, &footprint)
+                            .comparison(&existing.footprint, footprint)
                             .map_err(&mut *failure)?;
                     }
-                    if equal(&existing.footprint, &footprint)? {
+                    if equal(&existing.footprint, footprint)? {
                         return Ok(Some(Arc::clone(existing)));
                     }
                 }
             }
-            let ordinal = state.next_ordinal;
-            let Some(next_ordinal) = ordinal.checked_add(1) else {
+            let ordinal = *next_ordinal;
+            let Some(successor) = ordinal.checked_add(1) else {
                 return Ok(None);
             };
-            let prepared = if let Some(storage) = &storage {
+            let mut vacant = material_storage::CoordinateMeanings::default();
+            if let Some(storage) = &storage {
                 storage.meaning().map_err(&mut *failure)?;
-                let prepared = storage
-                    .prepare_container(&mut state, &coordinate)
-                    .map_err(&mut *failure)?;
-                storage
-                    .lookup(state.meanings.len())
-                    .map_err(&mut *failure)?;
-                prepared
-            } else {
-                None
-            };
+                let bucket = match &mut entry {
+                    Entry::Occupied(entry) => entry.get_mut(),
+                    Entry::Vacant(_) => &mut vacant,
+                };
+                bucket.reserve(storage, count).map_err(&mut *failure)?;
+            }
+            let footprint = incoming.as_ref().expect("incoming until admitted");
             let checkpoint_identity = if let Some(storage) = &storage {
                 checkpoint_commitment::checkpoint_source_identity_admitted(
                     query,
                     parameters,
-                    &footprint,
+                    footprint,
                     &mut |bytes| storage.work(bytes),
                 )
                 .map_err(&mut *failure)?
             } else {
-                checkpoint_commitment::checkpoint_source_identity(query, parameters, &footprint)
+                checkpoint_commitment::checkpoint_source_identity(query, parameters, footprint)
             };
             let meaning = Arc::new(WorthQueryObservedSourceMeaning {
                 coordinate: coordinate.clone(),
-                footprint,
+                footprint: incoming.take().expect("successful incoming admission"),
                 identity: source_identity(self.runtime_authority, ordinal),
                 runtime_idempotency_identity: stable_runtime_identity(
                     self.runtime_authority,
@@ -170,13 +171,12 @@ impl WorthQueryObservedSourceMeaningRegistry {
                     .as_ref()
                     .map(|storage| Arc::clone(storage.allocation)),
             });
-            state.next_ordinal = next_ordinal;
-            state
-                .meanings
-                .entry(coordinate)
-                .or_insert_with(|| prepared.unwrap_or_default())
-                .entries
-                .push(Arc::downgrade(&meaning));
+            *next_ordinal = successor;
+            let bucket = match entry {
+                Entry::Occupied(entry) => entry.into_mut(),
+                Entry::Vacant(entry) => entry.insert(vacant),
+            };
+            bucket.entries.push(Arc::downgrade(&meaning));
             Ok(Some(meaning))
         })();
         // Also covers failed pre-insertion paths: an empty map cannot strand a

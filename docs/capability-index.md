@@ -1066,3 +1066,18 @@ The journal keeps its existing frame, spine, ordering and Signal policy. Reads,
 encoding, allocation and short substrate locks remain cooperative rather than
 hard real-time. Accepted current-step custody survives observer loss through the
 existing physical mutation worker; no World acknowledgment runs in that worker.
+
+
+### Read the Bank current account roster through a managed Source
+
+Bank's `queries::current_accounts()` is a current-only managed Parent over the
+unchanged v1 account-discovery binding. It uses the actual principal mapping and
+`DiscoverOwnAccounts` ability, with personal ownership, authorized-user and
+business-owner paths deduplicated by account. The existing `queries::accounts()`
+and its pinned reads retain their contract. All-account output visits every
+matching Source row; this does not claim selective pruning or continuation.
+The Bank contribution installs its finite provider through the ordinary
+configuration owner. Actual grant/revoke and creation maintain stable occurrence
+slots without rebuilding warm roots. See the [Bank declaration](../workspaces/worth-query-bank-world/crates/bank-domain/src/queries/current_accounts.rs),
+[provider](../workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/current_accounts/provider.rs)
+and [ordinary receiver courts](../workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_reads/current_accounts/mod.rs).

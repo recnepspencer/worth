@@ -6025,9 +6025,14 @@ Native and Completed reads, expectations and recorded correction. The
 [Source authorization evidence](milestone-9.19-phase5-source-authorization-evidence.md)
 records854 distinct passes. Current-only
 Parents preserve genuine operation selection custody; retained equal-head reads
-still refuse. Phases 1 through 4 are complete; Phase5 remains open for Bank and
-actual public topology adoption, then Phase6 performs the single final private
-pin and integrated CAD cutover.
+still refuse. Bank's distinct current-only current_accounts() Parent now adopts
+the unchanged principal-specific v1 Source through its ordinary receiver, preserving
+all original budgets/populations and pinned v1 reads. The
+[Bank adoption evidence](milestone-9.19-phase5-bank-current-accounts-evidence.md)
+records524 distinct passes, two established unrelated cleanup failures and the
+unchanged paired1000/2000/+50000 maintenance court. Phases1 through4 are complete;
+Phase5 remains open for actual public topology face discovery and integrated
+public closure, then Phase6 performs the single final private pin and CAD cutover.
 
 
 ### Committed Provider Indexes

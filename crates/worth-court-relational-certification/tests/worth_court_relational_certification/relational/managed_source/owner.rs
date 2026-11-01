@@ -15,6 +15,9 @@ pub(crate) struct Court {
     pub expected: Mutex<BTreeMap<EntityId, (Vec<EntityId>, Vec<EntityId>)>>,
     previous: Mutex<Option<Arc<PreparedManagedIndexSourceRead>>>,
     pub foreign_observation: AtomicUsize,
+    pub probe_row_reads: std::sync::atomic::AtomicBool,
+    pub row_read_checks: Mutex<[usize; 4]>,
+    pub cancel_row_field: Mutex<Option<CancellationSource>>,
     pub checking_previous_proposal: std::sync::atomic::AtomicBool,
 }
 
@@ -114,6 +117,9 @@ impl RelationalPublicationCompanion for SourceOwner {
         _execution: &ExecutionRequest<'_, '_>,
         source: &ManagedIndexSourcePreparation<'_>,
     ) -> Result<Vec<PreparedManagedIndexSourceRoot>, ManagedIndexSourcePreparationDenial> {
+        if self.0.probe_row_reads.load(Ordering::SeqCst) {
+            super::row_read::observe(source, &self.0)?;
+        }
         let mut roots = Vec::new();
         for scope in source.scopes() {
             let committed = if scope.committed_scope_exists()? {

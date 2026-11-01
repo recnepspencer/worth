@@ -112,33 +112,13 @@ impl ManagedIndexSourceRows<'_> {
         column: usize,
         project: impl FnOnce(Option<&worth_foundational::facade::AspectValue>) -> T,
     ) -> Result<T, ReadDenial> {
-        self.admit_occurrence(occurrence)?;
-        let field = self
-            .program()
-            .fields()
-            .get(column)
-            .ok_or(Definition::InvalidExpression)?;
-        self.projection
-            .with_field_at(occurrence.row, self.program().row_kind(), field, project)
+        self.prepare_row(occurrence)?.with_field(column, project)
     }
+
     pub(super) fn admit_occurrence(
         &self,
         occurrence: &ManagedIndexSourceOccurrence,
     ) -> Result<(), ReadDenial> {
-        if occurrence.program != *self.projection.program || occurrence.scope != self.scope {
-            return Err(Definition::ForeignDefinition.into());
-        }
-        let shape = DerivedRelationReadShape::Adjacency { reverse: true };
-        let path = &self.projection.program.0.path;
-        let read = self.projection.prepare(path, occurrence.row, shape)?;
-        let data = self.projection.read(&read, path, occurrence.row, shape)?;
-        if !data
-            .endpoints()
-            .iter()
-            .any(|root| root.entity() == Some(self.scope))
-        {
-            return Err(Definition::RecordUnavailable.into());
-        }
-        Ok(())
+        self.prepare_row(occurrence).map(|_| ())
     }
 }
