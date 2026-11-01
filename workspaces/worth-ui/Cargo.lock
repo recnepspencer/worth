@@ -4883,6 +4883,7 @@ dependencies = [
  "indexmap",
  "rmp-serde",
  "serde",
+ "serde_json",
  "sha2",
  "sized-chunks",
  "smallvec",
