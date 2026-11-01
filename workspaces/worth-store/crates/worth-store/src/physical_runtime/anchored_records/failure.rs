@@ -157,6 +157,8 @@ impl std::fmt::Debug for AnchoredRecordMemberWriteFailure {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum AnchoredRecordReadFailure {
+    /// Live protection could not be inspected without waiting.
+    ProtectionBusy,
     /// A nonterminal stream was called with no output storage.
     EmptyReadBuffer,
     /// The original refusal was returned; this same stream cannot advance again.

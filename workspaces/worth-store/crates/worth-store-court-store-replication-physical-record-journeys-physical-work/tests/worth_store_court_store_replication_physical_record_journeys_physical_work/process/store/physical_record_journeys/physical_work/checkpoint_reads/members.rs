@@ -77,6 +77,24 @@ fn protected_members_survive_replacement_while_ordinary_reads_follow_current_anc
         membership.member(original_key, original.len() as u64),
         Some(selected.members()[0])
     );
+    let before_stream = serial.memory().unwrap().charged_memory_bytes();
+    let stream = records
+        .open_payload_from(&reader, &request, anchor(), 1 << 20)
+        .unwrap()
+        .unwrap();
+    let table_charge = serial.memory().unwrap().charged_memory_bytes() - before_stream;
+    assert!(
+        table_charge > 0,
+        "the original table has actual request custody"
+    );
+    let mut stream = match stream.into_verified_membership() {
+        Err(same) => same,
+        Ok(_) => panic!("membership cannot escape before verified EOF"),
+    };
+    assert_eq!(
+        serial.memory().unwrap().charged_memory_bytes(),
+        before_stream + table_charge
+    );
     let replacement = b"new actual member".to_vec();
     let latest = records
         .publish(
@@ -112,6 +130,32 @@ fn protected_members_survive_replacement_while_ordinary_reads_follow_current_anc
         assert_eq!(bytes.bytes(), original);
         assert_eq!(bytes.charged_payload_bytes(), Some(original.len() as u64));
     }
+    let mut selected_payload = Vec::new();
+    let mut scratch = [0; 7];
+    loop {
+        let count = stream.read_next(&mut scratch).unwrap();
+        if count == 0 {
+            break;
+        }
+        selected_payload.extend_from_slice(&scratch[..count]);
+    }
+    assert_eq!(selected_payload, b"original selected");
+    let charge_before_conversion = serial.memory().unwrap().charged_memory_bytes();
+    let io_before_conversion = serving.media_counters();
+    let read_membership = stream
+        .into_verified_membership()
+        .unwrap_or_else(|_| panic!("actual verified EOF must move the original table"));
+    assert_eq!(
+        serial.memory().unwrap().charged_memory_bytes(),
+        charge_before_conversion
+    );
+    assert_eq!(serving.media_counters(), io_before_conversion);
+    assert_eq!(
+        records
+            .validate_read_membership(&reader, &read_membership)
+            .unwrap(),
+        selected.membership()
+    );
     let current = serving.try_records_for_checkpoint(&request).unwrap();
     let before = serving.media_counters();
     assert!(matches!(
@@ -123,6 +167,11 @@ fn protected_members_survive_replacement_while_ordinary_reads_follow_current_anc
         before,
         "cross-root membership refuses before I/O"
     );
+    assert!(matches!(
+        records.validate_read_membership(&current, &read_membership),
+        Err(AnchoredRecordReadFailure::ForeignReader)
+    ));
+    assert_eq!(serving.media_counters(), before);
     let ordinary = records.read(anchor(), 1 << 20).unwrap().unwrap();
     assert_eq!(ordinary.version(), latest.version());
     assert_eq!(ordinary.bytes(), b"latest payload");
@@ -140,6 +189,13 @@ fn protected_members_survive_replacement_while_ordinary_reads_follow_current_anc
     assert_eq!(
         records.read(anchor(), 1 << 20).unwrap().unwrap().version(),
         latest.version()
+    );
+    // Explicit ordinary disposal is outside the conversion's bounded contract.
+    let before_drop = serial.memory().unwrap().charged_memory_bytes();
+    drop(read_membership);
+    assert_eq!(
+        serial.memory().unwrap().charged_memory_bytes(),
+        before_drop - table_charge
     );
     drop(current);
     drop(membership);

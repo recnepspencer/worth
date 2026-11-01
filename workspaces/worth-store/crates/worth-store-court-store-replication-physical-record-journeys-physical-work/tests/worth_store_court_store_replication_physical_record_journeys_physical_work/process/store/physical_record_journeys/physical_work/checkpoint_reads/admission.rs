@@ -158,6 +158,10 @@ fn checkpoint_reader_and_streams_refuse_busy_foreign_limits_and_original_stop() 
     ));
     assert_eq!(anchor_stream.verified_version(), None);
     drop(journal_stream);
+    let anchor_stream = match anchor_stream.into_verified_membership() {
+        Err(same) => same,
+        Ok(_) => panic!("a refused stream cannot issue verified membership"),
+    };
     drop(anchor_stream);
     drop(empty);
     drop(foreign_reader);

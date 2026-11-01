@@ -1234,7 +1234,13 @@ verified payload bytes;
 newer physical roots cannot expand its selected anchor or journal heads.
 Payload streams retain the same request and stop after a refusal. Only actual
 verified EOF validates payload bytes; pre-EOF sizes and coordinates are
-metadata. Anchor EOF additionally validates the full anchor-record SHA.
+metadata. Anchor EOF additionally validates the full anchor-record SHA. Consuming
+`into_verified_membership` then moves the original table, grant and session into
+an opaque `AnchoredRecordReadMembership`; before EOF it returns the same stream.
+`AnchoredRecords::validate_read_membership` checks owner, exact protected root
+and live protection without waiting or I/O before loaning the existing member
+table. Keep this carrier with its original reader through all selected consumers;
+generic disposal remains explicitly unbudgeted.
 Historical journal linkage uses protected physical identities and frame
 integrity, with no transitive journal-hash promise. Callers admit their own
 payload storage and perform I/O outside logical reservations. This physical

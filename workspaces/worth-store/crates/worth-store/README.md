@@ -49,6 +49,12 @@ for the selected head, its full record hash. Older journal linkage uses the
 selected physical manifest's immutable identities and validated frames, not a
 transitive journal hash chain. Metadata is admitted before growth; payload
 storage belongs to the caller. Perform payload I/O outside logical reservations.
+After verified anchor EOF, `into_verified_membership` moves the original table,
+its grant and its physical session into `AnchoredRecordReadMembership` without
+copying or releasing a lease. Before EOF or after refusal it returns the same
+stream. `validate_read_membership` loans the existing membership only for the
+same owner, exact protected root and live protection; its registry check is
+nonwaiting. Keep this carrier and its reader through selected-section consumers.
 Disposal follows ordinary unbudgeted physical protection release, not a Home
 close or complete semantic-checkpoint proof.
 

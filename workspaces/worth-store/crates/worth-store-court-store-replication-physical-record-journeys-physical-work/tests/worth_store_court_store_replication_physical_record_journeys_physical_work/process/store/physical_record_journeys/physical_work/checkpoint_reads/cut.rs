@@ -108,7 +108,16 @@ fn one_checkpoint_reader_preserves_anchor_and_three_journals_across_root_advance
     drop(terminal_journal);
     assert_eq!(stream.read_next(&mut scratch).unwrap(), 0);
     assert_eq!(stream.verified_version(), Some(selected.version()));
-    drop(stream);
+    let membership = stream
+        .into_verified_membership()
+        .unwrap_or_else(|_| panic!("completed fact wins over late cancellation"));
+    assert_eq!(
+        records
+            .validate_read_membership(&reader, &membership)
+            .unwrap(),
+        selected.membership()
+    );
+    drop(membership);
     drop(reader);
     drop(bytes);
     serving.close();

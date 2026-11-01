@@ -29,6 +29,12 @@ impl PhysicalRootReadLease {
         self.registry.require_live(self.binding)
     }
 
+    pub(in crate::physical_runtime) fn try_require_live(
+        &self,
+    ) -> Result<(), crate::physical_runtime::PhysicalCheckpointReadProtectionDenial> {
+        self.registry.try_require_live(self.binding)
+    }
+
     pub(in crate::physical_runtime) const fn observation(
         &self,
     ) -> PhysicalProtectedRootObservation {

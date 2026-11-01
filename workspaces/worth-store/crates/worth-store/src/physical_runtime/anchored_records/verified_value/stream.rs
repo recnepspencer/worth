@@ -122,6 +122,22 @@ impl AnchoredValueStream {
         self.remaining -= length as u64;
         Ok(length)
     }
+    pub(in crate::physical_runtime::anchored_records) fn into_read_membership(
+        self,
+        version: super::super::AnchoredRecordVersion,
+        root: crate::physical_runtime::PhysicalProtectedRootObservation,
+    ) -> super::super::AnchoredRecordReadMembership {
+        assert!(self.complete, "membership requires actual verified EOF");
+        super::super::AnchoredRecordReadMembership {
+            membership: super::super::AnchoredRecordMembership {
+                version,
+                members: self.members,
+            },
+            _session: self.session,
+            root,
+            _memory: self.memory,
+        }
+    }
     pub(super) fn into_verified(self, payload: Option<Vec<u8>>) -> VerifiedAnchoredValue {
         assert!(
             self.complete,

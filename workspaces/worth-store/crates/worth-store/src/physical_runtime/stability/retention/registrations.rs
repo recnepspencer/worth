@@ -165,10 +165,29 @@ impl RootProtectionRegistry {
         &self,
         binding: PhysicalProtectedRootObservation,
     ) -> Result<(), PhysicalReadProtectionDenial> {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        self.require_live_state(&state, binding)
+    }
+
+    pub(super) fn try_require_live(
+        &self,
+        binding: PhysicalProtectedRootObservation,
+    ) -> Result<(), crate::physical_runtime::PhysicalCheckpointReadProtectionDenial> {
+        use crate::physical_runtime::PhysicalCheckpointReadProtectionDenial as Failure;
+        let state = match self.state.try_lock() {
+            Ok(state) => state,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Failure::Busy),
+        };
+        self.require_live_state(&state, binding)
+            .map_err(Failure::Protection)
+    }
+
+    fn require_live_state(
+        &self,
+        state: &Registrations,
+        binding: PhysicalProtectedRootObservation,
+    ) -> Result<(), PhysicalReadProtectionDenial> {
         let lifecycle = self.lifecycle.snapshot();
         if state.revoked
             || lifecycle.phase != ObservedLifecyclePhase::RecordServing

@@ -90,6 +90,12 @@ impl PhysicalRecordReader {
         serving.owns_reader(self)
     }
 
+    pub(in crate::physical_runtime) fn try_require_live_protection(
+        &self,
+    ) -> Result<(), crate::physical_runtime::PhysicalCheckpointReadProtectionDenial> {
+        self.protection.try_require_live()
+    }
+
     /// Retains this selected root while changing only its internal frame work
     /// to diagnostic-background admission. No raw record route escapes.
     pub(in crate::physical_runtime) fn for_diagnostic_scrub(mut self) -> Self {

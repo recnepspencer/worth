@@ -8,13 +8,15 @@ use crate::physical_runtime::PhysicalRecordReader;
 use worth_execution::ExecutionRequest;
 
 /// The header's coordinates remain descriptive until verified EOF. This type
-/// exposes no member-list or verified-membership capability. It borrows the
+/// exposes no member-list before verified EOF. The consuming verified-membership
+/// handoff moves its original table and session without copying. It borrows the
 /// SAME original request, never a replacement grant. Generic disposal follows
 /// the physical session's ordinary, unbudgeted protection-release contract.
 pub struct AnchoredRecordPayloadStream<'request, 'authority> {
     stream: AnchoredValueStream,
     request: ExecutionRequest<'request, 'authority>,
     observed: AnchoredRecordVersion,
+    root: crate::physical_runtime::PhysicalProtectedRootObservation,
 }
 impl AnchoredRecords<'_> {
     /// Open the exact anchor selected by this caller's reader. Header lengths
@@ -55,6 +57,7 @@ impl AnchoredRecords<'_> {
             stream,
             request: *request,
             observed,
+            root: reader.protected_root(),
         }))
     }
 }
@@ -71,6 +74,17 @@ impl AnchoredRecordPayloadStream<'_, '_> {
     pub fn verified_version(&self) -> Option<AnchoredRecordVersion> {
         self.stream.complete().then_some(self.observed)
     }
+    /// Move the original verified table, its grant and its actual physical
+    /// session without allocation, copying, re-reading or releasing a lease.
+    /// Before verified EOF (including refusal), return this SAME stream.
+    /// A completed fact wins over cancellation observed after its EOF.
+    pub fn into_verified_membership(self) -> Result<super::AnchoredRecordReadMembership, Self> {
+        if !self.stream.complete() {
+            return Err(self);
+        }
+        Ok(self.stream.into_read_membership(self.observed, self.root))
+    }
+
     /// Copy at most 64 KiB. `Ok(0)` means frame, payload and whole-record
     /// digests matched. Empty output cannot impersonate EOF. A refusal leaves
     /// this same stream non-advancing with its actual session custody retained.
