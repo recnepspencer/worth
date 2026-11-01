@@ -740,7 +740,7 @@ request, retained execution authority, generic ledger or resource framework.
 Request-created historical metadata is the next concrete control-allocation
 predecessor. Add LAST move-only funding only to existing
 VersionedEntityMetadata/VersionedRelationMetadata, inside their existing
-StorageAllocation Arc. Keep the generic StorageAllocation<T> source/layout and
+StorageAllocation Arc. Keep the generic StorageAllocation<T> layout and
 one-word handle unchanged; add no wrapper or Arc. Admit the exact concrete
 metadata allocation layout before its creation, including its own footer and
 control layout, without rebilling the already-owned Extra allocation.
@@ -780,7 +780,10 @@ values are inline, while independently shared Meta/Extra/Digest payloads use the
 existing StorageAllocation<Payload> explicitly. Preserve independent payload
 identity through COW, adoption, rotations and delta walking. Do not add a second
 scalar tree, ownership-mode enum, backing Arc or generic allocation framework.
-StorageAllocation<T> source/layout stays unchanged, including its wire surface.
+StorageAllocation<T> layout and wire surface stay unchanged. The sole additive
+owner port is a storage-private get_mut(&mut Self) -> Option<&mut T> delegating
+actual Arc::get_mut for controlled node COW. Expose no raw Arc/Weak or generic
+funding/footer. A count proxy cannot replace that actual uniqueness decision.
 
 A closed private shallow-copy constraint admits only supported scalar copies,
 existing allocation-handle copies and existing column headers whose Clone copies
