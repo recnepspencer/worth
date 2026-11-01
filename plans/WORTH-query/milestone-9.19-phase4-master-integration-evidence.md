@@ -1,6 +1,9 @@
 # Phase 4 current-master integration evidence
 
 Phase4 is complete at its supported contract; Phases5/6 remain unfinished.
+Local code integration landed at0a0052f2953df5df8b533ab646fbc125e64631e9;
+all nine user files were restored and independently verified. The factual
+post-landing receipt below supersedes the earlier pending/preflight statements.
 The user's completion-triggered instruction requires landing Phase4 on master
 before adoption work. No Phase5 code was written. Integration uses fetched
 origin/masterc478117afa and feature0b0416debb, common38e679ec4a; local master is
@@ -135,3 +138,40 @@ code-quality-qa PASS for the tested integration candidate and approved local
 master fast-forward/preservation procedure. No scoped blocker remains before
 the merge commit. Actual primary drift recheck, stash/fast-forward/restore and
 post-landing outcome are recorded after execution, not inferred from this gate.
+
+## Actual local master landing and preservation
+
+After final independent qa-loop/qa-tests/code-quality-qa PASS, integration commit
+0a0052f2953df5df8b533ab646fbc125e64631e9 was created with parents0b0416debb and
+c478117afa. The primary checkout's HEAD/status/all9 original file hashes were
+rechecked against the preservation snapshot immediately before changing it.
+Recoverable stashf257b62d642b6b17d491ab0c4e1104b75f410c56 saved the original user
+work. Local master then fast-forwarded to that exact reviewed integration commit.
+
+The five tracked edits applied through genuine clean3-way restoration. The only
+untracked collision was the known9.18.2 draft; no unmerged path occurred. Stash
+checkout changed line endings on originally untracked files, so their exact
+original bytes were restored from the verified snapshot. The9.18.2 draft already
+matches the integrated version after line-ending normalization; it is now a
+tracked unstaged user change with its original exact bytes. Accepted upstream
+README/Query roadmap changes and original user hunks coexist; skill files use
+the actual checkout-filtered expected result. No user staging intent changed.
+
+Primary master and task HEAD independently verified equal0a0052f295. All9
+restored file hashes match the approved5 genuine3-way plus4 exact-original
+expectations. The primary checkout has only the approved user modifications/
+untracked files, with no staged/unmerged entry; task worktree is clean. All9 user
+paths are unchanged in the integration commit relative to origin/master, so
+user WIP was not accidentally included. Backup, original-byte inventory, expected
+restoration files, landing-result.json and preservation stash remain recoverable.
+
+Independent post-landing review issues qa-loop PASS, qa-tests PASS and
+code-quality-qa PASS for the actual landing and preservation. This factual
+receipt may be committed and fast-forwarded locally without touching user paths;
+heads and restored hashes are rechecked after that prose-only update. No runtime
+rebuild is needed solely for these recorded facts.
+
+Local master landing is complete before Phase5 adoption. No remote push, private
+SDK pin or CAD acceptance was performed. Phases1–4 are complete at the reviewed
+supported contract; Phases5/6 remain unfinished. Fresh merged cleanup failures
+and all test/scale exclusions above remain explicit.
