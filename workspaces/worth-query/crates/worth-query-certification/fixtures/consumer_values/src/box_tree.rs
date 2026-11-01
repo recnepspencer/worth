@@ -1,6 +1,8 @@
 //! A balanced finite box tree; callers own storage, controls and source resolution.
-use crate::{BoundsDenial, Box2};
+use crate::{BoundsDenial, BoxSpace, IntegerBox2, SignedFixture};
 mod edit;
+#[cfg(test)]
+mod model_local_tests;
 mod order;
 pub use edit::{insert_box_source, remove_box_source, replace_box_source, BoxEditStorage};
 pub use order::compare_box_bounds;
@@ -37,18 +39,18 @@ pub enum BoxNodeLinks<Id, Source = usize> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct BoxNode<Id, Source = usize> {
-    pub bounds: Box2,
+pub struct BoxNode<Id, Source = usize, Space: BoxSpace = SignedFixture> {
+    pub bounds: IntegerBox2<Space>,
     pub links: BoxNodeLinks<Id, Source>,
     pub last_source: Source,
-    pub last_bounds: Box2,
+    pub last_bounds: IntegerBox2<Space>,
     pub height: u8,
 }
 
 /// Cold construction uses the same spatial ordering and edits as maintained roots.
-pub fn build_box_tree<S: BoxEditStorage>(
+pub fn build_box_tree<Space: BoxSpace, S: BoxEditStorage<Space>>(
     count: usize,
-    mut source: impl FnMut(usize) -> Result<(S::Source, Box2), S::Stop>,
+    mut source: impl FnMut(usize) -> Result<(S::Source, IntegerBox2<Space>), S::Stop>,
     storage: &mut S,
 ) -> Result<Option<S::Id>, S::Stop> {
     storage.checkpoint()?;
@@ -61,11 +63,11 @@ pub fn build_box_tree<S: BoxEditStorage>(
 }
 
 /// Emit only overlapping leaf ordinals. The source owner resolves those ordinals.
-pub fn query_box_tree<Id: Copy, Source: Copy, E>(
+pub fn query_box_tree<Id: Copy, Source: Copy, E, Space: BoxSpace>(
     root: Option<Id>,
     node_count: usize,
-    probe: Box2,
-    mut read: impl FnMut(Id) -> Result<BoxNode<Id, Source>, E>,
+    probe: IntegerBox2<Space>,
+    mut read: impl FnMut(Id) -> Result<BoxNode<Id, Source, Space>, E>,
     mut emit: impl FnMut(Source) -> Result<(), E>,
     mut checkpoint: impl FnMut(u64) -> Result<(), E>,
     invalid: impl Fn() -> E,
@@ -87,12 +89,12 @@ pub fn query_box_tree<Id: Copy, Source: Copy, E>(
     }
 }
 
-fn visit<Id: Copy, Source: Copy, E>(
+fn visit<Id: Copy, Source: Copy, E, Space: BoxSpace>(
     id: Id,
     depth: u32,
     remaining: &mut usize,
-    probe: Box2,
-    read: &mut impl FnMut(Id) -> Result<BoxNode<Id, Source>, E>,
+    probe: IntegerBox2<Space>,
+    read: &mut impl FnMut(Id) -> Result<BoxNode<Id, Source, Space>, E>,
     emit: &mut impl FnMut(Source) -> Result<(), E>,
     checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
     invalid: &impl Fn() -> E,

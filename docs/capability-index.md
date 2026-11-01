@@ -969,6 +969,13 @@ This ordinary complete query is the future provider's Source profile; maintained
 Source custody and spatial discovery remain unfinished. See the
 [Scene/Face evidence](../plans/WORTH-query/milestone-9.19-phase5-scene-face-evidence.md).
 
+`SceneFaceRow::bounds()` derives an exact `IntegerBox2<ModelLocalMetre>` enclosure
+from those projected u64 points. The shared numerical box/tree/contact owner also
+retains the existing concrete signed `Box2` domain and raw serde carrier meaning.
+Cross-domain box operations are type errors. The type identifies the unit/frame
+class; Scene/context custody still supplies actual model affinity. These bounds
+are candidates and do not certify contour validity or exact face contact.
+
 ### Native managed Source impact history
 
 Native `authored_managed_source_selector` accepts the actual installed

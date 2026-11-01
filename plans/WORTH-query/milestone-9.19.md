@@ -2491,3 +2491,18 @@ projection freshness but does not yet prove rejection of a later Body-only inval
 contour-length change. See the [slice evidence](milestone-9.19-phase5-scene-face-evidence.md).
 Unsigned boxes, actual maintained provider/contact integration, spatial cost courts,
 public closure and Phase6 remain unfinished.
+
+### Phase5 typed topology bounds progress (2026-11-01)
+
+One Query-free IntegerBox2<Space> implementation now serves the existing signed
+Box2 domain and full-u64 ModelLocalMetre. Raw signed serde meaning, constants,
+storage/checkpoint receivers and exact65-bit centroid order are preserved. The same
+tree/edit/contact algorithms serve both classes; cross-domain overlap is rejected
+at compile time. Actual SceneFaceRow::bounds() derives exact unsigned enclosures
+from ordinary projected points. The type names the unit/frame class, while actual
+Scene/context custody still supplies model affinity and Native contour authority.
+
+220 distinct selected checks pass:13 numerical owner tests, two doctests and205
+ordinary consumer tests. See the [typed-box evidence](milestone-9.19-phase5-typed-boxes-evidence.md).
+Maintained Scene Source/provider, exact face-contact integration, genuine same-Scene
+authoring, spatial locality courts, public closure and Phase6 remain unfinished.

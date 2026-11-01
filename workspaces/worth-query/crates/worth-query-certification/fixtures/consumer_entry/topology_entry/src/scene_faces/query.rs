@@ -17,6 +17,24 @@ pub struct SceneFaceRow {
     /// Anchor, successor, predecessor, in Metre/model-local.v1.
     pub points: [[u64; 2]; 3],
 }
+impl SceneFaceRow {
+    /// Exact candidate enclosure in this row's Metre/model-local frame class.
+    /// Scene/context custody still supplies model affinity and contour authority.
+    pub fn bounds(
+        &self,
+    ) -> worth_query_consumer_values::IntegerBox2<worth_query_consumer_values::ModelLocalMetre>
+    {
+        use worth_query_consumer_values::{Box2Coordinates, IntegerBox2, ModelLocalMetre};
+        let boxes = self.points.map(|point| {
+            IntegerBox2::<ModelLocalMetre>::new(Box2Coordinates {
+                lower: point,
+                upper: point,
+            })
+            .expect("a point is a valid closed box")
+        });
+        boxes[0].union(boxes[1]).union(boxes[2])
+    }
+}
 pub struct SceneFacesParameters;
 worth_query_structured_value_binding!(pub SceneFacesParametersBinding for SceneFacesParameters { identity: "worth.query.scene-face.parameters.v1" });
 worth_query_structured_value_binding!(pub SceneFaceRowBinding for SceneFaceRow { identity: "worth.query.scene-face.row.v1" });

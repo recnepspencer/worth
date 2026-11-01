@@ -6062,6 +6062,15 @@ exercise this exact mutation/read path, indirect motion, replacement, Native
 cardinality refusal and triangle eligibility. Existing `PlanarDiscoveryRead` v1
 continues to follow authored links.
 
+Each returned `SceneFaceRow` can derive `bounds()`, an exact
+`IntegerBox2<ModelLocalMetre>` in the original full-u64 Metre/model-local domain.
+The same Query-free box, tree and segment-contact algorithms serve this domain
+and the existing signed fixture `Box2`; the raw `{ lower, upper }` serde carrier
+keeps its old default i64 meaning. Typed bounds cannot be combined across these
+unit/frame classes. A shared frame class does not prove that two model instances
+share an origin: actual Scene/context custody remains necessary. The enclosure is
+derived from real projected points, and supplies no contour or publication proof.
+
 A result-set/source expectation also retains the original Source READ support.
 Revoking a Source-only permission refuses a later non-querying mutation before
 publication. Recorded correction includes those policy fields and adjacency in

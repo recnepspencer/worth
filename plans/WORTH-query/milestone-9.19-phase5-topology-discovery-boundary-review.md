@@ -58,12 +58,11 @@ not discharge this face-discovery requirement.
    against the actual closed contour, not inferred from three coordinates or a
    BodyKey proxy. A Scene-to-Face relation supplies the actual universe. Vertex
    coordinates remain on Body; boxes are derived and never become geometry truth.
-2. Extend the existing Query-free box owner with typed coordinate/unit/frame
-   domains, retaining the old i64 fixture contract and adding the full u64
-   Metre/model-local domain without conversion, epsilon, clamp or duplicated
-   geometric algorithm. The same spatial tree and exact predicate core must serve
-   both domains. Resolve actual public type/API shape and every current caller
-   before planning edits.
+2. Established by the typed-box slice: one IntegerBox2<Space> owner retains Box2
+   as its concrete signed specialization and adds the full-u64 ModelLocalMetre
+   class. The same box/tree/contact algorithms serve both without conversion,
+   epsilon, clamp or duplicated geometry. SceneFaceRow::bounds() is the actual
+   unsigned consumer. Model-instance affinity remains with Scene/context custody.
 3. Established by the Scene/Face slice: the existing ConsumerSchema owner adopts
    a fourth contribution at minor1.2, preserving v1 query meanings and using the
    matching host tuple and actual program roster. No new schema is created solely
@@ -81,7 +80,9 @@ not discharge this face-discovery requirement.
 - AttachPlanarFace preserves actual Native context. Later same-Scene growth needs
   genuine scene-context contour creation; legacy CreateCycle issues a fresh context.
   Never divide the50000-face universe into per-face Scenes to obtain locality.
-- Typed numerical domain extension and ordinary primitive/serialization callers.
+- Typed numerical domains and existing signed callers are established by the
+  typed-box slice. The maintained provider must consume these actual typed bounds
+  and exact coordinate profiles without graph lookups per returned candidate.
 - Versioned existing ConsumerSchema composition is established in the model slice.
   Subsequent provider configuration must stay in that actual owning contribution
   and existing consumer court family.

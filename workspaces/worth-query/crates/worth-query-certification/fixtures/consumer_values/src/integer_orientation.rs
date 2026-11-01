@@ -9,9 +9,15 @@ mod sealed {
 
 /// These two coordinate classes bound every difference by u64::MAX in magnitude.
 /// Sealing prevents a wider integer class from invalidating that arithmetic proof.
-pub trait PlanarInteger: sealed::Coordinate + Copy + Into<i128> {}
-impl PlanarInteger for i64 {}
-impl PlanarInteger for u64 {}
+pub trait PlanarInteger: sealed::Coordinate + Copy + Into<i128> {
+    const MIN: Self;
+}
+impl PlanarInteger for i64 {
+    const MIN: Self = i64::MIN;
+}
+impl PlanarInteger for u64 {
+    const MIN: Self = u64::MIN;
+}
 
 /// Sign of (b-a) cross (c-a), including exact zero and full-width cancellation.
 /// All points must use the same unit/frame. This creates no geometric identity,
