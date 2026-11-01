@@ -607,6 +607,18 @@ actual invoked ownership path escapes. Trace that path rather than widening
 the scope to unrelated Arc uses. Keep these private storage owners at their
 existing validation/data, schema/data/continuity and graph_member domains.
 
+The exact private decoded_quote/nonmerge_tests.rs leaf under Native's canonical
+artifact owner may construct original SDK SerialRequest/ExecutionRequest only
+for owned_decode_custom_rule_clone_keeps_only_its_leaf_grant,
+owned_decode_touched_summary_clones_keep_separate_slice_grants,
+owned_decode_schema_text_and_error_clone_keep_original_leaf_grant,
+owned_decode_projected_member_clone_keeps_original_coordinate_grant, and
+owned_decode_shared_schema_preflight_refuses_zero_original_memory. Its pure
+owned_decode_nonmerge_leaf_wire_preserves_prior_named_and_compact_bytes control
+needs no runtime. These prove actual private leaf custody and predecode refusal
+using owner values, not Native/foreign runtime or positive artifact authority.
+Register only the exact file and two SDK runtime-root names.
+
 ### Selected canonical backing without covered-journal replay
 
 Actual root images alone are insufficient. Directory CHK17 omits complete
