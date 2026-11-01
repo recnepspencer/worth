@@ -6,6 +6,7 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_topology_entry::PlanarHistoryNavigation;
 mod authority;
+mod buttons;
 mod checkout;
 mod cutover;
 mod interruption;
@@ -227,23 +228,20 @@ fn checkout_with_required_outputs_preserves_both_futures_and_the_document_mode()
                 WorthQueryHistoryNavigationIntent::Checkout(_) => unreachable!(),
             }
         );
-        let mut owner = with_request(app, |request| {
-            let builder = document.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
-            let target = match intent {
-                WorthQueryHistoryNavigationIntent::UndoStep => builder.undo_step(),
-                WorthQueryHistoryNavigationIntent::RedoTo(child) => builder.redo_to(child),
-                WorthQueryHistoryNavigationIntent::Checkout(_) => unreachable!(),
-            };
-            target
-                .expected_selection(document.selection(request).unwrap())
-                .idempotency(key)
-                .prepare(request)
-                .unwrap()
+        let button = match intent {
+            WorthQueryHistoryNavigationIntent::UndoStep => buttons::Button::Undo,
+            WorthQueryHistoryNavigationIntent::RedoTo(child) => buttons::Button::RedoTo(child),
+            WorthQueryHistoryNavigationIntent::Checkout(_) => unreachable!(),
+        };
+        let (button, expected, mut advance) = with_request(app, |request| {
+            buttons::start(&document, request, button, key).unwrap()
         });
         let mut completed = None;
         for _ in 0..96 {
-            owner = match with_request(app, |request| owner.advance(request)) {
-                WorthQueryHistoryNavigationAdvance::Pending(owner) => owner,
+            match advance {
+                WorthQueryHistoryNavigationAdvance::Pending(owner) => {
+                    advance = with_request(app, |request| owner.advance(request));
+                }
                 WorthQueryHistoryNavigationAdvance::Selected(done) => {
                     completed = Some(done);
                     break;
@@ -251,9 +249,17 @@ fn checkout_with_required_outputs_preserves_both_futures_and_the_document_mode()
                 WorthQueryHistoryNavigationAdvance::Refused { cause, .. } => {
                     panic!("edge output navigation: {cause:?}")
                 }
-            };
+            }
         }
-        assert_eq!(completed.unwrap().requested_node(), node);
+        let completed = completed.unwrap();
+        assert_eq!(completed.requested_node(), node);
+        let (_, _, retried) = with_request(app, |request| {
+            buttons::prepare(&document, request, button, expected, key).unwrap()
+        });
+        let WorthQueryHistoryNavigationAdvance::Selected(retried) = retried else {
+            panic!("completed button click resolves its original selected result")
+        };
+        assert_eq!(retried.selection(), completed.selection());
         assert_eq!(
             with_request(app, |request| document.read(request).unwrap().rows()[0]
                 .value),

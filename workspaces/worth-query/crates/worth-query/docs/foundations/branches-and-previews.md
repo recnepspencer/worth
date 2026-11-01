@@ -389,6 +389,31 @@ the original expected selection together with the first advancement result:
     Ok((expected, navigation.advance(request)))
 ```
 
+For an undo or redo button, define an application command as `Button::Undo` or
+`Button::RedoTo(child)`. Capture `expected` with `document.selection(request)?`
+for each new click, then prepare the command through the same owned progression:
+
+<!-- compiled: document_history_buttons.rs -->
+```rust
+    let builder = document.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+    let target = match button {
+        Button::Undo => builder.undo_step(),
+        Button::RedoTo(child) => builder.redo_to(child),
+    };
+    let navigation = target
+        .expected_selection(expected.clone())
+        .idempotency(key)
+        .prepare(request)?;
+    Ok((button, expected, navigation.advance(request)))
+```
+
+Retain the returned button and expected selection together with `key`. On retry,
+use those originals; a fresh selection starts a new click. The example preserves
+the document's output mode and returns the actual first advancement, including
+its pending or refused owner. When redo discovery returns `ChoiceRequired`, show
+the bounded child pages and pass the user's explicit choice to `Button::RedoTo`.
+A single-child hint is also revalidated by preparation.
+
 Handle the returned advancement in the application:
 
 ```rust,ignore

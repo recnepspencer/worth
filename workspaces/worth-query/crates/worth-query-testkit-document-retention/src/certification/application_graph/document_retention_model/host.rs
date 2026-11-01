@@ -113,7 +113,7 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
             resolve_second_rule,
         )?;
         setup
-            .handler::<SetRetentionBinding, _>(SetRetentionHandler)
+            .handler::<SetRetentionBinding, _>(SetRetentionHandler::default())
             .and_then(|()| {
                 setup.handler::<super::correctable_retention::CorrectableRetentionBinding, _>(
                     ReviewedSetRetentionHandler,

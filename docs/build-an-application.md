@@ -2035,6 +2035,33 @@ and other records outside the model remain current. Read the
 [checkout contract and supported component meaning](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#select-a-historical-step-for-editing)
 before enabling navigation. A retained preview or page supplies no NAV authority.
 
+For undo and redo buttons, capture the expected selection for each new click.
+Represent its command as `Button::Undo` or `Button::RedoTo(child)` and lower it
+through the same prepared navigation owner:
+
+<!-- compiled: document_history_buttons.rs -->
+```rust
+    let builder = document.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+    let target = match button {
+        Button::Undo => builder.undo_step(),
+        Button::RedoTo(child) => builder.redo_to(child),
+    };
+    let navigation = target
+        .expected_selection(expected.clone())
+        .idempotency(key)
+        .prepare(request)?;
+    Ok((button, expected, navigation.advance(request)))
+```
+
+Keep the returned command, expected selection and key for retries. Use
+`document.redo_choices(&request, limits, after)` to read a bounded child page and
+its `NoChild`, `Single(child)` or `ChoiceRequired` hint. Offer an explicit child
+choice when several futures exist; preparation revalidates even a remembered
+single-child preference. The application keeps the actual pending/refused owner
+and preserves the document's output mode. Navigation selects an existing state;
+[semantic correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
+publishes a new inverse, compensation or reapplication under its own contract.
+
 For a fixed required-output tree, configure the document with
 `document.with_outputs::<Program, Root>(&phase, &request, &application, demand, controls)`
 inside an advancement of its owning host. A refusal returns the original

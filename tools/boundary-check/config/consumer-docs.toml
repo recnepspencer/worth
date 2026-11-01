@@ -54,6 +54,12 @@ target = "src/main.rs"
 source = "src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/checkout.rs"
 
 [[compiled_sources]]
+name = "document_history_buttons.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/buttons.rs"
+
+[[compiled_sources]]
 name = "owning_discovered.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"

@@ -19,6 +19,7 @@ mod race;
 mod recovery;
 mod retirement;
 mod retries;
+mod user_tree;
 
 type Owner<'d, 'r> =
     WorthQueryHistoryNavigation<'d, 'r, DocumentRetentionSchema, RetentionHistory, Navigation>;
