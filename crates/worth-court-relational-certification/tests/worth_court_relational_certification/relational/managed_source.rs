@@ -26,6 +26,7 @@ mod derived_admission;
 mod historical_material;
 mod history;
 mod journal;
+mod public_only;
 mod registry;
 pub(crate) use registry::registry;
 #[path = "managed_source/owner.rs"]

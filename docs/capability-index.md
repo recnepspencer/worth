@@ -936,6 +936,18 @@ matching values alone do not authorize restoration. Unsupported shapes and
 unavailable canonical evidence retain typed refusals under the original request.
 
 
+### Native public-only Source maintenance
+
+The Native compiler substrate can register an exact schema-bound program with
+`RelationalRuntimeBuilder::managed_index_source` or the initial installer's
+`install_with_managed_sources`, without inventing an invariant. The receiving
+registry validates actual membership/projection owners and derives structural
+access; original request controls and the existing Source participant own all
+maintenance. Live installation receipts bind the complete Source roster through
+checkpoint readmission; Source-affected codec transitions remain unsupported.
+This is Native substrate only: Query public maintenance declarations and Bank
+adoption remain unfinished. See the [boundary and implementation plan](../plans/WORTH-query/milestone-9.19-phase5-public-source-plan.md).
+
 ### Native managed Source impact history
 
 Native `authored_managed_source_selector` accepts the actual installed

@@ -33,6 +33,7 @@ pub(crate) struct FrozenCustomInvariantRegistry {
 impl FrozenCustomInvariantRegistry {
     pub(crate) fn from_registrations(
         registrations: Vec<CustomInvariantRegistration>,
+        public_sources: Vec<SourcePreparationGroup>,
     ) -> Result<Self, DuplicateCustomInvariantRegistration> {
         let mut index_by_identity_and_execution_point = BTreeMap::new();
         for (index, registration) in registrations.iter().enumerate() {
@@ -48,10 +49,11 @@ impl FrozenCustomInvariantRegistry {
                 });
             }
         }
-        let source_groups = registrations
+        let mut source_groups = registrations
             .iter()
             .filter_map(SourcePreparationGroup::from_invariant)
             .collect::<Vec<_>>();
+        source_groups.extend(public_sources);
         Ok(Self {
             source_history: Arc::new(crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog::compile(&source_groups)),
             source_postings:
@@ -62,6 +64,20 @@ impl FrozenCustomInvariantRegistry {
             registrations: registrations.into(),
             index_by_identity_and_execution_point: Arc::new(index_by_identity_and_execution_point),
         })
+    }
+
+    pub(crate) fn source_inventory(&self) -> Arc<[SourcePreparationGroup]> {
+        self.source_groups.clone()
+    }
+
+    pub(crate) fn explicit_source_programs(
+        &self,
+    ) -> Vec<crate::validation::candidate_source::ManagedIndexSourceProgram> {
+        self.source_groups
+            .iter()
+            .flat_map(SourcePreparationGroup::public_programs)
+            .cloned()
+            .collect()
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -167,7 +183,8 @@ mod tests {
         .unwrap();
 
         let error =
-            FrozenCustomInvariantRegistry::from_registrations(vec![left, right]).unwrap_err();
+            FrozenCustomInvariantRegistry::from_registrations(vec![left, right], Vec::new())
+                .unwrap_err();
         assert_eq!(error.identity.rule_id.as_str(), "dup.rule");
         assert_eq!(
             error.execution_point,
@@ -189,10 +206,10 @@ mod tests {
         .unwrap();
         let identity = commit_backstop.descriptor().identity.clone();
 
-        let registry = FrozenCustomInvariantRegistry::from_registrations(vec![
-            commit_backstop,
-            graph_composition,
-        ])
+        let registry = FrozenCustomInvariantRegistry::from_registrations(
+            vec![commit_backstop, graph_composition],
+            Vec::new(),
+        )
         .unwrap();
 
         assert_eq!(registry.len(), 2);
@@ -213,7 +230,8 @@ mod tests {
         .unwrap();
         let identity = registration.descriptor().identity.clone();
         let registry =
-            FrozenCustomInvariantRegistry::from_registrations(vec![registration]).unwrap();
+            FrozenCustomInvariantRegistry::from_registrations(vec![registration], Vec::new())
+                .unwrap();
 
         assert_eq!(registry.len(), 1);
         assert!(registry

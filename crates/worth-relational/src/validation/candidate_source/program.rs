@@ -113,6 +113,23 @@ impl ManagedIndexSourceProgram {
         self.paths().flat_map(|path| path.physical_sources())
     }
 
+    pub(crate) fn require_registry(
+        &self,
+        registry: &RelationalSchemaRegistry,
+    ) -> Result<(), Denial> {
+        if self
+            .paths()
+            .any(|path| !registry.admits_derived_relation(path))
+        {
+            return Err(Denial::ForeignDefinition);
+        }
+        projection_routes::validate_fields(registry, self.row_kind(), self.fields())?;
+        for route in self.projection_routes() {
+            route.validate(registry, self.row_kind())?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn require_access(
         &self,
         access: &CustomInvariantAccessContract,

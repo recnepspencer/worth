@@ -1,8 +1,9 @@
 //! Source-carrier readmission and supported consequence admission before restore.
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexKind};
-use crate::runtime::{CodecFieldLocus, RelationalRuntime};
+use crate::runtime::CodecFieldLocus;
 use crate::schema::data::RelationalSchemaRegistry;
+use crate::validation::FrozenCustomInvariantRegistry;
 use worth_foundational::FoundationalBranchTarget;
 
 mod relation_consequences;
@@ -44,15 +45,11 @@ pub(super) fn readmit_current_source_schema(
 }
 
 pub(super) fn admit_supported_consequences<'a>(
-    runtime: &RelationalRuntime,
+    registrations: &FrozenCustomInvariantRegistry,
     indexes: impl IntoIterator<Item = &'a DerivedIndexDefinition>,
     changes: &[CodecFieldLocus],
 ) -> Result<(), String> {
-    for invariant in runtime
-        .schema_contract_runtime
-        .custom_invariant_registries
-        .iter()
-    {
+    for invariant in registrations.iter() {
         let access = &invariant.descriptor().operational.access;
         if changes.iter().any(|change| {
             access.read_entity_kinds.contains(&change.kind_id)
@@ -61,6 +58,15 @@ pub(super) fn admit_supported_consequences<'a>(
             return Err(
                 "codec transition with custom invariant consequences is unsupported".into(),
             );
+        }
+    }
+    for group in registrations.source_inventory().iter() {
+        let access = group.access_contract();
+        if changes.iter().any(|change| {
+            access.read_entity_kinds.contains(&change.kind_id)
+                || access.affected_entity_kinds.contains(&change.kind_id)
+        }) {
+            return Err("codec transition with managed Source consequences is unsupported".into());
         }
     }
     for index in indexes {
@@ -103,3 +109,6 @@ pub(super) fn admit_single_codec_head(checkpoint: &DurableCheckpoint) -> Result<
 pub(super) fn schema_denial(detail: String) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::SchemaMismatch, detail)
 }
+
+#[cfg(test)]
+mod tests;
