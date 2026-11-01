@@ -71,12 +71,10 @@ impl RelationalRootAllocationVisitor for CensusRootWalk<'_> {
     fn region(
         &mut self,
         region: crate::branch::RelationalRootRegionObservation,
-        partition: Result<Option<&PartitionState>, RelationalStorageUnavailable>,
+        partition: Result<&PartitionState, RelationalStorageUnavailable>,
     ) -> Result<(), Denial> {
         let start = std::time::Instant::now();
-        let partition = partition
-            .map_err(Denial::StorageUnavailable)?
-            .ok_or(Denial::RootUnavailable)?;
+        let partition = partition.map_err(Denial::StorageUnavailable)?;
         self.accounting.census_work.as_mut().unwrap().region_entries += 1;
         for allocation in
             crate::inspection::mvcc::partition_allocations::authoritative_partition_allocations(

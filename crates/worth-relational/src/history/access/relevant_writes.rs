@@ -115,20 +115,13 @@ pub(crate) fn visit(
     Ok(())
 }
 
-/// AVL height is below twice its bit width. Pay key comparisons before the
-/// persistent backing walks; memory admission remains the backing owner's job.
+/// AVL height is below twice its bit width: one unit per descended level.
+/// Comparisons stop at the first differing byte, so key width is not priced.
 pub(crate) fn ordered_visit(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     entries: usize,
-    key_bytes: u64,
 ) -> Result<(), RelationalAuthoredWriteDenial> {
-    let height = 2 * u64::from(usize::BITS - entries.leading_zeros()) + 2;
-    let work =
-        height
-            .checked_mul(key_bytes.max(1))
-            .ok_or(RelationalAuthoredWriteDenial::Interrupted(
-                worth_execution::MapKernelStop::WorkCounterOverflow,
-            ))?;
+    let work = 2 * u64::from(usize::BITS - entries.leading_zeros()) + 2;
     if context.has_accounting() {
         context.checkpoint(work)?;
     } else {

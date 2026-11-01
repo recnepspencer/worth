@@ -87,7 +87,7 @@ impl RelationalRuntime {
             if generation.unsupported_merge {
                 return Err(Denial::UnsupportedMergeInterval);
             }
-            super::ordered_visit(context, generation.prefix.len(), 8)?;
+            super::ordered_visit(context, generation.prefix.len())?;
             let original_ordinal = *generation
                 .prefix
                 .get(&original_commit)
@@ -99,7 +99,7 @@ impl RelationalRuntime {
                 .iter()
                 .any(|key| matches!(key, Key::Adjacency { .. }))
             {
-                super::ordered_visit(context, generation.incomplete_adjacency.len(), 8)?;
+                super::ordered_visit(context, generation.incomplete_adjacency.len())?;
                 if let Some((&ordinal, gap)) =
                     generation.incomplete_adjacency.first_at_or_after(&next)
                 {
@@ -112,12 +112,11 @@ impl RelationalRuntime {
                     });
                 }
             }
-            super::ordered_visit(context, 0, selectors.len() as u64)?;
             if selectors
                 .iter()
                 .any(|key| matches!(key, Key::EntityFieldIndex { .. }))
             {
-                super::ordered_visit(context, generation.incomplete_indexes.len(), 8)?;
+                super::ordered_visit(context, generation.incomplete_indexes.len())?;
                 if generation
                     .incomplete_indexes
                     .first_at_or_after(&next)
@@ -145,7 +144,7 @@ impl RelationalRuntime {
                 if next < generation.index_run_start {
                     return Err(Denial::IncompleteIndexHistory);
                 }
-                super::ordered_visit(context, generation.index_coverage.len(), 8)?;
+                super::ordered_visit(context, generation.index_coverage.len())?;
                 let Some((_, coverage)) = generation.index_coverage.first_at_or_after(&next) else {
                     return Err(Denial::IncompleteIndexHistory);
                 };
@@ -162,7 +161,7 @@ impl RelationalRuntime {
             let bytes = selectors.iter().try_fold(0u64, |bytes, key| {
                 super::visit(context)?;
                 bytes
-                    .checked_add(selector_bytes(context, key)?)
+                    .checked_add(key.additional_charged_bytes())
                     .ok_or(Denial::SizeOverflow)
             })?;
             let key_memory = execution
@@ -170,8 +169,7 @@ impl RelationalRuntime {
                 .map_err(Denial::Request)?;
             let mut keys = ExecutionRequestArrayBuilder::allocate(execution, selectors.len())?;
             for key in selectors {
-                let bytes = selector_bytes(context, key)?;
-                super::ordered_visit(context, 0, bytes)?;
+                super::visit(context)?;
                 keys.push(key.clone())?;
             }
             // These sealed bases already own immutable root/history custody.
@@ -284,7 +282,7 @@ impl RelationalAuthoredWriteCursor {
                 .demand_commit_envelope(&execution, commit)
                 .map_err(Denial::Execution)?
                 .ok_or(Denial::CanonicalEvidenceUnavailable)?;
-            super::ordered_visit(context, self.source.generation.prefix.len(), 8)?;
+            super::ordered_visit(context, self.source.generation.prefix.len())?;
             if self
                 .source
                 .generation
@@ -323,14 +321,9 @@ impl RetainedAuthoredWriteSelection {
     ) -> Result<Option<(u64, CommitId)>, Denial> {
         let mut first = None;
         for key in self.keys.iter() {
-            let width = selector_bytes(context, key)?
-                .checked_add(std::mem::size_of::<Key>() as u64)
-                .ok_or(Denial::Interrupted(
-                    worth_execution::MapKernelStop::WorkCounterOverflow,
-                ))?;
-            super::ordered_visit(context, self.generation.writes.len(), width)?;
+            super::ordered_visit(context, self.generation.writes.len())?;
             if let Some(postings) = self.generation.writes.get(key) {
-                super::ordered_visit(context, postings.0.len(), 8)?;
+                super::ordered_visit(context, postings.0.len())?;
                 if let Some((&ordinal, &commit)) = postings.0.first_at_or_after(&next)
                     && first.is_none_or(|(previous, _)| ordinal < previous)
                 {
@@ -340,17 +333,4 @@ impl RetainedAuthoredWriteSelection {
         }
         Ok(first)
     }
-}
-
-fn selector_bytes(context: &mut MapKernelContext<'_, '_>, key: &Key) -> Result<u64, Denial> {
-    let fields = match key {
-        Key::Record {
-            scope: super::RelationalAuthoredWriteScope::Field(_, path),
-            ..
-        } => path.fields().len(),
-        Key::EntityFieldIndex { definition, .. } => definition.locator.field_path().fields().len(),
-        _ => 0,
-    };
-    super::ordered_visit(context, 0, fields as u64)?;
-    Ok(key.additional_charged_bytes())
 }
