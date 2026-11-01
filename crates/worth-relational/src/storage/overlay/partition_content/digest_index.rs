@@ -5,6 +5,9 @@ use crate::storage::substrate::{StorageAllocation as Arc, StorageAllocationVisit
 use sha2::{Digest, Sha256};
 
 mod append_frontier;
+mod carrier;
+#[cfg(test)]
+mod carrier_tests;
 #[cfg(test)]
 mod tests;
 

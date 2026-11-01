@@ -561,12 +561,13 @@ allocation. Shared edits admit each replacement before shallow copying; partial
 construction retains its admitted nodes until the unpublished workspace drops.
 Published roots remain readable after refusal.
 
-Scalars, shallow nested column headers and adjacency map headers are inline.
-Independently shared metadata, Extra and Digest values keep explicit existing
-allocation handles. Node bills exclude these payloads; escaped payload handles
-retain their own independent bills. Allocation observation reports actual node
-and payload identities without inventing scalar or inline-header identities.
-Generic storage handle layout and tree wire meaning remain unchanged.
+Scalars, shallow nested column headers, adjacency headers and DigestIndex map
+headers are inline. Independently shared metadata, Extra and Digest child nodes
+keep explicit existing allocation handles. Parent bills exclude those independent
+allocations. Where a payload is funded, its escaped handles retain that owner's
+independent bill. Allocation observation reports actual node and payload identities
+without inventing scalar or inline header identities. Generic storage handle
+layout and tree wire meaning remain unchanged.
 
 On the qualified 64-bit target, an inline kind-bucket node is 112 bytes, replacing
 a 112-byte node plus a 24-byte header Arc. An inline adjacency node is 168 bytes,
@@ -574,6 +575,15 @@ replacing a 112-byte node plus an 80-byte header Arc. Each removes 24 bytes of
 backing. Child nodes retain their actual identities and reservations; no separate
 header allocation or payload bill remains. This changes no selective publication
 algorithm and adds no adjacency or bitset funding guarantee.
+
+DigestIndex map nodes grow from 112 to 120 bytes while each distinct 32-byte
+header Arc disappears. This trades fewer allocations for larger copied nodes:
+the measured dense 64-entry owner falls from 15,360 to 13,824 bytes. Retaining
+64 append roots grows usage from 51,312 to 52,344 bytes; retaining 129 hot-history
+roots grows it from 160,864 to 161,376. These are measured examples, not universal
+savings or bounds.
+The actual Patricia and HistoryLastValue child owners stay shared and unchanged.
+Their funding and general nonshallow defaults remain separate obligations.
 
 This qualifies controlled column/map nodes, fixed pages and scalar-directory
 writes. Ordinary image and maintenance construction, legacy adjacency/bitset
