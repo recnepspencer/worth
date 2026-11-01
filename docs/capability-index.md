@@ -1228,7 +1228,9 @@ and the owning [Home attachment](../workspaces/worth-store/crates/worth-store-ap
 Use `ServingPhysicalRuntime::try_records_for_checkpoint(original_request)` to
 retain one actual reader without waiting on capture locks. Store owner adapters
 then use `AnchoredRecords::open_payload_from` and
-`OrderedJournal::{head_position_from,open_payload_from}` with that same reader;
+`OrderedJournal::{head_position_from,describe_entry_from,open_payload_from}`
+with that same reader; `describe_entry_from` reads funded header metadata, not
+verified payload bytes;
 newer physical roots cannot expand its selected anchor or journal heads.
 Payload streams retain the same request and stop after a refusal. Only actual
 verified EOF validates payload bytes; pre-EOF sizes and coordinates are

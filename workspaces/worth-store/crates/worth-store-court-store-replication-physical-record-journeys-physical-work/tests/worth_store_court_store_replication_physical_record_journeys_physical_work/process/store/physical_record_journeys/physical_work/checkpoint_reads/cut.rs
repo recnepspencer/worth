@@ -1,4 +1,5 @@
 use super::*;
+use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequestArrayBuilder;
 #[test]
 fn one_checkpoint_reader_preserves_anchor_and_three_journals_across_root_advance() {
@@ -49,6 +50,17 @@ fn one_checkpoint_reader_preserves_anchor_and_three_journals_across_root_advance
             .ordered_journal(OrderedJournalName::new(name).unwrap())
             .unwrap();
         assert_eq!(journal.head_position_from(&reader).unwrap(), 1);
+        let described = journal.describe_entry_from(&reader, &request, 1).unwrap();
+        assert_eq!(described.position(), 1);
+        assert_eq!(described.payload_bytes(), original.len() as u64);
+        assert_eq!(
+            described.payload_sha256(),
+            <[u8; 32]>::from(Sha256::digest(&original))
+        );
+        assert!(matches!(
+            journal.describe_entry_from(&reader, &request, 2),
+            Err(OrderedJournalReadFailure::NotFound { head: 1 })
+        ));
         assert_eq!(journal.head().unwrap().unwrap().position(), 2);
         assert_eq!(journal.read(1, 1 << 20).unwrap().bytes(), original);
         assert_eq!(

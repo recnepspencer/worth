@@ -11,6 +11,26 @@ use crate::physical_runtime::{
 };
 
 impl OrderedJournal<'_> {
+    /// Describe one exact position from this original protected reader.
+    /// Reader affinity is checked before I/O; the original request is checked
+    /// even when the position is absent. This funded header lookup does not
+    /// read/verify the complete payload and issues no verified-byte capability.
+    /// Physical identities and frames remain bound to the reader's selected root.
+    pub fn describe_entry_from(
+        &self,
+        reader: &PhysicalRecordReader,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        position: u64,
+    ) -> Result<OrderedJournalEntry, OrderedJournalReadFailure> {
+        if !reader.belongs_to(self.runtime) {
+            return Err(OrderedJournalReadFailure::ForeignReader);
+        }
+        request.check_live().map_err(|stop| {
+            OrderedJournalReadFailure::Execution(worth_execution::WorkCeilingDenial::Stopped(stop))
+        })?;
+        self.locate_header(reader, position, Some(request))
+    }
+
     /// The newest durable entry, or `None` for an empty journal.
     pub fn head(&self) -> Result<Option<OrderedJournalEntry>, OrderedJournalReadFailure> {
         let reader = self.reader()?;

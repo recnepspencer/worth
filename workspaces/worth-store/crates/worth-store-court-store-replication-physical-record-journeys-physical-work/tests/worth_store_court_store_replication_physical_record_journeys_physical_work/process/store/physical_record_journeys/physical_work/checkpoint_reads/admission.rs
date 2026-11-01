@@ -60,6 +60,10 @@ fn checkpoint_reader_and_streams_refuse_busy_foreign_limits_and_original_stop() 
         journal.open_payload_from(&foreign_reader, &request, 1, 1 << 20),
         Err(OrderedJournalReadFailure::ForeignReader)
     ));
+    assert!(matches!(
+        journal.describe_entry_from(&foreign_reader, &request, 1),
+        Err(OrderedJournalReadFailure::ForeignReader)
+    ));
     assert_eq!(
         serving.media_counters(),
         before,
@@ -123,6 +127,15 @@ fn checkpoint_reader_and_streams_refuse_busy_foreign_limits_and_original_stop() 
     assert_eq!(anchor_stream.read_next(&mut [0; 7]).unwrap(), 7);
     assert_eq!(journal_stream.read_next(&mut [0; 7]).unwrap(), 7);
     cancellation.cancel();
+    let empty_journal = foreign
+        .ordered_journal(OrderedJournalName::new(JOURNALS[0]).unwrap())
+        .unwrap();
+    let before_absence = foreign.media_counters();
+    assert!(matches!(
+        empty_journal.describe_entry_from(&foreign_reader, &request, 1),
+        Err(OrderedJournalReadFailure::Execution(_))
+    ));
+    assert_eq!(foreign.media_counters(), before_absence);
     assert!(matches!(
         serving.try_records_for_checkpoint(&request),
         Err(PhysicalCheckpointReadProtectionDenial::Request(_))

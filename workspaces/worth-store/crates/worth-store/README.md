@@ -39,7 +39,9 @@ installation. Existing reader construction still allocates its read-source Arc;
 this is no hard wall-clock or allocation-free guarantee.
 
 `AnchoredRecords::open_payload_from` and `OrderedJournal::open_payload_from`
-read through that exact protected reader. Their streams retain the original
+read through that exact protected reader. `describe_entry_from` provides an
+original-request-funded journal header description without consuming the full
+payload; this is metadata, not verified payload evidence. Their streams retain the original
 request, copy at most 64 KiB per call, and latch any refusal. Header coordinates
 are descriptive until verified EOF. Anchor EOF validates the complete anchor
 record, member table and payload; journal EOF validates the target payload and,
