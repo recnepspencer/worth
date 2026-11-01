@@ -873,13 +873,17 @@ publication ports. Admit and issue the original v4 frame there, before route,
 head or position publication. Request/allocation/encoding refusal preserves the
 original prepared state and leaves those effects absent.
 
-Retain that actual frame in the SAME Memory residency cell, replacing its old
-unpositioned byte backing rather than retaining a second canonical payload copy.
-Existing body-byte and body-digest observations use the canonical subrange of
-that same frame. Keep the positioned artifact-payload digest distinct. A narrow
-private canonical byte view may retain the existing immutable byte owner and
-range; expose no bare funded extraction, new ownership mode or generic framework.
-Admit actual old/new construction overlap and report the transient cost honestly.
+Retain that actual frame in the SAME Memory residency cell. Production observes
+only the old unpositioned tuple's byte count and digest, not its raw bytes. Obtain
+those same scalar observations by streaming the existing authoritative-payload
+writer into a checked count/SHA sink during preparation; remove the unused
+retained tuple allocation. Keep encode_authoritative_payload byte-exact for root
+visibility and its explicit callers. Its tuple grammar differs from the v4 named
+map, so neither a frame slice nor a renamed map can impersonate the old bytes.
+Keep that tuple digest distinct from the positioned artifact-payload digest.
+The original frame is the sole retained byte allocation for this Memory export;
+expose no bare funded extraction, ownership mode or generic byte framework.
+Admit actual construction overlap and report transient and inline costs honestly.
 
 The destination updates mvcc/publication/port_cutover.rs, the existing canonical
 performed-stream/publication owners, medium/commit publication, canonical artifact
