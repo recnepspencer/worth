@@ -295,6 +295,11 @@ release/continuation dispositions and actual Native release evidence; and all
 identity maxima. Enumerate these fields against the actual associated-effect
 reconciler before source implementation. Live catalog reclamation does not
 authorize omission of historical opens, associations or dispositions.
+Preserve an original Owner record only if one exists: production bootstrap
+currently publishes Branch directly. Do not synthesize an Owner row or infer
+journal coverage from the number of normalized branch origins. Preserve current
+multi-branch/Continued readmission refusals until their owning support lands;
+capturing their meaning does not admit unsupported service.
 
 Capture folds the SAME selected World image and only its uncovered tails into
 this state. Without a selected World image, initial capture validates the
@@ -335,6 +340,86 @@ World journal-frame ceiling. Check lengths/counts/arithmetic against remaining
 input and the original request before allocation. Fund retained maps/buffers
 and poll during encoding/decoding. Limit refusal preserves prior selection and
 all journals; it never prunes history to make a checkpoint fit.
+
+### Native historical-root reconstruction prerequisite
+
+The current Native capture selects current cells and actual external component
+holds. Its commit catalog stores root descriptions, basis indexes are Weak, and
+recovered roots become Weak after readmission. Legal process-local reclamation
+can therefore leave a World historical component with neither a live Native
+root nor a root image in the selected Native checkpoint. The retained-body
+export repair alone does not preserve that root. Copying all World descriptions
+into a checkpoint would still lose executable history.
+
+The coupled Home path requires a distinct Native complete-source-history
+capture operation. Existing standalone Native capture keeps its contract and
+ordinary cost. Do not introduce a history-policy mode enum, persistent pin
+registry, second serving runtime, or a second recovery/selection authority.
+
+Under the existing Native capture gate, first freeze the ORIGINAL
+`CapturedCheckpointBasis`, canonical/transition coverage, source affinities and
+expected source artifact metadata. Retain a protected immutable source prefix
+for that same cut, then release guards before reconstruction. Use actual
+canonical and transition records from position one through that cut when prior
+checkpoint roots are insufficient. Admit source framing, continuity, schemas
+and complete authoritative meaning through existing owner recovery admission.
+Legacy `encode_authoritative_payload` tuple parity omits association, semantic
+result, symbol texts and codec retirements; it cannot substitute for the full
+Artifact projection agreement required here.
+
+Use existing Native recovery/rebuild/root-inventory mechanics in an owner-local
+unshared checkpoint reconstruction workspace with NO durable medium and NO
+service/publication exposure. Never call `recover_with_authority`, detach or
+move the actual Home medium, install reconstructed live branch cells, or mint
+external observations from caller descriptions. Preserve the source-produced
+canonical/transition order. Extract actual roots, schema ownership and canonical
+observations while `RecoveredRootInventory` still owns Reconstructing roots,
+before its Weak downgrade. Merge those images into the ORIGINAL frozen captured
+basis after validating full source/receipt/position/root/schema agreement.
+Process-local Arc pointer equality cannot decide equivalence between two
+authentic reconstructions. Later live commits cannot move the captured cut.
+
+Retain ALL actual source-produced root observations through that Native cut,
+including Empty origins. Only preserving references found in the earlier World
+image is insufficient: World can publish between its cut and Native capture,
+and those legitimate occurrences arrive through uncovered World tails. No
+prior-checkpoint-only fallback may silently omit a requested historical root.
+Actual reconstructed roots and region/member protection, rather than copied
+descriptors, survive transfer into the prepared Native section and shared Home
+attempt until selection/acknowledgement completes.
+
+This is reconstructive work with worst-case O(the full admitted Native prefix
+plus its retained roots and encoded images) cost per coupled capture. It grants
+no ordinary-serving replay permission or constant-work/whole-heap claim. The
+original journals remain available until M4 retention authorizes reclamation.
+The image-size limit may refuse capture; no incomplete-history checkpoint may
+be selected to hide that refusal.
+
+Fund the checkpoint reconstruction workspace from the SAME original request.
+Existing reconstruction deep-clones pending tails, creates unfunded ID sets,
+root/descriptor/route collections, and stages replay intents with
+`SystemAllocation`. Its current allocation-observation inventory serializes
+some fields and saturates sums; it is not a preallocation quote. Repair the
+invoked path: avoid unnecessary clones, fund source buffers and collection
+growth before allocation, use checked owner quotes for retained
+intent/descriptor/schema backing, stage with the original allocation policy,
+and carry genuine backing grants with the actual captured roots. Reuse existing
+Execution ordered/array backing where it fits; add no general allocator or byte
+ledger. Raw `rmp_serde::from_slice` does not establish nested allocation funding:
+the invoked decode admission must have a checked funded path too. The 1 GiB
+wire/read limit is not a reconstruction heap budget. Refusal or stop before Home
+publication preserves prior selection and the actual live runtime.
+
+The decisive Native prerequisite court legally releases observations and
+reclaims old live roots/history metadata BEFORE coupled capture. A fresh
+process must then recover historical values and World publication meaning from
+the selected actual root images plus nonempty tails, without reading covered
+journal history, replaying handlers, publishing canonical work, moving a current
+head, or manufacturing receipt authority. Include a World publication between
+the World and Native cuts. Exact root/image/member observations must convict
+descriptor-only or earlier-World-reference-only implementations. Independent
+Native boundary review must close reconstruction/source/funding/transfer
+contracts before this prerequisite receives Source GO.
 
 ### Source cut, one selection and acknowledgement
 
@@ -489,6 +574,11 @@ worth-query-execution/.../request_execution/advancement/installed_completion.rs
   [create mandatory installed-operation completion]
 worth-execution/src/authority/request/native_completion.rs
   [create native effectful completion; preserve existing scope/report owner]
+worth-relational/src/durability/authority/checkpoint_history/
+  source.rs, reconstruction.rs, funding.rs, transfer.rs
+  [create complete-source-history operation at existing Native capture owner]
+worth-relational/src/durability/authority/checkpoint_capture.rs
+  [revise original frozen capture handoff; standalone contract preserved]
 ```
 
 World alone owns image meaning/admission. Store alone owns journal metadata,
