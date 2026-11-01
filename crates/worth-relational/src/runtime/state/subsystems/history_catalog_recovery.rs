@@ -8,6 +8,9 @@ use crate::history::RelationalCommitCatalog;
 
 use super::HistorySubsystem;
 
+#[path = "history_catalog_recovery/source_binding.rs"]
+mod source_binding;
+
 impl HistorySubsystem {
     pub(crate) fn install_recovered_canonical_inventory(
         &mut self,

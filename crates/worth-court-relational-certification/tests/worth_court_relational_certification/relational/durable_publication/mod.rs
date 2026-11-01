@@ -5,6 +5,7 @@ mod initial_schema_recovery;
 mod recorded_basis;
 mod recorded_component_checkpoint;
 mod recorded_component_recovery;
+mod recorded_component_validation;
 mod recovered_associated_effects;
 mod recovered_publication;
 mod result_snapshot_cleanup;

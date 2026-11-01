@@ -14,6 +14,9 @@ use super::patch_position_reservation::{
 use super::{CanonicalPublicationRecordError, CanonicalPublicationRoute};
 use crate::durability::medium::{RelationalCommitPublication, RelationalDurableMediumBinding};
 
+#[path = "performed_stream/recovered_source.rs"]
+mod recovered_source;
+
 #[derive(Default)]
 pub(super) struct PerformedPublicationStream {
     head: ArcSwapOption<PerformedPublicationNode>,

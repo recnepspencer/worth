@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{HistoryDriftClass, VersionNode};
@@ -13,6 +11,7 @@ pub(super) fn apply_authoritative_commit_artifacts(
     allow_reconstructed_replacement: bool,
     advance_branch_currentness: bool,
 ) -> Result<(), DurabilityError> {
+    super::unshared_state(runtime)?;
     let envelope = positioned.envelope();
     let index_artifacts = admit_envelope_derived_index_artifacts(envelope)?;
     let history_before = runtime
@@ -64,37 +63,19 @@ pub(super) fn apply_authoritative_commit_artifacts(
             commit: envelope.commit.clone(),
         },
     );
-    let canonical = runtime
-        .history
-        .recorded_commit_envelope(envelope.commit.commit_id)
-        .unwrap_or_else(|| Arc::clone(positioned.canonical_arc()));
-    let resident = Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
-        canonical.clone(),
-        canonical
-            .encode_authoritative_payload()
-            .map(Arc::from)
-            .map_err(|error| {
-                DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, error.to_string())
-            })?,
-    ));
-    resident.bind_performed(positioned, None);
-    runtime.history.with_ledger_mut(|ledger| {
-        ledger
-            .commit_envelopes
-            .insert(envelope.commit.commit_id, resident);
-        ledger
-            .patch_stream_index
-            .insert(positioned.position(), envelope.commit.commit_id);
-    });
-    let result = runtime
-        .history
-        .record_recovered_commit(
+    let symbols = runtime.services.symbols.interner_snapshot();
+    let result = (|| {
+        let canonical = runtime
+            .history
+            .synchronize_recovered_source_commit(positioned, &symbols)?;
+        runtime.history.record_recovered_commit(
             canonical.as_ref(),
             allow_reconstructed_replacement,
             advance_branch_currentness,
-            &runtime.services.symbols.interner_snapshot(),
+            &symbols,
         )
-        .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail));
+    })()
+    .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail));
     if let Err(error) = result {
         super::unshared_state(runtime)?
             .history
@@ -102,20 +83,6 @@ pub(super) fn apply_authoritative_commit_artifacts(
         return Err(error);
     }
 
-    let artifact = runtime
-        .history
-        .commit_artifact(envelope.commit.commit_id)
-        .ok_or_else(|| {
-            DurabilityError::new(
-                RecoveryFailureClass::CorruptCheckpoint,
-                "readmitted canonical commit has no catalog entry",
-            )
-        })?;
-    runtime.history.with_ledger_mut(|ledger| {
-        ledger
-            .commit_envelopes
-            .insert(envelope.commit.commit_id, artifact.envelope_residency());
-    });
     index_artifacts.install(runtime);
     Ok(())
 }

@@ -26,6 +26,8 @@ mod pending_settlement;
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
 mod position_admission;
+#[path = "canonical_publication_routes/recovered_source.rs"]
+mod recovered_source;
 pub(crate) use authored_writes::commit_denial as authored_write_commit_denial;
 pub(crate) use authored_writes::AuthoredWriteGeneration;
 #[path = "canonical_publication_routes/position_retention.rs"]
@@ -141,24 +143,9 @@ impl RelationalCanonicalPublicationRoutes {
         envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         roots: crate::branch::RelationalBranchRootDescriptor,
     ) -> Result<(), &'static str> {
-        let canonical = envelope
-            .get()
-            .ok_or("recovered route has no admitted resident body")?;
-        let positioned = Arc::new(PositionedCanonicalCommit::admit(
-            position_admission::CanonicalPositionAdmission::equivalent(&positioned, canonical)?,
-        ));
+        let (positioned, route) = recovered_source::prepare_route(positioned, envelope, roots)?;
         let installs_version_route = positioned.envelope().authority_kind()
             != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
-        envelope.bind_performed(&positioned, None);
-        let route = Arc::new(CanonicalPublicationRoute {
-            envelope,
-            commit: positioned.commit.clone(),
-            roots,
-            handoff: Mutex::new(None),
-            performed_position: AtomicU64::new(0),
-            performed: AtomicBool::new(true),
-            settled: AtomicBool::new(true),
-        });
         if self
             .by_commit
             .insert(positioned.envelope().commit.commit_id, Arc::clone(&route))

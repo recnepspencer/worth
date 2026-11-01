@@ -107,10 +107,17 @@ impl RelationalCommitCatalog {
             }
         }
         let artifact = match self.entries.get(&commit_id) {
-            Some(existing) => RelationalCommitArtifact::from_envelope_with_descriptor(
-                envelope,
-                existing.roots().clone(),
-            )?,
+            Some(existing) => match existing.envelope_residency().journal_placement() {
+                Some((entry, source)) => RelationalCommitArtifact::from_index(
+                    entry.as_ref().clone(),
+                    source,
+                    Some(positioned.clone()),
+                )?,
+                None => RelationalCommitArtifact::from_envelope_with_descriptor(
+                    envelope,
+                    existing.roots().clone(),
+                )?,
+            },
             None => RelationalCommitArtifact::from_envelope(envelope)?,
         };
         self.materializations.fetch_add(1, Ordering::Relaxed);

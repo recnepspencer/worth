@@ -211,6 +211,13 @@ payload; resident canonical Arc identity remains the constant-time acceptance
 path. A failed source demand returns a source refusal, without substituting the
 current head or retaining every journal body permanently.
 
+Recovery binds each reconstructed current root to the authenticated original
+canonical envelope before recording it as a historical image. Original
+validation is retained from that source, without rerunning its executor. Replay
+private completeness survives only the catalog's existing full authoritative
+payload equivalence; it is not transferred to a different original validation
+result. Recorded-component admission checks that same complete artifact payload.
+
 ## Retire one provider member-custody share
 
 `RelationalDurableMemberCustody::new_from_source(owner, issuing_weak_source)`

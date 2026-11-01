@@ -44,11 +44,12 @@ impl RelationalRuntime {
             FoundationalBranchTarget::Empty => RecordedRelationalComponentTarget::Empty,
             FoundationalBranchTarget::Basis(target) => {
                 let commit_id = crate::history::data::CommitId(target.selected_commit_id());
-                let artifact = self
+                let cell = self
                     .history
                     .commit_artifact(commit_id)
+                    .map(|artifact| artifact.envelope_residency())
+                    .or_else(|| self.history.performed_envelope_residency(commit_id))
                     .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
-                let cell = artifact.envelope_residency();
                 let positioned = cell
                     .demand_positioned(execution, 1 << 30)
                     .map_err(Refusal::Source)?;

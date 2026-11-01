@@ -103,21 +103,11 @@ impl RecoveredRelationalRuntimeAuthority {
                         1 << 30,
                     )
                     .map_err(|cause| refused(Cause::Source(cause)))?;
-                let encoded_source =
-                    admitted
-                        .envelope()
-                        .encode_authoritative_payload()
-                        .map_err(|cause| {
-                            refused(Cause::CanonicalEncoding {
-                                detail: cause.to_string(),
-                            })
-                        })?;
-                let encoded_root = envelope.encode_authoritative_payload().map_err(|cause| {
-                    refused(Cause::CanonicalEncoding {
-                        detail: cause.to_string(),
-                    })
-                })?;
-                if encoded_source != encoded_root {
+                if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload(
+                    &admitted, envelope,
+                ).map_err(|cause| refused(Cause::CanonicalEncoding {
+                    detail: cause.to_string(),
+                }))? {
                     return Err(refused(Cause::RecordedTargetMismatch));
                 }
             }
