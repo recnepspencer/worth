@@ -270,6 +270,19 @@ Freeze the following construction boundary:
   operation. Remove current-head lookup from Directory Home attachment; keep
   existing unrelated Memory construction behavior.
 
+The source-at-basis operation validates and retains the supplied observation
+through the existing Native snapshot operation; it MUST NOT rebind Bridge's
+truth head. Otherwise it could mask a preflight that still binds latest Native.
+The existing Store native_artifacts court independently retains the actual
+source from query_composition_parts and calls the existing Bridge
+TruthBranchHeadSource::load_branch_head_patch. Compare its actual envelope
+version with the selected World's admitted observation and immutable receipt;
+separately assert later unassociated Native truth has value 9 while World
+service reads 8. Those are values, not hardcoded version IDs. Existing
+attachment issued_from checks independently convict a wrong source basis.
+Root may add worth-runtime-bridge only to this existing Store-court leaf to
+name the existing trait; no reexport, raw getter or test port is introduced.
+
 The one new Native Query entity is `worth-query-bootstrap-publication`, aspect
 `bootstrap-publication`, contract revision 1. Required fields are
 `format-version: UInt64` (exactly 1), `binding: String`,
@@ -343,7 +356,19 @@ existing bounded entity scan and cumulative original request. Validate exact
 field/intent shape, unique keys, unique nonzero outcome identities, checked
 effect counts and actual immutable creation receipts. Extend the existing
 `application_attempt/idempotency/recorded_intent.rs` owner decoder rather than
-add another grammar. Restore each actual outcome through the existing identity
+add another grammar. The existing intent
+owner's shape validator must require its actual lowercase root digest and
+ordered source, operation, scope, precondition, input, proposal and
+conditional-definition slots. Digest values are '-' or 64 lowercase hex;
+scope is '-', 192 hex for the current encoding, or the existing legacy
+240-hex form. Optional suffixes remain in encoder order: workflow-definition,
+workflow-instance, workflow-proposal-context, workflow-captured-inputs,
+workflow-transition, workflow-support, workflow-client-key, workflow-approval,
+mutation-binding, correction. Reject duplicates, unknown keys, reordered or
+trailing data. Reuse the same borrowed validation in comparison and recovery,
+without reserialization. Legacy shape admission does not grant verifiable
+operation equality; preserve its existing RecordedIntentUnverifiable behavior.
+Restore each actual outcome through the existing identity
 frontier operation before any new outcome may be minted. Zero and MAX refuse;
 MAX-1 leaves the next mint honestly exhausted. A partially advanced allocator
 frontier grants no service. This is a bounded full recovery scan, with typed
