@@ -135,6 +135,67 @@ context, formatting and line-cap gates before integration. No full D11, Bridge
 source, Directory Native-close or physical inertness claim follows from this
 prerequisite alone.
 
+## Bridge observation and branch-head lease retirement prerequisite
+
+Consume the actual RelationalBridgeObservationLease or
+RelationalBridgeBranchHeadLease into its non-Clone retirement task. advance
+borrows the original ExecutionRequest and concrete RuntimeBridgeRelationalSource;
+into_retired returns opaque original custody or the same unfinished task. Use
+one owner-local RelationalBridgeBasisRetirementProgress contract with Advanced,
+Busy, Stopped, Refused and Complete; refusal distinguishes foreign source,
+registration/commit-index mismatch and original Native refusal. Final reclaim or
+abandonment is unbudgeted. Completed tasks perform no further poll or effect.
+
+Every live advance compares the original bindings Arcs with the borrowed source
+before effects. Head tasks verify BOTH head and observation issuers before their
+first effect and on later live advances. Match head binding ID AND its original
+snapshot identity: a missing or different tuple is locally detached, preserves
+its successor, and still retires this lease's own observation. Abandonment after
+a partial/foreign/Busy refusal must also remove only this original tuple, never
+a successor; do not accidentally route that task's cleanup through scalar-only
+matching. Existing ordinary public release retains its unbudgeted contract.
+
+Observation removal uses typed original snapshot/version parts without parser
+error allocation. Validate its actual retained Native subject and matching
+by-commit membership under the original observation try-lock, then consult the
+original request before removal. A missing original observation row before this
+task's recorded removal is RegistrationMismatch: authentic non-Clone issuance
+has no supported concurrent prune or replacement path. Shared runtime handles
+cache their original Native runtime ID, and the sole observation insertion caller
+checks the actual runtime against it before issuance; a swapped fresh runtime
+cannot insert reused IDs into the same source. Add no duplicate runtime-ID field,
+identity token, counter, allocator, registry or ownership-policy mode.
+
+Use remove_entry to move original branch keys, bindings and snapshot rows;
+BTreeSet::take removes the actual snapshot ID. Retain a removed empty commit
+set, original metadata payloads and registry Arcs in the same task. Disarm the
+ordinary lease cleanup and record the committed stage before another poll.
+Release EVERY Bridge guard before entering the existing Native retained-
+observation task. No replacement ownership allocation, key/descriptor clone,
+clear, drain or whole-index scan is permitted. Tree point removal is O(log n)
+and may free fixed control nodes while rebalancing; it is neither O(1) nor zero
+deallocation. Preserve all actual payload/grant custody until unbudgeted reclaim.
+
+Place tasks under runtime_source/observation_bindings/retirement.rs and
+branch_head_bindings/retirement.rs, with a narrow basis-retirement progress
+contract and existing explicit facade exports. Use an exact retirement child
+of the existing bridge_snapshot_reader_tests court for genuine source/native
+fixtures and original request inputs; owner-private cfg(test) assertions may
+hold actual gates/indexes without exposing a production gate or constructing
+hidden SDK/runtime roots. Root records only mechanically observed exact test
+classes and named private helper/caller pairs, with no family-wide exemption.
+
+Prove actual lock Busy/retry, original stop between committed stages, foreign
+sources sharing one Native runtime, superseded-head preservation, commit-index
+consistency and deferred reclaim. An already-open reader must still read its
+old packet after registration retirement while new opens refuse. Separately,
+a genuine observation alias must cause Native ReadCustodyRetained AFTER original
+Runtime Arc unwrap succeeds and the same refused runtime must remain usable;
+outer Arc sharing is not that oracle. Retained-snapshot reader retirement remains
+unsupported because its RuntimePublicationSnapshotReader owns an operational
+RelationalRuntimeHandle. These lease ports do not retire that handle, prove full
+Native root/publication-cell inertness, or establish whole Host D11.
+
 ## Cold member custody retirement prerequisite
 
 This prerequisite retires one actual source-issued registration, or one local
