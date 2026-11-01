@@ -193,6 +193,14 @@ preserve catalog/history meaning without acquiring another runtime's durable
 publication authority. Definition admission precedes genuine owner-derived
 generation build/demand; no generation image is invented as authoritative data.
 
+The current ordinary schema-transition admission requires identical executable
+kind contracts. Its real courtroom may exercise sibling schema versions and
+globally registered untouched/nonapplicable definitions, preserving their
+actual IDs. Do not invent differing executable contracts or another transition
+authority to stage this case. Absence of per-branch catalog filtering is also
+reviewed at its actual owner; no distinct-executable-schema runtime proof is
+claimed here. Full future transition support remains D16 work.
+
 Make the delta required in Full, Authoritative and Checkpoint envelope
 projections, including embedded checkpoint-envelope serialization. Cut over Native
 artifact v3 to v4 and Native checkpoint CHK16 to CHK17; older development
