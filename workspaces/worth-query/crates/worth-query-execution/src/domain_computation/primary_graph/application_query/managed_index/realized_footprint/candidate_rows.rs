@@ -74,6 +74,9 @@ impl CapturedCandidateRows {
         other: &Self,
         whole_source: bool,
         checkpoint: &mut dyn FnMut(u64) -> bool,
+        scratch: &mut crate::domain_computation::primary_graph::application_query::ContentScratch<
+            '_,
+        >,
     ) -> bool {
         if self.owner != other.owner
             || self.content != other.content
@@ -90,13 +93,21 @@ impl CapturedCandidateRows {
                     && !Arc::ptr_eq(&left.body, &right.body)
                     && !left
                         .body
-                        .same_content(&right.body, &mut |work| {
-                            if checkpoint(work) {
-                                Ok(())
-                            } else {
-                                Err(())
-                            }
-                        })
+                        .same_content(
+                            &right.body,
+                            &mut |work| {
+                                if checkpoint(work) {
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
+                            },
+                            scratch.reserve,
+                            &mut |cause| {
+                                (scratch.fault)(cause);
+                                ()
+                            },
+                        )
                         .unwrap_or(false))
             {
                 return false;
@@ -151,7 +162,15 @@ impl CapturedCandidateRows {
                 if original.body.content(control)? != current.content(control)?
                     || !original
                         .body
-                        .same_content(current, &mut |work| control.checkpoint(work))?
+                        .same_content(current, &mut |work| control.checkpoint(work),
+                            &mut |bytes| control.reserve_content_memory(bytes),
+                            &mut |cause| {
+                                use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
+                                control.refuse(match cause {
+                                    Fault::CapacityOverflow => Stop::CapacityOverflow,
+                                    Fault::AllocationFailed => Stop::MaterialStorage(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed),
+                                })
+                            })?
                 {
                     return Ok(false);
                 }

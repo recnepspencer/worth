@@ -231,9 +231,12 @@ fn retained_observation(
     ) = (fact.as_ref(), source.as_ref())
     {
         let equal = first
-            .same_truth(second, &mut |units| {
-                SourceFactsAllocation::work(execution, units)
-            })
+            .same_truth(
+                second,
+                &mut |units| SourceFactsAllocation::work(execution, units),
+                &mut |bytes| execution.reserve_retained_memory(bytes).map_err(Into::into),
+                &mut |cause| cause.into_native(),
+            )
             .map_err(|cause| {
                 SelfDenial::relational_read_stopped(cause, "managed fact role merge")
                     .into_decision_read_set_failure()

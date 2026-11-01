@@ -35,6 +35,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     pub(super) row: Tree,
     pub(super) dependencies: BTreeSet<ViewDependency>,
     pub(super) content: std::sync::OnceLock<[u8; 32]>,
+    pub(super) comparison_depth: usize,
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl Entry {
@@ -166,6 +167,17 @@ pub(super) fn project(
             .into_disclosed(&WorthQueryApplicationQueryGovernance::Public),
         dependencies: projector.dependencies,
         content: std::sync::OnceLock::new(),
+        comparison_depth: if program
+            .projection_routes()
+            .iter()
+            .any(|route| route.parent_route().is_some())
+        {
+            program.projection_routes().len().checked_add(1).ok_or(
+                DerivedRelationReadDenial::Definition(DerivedRelationDenial::InvalidExpression),
+            )?
+        } else {
+            2
+        },
         _allocation: projector.allocation,
     })
 }

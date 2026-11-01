@@ -10,6 +10,7 @@ pub struct WorthQueryManagedIndexControl<'a> {
         Option<&worth_relational::facade::runtime::CustomInvariantReadBudget<'_>>,
     ) -> Result<(), Stop>,
     poll: &'a dyn Fn() -> Result<(), MapKernelStop>,
+    reserve: &'a dyn Fn(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, Stop>,
     first: &'a RefCell<Option<Stop>>,
     source: Option<&'a worth_relational::facade::runtime::CustomInvariantReadBudget<'a>>,
 }
@@ -22,10 +23,15 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
         ) -> Result<(), Stop>,
         poll: &'a dyn Fn() -> Result<(), MapKernelStop>,
         first: &'a RefCell<Option<Stop>>,
+        reserve: &'a dyn Fn(
+            u64,
+        )
+            -> Result<Option<worth_execution::ExecutionMemoryReservation>, Stop>,
     ) -> Self {
         Self {
             checkpoint,
             poll,
+            reserve,
             first,
             source: None,
         }
@@ -52,9 +58,18 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
         WorthQueryManagedIndexControl {
             checkpoint: self.checkpoint,
             poll: self.poll,
+            reserve: self.reserve,
             first: self.first,
             source: Some(source),
         }
+    }
+
+    pub(super) fn reserve_content_memory(
+        &self,
+        bytes: u64,
+    ) -> Result<Option<worth_execution::ExecutionMemoryReservation>, Stop> {
+        self.poll()?;
+        (self.reserve)(bytes).map_err(|cause| self.refuse(cause))
     }
 
     pub(super) fn check(&self) -> Result<(), Stop> {

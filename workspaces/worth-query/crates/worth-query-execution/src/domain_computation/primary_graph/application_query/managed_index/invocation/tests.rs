@@ -101,3 +101,52 @@ fn managed_decoder_preserves_first_refusal_and_distinct_outer_request_stop() {
         Stop::Request(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
     );
 }
+
+#[test]
+fn original_content_reservation_keeps_its_payer_and_first_memory_or_cancel_refusal() {
+    use worth_execution::{LeaseDenial, SerialMemoryBudget};
+    let cancel = CancellationSource::new();
+    // The finite original ceiling funds framework entry plus the requested hold.
+    let ceiling = 4096;
+    let memory = SerialMemoryBudget::new(Some(ceiling));
+    let storage = SerialRequest::from_memory(memory.clone(), cancel.token(), None);
+    let execution = ExecutionRequest::serial(&storage);
+    let held = controlled(
+        &execution,
+        |control| Ok(control.reserve_content_memory(64)?),
+    )
+    .unwrap()
+    .expect("actual accounted original reservation");
+    assert_eq!(memory.charged_memory_bytes(), 64);
+    drop(held);
+    assert_eq!(memory.charged_memory_bytes(), 0);
+
+    let expected = RefCell::new(None);
+    let result = controlled(&execution, |control| {
+        let first = control.reserve_content_memory(ceiling + 1).unwrap_err();
+        assert!(matches!(
+            first,
+            Stop::Request(WorkCeilingDenial::Admission(LeaseDenial::MemoryExhausted(
+                _
+            )))
+        ));
+        assert_eq!(control.reserve_content_memory(1).unwrap_err(), first);
+        *expected.borrow_mut() = Some(first);
+        Ok(()) // original memory refusal cannot be swallowed by the caller
+    });
+    assert_eq!(controlled_cause(result), expected.into_inner().unwrap());
+    assert_eq!(memory.charged_memory_bytes(), 0);
+
+    let cancel = CancellationSource::new();
+    let storage = backing(&cancel);
+    let execution = ExecutionRequest::serial(&storage);
+    let result = controlled(&execution, |control| {
+        cancel.cancel();
+        assert!(control.reserve_content_memory(1).is_err());
+        Ok(())
+    });
+    assert_eq!(
+        controlled_cause(result),
+        Stop::Request(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
+    );
+}

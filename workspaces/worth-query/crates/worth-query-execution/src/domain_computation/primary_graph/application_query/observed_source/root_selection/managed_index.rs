@@ -114,7 +114,13 @@ impl DeclaredManagedIndexSelection {
             &other.dependencies.maintained,
         ) {
             (None, None) => {}
-            (Some(left), Some(right)) if left.same_truth(right, admit)? => {}
+            (Some(left), Some(right))
+                if left.same_truth(
+                    right,
+                    admit,
+                    &mut |bytes| execution.reserve_retained_memory(bytes).map_err(Into::into),
+                    &mut |cause| cause.into_native(),
+                )? => {}
             _ => return Ok(false),
         }
         if self.access.graph_obligations().identity() != other.access.graph_obligations().identity()

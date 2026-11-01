@@ -61,6 +61,9 @@ impl Entry {
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
+        reserve: &mut (impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>
+                  + ?Sized),
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault) -> E,
     ) -> Result<bool, E> {
         admit(65)?;
         if self.occurrence != other.occurrence
@@ -76,7 +79,14 @@ impl Entry {
                 return Ok(false);
             }
         }
-        self.row.same_one_hop_content(&other.row, admit)
+        self.row.same_source_content(
+            &other.row,
+            self.comparison_depth,
+            other.comparison_depth,
+            admit,
+            reserve,
+            fault,
+        )
     }
 }
 

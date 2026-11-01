@@ -2654,3 +2654,22 @@ materialization/content/equality/footprint receivers are qualified in the next
 batch. Ordered event membership, real private profile/admission/sharing and the
 integrated SDK/contact/scale/full-gate handoff remain open. This prerequisite
 closes neither Phase6 nor milestone9.19 and changes no SDK pin.
+
+
+### Phase6 Query retained-content equality prerequisite (2026-11-01)
+
+The first part of the [Query receiving plan](milestone-9.19-phase6-query-nested-projection-plan.md)
+now carries original work, reservation and physical-fault custody through all four
+actual retained-content comparison caller families. One first-error bridge prevents
+swallowed refusal from becoming equality or mismatch. Existing one-hop profiles
+keep their allocation-free comparer and unchanged Entry v1 bytes; finite deep raw
+representation equality preserves every descendant's exact provenance. Original
+memory, cancellation and typed physical-allocation classification are qualified.
+
+Fresh39 owner cases and91 bounded managed consumer cases pass. The
+[equality evidence](milestone-9.19-phase6-query-content-equality-evidence.md) records
+scope, failed iterations, fixed existing fixture mounts and unrun growth lanes.
+Installed nested Source lowering/materialization/content/footprint acceptance,
+the ordinary nested text composition and all private CAD adoption/contact/scale/
+full-gate obligations remain open. Phase6 and milestone9.19 remain incomplete;
+this prerequisite changes no SDK pin or application build root.

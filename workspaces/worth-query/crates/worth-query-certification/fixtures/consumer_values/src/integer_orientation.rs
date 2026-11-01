@@ -48,4 +48,5 @@ fn signed_product(a: i128, b: i128) -> (bool, u128) {
 }
 
 #[cfg(test)]
+#[path = "integer_orientation/tests.rs"]
 mod tests;

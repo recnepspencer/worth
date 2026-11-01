@@ -92,7 +92,16 @@ impl Fact {
                 let equal = first.same_truth(&second, &mut |units| {
                     crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(&execution, units)
                         .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
-                })?;
+                }, &mut |bytes| execution.reserve_retained_memory(bytes)
+                    .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest),
+                    &mut |cause| {
+                        use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
+                        use super::super::retained_decision_facts::StoreDenial;
+                        match cause {
+                            Fault::CapacityOverflow => StoreDenial::Representability,
+                            Fault::AllocationFailed => StoreDenial::PhysicalAllocation,
+                        }
+                    })?;
                 control.check_live()?;
                 Ok(equal)
             }

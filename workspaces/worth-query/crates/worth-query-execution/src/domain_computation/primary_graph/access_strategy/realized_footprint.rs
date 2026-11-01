@@ -14,9 +14,10 @@ use worth_relational::facade::{
 };
 
 /// Which already captured descriptive evidence the caller compares.
-#[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum CapturedInfluenceComparison {
-    Content,
+pub(in crate::domain_computation::primary_graph) enum CapturedInfluenceComparison<'a, 'b> {
+    Content(
+        &'a mut crate::domain_computation::primary_graph::application_query::ContentScratch<'b>,
+    ),
     SelectedMembership,
 }
 
@@ -31,7 +32,7 @@ pub(in crate::domain_computation::primary_graph) trait RetainedManagedInfluence:
     fn same_inputs(
         &self,
         other: &dyn RetainedManagedInfluence,
-        purpose: CapturedInfluenceComparison,
+        purpose: CapturedInfluenceComparison<'_, '_>,
         checkpoint: &mut dyn FnMut(u64) -> bool,
     ) -> bool;
     fn history_selector(
@@ -106,24 +107,31 @@ impl CapturedManagedInfluence {
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
+        reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault) -> E,
     ) -> Result<bool, E> {
-        self.compare(other, CapturedInfluenceComparison::Content, admit)
+        admit(self.comparison_work())?;
+        admit(other.comparison_work())?;
+        comparison::with_resources(admit, reserve, fault, &mut |checkpoint, scratch| {
+            self.authority.admits(&other.proof)
+                && other.authority.admits(&self.proof)
+                && self.support.same_inputs(
+                    other.support.as_ref(),
+                    CapturedInfluenceComparison::Content(scratch),
+                    checkpoint,
+                )
+        })
     }
     pub(in crate::domain_computation::primary_graph) fn same_selected_membership<E>(
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
     ) -> Result<bool, E> {
-        self.compare(
-            other,
-            CapturedInfluenceComparison::SelectedMembership,
-            admit,
-        )
+        self.compare(other, admit)
     }
     fn compare<E>(
         &self,
         other: &Self,
-        purpose: CapturedInfluenceComparison,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
     ) -> Result<bool, E> {
         admit(self.comparison_work())?;
@@ -131,9 +139,11 @@ impl CapturedManagedInfluence {
         comparison::with_checkpoint(admit, &mut |checkpoint| {
             self.authority.admits(&other.proof)
                 && other.authority.admits(&self.proof)
-                && self
-                    .support
-                    .same_inputs(other.support.as_ref(), purpose, checkpoint)
+                && self.support.same_inputs(
+                    other.support.as_ref(),
+                    CapturedInfluenceComparison::SelectedMembership,
+                    checkpoint,
+                )
         })
     }
 

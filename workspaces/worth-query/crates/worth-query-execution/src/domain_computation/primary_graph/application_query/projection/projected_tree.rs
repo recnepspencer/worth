@@ -1,3 +1,4 @@
+pub(super) mod content_storage;
 use std::sync::Arc;
 
 use worth_foundational::facade::AspectValue;
