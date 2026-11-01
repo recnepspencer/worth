@@ -133,6 +133,21 @@ impl Fact {
                 }
             }
             (
+                Fact::DerivedSource { observation: first },
+                Fact::DerivedSource {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                let equal = if std::sync::Arc::ptr_eq(first, &second) {
+                    true
+                } else {
+                    first.same_truth_with_poll(&second, || control.check_live())?
+                };
+                control.check_live()?;
+                Ok(equal)
+            }
+            (
                 Fact::StructuralWalk { observation: first },
                 Fact::StructuralWalk {
                     observation: second,

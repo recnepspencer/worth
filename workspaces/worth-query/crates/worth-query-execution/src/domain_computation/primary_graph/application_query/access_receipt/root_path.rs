@@ -12,6 +12,8 @@ use worth_query_declaration::facade::application_query::{
 pub struct WorthQueryApplicationQueryRootPathStepRead {
     path_index: usize,
     step_index: usize,
+    source_kind:
+        worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind,
     traversal: ApplicationQueryRootPathTraversal,
     direction: RelationDirection,
     reads: WorthQueryInvariantProjectionWork,
@@ -20,6 +22,7 @@ impl WorthQueryApplicationQueryRootPathStepRead {
     pub(in crate::domain_computation::primary_graph::application_query) fn new(
         path_index: usize,
         step_index: usize,
+        source_kind: worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind,
         traversal: ApplicationQueryRootPathTraversal,
         direction: RelationDirection,
         reads: WorthQueryInvariantProjectionWork,
@@ -27,6 +30,7 @@ impl WorthQueryApplicationQueryRootPathStepRead {
         Self {
             path_index,
             step_index,
+            source_kind,
             traversal,
             direction,
             reads,
@@ -39,6 +43,12 @@ impl WorthQueryApplicationQueryRootPathStepRead {
     /// Zero-based authored step index; guard positions retain their usual meaning.
     pub const fn step_index(&self) -> usize {
         self.step_index
+    }
+    pub const fn source_kind(
+        &self,
+    ) -> worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind
+    {
+        self.source_kind
     }
     pub const fn traversal(&self) -> ApplicationQueryRootPathTraversal {
         self.traversal

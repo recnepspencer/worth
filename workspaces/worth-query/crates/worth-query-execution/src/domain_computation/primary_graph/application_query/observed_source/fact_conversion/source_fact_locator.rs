@@ -19,6 +19,7 @@ pub(super) enum SourceFactLocator {
         crate::domain_computation::primary_graph::component_selection::ComponentSelectionKey,
     ),
     Aggregate(crate::domain_computation::primary_graph::aggregate_observation::AggregateKey),
+    DerivedSource(crate::domain_computation::primary_graph::derived_source::DerivedSourceKey),
     StructuralWalk(crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey),
     Entity(EntityId),
     Aspect(EntityId, AspectKey),
@@ -38,6 +39,7 @@ impl SourceFactLocator {
             }
             Fact::ComponentSelection { observation } => Self::Components(observation.key().clone()),
             Fact::Aggregate { observation } => Self::Aggregate(observation.key().clone()),
+            Fact::DerivedSource { observation } => Self::DerivedSource(observation.key().clone()),
             Fact::StructuralWalk { observation } => Self::StructuralWalk(observation.key().clone()),
             Fact::SourceEntity { entity_id } => Self::Entity(*entity_id),
             Fact::SourceAspectRevision {

@@ -26,7 +26,7 @@ use worth_relational::facade::{
         DerivedRelationReadDenial, ManagedIndexSourceField, ManagedIndexSourceOccurrence,
         ManagedIndexSourceProgram, ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceRows,
         PreparedManagedIndexProjectionRead, PreparedManagedIndexRelationRead,
-        PreparedManagedIndexSourceRowRead,
+        PreparedManagedIndexSourceOccurrence, PreparedManagedIndexSourceRowRead,
     },
     schema::DerivedRelationDenial,
     transactions::RelationalExecutionDenialCause as Storage,
@@ -70,16 +70,26 @@ enum FieldSource<'a, 'read, 'source> {
     ),
 }
 
+pub(super) enum ProjectionMembership<'a> {
+    Forward(&'a PreparedManagedIndexRelationRead),
+    Inverse(&'a PreparedManagedIndexSourceOccurrence),
+}
+
 pub(super) fn project(
     execution: &ExecutionRequest<'_, '_>,
     program: &ManagedIndexSourceProgram,
     rows: &ManagedIndexSourceRows<'_>,
     occurrence: ManagedIndexSourceOccurrence,
     graph: &WorthQueryInstalledGraphReadContract,
-    support: Option<&PreparedManagedIndexRelationRead>,
+    support: Option<ProjectionMembership<'_>>,
 ) -> Result<Entry, MaterialDenial> {
     let row_read = match support {
-        Some(read) => rows.prepare_row_from_read(read, &occurrence)?,
+        Some(ProjectionMembership::Forward(read)) => {
+            rows.prepare_row_from_read(read, &occurrence)?
+        }
+        Some(ProjectionMembership::Inverse(read)) => {
+            rows.prepare_row_from_occurrence(read, &occurrence)?
+        }
         None => rows.prepare_row(&occurrence)?,
     };
     let mut projector = Projector {

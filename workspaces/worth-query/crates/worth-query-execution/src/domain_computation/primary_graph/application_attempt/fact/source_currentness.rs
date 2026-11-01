@@ -37,7 +37,10 @@ impl WorthQueryApplicationObservedFact {
         }
         if !matches!(
             self,
-            Self::ComponentSelection { .. } | Self::Aggregate { .. } | Self::StructuralWalk { .. }
+            Self::ComponentSelection { .. }
+                | Self::Aggregate { .. }
+                | Self::StructuralWalk { .. }
+                | Self::DerivedSource { .. }
         ) {
             return self.source_currentness_in(runtime, execution, snapshot);
         }
@@ -61,6 +64,9 @@ impl WorthQueryApplicationObservedFact {
             }
             Self::Aggregate { observation } => {
                 reads.check_aggregate(observation, execution, control)
+            }
+            Self::DerivedSource { observation } => {
+                reads.check_derived(observation, execution, control)
             }
             Self::StructuralWalk { observation } => {
                 reads.check_walk(observation, execution, control)

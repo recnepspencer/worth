@@ -55,6 +55,7 @@ mod source_facts;
 pub(in crate::domain_computation) use source_facts::{
     validate_source_principal_facts, SourceFactsAllocation,
 };
+mod derived_source;
 mod source_read_equivalence;
 mod source_read_verification;
 mod structural_walk;

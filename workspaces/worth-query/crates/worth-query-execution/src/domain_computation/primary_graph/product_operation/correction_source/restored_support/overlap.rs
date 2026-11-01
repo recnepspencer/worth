@@ -168,6 +168,7 @@ pub(super) fn select(
             }
             Fact::Relation { .. } => return Err(unsupported("Relation", fact)),
             Fact::Adjacency { .. } => return Err(unsupported("Adjacency", fact)),
+            Fact::DerivedSource { .. } => return Err(unsupported("DerivedSource", fact)),
             Fact::StructuralWalk { .. } => return Err(unsupported("StructuralWalk", fact)),
             Fact::Aggregate { .. } => return Err(unsupported("Aggregate", fact)),
             Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection", fact)),

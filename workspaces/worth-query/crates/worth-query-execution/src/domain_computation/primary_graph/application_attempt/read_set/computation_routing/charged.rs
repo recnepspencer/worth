@@ -81,6 +81,7 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
             | Self::ManagedIndexSource { .. }
             | Self::SourceReadAuthorization { .. }
             | Self::SourcePublication { .. }
+            | Self::DerivedSource { .. }
             | Self::StructuralWalk { .. }
             | Self::Aggregate { .. }
             | Self::SourceEntity { .. }

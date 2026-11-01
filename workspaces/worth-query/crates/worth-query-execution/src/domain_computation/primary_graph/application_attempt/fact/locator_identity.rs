@@ -16,6 +16,7 @@ pub(super) fn write(
             write!(output, "application-managed-source:{:?}", observation.key()),
         WorthQueryApplicationObservedFact::ComponentSelection {observation}=>observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::Aggregate { observation } => observation.key().write_locator(output),
+        WorthQueryApplicationObservedFact::DerivedSource { observation } => observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::SourcePublication { observation } =>
             write!(output, "application-source-publication:{:?}", observation.address()),

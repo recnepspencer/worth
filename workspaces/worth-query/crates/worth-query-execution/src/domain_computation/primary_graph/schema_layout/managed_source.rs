@@ -86,7 +86,7 @@ pub(super) fn lower(
             version: basis.1,
             name: format!("managed-index-source::{}", definition.parts().name),
         };
-        let nodes = membership::path(source, entities, relations)?;
+        let nodes = membership::path(source, entities, relations, &registry, basis)?;
         let (next_registry, projection, routes) =
             projection::lower(registry, source, &identity, entities, relations, fields)?;
         registry = next_registry;

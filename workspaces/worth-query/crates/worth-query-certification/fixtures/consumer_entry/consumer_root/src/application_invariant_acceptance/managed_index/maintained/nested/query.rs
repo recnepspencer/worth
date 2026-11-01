@@ -107,9 +107,7 @@ pub fn source_definition(
         SourceQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
     )
-    .root_path(
-        ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
-    )
+    .root_path(super::source_path())
     .order_by(name(), ApplicationQueryOrderingDirection::Descending)
     .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
     .build()

@@ -107,6 +107,10 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
     Aggregate {
         observation: std::sync::Arc<super::super::aggregate_observation::AggregateObservation>,
     },
+    /// Complete original derived acquisition, including negative physical support.
+    DerivedSource {
+        observation: std::sync::Arc<super::super::derived_source::DerivedSourceObservation>,
+    },
     /// Exact complete Native observation, issued under the original projection.
     StructuralWalk {
         observation: std::sync::Arc<super::super::structural_walk::StructuralWalkObservation>,

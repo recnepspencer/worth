@@ -15,6 +15,8 @@ pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: Enti
         WorthQueryApplicationObservedFact::Aggregate { observation } => {
             observation.native().contains(candidate)
         }
+        WorthQueryApplicationObservedFact::DerivedSource { observation } => observation.native().data().entity_dependencies()
+            .binary_search_by_key(&candidate, |(entity,_)| *entity).is_ok(),
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => observation
             .native()
             .visits()

@@ -23,6 +23,9 @@ impl WorthQueryApplicationObservedFact {
             Self::Aggregate { observation } => {
                 observation.remains_equal(runtime, execution, snapshot, None)
             }
+            Self::DerivedSource { observation } => {
+                observation.remains_equal(runtime, execution, snapshot)
+            }
             Self::StructuralWalk { observation } => {
                 observation.remains_equal(runtime, execution, snapshot)
             }

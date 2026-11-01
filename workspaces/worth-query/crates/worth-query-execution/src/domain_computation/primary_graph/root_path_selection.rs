@@ -19,6 +19,7 @@ use worth_relational::facade::{
 };
 mod closure;
 mod denial;
+mod derived;
 mod guards;
 mod ports;
 mod step;
@@ -85,6 +86,7 @@ impl<'a> PathStep<'a> {
         RootPathReadObservation::Step {
             path_index: self.path_index,
             step_index: self.step_index,
+            source_kind: self.step.source_kind(),
             traversal: self.step.traversal(),
             direction: self.direction,
             reads,
@@ -204,6 +206,10 @@ fn traverse_path<E>(
             ports.notify(located.completed(Default::default()))?;
             continue;
         }
+        if step.source_kind() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived {
+            if step.traversal() != ApplicationQueryRootPathTraversal::OneHop { return Err(RootPathReadDenial::traversal(step.relation())); }
+            frontier = derived::advance(basis, located, &mut frontier, ports, selected)?;
+        } else {
         let layout = basis
             .graph
             .relation(step.relation())
@@ -217,6 +223,7 @@ fn traverse_path<E>(
         } else {
             step::advance(basis, layout, located, &mut frontier, ports, selected)?
         };
+        }
         guards::apply(
             basis,
             path,

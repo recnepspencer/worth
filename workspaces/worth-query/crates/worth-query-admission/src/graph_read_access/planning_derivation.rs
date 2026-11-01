@@ -21,6 +21,7 @@ enum RelationRequirementBasis {
     DirectionalAdjacency,
     ReverseAdjacency,
     AggregateSelection,
+    DerivedSource,
     TraversalWorkset,
 }
 
@@ -58,6 +59,15 @@ fn visit_specs<'a, S: RowSink<'a>>(
         sink.visit()?;
         for operator in relation.operators() {
             sink.visit()?;
+            if *operator == WorthQueryGraphReadTraversalOperator::CompleteDerivedSource {
+                sink.row(RowSpec::Relation {
+                    relation,
+                    operator,
+                    kind: super::WorthQueryGraphReadAccessRequirementKind::DerivedSource,
+                    basis: RelationRequirementBasis::DerivedSource,
+                })?;
+                continue;
+            }
             if *operator == WorthQueryGraphReadTraversalOperator::AggregateSelection {
                 sink.row(RowSpec::Relation {
                     relation,
@@ -87,7 +97,8 @@ fn visit_specs<'a, S: RowSink<'a>>(
                     sink.row(forward)?;
                     sink.row(reverse)?;
                 }
-                WorthQueryGraphReadTraversalOperator::AggregateSelection => {}
+                WorthQueryGraphReadTraversalOperator::AggregateSelection
+                | WorthQueryGraphReadTraversalOperator::CompleteDerivedSource => {}
                 WorthQueryGraphReadTraversalOperator::DeclarationTraversal
                 | WorthQueryGraphReadTraversalOperator::CompleteClosure
                 | WorthQueryGraphReadTraversalOperator::DirectEdge => match relation.direction() {

@@ -19,6 +19,22 @@ pub(super) fn observe(
                 prepared.with_field(0, |value| value.is_none())?,
                 "optional projected field absence stays absent"
             );
+            let inverse = rows
+                .prepare_occurrence(occurrence.entity())?
+                .expect("actual inverse membership");
+            if let Some(other) = occurrences
+                .iter()
+                .find(|other| other.entity() != occurrence.entity())
+            {
+                assert!(matches!(
+                    rows.prepare_row_from_occurrence(&inverse, other),
+                    Err(DerivedRelationReadDenial::Definition(
+                        DerivedRelationDenial::ForeignObservation
+                    ))
+                ));
+            }
+            let prepared = rows.prepare_row_from_occurrence(&inverse, occurrence)?;
+            assert!(prepared.with_field(0, |value| value.is_none())?);
             court.row_read_checks.lock().unwrap()[0] += 1;
             if let Some(cancel) = court.cancel_row_field.lock().unwrap().take() {
                 prepared.with_field(0, |_| cancel.cancel())?;
@@ -40,6 +56,12 @@ pub(super) fn observe(
                 .map(|(_, scope)| scope)
             {
                 let foreign_rows = other.proposed();
+                assert!(matches!(
+                    foreign_rows.prepare_row_from_occurrence(&inverse, occurrence),
+                    Err(DerivedRelationReadDenial::Definition(
+                        DerivedRelationDenial::ForeignDefinition
+                    ))
+                ));
                 let foreign_read = foreign_rows.acquire_all()?;
                 assert!(matches!(
                     rows.prepare_row_from_read(&foreign_read, occurrence),
@@ -54,6 +76,15 @@ pub(super) fn observe(
             let old = scope.committed()?;
             let old_read = old.acquire_all()?;
             for occurrence in old.occurrences(&old_read)? {
+                let old_inverse = old
+                    .prepare_occurrence(occurrence.entity())?
+                    .expect("old membership");
+                assert!(matches!(
+                    rows.prepare_row_from_occurrence(&old_inverse, &occurrence),
+                    Err(DerivedRelationReadDenial::Definition(
+                        DerivedRelationDenial::ForeignObservation
+                    ))
+                ));
                 assert!(matches!(
                     rows.prepare_row_from_read(&old_read, &occurrence),
                     Err(DerivedRelationReadDenial::Definition(
@@ -101,7 +132,7 @@ fn birth() -> WorkerIntentBatch {
             ),
         })));
     }
-    for (scope, row, label) in [("A", "x", "A-x"), ("B", "y", "B-y")] {
+    for (scope, row, label) in [("A", "x", "A-x"), ("A", "y", "A-y"), ("B", "y", "B-y")] {
         batch = batch.push(MutationIntent::Create(CreateIntent::Relation(
             RelationSpec {
                 partition_id: PartitionId::main(),

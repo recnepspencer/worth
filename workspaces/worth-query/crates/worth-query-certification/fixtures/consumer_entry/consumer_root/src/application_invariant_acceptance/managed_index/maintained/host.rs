@@ -219,3 +219,28 @@ pub(super) fn install_nested(
             Ok(())
         }).expect("the declared nested capability installs through the ordinary host")
 }
+
+// This registered construction owner also installs the explicit nested text capability.
+pub(super) type EventHost = WorthQueryProgramApplicationRuntime<
+    super::events::schema::Catalog,
+    super::events::composition::Program,
+>;
+pub(super) fn install_events(
+    provider: Arc<super::events::prefix::Calls>,
+    records: Arc<super::events::rule::Calls>,
+) -> EventHost {
+    use super::events::{
+        composition::{Configuration as EventConfiguration, Program as EventProgram},
+        schema::*,
+    };
+    let declaration = Catalog::declaration().unwrap();
+    in_memory_program(ApplicationProgramAuthoring::<Catalog,EventProgram>::begin().with_schema(&declaration).validated_program().unwrap(),declaration,(EventConfiguration {provider,records},),
+        ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191927").unwrap(),
+        super::super::super::resources::application_limits_with_observations(super::super::super::resources::EXECUTION_POLICY,320),
+        |_,graph,installed| {
+            graph.bind_principal(&installed.principal_binding(CatalogPrincipal::reference()).unwrap(),WorthQueryApplicationPrincipalKey::new("event-reader").unwrap(),1u64,
+                super::super::super::authentication::external_identity(),worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
+            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new("catalog").unwrap()).field(DirectoryIdentity::reference(),"catalog".to_owned()))?;
+            Ok(())
+        }).expect("the declared event capability installs through the ordinary host")
+}

@@ -42,6 +42,10 @@ pub(in crate::application_schema) fn validate_closure(
         || paths.iter().any(|path| {
             path.start_entity() != meaning.root()
                 || path.terminal_entity() != meaning.member()
+                || path.steps().iter().any(|step| {
+                    step.source_kind()
+                        != crate::application_query::ApplicationQueryRootPathSourceKind::Stored
+                })
                 || !super::super::root_path_closure::is_closed(path, members)
         })
     {

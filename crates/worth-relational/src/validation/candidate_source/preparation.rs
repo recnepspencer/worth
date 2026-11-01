@@ -17,7 +17,7 @@ mod rows;
 pub use projection_rows::{
     ManagedIndexSourceProjectionOccurrence, PreparedManagedIndexProjectionRead,
 };
-pub use row_read::PreparedManagedIndexSourceRowRead;
+pub use row_read::{PreparedManagedIndexSourceOccurrence, PreparedManagedIndexSourceRowRead};
 pub use rows::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
 
 pub(crate) type RootPayload = Arc<dyn Any + Send + Sync>;
@@ -110,11 +110,10 @@ impl<'a> ManagedIndexSourceScope<'a> {
         )>,
         Denial,
     > {
-        self.views
-            .after
-            .read_budget()
+        let changed = self.prepare_changed_occurrences()?;
+        self.read_budget()
             .claim_retained(
-                self.changed
+                changed
                     .len()
                     .checked_mul(size_of::<(
                         Option<ManagedIndexSourceOccurrence>,
@@ -124,11 +123,40 @@ impl<'a> ManagedIndexSourceScope<'a> {
                     as u64,
             )
             .map_err(ReadDenial::Structural)?;
+        Ok(changed
+            .into_iter()
+            .map(|(before, after)| (before, after.map(|prepared| prepared.occurrence)))
+            .collect())
+    }
+    /// Changed coordinates retain their actual proposed inverse membership.
+    pub fn prepare_changed_occurrences(
+        &self,
+    ) -> Result<
+        Vec<(
+            Option<ManagedIndexSourceOccurrence>,
+            Option<PreparedManagedIndexSourceOccurrence>,
+        )>,
+        Denial,
+    > {
+        self.views
+            .after
+            .read_budget()
+            .claim_retained(
+                self.changed
+                    .len()
+                    .checked_mul(size_of::<(
+                        Option<ManagedIndexSourceOccurrence>,
+                        Option<PreparedManagedIndexSourceOccurrence>,
+                    )>())
+                    .ok_or(ReadDenial::Definition(Definition::WorkBudgetExceeded))?
+                    as u64,
+            )
+            .map_err(ReadDenial::Structural)?;
         let before = self.committed()?;
         let after = self.proposed();
         self.changed
             .iter()
-            .map(|row| Ok((before.occurrence(*row)?, after.occurrence(*row)?)))
+            .map(|row| Ok((before.occurrence(*row)?, after.prepare_occurrence(*row)?)))
             .collect()
     }
 

@@ -26,6 +26,11 @@ pub(in crate::domain_computation::primary_graph) enum RootPathReadObservation<'a
         fields: usize,
         subject: &'a str,
     },
+    Derived {
+        reads: worth_relational::facade::runtime::DerivedRelationReads,
+        units: usize,
+        subject: &'a str,
+    },
     Walk {
         reads: PinnedStructuralWalkReads,
         units: usize,
@@ -34,6 +39,8 @@ pub(in crate::domain_computation::primary_graph) enum RootPathReadObservation<'a
     Step {
         path_index: usize,
         step_index: usize,
+        source_kind:
+            worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind,
         traversal: ApplicationQueryRootPathTraversal,
         direction: RelationDirection,
         reads: WorthQueryInvariantProjectionWork,

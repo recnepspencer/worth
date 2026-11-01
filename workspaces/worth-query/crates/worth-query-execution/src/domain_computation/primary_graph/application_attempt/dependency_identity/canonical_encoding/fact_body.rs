@@ -86,6 +86,9 @@ pub(super) fn append_fact(
         WorthQueryApplicationObservedFact::Aggregate { observation } => {
             aggregate::append_values(entries, prefix, observation)
         }
+        WorthQueryApplicationObservedFact::DerivedSource { observation } => {
+            derived_source::append_values(entries, prefix, observation)
+        }
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => {
             structural_walk::append_values(entries, prefix, observation)
         }

@@ -14,6 +14,10 @@ pub(in crate::domain_computation::primary_graph) enum RootPathReadDenial<E> {
         subject: String,
         cause: SourceFactReadDenial,
     },
+    Derived {
+        subject: String,
+        kind: worth_relational::facade::runtime::DerivedRelationReadDenial,
+    },
     Walk {
         subject: String,
         kind: PinnedStructuralWalkDenialKind,

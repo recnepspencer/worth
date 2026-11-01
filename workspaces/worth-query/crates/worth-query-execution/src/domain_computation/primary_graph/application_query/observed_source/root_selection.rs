@@ -86,6 +86,7 @@ impl WorthQueryObservedRootSelection {
             aspects,
             adjacencies,
             walks: _walks,
+            derived: _derived,
             allocation: _,
         } = &self.facts;
         let base = std::mem::size_of::<Self>().saturating_add(2 * std::mem::size_of::<usize>());

@@ -34,6 +34,16 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
                     observation: std::sync::Arc::clone(observation),
                 });
             }
+            for observation in observed
+                .derived
+                .into_iter()
+                .flat_map(|derived| derived.values())
+            {
+                control.poll(&source.query_identifier)?;
+                facts.push(Fact::DerivedSource {
+                    observation: std::sync::Arc::clone(observation),
+                });
+            }
             for observation in observed.walks.into_iter().flat_map(|walks| walks.values()) {
                 control.poll(&source.query_identifier)?;
                 facts.push(Fact::StructuralWalk {

@@ -1,5 +1,6 @@
 //! Native physical read facts shared by Query and operation selection issuers.
 //! These facts describe reads; they do not grant access or mint aggregate identity.
+use super::derived_source::DerivedSourceDependencies;
 use super::structural_walk::StructuralWalkDependencies;
 use std::sync::Arc;
 use worth_relational::facade::identity::EntityId;
@@ -28,6 +29,8 @@ pub(in crate::domain_computation::primary_graph) struct SourceFacts {
     pub(in crate::domain_computation::primary_graph) adjacencies:
         Vec<WorthQueryObservedAdjacencyRevision>,
     pub(in crate::domain_computation::primary_graph) walks: Option<Arc<StructuralWalkDependencies>>,
+    pub(in crate::domain_computation::primary_graph) derived:
+        Option<Arc<DerivedSourceDependencies>>,
     pub(in crate::domain_computation::primary_graph) allocation: Option<Arc<SourceFactsAllocation>>,
 }
 
@@ -37,6 +40,7 @@ impl PartialEq for SourceFacts {
             && self.aspects == other.aspects
             && self.adjacencies == other.adjacencies
             && self.walks == other.walks
+            && self.derived == other.derived
     }
 }
 

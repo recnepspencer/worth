@@ -5,12 +5,26 @@ use crate::derived_relation::{DerivedRelationData, DerivedRelationReadShape as S
 use crate::graph_member::NativeMemberKey;
 
 enum Membership<'read> {
-    Forward {
+    Borrowed {
         _read: &'read PreparedManagedIndexRelationRead,
     },
-    Inverse {
+    Owned {
         _read: PreparedManagedIndexRelationRead,
     },
+}
+/// Actual inverse membership issued by one immutable Native loan. Its coordinate
+/// is descriptive; consumption still validates the complete current read owner.
+pub struct PreparedManagedIndexSourceOccurrence {
+    pub(super) occurrence: ManagedIndexSourceOccurrence,
+    pub(super) read: PreparedManagedIndexRelationRead,
+}
+impl PreparedManagedIndexSourceOccurrence {
+    pub fn occurrence(&self) -> &ManagedIndexSourceOccurrence {
+        &self.occurrence
+    }
+    pub fn entity(&self) -> EntityId {
+        self.occurrence.entity()
+    }
 }
 /// Borrow-confined physical row preparation, not principal READ permission.
 /// The exact loan and successful membership acquisition remain owned here.
@@ -64,7 +78,33 @@ impl<'source> ManagedIndexSourceRows<'source> {
         Ok(PreparedManagedIndexSourceRowRead {
             rows: self,
             occurrence,
-            _membership: Membership::Forward { _read: read },
+            _membership: Membership::Borrowed { _read: read },
+        })
+    }
+    /// Consume actual inverse membership under this exact current loan.
+    pub fn prepare_row_from_occurrence<'read>(
+        &'read self,
+        prepared: &'read PreparedManagedIndexSourceOccurrence,
+        occurrence: &'read ManagedIndexSourceOccurrence,
+    ) -> Result<PreparedManagedIndexSourceRowRead<'read, 'source>, ReadDenial> {
+        self.check_row_context(occurrence)?;
+        self.check_row_context(&prepared.occurrence)?;
+        if occurrence.row != prepared.occurrence.row {
+            return Err(Definition::ForeignObservation.into());
+        }
+        let data = self.projection.read(
+            &prepared.read,
+            &self.projection.program.0.path,
+            occurrence.row,
+            Shape::Adjacency { reverse: true },
+        )?;
+        self.require_member(data, self.scope)?;
+        Ok(PreparedManagedIndexSourceRowRead {
+            rows: self,
+            occurrence,
+            _membership: Membership::Borrowed {
+                _read: &prepared.read,
+            },
         })
     }
     /// A retained occurrence has no current membership ticket. Reacquire it once.
@@ -81,7 +121,7 @@ impl<'source> ManagedIndexSourceRows<'source> {
         Ok(PreparedManagedIndexSourceRowRead {
             rows: self,
             occurrence,
-            _membership: Membership::Inverse { _read: read },
+            _membership: Membership::Owned { _read: read },
         })
     }
 }

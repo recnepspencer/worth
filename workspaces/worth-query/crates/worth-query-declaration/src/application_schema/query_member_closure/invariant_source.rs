@@ -49,7 +49,8 @@ pub(super) fn validate(members: &[Member]) -> Result<(), Denial> {
         {
             return Err(denied());
         }
-        if source_audience(source)
+        let audience = source_audience(source, members).ok_or_else(denied)?;
+        if audience
             .iter()
             .any(|target| !read.contains(target) || !affected.contains(target))
         {
@@ -101,7 +102,10 @@ fn source_query<'a>(
     })
 }
 
-fn source_audience(source: &ErasedApplicationQueryDefinition) -> BTreeSet<Target> {
+fn source_audience(
+    source: &ErasedApplicationQueryDefinition,
+    members: &[Member],
+) -> Option<BTreeSet<Target>> {
     let mut audience = BTreeSet::from([
         Target::Entity(source.scope_entity().to_owned()),
         Target::Entity(source.root_entity().to_owned()),
@@ -110,7 +114,26 @@ fn source_audience(source: &ErasedApplicationQueryDefinition) -> BTreeSet<Target
         for step in path.steps() {
             audience.insert(Target::Entity(step.from().to_owned()));
             audience.insert(Target::Entity(step.to().to_owned()));
-            audience.insert(Target::Relation(step.relation().to_owned()));
+            match step.source_kind() {
+                crate::application_query::ApplicationQueryRootPathSourceKind::Stored => {
+                    audience.insert(Target::Relation(step.relation().to_owned()));
+                }
+                crate::application_query::ApplicationQueryRootPathSourceKind::Derived => {
+                    let closure = super::super::application_derived_relation_source_closure(
+                        members,
+                        step.relation(),
+                    )
+                    .ok()?;
+                    if !closure.projected_domains.is_empty() {
+                        return None;
+                    }
+                    for source in closure.physical {
+                        audience.insert(Target::Relation(source.relation.clone()));
+                        audience.insert(Target::Entity(source.from.entity()?.to_owned()));
+                        audience.insert(Target::Entity(source.to.entity()?.to_owned()));
+                    }
+                }
+            }
         }
         audience.extend(
             path.guards()
@@ -125,7 +148,7 @@ fn source_audience(source: &ErasedApplicationQueryDefinition) -> BTreeSet<Target
             .iter()
             .map(|predicate| Target::Entity(predicate.field().0.to_owned())),
     );
-    audience
+    Some(audience)
 }
 
 fn shape_audience(shape: &ApplicationQueryResultShape, audience: &mut BTreeSet<Target>) {

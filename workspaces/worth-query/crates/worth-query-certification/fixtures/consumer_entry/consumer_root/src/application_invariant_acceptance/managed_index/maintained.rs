@@ -5,6 +5,7 @@ mod bounds;
 mod correction;
 #[cfg(test)]
 mod court;
+mod events;
 mod generated;
 mod geometry;
 mod handler;

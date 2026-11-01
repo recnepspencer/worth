@@ -6486,6 +6486,43 @@ ordinary hops and guards. See [declared query closure](../workspaces/worth-query
 for reflexive selection, source currentness and per-step receipt observations.
 
 
+### Derived query root paths
+
+Use a declared named derived relation to select physical entity roots:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative application marker names; the consumer court compiles this shape.
+let path = ApplicationQueryRootPath::from(Event::reference())
+    .forward_derived(LiveRows::reference());
+```
+
+`reverse_derived` selects in the other direction. Compose ordinary query paths
+with physical hops, other derived steps and guards. Maintained Sources retain
+their existing guard and predicate restrictions. The installed path retains the
+Stored or Derived namespace, so a same-named stored relation cannot satisfy a
+derived step. This entrance requires physical entity endpoints and physical
+intermediate source domains. Derived closure steps are refused; a named recipe
+already defines its complete source meaning.
+
+For newest-first history, declare `LiveRows` with
+`ApplicationDerivedRelation::ordered_events(previous, introduces, retires)`.
+The same registered Native evaluator supplies ordinary query roots and maintained
+Source membership. A history edit can change a direct Source even when every
+rendered row stays identical: complete physical support and negative probes are
+part of that observation. Empty Sources retain their negative membership too.
+Watches and request-bearing Source expectations use those actual dependencies;
+a fresh observation remains the lawful input after a stale one is refused.
+
+Original pinned reads retain their selected history. New reads and currentness
+checks retain the original request controls and allocation custody, including
+cancellation and failed-acquisition work receipts. This query entrance does not
+extend operation-body path-input or component-read grants.
+
+The ordinary Decl/Host event-text [consumer court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/court.rs)
+exercises forward, inverse, composed, empty and changed-history Sources.
+
+
 ## Inspect original source and query evidence
 
 Use inspection for an audit view, a debugging explanation, or a comparison of

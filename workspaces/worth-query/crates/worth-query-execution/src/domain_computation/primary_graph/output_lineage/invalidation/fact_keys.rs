@@ -63,6 +63,27 @@ where
             ))
         }
 
+        Fact::DerivedSource { observation } => {
+            for (entity, _) in observation.native().data().entity_dependencies() {
+                projection.key(|| Key::EntityLifecycle(*entity))?;
+            }
+            for probe in observation.native().data().adjacency_dependencies() {
+                projection.key(|| Key::Adjacency {
+                    kind: probe.relation,
+                    anchor: probe.anchor,
+                    direction: if probe.outgoing {
+                        Direction::Outgoing
+                    } else {
+                        Direction::Incoming
+                    },
+                })?;
+            }
+            // Physical wake postings retain every negative probe. They do not
+            // certify this registered recipe's complete semantic currentness.
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact,
+            ));
+        }
         Fact::StructuralWalk { observation } => {
             let query = observation.key();
             let direction = match query.direction() {

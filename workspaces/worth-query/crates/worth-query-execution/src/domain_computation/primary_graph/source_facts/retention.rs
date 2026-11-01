@@ -28,6 +28,7 @@ impl SourceFacts {
             aspects: self.aspects.clone(),
             adjacencies: self.adjacencies.clone(),
             walks: self.walks.clone(),
+            derived: self.derived.clone(),
             allocation: self.allocation.clone(),
         })
     }

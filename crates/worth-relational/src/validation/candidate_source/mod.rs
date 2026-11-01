@@ -39,8 +39,8 @@ pub(crate) mod routing;
 pub use preparation::{
     ManagedIndexSourceAvailability, ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
     ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceRows, ManagedIndexSourceScope,
-    PreparedManagedIndexProjectionRead, PreparedManagedIndexSourceRoot,
-    PreparedManagedIndexSourceRowRead,
+    PreparedManagedIndexProjectionRead, PreparedManagedIndexSourceOccurrence,
+    PreparedManagedIndexSourceRoot, PreparedManagedIndexSourceRowRead,
 };
 pub use program::{
     ManagedIndexSourceField, ManagedIndexSourceProgram, ManagedIndexSourceProjectionRoute,

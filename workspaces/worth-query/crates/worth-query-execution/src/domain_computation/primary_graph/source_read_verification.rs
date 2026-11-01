@@ -16,11 +16,13 @@ pub(in crate::domain_computation::primary_graph) struct SourceReadVerification<'
     runtime: &'runtime RelationalRuntime,
     pin: RelationalPinnedRead,
     completed: BTreeMap<usize, (Arc<StructuralWalkObservation>, bool)>,
+    derived: BTreeMap<usize, (Arc<super::derived_source::DerivedSourceObservation>, bool)>,
     aggregates: BTreeMap<usize, (Arc<AggregateObservation>, bool)>,
     bytes: u64,
     _memory: Option<ExecutionMemoryReservation>,
 }
 mod components;
+mod derived;
 impl<'runtime> SourceReadVerification<'runtime> {
     pub(in crate::domain_computation::primary_graph) fn open(
         runtime: &'runtime RelationalRuntime,
@@ -43,6 +45,7 @@ impl<'runtime> SourceReadVerification<'runtime> {
             runtime,
             pin,
             completed: BTreeMap::new(),
+            derived: BTreeMap::new(),
             aggregates: BTreeMap::new(),
             bytes: 0,
             _memory: None,
