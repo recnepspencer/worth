@@ -157,7 +157,7 @@ Forbidden in `worth-query`:
 - folding basis eligibility, operation permission, lower-runtime binding,
   receipt materialization, and certification into one optional-field envelope
 - claiming durable basis reload, store-restored snapshot-plus-tail parity, or
-  restart-stable basis envelopes before Milestones 10 and 11
+  restart-stable basis envelopes before Store execution and durable-artifact integration
 - re-validating raw lower-runtime basis identifiers in later phases instead of
   carrying the proof-bearing basis type established earlier
 
@@ -1100,7 +1100,7 @@ The following remain deferred:
 - portable basis capability import/export
 - persisted basis use receipt archives
 
-Those are Milestone 10, Milestone 11, or later certification scope. Any 9.3.2
+Those are Store execution/historical integration, Store Milestone 11, or later certification scope. Any 9.3.2
 surface that encounters those families must report typed deferred or
 unsupported posture.
 

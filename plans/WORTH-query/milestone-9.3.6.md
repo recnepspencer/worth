@@ -1296,7 +1296,7 @@ Forbidden signal changes:
 - store-backed route parity and durable route replay remain later-milestone
   work
 - any current store-adjacent mention in 9.3.6 must remain typed deferred or
-  explicit later-milestone deferral until Milestones 10 and 11 close
+  explicit later-milestone deferral until Store execution and durable-artifact integration close
 
 ## Typed Phase Progression Lock
 

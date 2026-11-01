@@ -132,7 +132,7 @@ This milestone fails if any covered path:
   bridge-backed read runtime. Hostile certification should not need custom
   one-off runtime assembly just to reach the read seam.
 - This milestone fully builds the runtime-backed product surface it names.
-  Milestones `10` and `11` own additional store-backed and durable capabilities;
+  Store execution and durable-artifact integration own additional store-backed and durable capabilities;
   they do not excuse unfinished runtime-backed work here.
 
 ## Phase Plan
@@ -493,7 +493,7 @@ This milestone is complete only when `worth-query` can prove:
   [milestone-9.4.md](./milestone-9.4.md) closure so runtime-backed
   temporal/async semantics are already frozen before reuse and productization
   work tries to preserve them.
-- It belongs before Milestones `10` and `11` because store-backed and durable
+- It belongs before Store execution and durable-artifact integration because store-backed and durable
   milestones should not inherit half-hardened reuse, view-shape, and retained
   fact-consumption surfaces as if they were final.
 - It should be implemented as an explicit per-family build program, not as

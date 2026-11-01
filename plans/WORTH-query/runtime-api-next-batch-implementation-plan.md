@@ -816,4 +816,4 @@ model across computed values, effects, preview, intents, and inspection.
   tests without inventing domain semantics.
 - The plan belongs here because it is the runtime API hardening pass that must
   consume completed 9.1-9.3 subscription work before 9.4-9.7 temporal/async and
-  Milestone 10 store-backed execution build on top.
+  Store execution/historical integration store-backed execution build on top.

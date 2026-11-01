@@ -62,7 +62,7 @@ Passed:
 
 ## Defended Exclusions
 
-- Store-backed execution parity belongs to Milestone 10.
-- Durable restart and artifact reload belong to Milestone 11.
+- Store-backed execution parity belongs to Store execution/historical integration.
+- Durable restart and artifact reload belong to Store Milestone 11.
 
 These are not Milestone 9.7 gaps. They are later milestone-class owners.

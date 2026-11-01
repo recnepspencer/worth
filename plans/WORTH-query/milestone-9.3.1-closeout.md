@@ -215,5 +215,5 @@ The following are not part of Milestone 9.3.1 closeout:
 - cross-process causal-envelope reload
 - durable/store-backed causal artifact materialization
 
-These remain Milestone 10, Milestone 11, or later diagnostic-certification
+These remain Store execution/historical integration, Store Milestone 11, or later diagnostic-certification
 scope exactly as the milestone spec declared.

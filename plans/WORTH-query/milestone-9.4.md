@@ -135,7 +135,7 @@ This milestone fails if any supported path:
   sidecar API family.
 - Runtime-backed first ship is allowed. Durable temporal replay, persisted
   async continuation, and restart-stable saved artifacts remain deferred to
-  Milestones `10` and `11`.
+  Store execution and durable-artifact integration.
 
 ## Phase Plan
 
@@ -1094,7 +1094,7 @@ semantics.
 
 **Warnings**
 - Do not let saved-query reload or template expansion silently erase temporal/async declaration posture.
-- Do not claim durable saved temporal/async artifacts before Milestone `11`.
+- Do not claim durable saved temporal/async artifacts before Store Milestone 11.
 
 **Test requirements**
 - Add scope/template expansion parity tests proving temporal/async declaration identity survives composition.
@@ -1380,7 +1380,7 @@ authoritative mutation-evidence story must stabilize before temporal/async work
 extends them. It also must land after Bridge Milestone 17 because Query should
 project a closed lower-authority temporal/async law rather than inventing one.
 
-It belongs before Milestones `10` and `11` because store-backed execution,
+It belongs before Store execution and durable-artifact integration because store-backed execution,
 durable restart, and persisted artifacts need one stable runtime-backed product
 surface to preserve. If those later milestones arrived first, they would have
 to guess temporal/async Query meaning and would almost certainly freeze the

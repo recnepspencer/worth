@@ -994,10 +994,10 @@ This milestone is complete only when `worth-query` can prove:
   [milestone-9.7.md](./milestone-9.7.md), so the kit's report, audit, and
   pinning surfaces cover the concurrency-era facade families rather than
   shipping against a surface about to be re-expressed.
-- It sits before Milestone `10` in the critical path so the kit
+- It sits before Store execution/historical integration in the critical path so the kit
   pressure-tests the frozen runtime-backed product surface through real
   consumer adoption before store-backed work builds on it; where staffing
-  allows, its phases may overlap early Milestone `10` work, since store
+  allows, its phases may overlap early Store execution/historical integration work, since store
   execution does not consume kit surfaces.
 - Durable artifacts are out of scope: persisted snapshots, durable audit
-  archives, and store-backed kit artifacts remain Milestone `10`/`11` scope.
+  archives, and store-backed kit artifacts remain Store execution/durability integration scope.

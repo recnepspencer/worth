@@ -51,7 +51,7 @@ sources, reload postures, and downstream consumers that must preserve it.
 - `WORTH_query_roadmap.md` protects Query as the ordinary platform entry and
   forbids downstream pseudo-Query layers. This milestone closes the remaining
   gap between basis/projection primitives and a product-grade downstream
-  authority handoff before Milestone `10` adds store-backed sources.
+  authority handoff before Store execution/historical integration adds store-backed sources.
 
 ## Adversarial Constraint
 
