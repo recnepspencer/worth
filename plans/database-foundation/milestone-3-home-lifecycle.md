@@ -148,6 +148,189 @@ cutover and honest fixtures, then run focused provider tests, relevant Native
 regressions, formatting, scoped line caps, boundary and context checks. Fresh
 independent source review must approve the coherent batch before integration.
 
+## Native and Store source-close prerequisite
+
+This is the next source-close destination, not implemented completion. It
+extends the qualified single-registration retirement into an actual Native and
+Store physical close consumer. It does NOT close full Host D11: Query's
+installed handlers/resources/providers and Bridge's assemblies/source/sink
+owners still need consuming retirement before their arbitrary destruction can
+be kept off the Host request boundary. Retaining the whole Query object would
+retain operational capabilities and obstruct Native close; it is not a fix.
+
+The decisive court holds the retired allocations while obtaining actual Store
+physical Closed. Include cold and materialized region/history, BOTH nested
+dictionary owners, empty lineage registrations, deferred index detached history
+and selected canonical backing when CHK18 lands. Interrupt a provider callback
+handoff and hold its return-slot lock; resume the SAME task without another
+callback. A live fork/port refuses before seal. A source-capable external plan
+keeps its own physical protection and prevents Closed, while an inert metadata
+pin keeps readable resident values and its normal once-only lease accounting.
+No count, a region flag, empty container or dropped owner substitutes for those
+observations.
+
+### Authentic preparation and irreversible seal
+
+The entry consumes the original outer runtime Arc through authentic ownership
+transfer. A reversible refusal preserves the SAME actual runtime/state/source
+authority and usable legitimate observers; the outer allocation address is not
+authority. Preserve the inner runtime-state Arc and its Weak services. Do not
+use recovery's `unshared_state_mut`/`Arc::get_mut(state)` as a close gate: that
+would reject or invalidate legitimate Weak bindings.
+
+Apply the existing stop/in-flight handshake, actual publication/candidate/
+settlement/read fences and incremental complete source/provider validation
+before destructive cleanup. Require an actual original medium binding in this
+supported Store composition. Source-only/no-binding, moved medium, unsupported
+provider, foreign source, unresolved publication or pending codec transition
+refuses before seal. A cold-source-only fork has no retained medium binding,
+so absence of that binding cannot prove exclusion. Memory's strict
+source-affinity refusal stays unchanged.
+
+Move the actual medium, cold-source and transition-history options under the
+existing durability ownership lock. Construct bindings/provider attachments
+outside its guards; release guards before binding locks or callbacks. Replace
+automatic state cloning with explicit fork snapshot construction: no publisher,
+the original transition reader and the retained cold source. Never clone a
+publisher into a speculative runtime.
+
+After complete preflight, take the ORIGINAL binding under a nonwaiting guard
+and use `Arc::try_unwrap`. Failure reinstalls that exact Arc before admission
+resumes. Success is the irreversible cut: retain the extracted original binding
+and boxed provider, permanently disallow serving restoration. Dormant Weak
+checkpoint observers do not veto this cut; a callback that upgraded its Weak,
+a real fork or an owned port retains a strong binding and therefore refuses it.
+Do not use reference counts as an authority probe.
+
+### Actual physical slots and retained callback work
+
+Leave immutable root/radix/record/page allocations intact through unbudgeted
+reclamation. Retire only actual issued physical obligations in their existing
+owners. Inline slots retain optional original source/custody/task and completed
+inert payload; a missing temporary slot is never a completion witness.
+
+| Owner | Mutable placement |
+| --- | --- |
+| Region backing and readmission | Existing region state mutex; retain descriptors and resident contents |
+| Symbol residency | Existing pages state mutex; retain dictionary/page data |
+| Lineage node residency | One inline custody mutex in its existing shared residency allocation |
+| Lineage event residency | One inline custody mutex in its existing shared residency allocation |
+| History prefixes | One shared concrete custody cell per ORIGINAL load-head history registration, shared by prefix clones |
+| Deferred index image | Existing admitted-state mutex plus local directory-edge retirement; traverse its detached history owner |
+| Canonical envelope residency | Existing state mutex, including CHK18 selected member/directory backing when implemented |
+| Directory | Consume only the Native-local Arc edge; keep any last finite directory payload in that original holder slot |
+
+Node/event aggregate registrations require retirement even if their page
+containers are empty. This adds mutex/progress metadata inside existing shared
+allocations, not another Arc per node/page. Prefix issuance pays one additional
+allocation and indirection per original history registration, never per row.
+Document exact inline/task/directory footprint rather than calling it free.
+
+Visit top-level and cold-backing dictionaries AND
+`cell.head_readmission.symbols` AND mirror Head readmission symbols. Detached
+snapshots may own distinct physical residencies; ordinary aliases of one
+residency observe the same original retirement progress.
+
+Each owner-specific cursor holds the actual current owner Arc/root and exact
+slot identity. Under its lock, convert the original token once or take its
+existing task, placing that task in the close phase BEFORE unlocking. Invoke
+the provider outside Native locks. Retain the callback observation in the phase
+before attempting nonwaiting slot return. If return is Busy, retain task AND
+observation, keep the cursor fixed, and return the task first on the next call.
+Do not repeat an already performed callback, recreate a task, or classify an
+empty handoff slot as discharged. Use constant current-handoff storage, not a
+graph-sized queue, shadow registry, scheduler or ownership-mode framework.
+
+Retire each Native-owned issued region lease exactly once and disarm that
+lease's later Drop decrement, retaining its cell/resident allocations. Preserve
+external metadata-pin lease counts and their ordinary clone/Drop behavior.
+Their actual public methods only read resident metadata and a copied interner;
+they may survive as inert data once physical slots retire. Never clear shared
+counters or require such external pin counts to become zero.
+
+### Reversible inventory traversal and ordinary concurrency
+
+Replace the primary retired-root DashMap with an existing-owner
+`RwLock<BTreeMap<usize, RelationalRetiredBranchRoot>>`. Close uses a nonwaiting
+excluded-key successor lookup, retains at most one actual root, and releases
+the map guard before traversal/callbacks. It never pops/requeues the ordinary
+SegQueue and never invokes diagnostic inventory or count-based GC to certify
+close. Root locator maps hold only key/generation data and need no physical
+owner traversal.
+
+This introduces REAL global write serialization formerly distributed across
+shards; `external_cut` did not already serialize retirement writes. Keep reserve,
+retire and release to individual entries. For sweeps, snapshot one entry's
+generation/root/binding handles, inspect lane liveness outside the primary
+guard, then reacquire and validate generation and actual binding identity
+before pruning. Locator cleanup and removed-payload destruction occur outside
+the primary guard. Preserve existing locator-before-primary guard release
+order; never hold one global write guard through a sweep or lane wait.
+
+After authentic stop and custody fences no new retirement entry can be
+admitted. Reservation Drop may remove an unretired entry, but its unchanged
+live head still holds that root. Retired entries remain because close invokes
+no ordinary reclaimer. Preserve these premises so dropping a temporary cursor
+Arc cannot destroy the final root. Selection costs O(log retained roots),
+member steps O(log distinct registered members); there is no hard destructor
+wall-clock or no-deallocation claim.
+
+### Actual Store consumer and explicit reclaim
+
+Replace synchronous `ClosingRelationalSection::finish` with original-request
+advancement and consuming retired extraction. The section privately lends its
+actual source and retains actual Serving/selection custody. No new source
+getter or public unfinished close helper is introduced. Unknown medium
+providers refuse in preflight; their trait-object Drop is never assumed inert.
+
+Retire Native-owned slots, then original medium physical shares, then Store's
+local source share. A shared external source or RecoveryPlan retains its own
+semantic basis/protection; never globally detach it. Keep the actual close
+stage across Busy/stop/refusal and drive the existing physical close operation.
+The same actual registry and Serving identity checks continue to apply.
+
+Keep Native/provider retired allocations in existing
+`ApplicationHomeRecoveryCustody` through physical close. Actual Closed moves
+them and remaining inert Home allocations into an opaque
+`RetiredApplicationHomeAllocation` in the existing
+`ApplicationHomeCloseOutcome::Closed`. Only explicit `reclaim(self)` performs
+unbudgeted destruction. Incomplete Drop remains unbudgeted abandonment and
+proves neither discharge nor close. The existing
+`WorthQueryApplicationHomeClosed` already retains the lower outcome; extend its
+reclaim surface instead of introducing another top-level wrapper or mapping
+success to unit.
+
+The Native+Store court must prove physical Closed WHILE all those inert
+allocations remain retained. Test Busy during task return, original stop and
+rejoin, source switching, empty registrations, both nested dictionary paths,
+deferred history, original provider release, forks/ports/readers, external plans
+and metadata pins. Private exact-slot tests complement genuine filesystem
+observation; they do not qualify physical close alone. Caller/control additions
+require Root's exact ruling, never a family-wide test exemption.
+
+Current and committed-successor topology remains owner-directed:
+
+```text
+worth-relational/src/runtime/state/runtime_state/source_close/
+  [create consuming preparation/seal/traversal; retain actual state identity]
+worth-relational/src/storage/residency/ [revise actual region/lease/prefix slots]
+worth-relational/src/runtime/state/subsystems/services/
+  [revise actual symbol/node/event residency owners]
+worth-relational/src/history/retention/ [replace primary map; keep original authority]
+worth-relational/src/history/commit/envelope_residency/
+  [extend source retirement for actual journal/selected checkpoint backing]
+worth-store-relational/src/section/close/ [revise actual consumer and provider handoff]
+worth-store-application/src/close/ [retain same task and retired allocation]
+worth-query-host/src/application_home/close.rs [extend existing Closed reclaim]
+Query/Bridge consuming ownership retirement [committed successor; full Host D11 open]
+```
+
+No empty placeholders are required. Query/Bridge must later disassemble their
+actual physical capabilities and retain arbitrary installed payloads before a
+full Host request-boundary claim is made. Their current `drop(query)` and
+composition destruction remain explicit gaps; Native+Store success cannot
+silently certify them.
+
 ## Fresh Directory bootstrap completion publication
 
 This producer-only prerequisite may run in an isolated lane alongside Native
