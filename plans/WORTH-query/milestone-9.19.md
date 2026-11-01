@@ -1,6 +1,6 @@
 # Milestone 9.19: Managed Advanced Access And Verified Footprints
 
-> **Status:** In progress. Phases 1–4 complete; Phases 5–6 unfinished.
+> **Status:** In progress. Phases 1–5 complete; Phase 6 unfinished.
 > **Scope revised 2026-10-27:** the general managed derived-index extension owns
 > the spatial-index finding formerly assigned to 9.18.1 Phase 12 and the dependent
 > CAD locality qualification from Phase 15. Proprietary cutover is the final phase.
@@ -2615,3 +2615,22 @@ gates pass. Public Phase5 closure and actual private Phase6 adoption remain
 subsequent gates.
 The new private integration tree is based on freshly fetched Proprietary main
 7d582d94c08d906dbcb2e0f84da72f0b2c33b7fc; existing private work stays untouched.
+
+
+### Phase5 revised public-contract closure (2026-11-01)
+
+Phase5 is complete under the corrected generic provider/Bank scope. The
+[closure matrix](milestone-9.19-phase5-closure.md) maps actual installed Bank
+admission/compatibility, Source authority, existing box/prefix providers and both
+read contexts, exact refinement/candidate atomicity, original-funded lifecycle,
+compiled/wire/facade fences and whole-path locality to their accepted evidence.
+Fresh cleanup219 distinct tests plus its ordinary executable remain separate
+from reused Bank/Native/owner/scale receipts. Two independently baseline-reproduced
+branch/attempt cleanup failures remain explicit; no unfiltered green suite or
+universal unsupported-profile guarantee is claimed.
+
+Actual document/context/text gates and independent qa-loop, qa-tests and
+code-quality-qa final closeout gates pass. No new public CAD or numerical API,
+SDK family, root or heavy runtime repetition was required. Phases1–5 are complete.
+Phase6 remains open for the one final private SDK adoption and real CAD
+contact/topology/actual-face acceptance in the updated-main integration worktree.

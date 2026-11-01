@@ -1,5 +1,9 @@
 # Phase5 Bank current accounts: evidence
 
+> Follow-on status update2026-11-01: this receipt's generic results remain evidence.
+> Historical next-public-CAD requirements below are superseded by the corrected
+> scope; real CAD acceptance isPhase6. See the [current public closure matrix](milestone-9.19-phase5-closure.md).
+
 Status: all scoped runtime and repository verification passes:524 distinct
 passing tests, with two established unrelated cleanup failures documented below.
 Independent qa-loop, qa-tests and code-quality-qa all PASS. This Bank adoption

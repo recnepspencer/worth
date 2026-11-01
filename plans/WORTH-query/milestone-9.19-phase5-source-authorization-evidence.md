@@ -1,5 +1,9 @@
 # Phase5 conventional Source READ authorization evidence
 
+> Follow-on status update2026-11-01: this receipt's generic results remain evidence.
+> Historical next-public-CAD requirements below are superseded by the corrected
+> scope; real CAD acceptance isPhase6. See the [current public closure matrix](milestone-9.19-phase5-closure.md).
+
 Date: 2026-11-01. Worktree: worth-9181-phase11. This slice follows
 [the boundary review](milestone-9.19-phase5-source-authorization-boundary-review.md)
 and [the saved plan](milestone-9.19-phase5-source-authorization-plan.md).

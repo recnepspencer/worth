@@ -972,6 +972,8 @@ Phase5 qualifies Bank and the existing bounded box/prefix provider contracts.
 Real CAD geometry/topology/contact integration and actual-face scale acceptance
 belong to Phase6 in the private application. See the
 [public cleanup evidence](../plans/WORTH-query/milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+The [Phase5 contract matrix](../plans/WORTH-query/milestone-9.19-phase5-closure.md)
+records the qualified public boundary, evidence provenance and remaining private gate.
 
 ### Native managed Source impact history
 

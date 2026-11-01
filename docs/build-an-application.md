@@ -6039,6 +6039,8 @@ Phase5 uses Bank and the existing bounded provider fixtures for contract evidenc
 The former public Scene/Face application has been removed; real CAD adaptation
 uses its private numerical/topology/contact owners in Phase6. See the
 [cleanup evidence](../plans/WORTH-query/milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+The [Phase5 contract matrix](../plans/WORTH-query/milestone-9.19-phase5-closure.md)
+records the qualified public boundary, evidence provenance and remaining private gate.
 
 A result-set/source expectation also retains the original Source READ support.
 Revoking a Source-only permission refuses a later non-querying mutation before

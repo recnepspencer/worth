@@ -6033,11 +6033,12 @@ the unchanged principal-specific v1 Source through its ordinary receiver, preser
 all original budgets/populations and pinned v1 reads. The
 [Bank adoption evidence](milestone-9.19-phase5-bank-current-accounts-evidence.md)
 records524 distinct passes, two established unrelated cleanup failures and the
-unchanged paired1000/2000/+50000 maintenance court. Phases1 through4 are complete;
-Phase5 remains open for integrated public contract/facade closure. Under the
-2026-11-01 scope correction, further public Scene/triangle/contact development is
-not a prerequisite. Phase6 performs the single final private pin and real CAD
-cutover in a new worktree based on the updated Proprietary main.
+unchanged paired1000/2000/+50000 maintenance court. Phases1 through5 are complete
+at the [revised public-contract closure](milestone-9.19-phase5-closure.md), including
+the coherent public CAD cleanup and its219 distinct tests plus ordinary executable.
+Under the2026-11-01 scope correction, further public Scene/triangle/contact
+expansion is not a prerequisite. Phase6 remains open for the single final private
+pin and real CAD cutover in a new worktree based on updated Proprietary main.
 
 
 ### Committed Provider Indexes

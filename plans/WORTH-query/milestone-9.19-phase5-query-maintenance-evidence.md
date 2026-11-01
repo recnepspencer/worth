@@ -1,5 +1,9 @@
 # Query9.19 Phase5: public maintenance and current-only receiving evidence
 
+> Follow-on status update2026-11-01: this receipt's generic results remain evidence.
+> Historical next-public-CAD requirements below are superseded by the corrected
+> scope; real CAD acceptance isPhase6. See the [current public closure matrix](milestone-9.19-phase5-closure.md).
+
 Status: complete; independent qa-loop, qa-tests and code-quality-qa PASS.
 Committed after final runtime, documentation and text review.
 Baseline `61b17083ed`. [Boundary](milestone-9.19-phase5-query-maintenance-boundary-review.md)
