@@ -12,3 +12,8 @@ fn merge_phase_boundaries_are_compile_time_private() {
 fn prepared_candidate_boundaries_are_compile_time_private() {
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/prepared_candidate/*.rs")).expect("prebuilt compiler denial");
 }
+
+#[test]
+fn memory_cutover_cannot_escape_or_perform_twice() {
+    worth_testkit_compiler::production_denial(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/scoped_cutover/*.rs")).expect("prebuilt scoped cutover denial");
+}

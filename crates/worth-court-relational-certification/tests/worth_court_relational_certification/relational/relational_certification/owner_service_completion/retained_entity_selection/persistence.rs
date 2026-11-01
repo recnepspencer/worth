@@ -1,10 +1,10 @@
 //! Unsupported persistence refuses through the real medium and recovery doors.
+use super::super::unaccessed_medium::UnaccessedMedium;
 use super::occurrences::{fixture, perform, prepare};
 use super::*;
-use std::sync::Arc;
 use worth_relational::facade::{
     durability::*, mvcc::RelationalRetainedEntitySelectionDenial as Denial,
-    runtime::RelationalRuntimeApi, storage::RelationalStorageUnavailableCause,
+    runtime::RelationalRuntimeApi,
 };
 
 #[test]
@@ -67,7 +67,7 @@ fn attached_medium_refuses_selection_before_any_medium_access() {
         .unwrap();
     let durable = RelationalRuntimeApi::builder()
         .schema_registry(fixture().build_registry())
-        .build_durable(Box::new(UnusedMedium))
+        .build_durable(Box::new(UnaccessedMedium))
         .unwrap();
     let transaction = begin_main_transaction(&durable);
     assert_eq!(
@@ -97,50 +97,5 @@ fn attached_medium_refuses_selection_before_any_medium_access() {
     );
     for commit in [&old, &lawful] {
         release_test_commit_snapshot(&runtime, commit);
-    }
-}
-
-#[derive(Debug)]
-struct UnusedMedium;
-impl RelationalDurableColdSource for UnusedMedium {
-    fn retain_members(
-        &self,
-        _: &[RelationalDurableMemberLocator],
-    ) -> Result<RelationalDurableMemberCustody, RelationalStorageUnavailableCause> {
-        panic!("selection cannot acquire medium members")
-    }
-    fn read_member(
-        &self,
-        _: RelationalDurableMemberLocator,
-        _: u64,
-    ) -> Result<Vec<u8>, RelationalStorageUnavailableCause> {
-        panic!("selection cannot read medium members")
-    }
-    fn read_commit(
-        &self,
-        _: worth_relational::facade::publication::PatchStreamPosition,
-        _: u64,
-    ) -> Result<Vec<u8>, RelationalStorageUnavailableCause> {
-        panic!("selection cannot read medium commits")
-    }
-}
-impl RelationalDurableMedium for UnusedMedium {
-    fn cold_source(&self) -> Arc<dyn RelationalDurableColdSource> {
-        Arc::new(UnusedMedium)
-    }
-    fn read_transition(
-        &self,
-        _: worth_relational::facade::branch::RelationalBranchTransitionSequence,
-    ) -> Result<RelationalBranchTransitionArtifact, RelationalDurableTransitionReadFailure> {
-        panic!("selection cannot read medium transitions")
-    }
-    fn publish(&self, _: &RelationalCanonicalCommitArtifact) -> RelationalDurablePublication {
-        panic!("selection cannot publish medium commits")
-    }
-    fn publish_transition(
-        &self,
-        _: &RelationalBranchTransitionArtifact,
-    ) -> RelationalDurablePublication {
-        panic!("selection cannot publish medium transitions")
     }
 }

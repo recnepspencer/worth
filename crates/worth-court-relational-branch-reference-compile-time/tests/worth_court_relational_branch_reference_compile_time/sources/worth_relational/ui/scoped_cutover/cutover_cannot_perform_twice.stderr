@@ -1,0 +1,15 @@
+error[E0382]: use of moved value: `cutover`
+  --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/scoped_cutover/cutover_cannot_perform_twice.rs:13:9
+   |
+11 |     let _ = port.with_prepared_memory_cutover(request, candidate, |cutover| {
+   |                                                                    ------- move occurs because `cutover` has type `PreparedMemoryRelationalCutover<'_, '_, '_>`, which does not implement the `Copy` trait
+12 |         cutover.perform();
+   |                 --------- `cutover` moved due to this method call
+13 |         cutover.perform();
+   |         ^^^^^^^ value used here after move
+   |
+note: `worth_relational::facade::mvcc::PreparedMemoryRelationalCutover::<'_, '_, '_>::perform` takes ownership of the receiver `self`, which moves `cutover`
+  --> $WORKSPACE/crates/worth-relational/src/mvcc/publication/port_handoff.rs
+  |
+  |     pub fn perform(self) {
+  |                    ^^^^

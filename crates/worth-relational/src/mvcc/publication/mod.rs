@@ -47,6 +47,7 @@ pub use outcome::{
 };
 pub(crate) use port::PreparedCanonicalBranchMovement;
 pub use port::RelationalPublicationPort;
+pub use port::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
 
 #[cfg(test)]
 pub(crate) use application_publication::{native_birth_fixture, native_meaning_fixture};

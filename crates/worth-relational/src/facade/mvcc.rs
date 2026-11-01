@@ -46,4 +46,5 @@ pub use crate::transactions::data::{
 };
 
 pub use crate::mvcc::RelationalPublicationReadDependencyDenial;
+pub use crate::mvcc::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
 pub use crate::runtime::RelationalPatchPositionReservationGateForTest;

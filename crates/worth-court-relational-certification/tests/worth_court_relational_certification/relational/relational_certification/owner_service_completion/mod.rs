@@ -16,3 +16,4 @@ mod retained_fork;
 mod retained_storage;
 #[path = "service_properties/mod.rs"]
 pub(crate) mod service_properties;
+mod unaccessed_medium;

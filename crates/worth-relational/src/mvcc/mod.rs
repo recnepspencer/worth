@@ -1,6 +1,7 @@
 mod observation;
 pub(crate) mod publication;
 pub use publication::RelationalPublicationReadDependencyDenial;
+pub use publication::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
 pub(crate) mod retained_entity_selection;
 mod transaction;
 #[cfg(test)]

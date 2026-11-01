@@ -8,7 +8,7 @@ use super::{
 
 impl PreparedBranchPublicationPreflight {
     pub(super) fn perform_cutover(
-        mut self,
+        &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> RelationalPublicationOutcome {
         let _publication_lifecycle = self
@@ -103,7 +103,7 @@ impl PreparedBranchPublicationPreflight {
         };
         if observed != self.expected {
             return RelationalPublicationOutcome::stale(StaleRelationalBranchObservation::new(
-                self.expected,
+                self.expected.clone(),
                 observed,
             ));
         }
@@ -111,7 +111,12 @@ impl PreparedBranchPublicationPreflight {
         // Capacity was reserved before head comparison so stale attempts still
         // release their exact preflight reservation. Only this coordinated,
         // unchanged head can turn capacity into a transfer witness.
-        let head_retirement = match self.head_retirement.bind_current_head() {
+        let head_retirement = match self
+            .head_retirement
+            .take()
+            .expect("the owner issues one retirement reservation to one consuming cutover token")
+            .bind_current_head()
+        {
             Ok(reservation) => reservation,
             Err(denial) => {
                 return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
@@ -159,7 +164,9 @@ impl PreparedBranchPublicationPreflight {
             Some(_) => crate::runtime::PatchPositionReservationAdmission::WaitWithin(execution),
             None => crate::runtime::PatchPositionReservationAdmission::DeferBehindCommit(execution),
         };
-        let symbol_meanings = self.movement.symbol_meanings;
+        let symbol_meanings = self.movement.symbol_meanings.take().expect(
+            "the owner issues one prepared symbol publication to one consuming cutover token",
+        );
         let (positioned_commit, head_retirement) = match self
             .movement
             .canonical_publication_route
@@ -178,7 +185,9 @@ impl PreparedBranchPublicationPreflight {
                     // global patch-position reservation is held, so this is where a
                     // concurrent publisher can be made to meet it.
                     reservation_pause.pause_holding_patch_position_reservation_for_test();
-                    let previous_root = publication_state.replace_with(self.next_state);
+                    let previous_root = publication_state.replace_with(self.next_state.take().expect(
+                        "preflight prepares the one target state before the consuming cutover token",
+                    ));
                     if let Some(companion) = &mut companion_cutover {
                         companion.install_at(position);
                     }
@@ -215,11 +224,17 @@ impl PreparedBranchPublicationPreflight {
         self.control.pause_after_linearization_for_test();
         drop(_critical_section);
         let settlement_retention = head_retirement.replace_head_for_publication(
-            self.candidate_retention,
+            self.candidate_retention
+                .take()
+                .expect("the consuming cutover owns candidate retention"),
             Arc::clone(&self.movement.root),
         );
         drop(_publication_lifecycle);
-        self.movement.record_allocations.commit();
+        self.movement
+            .record_allocations
+            .take()
+            .expect("the consuming cutover owns prepared record allocations")
+            .commit();
         let late_interruption = self
             .control
             .observe(crate::runtime::RelationalInterruptionBoundary::AfterLinearization);
@@ -232,14 +247,18 @@ impl PreparedBranchPublicationPreflight {
         // Authorizing the already-installed record is what disarms pre-effect
         // cleanup. From here the commit is recoverable by identity alone, and
         // the returned witness is only a witness.
-        let record = self.settlement_reservation.authorize(
-            Arc::clone(&positioned_commit),
-            settlement_retention,
-            late_interruption,
-        );
+        let record = self
+            .settlement_reservation
+            .take()
+            .expect("one actual cutover authorizes its original settlement reservation")
+            .authorize(
+                Arc::clone(&positioned_commit),
+                settlement_retention,
+                late_interruption,
+            );
         RelationalPublicationOutcome::performed(PerformedRelationalCommit::record(
             positioned_commit,
-            self.next_basis,
+            self.next_basis.clone(),
             record,
             late_interruption,
         ))

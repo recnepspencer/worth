@@ -506,3 +506,4 @@ workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/cr
 # Existing Bridge history control follows its public eviction court.
 crates/worth-runtime-bridge/ crates/worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/history.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/current_read_publication/critical_section.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/current_read_publication/scoped_cutover.rs

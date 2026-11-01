@@ -1,5 +1,6 @@
 //! Public Native publication keeps a separate original readonly source current.
 mod critical_section;
+mod scoped_cutover;
 use super::retained_entity_selection::{create, fixture, perform, update, values};
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 use worth_relational::facade::{
