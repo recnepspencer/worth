@@ -596,6 +596,13 @@ value, so it is insufficient for this completion boundary. `prepare_native` is
 pre-effect-only and must not publish checkpoints. Nested stop ownership remains
 latched; preserving an effectful callback result does not clear stops or grant
 fresh allowance. Test both native posture and accounted-parent inheritance.
+An original request already stopped before entry must not run an effectful
+callback, including when its invoking meter has a latched nested stop but could
+admit another zero-work child. Preserve that original control fact through
+actual scope admission. Foreign/sibling lineage refusal keeps its existing
+precedence over ambient interruption; do not return a pre-entry ambient consult
+error before checking actual lineage admission. A stop arising after the
+callback returned still preserves its value as specified above.
 
 Use Query's existing catch/resume-unwind pattern around the whole completion;
 Execution containment must not convert business or maintenance panic into a
