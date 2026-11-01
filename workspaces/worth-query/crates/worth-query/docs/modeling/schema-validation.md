@@ -385,9 +385,12 @@ adjacency revision facts remain required; populated observations can still refus
 after managed content restoration, as can empty output whose ordinary root
 predicate actually read a changed field. Restored semantic values do not establish
 canonical authored-history cancellation. Qualified retained observations can
-join the ordinary correction path through conservative Native scope candidates;
-every candidate must have genuine performed cancellation before paired support
-comparison. Exact historical relevance remains unfinished. The commit receiver pins that exact checked target. Raw frames, result rows and diagnostics cannot mint this support.
+join ordinary correction through Native scope candidates. Qualified Public
+Parents exclude nonmatching affected rows using both actual historical images and
+the installed forward predicate, outside runtime/attempt gates. Exact refinement
+never excludes matching history. Expired material stays conservative. Every
+remaining occurrence needs genuine performed cancellation before paired support
+comparison. The commit receiver pins that exact checked target. Raw frames, result rows and diagnostics cannot mint this support.
 Governed Parents qualify only with actual session-bound passive full capability-
 use and admitted disclosure meaning, retained by the existing authorization owner
 under the exact installed Parent. No old READ or capability decision is retained;
@@ -403,9 +406,9 @@ Complete candidate IDs/dispositions,
 outer field/relation shape and actual invocation affinity remain checked; input,
 edition, context, handler facts and output witness must still pass. Conservative
 stable registration retains full verification and genuine output projection,
-without clean equality links or downstream discharge. Conservative prefix
+without clean equality links or downstream discharge. Public prefix
 correction is described in the [correction guide](../execution/recorded-source-correction.md#qualified-managed-source-support);
-other correction profiles and field-access tracing remain unqualified. Initial-only producers do not gain
+governed/box correction and narrower field-access tracing remain unqualified. Initial-only producers do not gain
 successful changed-input regeneration from semantic reuse. See the
 [application guide](../../../../../../docs/build-an-application.md#construct-committed-provider-indexes)
 for ordinary Decl/Host setup, explicit access and the qualified fixture limits.

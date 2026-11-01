@@ -1,4 +1,4 @@
-//! One canonical union; managed scope candidates are deliberately unfiltered.
+//! Canonical candidates retain their ordinary or managed selection provenance.
 use super::super::WorthQueryCorrectionDerivationDenial as Denial;
 use super::{
     cancellation::Occurrences, overlap::Selection,
@@ -14,14 +14,23 @@ use worth_relational::facade::{
     runtime::RelationalRuntime,
 };
 
+mod relevance;
+pub(super) use relevance::narrow;
+
+pub(super) struct SelectedHistory {
+    ordinary: Occurrences,
+    managed: Occurrences,
+}
+
 pub(super) fn collect(
     runtime: &RelationalRuntime,
     execution: ExecutionRequest<'_, '_>,
     original: &AdmittedRelationalBranchBasis,
     target: &AdmittedRelationalBranchBasis,
     selection: &Selection,
-) -> Result<Occurrences, Denial> {
-    let mut occurrences = Occurrences::default();
+) -> Result<SelectedHistory, Denial> {
+    let mut ordinary = Occurrences::default();
+    let mut managed = Occurrences::default();
     // Preserve the existing truly-empty selection refusal. An all-managed
     // selection alone may skip the ordinary cursor's unrelated EmptySelection.
     if !selection.keys.is_empty() || selection.managed.is_empty() {
@@ -38,7 +47,7 @@ pub(super) fn collect(
             runtime,
             execution,
             cursor,
-            &mut occurrences,
+            &mut ordinary,
             "canonical-history-page",
         )?;
     }
@@ -54,17 +63,17 @@ pub(super) fn collect(
             .inspect_err(|cause| {
                 correction_rejection("managed-scope-candidate-history", None, cause)
             })?;
-        // No current-content or row-intersection filter is lawful here. Every
-        // conservative candidate must reach the existing performed-pair court.
+        // Only weak metadata can be acquired under this runtime loan. Historical
+        // predicate work follows outside it, before genuine cancellation.
         pages(
             runtime,
             execution,
             cursor,
-            &mut occurrences,
+            &mut managed,
             "managed-scope-candidate-page",
         )?;
     }
-    Ok(occurrences)
+    Ok(SelectedHistory { ordinary, managed })
 }
 fn selected(
     runtime: &RelationalRuntime,

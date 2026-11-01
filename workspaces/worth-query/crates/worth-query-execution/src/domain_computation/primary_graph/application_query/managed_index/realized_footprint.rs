@@ -2,6 +2,7 @@
 use crate::domain_computation::primary_graph::access_strategy::coverage::RetainedCoverage;
 mod candidate_rows;
 mod capture;
+mod history;
 mod revalidation;
 use super::{adapter::InstalledIndexProvider, predicate::RetainedPredicateProbe};
 use crate::domain_computation::{

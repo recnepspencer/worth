@@ -74,6 +74,11 @@ impl PersistentSourceRows {
     ) -> &ManagedIndexSourceProgram {
         &self.program
     }
+    pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn scope(
+        &self,
+    ) -> EntityId {
+        self.scope
+    }
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn entry(
         &self,
         entity: EntityId,

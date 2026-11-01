@@ -1,9 +1,13 @@
 //! Managed expectations retain owner-issued support, never an Execution loan.
 use crate::domain_computation::primary_graph::access_strategy::realized_footprint::{
-    CapturedManagedInfluence, CheckedRealizedSource,
+    CapturedManagedInfluence, CheckedRealizedSource, ManagedHistoryRelevanceDenial as HistoryDenial,
 };
 use std::sync::Arc;
 use worth_relational::facade::{
+    history::{
+        RelationalAuthoredManagedSourceImpact, RelationalAuthoredWriteDenial,
+        RelationalAuthoredWriteOccurrence,
+    },
     identity::EntityId,
     runtime::{ManagedIndexSourceObservation, RelationalRuntime},
     snapshots::SnapshotHandle,
@@ -94,12 +98,34 @@ impl ManagedSourceRead {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Option<worth_relational::facade::history::RelationalAuthoredManagedSourceSelector>,
-        worth_relational::facade::history::RelationalAuthoredWriteDenial,
+        RelationalAuthoredWriteDenial,
     > {
         match &self.influence {
             Some(capture) => capture.history_selector(runtime, execution),
             None => Ok(None),
         }
+    }
+    pub(in crate::domain_computation::primary_graph) fn history_impact(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        occurrence: &RelationalAuthoredWriteOccurrence,
+    ) -> Result<RelationalAuthoredManagedSourceImpact, HistoryDenial> {
+        self.history_capture()?
+            .history_impact(runtime, execution, occurrence)
+    }
+    /// Caller must have released runtime/attempt gates before opaque acquisition.
+    pub(in crate::domain_computation::primary_graph) fn history_relevant(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        impact: RelationalAuthoredManagedSourceImpact,
+    ) -> Result<bool, HistoryDenial> {
+        self.history_capture()?.history_relevant(execution, impact)
+    }
+    fn history_capture(&self) -> Result<&CapturedManagedInfluence, HistoryDenial> {
+        self.influence.as_deref().ok_or(HistoryDenial::Native(
+            RelationalAuthoredWriteDenial::UnsupportedManagedSourceSelector,
+        ))
     }
     pub(in crate::domain_computation::primary_graph) fn same_truth<E>(
         &self,

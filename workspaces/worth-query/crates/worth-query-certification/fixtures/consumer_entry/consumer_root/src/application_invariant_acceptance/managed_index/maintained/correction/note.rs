@@ -1,10 +1,17 @@
 //! Recorded note decisions genuinely consume a managed Parent outside their write locus.
+use super::super::refinement;
 use super::*;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
 
 #[derive(Clone, Debug, serde::Serialize)]
+pub enum Parent {
+    Prefix,
+    Exact,
+}
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct Input {
+    pub parent: Parent,
     pub directory: String,
     pub prefix: String,
     pub expect_empty: bool,
@@ -52,6 +59,7 @@ impl ApplicationDeclaredOperation<Catalog> for WriteNote {
             .operation_read_field(op, ItemName::reference())
             .operation_read_field(op, ItemEnabled::reference())
             .operation_managed_index_read::<query::PrefixBinding, _, _>(op)
+            .operation_managed_index_read::<refinement::ExactBinding, _, _>(op)
             .operation_write(op, DirectoryNote::reference())
     }
 }
@@ -63,11 +71,21 @@ impl OperationHandler<Catalog, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Directory>, Denial> {
         let result = (|| {
-            let rows = reader.index_query::<query::PrefixBinding>(query::FindPrefix {
-                directory: input.directory.clone(),
-                prefix: input.prefix.clone(),
-            })?;
-            if rows.is_empty() != input.expect_empty {
+            let empty = match input.parent {
+                Parent::Prefix => reader
+                    .index_query::<query::PrefixBinding>(query::FindPrefix {
+                        directory: input.directory.clone(),
+                        prefix: input.prefix.clone(),
+                    })?
+                    .is_empty(),
+                Parent::Exact => reader
+                    .index_query::<refinement::ExactBinding>(refinement::FindExact {
+                        directory: input.directory.clone(),
+                        name: input.prefix.clone(),
+                    })?
+                    .is_empty(),
+            };
+            if empty != input.expect_empty {
                 return Ok(None);
             }
             let directory =

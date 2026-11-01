@@ -11,12 +11,25 @@ pub(super) fn note_source(
     empty: bool,
     key: u64,
 ) -> WorthQueryApplicationCommitReceipt {
-    let input = note::Input {
-        directory: "A".into(),
-        prefix: prefix.into(),
-        expect_empty: empty,
-        replacement: "recorded note".into(),
-    };
+    note_input(
+        world,
+        request,
+        note::Input {
+            parent: note::Parent::Prefix,
+            directory: "A".into(),
+            prefix: prefix.into(),
+            expect_empty: empty,
+            replacement: "recorded note".into(),
+        },
+        key,
+    )
+}
+pub(super) fn note_input(
+    world: &host::Host,
+    request: &Request<'_, '_, '_>,
+    input: note::Input,
+    key: u64,
+) -> WorthQueryApplicationCommitReceipt {
     let operation = request
         .mutate(input)
         .without_source()

@@ -2326,3 +2326,20 @@ The [Native material receipt](milestone-9.19-phase4-historical-candidate-evidenc
 records actual weak-funding/opaque-retirement and ownership controls,238 distinct
 scoped passes and the unchanged prefix work guard. It qualifies Native material
 custody only; the ordinary Query relevance consumer remains unfinished.
+
+### Phase4 Public historical predicate relevance
+
+The [boundary review](milestone-9.19-phase4-historical-relevance-boundary-review.md)
+and [plan](milestone-9.19-phase4-historical-relevance-plan.md) consume Native weak
+historical material after leaving the runtime loan and before inverse-attempt
+creation. The original advancement budget remains active. Query validates both
+actual historical roots and applies the installed forward predicate only to
+actual affected rows; exact refinement cannot exclude matching history. Ordinary
+history remains independent. Missing/expired material and governed Parents keep
+conservative candidates. Cancellation and strict original/complete target support
+remain required. Phase4 remains open for remaining correction profiles, narrower
+field tracing and completion evidence; Phases5/6 remain unfinished.
+
+The [historical relevance receipt](milestone-9.19-phase4-historical-relevance-evidence.md)
+records188 current consumer and43 focused Query owner passes, actual original
+cancellation, unchanged prefix growth invoices and explicit baseline exclusions.

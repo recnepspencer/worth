@@ -1,11 +1,14 @@
 //! Retained consistency authority exposes no rows, READ grant or publication.
 mod comparison;
+mod history;
 use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+pub(in crate::domain_computation::primary_graph) use history::ManagedHistoryRelevanceDenial;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_proof::{RealizedFootprintAuthority, VerifiedRealizedFootprint};
 use worth_relational::facade::{
+    history::{RelationalAuthoredManagedSourceImpact, RelationalAuthoredWriteOccurrence},
     runtime::{ManagedIndexSourceObservation, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
@@ -39,6 +42,18 @@ pub(in crate::domain_computation::primary_graph) trait RetainedManagedInfluence:
         Option<worth_relational::facade::history::RelationalAuthoredManagedSourceSelector>,
         worth_relational::facade::history::RelationalAuthoredWriteDenial,
     >;
+    fn history_impact(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &ExecutionRequest<'_, '_>,
+        occurrence: &RelationalAuthoredWriteOccurrence,
+    ) -> Result<RelationalAuthoredManagedSourceImpact, ManagedHistoryRelevanceDenial>;
+    /// Acquire/use/release opaque payloads only outside runtime/attempt gates.
+    fn history_relevant(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        impact: RelationalAuthoredManagedSourceImpact,
+    ) -> Result<bool, ManagedHistoryRelevanceDenial>;
     fn revalidate(
         &self,
         runtime: &RelationalRuntime,

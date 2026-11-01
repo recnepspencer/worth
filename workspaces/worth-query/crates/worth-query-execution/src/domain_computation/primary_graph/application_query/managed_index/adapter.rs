@@ -14,6 +14,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
 
 mod execution;
+mod history;
 pub(super) use execution::ErasedIndexExecutor;
 
 pub(super) trait InstalledIndexProvider<S, I>: Send + Sync
@@ -39,6 +40,14 @@ where
         execution: &ExecutionRequest<'_, '_>,
         frame: CoverageFrame<'frame, 'loan>,
     ) -> Result<CandidateSelection<'frame, 'loan>, WorthQueryManagedIndexWorkDenial>;
+    fn historical_candidate_relevant(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        before: source_rows::SourceImageView<'_>,
+        after: source_rows::SourceImageView<'_>,
+        probe: &worth_foundational::facade::AspectValue,
+        material: &worth_relational::facade::history::RelationalAuthoredManagedSourceMaterial,
+    ) -> Result<bool, WorthQueryManagedIndexWorkDenial>;
     fn update(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -247,6 +256,16 @@ where
                 Ok(CandidateSelection::conservative(frame, slots))
             }
         })
+    }
+    fn historical_candidate_relevant(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        before: source_rows::SourceImageView<'_>,
+        after: source_rows::SourceImageView<'_>,
+        probe: &worth_foundational::facade::AspectValue,
+        material: &worth_relational::facade::history::RelationalAuthoredManagedSourceMaterial,
+    ) -> Result<bool, WorthQueryManagedIndexWorkDenial> {
+        history::relevant(self, execution, before, after, probe, material)
     }
     fn update(
         &self,

@@ -947,15 +947,17 @@ recreate sidecar issuance, and missing metadata refuses as
 `IncompleteManagedSourceHistory`. See the [Native API contract](../crates/worth-relational/API_OVERVIEW.md#managed-source-authored-impact-candidates)
 and [slice plan](../plans/WORTH-query/milestone-9.19-phase4-membership-history-plan.md).
 
-### Conservative managed Source correction
+### Qualified managed Source correction
 
 Qualified retained managed Source facts join ordinary recorded correction through
-existing receipt selection and preparation. Their actual Native observation
-issues the history selector; ordinary occurrences and conservative managed scope
-candidates share one canonical union and unchanged performed-cancellation checks.
-Strict original and complete target support remain required. Same-scope irrelevant
-uncancelled edits can still refuse; exact relevance and governed/box/refined
-correction qualification remain unfinished. No historical READ is granted. See
+existing receipt selection and preparation. Actual Native scope candidates for
+Public Parents can be narrowed by the same installed forward predicate on both
+historical affected row images. Opaque acquisition/use/disposal happens outside
+runtime/attempt gates under the original request. Exact refinement never excludes
+matching history. Missing/expired material and governed Parents stay conservative;
+wrong association refuses. Ordinary history, performed cancellation, strict
+original and complete target support remain independent requirements. No historical
+READ is granted; governed/box correction qualification remains unfinished. See
 the [correction contract](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
 
 ### Native historical Source material receipts
@@ -964,7 +966,6 @@ An actual Source observation may call `authored_history_impact` on a genuine
 canonical occurrence. The sealed view validates actual Native ownership and
 carries affected rows plus funded weak before/after material receipts. Opaque
 payload acquisition/use/release occurs outside all runtime/attempt gates; expiry
-is conservative. This admits no historical READ or Query narrowing. The existing
-Query correction path remains conservative until its outside-guard consumer is
-implemented. See the [Native API](../crates/worth-relational/API_OVERVIEW.md#historical-source-material-metadata)
+is conservative. This admits no historical READ. Query's qualified Public
+correction consumer interprets this metadata at its outside-guard boundary. See the [Native API](../crates/worth-relational/API_OVERVIEW.md#historical-source-material-metadata)
 and [foundation plan](../plans/WORTH-query/milestone-9.19-phase4-historical-candidate-plan.md).

@@ -91,6 +91,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                     &selection,
                 )
             })?;
+    let occurrences = history::narrow(target, execution, facts, occurrences)
+        .inspect_err(|cause| correction_rejection("managed-historical-relevance", None, cause))?;
     cancellation::require(target, execution, &occurrences).inspect_err(|cause| {
         correction_rejection(
             if selection.managed.is_empty() {

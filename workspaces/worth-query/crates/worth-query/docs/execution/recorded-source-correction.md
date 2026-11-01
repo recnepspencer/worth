@@ -129,20 +129,27 @@ correction through the existing receipt selection and preparation APIs. The
 original observation issues its Native history selector from its actual Source
 program, full-generation scope and runtime. It grants no historical READ.
 
-The canonical history union includes ordinary field/aspect/adjacency occurrences
-and every conservative managed scope-impact candidate. Every selected occurrence
-must have an authentic performed recorded cancellation before strict original
-support and complete target support are compared. Equal present results, raw
-value restoration and authored no-ops cannot replace cancellation. Missing live
-Native history metadata and unqualified captures refuse.
+Ordinary field/aspect/adjacency occurrences are preserved independently. For a
+qualified Public Parent, Native managed scope candidates can be narrowed using
+actual affected row keys and both historical Source images. Query validates the
+actual installed adapter, program and full-generation scope, then applies the
+same forward `matches_source` predicate outside runtime/attempt gates. Exact
+refinement never excludes a matching candidate from history, even when its DTO
+result was empty. Payload acquisition and disposal use the original request.
 
-This initial posture can reject an unrelated uncancelled edit in the same Source
-scope. Exact historical candidate relevance remains unfinished. The compiled
-[maintained Catalog correction court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/correction.rs)
-exercises genuine recorded reversals for populated and empty prefix input,
-transient entrants, no-ops and conservative same-scope refusal. It does not qualify
-governed, box or refined correction profiles. Current authority, disclosure,
-ordinary revision facts and exact prepared-target publication remain required.
+Missing or expired historical material and governed Parents keep conservative
+candidates; wrong associations and missing live Native history metadata refuse.
+Every remaining occurrence requires an authentic performed recorded cancellation
+before strict original and complete target support are compared. Equal present
+results, raw restoration and matching authored no-ops cannot replace cancellation.
+An irrelevant uncancelled edit or nonmatching no-op can be excluded when actual
+historical material survives. Independent ordinary facts still apply.
+
+The compiled [maintained Catalog correction court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/correction.rs)
+exercises populated/empty prefix inputs, irrelevant edits, transient entrants,
+matching exact-rejected no-ops, ordinary authored overlap and cancellation/retry.
+Governed and box correction qualification remain unfinished. Current authority,
+disclosure and exact prepared-target publication remain required.
 
 ## Select a source after closing its operation
 

@@ -8,7 +8,8 @@ use crate::domain_computation::primary_graph::{
     access_strategy::{
         coverage::CoverageFrame,
         realized_footprint::{
-            CapturedInfluenceComparison, CapturedManagedInfluence, RetainedManagedInfluence,
+            CapturedInfluenceComparison, CapturedManagedInfluence,
+            ManagedHistoryRelevanceDenial as HistoryDenial, RetainedManagedInfluence,
             RevalidatedManagedSource,
         },
     },
@@ -17,6 +18,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
+    history::{RelationalAuthoredManagedSourceImpact, RelationalAuthoredWriteOccurrence},
     runtime::{DerivedRelationReadDenial, ManagedIndexSourcePreparationDenial, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
@@ -79,6 +81,23 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
         self.original
             .authored_history_selector(runtime, *execution)
             .map(Some)
+    }
+    fn history_impact(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &ExecutionRequest<'_, '_>,
+        occurrence: &RelationalAuthoredWriteOccurrence,
+    ) -> Result<RelationalAuthoredManagedSourceImpact, HistoryDenial> {
+        self.original
+            .authored_history_impact(runtime, *execution, occurrence)
+            .map_err(HistoryDenial::Native)
+    }
+    fn history_relevant(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        impact: RelationalAuthoredManagedSourceImpact,
+    ) -> Result<bool, HistoryDenial> {
+        super::history::relevant(self, execution, impact)
     }
     fn revalidate(
         &self,
