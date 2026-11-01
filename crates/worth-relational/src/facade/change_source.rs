@@ -42,6 +42,7 @@ pub use crate::change_source::{
     RelationalObservationReadDenial, RelationalRetainedObservation,
     RelationalRetainedObservationRetirement, RelationalRetainedObservationRetirementDenial,
     RelationalRetainedObservationRetirementProgress, RelationalRuntimeHandle,
-    RelationalRuntimeLockObservationForTest, RelationalSelectedCommit,
-    RetiredMemoryRelationalAllocation, RetiredRelationalRetainedObservation,
+    RelationalRuntimeHandleAliasRetirementDenial, RelationalRuntimeLockObservationForTest,
+    RelationalSelectedCommit, RetiredMemoryRelationalAllocation,
+    RetiredRelationalRetainedObservation, RetiredRelationalRuntimeHandleAlias,
 };

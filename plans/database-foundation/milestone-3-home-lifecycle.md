@@ -265,6 +265,18 @@ counters at that stage, existing-reader protection, and genuine Native work AFTE
 alias discharge. Source/caller tests use existing genuine owner fixtures; Root
 records only exact observed SDK classes and named owner-private assertions.
 
+Only Native runtime_handle/alias_retirement/tests.rs receives the observed
+ExecutionRequest/RelationalRuntime/SerialRequest classes, and only the existing
+bridge_snapshot_reader_tests/retained_snapshot_retirement.rs court child receives
+ExecutionRequest/RelationalRuntime/RuntimeBridgeRelationalSource. The Native
+three named units inspect original private handle/slot identity and real admitted
+tenure, including a genuine owner-issued operation; record those exact private
+placements in src-court-private-logic-audit.json. The four named closed-reader
+construction/phase/abandonment/independent-reader cases reuse their existing
+owner court and genuine Native fixture; no family-wide fixture or factory
+permission is added. Runtime state equality/cached identity never substitutes for
+actual owner pointee identity, and no counterfeit positive owner is constructed.
+
 Shared support and actual Directory Native business/graph retirement remain
 unimplemented. Current Memory source-affinity refusal and ordinary prepare_close/
 finish cannot substitute. Later coupled proof must still capture/select/ack

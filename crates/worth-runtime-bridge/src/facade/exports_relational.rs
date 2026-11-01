@@ -25,8 +25,10 @@ pub use crate::relational_source::{
     RelationalBridgePublicationDenial, RelationalBridgePublicationFailure,
     RelationalBridgePublicationOutcome, RelationalBridgePublicationRebindRequired,
     RelationalBridgePublicationStale, RelationalBridgeRetainedSnapshot,
-    RelationalBridgeSourceConfigurationError, RelationalOpaqueAspectWideningAdmission,
-    RelationalOpaqueAspectWideningAdmissionDenial, RetiredRelationalBridgeBranchHead,
-    RetiredRelationalBridgeCanonicalSubscription, RetiredRelationalBridgeObservation,
+    RelationalBridgeRetainedSnapshotRetirement, RelationalBridgeRetainedSnapshotRetirementDenial,
+    RelationalBridgeRetainedSnapshotRetirementProgress, RelationalBridgeSourceConfigurationError,
+    RelationalOpaqueAspectWideningAdmission, RelationalOpaqueAspectWideningAdmissionDenial,
+    RetiredRelationalBridgeBranchHead, RetiredRelationalBridgeCanonicalSubscription,
+    RetiredRelationalBridgeObservation, RetiredRelationalBridgeRetainedSnapshot,
     RuntimeBridgeRelationalSource,
 };

@@ -1,4 +1,8 @@
 use std::sync::{Arc, Mutex};
+mod alias_retirement;
+pub use alias_retirement::{
+    RelationalRuntimeHandleAliasRetirementDenial, RetiredRelationalRuntimeHandleAlias,
+};
 mod lock_observation;
 mod memory_close;
 pub use lock_observation::RelationalRuntimeLockObservationForTest;

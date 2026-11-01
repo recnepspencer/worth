@@ -6,6 +6,11 @@ use crate::facade::{
 use crate::relational_source::snapshot_reading::RuntimePublicationSnapshotReader;
 
 use super::{RelationalBridgeObservationLease, RuntimeBridgeRelationalSource};
+mod retirement;
+pub use retirement::{
+    RelationalBridgeRetainedSnapshotRetirement, RelationalBridgeRetainedSnapshotRetirementDenial,
+    RelationalBridgeRetainedSnapshotRetirementProgress, RetiredRelationalBridgeRetainedSnapshot,
+};
 
 /// Reader and registration custody for one exact retained source observation.
 ///

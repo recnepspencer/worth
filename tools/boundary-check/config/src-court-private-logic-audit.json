@@ -890,6 +890,39 @@
       ],
       "audit": "Coordinator exact owner-private cfg(test) placement ruling, 2026-11-01; only the named assertion helper and original court caller are admitted. Helpers borrow genuine source/task/request/basis, construct no runtime or SDK request, and return no authority/guard. Observed borrowed-type classifications are exact file rows, not a family exemption. Exact court caller: relational_source::bridge_snapshot_reader_tests::retirement::bridge_lease_retirement_wrapped_head_successor_survives_abandonment.",
       "private_subject": "Negative-only boundary scheduling sets the ORIGINAL existing next_binding_id to MAX, then issues genuine max and wrapped-zero heads via the public source and admitted basis. Original zero-task abandonment and superseded max-task completion must preserve the real wrapped successor, distinguished by its owner-issued snapshot identity. No fake lease, new counter, Native runtime construction or production mutation door is added."
+    },
+    {
+      "source": "crates/worth-relational/src/change_source/runtime_handle/alias_retirement/tests.rs",
+      "test": "change_source::runtime_handle::alias_retirement::tests::immutable_alias_retirement_keeps_owner_serving_and_original_slot_until_reclaim",
+      "constructors": [
+        "runtime_with_test_schema",
+        "RelationalRuntimeHandle::immutable"
+      ],
+      "audit": "Coordinator exact private original-handle/slot/tenure placement ruling, 2026-11-01; only this named Native owner unit and observed exact file classes are admitted. Existing genuine owner fixture is reused; no new runtime constructor, source factory or public test getter is added.",
+      "private_subject": "Borrows the genuine original Native owner while retiring its exact local immutable handle. Private original lock-observation-slot Weak identity remains live until opaque alias-data reclaim; real subsequent Native publication proves admission was never stopped. Actual Runtime Arc unwrap and ordinary owner close complete while the passive alias metadata remains held."
+    },
+    {
+      "source": "crates/worth-relational/src/change_source/runtime_handle/alias_retirement/tests.rs",
+      "test": "change_source::runtime_handle::alias_retirement::tests::immutable_alias_retirement_rejects_same_state_cached_identity_and_foreign_owner",
+      "constructors": [
+        "runtime_with_test_schema",
+        "owner_binding().admit",
+        "RelationalRuntime::admitted",
+        "RelationalRuntimeHandle::immutable"
+      ],
+      "audit": "Coordinator exact private original-handle/slot/tenure placement ruling, 2026-11-01; only this named Native owner unit and observed exact file classes are admitted. Existing genuine owner fixture is reused; no new runtime constructor, source factory or public test getter is added.",
+      "private_subject": "Creates an actual admitted runtime handle through the genuine owner-issued operation over the same state/cached runtime ID, then proves it is not the original owning runtime pointee. Private original handle/slot identity survives refusal. A genuinely foreign owner also refuses. No fake Owner tenure or positive owner witness is constructed."
+    },
+    {
+      "source": "crates/worth-relational/src/change_source/runtime_handle/alias_retirement/tests.rs",
+      "test": "change_source::runtime_handle::alias_retirement::tests::immutable_alias_retirement_shared_and_stopped_refusals_preserve_original_handle",
+      "constructors": [
+        "runtime_with_test_schema",
+        "RelationalRuntimeHandle::shared",
+        "RelationalRuntimeHandle::immutable"
+      ],
+      "audit": "Coordinator exact private original-handle/slot/tenure placement ruling, 2026-11-01; only this named Native owner unit and observed exact file classes are admitted. Existing genuine owner fixture is reused; no new runtime constructor, source factory or public test getter is added.",
+      "private_subject": "Inspects exact private Shared/Immutable Arc identity and original observation slot after unsupported Shared or original-request stop. Returned handles are the same inputs, before effects; ordinary unbudgeted disposal and genuine original owner closure remain separate."
     }
   ]
 }

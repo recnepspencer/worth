@@ -44,7 +44,11 @@ pub use observation_bindings::{
 pub(in crate::relational_source) use observation_bindings::{
     RelationalBridgeSelectedCommitObservation, RelationalBridgeSelectedObservation,
 };
-pub use retained_snapshot::RelationalBridgeRetainedSnapshot;
+pub use retained_snapshot::{
+    RelationalBridgeRetainedSnapshot, RelationalBridgeRetainedSnapshotRetirement,
+    RelationalBridgeRetainedSnapshotRetirementDenial,
+    RelationalBridgeRetainedSnapshotRetirementProgress, RetiredRelationalBridgeRetainedSnapshot,
+};
 
 #[derive(Debug, Clone)]
 pub struct RuntimeBridgeRelationalSource {

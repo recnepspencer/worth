@@ -41,4 +41,7 @@ pub use runtime_handle::{
     RelationalMemoryClose, RelationalMemoryCloseDenial, RelationalMemoryCloseObservation,
     RelationalMemoryCloseRefused, RetiredMemoryRelationalAllocation,
 };
-pub use runtime_handle::{RelationalRuntimeHandle, RelationalRuntimeLockObservationForTest};
+pub use runtime_handle::{
+    RelationalRuntimeHandle, RelationalRuntimeHandleAliasRetirementDenial,
+    RelationalRuntimeLockObservationForTest, RetiredRelationalRuntimeHandleAlias,
+};

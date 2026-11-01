@@ -2,6 +2,10 @@ use crate::facade::{
     BridgeSnapshotReadError, SnapshotReadPacket, SnapshotReadPacketResult, SnapshotReadRecord,
     TruthSnapshotIdentity, TruthSnapshotReader,
 };
+mod retirement;
+pub(in crate::relational_source) use retirement::{
+    RetiredRuntimePublicationSnapshotReader, RuntimePublicationSnapshotReaderRetirement,
+};
 
 use super::identities::record_ref_from_identity_parts;
 use super::snapshot_values::{
