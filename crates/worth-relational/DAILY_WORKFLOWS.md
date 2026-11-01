@@ -66,6 +66,15 @@ error does not undo a performed publication. Settle a `Performed` outcome
 through its original owner after releasing the guard. `None` means the token
 was unused; an outer `Err` is a refusal before the callback.
 
+Use `cutover.perform_before(deadline)` when the enclosing operation has an
+additional admitted deadline, such as authentication expiry. This only narrows
+the original request and candidate lifetime. Native rechecks the original
+request and the effective cutoff after reservation waits, before assigning a
+canonical position. An elapsed additional cutoff returns
+`RelationalPublicationDenial::CutoverDeadlineElapsed`; an earlier candidate
+expiry retains `CandidateLifetimeExpired`. The cutoff does not replace the
+original request's cancellation or waiting policy.
+
 ## Read truth
 
 Use:

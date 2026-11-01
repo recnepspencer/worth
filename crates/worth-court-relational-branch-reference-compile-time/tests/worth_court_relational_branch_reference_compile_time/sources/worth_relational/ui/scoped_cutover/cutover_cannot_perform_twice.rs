@@ -9,7 +9,7 @@ fn deny(
     candidate: PreparedRelationalCommitCandidate,
 ) {
     let _ = port.with_prepared_memory_cutover(request, candidate, |cutover| {
-        cutover.perform();
+        cutover.perform_before(std::time::Instant::now());
         cutover.perform();
     });
 }

@@ -20,6 +20,14 @@ impl PreparedMemoryRelationalCutover<'_, '_, '_> {
     pub fn perform(self) {
         self.inner.perform();
     }
+
+    /// Narrow this cutover with an additional deadline, checked after owner
+    /// waits and before canonical position assignment. This cannot extend the
+    /// original request or candidate lifetime. Actual custody still returns
+    /// outside the callback; expiry performs nothing.
+    pub fn perform_before(self, deadline: std::time::Instant) {
+        self.inner.perform_before(Some(deadline));
+    }
 }
 
 pub(super) struct PreparedRelationalCutover<'cutover, 'policy, 'request> {
@@ -30,7 +38,11 @@ pub(super) struct PreparedRelationalCutover<'cutover, 'policy, 'request> {
 
 impl PreparedRelationalCutover<'_, '_, '_> {
     pub(super) fn perform(self) {
-        *self.outcome = Some(self.prepared.perform_cutover(self.execution));
+        self.perform_before(None);
+    }
+
+    fn perform_before(self, deadline: Option<std::time::Instant>) {
+        *self.outcome = Some(self.prepared.perform_cutover(self.execution, deadline));
     }
 }
 

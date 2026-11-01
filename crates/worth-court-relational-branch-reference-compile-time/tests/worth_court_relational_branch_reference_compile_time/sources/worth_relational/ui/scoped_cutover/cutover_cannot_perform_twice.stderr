@@ -3,13 +3,7 @@ error[E0382]: use of moved value: `cutover`
    |
 11 |     let _ = port.with_prepared_memory_cutover(request, candidate, |cutover| {
    |                                                                    ------- move occurs because `cutover` has type `PreparedMemoryRelationalCutover<'_, '_, '_>`, which does not implement the `Copy` trait
-12 |         cutover.perform();
-   |                 --------- `cutover` moved due to this method call
+12 |         cutover.perform_before(std::time::Instant::now());
+   |         ------- value moved here
 13 |         cutover.perform();
    |         ^^^^^^^ value used here after move
-   |
-note: `worth_relational::facade::mvcc::PreparedMemoryRelationalCutover::<'_, '_, '_>::perform` takes ownership of the receiver `self`, which moves `cutover`
-  --> $WORKSPACE/crates/worth-relational/src/mvcc/publication/port_handoff.rs
-  |
-  |     pub fn perform(self) {
-  |                    ^^^^

@@ -194,6 +194,7 @@ impl StaleRelationalBranchObservation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationDenial {
     ScopedCutoverDurabilityUnsupported,
+    CutoverDeadlineElapsed,
     CurrentReadDependency(super::RelationalPublicationReadDependencyDenial),
     RecoveredCodecTransitionRequired,
     StaleInvariantGeneration {

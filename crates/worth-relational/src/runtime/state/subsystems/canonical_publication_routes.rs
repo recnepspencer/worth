@@ -1,6 +1,9 @@
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 
+#[path = "canonical_publication_routes/narrowed_cutover_control.rs"]
+mod narrowed_cutover_control;
+
 use dashmap::DashMap;
 
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
@@ -92,6 +95,9 @@ pub(crate) enum CanonicalPublicationRecordError {
     /// reservation; it was assigned nothing.
     ReservationWaitStopped(worth_execution::WorkCeilingDenial),
     PositionCapacityExhausted,
+    /// A caller narrowed the memory cutover and its deadline elapsed before
+    /// canonical assignment. No position or owner effect was produced.
+    CutoverDeadlineElapsed,
     /// The durable step did not make the positioned commit durable, so the
     /// position was not consumed and nothing was installed.
     Durable(crate::durability::medium::RelationalDurableStepStop),
@@ -294,6 +300,7 @@ impl PreparedCanonicalPublicationRoute {
         &self,
         publication_cell: crate::branch::RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
+        cutover_before: Option<std::time::Instant>,
         durable: impl FnOnce(
             &PositionedCanonicalCommit,
             &crate::branch::RelationalBranchRootDescriptor,
@@ -314,6 +321,7 @@ impl PreparedCanonicalPublicationRoute {
             Arc::clone(&self.route),
             self.resident.clone(),
             admission,
+            cutover_before,
             durable,
             cutover,
         )
