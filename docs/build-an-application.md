@@ -5906,7 +5906,8 @@ actual historical affected rows in both Source images can exclude nonmatching
 edits using the installed forward predicate; exact refinement never removes a
 matching candidate. Missing/expired material stays conservative. Every remaining
 candidate needs genuine performed cancellation before strict original and complete
-target comparison. Governed/box correction qualification remains unfinished. See the
+target comparison. The same ordinary correction path qualifies prefix and
+indirect box/contact inputs; governed historical relevance stays conservative. See the
 [correction guide](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
 Independent ordinary field and adjacency revision facts still apply. Thus equal
 restored managed content does not guarantee that every populated observation

@@ -149,6 +149,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .finish_action()
                 .action::<correction::mover::Binding, correction::MoverDelivery>()
                 .finish_action()
+                .action::<correction::motion::Binding, correction::MotionDelivery>()
+                .finish_action()
                 .native_action::<mutation::Binding>()
                 .finish_action()
                 .native_action::<super::refinement::mutation::Binding>()

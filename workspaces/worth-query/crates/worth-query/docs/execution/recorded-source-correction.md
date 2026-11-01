@@ -148,7 +148,11 @@ historical material survives. Independent ordinary facts still apply.
 The compiled [maintained Catalog correction court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/correction.rs)
 exercises populated/empty prefix inputs, irrelevant edits, transient entrants,
 matching exact-rejected no-ops, ordinary authored overlap and cancellation/retry.
-Governed and box correction qualification remain unfinished. Current authority,
+The same correction family qualifies the box provider's actual indirect endpoint
+history, including irrelevant motion, transient entrants, genuine recorded motion
+reversal and an AABB match rejected by exact contact. The motion inverse decodes
+its actual retained coordinate preimage; domain numerical meaning is unchanged.
+Governed historical relevance remains explicitly conservative. Current authority,
 disclosure and exact prepared-target publication remain required.
 
 ## Select a source after closing its operation

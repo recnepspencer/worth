@@ -957,7 +957,8 @@ runtime/attempt gates under the original request. Exact refinement never exclude
 matching history. Missing/expired material and governed Parents stay conservative;
 wrong association refuses. Ordinary history, performed cancellation, strict
 original and complete target support remain independent requirements. No historical
-READ is granted; governed/box correction qualification remains unfinished. See
+READ is granted. Prefix and indirect box/contact correction use the same generic
+history consumer; governed historical relevance stays conservative. See
 the [correction contract](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
 
 ### Native historical Source material receipts

@@ -5,6 +5,7 @@ use worth_query_decl::facade::{
 };
 pub struct Note;
 pub struct Mover;
+pub struct Motion;
 const PREIMAGE_BYTES: usize = 4096; // An explicit fixture retention ceiling; oversized values refuse.
 fn key(value: &str, identity: &'static str) -> Result<u64, ApplicationValueEncodeDenial> {
     value.parse().map_err(|_| ApplicationValueEncodeDenial::CodecRejected {
@@ -20,6 +21,10 @@ pub(super) fn visit<V: ApplicationCorrectionVisitor<Catalog>>(
         Ok(dispatch_application_correction::<Catalog, Note, V>(visitor))
     } else if source == std::any::TypeId::of::<mover::Binding>() {
         Ok(dispatch_application_correction::<Catalog, Mover, V>(
+            visitor,
+        ))
+    } else if source == std::any::TypeId::of::<motion::Binding>() {
+        Ok(dispatch_application_correction::<Catalog, Motion, V>(
             visitor,
         ))
     } else {
@@ -131,6 +136,73 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
         Ok(mover::Input {
+            replacement: prior,
+            ..original.clone()
+        })
+    }
+    fn inverse_key(value: &str) -> Result<u64, ApplicationValueEncodeDenial> {
+        key(value, Self::IDENTITY)
+    }
+    fn visit<V: ApplicationCorrectionVisitor<Catalog>>(
+        dispatch: ApplicationCorrectionDispatch<Catalog, Self, V>,
+    ) -> V::Output {
+        dispatch.conventional()
+    }
+}
+
+impl ApplicationCorrectionBinding<Catalog> for Motion {
+    const IDENTITY: &'static str = "maintained-catalog.recorded-motion.correction.v1";
+    type Source = motion::Binding;
+    type InverseIntent = motion::Input;
+    type Disclosure = state::Binding;
+    fn disclosure_parameters(
+        original: &motion::Input,
+    ) -> Result<ApplicationQueryParameterSet<state::NoteQuery>, ApplicationCorrectionDerivationDenial>
+    {
+        Ok(
+            <state::Read as ApplicationQueryIntent<Catalog>>::parameters(&state::Read {
+                directory: original.directory.clone(),
+            }),
+        )
+    }
+    fn source_definition() -> ApplicationOperationDefinitionBuilder<
+        Catalog,
+        motion::MoveVertex,
+        motion::Input,
+        true,
+        false,
+    > {
+        motion::MoveVertex::reference()
+            .definition()
+            .no_external_effect()
+    }
+    fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
+            DeclaredPreImageDemand::new(
+                [DeclaredPreImageLocus::from_field(
+                    super::super::geometry::schema::VertexRegion::reference(),
+                )],
+                PREIMAGE_BYTES,
+            )
+            .unwrap(),
+        )
+    }
+    fn derive_correction(
+        original: &motion::Input,
+        material: ApplicationCorrectionSourceMaterial<'_, Catalog>,
+    ) -> Result<motion::Input, ApplicationCorrectionDerivationDenial> {
+        let ApplicationCorrectionSourceMaterial::RecordedInverse(preimage) = material else {
+            return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
+        };
+        let prior = super::super::bounds::CoordinatesBinding::decode(
+            preimage
+                .field(&DeclaredPreImageLocus::from_field(
+                    super::super::geometry::schema::VertexRegion::reference(),
+                ))
+                .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
+        )
+        .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
+        Ok(motion::Input {
             replacement: prior,
             ..original.clone()
         })

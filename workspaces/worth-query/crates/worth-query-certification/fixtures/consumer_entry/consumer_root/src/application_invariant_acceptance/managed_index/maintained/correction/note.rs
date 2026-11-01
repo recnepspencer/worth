@@ -1,5 +1,9 @@
 //! Recorded note decisions genuinely consume a managed Parent outside their write locus.
-use super::super::refinement;
+use super::super::{
+    bounds::Coordinates,
+    geometry::{self, schema::*},
+    refinement,
+};
 use super::*;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
@@ -8,6 +12,8 @@ use worth_query_host::facade::{application_entry::*, primary_graph::*};
 pub enum Parent {
     Prefix,
     Exact,
+    Boxes { probe: Coordinates },
+    Contact { probe: Coordinates },
 }
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Input {
@@ -27,7 +33,7 @@ worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ma
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-catalog.recorded-note.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-catalog.recorded-note.denial.v1" });
 worth_query_operation!(pub WriteNote for Catalog, input InputBinding);
-worth_query_operation_reads!(WriteNote => [Directory, DirectoryIdentity, DirectoryNote, ItemIdentity, ItemName, ItemEnabled]);
+worth_query_operation_reads!(WriteNote => [Directory, DirectoryIdentity, DirectoryNote, ItemIdentity, ItemName, ItemEnabled, EdgeIdentity, VertexRegion, Starts, Ends]);
 worth_query_operation_writes!(WriteNote => [DirectoryNote]);
 fn scope(input: &Input) -> String {
     input.directory.clone()
@@ -60,6 +66,12 @@ impl ApplicationDeclaredOperation<Catalog> for WriteNote {
             .operation_read_field(op, ItemEnabled::reference())
             .operation_managed_index_read::<query::PrefixBinding, _, _>(op)
             .operation_managed_index_read::<refinement::ExactBinding, _, _>(op)
+            .operation_managed_index_read::<geometry::query::BoxBinding, _, _>(op)
+            .operation_managed_index_read::<geometry::refinement::Binding, _, _>(op)
+            .operation_read_field(op, EdgeIdentity::reference())
+            .operation_read_field(op, VertexRegion::reference())
+            .operation_read_relation(op, Starts::reference())
+            .operation_read_relation(op, Ends::reference())
             .operation_write(op, DirectoryNote::reference())
     }
 }
@@ -83,6 +95,20 @@ impl OperationHandler<Catalog, Binding> for Handler {
                         directory: input.directory.clone(),
                         name: input.prefix.clone(),
                     })?
+                    .is_empty(),
+                Parent::Boxes { probe } => reader
+                    .index_query::<geometry::query::BoxBinding>(geometry::query::FindBoxes {
+                        directory: input.directory.clone(),
+                        probe,
+                    })?
+                    .is_empty(),
+                Parent::Contact { probe } => reader
+                    .index_query::<geometry::refinement::Binding>(
+                        geometry::refinement::FindContact {
+                            directory: input.directory.clone(),
+                            probe,
+                        },
+                    )?
                     .is_empty(),
             };
             if empty != input.expect_empty {

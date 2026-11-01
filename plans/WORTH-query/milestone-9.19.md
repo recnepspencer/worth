@@ -2343,3 +2343,19 @@ field tracing and completion evidence; Phases5/6 remain unfinished.
 The [historical relevance receipt](milestone-9.19-phase4-historical-relevance-evidence.md)
 records188 current consumer and43 focused Query owner passes, actual original
 cancellation, unchanged prefix growth invoices and explicit baseline exclusions.
+
+### Phase4 alternate-provider correction qualification
+
+The [box correction boundary](milestone-9.19-phase4-box-correction-boundary-review.md)
+and [plan](milestone-9.19-phase4-box-correction-plan.md) qualify the same generic
+Public history path with actual one-hop vertex/edge Source and existing box/exact-
+contact providers. Same Catalog/Program recorded Note and motion inverses preserve
+actual coordinate preimage, Directory disclosure, ordinary publication and real
+performed cancellation. No platform or numerical code changes are intended.
+Phase4 completion review remains separate. Its explicit conservative governed
+history and complete projected candidate support do not imply minimal per-field
+tracing or new governed producer APIs. Phases5/6 remain unfinished.
+
+The [box correction receipt](milestone-9.19-phase4-box-correction-evidence.md)
+records12 focused correction and192 broad current consumer passes with unchanged
+original prefix invoices, the same explicit exclusions and no platform rebuild.

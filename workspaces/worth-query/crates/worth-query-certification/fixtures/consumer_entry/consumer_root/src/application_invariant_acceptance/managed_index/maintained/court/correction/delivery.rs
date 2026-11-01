@@ -37,20 +37,7 @@ pub(super) fn note_input(
         .unwrap_or_else(|(_, _, denial)| panic!("record note capture: {denial:?}"))
         .retain_operation::<host::Program, correction::NoteAction>(world)
         .unwrap_or_else(|(_, denial)| panic!("record note action: {denial:?}"));
-    let mut operation = Some(operation);
-    let completed = (0..16)
-        .find_map(|_| match operation.take().unwrap().advance(request) {
-            WorthQuerySourceOnlyAdvance::Progress(next) => {
-                operation = Some(next);
-                None
-            }
-            WorthQuerySourceOnlyAdvance::Completed(completed) => Some(completed),
-            WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
-                panic!("recorded note: {denial:?}")
-            }
-            _ => panic!("recorded note unexpectedly terminated"),
-        })
-        .expect("bounded fixture source steps complete");
+    let completed = complete(operation.advance(request), |next| next.advance(request));
     let (_, evidence) = completed
         .close_with_evidence(request)
         .unwrap_or_else(|(_, denial)| panic!("record note close: {denial:?}"));
@@ -78,20 +65,7 @@ pub(super) fn move_source(
         .unwrap_or_else(|(_, _, denial)| panic!("record mover capture: {denial:?}"))
         .retain_operation::<host::Program, correction::MoverAction>(world)
         .unwrap_or_else(|(_, denial)| panic!("record mover action: {denial:?}"));
-    let mut operation = Some(operation);
-    let completed = (0..16)
-        .find_map(|_| match operation.take().unwrap().advance(request) {
-            WorthQuerySourceOnlyAdvance::Progress(next) => {
-                operation = Some(next);
-                None
-            }
-            WorthQuerySourceOnlyAdvance::Completed(completed) => Some(completed),
-            WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
-                panic!("recorded mover: {denial:?}")
-            }
-            _ => panic!("recorded mover unexpectedly terminated"),
-        })
-        .expect("bounded fixture source steps complete");
+    let completed = complete(operation.advance(request), |next| next.advance(request));
     let (_, evidence) = completed
         .close_with_evidence(request)
         .unwrap_or_else(|(_, denial)| panic!("record mover close: {denial:?}"));
@@ -121,20 +95,7 @@ pub(super) fn reverse_mover(
         WorthQueryOperationCorrectionPreparation::Continued(advance) => advance,
         _ => panic!("a real inverse retains its source owner"),
     };
-    let mut advance = Some(advance);
-    let completed = (0..16)
-        .find_map(|_| match advance.take().unwrap() {
-            WorthQuerySourceOnlyAdvance::Progress(next) => {
-                advance = Some(next.advance(request));
-                None
-            }
-            WorthQuerySourceOnlyAdvance::Completed(completed) => Some(completed),
-            WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
-                panic!("inverse mover: {denial:?}")
-            }
-            _ => panic!("inverse mover unexpectedly terminated"),
-        })
-        .expect("bounded fixture inverse steps complete");
+    let completed = complete(advance, |next| next.advance(request));
     let (_, evidence) = completed
         .close_with_evidence(request)
         .unwrap_or_else(|(_, denial)| panic!("inverse mover close: {denial:?}"));
@@ -162,20 +123,7 @@ pub(super) fn reverse_note(
         WorthQueryOperationCorrectionPreparation::Continued(advance) => advance,
         _ => panic!("a real inverse retains its source owner"),
     };
-    let mut advance = Some(advance);
-    let completed = (0..16)
-        .find_map(|_| match advance.take().unwrap() {
-            WorthQuerySourceOnlyAdvance::Progress(next) => {
-                advance = Some(next.advance(request));
-                None
-            }
-            WorthQuerySourceOnlyAdvance::Completed(completed) => Some(completed),
-            WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
-                panic!("inverse note: {denial:?}")
-            }
-            _ => panic!("inverse note unexpectedly terminated"),
-        })
-        .expect("bounded fixture inverse steps complete");
+    let completed = complete(advance, |next| next.advance(request));
     completed
         .close_with_evidence(request)
         .unwrap_or_else(|(_, denial)| panic!("inverse note close: {denial:?}"));
@@ -231,4 +179,76 @@ pub(super) fn state(request: &Request<'_, '_, '_>, note: &str, name: &str) {
         .unwrap();
     let x = rows.rows().iter().find(|row| row.identity == "x").unwrap();
     assert_eq!(x.name, name);
+}
+
+fn complete<O, C, T>(
+    mut advance: WorthQuerySourceOnlyAdvance<O, C, T>,
+    mut step: impl FnMut(O) -> WorthQuerySourceOnlyAdvance<O, C, T>,
+) -> C {
+    for _ in 0..16 {
+        advance = match advance {
+            WorthQuerySourceOnlyAdvance::Progress(next) => step(next),
+            WorthQuerySourceOnlyAdvance::Completed(completed) => return completed,
+            WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
+                panic!("recorded operation: {denial:?}")
+            }
+            WorthQuerySourceOnlyAdvance::Terminal(_) => {
+                panic!("recorded operation unexpectedly terminated")
+            }
+        };
+    }
+    panic!("bounded fixture operation steps complete");
+}
+pub(super) fn motion_source(
+    world: &host::Host,
+    request: &Request<'_, '_, '_>,
+    vertex: &str,
+    replacement: super::super::super::bounds::Coordinates,
+    key: u64,
+) -> WorthQueryApplicationCommitReceipt {
+    let operation = request
+        .mutate(correction::motion::Input {
+            directory: "A".into(),
+            vertex: vertex.into(),
+            replacement,
+        })
+        .without_source()
+        .idempotency_owned(key)
+        .unwrap_or_else(|(_, _, denial)| panic!("record motion capture: {denial:?}"))
+        .retain_operation::<host::Program, correction::MotionAction>(world)
+        .unwrap_or_else(|(_, denial)| panic!("record motion action: {denial:?}"));
+    let completed = complete(operation.advance(request), |next| next.advance(request));
+    let (_, evidence) = completed
+        .close_with_evidence(request)
+        .unwrap_or_else(|(_, denial)| panic!("record motion close: {denial:?}"));
+    let receipt = match evidence {
+        WorthQuerySourceCompletion::Fresh { receipt, .. }
+        | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+    };
+    assert!(receipt.has_retained_preimage());
+    receipt
+}
+pub(super) fn reverse_motion(
+    world: &host::Host,
+    request: &Request<'_, '_, '_>,
+    receipt: &WorthQueryApplicationCommitReceipt,
+    key: &str,
+) {
+    let selected = request.corrections().select(receipt, limits()).unwrap();
+    let prepared = request
+        .corrections()
+        .reverse(&selected)
+        .idempotency(key)
+        .limits(limits())
+        .prepare_operation::<recorded::Motion, host::Program, correction::MotionAction>(world)
+        .unwrap();
+    let advance = match prepared {
+        WorthQueryOperationCorrectionPreparation::Prepared(prepared) => prepared.publish().unwrap(),
+        WorthQueryOperationCorrectionPreparation::Continued(advance) => advance,
+        _ => panic!("real motion inverse retains its source owner"),
+    };
+    let completed = complete(advance, |next| next.advance(request));
+    completed
+        .close_with_evidence(request)
+        .unwrap_or_else(|(_, denial)| panic!("inverse motion close: {denial:?}"));
 }

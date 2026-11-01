@@ -6,6 +6,7 @@ use super::super::{
 use super::*;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt;
 mod delivery;
+mod geometry;
 use delivery::*;
 
 #[test]

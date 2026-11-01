@@ -408,7 +408,9 @@ edition, context, handler facts and output witness must still pass. Conservative
 stable registration retains full verification and genuine output projection,
 without clean equality links or downstream discharge. Public prefix
 correction is described in the [correction guide](../execution/recorded-source-correction.md#qualified-managed-source-support);
-governed/box correction and narrower field-access tracing remain unqualified. Initial-only producers do not gain
+indirect box/contact correction uses the same qualified generic history path.
+Governed history stays conservative. Complete projected candidate support remains
+the comparison boundary; minimal per-field tracing is not claimed. Initial-only producers do not gain
 successful changed-input regeneration from semantic reuse. See the
 [application guide](../../../../../../docs/build-an-application.md#construct-committed-provider-indexes)
 for ordinary Decl/Host setup, explicit access and the qualified fixture limits.

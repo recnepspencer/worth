@@ -8,7 +8,7 @@ pub(super) mod query;
 pub(super) mod refinement;
 pub(super) mod refresh;
 pub(super) mod rule;
-mod schema;
+pub(super) mod schema;
 use super::schema::Catalog;
 use std::sync::Arc;
 use worth_query_decl::facade::{
