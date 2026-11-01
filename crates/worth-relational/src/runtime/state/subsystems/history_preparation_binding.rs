@@ -31,6 +31,9 @@ pub(crate) struct RelationalPreparationHistory {
 }
 
 impl RelationalPreparationHistory {
+    pub(crate) fn index_definition_frontier(&self) -> u64 {
+        self.canonical_routes.index_definition_frontier()
+    }
     #[allow(clippy::too_many_arguments)]
     pub(super) fn new(
         branches: RelationalBranchReferenceRegistry,

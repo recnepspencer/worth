@@ -258,7 +258,7 @@ impl CapturedCheckpointBasis {
                 .chain(runtime.indexes.checkpoint_export_sources())
                 .collect(),
             lineage_events: lineage_events.into_values().collect(),
-            index_definitions: runtime.index_access().definitions_snapshot(),
+            index_definitions: index_state.definition_snapshot(),
             carried_index_image: runtime.indexes.carried_checkpoint_image(),
             index_state,
             retained_indexes: retained,

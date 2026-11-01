@@ -185,6 +185,10 @@ impl RelationalNativeCheckpoint {
         {
             return Err(Denial::ForeignSource);
         }
+        self.manifest_publication
+            .as_ref()
+            .expect("validated bound capture")
+            .validate_coverage()?;
         Ok(())
     }
 

@@ -64,9 +64,12 @@ impl DeferredIndexImage {
             }
             let mut state = IndexingState::default();
             state.restore_generation_frontier(self.directory.manifest.index_generation_frontier);
-            for definition in &self.directory.manifest.index_definitions {
-                state.insert_definition(definition.clone());
-            }
+            state
+                .readmit_checkpoint_catalog(
+                    &self.directory.manifest.index_definitions,
+                    self.directory.manifest.index_definition_frontier,
+                )
+                .map_err(|_| refusal(Cause::Damaged))?;
             crate::durability::derived_index_artifacts::restore_checkpoint_derived_index_artifacts(
                 &mut state,
                 &self.history,
@@ -116,9 +119,15 @@ impl IndexingSubsystem {
             })?;
         let mut state = IndexingState::default();
         state.restore_generation_frontier(directory.manifest.index_generation_frontier);
-        for definition in &directory.manifest.index_definitions {
-            state.insert_definition(definition.clone());
-        }
+        state
+            .readmit_checkpoint_catalog(
+                &directory.manifest.index_definitions,
+                directory.manifest.index_definition_frontier,
+            )
+            .map_err(|_| RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Index(crate::indexes::data::DerivedIndexId(0)),
+                cause: Cause::Damaged,
+            })?;
         let history =
             history
                 .detached_owner_snapshot()

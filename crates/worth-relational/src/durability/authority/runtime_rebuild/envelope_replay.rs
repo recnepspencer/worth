@@ -29,6 +29,7 @@ pub(super) fn replay_readmitted_envelope(
     restore_authoritative_envelope: bool,
     recovered_roots: &mut RecoveredRootInventory,
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
+    let catalog = super::index_catalog::readmit(execution, restored, &readmitted)?;
     let envelope = readmitted.envelope();
     for (_, text) in &envelope.symbol_texts.entries {
         restored
@@ -69,7 +70,7 @@ pub(super) fn replay_readmitted_envelope(
             .stage_replay_allocations_with_leading_gaps(envelope.record_allocations().to_vec())
             .map_err(|detail| DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail))?;
     }
-    let replay_result = replay_envelope_effect(execution, restored, &positioned);
+    let replay_result = replay_envelope_effect(execution, restored, &positioned, catalog);
     let staged_was_not_consumed = restored.record_identity.clear_staged_replay_allocations();
     replay_result?;
     if staged_was_not_consumed && replays_mutation_pipeline {

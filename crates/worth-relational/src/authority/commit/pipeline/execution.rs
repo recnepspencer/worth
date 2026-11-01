@@ -10,6 +10,13 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    let mut recovered_runtime = runtime.clone();
+    if let Some(catalog) = context.recovered_index_catalog.take() {
+        let (delta, authored) = catalog.original_for(runtime.runtime_instance_id())?;
+        recovered_runtime.recovered_index_catalog = Some(delta);
+        recovered_runtime.recovered_authored_index_writes = Some(authored);
+    }
+    let runtime = &recovered_runtime;
     let required_output_publication = context.required_output_publication.take();
     let caller_association = context.caller_association.take();
     let required_output_materialization = context.required_output_materialization.take();

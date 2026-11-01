@@ -43,7 +43,7 @@ pub use aspect_history::{
 pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 pub(crate) use canonical_commit_envelope::{
     AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
-    CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
+    CanonicalIndexDefinitionDelta, CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
 };
 pub(crate) use canonical_commit_envelope::{
     CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,

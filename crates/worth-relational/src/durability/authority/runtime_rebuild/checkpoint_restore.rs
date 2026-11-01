@@ -173,10 +173,18 @@ fn prepare_indexes(
     }
     let mut indexes = IndexingState::default();
     indexes.restore_generation_frontier(checkpoint.index_generation_frontier);
-    for definition in &checkpoint.index_definitions {
-        indexes.insert_definition(definition.clone());
-        work.index_definitions_readmitted += 1;
-    }
+    indexes
+        .readmit_checkpoint_catalog(
+            &checkpoint.index_definitions,
+            checkpoint.index_definition_frontier,
+        )
+        .map_err(|detail| {
+            DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                detail,
+            )
+        })?;
+    work.index_definitions_readmitted += checkpoint.index_definitions.len();
     restore_checkpoint_derived_index_artifacts(
         &mut indexes,
         history,

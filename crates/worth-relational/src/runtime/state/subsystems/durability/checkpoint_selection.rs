@@ -52,6 +52,30 @@ impl RelationalCheckpointManifestSelection {
 }
 
 impl RelationalCheckpointManifestPublication {
+    pub(crate) fn validate_coverage(
+        &self,
+    ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
+        let selected = self
+            .selection
+            .selected
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if selected
+            .as_ref()
+            .is_some_and(|prior| self.regresses(&prior.manifest))
+        {
+            return Err(
+                crate::durability::medium::RelationalCheckpointAcknowledgementDenial::StaleCapture,
+            );
+        }
+        Ok(())
+    }
+    fn regresses(&self, prior: &RelationalCheckpointManifest) -> bool {
+        prior.covered_position > self.directory.manifest.covered_position
+            || prior.coverage.up_to_branch_transition
+                > self.directory.manifest.coverage.up_to_branch_transition
+            || prior.index_definition_frontier > self.directory.manifest.index_definition_frontier
+    }
     pub(crate) fn source_matches(&self, source: &Arc<dyn RelationalDurableColdSource>) -> bool {
         Arc::ptr_eq(&self.directory.source, source)
     }
@@ -64,12 +88,11 @@ impl RelationalCheckpointManifestPublication {
             .selected
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if selected.as_ref().is_some_and(|prior| {
-            prior.manifest.covered_position > self.directory.manifest.covered_position
-                || prior.manifest.coverage.up_to_branch_transition
-                    > self.directory.manifest.coverage.up_to_branch_transition
-        }) {
-            return Ok(());
+        if selected
+            .as_ref()
+            .is_some_and(|prior| self.regresses(&prior.manifest))
+        {
+            return Err(crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable);
         }
         *selected = Some(directory);
         Ok(())

@@ -14,6 +14,7 @@ use super::push;
 
 pub(super) fn entity(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
@@ -25,6 +26,7 @@ pub(super) fn entity(
 ) -> Result<bool, Failure> {
     record(
         runtime,
+        catalog,
         selected,
         working,
         partition,
@@ -39,6 +41,7 @@ pub(super) fn entity(
 
 pub(super) fn relation(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
@@ -121,6 +124,7 @@ pub(super) fn relation(
     }
     record(
         runtime,
+        catalog,
         selected,
         working,
         partition,
@@ -135,6 +139,7 @@ pub(super) fn relation(
 
 fn record<K: RecordKind>(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::SelectedRelationalBranchState,
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
@@ -251,6 +256,7 @@ fn record<K: RecordKind>(
             && !append_field(
                 runtime,
                 FieldDifference {
+                    catalog,
                     selected,
                     working,
                     symbols,
@@ -272,6 +278,7 @@ fn record<K: RecordKind>(
             && !append_field(
                 runtime,
                 FieldDifference {
+                    catalog,
                     selected,
                     working,
                     symbols,

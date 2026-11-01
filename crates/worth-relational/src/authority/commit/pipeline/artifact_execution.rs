@@ -2,6 +2,7 @@ use super::snapshot_validation::SnapshotValidatedCommitExecution;
 
 mod authored_index_writes;
 mod descriptive_touches;
+mod index_catalog;
 mod phase;
 pub(super) mod preparation;
 

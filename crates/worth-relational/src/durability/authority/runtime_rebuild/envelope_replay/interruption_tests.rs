@@ -286,11 +286,18 @@ fn corrupt_replay_keeps_its_durability_failure() {
         .push(branch_context);
     let mut target = runtime_with_test_schema();
     let host = crate::test_execution_policy::serial_request();
+    let catalog = super::super::index_catalog::readmit(
+        &ExecutionRequest::serial(&host),
+        &target,
+        &plan.tail_log[0],
+    )
+    .unwrap();
     let error = super::effect::replay_merge_commit(
         &ExecutionRequest::serial(&host),
         &mut target,
         &envelope,
         plan.tail_log[0].position(),
+        catalog,
     )
     .unwrap_err();
     match error {

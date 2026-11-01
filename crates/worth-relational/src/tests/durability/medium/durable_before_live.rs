@@ -69,6 +69,17 @@ fn a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live() {
     let medium = attached_test_medium(&runtime);
     let before = live_footprint(execution, &runtime);
 
+    let definition = runtime
+        .index_authority()
+        .register(crate::indexes::data::DerivedIndexDefinition {
+            index_id: crate::indexes::data::DerivedIndexId(0),
+            name: "refused-catalog".into(),
+            branch_scoped: true,
+            kind: crate::indexes::data::DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+        })
+        .unwrap();
     medium.script_next_publication(ScriptedPublication::ProvenNoEffect);
     let refused = commit_one(execution, &runtime, "refused").expect_err("the medium refused");
 
@@ -85,6 +96,26 @@ fn a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live() {
     assert_eq!(offered.position(), PatchStreamPosition(2));
     assert_eq!(live_footprint(execution, &runtime), before);
     assert_eq!(medium.head(), PatchStreamPosition(1));
+    assert_eq!(
+        runtime
+            .preparation_runtime_snapshot()
+            .history
+            .index_definition_frontier(),
+        1
+    );
+    let accepted = commit_one(execution, &runtime, "catalog-after-refusal").unwrap();
+    assert_eq!(
+        accepted
+            .envelope()
+            .index_definition_delta
+            .base_next_index_id,
+        1
+    );
+    assert_eq!(
+        accepted.envelope().index_definition_delta.definitions(),
+        &[definition]
+    );
+    release_test_commit_snapshot(&runtime, &accepted);
 }
 
 #[test]

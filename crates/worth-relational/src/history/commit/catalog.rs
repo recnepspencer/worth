@@ -91,12 +91,20 @@ impl RelationalCommitCatalog {
     ) -> Result<(), RelationalCommitArtifactDenial> {
         let envelope = positioned.canonical_arc().clone();
         let commit_id = envelope.commit.commit_id;
-        if self
+        if let Some(resident) = self
             .entries
             .get(&commit_id)
-            .is_some_and(|existing| existing.resident_envelope().as_ref() == Some(&envelope))
+            .and_then(|entry| entry.resident_envelope())
         {
-            return Ok(());
+            // Recovery may have freshly issued private completeness from the
+            // actual selected/working pair. Keep that immutable owner only if
+            // its complete authoritative payload matches this source subject;
+            // omitted diagnostics/cache lanes must not erase its provenance.
+            if crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload(
+                positioned, &resident,
+            ).map_err(|_| RelationalCommitArtifactDenial::CanonicalPayloadEncoding)? {
+                return Ok(());
+            }
         }
         let artifact = match self.entries.get(&commit_id) {
             Some(existing) => RelationalCommitArtifact::from_envelope_with_descriptor(

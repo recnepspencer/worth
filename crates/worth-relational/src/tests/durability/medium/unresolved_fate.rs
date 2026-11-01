@@ -37,6 +37,17 @@ fn an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_ali
     let medium = attached_test_medium(&runtime);
     let published_handles = runtime.visibility.published_snapshot_handle_count();
 
+    runtime
+        .index_authority()
+        .register(crate::indexes::data::DerivedIndexDefinition {
+            index_id: crate::indexes::data::DerivedIndexId(0),
+            name: "uncertain-catalog".into(),
+            branch_scoped: true,
+            kind: crate::indexes::data::DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+        })
+        .unwrap();
     medium.script_next_publication(ScriptedPublication::IndeterminateWithoutEffect);
     let unresolved = commit_one(execution, &runtime, "unresolved").expect_err("fate unknown");
     let fate = unresolved
@@ -58,6 +69,13 @@ fn an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_ali
     assert_eq!(digest, offered.payload_digest());
     assert_eq!(main_head(&runtime), Some(anchor.commit.clone()));
     assert_eq!(runtime.durability().durable_commit_count(), 1);
+    assert_eq!(
+        runtime
+            .preparation_runtime_snapshot()
+            .history
+            .index_definition_frontier(),
+        1
+    );
     assert_eq!(
         runtime.visibility.published_snapshot_handle_count(),
         published_handles

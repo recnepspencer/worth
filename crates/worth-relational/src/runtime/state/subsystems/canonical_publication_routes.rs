@@ -128,6 +128,9 @@ impl Default for RelationalCanonicalPublicationRoutes {
 }
 
 impl RelationalCanonicalPublicationRoutes {
+    pub(crate) fn index_definition_frontier(&self) -> u64 {
+        self.performed_stream.index_definition_frontier()
+    }
     pub(crate) fn advance_position_floor(&self, floor: PatchStreamPosition) {
         self.performed_stream.advance_position_floor(floor);
     }

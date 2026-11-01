@@ -15,6 +15,7 @@ pub(super) fn serialize<S: serde::Serializer>(
     projection: EnvelopeProjection,
 ) -> Result<S::Ok, S::Error> {
     let CanonicalCommitEnvelopeBody {
+        index_definition_delta,
         caller_association,
         authored_index_writes,
         required_output_codec_retirements,
@@ -51,9 +52,10 @@ pub(super) fn serialize<S: serde::Serializer>(
         entries: Vec::new(),
     };
     let omitted_indexes = DerivedIndexArtifacts::default();
-    let field_count = 28 + usize::from(!authored_index_writes.is_unavailable());
+    let field_count = 29 + usize::from(!authored_index_writes.is_unavailable());
     let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
     fields.serialize_field("caller_association", caller_association)?;
+    fields.serialize_field("index_definition_delta", index_definition_delta)?;
     fields.serialize_field("semantic_result", envelope.semantic_result())?;
     if !authored_index_writes.is_unavailable() {
         fields.serialize_field("authored_index_writes", authored_index_writes)?;

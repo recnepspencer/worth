@@ -182,6 +182,8 @@ fn canonical_effect_drift(
         drifted.push("branch_cell_checkpoint");
     }
     compare!(authority_kind);
+    compare!(index_definition_delta);
+    compare!(authored_index_writes);
     compare!(merge_execution_authority);
     compare!(merge_parent_branches);
     compare!(merge_base_commits);

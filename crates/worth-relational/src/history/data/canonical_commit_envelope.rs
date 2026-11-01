@@ -21,7 +21,9 @@ use crate::transactions::data::{
 };
 
 mod authored_index_writes;
+mod index_catalog;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
+pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
 mod payload_digest;
@@ -107,6 +109,7 @@ impl CanonicalCommitEnvelope {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CanonicalCommitEnvelopeBody {
+    pub(crate) index_definition_delta: CanonicalIndexDefinitionDelta,
     pub(crate) caller_association: Option<super::RelationalCallerAssociation>,
     pub(crate) required_output_codec_retirements:
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
@@ -260,6 +263,7 @@ impl CanonicalCommitEnvelopeBody {
         writer: &mut W,
     ) -> Result<(), rmp_serde::encode::Error> {
         let identity_and_authority = (
+            &self.index_definition_delta,
             &self.commit,
             &self.branch_context,
             &self.branch_cell_checkpoint,

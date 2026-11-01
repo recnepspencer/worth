@@ -167,6 +167,7 @@ impl CapturedManifest {
                 aspect_contracts: checkpoint.aspect_contracts.clone(),
                 index_definitions: checkpoint.index_definitions.clone(),
                 index_generation_frontier: checkpoint.index_generation_frontier,
+                index_definition_frontier: checkpoint.index_definition_frontier,
                 roots: Vec::new(),
                 retained_empty_components: checkpoint.retained_empty_components.clone(),
                 mirror_schema: checkpoint.mirror_schema_digest,

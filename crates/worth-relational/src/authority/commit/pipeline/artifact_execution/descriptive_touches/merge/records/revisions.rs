@@ -29,6 +29,7 @@ pub(super) fn append_aspect(
 }
 
 pub(super) struct FieldDifference<'a> {
+    pub(super) catalog: &'a crate::runtime::CapturedIndexDefinitionCatalog,
     pub(super) selected: &'a crate::branch::SelectedRelationalBranchState,
     pub(super) working: &'a crate::runtime::WorkingState,
     pub(super) symbols: (Symbol, Symbol),
@@ -46,6 +47,7 @@ pub(super) fn append_field(
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
     let FieldDifference {
+        catalog,
         selected,
         working,
         symbols,
@@ -93,42 +95,43 @@ pub(super) fn append_field(
         },
         budget,
     )?;
-    runtime
-        .index_definitions
-        .with_field(&aspect, &field, |definitions| {
-            for definition in definitions {
-                let locator = match &definition.kind {
-                    crate::indexes::data::DerivedIndexKind::EntityField { field_locator }
-                        if matches!(record, RecordRef::Entity(_)) =>
-                    {
-                        field_locator
-                    }
-                    crate::indexes::data::DerivedIndexKind::RelationField { field_locator }
-                        if matches!(record, RecordRef::Relation(_)) =>
-                    {
-                        field_locator
-                    }
-                    _ => continue,
-                };
-                append_index_for_field(
-                    IndexTouchInput {
-                        selected,
-                        working,
-                        old_record: old_record.unwrap_or(record),
-                        new_record: new_record.unwrap_or(record),
-                        old_kind,
-                        new_kind,
-                        aspect: &aspect,
-                        field: &field,
-                        definition,
-                        locator,
-                    },
-                    touches,
-                    budget,
-                )?;
-            }
-            Ok::<(), Failure>(())
-        })?;
+    catalog.catalog.with_field(&aspect, &field, |definitions| {
+        for definition in definitions
+            .iter()
+            .filter(|definition| definition.index_id.0 < catalog.next_index_id)
+        {
+            let locator = match &definition.kind {
+                crate::indexes::data::DerivedIndexKind::EntityField { field_locator }
+                    if matches!(record, RecordRef::Entity(_)) =>
+                {
+                    field_locator
+                }
+                crate::indexes::data::DerivedIndexKind::RelationField { field_locator }
+                    if matches!(record, RecordRef::Relation(_)) =>
+                {
+                    field_locator
+                }
+                _ => continue,
+            };
+            append_index_for_field(
+                IndexTouchInput {
+                    selected,
+                    working,
+                    old_record: old_record.unwrap_or(record),
+                    new_record: new_record.unwrap_or(record),
+                    old_kind,
+                    new_kind,
+                    aspect: &aspect,
+                    field: &field,
+                    definition,
+                    locator,
+                },
+                touches,
+                budget,
+            )?;
+        }
+        Ok::<(), Failure>(())
+    })?;
     Ok(true)
 }
 

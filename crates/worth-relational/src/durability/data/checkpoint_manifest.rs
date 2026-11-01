@@ -21,6 +21,7 @@ pub(crate) struct RelationalCheckpointManifest {
     pub(crate) record_identity: DurableRecordIdentityState,
     pub(crate) aspect_contracts: Vec<worth_foundational::facade::PortableAspectContract>,
     pub(crate) index_generation_frontier: u64,
+    pub(crate) index_definition_frontier: u64,
     pub(crate) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
     pub(crate) roots: Vec<RelationalCheckpointRoot>,
     pub(crate) retained_empty_components: Vec<RelationalCheckpointEmptyComponent>,

@@ -21,7 +21,10 @@ pub(crate) trait RuntimeSubsystem: Sized {
 }
 
 pub(crate) use commit_strategies::CommitStrategiesSubsystem;
-pub(crate) use durability::{DurabilitySubsystem, RelationalCheckpointManifestPublication};
+pub(crate) use durability::{
+    DurabilitySubsystem, RelationalCheckpointManifestPublication,
+    RelationalCheckpointManifestSelection,
+};
 pub(crate) use history::{authored_write_commit_denial, AuthoredWriteGeneration};
 pub(crate) use history::{
     readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
@@ -39,8 +42,8 @@ pub use history::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
 };
 pub(crate) use indexing::{
-    IndexCatalogCoverage, IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexingState,
-    IndexingSubsystem, PreparedGenerationBatch,
+    CapturedIndexDefinitionCatalog, IndexCatalogCoverage, IndexDefinitionReadBinding,
+    IndexingState, IndexingSubsystem, PreparedGenerationBatch,
 };
 pub(crate) use lineage::{
     LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,

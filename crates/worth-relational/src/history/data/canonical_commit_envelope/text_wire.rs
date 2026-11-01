@@ -15,6 +15,7 @@ use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthori
 
 #[derive(Deserialize)]
 pub(crate) struct CanonicalEnvelopeWire<'a> {
+    index_definition_delta: super::CanonicalIndexDefinitionDelta,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     caller_association: Option<super::super::RelationalCallerAssociation>,
     required_output_codec_retirements:
@@ -90,6 +91,7 @@ impl CanonicalEnvelopeWire<'_> {
         }
         let symbol_texts = self.symbol_texts.readmit(execution)?;
         let body = super::CanonicalCommitEnvelopeBody {
+            index_definition_delta: self.index_definition_delta,
             caller_association: self.caller_association,
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,

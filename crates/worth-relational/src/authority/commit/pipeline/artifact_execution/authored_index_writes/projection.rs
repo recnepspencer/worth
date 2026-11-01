@@ -12,7 +12,7 @@ use worth_foundational::facade::{
 pub(super) struct Projection<'a, 'kernel, 'controls, 'request, 'authority> {
     pub(super) execution: ExecutionRequest<'request, 'authority>,
     pub(super) runtime: &'a RelationalPreparationRuntime,
-    pub(super) catalog: &'a crate::runtime::IndexDefinitionCatalog,
+    pub(super) catalog: &'a crate::runtime::CapturedIndexDefinitionCatalog,
     pub(super) unavailable: bool,
     pub(super) selected: &'a SelectedRelationalBranchState,
     pub(super) working: &'a WorkingState,
@@ -156,13 +156,17 @@ impl Projection<'_, '_, '_, '_, '_> {
         let after = values::live(&self.execution, self.working, entity)?;
         let context = &mut *self.context;
         let output = &mut self.output;
-        self.catalog.with_field_admitted(
+        let frontier = self.catalog.next_index_id;
+        self.catalog.catalog.with_field_admitted(
             locus.aspect,
             locus.field,
             context,
             |definitions, context| {
                 for definition in definitions {
                     work(context, 1)?;
+                    if definition.index_id.0 >= frontier {
+                        continue;
+                    }
                     let DerivedIndexKind::EntityField { field_locator } = &definition.kind else {
                         continue;
                     };

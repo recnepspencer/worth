@@ -109,7 +109,7 @@ fn semantic_result_preserves_original_create_bindings_and_validation_meaning() {
         );
     }
     let artifact = medium.offered().pop().unwrap();
-    assert_eq!(Artifact::FORMAT_VERSION, 3);
+    assert_eq!(Artifact::FORMAT_VERSION, 4);
     let readmitted = Artifact::readmit(artifact.as_bytes(), execution).unwrap();
     assert_eq!(readmitted.envelope().semantic_result(), original);
     release_test_commit_snapshot(&runtime, &committed);

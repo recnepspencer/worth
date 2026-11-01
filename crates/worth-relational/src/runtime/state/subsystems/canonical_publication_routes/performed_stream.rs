@@ -23,6 +23,7 @@ pub(super) struct PerformedPublicationStream {
 }
 
 pub(super) struct PerformedPublicationNode {
+    index_definition_frontier: u64,
     position: PatchStreamPosition,
     route: Arc<CanonicalPublicationRoute>,
     previous: Option<Arc<PerformedPublicationNode>>,
@@ -43,6 +44,12 @@ struct PerformedPublicationIndex {
 }
 
 impl PerformedPublicationStream {
+    pub(super) fn index_definition_frontier(&self) -> u64 {
+        self.head
+            .load_full()
+            .as_ref()
+            .map_or(1, |head| head.index_definition_frontier)
+    }
     pub(super) fn checkpoint_selection(
         &self,
         covered_transitions: crate::branch::RelationalBranchTransitionSequence,
@@ -116,6 +123,10 @@ impl PerformedPublicationStream {
         Ok(publication.cutover(|positioned, journal| {
             route.envelope.bind_performed(&positioned, journal);
             let node = Arc::new(PerformedPublicationNode {
+                index_definition_frontier: current
+                    .as_ref()
+                    .map_or(1, |node| node.index_definition_frontier)
+                    .max(positioned.envelope().index_definition_delta.next_index_id),
                 position: positioned.position(),
                 route: Arc::clone(&route),
                 previous: current,
@@ -146,6 +157,10 @@ impl PerformedPublicationStream {
             return Err("recovered canonical stream order is not strictly increasing");
         }
         let node = Arc::new(PerformedPublicationNode {
+            index_definition_frontier: current
+                .as_ref()
+                .map_or(1, |node| node.index_definition_frontier)
+                .max(positioned.envelope().index_definition_delta.next_index_id),
             position: positioned.position(),
             route,
             previous: current,

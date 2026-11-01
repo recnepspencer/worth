@@ -115,6 +115,7 @@ impl CapturedCheckpointBasis {
             lineage: LineageCheckpointArtifact::new(lineage_basis, lineage_nodes),
             index_definitions,
             index_generation_frontier: index_state.generation_frontier(),
+            index_definition_frontier: index_state.definition_frontier(),
             derived_index_artifacts: crate::indexes::data::DerivedIndexArtifacts::default(),
             derived_index_checkpoint: Some(derived_index_checkpoint),
             derived_index_checkpoint_format:

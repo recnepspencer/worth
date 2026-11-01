@@ -107,8 +107,20 @@ impl IndexDefinitionCatalog {
     pub(crate) fn coverage(&self) -> IndexCatalogCoverage {
         self.coverage
     }
+    /// Readmission inserts an ordered issued-ID prefix; equal overlap never
+    /// reinserts it. Preserve this prefix's actual installation provenance.
+    pub(crate) fn coverage_before(&self, next: u64) -> IndexCatalogCoverage {
+        IndexCatalogCoverage {
+            incarnation: self.coverage.incarnation,
+            epoch: self
+                .introductions
+                .range(..DerivedIndexId(next))
+                .next_back()
+                .map_or(0, |(_, epoch)| *epoch),
+        }
+    }
 
-    pub(super) fn with_field<R>(
+    pub(crate) fn with_field<R>(
         &self,
         aspect: &AspectKey,
         field: &FieldKey,

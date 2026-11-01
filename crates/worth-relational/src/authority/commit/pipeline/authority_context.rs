@@ -16,6 +16,7 @@ pub(super) enum CommitAuthorityInput {
 
 #[derive(Debug)]
 pub(crate) struct AuthoritativeCommitContext {
+    pub(super) recovered_index_catalog: Option<crate::durability::authority::RecoveredIndexCatalog>,
     pub(super) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
     pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(super) required_output_materialization:
@@ -62,6 +63,14 @@ pub(super) struct MergeExecutionAccounting {
 }
 
 impl AuthoritativeCommitContext {
+    pub(crate) fn with_recovered_index_catalog(
+        mut self,
+        catalog: crate::durability::authority::RecoveredIndexCatalog,
+    ) -> Self {
+        self.recovered_index_catalog = Some(catalog);
+        self
+    }
+
     pub(crate) fn from_validated_proposal(
         candidate: crate::mvcc::ValidatedRelationalProposal,
     ) -> Self {
@@ -98,6 +107,7 @@ impl AuthoritativeCommitContext {
                 )
             });
         Self {
+            recovered_index_catalog: None,
             caller_association,
             required_output_publication,
             required_output_materialization,
@@ -159,6 +169,7 @@ impl AuthoritativeCommitContext {
         validate_merge_context_proof(&validation_input, &merge_plan)?;
 
         Ok(Self {
+            recovered_index_catalog: None,
             caller_association: None,
             required_output_publication: None,
             required_output_materialization: None,

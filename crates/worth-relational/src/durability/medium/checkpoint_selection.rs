@@ -56,6 +56,7 @@ pub enum CheckpointSelectionObservation {
 pub enum RelationalCheckpointAcknowledgementDenial {
     CaptureNotBound,
     ForeignSource,
+    StaleCapture,
     SelectionNotKnown,
     Storage(crate::storage::data::RelationalStorageUnavailableCause),
     Stopped(worth_execution::MapKernelStop),

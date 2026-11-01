@@ -125,6 +125,24 @@ A checkpoint captures the catalog as it exists at capture time; reopening a
 checkpoint captured after a completed discard does not itself reconstruct the
 missing generations from source records.
 
+## Durable index definitions
+
+`index_authority().register` installs a definition and its original issued ID in
+this owner. The next authoritative canonical commit carries the newly introduced
+ordered definition prefix, including full names, kinds, scoping and duplicate
+equivalent definitions at distinct IDs. Artifact v4 requires this delta in full,
+authoritative and embedded checkpoint envelope projections; CHK17 carries the
+catalog and issued frontier from one capture. Earlier development formats refuse.
+Only an actual performed canonical cutover or acknowledged checkpoint selection
+advances the accepted frontier. Preparation, refusal and uncertain fate do not.
+
+Recovery admits checkpoint definitions and exact overlapping tail declarations
+before replay, retaining the original tail payload and catalog-prefix coverage.
+The catalog is global; sibling schema bases do not prune it. Expanded checkpoint
+restore may reemit an exact overlap once because it has no admitted directory
+selection. Generations remain derived: use the existing owner build/demand doors.
+Catalog coverage incarnation/epochs are live observations and never enter wire.
+
 ## Mental model
 
 - `RelationalRuntimeApi::builder()` is the setup door
@@ -150,7 +168,7 @@ binding twice refuses and a prepared candidate cannot be rebound. Candidate
 `caller_association()` observes its retained sealed payload; the canonical
 envelope exposes the same immutable bytes. Native preserves the caller's bytes
 without interpreting them or granting completion authority. Canonical artifact
-v3 and native checkpoint CHK16 retain the field through journal and embedded or
+v4 and native checkpoint CHK17 retain the field through journal and embedded or
 cold checkpoint recovery. Older artifact and checkpoint versions refuse rather
 than acquiring the new grammar implicitly. Association bytes or successful
 artifact decoding alone establish no durable World effect or product movement.
@@ -275,7 +293,7 @@ Pending settlement must be completed by its existing actual owner first.
 An owning refusal preserves the original source image and any acquired pins;
 `into_effect()` explicitly releases partial new pins for a fresh request.
 
-CHK16 records exact current observations and live external component obligations.
+CHK17 records exact current observations and live external component obligations.
 Canonical root headers require `recorded_components`; explicit
 `retained_empty_components` bind Empty observations to their schema carriers.
 These fields come from the same actual observations that created the external

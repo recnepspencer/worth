@@ -4,7 +4,9 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 mod admitted_definition;
+mod catalog_publication;
 mod definition_catalog;
+pub(crate) use catalog_publication::CapturedIndexDefinitionCatalog;
 pub(crate) use definition_catalog::{IndexCatalogCoverage, IndexDefinitionCatalog};
 mod admitted_selection;
 mod cold_checkpoint;
@@ -130,15 +132,6 @@ impl Clone for IndexDefinitionReadBinding {
 }
 
 impl IndexDefinitionReadBinding {
-    pub(crate) fn with_field<R>(
-        &self,
-        aspect: &AspectKey,
-        field: &FieldKey,
-        read: impl FnOnce(&[Arc<DerivedIndexDefinition>]) -> R,
-    ) -> R {
-        self.snapshot().with_field(aspect, field, read)
-    }
-
     pub(crate) fn snapshot(&self) -> Arc<IndexDefinitionCatalog> {
         Arc::clone(&self.state.read().catalog)
     }

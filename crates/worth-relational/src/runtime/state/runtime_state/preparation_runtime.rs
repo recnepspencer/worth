@@ -13,6 +13,7 @@ use crate::runtime::{
 /// held ports observe atomic schema/configuration replacement.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationOwnerBinding {
+    checkpoint_selection: crate::runtime::RelationalCheckpointManifestSelection,
     configuration: RelationalRuntimeConfigurationBinding,
     history: RelationalPreparationHistory,
     record_identity: RecordIdentitySubsystem,
@@ -31,6 +32,10 @@ pub(crate) struct RelationalPreparationOwnerBinding {
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
+    pub(crate) checkpoint_selection: crate::runtime::RelationalCheckpointManifestSelection,
+    pub(crate) recovered_index_catalog: Option<crate::history::data::CanonicalIndexDefinitionDelta>,
+    pub(crate) recovered_authored_index_writes:
+        Option<crate::history::data::CanonicalAuthoredIndexWrites>,
     pub(crate) symbol_references: Arc<std::collections::BTreeSet<crate::symbols::data::Symbol>>,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: Arc<RelationalRuntimeConfig>,
@@ -55,6 +60,7 @@ impl RelationalPreparationOwnerBinding {
         #[cfg(test)]
         crate::mvcc::split_contacts::binding_capture();
         Self {
+            checkpoint_selection: runtime.durability.checkpoint_selection().clone(),
             configuration: runtime.configuration_binding(),
             history: runtime.history.preparation_binding(),
             record_identity: runtime.record_identity.clone(),
@@ -89,6 +95,9 @@ impl RelationalPreparationOwnerBinding {
         configuration: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
+            checkpoint_selection: self.checkpoint_selection.clone(),
+            recovered_index_catalog: None,
+            recovered_authored_index_writes: None,
             symbol_references: Arc::default(),
             commit_work_budget: None,
             config: Arc::clone(&configuration.config),
