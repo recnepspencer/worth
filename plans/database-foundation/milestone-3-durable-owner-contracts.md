@@ -391,8 +391,9 @@ PreparedRelationalSection remains the standalone contract. No marker field,
 Deref, downgrade or public raw-capture pairing turns the ordinary result into
 the complete result. Share their private framing and selection algorithm.
 
-The section currently owns a bare Native runtime, not an Arc of that runtime.
-The port therefore retains a Native-owner-issued complete-capture service with
+The port does not depend on the section's outer runtime representation: the
+qualified readmission section already shares its Native runtime, while an
+earlier capture baseline held it directly. Retain a Native-owner-issued complete-capture service with
 ONLY Weak<RelationalRuntimeState>, plus Weak<StoreColdSource> and Weak of the
 section's actual checkpoint-selection source. It retains no runtime handle,
 persistent lifecycle binding, Serving Arc, Home Arc or replacement section.
