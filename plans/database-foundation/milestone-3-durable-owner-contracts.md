@@ -541,6 +541,42 @@ wire meaning or semantic equality. Moving `ReadmittedCanonicalCommit` into a
 positioned value must retain these grants; its discarded sidecar is not their
 owner. Document the added inline ownership footprint.
 
+Merge authority has smaller escaping owners too: witness row buffers, resolved
+base ancestor buffers, identity key sets and custom identity/policy names can
+outlive their envelope through existing public clones. An envelope or outer
+merge reservation cannot fund those lifetimes. Close raw Arc-valued public
+leaves with Native-owned opaque storage exposing borrowed slices/str and Clone,
+without Arc/Weak/unwrap extraction. Preserve existing wire/equality meaning;
+ordinary From<Arc> construction moves its same input without deep copying and
+retains its explicit unbudgeted contract. Add no ownership-policy mode.
+
+Each decoded leaf retains its own payload and concrete private control-layout
+grant. A private backing may keep the original data Arc plus one private Arc
+containing a once-filled funding slot LAST; quote BOTH control blocks before
+growth. This adds a real allocation/indirection, not a zero-cost wrapper.
+Internal legitimate Serde clones share the SAME backing/funding slot. No small
+leaf may retain an entire envelope/merge/peak reservation. Grants affect neither
+wire values nor semantic equality, and shared funding never covers independent
+deep copies.
+
+A private, one-decode typed admission tree may hold the original per-leaf
+reservations before Serde. Fund the tree's own transient storage before growth.
+Its only role is transferring those SAME already-reserved grants into actual
+decoded owners before any external exposure, including through internal clones;
+it is not a persistent registry, identity/authority map or general byte ledger.
+Duplicate attachment returns unused funding safely. Partial refusal preserves
+the actual remaining values/grants without after-charging, new requests or TLS.
+The narrow private Merge witness-row carrier may share allocation/retention
+mechanics; concrete witnesses retain their validation, policy and wire owners.
+
+Committed placement is merge/data/identity/{key_set,custom_name}.rs,
+merge/data/policy/custom_name.rs, history/data/merge_branch_basis/ancestors.rs,
+and merge/data/artifacts/ for private witness-row storage, with the typed decode
+handoff under durability/canonical_commit_artifact/decoded_quote/. Populate only
+actual responsibilities. Prove predecode finite-budget refusal, intrinsic
+small-leaf clone/drop lifetime, and unchanged prior wire/digest bytes. These are
+causal Native funding prerequisites, not complete capture/reconstruction or D12.
+
 ### Selected canonical backing without covered-journal replay
 
 Actual root images alone are insufficient. Directory CHK17 omits complete
