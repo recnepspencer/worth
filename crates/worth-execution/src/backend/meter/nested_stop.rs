@@ -135,12 +135,15 @@ impl super::KernelContext<'_, '_> {
         result: &Result<R, E>,
         classify: impl FnOnce(&E) -> NestedStopOwner,
     ) -> Option<NestedStopOwner> {
+        self.settle_pending_refusal(result.is_err());
+        result.as_ref().err().map(classify)
+    }
+
+    fn settle_pending_refusal(&self, failed: bool) {
         let mut meter = self.meter.borrow_mut();
-        if std::mem::take(&mut meter.pending_request_refusal) && result.is_err() {
+        if std::mem::take(&mut meter.pending_request_refusal) && failed {
             meter.nested_stop.record(NestedStopOwner::Request);
         }
-        drop(meter);
-        result.as_ref().err().map(classify)
     }
 
     pub(crate) fn failure_owner<E>(&self, failure: &super::KernelFailure<E>) -> NestedStopOwner {

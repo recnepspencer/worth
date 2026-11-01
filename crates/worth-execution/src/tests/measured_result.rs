@@ -1,4 +1,5 @@
 mod drop_order;
+mod result_capacity;
 
 use crate::{
     CancellationSource, CancellationToken, ChargedBytes, ExecutionRequest, ExecutionResourceLease,
