@@ -2728,3 +2728,18 @@ private codec/profile/COW, integrated SDK adoption and real CAD contacts/topolog
 face-scale/Acceptance8/full private gate remain open. Native pinned caller control
 and failed-read work receipts are a required root-path handoff. This prerequisite
 closes neither Phase6 nor milestone9.19 and changes no SDK pin.
+
+
+### Phase6 controlled Native pinned acquisition prerequisite (2026-11-01)
+
+The existing pinned derived evaluator now accepts a narrowing borrowed caller
+control and returns original typed failure with actual reads/admitted work. Old
+pinned and candidate-projection callers delegate through the same owner; complete
+or partial refusal returns no body. Limit-crossing work and final-handoff receipts
+retain their original custody. The [controlled acquisition evidence](milestone-9.19-phase6-controlled-derived-read-evidence.md)
+records42 selected Native passes (5new/37existing) and fixture corrections.
+
+The Query root-path/shared observation/currentness receiver remains open, along
+with private codec/reference/COW, one integrated SDK adoption, real CAD contact/
+topology/face-scale/Acceptance8 and the final complete clean private gate. This
+prerequisite closes neither Phase6 nor milestone9.19 and changes no SDK pin.

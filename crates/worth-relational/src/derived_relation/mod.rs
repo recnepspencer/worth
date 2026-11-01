@@ -14,7 +14,9 @@ mod proof;
 mod source;
 mod source_buffer;
 pub(crate) mod support;
-pub use pinned::PinnedDerivedRelationRead;
+pub use pinned::{
+    PinnedDerivedRelationDenial, PinnedDerivedRelationRead, PinnedDerivedRelationScope,
+};
 mod structural;
 pub use proof::{
     DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationWalkStep,
