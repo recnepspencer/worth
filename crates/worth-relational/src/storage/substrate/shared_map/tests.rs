@@ -121,3 +121,75 @@ fn targeted_mutation_does_not_change_a_retained_map() {
     assert!(map.is_empty());
     assert_eq!(retained.len(), 10_000);
 }
+
+#[test]
+fn inline_header_footprints_remove_only_actual_header_arcs() {
+    use crate::identity::data::{KindId, RelationId};
+    use crate::storage::partition::AdjacencySet;
+    use crate::storage::substrate::{
+        visit_inline_value, StorageAllocationObservation, StorageAllocationVisitor,
+    };
+    type Header = SharedMap<RelationId, ()>;
+    fn header_arc<T>() -> u64 {
+        std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<T>())
+            .unwrap()
+            .0
+            .pad_to_align()
+            .size() as u64
+    }
+    #[derive(Default)]
+    struct Inventory(Vec<StorageAllocationObservation>);
+    impl StorageAllocationVisitor for Inventory {
+        fn visit(&mut self, value: StorageAllocationObservation) -> bool {
+            self.0.push(value);
+            true
+        }
+    }
+    fn inventory<K: Ord + Copy, V: StoredValue>(map: &SharedMap<K, V>) -> Inventory {
+        let mut found = Inventory::default();
+        map.visit_allocations(true, &mut found, &mut visit_inline_value);
+        found
+    }
+    let old_kind = Arc::<MapNode<KindId, Arc<Header>>>::layout_bytes();
+    let new_kind = Arc::<MapNode<KindId, Header>>::layout_bytes();
+    let kind_header = header_arc::<Header>();
+    assert_eq!(kind_header, Arc::<Header>::layout_bytes());
+    let old_kind_map: SharedMap<KindId, Arc<Header>> =
+        [(KindId(7), Header::default())].into_iter().collect();
+    let new_kind_map: SharedMap<KindId, Header> =
+        [(KindId(7), Header::default())].into_iter().collect();
+    let old = inventory(&old_kind_map);
+    let new = inventory(&new_kind_map);
+    assert_eq!(old.0.len(), 2);
+    assert_eq!(new.0.len(), 1);
+    assert_eq!(
+        old.0.iter().map(|owner| owner.bytes).sum::<u64>(),
+        old_kind + kind_header
+    );
+    assert_eq!(new.0.iter().map(|owner| owner.bytes).sum::<u64>(), new_kind);
+    assert!(new_kind < old_kind + kind_header);
+    let old_slot = Arc::<MapNode<usize, Arc<AdjacencySet>>>::layout_bytes();
+    let new_slot = Arc::<MapNode<usize, AdjacencySet>>::layout_bytes();
+    let slot_header = header_arc::<AdjacencySet>();
+    assert_eq!(slot_header, Arc::<AdjacencySet>::layout_bytes());
+    let policy = crate::config::data::AdjacencyPolicy {
+        backend: crate::config::data::AdjacencyBackend::InlineSmallDegreeAdjacency,
+        small_degree_inline_capacity: 4,
+    };
+    let old_slot_map: SharedMap<usize, Arc<AdjacencySet>> =
+        [(11, AdjacencySet::new(&policy))].into_iter().collect();
+    let new_slot_map: SharedMap<usize, AdjacencySet> =
+        [(11, AdjacencySet::new(&policy))].into_iter().collect();
+    let old = inventory(&old_slot_map);
+    let new = inventory(&new_slot_map);
+    assert_eq!(old.0.len(), 2);
+    assert_eq!(new.0.len(), 1);
+    assert_eq!(
+        old.0.iter().map(|owner| owner.bytes).sum::<u64>(),
+        old_slot + slot_header
+    );
+    assert_eq!(new.0.iter().map(|owner| owner.bytes).sum::<u64>(), new_slot);
+    assert!(new_slot < old_slot + slot_header);
+    eprintln!("kind header: old node {old_kind} + header Arc {kind_header}, inline node {new_kind}; adjacency header: old node {old_slot} + header Arc {slot_header}, inline node {new_slot}");
+}

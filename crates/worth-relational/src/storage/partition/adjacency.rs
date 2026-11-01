@@ -3,6 +3,9 @@ use crate::identity::data::{KindId, RelationId, VersionId};
 
 use crate::storage::substrate::SharedMap;
 mod allocation;
+mod carrier;
+#[cfg(test)]
+mod carrier_tests;
 mod ids;
 pub(crate) use ids::AdjacencyIds;
 type RelationSet = SharedMap<RelationId, ()>;
@@ -14,14 +17,11 @@ pub(crate) enum AdjacencySet {
 }
 
 #[derive(Debug, Clone)]
-// The kind indexes are cold until a kind-filtered traversal first needs them.
-// Keeping them indirect preserves the small ordinary adjacency value layout.
+// Optional kind indexes keep shallow root handles inline. Their nodes own all backing.
 pub(crate) struct AdjacencyEntries {
     current: RelationSet,
-    current_by_kind:
-        Option<SharedMap<KindId, crate::storage::substrate::StorageAllocation<RelationSet>>>,
-    historical_by_kind:
-        Option<SharedMap<KindId, crate::storage::substrate::StorageAllocation<RelationSet>>>,
+    current_by_kind: Option<SharedMap<KindId, RelationSet>>,
+    historical_by_kind: Option<SharedMap<KindId, RelationSet>>,
     structural_revision_by_kind: Option<SharedMap<KindId, VersionId>>,
 }
 
@@ -272,9 +272,7 @@ impl AdjacencySet {
 }
 
 fn insert_kind_relation(
-    buckets: &mut Option<
-        SharedMap<KindId, crate::storage::substrate::StorageAllocation<RelationSet>>,
-    >,
+    buckets: &mut Option<SharedMap<KindId, RelationSet>>,
     kind_id: KindId,
     relation_id: RelationId,
 ) {

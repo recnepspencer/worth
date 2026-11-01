@@ -1,6 +1,6 @@
 //! Closed physical element carriers: scalars inline, independent payloads shared.
 use super::{StorageAllocation, StorageAllocationObservation};
-mod sealed {
+pub(super) mod sealed {
     pub trait Sealed {}
 }
 
@@ -102,3 +102,5 @@ impl StoredValueObservation {
         }
     }
 }
+
+impl<K: Ord + Copy, V: StoredValue> sealed::Sealed for super::SharedMap<K, V> {}

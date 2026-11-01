@@ -7,7 +7,7 @@ use super::AdjacencySet;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct SparseAdjacencyTable {
-    entries: SharedMap<usize, crate::storage::substrate::StorageAllocation<AdjacencySet>>,
+    entries: SharedMap<usize, AdjacencySet>,
 }
 
 impl SparseAdjacencyTable {

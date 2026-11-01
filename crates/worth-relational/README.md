@@ -561,12 +561,19 @@ allocation. Shared edits admit each replacement before shallow copying; partial
 construction retains its admitted nodes until the unpublished workspace drops.
 Published roots remain readable after refusal.
 
-Scalars and shallow nested column headers are inline. Independently shared
-metadata, Extra, Digest and adjacency values keep explicit existing allocation
-handles. Node bills exclude these payloads; escaped payload handles retain their
-own independent bills. Allocation observation reports actual node and payload
-identities without inventing scalar or inline-header identities. Generic storage
-handle layout and tree wire meaning remain unchanged.
+Scalars, shallow nested column headers and adjacency map headers are inline.
+Independently shared metadata, Extra and Digest values keep explicit existing
+allocation handles. Node bills exclude these payloads; escaped payload handles
+retain their own independent bills. Allocation observation reports actual node
+and payload identities without inventing scalar or inline-header identities.
+Generic storage handle layout and tree wire meaning remain unchanged.
+
+On the qualified 64-bit target, an inline kind-bucket node is 112 bytes, replacing
+a 112-byte node plus a 24-byte header Arc. An inline adjacency node is 168 bytes,
+replacing a 112-byte node plus an 80-byte header Arc. Each removes 24 bytes of
+backing. Child nodes retain their actual identities and reservations; no separate
+header allocation or payload bill remains. This changes no selective publication
+algorithm and adds no adjacency or bitset funding guarantee.
 
 This qualifies controlled column/map nodes, fixed pages and scalar-directory
 writes. Ordinary image and maintenance construction, legacy adjacency/bitset

@@ -18,21 +18,17 @@ impl AdjacencySet {
                 kinds.visit_new_allocations(
                     old.as_ref().unwrap_or(&empty),
                     visitor,
-                    &mut |relations: &RelationSet, previous, allocation, visitor| {
-                        if allocation.visit(visitor) {
-                            if let Some(previous) = previous {
-                                relations.visit_new_allocations(
-                                    previous,
-                                    visitor,
-                                    &mut crate::storage::substrate::visit_new_inline_value,
-                                );
-                            } else {
-                                relations.visit_allocations(
-                                    false,
-                                    visitor,
-                                    &mut visit_inline_value,
-                                );
-                            }
+                    &mut |relations: &RelationSet, previous, _header, visitor| {
+                        // This inline header has no allocation to visit. Its actual
+                        // child nodes retain the original owners and reservations.
+                        if let Some(previous) = previous {
+                            relations.visit_new_allocations(
+                                previous,
+                                visitor,
+                                &mut crate::storage::substrate::visit_new_inline_value,
+                            );
+                        } else {
+                            relations.visit_allocations(false, visitor, &mut visit_inline_value);
                         }
                     },
                 );
@@ -80,10 +76,8 @@ impl AdjacencySet {
             kinds.visit_allocations(
                 false,
                 visitor,
-                &mut |relations: &RelationSet, allocation, visitor| {
-                    if allocation.visit(visitor) {
-                        relations.visit_allocations(false, visitor, &mut visit_inline_value);
-                    }
+                &mut |relations: &RelationSet, _header, visitor| {
+                    relations.visit_allocations(false, visitor, &mut visit_inline_value);
                 },
             );
         }

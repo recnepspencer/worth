@@ -239,3 +239,29 @@ impl<'a, K: Ord + Copy, V: StoredValue> SharedMapEntry<'a, K, V> {
         self.or_insert_with(V::Value::default)
     }
 }
+
+// A map header owns only its actual root handle; copying it never clones keys or values.
+impl<K: Ord + Copy, V: StoredValue> StoredValue for SharedMap<K, V> {
+    type Value = Self;
+    fn from_value(value: Self) -> Self {
+        value
+    }
+    fn value(&self) -> &Self {
+        self
+    }
+    fn value_mut(&mut self) -> &mut Self {
+        self
+    }
+    fn into_value(self) -> Self {
+        self
+    }
+    fn same_storage(&self, other: &Self) -> bool {
+        self.root.as_ref().map(Arc::id) == other.root.as_ref().map(Arc::id)
+    }
+    fn allocation(&self, _: bool) -> Option<super::StorageAllocationObservation> {
+        None
+    }
+    fn allocation_bytes() -> u64 {
+        0
+    }
+}

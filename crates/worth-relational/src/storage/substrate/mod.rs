@@ -5,6 +5,7 @@ mod shared_column;
 mod shared_map;
 mod storage_allocation;
 mod stored_value;
+pub(in crate::storage) use stored_value::sealed::Sealed as StoredValueSealed;
 pub(crate) use stored_value::{StoredValue, StoredValueObservation};
 
 pub(crate) use allocation_visitor::{
