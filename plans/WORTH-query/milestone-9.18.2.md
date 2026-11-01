@@ -1,6 +1,6 @@
 # Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
 
-**Status:** in progress; Phases 1–3 implemented and verified; Phases 4–7 remain open.
+**Status:** in progress; Phases 1–4 implemented and verified; Phases 5–7 remain open.
 **Public boundary:** process-local Decl/Host consumers.
 **Prerequisites:** qualified branch/correction owners from
 [9.18](./milestone-9.18.md) and retained-read, guarded adoption and history
@@ -316,6 +316,7 @@ missing security or recovery proof.
 
 ## Phase 4: Parent Undo And Explicit Child Redo
 
+**Status:** implemented and verified.
 **Depends on:** completed Phase 3.
 **Outcome:** consumer undo/redo buttons use the existing checkout progression
 and preserve every qualified alternative.
