@@ -12,6 +12,10 @@ mod managed_source_read;
 mod movement;
 mod retirement_equality;
 mod source_currentness;
+mod source_read_authorization;
+pub(in crate::domain_computation::primary_graph) use source_read_authorization::{
+    SourceReadAuthorization, SourceReadAuthorizationKey,
+};
 mod source_merge;
 mod source_publication_read;
 pub(in crate::domain_computation::primary_graph) use managed_source_read::{
@@ -58,6 +62,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
     ComponentSelection(super::super::component_selection::ComponentSelectionKey),
     SourcePublication(SourcePublicationRead),
     ManagedIndexSource(ManagedSourceReadKey),
+    SourceReadAuthorization(SourceReadAuthorizationKey),
     Entity {
         entity: String,
         entity_id: EntityId,
@@ -87,6 +92,10 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+    /// Actual conventional Source permission, independently retained and checked.
+    SourceReadAuthorization {
+        observation: std::sync::Arc<SourceReadAuthorization>,
+    },
     /// The complete original Source, including nonmatches and empty membership.
     ManagedIndexSource {
         observation: std::sync::Arc<ManagedSourceRead>,

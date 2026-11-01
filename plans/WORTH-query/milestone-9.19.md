@@ -2412,3 +2412,21 @@ legacy byte hashes, receiving proof, scope and final QA receipts. This is partia
 Phase5 progress. Next is retained conventional Source authorization custody before
 Bank v1 Source adoption; actual public topology face discovery, public closure and
 Phase6's final private pin/adoption remain unfinished.
+
+
+### Phase5 Source authorization progress (2026-11-01)
+
+The conventional Source READ slice adds independent principal and actual installed
+policy support through Completed and Native managed reads, retained expectations
+and ordinary correction history selection. Ability-authorized Sources require a
+current-only Parent at declaration and installation. Genuine current operation
+selection travels with its actual mutation snapshot lease; raw retained reads,
+including an equal unchanged head, remain unsupported by current-only Parents.
+Six actual Catalog consumer courts cover Source-only revocation before callbacks,
+Native/Completed non-querying expectation refusal, separately admitted semantic
+replay and owning correction refusal plus lawful regrant/inverse completion.
+The boundary and implementation plan are recorded in
+[milestone-9.19-phase5-source-authorization-plan.md](milestone-9.19-phase5-source-authorization-plan.md).
+Bank and actual topology discovery qualification remain open; this is not Phase5
+or Phase6 completion. [Final slice evidence](milestone-9.19-phase5-source-authorization-evidence.md)
+records854 distinct passes and the final independent review.

@@ -15,6 +15,12 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
                 observation: std::sync::Arc::clone(observation),
             });
         }
+        if let Some(observation) = source.invocation_source_authorization()? {
+            control.poll(&source.query_identifier)?;
+            facts.push(Fact::SourceReadAuthorization {
+                observation: std::sync::Arc::clone(observation),
+            });
+        }
         let mut fields = self.fields.iter();
         for observed in source.source_meaning.footprint().fact_sources() {
             control.poll(&source.query_identifier)?;

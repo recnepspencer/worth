@@ -85,16 +85,30 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         WorthQueryOperationAuthorizationDenial,
     > {
-        crate::domain_computation::authorization::progress_conventional_operation(
-            execution,
-            self.application(),
-            self.product(),
-            principal,
-            scope,
-            operation,
-            preconditions,
-            request,
-        )
+        let mut admission =
+            crate::domain_computation::authorization::progress_conventional_operation(
+                execution,
+                self.application(),
+                self.product(),
+                principal,
+                scope,
+                operation,
+                preconditions,
+                request,
+            )?;
+        let retained = admission
+            .graph_work_mut()
+            .mutation_lease_mut()
+            .is_some_and(|lease| lease.retain_selection_origin_from(self));
+        if !retained {
+            return Err(WorthQueryOperationAuthorizationDenial::new(
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+                ),
+                operation.operation(),
+            ));
+        }
+        Ok(admission)
     }
 
     pub fn admit_capability_access<Principal, PrincipalIdentity, Capability, Operation, Input>(

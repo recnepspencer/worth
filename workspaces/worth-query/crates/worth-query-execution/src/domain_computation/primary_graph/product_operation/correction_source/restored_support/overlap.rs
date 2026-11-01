@@ -13,6 +13,7 @@ use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Compar
 use worth_relational::facade::transactions::RecordRef;
 
 mod aspect;
+mod source_authorization;
 
 pub(super) struct Selection {
     pub(super) keys: ExecutionArray<Key>,
@@ -35,6 +36,9 @@ pub(super) fn select(
     for fact in facts.iter() {
         execution.consult().map_err(Stop::Request)?;
         let (entries, payload) = match fact {
+            Fact::SourceReadAuthorization { observation } => {
+                source_authorization::measure(execution, observation)?
+            }
             Fact::SourceEntity { .. } | Fact::Entity { .. } => (1, 0),
             Fact::SourceFieldRevision {
                 entity_id, locator, ..
@@ -215,6 +219,10 @@ pub(super) fn select(
         ExecutionRequestArrayBuilder::allocate(execution, managed_count).map_err(array_stop)?;
     for fact in facts.iter() {
         execution.consult().map_err(Stop::Request)?;
+        if let Fact::SourceReadAuthorization { observation } = fact {
+            source_authorization::append(execution, observation, &mut keys)?;
+            continue;
+        }
         if let Fact::ManagedIndexSource { observation } = fact {
             let selector = observation
                 .history_selector(runtime, &execution)

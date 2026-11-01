@@ -9,6 +9,9 @@ use worth_relational::facade::{
 
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
 pub(super) enum SourceFactLocator {
+    SourceAuthorization(
+        crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,
+    ),
     ManagedSource(
         crate::domain_computation::primary_graph::application_attempt::ManagedSourceReadKey,
     ),
@@ -27,6 +30,9 @@ pub(super) enum SourceFactLocator {
 impl SourceFactLocator {
     pub(super) fn from_fact(fact: &Fact) -> Self {
         match fact {
+            Fact::SourceReadAuthorization { observation } => {
+                Self::SourceAuthorization(observation.key().clone())
+            }
             Fact::ManagedIndexSource { observation } => {
                 Self::ManagedSource(observation.key().clone())
             }

@@ -50,6 +50,40 @@ impl<Schema, Operation, Input, Scope>
             ))
         })
     }
+    pub(super) fn observe_source_authorization(
+        &self,
+        key: &crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,
+    ) -> Result<
+        (
+            super::super::InstalledScopePosition,
+            WorthQueryApplicationObservedFact,
+        ),
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let observation = self
+            .expected_facts
+            .as_ref()
+            .and_then(|expected| {
+                expected.source_authorization(
+                    key,
+                    self.admission.admission_identity(),
+                    &self.admission.retain_graph_contract(),
+                    self.lease.snapshot(),
+                )
+            })
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
+                    self.admission.operation(),
+                )
+            })?;
+        Ok((
+            super::super::InstalledScopePosition::SourceQuery,
+            WorthQueryApplicationObservedFact::SourceReadAuthorization {
+                observation: std::sync::Arc::clone(observation),
+            },
+        ))
+    }
     pub(super) fn observe_managed_source(
         &self,
         key: &ManagedSourceReadKey,

@@ -100,10 +100,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let execution = phase
             .execution_request_for(&self.product_runtime)
             .map_err(MutationHandlerExecutionDenial::ForeignAdvancementPhase)?;
-        work.mutation_product()
+        work.mutation_lease()
             .ok_or(DecisionQueryPreparationStop::MissingProduct)
-            .and_then(|product| {
-                self.on_product(&execution, product.retained_clone())
+            .and_then(|lease| {
+                self.on_mutation_product(&execution, lease)
                     .map_err(DecisionQueryPreparationStop::Product)
             })
             .and_then(|selected| {

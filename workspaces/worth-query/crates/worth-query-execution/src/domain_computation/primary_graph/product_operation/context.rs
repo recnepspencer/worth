@@ -108,6 +108,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.on_product_with_basis_admission(execution, product, |_| Ok(()))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn on_mutation_product(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        lease: &super::super::application_attempt::WorthQueryApplicationSnapshotLease,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        let mut selected = self.on_product(execution, lease.product().retained_clone())?;
+        selected.selection_origin = lease.selection_origin();
+        Ok(selected)
+    }
+
     fn on_product_with_basis_admission<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

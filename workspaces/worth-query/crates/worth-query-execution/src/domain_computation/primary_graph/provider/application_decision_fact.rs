@@ -199,6 +199,31 @@ fn retained_observation(
         source_facts::SourceFactsAllocation,
     };
     if let (
+        Fact::SourceReadAuthorization { observation: first },
+        Fact::SourceReadAuthorization {
+            observation: second,
+        },
+    ) = (fact.as_ref(), source.as_ref())
+    {
+        let equal = first
+            .same_truth(second, &mut |units| {
+                SourceFactsAllocation::work(execution, units)
+            })
+            .map_err(|cause| {
+                SelfDenial::relational_read_stopped(cause, "Source authorization role merge")
+                    .into_decision_read_set_failure()
+            })?;
+        SourceFactsAllocation::work(execution, 0).map_err(|cause| {
+            SelfDenial::relational_read_stopped(cause, "Source authorization role merge")
+                .into_decision_read_set_failure()
+        })?;
+        return if equal {
+            Ok(fact)
+        } else {
+            Err(binding_failure(DISAGREEMENT))
+        };
+    }
+    if let (
         Fact::ManagedIndexSource { observation: first },
         Fact::ManagedIndexSource {
             observation: second,

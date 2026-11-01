@@ -8,6 +8,26 @@ impl<Query> WorthQueryObservedSource<Query> {
             .as_ref()
             .is_some_and(|source| source.has_verified_realized_footprint())
     }
+    pub(in crate::domain_computation::primary_graph::application_query) fn invocation_source_authorization(&self) -> Result<Option<&std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>>, super::WorthQuerySourceExpectationDenial>{
+        let declared = self.source_meaning.footprint().source_authorization();
+        let actual = self.invocation_source_authorization.as_ref();
+        if declared.map(|value| value.key()) != actual.map(|value| value.key())
+            || self
+                .invocation_managed_source
+                .as_ref()
+                .is_some_and(|managed| {
+                    actual.is_none_or(|actual| {
+                        !std::sync::Arc::ptr_eq(managed.authorization(), actual)
+                    })
+                })
+        {
+            return Err(super::WorthQuerySourceExpectationDenial::new(
+                super::WorthQuerySourceExpectationDenialKind::IncompleteFootprint,
+                self.query_identifier.as_str(),
+            ));
+        }
+        Ok(actual)
+    }
     pub(in crate::domain_computation::primary_graph::application_query) fn invocation_managed_source(
         &self,
     ) -> Result<

@@ -1,7 +1,7 @@
 //! Inverse UTF-8 bounds borrow framework-maintained real probe extrema.
 use super::*;
 use worth_query_consumer_values::{compare_prefix_keys, prefix_watch_bounds_may_match};
-impl WorthQueryManagedIndexPredicateProvider<Catalog, PrefixIndex> for Provider {
+impl<I: PrefixSourceIndex> WorthQueryManagedIndexPredicateProvider<Catalog, I> for Provider {
     type PredicateSummary = ();
     fn compare_probes(
         &self,
@@ -24,7 +24,7 @@ impl WorthQueryManagedIndexPredicateProvider<Catalog, PrefixIndex> for Provider 
         &self,
         _: (),
         extrema: [&query::Probe; 2],
-        row: WorthQueryManagedIndexSourceRow<'_, Catalog, PrefixIndex>,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {
         #[cfg(test)]

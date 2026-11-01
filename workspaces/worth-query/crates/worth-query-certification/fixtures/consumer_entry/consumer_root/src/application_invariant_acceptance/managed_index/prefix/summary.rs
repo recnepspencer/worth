@@ -4,11 +4,11 @@ use worth_query_consumer_values::{
     compare_prefix_keys, join_prefix_bounds, prefix_bounds_may_match, PrefixSourceBounds,
 };
 type Bounds = PrefixSourceBounds<WorthQueryManagedIndexSourceSlot>;
-type Sources<'a, 'b> = WorthQueryManagedIndexSummarySources<'a, 'b, Catalog, PrefixIndex>;
+type Sources<'a, 'b, I> = WorthQueryManagedIndexSummarySources<'a, 'b, Catalog, I>;
 
-pub(super) fn merge(
+pub(super) fn merge<I: PrefixSourceIndex>(
     parts: [Option<Bounds>; 3],
-    sources: &Sources<'_, '_>,
+    sources: &Sources<'_, '_, I>,
     control: &WorthQueryManagedIndexControl<'_>,
     calls: &Calls,
 ) -> Result<Bounds, Stop> {
@@ -45,9 +45,9 @@ pub(super) fn merge(
     }
     result.ok_or(Stop::Domain(PrefixIndexDenial::InvalidTopology))
 }
-pub(super) fn may_match(
+pub(super) fn may_match<I: PrefixSourceIndex>(
     bounds: Bounds,
-    sources: &Sources<'_, '_>,
+    sources: &Sources<'_, '_, I>,
     probe: &query::Probe,
     control: &WorthQueryManagedIndexControl<'_>,
     calls: &Calls,

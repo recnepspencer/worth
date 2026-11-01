@@ -114,6 +114,23 @@ impl WorthQueryObservedSourceFootprint {
             .maintained
             .as_ref()
     }
+    pub(in crate::domain_computation::primary_graph::application_query) fn source_authorization(
+        &self,
+    ) -> Option<
+        &Arc<
+            crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization,
+        >,
+    > {
+        Some(
+            &self
+                .root_selection
+                .as_ref()?
+                .managed_index
+                .as_ref()?
+                .dependencies
+                .authorization,
+        )
+    }
     pub(super) fn validate_selections(
         &self,
         layout: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,

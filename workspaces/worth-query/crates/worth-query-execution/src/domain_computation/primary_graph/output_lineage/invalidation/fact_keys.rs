@@ -55,7 +55,9 @@ where
                 FullVerificationReason::UnsupportedFact,
             ));
         }
-        Fact::Aggregate { .. } | Fact::ManagedIndexSource { .. } => {
+        Fact::Aggregate { .. }
+        | Fact::ManagedIndexSource { .. }
+        | Fact::SourceReadAuthorization { .. } => {
             return Err(FactKeyProjectionStop::FullVerificationRequired(
                 FullVerificationReason::UnsupportedFact,
             ))

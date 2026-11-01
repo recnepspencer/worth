@@ -57,6 +57,26 @@ impl Fact {
     ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
         match (self, duplicate) {
             (
+                Fact::SourceReadAuthorization { observation: first },
+                Fact::SourceReadAuthorization {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    return Ok(true);
+                }
+                let Some(execution) = control.execution() else {
+                    return Ok(false);
+                };
+                let equal = first.same_truth(&second, &mut |units| {
+                    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(&execution, units)
+                        .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
+                })?;
+                control.check_live()?;
+                Ok(equal)
+            }
+            (
                 Fact::ManagedIndexSource { observation: first },
                 Fact::ManagedIndexSource {
                     observation: second,

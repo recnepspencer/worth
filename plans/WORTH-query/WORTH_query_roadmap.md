@@ -6020,9 +6020,15 @@ requirements. The existing Catalog's independent public-only geometry index and
 corrected paired1000/2000/+50000 maintenance court pass; the old asymmetric cost
 calibration failure remains explicit. [Current evidence](milestone-9.19-phase5-query-maintenance-evidence.md)
 records848 distinct passes and the two established unrelated cleanup exclusions.
-Phases1–4 are complete; Phase5 remains open for conventional Source authorization
-custody, Bank and actual public topology adoption, then Phase6 performs the single
-final private pin and integrated CAD cutover.
+Conventional ability-authorized Sources now retain independent READ support through
+Native and Completed reads, expectations and recorded correction. The
+[Source authorization evidence](milestone-9.19-phase5-source-authorization-evidence.md)
+records854 distinct passes. Current-only
+Parents preserve genuine operation selection custody; retained equal-head reads
+still refuse. Phases 1 through 4 are complete; Phase5 remains open for Bank and
+actual public topology adoption, then Phase6 performs the single final private
+pin and integrated CAD cutover.
+
 
 ### Committed Provider Indexes
 

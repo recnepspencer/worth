@@ -432,3 +432,12 @@ The managed+continuation declaration refusal remains necessary because the
 continuation reader does not consume the managed candidate receiver. See
 [compiled protected pages](../../../../../../docs/build-an-application.md#protected-continuation-pages)
 for the ordinary public methods and real old-data/current-governance example.
+
+
+Managed Sources with conventional READ authorization require a current-only Parent.
+Declaration and installation reject a pinned Parent even if its retained basis
+happens to equal the current head. Public Source disclosure and the full installed
+principal mapping remain required. Original Source principal/policy evidence is
+independent of the structural managed root and every provider candidate: cache
+reuse, retained expectations and correction cannot narrow away that permission.
+The original Source query can retain its own ordinary pinned support.

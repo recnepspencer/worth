@@ -23,3 +23,23 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
         super::super::PREFIX_MEMBERSHIP;
 }
 // compiled-example: end
+
+/// The adapter consumes this exact entity/probe grammar; each Source's actual
+/// installed projection still controls every field loan.
+pub(in super::super) trait PrefixSourceIndex:
+    ApplicationManagedIndexBinding<
+    Catalog,
+    Entity = super::super::schema::Item,
+    ProbeBinding = query::ProbeBinding,
+>
+{
+}
+impl<
+        I: ApplicationManagedIndexBinding<
+            Catalog,
+            Entity = super::super::schema::Item,
+            ProbeBinding = query::ProbeBinding,
+        >,
+    > PrefixSourceIndex for I
+{
+}

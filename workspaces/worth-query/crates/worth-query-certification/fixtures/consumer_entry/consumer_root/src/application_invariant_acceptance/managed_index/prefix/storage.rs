@@ -2,13 +2,13 @@
 use super::*;
 use worth_query_consumer_values::{compare_prefix_keys, PrefixBuildStorage};
 
-pub(super) struct Build<'call, 'source, 'node, 'control> {
-    pub sources: &'call WorthQueryManagedIndexSourceRows<'source, Catalog, PrefixIndex>,
+pub(super) struct Build<'call, 'source, 'node, 'control, I: PrefixSourceIndex> {
+    pub sources: &'call WorthQueryManagedIndexSourceRows<'source, Catalog, I>,
     pub nodes: &'call mut WorthQueryManagedIndexNodeWriter<'node, Node>,
     pub control: &'call WorthQueryManagedIndexControl<'control>,
     pub after_first_node: &'call Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
-impl Build<'_, '_, '_, '_> {
+impl<I: PrefixSourceIndex> Build<'_, '_, '_, '_, I> {
     fn observed_write(&self) {
         let observe = self.after_first_node.lock().unwrap().take();
         if let Some(observe) = observe {
@@ -19,7 +19,7 @@ impl Build<'_, '_, '_, '_> {
 fn invalid() -> Stop {
     Stop::Domain(PrefixIndexDenial::InvalidTopology)
 }
-impl PrefixBuildStorage for Build<'_, '_, '_, '_> {
+impl<I: PrefixSourceIndex> PrefixBuildStorage for Build<'_, '_, '_, '_, I> {
     type Id = WorthQueryManagedIndexNodeId;
     type Source = WorthQueryManagedIndexSourceSlot;
     type Stop = Stop;

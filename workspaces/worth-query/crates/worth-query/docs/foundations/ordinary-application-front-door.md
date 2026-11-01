@@ -1266,3 +1266,12 @@ Native cleanup release preserves its original business outcome and does not
 re-execute either producer. Conditional lag reconstruction follows the same
 rule as reinstallation: pending native release refuses replacement, and released
 cleanup evidence remains retained without restoring business eligibility.
+
+
+Current-only managed Parent reads in a mutation handler borrow that operation's
+original current selection. The admitted snapshot lease carries the sealed
+selection origin through preparation and owning progression; reconstructing a
+retained product does not mint current selection. A conventional ability-authorized
+Source admits its own READ independently, and retained expectations preserve that
+original support through publication. Recorded correction selects Source policy
+history before managed predicate narrowing and freshly admits its inverse reads.

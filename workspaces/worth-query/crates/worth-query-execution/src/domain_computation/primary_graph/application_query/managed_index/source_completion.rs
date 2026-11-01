@@ -23,6 +23,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
 
 pub(super) enum SourceDenial {
+    Admission(worth_relational::facade::mvcc::CompanionPreflightStop),
     Native(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
     Read(Denial),
     Work(super::WorthQueryManagedIndexWorkDenial),
@@ -75,6 +76,12 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
     one_shot::plan_admission::validate_one_shot_plan(execution, application, &plan)?;
     refresh_governed_authorization(execution, application, &mut plan)
         .map_err(|cause| one_shot::map_authorized_read_denial(cause, query))?;
+    let binding = plan
+        .query
+        .binding_observation()
+        .cloned()
+        .ok_or_else(|| one_shot::denial(Kind::ForeignPlan, query, query))?;
+    let source_identity = *plan.query.identity().as_bytes();
     let mut rebuild_loan = None;
     let mut native_denial = None;
     let (kernel, authorization_work, read_proof) =
@@ -136,12 +143,16 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
         },
     )?;
     let parts = completed.into_source_parts(execution)?;
+    let authorization = crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization::complete(
+        execution, &parts.terminal, binding, source_identity, parts.authorization, &application.authorization, &allocation,
+    ).map_err(SourceDenial::Admission)?.ok_or_else(|| one_shot::denial(Kind::ForeignPlan, query, query))?;
     let tree = tree.expect("successful completion moved the genuine disclosed source once");
     let order = super::source_order::canonical(execution, &tree)?;
     let dependencies = super::source_dependencies::capture(
         execution,
         &parts.sources,
         &parts.result_set,
+        Arc::clone(&authorization),
         &allocation,
     )?;
     storage
@@ -162,6 +173,7 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
         installed,
         material,
         dependencies,
+        authorization,
         _sources: parts.sources,
         _result_set: parts.result_set,
         _affinity: parts.affinity,

@@ -177,6 +177,9 @@ impl<Schema, Operation, Input, Scope>
                 None,
             );
         }
+        if let WorthQueryApplicationFactKey::SourceReadAuthorization(key) = key {
+            return self.observe_source_authorization(key);
+        }
         if let WorthQueryApplicationFactKey::ManagedIndexSource(key) = key {
             return self.observe_managed_source(key);
         }

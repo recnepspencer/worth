@@ -4,6 +4,7 @@ use super::{
     handler::{DecisionRead, Handler},
     mutation, prefix, protected, query, rule,
     schema::*,
+    source_authorization,
 };
 use std::sync::Arc;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
@@ -45,6 +46,7 @@ pub struct Configuration {
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
+    sources: source_authorization::Configuration,
 }
 impl WorthQueryApplicationContribution<Catalog> for Contribution {
     type Configuration = Configuration;
@@ -59,6 +61,7 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
         setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         geometry::configure(configuration.geometry, setup)?;
+        source_authorization::configure(configuration.sources, setup)?;
         generated::configure(setup)?;
         geometry::generated::configure(setup)?;
         #[cfg(test)]
@@ -156,6 +159,10 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .native_action::<super::refinement::mutation::Binding>()
                 .finish_action()
                 .native_action::<protected::expectation::Binding>()
+                .finish_action()
+                .native_action::<source_authorization::expectation::NativeBinding>()
+                .finish_action()
+                .native_action::<source_authorization::expectation::CompletedBinding>()
                 .finish_action()
                 .native_action::<protected::status::Binding>()
                 .finish_action()
@@ -269,6 +276,40 @@ fn try_install_root(
     geometry: geometry::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
 ) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+    try_install_root_with_sources(
+        prefix,
+        rules,
+        decision_read,
+        geometry,
+        source_authorization::Configuration::default(),
+        limits,
+    )
+}
+#[cfg(test)]
+pub(super) fn install_source_authorization(sources: source_authorization::Configuration) -> Host {
+    let prefix = Arc::new(prefix::Calls::default());
+    let rules = Arc::new(rule::Calls::new(Arc::clone(&prefix)));
+    let world = try_install_root_with_sources(
+        prefix,
+        Arc::clone(&rules),
+        DecisionRead::Declared,
+        geometry::Configuration::default(),
+        sources,
+        super::super::super::resources::application_limits(),
+    )
+    .unwrap();
+    authoring::populate(&world, &rules);
+    rules.records.lock().unwrap().clear();
+    world
+}
+fn try_install_root_with_sources(
+    prefix: Arc<prefix::Calls>,
+    rules: Arc<rule::Calls>,
+    decision_read: DecisionRead,
+    geometry: geometry::Configuration,
+    sources: source_authorization::Configuration,
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()
@@ -281,6 +322,7 @@ fn try_install_root(
             rules,
             decision_read,
             geometry,
+            sources,
         },),
         ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191919").unwrap(),
         limits,

@@ -11,6 +11,7 @@ use worth_query_host::facade::{application_entry::*, primary_graph::*};
 #[derive(Clone, Debug, serde::Serialize)]
 pub enum Parent {
     Prefix,
+    AuthorizedSource,
     Exact,
     Boxes { probe: Coordinates },
     Contact { probe: Coordinates },
@@ -65,6 +66,7 @@ impl ApplicationDeclaredOperation<Catalog> for WriteNote {
             .operation_read_field(op, ItemName::reference())
             .operation_read_field(op, ItemEnabled::reference())
             .operation_managed_index_read::<query::PrefixBinding, _, _>(op)
+            .operation_managed_index_read::<super::super::source_authorization::NativeBinding, _, _>(op)
             .operation_managed_index_read::<refinement::ExactBinding, _, _>(op)
             .operation_managed_index_read::<geometry::query::BoxBinding, _, _>(op)
             .operation_managed_index_read::<geometry::refinement::Binding, _, _>(op)
@@ -84,6 +86,14 @@ impl OperationHandler<Catalog, Binding> for Handler {
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Directory>, Denial> {
         let result = (|| {
             let empty = match input.parent {
+                Parent::AuthorizedSource => reader
+                    .index_query::<super::super::source_authorization::NativeBinding>(
+                        super::super::source_authorization::FindNative {
+                            directory: input.directory.clone(),
+                            prefix: input.prefix.clone(),
+                        },
+                    )?
+                    .is_empty(),
                 Parent::Prefix => reader
                     .index_query::<query::PrefixBinding>(query::FindPrefix {
                         directory: input.directory.clone(),

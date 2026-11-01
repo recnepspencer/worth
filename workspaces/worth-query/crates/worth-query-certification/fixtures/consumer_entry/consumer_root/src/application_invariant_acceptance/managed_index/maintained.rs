@@ -19,6 +19,7 @@ mod query;
 mod refinement;
 mod rule;
 mod schema;
+mod source_authorization;
 
 const PREFIX_MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
     worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;

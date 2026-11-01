@@ -103,7 +103,8 @@ impl Calls {
     }
 }
 pub struct Provider(pub Arc<Calls>);
-impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
+pub(super) use definition::PrefixSourceIndex;
+impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provider {
     fn decompose(
         &self,
         node: Node,
@@ -120,7 +121,7 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     fn source_summary(
         &self,
         slot: WorthQueryManagedIndexSourceSlot,
-        row: WorthQueryManagedIndexSourceRow<'_, Catalog, PrefixIndex>,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
         control.checkpoint(1)?;
@@ -133,7 +134,7 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     fn merge_summaries(
         &self,
         parts: [Option<Self::Summary>; 3],
-        sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, PrefixIndex>,
+        sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
         #[cfg(test)]
@@ -167,7 +168,7 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     fn summary_may_match(
         &self,
         bounds: Self::Summary,
-        sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, PrefixIndex>,
+        sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, I>,
         probe: &query::Probe,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {
@@ -212,7 +213,7 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     }
     fn build(
         &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, I>,
         nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
@@ -257,8 +258,8 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     }
     fn update(
         &self,
-        before: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
-        after: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        before: &WorthQueryManagedIndexSourceRows<'_, Catalog, I>,
+        after: &WorthQueryManagedIndexSourceRows<'_, Catalog, I>,
         changes: &[WorthQueryManagedIndexSourceChange],
         mut root: Option<WorthQueryManagedIndexNodeId>,
         nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
@@ -314,13 +315,13 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     }
     fn query(
         &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, I>,
         _nodes: &WorthQueryManagedIndexNodes<Node>,
         probe: &query::Probe,
         candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), Stop> {
-        self.validate_probe(probe, control)?;
+        <Self as WorthQueryManagedIndexProvider<Catalog, I>>::validate_probe(self, probe, control)?;
         assert!(candidates.is_empty());
         #[cfg(test)]
         if let Some(slot) = *self.0.foreign_candidate.lock().unwrap() {
@@ -353,7 +354,7 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
     }
     fn matches_source(
         &self,
-        row: WorthQueryManagedIndexSourceRow<'_, Catalog, PrefixIndex>,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, I>,
         probe: &query::Probe,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {

@@ -5652,10 +5652,16 @@ an owned result such as a boolean or ordering. A text read returns either a
 projection denial or the original controlled stop.
 
 
-Source queries have no parameters and must have Public authorization and Public
-disclosure without capability or rule governance. Parent queries may use Public
-or Governed disclosure, with their own installed READ ability and capability
-admission. Opaque `InstalledPolicyRequired` disclosure is unsupported. Run index
+Source queries have no parameters and use Public disclosure without capability or
+rule governance. Source authorization may be Public or an installed conventional
+READ ability. An ability-authorized Source requires a current-only Parent; the
+ordinary Source query may still declare its own current and pinned support.
+Each Source execution admits its actual principal, scope and READ policy. Completed
+caches retain that original authorization support and recheck it before provider
+callbacks; Native maintenance also checks the actual Source READ independently of
+the Parent. A current structural root or Ready cache does not grant permission.
+Parent queries may use Public or Governed disclosure, with their own installed
+READ ability and capability admission. Opaque `InstalledPolicyRequired` disclosure is unsupported. Run index
 requests as current committed one-shot reads with the same admitted principal
 and full-generation scope.
 Parent admission and current READ/security checks precede cache/provider access;
@@ -5680,8 +5686,8 @@ with the actual capability, operation and request input, then `execute_governed`
 for each read. Approved elevation has corresponding `open_index_approved`,
 `rebuild_index_approved` and `execute_approved` entrances. Each call freshly
 admits the Parent capability and READ policy before cache or provider access;
-its normal final disclosure still applies. A valid Public Source or a Ready
-cache does not authorize the Parent.
+its normal final disclosure still applies. Source admission and a Ready cache
+leave the independent Parent authorization check in force.
 
 Repeated opens share one registration for the actual installed Index/Parent
 binding, principal, full-generation scope and World incarnation. Two bindings to
@@ -6018,6 +6024,15 @@ reads or continuation without pinned support. The
 [public geometry consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/public_only.rs)
 uses a distinct maintained index with no invariant requirement. Bank and topology
 adoption are tracked separately in Query 9.19 Phase5.
+
+A result-set/source expectation also retains the original Source READ support.
+Revoking a Source-only permission refuses a later non-querying mutation before
+publication. Recorded correction includes those policy fields and adjacency in
+ordinary history selection, before managed predicate narrowing. Regranting READ
+allows a fresh Source read; it does not erase uncancelled policy history from an
+older recorded operation. Current-only handler reads preserve their actual
+operation selection; retaining an equal snapshot does not promote it to current.
+See the [Source authorization consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/source_authorization.rs).
 
 The
 [public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)

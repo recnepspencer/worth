@@ -6,7 +6,9 @@ use crate::application_schema::{ApplicationEntityMarkerIdentity, ApplicationSche
 /// Refusals while describing or resolving a managed index.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationManagedIndexDefinitionDenial {
-    UnsupportedVersion { observed: u16 },
+    UnsupportedVersion {
+        observed: u16,
+    },
     InvalidIdentifier,
     UnsupportedProbeProfile,
     UnsupportedSourceStructure,
@@ -14,6 +16,8 @@ pub enum ApplicationManagedIndexDefinitionDenial {
     UnsupportedRefinement,
     UnsupportedMaintenance,
     UnsupportedSourcePosture,
+    /// Conventional Source authorization currently requires a current-only Parent.
+    UnsupportedParentBasis,
     UnsupportedSourceShape,
     SourceDependencyCycle,
     MissingSource,
