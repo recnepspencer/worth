@@ -1,7 +1,4 @@
-use super::{
-    basis_identity_validation::require_local_branch_identity, AdmittedRelationalBranchBasis,
-    RelationalBranchBasisDenial,
-};
+use super::{AdmittedRelationalBranchBasis, RelationalBranchBasisDenial};
 use crate::history::retention::{
     RelationalBranchRetentionLease, RelationalBranchRetentionReleaseDenial,
     RelationalBranchRetentionReleaseReceipt,
@@ -48,11 +45,28 @@ impl RelationalRuntime {
         Ok(lease.admitted_basis())
     }
 
+    /// Retain the same owner-issued immutable basis, including after its branch
+    /// retires. The original observation obligation establishes ownership;
+    /// a descriptor or a live branch name cannot substitute for it. This does
+    /// not establish currentness or admit a fork/publication.
     pub fn retain_component_basis(
         &self,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<RelationalBranchRetentionLease, RelationalBranchBasisDenial> {
-        require_local_branch_identity(self, basis.identity())?;
+        if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
+            return Err(RelationalBranchBasisDenial::ForeignRuntime {
+                expected_runtime_instance_id: self.runtime_instance_id(),
+                actual_runtime_instance_id: basis.identity().runtime_instance_id(),
+            });
+        }
+        if basis
+            .inner
+            .retention
+            .owner_relationship(&self.history.retention_binding())
+            != crate::history::retention::RelationalRetentionOwnerRelationship::SameOwner
+        {
+            return Err(RelationalBranchBasisDenial::UnavailableRetainedTarget);
+        }
         let lease = RelationalBranchRetentionLease::new(
             basis.observation(),
             &basis.inner.retention_binding,

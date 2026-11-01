@@ -42,6 +42,13 @@ impl RelationalObservationRetentionObligation {
     pub(crate) const fn reason(&self) -> RelationalBasisRetentionReason {
         RelationalBasisRetentionReason::Observation
     }
+
+    pub(crate) fn owner_relationship(
+        &self,
+        binding: &super::RelationalBranchRetentionBinding,
+    ) -> super::RelationalRetentionOwnerRelationship {
+        self._guard.owner_relationship(binding)
+    }
 }
 
 #[derive(Debug)]

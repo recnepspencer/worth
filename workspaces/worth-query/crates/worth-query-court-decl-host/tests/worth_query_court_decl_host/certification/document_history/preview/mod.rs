@@ -6,6 +6,7 @@ use worth_query_host::facade::application_entry::{
 };
 mod closing;
 mod governed;
+mod retirement;
 
 #[test]
 fn a_preview_keeps_its_old_source_after_later_edits_without_changing_either_document() {
