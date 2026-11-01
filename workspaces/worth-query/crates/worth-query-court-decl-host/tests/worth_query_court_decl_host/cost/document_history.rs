@@ -1,4 +1,5 @@
 //! Warm ordinary append; retained-history depth varies, model and local edit do not.
+mod group;
 mod redo_choices;
 use crate::certification::document_history::recording::{begin, close, finish, ready};
 use crate::certification::document_history::{attach, head, value, App, Document};

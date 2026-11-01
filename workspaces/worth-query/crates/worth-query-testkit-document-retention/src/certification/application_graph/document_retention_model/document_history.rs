@@ -30,6 +30,20 @@ impl ApplicationHistoryBinding<DocumentRetentionSchema> for RetentionHistory {
     const IDENTITY: &'static str = "DocumentRetentionHistory";
 }
 
+/// Distinct installed counts expose result admission independently of membership.
+pub struct ResultBoundedRetentionHistory;
+worth_query_portable_type!(ResultBoundedRetentionHistory => "worth.query.document-retention.result-bounded-history.v1");
+impl ApplicationHistoryBinding<DocumentRetentionSchema> for ResultBoundedRetentionHistory {
+    type Access = DocumentRetentionRead;
+    const IDENTITY: &'static str = "ResultBoundedDocumentRetentionHistory";
+    const GROUP_RESOURCES:
+        worth_query_decl::facade::application_history::ApplicationHistoryGroupResources =
+        worth_query_decl::facade::application_history::ApplicationHistoryGroupResources {
+            maximum_members: std::num::NonZeroUsize::new(4).unwrap(),
+            maximum_retained_results: std::num::NonZeroUsize::MIN,
+        };
+}
+
 /// A real authored label payload exercises record allocation without replacing
 /// READ, action authorization, the business operation or native funding.
 pub struct DetailedRetentionHistory;
@@ -83,7 +97,12 @@ fn metadata_disclosure_for<
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
-    control_roles::declare(navigation::declare(schema)).application_query(matching_read::definition())
+    control_roles::declare(navigation::declare(schema))
+        .application_history(
+            ApplicationHistoryDefinition::<DocumentRetentionSchema, ResultBoundedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
+                .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+                .operation::<SetRetentionBinding>("Set retention"),
+        ).application_query(matching_read::definition())
         .application_query_binding::<matching_read::Binding>()
         .application_history(
             ApplicationHistoryDefinition::<DocumentRetentionSchema, matching_read::History>::for_binding(metadata_disclosure_for::<matching_read::History>())

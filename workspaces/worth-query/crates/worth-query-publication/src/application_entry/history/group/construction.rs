@@ -56,6 +56,60 @@ impl<
     ///     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:ApplicationMutationScopeBinding<S,Scope=ApplicationHistoryModel<S,H>>,
     /// { let _=document.group_edits::<I,P,A,1>(program,request,1,[member]); }
     /// ```
+    /// A group lends shared document access; it cannot enroll a nested group.
+    /// ```compile_fail,E0507
+    /// use worth_query_publication::facade::application_entry::*;
+    /// use worth_query_declaration::facade::{
+    ///     application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},
+    ///     application_operation::{ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding, NoApplicationMutationSource},
+    ///     application_program::{ApplicationAction, ApplicationActionDelivery, ApplicationProgramDefinition, ApplicationSourceCompletion},
+    ///     application_schema::ApplicationSchema,
+    /// };
+    /// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+    /// fn nested<S, H, I, P, A>(
+    ///     group: &mut WorthQueryGroupedHistoryDocument<'_, S, H, I, P, A>,
+    ///     program: &WorthQueryProgramApplicationRuntime<S, P>,
+    ///     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ///     member: (I, <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey),
+    /// )
+    /// where S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>,
+    ///     I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>, A: ApplicationAction<S, I::Binding>,
+    ///     A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+    ///     I::Binding: WorthQuerySourceOperationBinding<S> + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+    ///     <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
+    ///     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+    /// {
+    ///     let (document, _) = group.parts();
+    ///     let _ = document.group_edits::<I, P, A, 1>(program, request, 2, [member]);
+    /// }
+    /// ```
+    /// Abort the first owner before transferring the recovered document to a new group.
+    /// ```
+    /// use worth_query_publication::facade::application_entry::*;
+    /// use worth_query_declaration::facade::{
+    ///     application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},
+    ///     application_operation::{ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding, NoApplicationMutationSource},
+    ///     application_program::{ApplicationAction, ApplicationActionDelivery, ApplicationProgramDefinition, ApplicationSourceCompletion},
+    ///     application_schema::ApplicationSchema,
+    /// };
+    /// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+    /// fn abort_then_open<'r, S, H, I, P, A>(
+    ///     group: WorthQueryGroupedHistoryDocument<'r, S, H, I, P, A>,
+    ///     program: &WorthQueryProgramApplicationRuntime<S, P>,
+    ///     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ///     member: (I, <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey),
+    /// ) -> WorthQueryGroupedHistoryDocument<'r, S, H, I, P, A>
+    /// where S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>,
+    ///     I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>, A: ApplicationAction<S, I::Binding>,
+    ///     A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+    ///     I::Binding: WorthQuerySourceOperationBinding<S> + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+    ///     <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
+    ///     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+    /// {
+    ///     let document = group.abort(request).unwrap();
+    ///     document.group_edits::<I, P, A, 1>(program, request, 2, [member]).unwrap()
+    /// }
+    /// ```
     pub fn group_edits<I, P, A, const N: usize>(
         self,
         program: &WorthQueryProgramApplicationRuntime<S, P>,

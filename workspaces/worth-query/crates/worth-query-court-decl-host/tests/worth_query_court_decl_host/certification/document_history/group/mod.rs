@@ -22,6 +22,7 @@ mod predecessor;
 mod race;
 mod recovery;
 mod refusal;
+mod resources;
 mod retries;
 
 type Action = ApplicationActionReference<

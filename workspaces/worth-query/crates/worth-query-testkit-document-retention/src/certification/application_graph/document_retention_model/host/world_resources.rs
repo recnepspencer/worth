@@ -9,6 +9,15 @@ pub fn world_resources(
     metadata_bytes: u64,
     pins: u64,
 ) -> runtime::WorthQueryProductWorldResources {
+    world_resources_with_branches(commits, metadata_bytes, pins, 32)
+}
+
+pub fn world_resources_with_branches(
+    commits: u64,
+    metadata_bytes: u64,
+    pins: u64,
+    live_product_branches: u64,
+) -> runtime::WorthQueryProductWorldResources {
     // These ordinary authority courts impose no guessed request-work ceiling.
     // Native checked work and allocation handling retain their existing policy.
     let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
@@ -19,7 +28,7 @@ pub fn world_resources(
     runtime::WorthQueryProductWorldResources::install(
         runtime::RuntimeWorldBudgetInstallation {
             branches: runtime::RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 32,
+                live_product_branches,
             },
             history: runtime::RuntimeWorldHistoryBudgetInstallation {
                 retained_composite_commits: commits,

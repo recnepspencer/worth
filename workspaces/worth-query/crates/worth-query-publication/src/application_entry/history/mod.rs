@@ -139,11 +139,12 @@ pub use denial::{
 };
 pub use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial;
 pub use worth_query_execution::publication_boundary::document_history::{
-    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
-    WorthQueryDocumentHistoryClosingDenial, WorthQueryHistoryContextRefreshDenial,
-    WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
-    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
-    WorthQueryHistoryPageRow, WorthQueryHistoryStep,
+    WorthQueryDocumentHistoryCandidateDenial, WorthQueryDocumentHistoryCloseReceipt,
+    WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
+    WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
+    WorthQueryHistoryNodeId, WorthQueryHistoryPage, WorthQueryHistoryPageCursor,
+    WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
+    WorthQueryHistoryStep,
 };
 pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,

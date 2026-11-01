@@ -1383,8 +1383,12 @@ navigation can make an unselected group stale; retain and abort its candidate.
 
 `ApplicationHistoryBinding::GROUP_RESOURCES` sets the installation's finite
 member and retained-result counts. Both default to 64; the document admits one
-unfinished group. Capacity refusal precedes candidate effects. Nested groups
-cannot consume the document through its shared borrow. Groups retain the
+unfinished group. Capacity refusal precedes candidate effects. The group uses
+one private candidate for every member. That candidate is also
+subject to the installed World branch budget; on creation-capacity refusal,
+retain the group and retry advancement after capacity is released, or abort it.
+Finish or abort the current group before opening another; the shared document
+borrow cannot transfer ownership into a nested group. Groups retain the
 ordinary operation's current authorization and invariants; workflow and external
 effects are ineligible. For fixed actions, preflight checks every installed
 producer in each declared root and child family before candidate creation or
