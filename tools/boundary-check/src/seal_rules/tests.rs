@@ -155,6 +155,10 @@ fn certification_factory_callers_are_class_and_file_exact() {
             "capture_complete_checkpoint",
             "native-home-complete-checkpoint",
         ),
+        (
+            "from_native_checkpoint_source",
+            "native-checkpoint-read-protection",
+        ),
         ("prepare_home_program", "query-home-preparation"),
         ("install_home_native_schema", "query-home-preparation"),
         (

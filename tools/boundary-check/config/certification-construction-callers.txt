@@ -126,3 +126,4 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 
 # Ruled cfg(test) bound-versus-unbound original projection capture through real admission.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/projection/retained_projection/tests/reads.rs
+native-checkpoint-read-protection workspaces/worth-store/crates/worth-store-relational/src/cold_source/read_protection.rs

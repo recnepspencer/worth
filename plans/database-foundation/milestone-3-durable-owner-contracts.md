@@ -337,7 +337,18 @@ canonical artifact v4 and the Relational WSRCKPT1 version-3 section remain
 unchanged. Store transports
 opaque owner sections; it does not parse World or Native semantic payloads.
 Keep the existing 1 GiB combined Home-manifest ceiling and 64 KiB individual
-World journal-frame ceiling. Check lengths/counts/arithmetic against remaining
+World journal-frame ceiling.
+Owner-private Native, Signal and Bridge recorded component schemas own their
+JSON heap quotes and funded decoding. Preserve their existing wire meaning and
+borrowed admission APIs. Their SAME recorded DTOs retain actual funding inside
+shared immutable meaning, so Clone shares the original allocation and grant.
+Fund producer copies before allocation as well as recovered descriptions. World
+must not duplicate another owner's private schema or count its wire grant as
+nested decoded funding. Borrowed JSON fields do not themselves prove zero
+allocation: escaped keys/strings and error paths may grow parser scratch. Either
+use an actually allocation-free prequote or fund checked parser scratch before
+that parser, then admit owner-specific retained heap and transient decode peaks
+before growth. Retain every escaped grant with its actual owning allocation. Check lengths/counts/arithmetic against remaining
 input and the original request before allocation. Fund retained maps/buffers
 and poll during encoding/decoding. Limit refusal preserves prior selection and
 all journals; it never prunes history to make a checkpoint fit.
@@ -357,12 +368,46 @@ capture operation. Existing standalone Native capture keeps its contract and
 ordinary cost. Do not introduce a history-policy mode enum, persistent pin
 registry, second serving runtime, or a second recovery/selection authority.
 
-Under the existing Native capture gate, first freeze the ORIGINAL
+Use the existing Native selection/revalidation path to freeze the ORIGINAL
 `CapturedCheckpointBasis`, canonical/transition coverage, source affinities and
-expected source artifact metadata. Retain a protected immutable source prefix
-for that same cut, then release guards before reconstruction. Use actual
-canonical and transition records from position one through that cut when prior
-checkpoint roots are insufficient. Admit source framing, continuity, schemas
+expected source artifact metadata. Release logical guards before the original
+cold source acquires a protected immutable physical read cut N and verifies its
+selected membership. N may contain later entries, but its heads must cover the
+frozen bounds. Later entries never expand the original checkpoint coverage.
+Keep the original basis and validate every read against its expected metadata.
+Do not hold another Native lifecycle guard around optimistic capture: selection
+and revalidation already acquire their own nonwaiting guards.
+
+N is distinct from the earlier protected World cut W. W selects one World image
+and all three World journal prefixes; Native captures later and may be ahead.
+A World publication between W and N remains supported and tested. Neither owner
+requires a global joint reader or joint logical gate. The complete Native
+historical inventory and one Home selection/member union preserve cross-cut
+references.
+
+The SAME installed `RelationalDurableColdSource` issues a narrowly constructed
+`RelationalDurableReadProtection`. Its immutable issuing Weak and original opaque
+provider payload remain together through the prepared section and SAME Home
+attempt until selection/acknowledgement. Nonoverridable carrier read methods
+check source DATA identity before provider callbacks, without upgrading the Weak
+or exposing the payload. Unknown providers refuse before allocation; no wrapper
+cold source, replacement issuer or latest-reader fallback is permitted.
+
+Store's original payload retains one actual `PhysicalRecordReader`, its issuing
+source Weak, frozen canonical/transition bounds, that reader's verified selected
+member placement and actual metadata funding. Each provided-reader stream
+validates Store, work-runtime/lifecycle and live-protection affinity; stable Store
+identity alone is insufficient. Freeze placement from the anchor selected by N,
+never from the mutable live placement map during each body read. Reuse the
+existing physical streaming algorithms and enforce frozen bounds, exact length,
+verified EOF and full owner artifact agreement. If acquisition promises
+nonwaiting behavior, use the same physical registration/lock order with
+nonwaiting admission and typed Busy/refusal; existing blocking `records()` does
+not establish that promise. No payload I/O or reconstruction runs under logical
+guards.
+
+Use actual canonical and transition records from position one through that cut
+when prior checkpoint roots are insufficient. Admit source framing, continuity, schemas
 and complete authoritative meaning through existing owner recovery admission.
 Legacy `encode_authoritative_payload` tuple parity omits association, semantic
 result, symbol texts and codec retirements; it cannot substitute for the full
@@ -506,6 +551,12 @@ Partial transfer never recaptures, republishes, moves a head or acknowledges
 uncaptured definitions. A completed operation can then reuse selected backing
 for later capture without covered-journal demand. Test interruption mid-transfer
 and source/member protection through final acknowledgement.
+Advance the physical root after N and verify that all reads remain on N. A
+Native publication between basis freeze and N must not expand coverage. Foreign
+protection, including a second cold-source registry over the same Serving
+object, refuses before payload I/O; changing the live member map cannot redirect
+N-selected reads. Acquisition refusal preserves prior selection with no
+checkpoint effect.
 
 The decisive Native prerequisite court legally releases observations and
 reclaims old live roots/history metadata BEFORE coupled capture. A fresh
