@@ -16,6 +16,12 @@ fn recorded_component_recovery_admits_original_empty_and_historical_tail_subject
     let predecessor = current(execution, &runtime);
     create_entity(execution, &runtime, "unpublished-native-successor");
     let successor = current(execution, &runtime);
+    create_entity(execution, &runtime, "original-world-genesis");
+    let genesis = current(execution, &runtime);
+    create_entity(execution, &runtime, "later-writer-head");
+    let later = current(execution, &runtime);
+    let offers = medium.offered().len();
+    drop(runtime);
     let mut recovered = durable_runtime(&medium);
     let plan = recovered
         .durability()
@@ -29,12 +35,21 @@ fn recorded_component_recovery_admits_original_empty_and_historical_tail_subject
         .durability_recovery()
         .recover_with_authority(execution, plan)
         .unwrap();
-    for recorded in [&empty, &predecessor, &successor] {
+    for recorded in [&empty, &predecessor, &successor, &genesis, &later] {
         let basis = authority
             .admit_recorded_component(execution, &recovered, recorded)
             .unwrap()
             .into_basis();
         assert_recorded_basis(&recovered, &basis, recorded);
+        assert_eq!(
+            &recovered
+                .owner_component_services()
+                .basis_port()
+                .export_recorded_retained_component(execution, &basis)
+                .unwrap(),
+            recorded,
+            "recovery re-exports the original historical subject without replacing it with the head"
+        );
         assert_ne!(
             basis.descriptor().runtime_instance_id(),
             recorded.descriptor().runtime_instance_id()
@@ -86,6 +101,11 @@ fn recorded_component_recovery_admits_original_empty_and_historical_tail_subject
             .cause(),
         Cause::RecordedTargetMismatch
     ));
+    assert_eq!(
+        medium.offered().len(),
+        offers,
+        "readmission never republishes"
+    );
 }
 
 #[test]

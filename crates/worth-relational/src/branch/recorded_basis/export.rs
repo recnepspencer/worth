@@ -44,26 +44,30 @@ impl RelationalRuntime {
             FoundationalBranchTarget::Empty => RecordedRelationalComponentTarget::Empty,
             FoundationalBranchTarget::Basis(target) => {
                 let commit_id = crate::history::data::CommitId(target.selected_commit_id());
-                let positioned = self
+                let artifact = self
                     .history
-                    .positioned_canonical_commit(commit_id)
+                    .commit_artifact(commit_id)
                     .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
+                let cell = artifact.envelope_residency();
+                let positioned = cell
+                    .demand_positioned(execution, 1 << 30)
+                    .map_err(Refusal::Source)?;
                 let envelope = basis
                     .inner
                     .root
                     .canonical_envelope()
                     .ok_or(Refusal::CanonicalMismatch { commit_id })?;
-                if !std::sync::Arc::ptr_eq(positioned.canonical_arc(), envelope)
-                    || positioned.commit.commit_id != commit_id
+                if positioned.commit.commit_id != commit_id
                     || positioned.commit.version_id.0 != target.version_id()
                     || basis.inner.root.descriptor() != Some(target.roots())
+                    || !Artifact::matches_positioned_payload(&positioned, envelope).map_err(
+                        |error| Refusal::PayloadEncoding {
+                            detail: error.to_string(),
+                        },
+                    )?
                 {
                     return Err(Refusal::CanonicalMismatch { commit_id });
                 }
-                let cell = self
-                    .history
-                    .performed_envelope_residency(commit_id)
-                    .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
                 let artifact_digest = match cell.journal_index() {
                     Some(entry) => {
                         if entry.commit != envelope.commit

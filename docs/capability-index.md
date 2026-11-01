@@ -785,7 +785,11 @@ source qualification nor recovery authority; see
 
 The same basis service's `export_recorded_retained_component` exports the exact
 original admitted and pinned subject after head advancement, preserving its
-original receipt/position/digest. Native's durability authority provides
+original receipt/position/digest. Historical Journal and checkpoint subjects use
+request-driven catalog materialization; independent body readmission checks the
+complete authoritative payload, while resident canonical identity avoids that
+reconstructive comparison. Failed source demands refuse explicitly. Native's
+durability authority provides
 `discover_associated_effects`, `discover_all_associated_effects` and
 `readmit_associated_effect` for selected or all opaque associations: discovery leaves unrelated bodies cold, and readmission verifies
 the exact retained Journal source/index/body rather than a resident re-encoding.

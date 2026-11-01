@@ -113,3 +113,86 @@ fn recorded_component_checkpoint_body_alone_cannot_invent_original_successor_ima
         "refusal keeps the same actual source description"
     );
 }
+
+#[test]
+fn recorded_component_checkpoint_reexports_the_actual_cold_historical_subject() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let original = original(execution, false);
+    let recorded = original.before.clone();
+    let medium = original.medium.clone();
+    let offers = medium.offered().len();
+    drop(original);
+    let (runtime, authority) = recover(execution, &medium);
+    let basis = authority
+        .admit_recorded_component(execution, &runtime, &recorded)
+        .unwrap()
+        .into_basis();
+    let port = runtime.owner_component_services().basis_port();
+    assert!(port.compare_current_exact(&basis).is_err());
+    assert_eq!(
+        port.export_recorded_retained_component(execution, &basis)
+            .unwrap(),
+        recorded
+    );
+    assert_eq!(
+        medium.offered().len(),
+        offers,
+        "cold export never republishes"
+    );
+}
+
+#[test]
+fn recorded_component_checkpoint_reexport_refuses_missing_original_source() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let original = original(execution, false);
+    let recorded = original.before.clone();
+    let medium = original.medium.clone();
+    drop(original);
+    let (runtime, authority) = recover(execution, &medium);
+    let basis = authority
+        .admit_recorded_component(execution, &runtime, &recorded)
+        .unwrap()
+        .into_basis();
+    let Target::Canonical(target) = recorded.target() else {
+        panic!("the source-issued predecessor is canonical")
+    };
+    medium.drop_artifact(target.position());
+    assert!(matches!(
+        runtime
+            .owner_component_services()
+            .basis_port()
+            .export_recorded_retained_component(execution, &basis),
+        Err(RelationalRecordedComponentRefusal::Source(_))
+    ));
+    assert_recorded_basis(&runtime, &basis, &recorded);
+}
+
+#[test]
+fn recorded_component_checkpoint_reexport_refuses_corrupt_original_source() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let original = original(execution, false);
+    let recorded = original.before.clone();
+    let medium = original.medium.clone();
+    drop(original);
+    let (runtime, authority) = recover(execution, &medium);
+    let basis = authority
+        .admit_recorded_component(execution, &runtime, &recorded)
+        .unwrap()
+        .into_basis();
+    let Target::Canonical(target) = recorded.target() else {
+        panic!("the source-issued predecessor is canonical")
+    };
+    let final_byte = medium.artifact_bytes(target.position()).unwrap().len() - 1;
+    medium.flip_artifact_byte(target.position(), final_byte);
+    assert!(matches!(
+        runtime
+            .owner_component_services()
+            .basis_port()
+            .export_recorded_retained_component(execution, &basis),
+        Err(RelationalRecordedComponentRefusal::Source(_))
+    ));
+    assert_recorded_basis(&runtime, &basis, &recorded);
+}

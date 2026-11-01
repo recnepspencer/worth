@@ -204,7 +204,12 @@ basis; callers cannot rewrite its canonical runtime frame into a live identity.
 owner fact path for an already-admitted, pinned subject after a later commit
 advances the branch. It preserves the original performed position and artifact
 digest; it neither selects the latest head nor pairs a caller-supplied result
-with a descriptor. Foreign owners refuse.
+with a descriptor. Foreign owners refuse. Historical Journal or checkpoint
+subjects demand their exact catalog-backed positioned body under the original
+request. Independently readmitted bodies must match the complete authoritative
+payload; resident canonical Arc identity remains the constant-time acceptance
+path. A failed source demand returns a source refusal, without substituting the
+current head or retaining every journal body permanently.
 
 ## Retire one provider member-custody share
 
