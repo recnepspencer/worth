@@ -1,6 +1,7 @@
 //! Install the original-request preparation phase before any invariant family.
 use super::preparation::{ManagedIndexSourcePreparation, PreparedSourceProgram, SourceViews};
 use super::staged::PreparedManagedIndexSources;
+use super::SourcePreparationGroup;
 use super::{
     ManagedIndexSourceAvailability as Availability, ManagedIndexSourcePreparationDenial as Denial,
 };
@@ -11,9 +12,7 @@ use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::OverlayStateView;
 use crate::transactions::data::{RecordRef, TransactionCommitError};
 use crate::validation::custom_rule::CustomInvariantWorkMeter;
-use crate::validation::data::{
-    CustomInvariantRegistration, StructuralAspectStateView, StructuralRelationView,
-};
+use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
 use std::sync::Arc;
@@ -68,10 +67,10 @@ fn prepare(
             }
         }
     }
-    let registrations = runtime
+    let groups = runtime
         .schema_contract_runtime
         .custom_invariant_registries
-        .source_registrations(
+        .source_groups(
             kinds.into_iter(),
             draft
                 .outcome
@@ -81,7 +80,7 @@ fn prepare(
                 .iter()
                 .map(|delta| delta.kind_id),
         );
-    if registrations.is_empty() {
+    if groups.is_empty() {
         // An actual pre-first stage proves an empty closure. Absence of that
         // stage must remain distinguishable from complete, unrelated changes.
         draft
@@ -131,17 +130,17 @@ fn prepare(
         // Compatible requirements share the union of invocation scopes, including
         // an unchanged required index in a scope changed by a sibling requirement.
         let mut plans: Vec<SourcePlan<'_>> = Vec::new();
-        for registration in registrations {
+        for group in groups {
             let mut invocation = std::collections::BTreeSet::new();
-            for program in registration.managed_sources.iter() {
+            for program in group.programs() {
                 program
-                    .require_access(registration.access_contract())
+                    .require_access(group.access_contract())
                     .map_err(DerivedRelationReadDenial::from)?;
                 if let Some(plan) = plans.iter().find(|plan| plan.program == program) {
                     invocation.extend(plan.affected_scopes.iter().copied());
                     continue;
                 }
-                let mut work = CustomInvariantWorkMeter::new(registration.maximum_work_units());
+                let mut work = CustomInvariantWorkMeter::new(group.maximum_work_units());
                 work = work.with_lease(budget);
                 let physical = views(
                     &runtime_view,
@@ -149,7 +148,7 @@ fn prepare(
                     before.clone(),
                     after.clone(),
                     execution,
-                    registration,
+                    group,
                     &work,
                 );
                 let source_records = changed_source_records(
@@ -174,7 +173,7 @@ fn prepare(
                 invocation.extend(affected_scopes.iter().copied());
                 plans.push(SourcePlan {
                     program,
-                    registration,
+                    group,
                     closure,
                     affected_scopes,
                     work,
@@ -182,7 +181,7 @@ fn prepare(
             }
             for plan in plans
                 .iter_mut()
-                .filter(|plan| registration.managed_sources.contains(plan.program))
+                .filter(|plan| group.programs().contains(plan.program))
             {
                 for scope in &invocation {
                     plan.closure.scopes.entry(*scope).or_default();
@@ -192,7 +191,7 @@ fn prepare(
         let mut programs = Vec::new();
         for SourcePlan {
             program,
-            registration,
+            group,
             closure,
             affected_scopes,
             work,
@@ -208,7 +207,7 @@ fn prepare(
                 before.clone(),
                 logical_after,
                 execution,
-                registration,
+                group,
                 &work,
             );
             let source = ManagedIndexSourcePreparation {
@@ -248,7 +247,7 @@ fn prepare(
 
 struct SourcePlan<'a> {
     program: &'a super::ManagedIndexSourceProgram,
-    registration: &'a CustomInvariantRegistration,
+    group: &'a SourcePreparationGroup,
     closure: super::scope_closure::PreparedManagedIndexScopeClosure,
     affected_scopes: std::collections::BTreeSet<crate::identity::data::EntityId>,
     work: CustomInvariantWorkMeter,
@@ -289,10 +288,10 @@ fn views<'a>(
     before: InvariantStateView<'a>,
     after: InvariantStateView<'a>,
     execution: worth_execution::ExecutionRequest<'a, 'a>,
-    registration: &CustomInvariantRegistration,
+    group: &SourcePreparationGroup,
     work: &CustomInvariantWorkMeter,
 ) -> SourceViews<'a> {
-    let access = Arc::new(registration.access_contract().clone());
+    let access = Arc::new(group.access_contract().clone());
     SourceViews {
         before: StructuralRelationView::new(
             before.clone(),

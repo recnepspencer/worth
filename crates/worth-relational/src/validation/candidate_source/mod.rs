@@ -14,6 +14,8 @@ pub use denial::ManagedIndexSourcePreparationDenial;
 pub(crate) use program::SourceBindingCache;
 mod observation;
 mod preparation;
+mod preparation_group;
+pub(crate) use preparation_group::SourcePreparationGroup;
 mod projection;
 mod provider_failure;
 pub use provider_failure::ManagedIndexSourceProviderFailure;

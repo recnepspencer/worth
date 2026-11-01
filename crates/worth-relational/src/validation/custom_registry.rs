@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use crate::validation::candidate_source::SourcePreparationGroup;
 use crate::validation::data::{
     CustomInvariantRegistration, CustomInvariantSemanticIdentity, InvariantExecutionPoint,
 };
@@ -14,6 +15,7 @@ pub struct DuplicateCustomInvariantRegistration {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FrozenCustomInvariantRegistry {
     registrations: Arc<[CustomInvariantRegistration]>,
+    source_groups: Arc<[SourcePreparationGroup]>,
     source_postings: crate::validation::candidate_source::routing::SourceProgramPostings,
     pub(crate) source_history:
         Arc<crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
@@ -46,12 +48,17 @@ impl FrozenCustomInvariantRegistry {
                 });
             }
         }
+        let source_groups = registrations
+            .iter()
+            .filter_map(SourcePreparationGroup::from_invariant)
+            .collect::<Vec<_>>();
         Ok(Self {
-            source_history: Arc::new(crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog::compile(&registrations)),
+            source_history: Arc::new(crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog::compile(&source_groups)),
             source_postings:
                 crate::validation::candidate_source::routing::SourceProgramPostings::compile(
-                    &registrations,
+                    &source_groups,
                 ),
+            source_groups: source_groups.into(),
             registrations: registrations.into(),
             index_by_identity_and_execution_point: Arc::new(index_by_identity_and_execution_point),
         })
@@ -61,15 +68,15 @@ impl FrozenCustomInvariantRegistry {
         self.registrations.len()
     }
 
-    pub(crate) fn source_registrations(
+    pub(crate) fn source_groups(
         &self,
         entities: impl Iterator<Item = crate::identity::data::KindId>,
         relations: impl Iterator<Item = crate::identity::data::KindId>,
-    ) -> Vec<&CustomInvariantRegistration> {
+    ) -> Vec<&SourcePreparationGroup> {
         self.source_postings
             .affected(entities, relations)
             .into_iter()
-            .map(|slot| &self.registrations[slot])
+            .map(|slot| &self.source_groups[slot])
             .collect()
     }
 

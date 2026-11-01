@@ -1,6 +1,6 @@
-//! Derived postings in the existing installed custom-rule registry.
+//! Derived group postings in the existing installed registry.
 use crate::identity::data::KindId;
-use crate::validation::data::CustomInvariantRegistration;
+use crate::validation::candidate_source::SourcePreparationGroup;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Default, Debug, Clone)]
@@ -10,10 +10,10 @@ pub(crate) struct SourceProgramPostings {
 }
 
 impl SourceProgramPostings {
-    pub(crate) fn compile(registrations: &[CustomInvariantRegistration]) -> Self {
+    pub(crate) fn compile(groups: &[SourcePreparationGroup]) -> Self {
         let mut postings = Self::default();
-        for (slot, registration) in registrations.iter().enumerate() {
-            for source in registration.managed_sources.iter() {
+        for (slot, group) in groups.iter().enumerate() {
+            for source in group.programs() {
                 for kind in [source.scope_kind(), source.row_kind()] {
                     postings.entities.entry(kind).or_default().insert(slot);
                 }

@@ -63,15 +63,15 @@ pub(in crate::validation::candidate_source) fn prepare(
                 )
             })?,
         )?;
-        let registrations = runtime
+        let groups = runtime
             .schema_contract_runtime
             .custom_invariant_registries
-            .source_registrations(input.entity_kinds(&before, &after), input.relation_kinds());
+            .source_groups(input.entity_kinds(&before, &after), input.relation_kinds());
         let adjacency = input.deltas(budget)?;
         let mut seen = ExecutionOrderedMap::<usize, ()>::default();
         let mut impacts = ExecutionOrderedMap::default();
-        for registration in registrations {
-            for program in registration.managed_sources.iter() {
+        for group in groups {
+            for program in group.programs() {
                 admission::work(budget, 1)?;
                 admission::work(budget, catalog.len())?;
                 let slot = catalog.slot(program).map_err(|_| Denial::ForeignSource)?;
@@ -82,11 +82,11 @@ pub(in crate::validation::candidate_source) fn prepare(
                 seen.insert_cloned_native_for_request(&slot, &(), execution)
                     .map_err(admission::map)?;
                 program
-                    .require_access(registration.access_contract())
+                    .require_access(group.access_contract())
                     .map_err(DerivedRelationReadDenial::from)?;
-                let work = CustomInvariantWorkMeter::new(registration.maximum_work_units())
-                    .with_lease(budget);
-                let access = Arc::new(registration.access_contract().clone());
+                let work =
+                    CustomInvariantWorkMeter::new(group.maximum_work_units()).with_lease(budget);
+                let access = Arc::new(group.access_contract().clone());
                 let old = StructuralRelationView::new(
                     before.clone(),
                     execution,
