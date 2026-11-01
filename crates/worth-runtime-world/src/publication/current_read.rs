@@ -7,6 +7,9 @@
 pub enum CurrentProductReadDependencyDenial {
     AlreadyRequired,
     UnsupportedComponentPlan,
+    CurrentReadRequired,
+    CutoverNotPerformed,
+    CutoverDeadlineElapsed,
     Branch(crate::branch::RuntimeWorldBranchAdmissionDenial),
     WorldHeadUnavailable,
     Native(worth_relational::facade::mvcc::RelationalPublicationReadDependencyDenial),

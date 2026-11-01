@@ -116,6 +116,31 @@ original settled Relational successor explicitly, call
 and execute the returned `WithoutSignal` preparation. This preserves the original
 expected product head; it does not rebase a lost write target.
 
+To surround only the Native cutover with caller-owned liveness guards, use
+`execute_without_signal_with_memory_cutover`,
+`execute_with_signal_with_memory_cutover`, or
+`publish_bridge_conditional_definition_with_memory_cutover`. These require a
+fresh Native publication with a current-read requirement. Native preparation
+finishes before the callback starts. The callback receives a borrowed,
+single-use `PreparedWorldRelationalCutover`; consume it with `perform()` or
+`perform_before(deadline)`. The latter adds a narrowing cutoff to the original
+Native operation, checked after reservation waits before position assignment.
+
+The callback starts before World acquires the current control cell guard. Only
+the token's perform operation holds that guard; Signal, settlement, activation
+and final product movement follow after the callback returns. Returning without
+performing yields `CutoverNotPerformed`. This entrance grants no additional
+permission and cannot be used for Signal-only work or settled adoption.
+
+Inspect both parts of the returned `(Option<CallerResult>, outcome)`. `None`
+means the callback was never entered. A caller error returned after `perform()`
+cannot erase an actual Native effect or change the publication outcome. If the
+callback panics after performing, World records that genuine effect in the
+original recovery handle before resuming the panic. Inspect and continue that
+handle to repair the exact Native settlement and release the retained
+obligations. Identity-only recovery carries a settlement receipt; explicit
+adoption requires the full settlement result and refuses a receipt alone.
+
 Recovery retains exclusive custody of the record while settlement runs. If
 settlement unwinds, the record regains its exact carried progress and component
 results before it becomes available again. A consumed settlement route leaves

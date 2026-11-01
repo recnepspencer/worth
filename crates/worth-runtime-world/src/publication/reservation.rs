@@ -188,6 +188,27 @@ impl ReservedCompositePublicationAttempt {
         self.progress = self.custody.record_progress(progress.retained_image());
     }
 
+    /// Preserve only the genuine Native occurrence before any later owner work
+    /// or caller unwind can abandon this attempt.
+    pub(crate) fn record_relational_performed(
+        &mut self,
+        performed: &worth_relational::facade::mvcc::PerformedRelationalCommit,
+    ) -> (
+        worth_relational::facade::history::RelationalCommitIdentity,
+        worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    ) {
+        let identity = performed.commit_identity();
+        let successor = performed.next_basis().clone();
+        self.record_progress(&CompositeAttemptProgress::new(
+            super::RelationalAttemptProgress::settlement_required(
+                identity.clone(),
+                successor.clone(),
+            ),
+            super::SignalAttemptProgress::untouched(),
+        ));
+        (identity, successor)
+    }
+
     /// Structural counters are initialized when the attempt is reserved, before
     /// the first owner effect, so a caller can read an honest zeroed scope.
     #[cfg(test)]

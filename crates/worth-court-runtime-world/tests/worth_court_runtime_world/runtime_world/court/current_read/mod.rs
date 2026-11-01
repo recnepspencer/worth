@@ -4,6 +4,7 @@ use worth_runtime_world::facade::*;
 
 mod fixture;
 mod guarded_cutover;
+mod memory_handoff;
 mod recovery;
 mod refusals;
 use fixture::*;

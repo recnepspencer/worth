@@ -125,12 +125,16 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
     pub(crate) fn perform_memory_publication(
         self,
         cutover: worth_relational::facade::mvcc::PreparedMemoryRelationalCutover<'_, '_, '_>,
+        deadline: Option<std::time::Instant>,
     ) -> Result<(), crate::publication::CurrentProductReadDependencyDenial> {
-        self.while_locked(cutover, |cutover| cutover.perform())
-            .map_err(|failure| {
-                drop(failure);
-                crate::publication::CurrentProductReadDependencyDenial::WorldHeadUnavailable
-            })
+        self.while_locked(cutover, |cutover| match deadline {
+            Some(deadline) => cutover.perform_before(deadline),
+            None => cutover.perform(),
+        })
+        .map_err(|failure| {
+            drop(failure);
+            crate::publication::CurrentProductReadDependencyDenial::WorldHeadUnavailable
+        })
     }
 
     fn while_locked<Argument, Output>(

@@ -10,6 +10,9 @@ use worth_relational::facade::mvcc::{
 };
 
 use super::RuntimeWorldOwnerRoot;
+mod memory_cutover;
+pub use memory_cutover::PreparedWorldRelationalCutover;
+pub(crate) use memory_cutover::RelationalCutoverHandoff;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
 where
@@ -36,11 +39,15 @@ where
     pub(super) fn publish_relational_with_current_read(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        attempt: &ReservedCompositePublicationAttempt,
+        attempt: &mut ReservedCompositePublicationAttempt,
         candidate: PreparedRelationalCommitCandidate,
+        handoff: Option<&mut RelationalCutoverHandoff<'_>>,
     ) -> Result<RelationalPublicationOutcome, Denial> {
         let port = self.state.relational.publication_port();
         let Some(current) = attempt.plan().relational().current_read() else {
+            if handoff.is_some() {
+                return Err(Denial::CurrentReadRequired);
+            }
             return Ok(port.compare_and_publish(execution, candidate));
         };
         let scope = self.current_read_scope(current)?;
@@ -48,16 +55,50 @@ where
         // companion preparation or owning cleanup. No Signal/World effect runs
         // inside the purpose-specific cutover receiver.
         let scoped = match port.with_prepared_memory_cutover(execution, candidate, |cutover| {
-            scope.perform_memory_publication(cutover)
+            let Some(handoff) = handoff else {
+                return (Some(scope.perform_memory_publication(cutover, None)), None);
+            };
+            let mut scope = Some(scope);
+            let mut guarded = None;
+            let mut perform = |native, deadline| {
+                guarded = Some(
+                    scope
+                        .take()
+                        .expect("one World token consumes one scope")
+                        .perform_memory_publication(native, deadline),
+                );
+            };
+            let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                handoff(PreparedWorldRelationalCutover::new(
+                    cutover,
+                    current,
+                    attempt.expected_head(),
+                    &mut perform,
+                ));
+            }))
+            .err();
+            (guarded, unwind)
         }) {
             Ok(scoped) => scoped,
             Err(outcome) => return Ok(outcome),
         };
-        let (guarded, publication) = scoped.into_parts();
+        let ((guarded, unwind), publication) = scoped.into_parts();
+        if let Some(payload) = unwind {
+            // Native returned the actual outcome after all callback/World
+            // guards and owning preflight cleanup. Preserve its occurrence
+            // before the original caller panic abandons the World attempt.
+            if let Some(RelationalPublicationOutcome::Performed(performed)) = &publication {
+                attempt.record_relational_performed(performed);
+            }
+            drop(publication);
+            std::panic::resume_unwind(payload);
+        }
         match publication {
             // An actual Native fact wins over the caller's callback result.
             Some(outcome) => Ok(outcome),
-            None => Err(guarded.err().unwrap_or(Denial::WorldHeadUnavailable)),
+            None => Err(guarded
+                .and_then(Result::err)
+                .unwrap_or(Denial::CutoverNotPerformed)),
         }
     }
 
