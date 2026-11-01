@@ -93,15 +93,6 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
             for grant in deployment_grants {
                 grant.bind(graph)?;
             }
-            seed::seed_cycles_with(bootstrap_phase, graph, |graph| {
-                worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "anchor-a")
-                    .unwrap();
-                worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "remote-a")
-                    .unwrap();
-            });
-            if isolated_cycle {
-                seed::seed_isolated_cycle(bootstrap_phase, graph);
-            }
             graph.bind_principal(
                 &principal,
                 primary_graph::WorthQueryApplicationPrincipalKey::new("sibling-owner").unwrap(),
@@ -113,6 +104,21 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
                 .unwrap(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
+            seed::seed_cycles_with(bootstrap_phase, graph, |graph| {
+                worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "anchor-a")
+                    .unwrap();
+                worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "remote-a")
+                    .unwrap();
+                worth_query_topology_entry::bind_navigation_grant(
+                    graph,
+                    "sibling-owner",
+                    "anchor-a",
+                )
+                .unwrap();
+            });
+            if isolated_cycle {
+                seed::seed_isolated_cycle(bootstrap_phase, graph);
+            }
             Ok(())
         },
     )?;

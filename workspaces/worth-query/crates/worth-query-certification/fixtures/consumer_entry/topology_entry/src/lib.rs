@@ -37,6 +37,8 @@ mod compiled_example_drift;
 mod discovery_connection;
 mod discovery_read;
 pub use discovery_connection::*;
+mod owner_discovery;
+pub use owner_discovery::*;
 mod membership;
 pub use membership::*;
 mod mutation;
@@ -93,6 +95,7 @@ worth_query_application_contribution! {
             let schema = <PlanarSourceFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = initial_adjustment::declare_initial_adjustment(schema);
             let schema = document_history::declare(schema);
+            let schema = owner_discovery::declare(schema);
             let schema = <PlanarFinalFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = match Schema::PLANAR_EDIT_PROJECTION_WORK {
                 Some(work) => schema.operation_projection_work_budget(EditPlanar::reference::<Schema>(), work),

@@ -5,6 +5,7 @@ mod authority;
 mod checkout;
 mod cutover;
 mod interruption;
+mod owner_discovery;
 mod panic_disposal;
 mod producer_admission;
 mod profile;
