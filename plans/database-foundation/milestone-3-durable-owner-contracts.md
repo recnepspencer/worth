@@ -544,6 +544,41 @@ funds portable input construction, actual nested clones and owner bounds from
 the original request; no tree-node guess, eight-times multiplier, general
 collection framework or Foundation-to-Execution dependency is permitted.
 
+Owned codec payload reconstruction is the next independent funding closure;
+it does not issue Complete capture authority. Preserve the actual
+ReconstructedPayload owner and its five existing consumers. Replace its eight-copy
+estimate with separately admitted portable-input construction, portable admission
+and output application phases. Fund each before its growth and release temporary
+reservations only after their actual input/admitted owners drop; only the actual
+output bill remains with the returned payload until final Drop. Preserve the
+original execution.in_scope contract: reserve_in_scope without a lease already
+uses its active serial account and is not inherently an unaccounted fallback.
+
+Foundation adds one pure application_allocation_bounds method on the existing
+AuthoritativeRecordAspectPatch, returning AspectPatchStorageBounds and reusing
+its actual selected_entries/selected_fields. Include selected output backing,
+nested contract/key/value clones and simultaneous boxing/merge scratch once.
+Do not sum overlapping full bounds or pin cleared/overwritten huge prior values
+in a small result, and do not duplicate the selector or private layout in Native.
+Native separately funds portable operation/field rosters, basis/key/value copies,
+owned lookup/validation contract clones and existing readmission backing bounds;
+moved values are not separately copied or charged twice. No Execution dependency
+enters Foundation. Birth reconstruction funds typed pairs, canonicalizes accepted
+unsorted unique input, rejects duplicates and uses from_sorted_fields.
+
+Implement in the existing Foundation patches/storage_bounds owner and its tests,
+with Native payload_reconstruction/{portable_input,allocation,tests}.rs children
+for those actual phases. Preserve Native apply's existing signature and owned
+result handoff. Pure allocation controls use only the exact new owner-private
+payload_reconstruction/tests.rs SDK ExecutionRequest/SerialRequest leaf. Genuine
+producer/ordinary-write refusal controls remain in their existing runtime court;
+no new runtime audience or hidden fixture constructors are admitted. Prove finite
+original-request pre-growth denial without prior-state mutation, exact small-output
+retention after huge cleared input, final refund, birth order/duplicates and
+unchanged clear/set behavior, plus actual producer readmission and its existing
+ordinary equal-write authority refusal. Freeze and independently review this
+causal slice before proceeding to replay staging, Complete capture or Home close.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes

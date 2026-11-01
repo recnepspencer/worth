@@ -185,7 +185,7 @@
 {"source":"crates/worth-relational/src/mvcc/publication/application_publication/continuity_tests/retirement/authored/request.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/application_publication/continuity_tests/retirement/ordinary.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/application_publication/continuity_tests/routes.rs","module":"file","roots":["ExecutionRequest"]},
-{"source":"crates/worth-relational/src/mvcc/publication/application_publication/tests.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-relational/src/mvcc/publication/application_publication/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/companion/registration/poison_recovery.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/mvcc/transaction/overlay_normalization/no_raw_keys.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/mvcc/transaction/overlay_normalization/selected_policy.rs","module":"file","roots":["ExecutionAuthority","ExecutionRequest"]},
@@ -3030,6 +3030,7 @@
 {"source":"crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/companion/registration/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/change_source/retained_observation/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/history/data/codec_retirement_closure/payload_reconstruction/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/branch/basis_registry/retirement/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/history/retention/lane/retained_release/tests.rs","module":"file","roots":["ExecutionRequest"]}
 ]
