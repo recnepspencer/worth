@@ -54,10 +54,8 @@ where
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
     ) -> Result<RelationalAttemptProgress, RelationalExecutionFailure> {
         match self
-            .state
-            .relational
-            .publication_port()
-            .compare_and_publish(execution, candidate)
+            .publish_relational_with_current_read(execution, attempt, candidate)
+            .map_err(|denial| pre_effect_failure(NoEffectCause::CurrentReadDependency(denial)))?
         {
             RelationalPublicationOutcome::RequestStopped(stop) => {
                 Err(pre_effect_failure(NoEffectCause::ExecutionRequest(stop)))
@@ -100,6 +98,8 @@ where
             RelationalPublicationOutcome::Denied(denial) => {
                 let cause = match denial {
                     worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerUnavailable { .. } => NoEffectCause::OwnerUnavailable,
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::CurrentReadDependency(denial) => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::Native(denial)),
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::ScopedCutoverDurabilityUnsupported => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::DurabilityUnsupported),
                     _ => NoEffectCause::OwnerDeniedBeforeEffect,
                 };
                 Err(pre_effect_failure(cause))

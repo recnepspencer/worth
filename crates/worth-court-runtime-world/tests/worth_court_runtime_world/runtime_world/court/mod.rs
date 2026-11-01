@@ -2,6 +2,7 @@
 pub(crate) mod bootstrap;
 #[path = "branches/mod.rs"]
 pub(crate) mod branches;
+mod current_read;
 #[path = "exact_history/mod.rs"]
 pub(crate) mod exact_history;
 #[path = "operation_control/mod.rs"]

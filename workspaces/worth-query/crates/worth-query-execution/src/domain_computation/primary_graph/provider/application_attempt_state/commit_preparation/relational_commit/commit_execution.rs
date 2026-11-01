@@ -297,6 +297,7 @@ fn world_no_effect(
         )),
         NoEffectCause::ExecutionRequest(_)
         | NoEffectCause::OwnerDeniedBeforeEffect
+        | NoEffectCause::CurrentReadDependency(_)
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted

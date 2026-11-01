@@ -20,6 +20,7 @@ use super::owner_inputs::RuntimeWorldOwnerInputs;
 mod bootstrap;
 mod branch_service;
 mod construction;
+mod current_read_publication;
 mod execution_service;
 mod inspection_service;
 mod operation;

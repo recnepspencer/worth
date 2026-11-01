@@ -60,6 +60,11 @@ pub enum RuntimeWorldBranchCreationOutcome {
 pub(crate) trait RuntimeWorldObservationService:
     super::availability::RuntimeWorldAvailability
 {
+    fn product_branch_writers_are_locked_out_for_test(
+        &self,
+        expected: &ProductBranchObservation,
+    ) -> Result<bool, RuntimeWorldBranchAdmissionDenial>;
+
     fn readmit_product_branch_reference(
         &self,
         description: &crate::branch::ProductBranchReferenceDescription,

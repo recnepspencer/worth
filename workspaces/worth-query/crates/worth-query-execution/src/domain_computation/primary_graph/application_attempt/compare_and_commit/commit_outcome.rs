@@ -6,6 +6,9 @@ use super::WorthQueryApplicationCommitDeferred;
 pub enum WorthQueryApplicationNoEffectCause {
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     OwnerDeniedBeforeEffect,
+    /// The current control input failed its pre-effect condition; the write
+    /// target did not become stale merely because this input changed.
+    CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial),
     CorrespondenceRebindRequired,
     ReferenceGenerationExhausted,
     CapacityExhausted,

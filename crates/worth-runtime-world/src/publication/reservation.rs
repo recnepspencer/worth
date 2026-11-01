@@ -13,8 +13,9 @@ mod capacities;
 
 pub(crate) use capacities::{ReservedAttemptCapacities, ReservedAttemptCapacityInputs};
 
-/// Component calls have one fixed order. There is no cross-owner lock held
-/// across those calls.
+/// Component calls have one fixed order. A current-read condition guards only
+/// Native's prepared memory cutover; no guard spans preparation, owning cleanup,
+/// settlement or the subsequent Signal call.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompositePublicationOrder {
     RelationalThenSignal,

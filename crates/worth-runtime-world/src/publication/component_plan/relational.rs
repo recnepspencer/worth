@@ -17,9 +17,30 @@ pub struct RelationalComponentPlan {
     expected: AdmittedRelationalBranchBasis,
     prepared_candidate: Option<PreparedRelationalCommitCandidate>,
     settled_adoption: Option<crate::publication::SettledRelationalPublicationAdoption>,
+    current_read: Option<crate::branch::ProductBranchObservation>,
 }
 
 impl RelationalComponentPlan {
+    pub fn current_read(&self) -> Option<&crate::branch::ProductBranchObservation> {
+        self.current_read.as_ref()
+    }
+
+    pub(super) fn require_current_read(
+        &mut self,
+        current: crate::branch::ProductBranchObservation,
+    ) -> Result<(), crate::publication::CurrentProductReadDependencyDenial> {
+        use crate::publication::CurrentProductReadDependencyDenial as Denial;
+        let candidate = self
+            .prepared_candidate
+            .as_mut()
+            .ok_or(Denial::UnsupportedComponentPlan)?;
+        candidate
+            .require_current_read(current.basis().relational_basis())
+            .map_err(Denial::Native)?;
+        self.current_read = Some(current);
+        Ok(())
+    }
+
     pub const fn posture(&self) -> RelationalComponentPlanPosture {
         self.posture
     }
@@ -47,6 +68,7 @@ impl RelationalComponentPlan {
             expected,
             prepared_candidate: None,
             settled_adoption: None,
+            current_read: None,
         }
     }
 
@@ -59,6 +81,7 @@ impl RelationalComponentPlan {
             expected,
             prepared_candidate: Some(prepared_candidate),
             settled_adoption: None,
+            current_read: None,
         }
     }
 
@@ -71,6 +94,7 @@ impl RelationalComponentPlan {
             expected,
             prepared_candidate: None,
             settled_adoption: Some(settled_adoption),
+            current_read: None,
         }
     }
 

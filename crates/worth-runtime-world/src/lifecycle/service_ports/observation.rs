@@ -8,6 +8,21 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    /// Read-only probe of the actual occurrence's lock. It grants no mutation,
+    /// source-admission or currentness authority and never waits for its writer.
+    #[doc(hidden)]
+    pub fn product_branch_writers_are_locked_out_for_test(
+        &self,
+        expected: &crate::branch::ProductBranchObservation,
+    ) -> Result<
+        bool,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .product_branch_writers_are_locked_out_for_test(expected)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
     /// Resolve transported coordinates through this owner's live reference.
     /// The immutable selected commit supplies its exact component tuple.
     pub fn readmit_product_branch_reference(
