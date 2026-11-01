@@ -44,6 +44,65 @@ then independently review the exact causal diff before integration. Full Bridge
 observation/branch-head retirement, Native Directory close, Complete capture and
 Host D11 remain separate unfinished obligations.
 
+## Retained Native observation custody retirement prerequisite
+
+RelationalRetainedObservation::into_retirement consumes the actual issued value
+into a non-Clone RelationalRetainedObservationRetirement. advance(&mut self,
+&ExecutionRequest) reports the owner-specific Advanced, Busy,
+Stopped(WorkCeilingDenial), Refused(typed cause), or Complete progress. Refusal
+causes describe actual owner unavailability or registration/accounting mismatch;
+no generic cleanup registry is introduced. into_retired returns either an
+opaque RetiredRelationalRetainedObservation or the same unfinished task.
+Final reclaim/abandonment is unbudgeted. Completed tasks report Complete without
+another effect or request poll; live steps consult the original request before
+effects, without retaining the request or issuing a replacement.
+
+The actual value owns an ExternalComponentBasis lease and TWO observation
+shares. Those share an admitted inner with its own Observation obligation and
+basis-registry lease. Removing only the external lease is insufficient. Retire
+under the original owner's external_cut then original lane try gates, matching
+existing acquisition/capture order. Validate actual obligation identity, kind,
+roots and accounting, update existing multiplicities/counters once, disarm the
+original guard and retain the removed original record before unlocking. Preserve
+its root_ids, original guard roots, lane and upgraded original owner Arc.
+
+Consume the two original observation shares with Arc::into_inner. A nonfinal
+share releases only its local custody; an independent alias remains operational
+and continues vetoing owner close. For the unique actual admitted inner, retire
+its own Observation obligation with the same retained-record guarantee, then
+its exact basis-registry registration. Keep the original removed registry key,
+entry and upgraded registry/metrics Arcs; mark the original registration retired
+at removal. Moving the unique inner makes its registry Weak non-upgradeable:
+concurrent readmission may prune that dead entry and decrement metrics, or a new
+registration may replace it before this stage. Absence or a different original
+registration ID completes this lease idempotently, without removing a successor
+or decrementing again. Preserve the ordinary exact-ID conditional accounting.
+No root-vector clear, descriptor clone, replacement ownership
+allocation, ordinary runtime admission or last upgraded-owner destruction occurs
+inside the controlled step, including Busy/stop/refusal returns. Each committed
+stage is recorded before the next poll, so retry never repeats terminal effects.
+
+Place the public task under change_source/retained_observation/retirement.rs;
+keep retaining lane and basis-registry mechanics under their existing owners.
+Reuse or strengthen the existing private observation retirement where lawful;
+do not add an ownership mode or general lifecycle framework. Keep all original
+payloads and grants in opaque inert custody until unbudgeted reclaim. This
+retires these registrations only: retained root/publication-cell ownership still
+needs the full Native/physical close proof, and SnapshotHandle registry/cache
+obligations remain separate.
+
+The exact owner-private retained_observation/retirement/tests.rs child may
+construct only SDK ExecutionRequest/SerialRequest roots. Use genuine Native
+owner-issued bases and the actual gates for external-cut Busy, lane Busy,
+original stop after external removal, registry Busy after Observation removal,
+once-only terminal accounting, concurrent original-entry pruning or successor
+registration after unique-inner handoff, and an independent readable observation alias.
+The alias must preserve its genuine close veto. Review the exact causal source,
+run these controls plus relevant existing retirement evidence, then boundary,
+context, formatting and line-cap gates before integration. No full D11, Bridge
+source, Directory Native-close or physical inertness claim follows from this
+prerequisite alone.
+
 ## Cold member custody retirement prerequisite
 
 This prerequisite retires one actual source-issued registration, or one local
