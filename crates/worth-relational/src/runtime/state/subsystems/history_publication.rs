@@ -133,6 +133,10 @@ impl HistorySubsystem {
             recovery_readmission,
             sequence,
         } = prepared;
+        // Preparation had scalar observations only. The real Memory frame was
+        // admitted later at position binding and is observed once at settlement.
+        let new_authoritative_bytes = new_authoritative_bytes
+            .saturating_add(artifact.envelope_residency().payload_storage_bytes());
         self.with_ledger_mut(|ledger| {
             ledger.install_published_commit(
                 commit_id,

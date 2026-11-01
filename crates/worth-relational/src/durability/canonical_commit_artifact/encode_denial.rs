@@ -5,6 +5,7 @@ use worth_execution::ExecutionAllocationDenial;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum RelationalCanonicalCommitArtifactEncodeDenial {
+    Request(worth_execution::WorkCeilingDenial),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     /// The caller's allocation policy refused, was cancelled or expired.
     Allocation(ExecutionAllocationDenial),
@@ -45,6 +46,9 @@ impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionD
 impl std::fmt::Display for RelationalCanonicalCommitArtifactEncodeDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Request(cause) => {
+                write!(formatter, "original canonical artifact request: {cause:?}")
+            }
             Self::StorageUnavailable(failure) => write!(
                 formatter,
                 "canonical artifact storage unavailable: {failure:?}"
@@ -74,6 +78,19 @@ impl std::error::Error for RelationalCanonicalCommitArtifactEncodeDenial {
         match self {
             Self::Allocation(denial) => Some(denial),
             _ => None,
+        }
+    }
+}
+
+impl From<worth_execution::ExecutionRequestArrayDenial>
+    for RelationalCanonicalCommitArtifactEncodeDenial
+{
+    fn from(cause: worth_execution::ExecutionRequestArrayDenial) -> Self {
+        match cause {
+            worth_execution::ExecutionRequestArrayDenial::Request(cause) => Self::Request(cause),
+            worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => {
+                Self::Allocation(cause)
+            }
         }
     }
 }

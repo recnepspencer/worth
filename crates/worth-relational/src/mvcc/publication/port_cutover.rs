@@ -157,6 +157,7 @@ impl PreparedBranchPublicationPreflight {
                 admission,
                 medium.as_deref(),
                 durable_policy,
+                execution,
                 |position| {
                     symbol_meanings
                         .publish()
@@ -191,6 +192,9 @@ impl PreparedBranchPublicationPreflight {
                     RelationalPublicationFailureKind::PatchPositionCapacityExhausted,
                     "performed publication stream position capacity exhausted",
                 ));
+            }
+            Err(crate::runtime::CanonicalPublicationRecordError::MemoryFrame(cause))=>{
+                return memory_frame_stop_outcome(cause);
             }
             Err(crate::runtime::CanonicalPublicationRecordError::Durable(stop)) => {
                 return durable_stop_outcome(stop);
@@ -247,4 +251,23 @@ fn durable_stop_outcome(
             RelationalPublicationOutcome::DurabilityUnresolved(unresolved)
         }
     }
+}
+
+fn memory_frame_stop_outcome(
+    cause:crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+) -> RelationalPublicationOutcome {
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
+    if let Denial::Request(stop) = cause {
+        return RelationalPublicationOutcome::RequestStopped(stop);
+    }
+    if let Denial::Allocation(allocation) = &cause {
+        if let worth_execution::ExecutionAllocationDenialClass::Request(stop) =
+            allocation.classify()
+        {
+            return RelationalPublicationOutcome::RequestStopped(stop);
+        }
+    }
+    RelationalPublicationOutcome::denied(RelationalPublicationDenial::CanonicalArtifactEncoding(
+        cause,
+    ))
 }

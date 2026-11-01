@@ -12,11 +12,28 @@ use crate::history::data::PositionedCanonicalCommit;
 use crate::history::RelationalCommitIndexEntry;
 
 pub(crate) enum RelationalCommitPublication {
-    MemoryOnly(Arc<PositionedCanonicalCommit>),
+    MemoryOnly {
+        positioned: Arc<PositionedCanonicalCommit>,
+        original: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact,
+    },
     Durable(DurablyCommitted<RelationalDurableCommitReadmission>),
 }
 
 impl RelationalCommitPublication {
+    pub(crate) fn prepare_memory_frame(
+        position: crate::publication::patch::data::PatchStreamPosition,
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+        medium: Option<&RelationalDurableMediumBinding>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact>,
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    > {
+        if medium.is_some() {
+            return Ok(None);
+        }
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_memory_publication(position,envelope,execution).map(Some)
+    }
     /// Publish or retain the stream's own subject. A caller cannot substitute
     /// another admitted publication for the prepared route's commit.
     pub(crate) fn publish(
@@ -24,10 +41,18 @@ impl RelationalCommitPublication {
         roots: &crate::branch::RelationalBranchRootDescriptor,
         medium: Option<&RelationalDurableMediumBinding>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        original: Option<
+            crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact,
+        >,
     ) -> Result<Self, RelationalDurableStepStop> {
         match medium {
             Some(medium) => medium.publish(positioned, roots, policy).map(Self::Durable),
-            None => Ok(Self::MemoryOnly(positioned)),
+            None => Ok(Self::MemoryOnly {
+                positioned,
+                original: original.expect(
+                    "the performed stream prepared its original Memory frame before admission",
+                ),
+            }),
         }
     }
 
@@ -41,13 +66,17 @@ impl RelationalCommitPublication {
                 RelationalCommitIndexEntry,
                 Arc<dyn RelationalDurableColdSource>,
             )>,
+            Option<worth_execution::ExecutionImmutableBytes>,
         ) -> Output,
     ) -> Output {
         match self {
-            Self::MemoryOnly(positioned) => apply(positioned, None),
+            Self::MemoryOnly {
+                positioned,
+                original,
+            } => apply(positioned, None, Some(original.into_bytes())),
             Self::Durable(committed) => committed.consume(|publication| {
                 let (positioned, entry, source) = publication.into_parts();
-                apply(positioned, Some((entry, source)))
+                apply(positioned, Some((entry, source)), None)
             }),
         }
     }

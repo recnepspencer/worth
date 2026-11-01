@@ -96,6 +96,9 @@ pub(crate) enum CanonicalPublicationRecordError {
     /// reservation; it was assigned nothing.
     ReservationWaitStopped(worth_execution::WorkCeilingDenial),
     PositionCapacityExhausted,
+    MemoryFrame(
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    ),
     /// The durable step did not make the positioned commit durable, so the
     /// position was not consumed and nothing was installed.
     Durable(crate::durability::medium::RelationalDurableStepStop),
@@ -289,6 +292,7 @@ impl PreparedCanonicalPublicationRoute {
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         medium: Option<&crate::durability::medium::RelationalDurableMediumBinding>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         self.route
@@ -304,6 +308,7 @@ impl PreparedCanonicalPublicationRoute {
             admission,
             medium,
             policy,
+            execution,
             cutover,
         )
     }

@@ -308,7 +308,10 @@ fn recovered_nonhead_tail_envelopes_release_their_actual_journal_backed_bodies()
             .history
             .commit_artifacts()
             .iter()
-            .all(|artifact| artifact.envelope_residency().resident_payload().is_none()),
+            .all(|artifact| artifact
+                .envelope_residency()
+                .resident_payload_bytes()
+                .is_none()),
         "journal placement releases encoded duplicate buffers too"
     );
     let receipt = runtime

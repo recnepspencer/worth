@@ -19,6 +19,18 @@ impl RelationalCommitEnvelopeResidency {
         if let Some(failure) = state.damage {
             return Err(Denial::StorageUnavailable(failure));
         }
+        if let EnvelopeBacking::Memory {
+            original: Some(bytes),
+            ..
+        } = &state.backing
+        {
+            // Verify the original immutable frame; never encode another copy.
+            return Artifact::from_owned_bytes(bytes.clone()).map_err(|_| {
+                Denial::PayloadEncoding {
+                    detail: "retained original Memory artifact failed verification".into(),
+                }
+            });
+        }
         if let Some(commit) = state
             .position
             .as_ref()

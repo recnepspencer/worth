@@ -1304,3 +1304,15 @@ feeds existing Native frame and semantic readmission. It does not certify a
 Complete checkpoint or fund recovery-plan/decoded-transition collections. See
 [Native protected source reads](../crates/worth-relational/README.md#read-an-original-protected-source-cut)
 and [Store provider ownership](../workspaces/worth-store/crates/worth-store-relational/README.md#protected-native-source-reads).
+
+
+### Export the original Memory publication artifact
+
+New Native Memory publications retain their original v4 artifact in the existing
+residency cell, admitted under the actual publication request before head/position
+cutover. The existing `canonical_commit_artifacts` iterator verifies and shares
+those bytes rather than encoding another frame. Legacy authoritative tuple
+length/digest observations are unchanged and no longer retain tuple bytes.
+Memory publication now pays the declared frame encoding/verification cost; the
+Journal route and CHK17 capture contract remain unchanged. See
+[original Memory frames](../crates/worth-relational/README.md#retain-original-memory-publication-frames).

@@ -11,10 +11,11 @@ impl DurabilityAccess<'_> {
     /// performed publication stream checkpoints select from; it is not a
     /// second history store.
     ///
-    /// The selection is fixed when this is called. Encoding is lazy: each
-    /// item is framed only when pulled, under `policy`, so transient memory
-    /// is one artifact at a time. Cost: O(retained commits) shared handles
-    /// up front, then one artifact encode per pulled item.
+    /// The selection is fixed when called. New Memory publications verify and
+    /// share their retained original frame when pulled, without encoding or a
+    /// replacement byte allocation. Legacy and Journal paths keep their ordinary
+    /// export behavior. Selection costs O(retained commits) shared metadata;
+    /// verifying an original costs O(artifact bytes), with no new payload copy.
     pub fn canonical_commit_artifacts<'scope, 'authority>(
         &self,
         policy: ExecutionAllocationPolicy<'scope, 'authority>,

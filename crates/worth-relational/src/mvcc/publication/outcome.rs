@@ -193,6 +193,9 @@ impl StaleRelationalBranchObservation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationDenial {
+    CanonicalArtifactEncoding(
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    ),
     RecoveredCodecTransitionRequired,
     StaleInvariantGeneration {
         expected_generation: u64,

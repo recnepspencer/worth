@@ -278,7 +278,7 @@ fn graft_disconnected_branch_head(
             commit: orphan_head,
         },
     );
-    let payload = Arc::from(envelope.encode_authoritative_payload().unwrap());
+    let payload = envelope.authoritative_payload_observation().unwrap();
     runtime.history.with_ledger_mut(|ledger| {
         ledger.commit_envelopes.insert(
             envelope.body_mut_for_test().commit.commit_id,

@@ -166,7 +166,7 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
         let position = performed.position();
         let body = performed.canonical_arc().clone();
         let weak = Arc::downgrade(&body);
-        let payload = Arc::from(body.encode_authoritative_payload().unwrap());
+        let payload = body.authoritative_payload_observation().unwrap();
         let cell = RelationalCommitEnvelopeResidency::resident(body, payload);
         let reads = source.reads.load(Ordering::Relaxed);
         cell.bind_performed(
@@ -177,6 +177,7 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
                     source.clone() as Arc<dyn RelationalDurableColdSource>,
                 )
             }),
+            None,
         );
         drop(performed);
         assert_eq!(cell.positioned_if_resident().unwrap().position(), position);
@@ -247,7 +248,7 @@ fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
     let mut conflicting = envelope.copy_original_for_test(&execution);
     conflicting.body_mut_for_test().commit.version_id = crate::identity::data::VersionId(u64::MAX);
     assert_eq!(artifact.matches_envelope(&conflicting), Ok(false));
-    let payload = Arc::from(envelope.encode_authoritative_payload().unwrap());
+    let payload = envelope.authoritative_payload_observation().unwrap();
     let cell = RelationalCommitEnvelopeResidency::resident(envelope, payload);
     let Err(crate::durability::data::RelationalRecoveryStop::Durability(failure)) =
         cell.demand_positioned(&execution, 1 << 30)

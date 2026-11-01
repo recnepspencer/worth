@@ -46,7 +46,7 @@ pub(super) fn install(
             payload_digest: digest,
         };
         crate::execution::check_request(execution)?;
-        cell.bind_performed(&positioned, Some((entry, source)));
+        cell.bind_performed(&positioned, Some((entry, source)), None);
         cell.settle();
     }
     Ok(())

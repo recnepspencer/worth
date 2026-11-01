@@ -978,6 +978,48 @@
       ],
       "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
       "private_subject": "Produces actual merge authority through existing genuine prepare/execute workflow, then invokes the private reconstructed merge-plan copy owner. Exact intrinsic row/ancestor backing identity must remain shared while new independent headers/intents retain a separate original-budget bill until this owner drops."
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "history::commit::envelope_residency::memory_publication_tests::memory_original_frame_survives_export_checkpoint_and_last_alias",
+      "constructors": [
+        "runtime_with_test_schema",
+        "create_entity_outcome"
+      ],
+      "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
+      "private_subject": "Uses the genuine Memory producer and existing public artifact export/checkpoint, observes SAME private residency/frame backing and final alias refund; no reconstructed original or fake performed proof."
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "history::commit::envelope_residency::memory_publication_tests::memory_frame_quota_and_cancel_refuse_before_position_or_head",
+      "constructors": [
+        "runtime_with_test_schema",
+        "create_entity_outcome",
+        "test_owner_begin_transaction_for_main",
+        "prepare_validated_proposal"
+      ],
+      "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
+      "private_subject": "Uses an actual validated/prepared proposal and real compare_and_publish; independent reference encoding/public controller calibration identifies the entered frame buffer refusal while actual head/basis/position remain unchanged. Cancellation is a separate genuine invocation; no claim that the consumed failed proposal is reusable."
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "history::commit::envelope_residency::memory_publication_tests::memory_frame_layout_preserves_scalar_tuple_observations",
+      "constructors": [
+        "runtime_with_test_schema",
+        "create_entity_outcome"
+      ],
+      "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
+      "private_subject": "Observes exact existing tuple length/digest and actual Memory cell/backing layouts after genuine publication; old tuple encoder stays byte-exact and no raw tuple/map substitution is made."
+    },
+    {
+      "source": "crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs",
+      "test": "history::commit::envelope_residency::memory_publication_tests::journal_publication_keeps_journal_placement_without_memory_frame",
+      "constructors": [
+        "durable_runtime_with_test_schema",
+        "attached_test_medium"
+      ],
+      "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
+      "private_subject": "Uses the genuine durable runtime and attached medium to inspect actual Journal placement and absence of Memory-only retained frame; preserves the existing original Journal route."
     }
   ]
 }

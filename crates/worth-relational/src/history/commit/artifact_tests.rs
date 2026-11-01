@@ -128,8 +128,8 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         .relink_preencoded_recovery(&envelope, Some(&root), None)
         .unwrap();
     assert!(Arc::ptr_eq(
-        &preencoded.envelope_residency().resident_payload().unwrap(),
-        &relinked.envelope_residency().resident_payload().unwrap()
+        &preencoded.envelope_residency(),
+        &relinked.envelope_residency()
     ));
     assert_eq!(relinked.identity(), legacy.identity());
     assert_eq!(relinked.parentage(), legacy.parentage());
@@ -245,7 +245,8 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     );
     assert_eq!(
         allocation(RelationalCommitAuthoritativeAllocationKind::CanonicalPayload),
-        baseline_payload_bytes,
+        0,
+        "unpositioned scalar observations retain no byte allocation",
     );
     assert_eq!(
         allocation(RelationalCommitAuthoritativeAllocationKind::EnvelopeObject),

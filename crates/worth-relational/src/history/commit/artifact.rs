@@ -71,13 +71,13 @@ impl RelationalCommitArtifact {
         RelationalCommitParentage::from_ordered(envelope.commit.parents.clone())
             .map(|_| ())
             .map_err(|_| RelationalCommitArtifactDenial::Parentage)?;
-        encode_canonical_payload(envelope).map(|_| ())
+        observe_canonical_payload(envelope).map(|_| ())
     }
 
     pub(super) fn from_envelope(
         envelope: Arc<CanonicalCommitEnvelope>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
-        let canonical_payload = encode_canonical_payload(&envelope)?;
+        let canonical_payload = observe_canonical_payload(&envelope)?;
         let identity = RelationalCommitIdentity::new(
             envelope.commit.commit_id,
             envelope.commit.version_id,
@@ -192,7 +192,7 @@ impl RelationalCommitArtifact {
         }
         let canonical_payload = admitted
             .as_ref()
-            .map(|commit| encode_canonical_payload(commit.envelope()))
+            .map(|commit| observe_canonical_payload(commit.envelope()))
             .transpose()?;
         let parentage = RelationalCommitParentage::from_ordered(entry.commit.parents.clone())
             .map_err(|_| RelationalCommitArtifactDenial::Parentage)?;
@@ -209,9 +209,7 @@ impl RelationalCommitArtifact {
                 entry,
                 source,
                 admitted,
-                canonical_payload
-                    .as_ref()
-                    .map(|bytes| payload_digest(bytes)),
+                canonical_payload.map(|(_, digest)| digest),
             )),
         })
     }
@@ -260,11 +258,9 @@ impl RelationalCommitArtifact {
         &self.roots
     }
 
+    #[cfg(test)]
     pub(crate) fn canonical_payload_bytes(&self) -> u64 {
-        self.envelope
-            .resident_payload()
-            .as_ref()
-            .map_or(0, |payload| payload.len() as u64)
+        self.envelope.resident_payload_bytes().unwrap_or(0)
     }
 
     pub(crate) fn canonical_payload_digest(
@@ -285,7 +281,7 @@ impl RelationalCommitArtifact {
             },
             RelationalCommitAuthoritativeAllocationObservation {
                 kind: RelationalCommitAuthoritativeAllocationKind::CanonicalPayload,
-                authoritative_bytes: self.canonical_payload_bytes(),
+                authoritative_bytes: self.envelope.payload_storage_bytes(),
             },
             RelationalCommitAuthoritativeAllocationObservation {
                 kind: RelationalCommitAuthoritativeAllocationKind::EnvelopeObject,
@@ -333,17 +329,11 @@ impl RelationalCommitArtifact {
     }
 }
 
-fn payload_digest(bytes: &[u8]) -> [u8; 32] {
-    use sha2::{Digest, Sha256};
-    Sha256::digest(bytes).into()
-}
-
-fn encode_canonical_payload(
+fn observe_canonical_payload(
     envelope: &CanonicalCommitEnvelope,
-) -> Result<Arc<[u8]>, RelationalCommitArtifactDenial> {
+) -> Result<(u64, [u8; 32]), RelationalCommitArtifactDenial> {
     envelope
-        .encode_authoritative_payload()
-        .map(Arc::from)
+        .authoritative_payload_observation()
         .map_err(|_| RelationalCommitArtifactDenial::CanonicalPayloadEncoding)
 }
 

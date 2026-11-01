@@ -26,6 +26,7 @@ mod encode_denial;
 mod encoding;
 mod frame;
 mod frame_refusal;
+mod memory_publication;
 mod payload_digest;
 mod payload_wire;
 mod readmission;

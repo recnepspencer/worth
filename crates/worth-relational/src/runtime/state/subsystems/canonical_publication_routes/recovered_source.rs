@@ -18,7 +18,7 @@ pub(super) fn prepare_route(
     let positioned = Arc::new(PositionedCanonicalCommit::admit(
         position_admission::CanonicalPositionAdmission::equivalent(&source, canonical)?,
     ));
-    envelope.bind_performed(&positioned, None);
+    envelope.bind_performed(&positioned, None, None);
     let route = Arc::new(CanonicalPublicationRoute {
         envelope,
         commit: positioned.commit.clone(),

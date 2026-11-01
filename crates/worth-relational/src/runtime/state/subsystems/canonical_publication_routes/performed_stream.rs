@@ -103,6 +103,7 @@ impl PerformedPublicationStream {
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         medium: Option<&RelationalDurableMediumBinding>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
@@ -112,6 +113,13 @@ impl PerformedPublicationStream {
             self.reservation.overflows.fetch_add(1, Ordering::Relaxed);
             return Err(CanonicalPublicationRecordError::PositionCapacityExhausted);
         };
+        let original = RelationalCommitPublication::prepare_memory_frame(
+            PatchStreamPosition(next_position),
+            &resident,
+            medium,
+            execution,
+        )
+        .map_err(CanonicalPublicationRecordError::MemoryFrame)?;
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
                 PatchStreamPosition(next_position),
@@ -120,11 +128,18 @@ impl PerformedPublicationStream {
         ));
         // Durable before live: the position is assigned only once the medium
         // holds it, and the cutover below runs only after that.
-        let publication =
-            RelationalCommitPublication::publish(positioned, &route.roots, medium, policy)
-                .map_err(CanonicalPublicationRecordError::Durable)?;
-        Ok(publication.cutover(|positioned, journal| {
-            route.envelope.bind_performed(&positioned, journal);
+        let publication = RelationalCommitPublication::publish(
+            positioned,
+            &route.roots,
+            medium,
+            policy,
+            original,
+        )
+        .map_err(CanonicalPublicationRecordError::Durable)?;
+        Ok(publication.cutover(|positioned, journal, original| {
+            route
+                .envelope
+                .bind_performed(&positioned, journal, original);
             let node = Arc::new(PerformedPublicationNode {
                 index_definition_frontier: current
                     .as_ref()

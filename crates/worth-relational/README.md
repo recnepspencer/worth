@@ -639,3 +639,20 @@ retains the funded original raw buffer. Transport/plan collections and decoded
 transition heaps retain their ordinary allocation contract. This capability
 confers no Complete checkpoint, CHK18 coverage, schema reconstruction, selected
 residency transfer or acknowledgement authority.
+
+
+## Retain original Memory publication frames
+
+A new Memory publication admits and issues its original canonical artifact v4
+frame under the caller's original request after reserving the position and
+before publishing any head or position. The existing residency cell retains
+that immutable frame. Artifact export verifies and shares the original bytes;
+it does not encode a replacement. This adds count/hash and emission passes plus
+frame verification to Memory publication while the position reservation is held.
+The exact byte buffer is admitted before growth; failure moves no head or position.
+
+Preparation keeps the legacy authoritative tuple's exact scalar length/digest
+using its existing serializer, without retaining tuple bytes. The positioned
+artifact digest remains separate. There is one retained frame allocation rather
+than both a frame and tuple payload. Existing Journal and legacy CHK17 export
+behavior remains; this prerequisite neither enables CHK18 nor qualifies Complete.
