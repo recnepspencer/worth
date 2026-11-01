@@ -337,6 +337,24 @@ No empty placeholders are required. Qualify the narrow owner primitives and
 their coherent ordinary-path cutover before integrating the consuming Store
 composition. Native/Bridge/Query retirement remains independently required.
 
+The following exact private Signal leaf is a narrow Iteration Law 2 exception:
+`crates/worth-signal/src/branch/owner_services/owner/initial_empty_stop/tests.rs`.
+Its seven tests alone may construct SignalGraph and original SDK SerialRequest/
+ExecutionRequest roots to exercise the owning crate's inaccessible proof locks,
+admission CAS, original-root lifetime and poison posture. An external court
+cannot hold those private gates without adding a production extraction/control
+door. Register exactly those three roots for that file in
+`tools/boundary-check/config/src-court-baseline.json`; this grants no family-wide
+exception or additional runtime/testkit/helper constructor.
+
+- preparation_resume_preserves_actual_basis_and_service_execution
+- every_actual_proof_lock_busy_preserves_the_same_open_runtime
+- competing_real_admission_defeats_the_final_zero_count_cas
+- commit_retains_real_sealed_service_custody_until_explicit_reclaim
+- original_stop_preserves_open_or_prepared_custody_without_cleanup
+- nonempty_or_reconstructed_graphs_and_multiple_branches_refuse_before_stop
+- poisoned_owner_metadata_refuses_without_stopping_or_losing_the_root
+
 ## Native and Store source-close prerequisite
 
 This is the next source-close destination, not implemented completion. It

@@ -1415,6 +1415,7 @@
 {"source":"crates/worth-signal/src/branch/owner_services/mutation_port/tests/races/restore_restore_race_has_one_movement_and_preserves_the_winning_snapshot.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-signal/src/branch/owner_services/mutation_port/tests/reservation.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-signal/src/branch/owner_services/mutation_port/tests/world.rs","module":"file","roots":["SignalGraph"]},
+{"source":"crates/worth-signal/src/branch/owner_services/owner/initial_empty_stop/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest","SignalGraph"]},
 {"source":"crates/worth-signal/src/branch/owner_services/owner/managed_reference_replacement_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest","SignalGraph"]},
 {"source":"crates/worth-signal/src/branch/owner_services/tests/cancellation.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-signal/src/branch/owner_services/tests/cancellation/restore.rs","module":"file","roots":["ExecutionRequest","SerialRequest","SignalGraph"]},
