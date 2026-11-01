@@ -118,8 +118,8 @@ impl Fixture {
             "Full reads"
         );
         assert_eq!(
-            crate::workload::artifacts_of(home.relational().runtime()),
-            crate::workload::artifacts_of(&self.reference)
+            crate::workload::artifacts_of(execution, home.relational().runtime()),
+            crate::workload::artifacts_of(execution, &self.reference)
         );
     }
 }

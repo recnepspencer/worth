@@ -1,38 +1,45 @@
-//! Live placement obligations and an owned, frozen checkpoint selection.
-use std::collections::{BTreeMap, BTreeSet};
+//! Live placement obligations and one genuinely frozen publication inventory.
 use std::sync::{Arc, RwLock, Weak};
-use worth_relational::facade::durability::RelationalDurableMemberLocator;
+use worth_execution::{
+    ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionOrderedMapCell, ExecutionRequest,
+};
+use worth_relational::facade::durability::{
+    RelationalDurableMemberLocator as Member, RelationalDurableOwnedReadRefusal as Refusal,
+};
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
 use worth_store::physical_runtime::ServingPhysicalRuntime;
 
+mod admission;
 mod retirement;
 #[cfg(test)]
 mod retirement_tests;
+mod selection;
 
+type Counts = ExecutionOrderedMap<Member, usize>;
+type Cell = ExecutionOrderedMapCell<Member, usize>;
 #[derive(Debug, Default)]
 struct CustodyState {
-    counts: BTreeMap<RelationalDurableMemberLocator, usize>,
+    // PRIVATE and NEVER CLONED. Every edit uses only the Copy-unique SDK ports.
+    counts: Counts,
     selection: Weak<FrozenSelection>,
 }
-
 #[derive(Debug)]
 struct FrozenSelection {
-    members: BTreeSet<RelationalDurableMemberLocator>,
+    members: ExecutionOrderedMap<Member, ()>,
+    // Its preexisting fixed Arc/Weak control allocation remains explicitly open.
 }
-
 #[derive(Debug, Default)]
 pub(super) struct MemberCustodyRegistry {
     state: Arc<RwLock<CustodyState>>,
 }
-
 pub(super) struct MemberCustodyOwner {
     serving: Option<Arc<ServingPhysicalRuntime>>,
     state: Arc<RwLock<CustodyState>>,
-    members: Vec<RelationalDurableMemberLocator>,
+    members: Vec<Member>,
     next: usize,
+    retired_cells: Vec<Cell>,
+    _memory: Option<ExecutionMemoryReservation>,
 }
-
-/// Lifetime-only protection. Clones protect the same frozen selection.
 #[derive(Debug, Clone)]
 pub(crate) struct RetainedMemberPublication {
     selection: Arc<FrozenSelection>,
@@ -41,71 +48,28 @@ pub(crate) struct RetainedMemberPublication {
 impl MemberCustodyRegistry {
     pub(super) fn retain(
         &self,
-        members: &[RelationalDurableMemberLocator],
+        members: &[Member],
         serving: Arc<ServingPhysicalRuntime>,
-        validate: impl FnOnce(&[RelationalDurableMemberLocator]) -> Result<(), Cause>,
+        validate: impl FnOnce(&[Member]) -> Result<(), Cause>,
     ) -> Result<MemberCustodyOwner, Cause> {
-        let mut selected = Vec::new();
-        selected
-            .try_reserve_exact(members.len())
-            .map_err(|_| Cause::MemoryExhausted)?;
-        selected.extend_from_slice(members);
-        selected.sort_unstable();
-        selected.dedup();
-        let mut state = self
-            .state
-            .write()
-            .unwrap_or_else(|error| error.into_inner());
-        if state.selection.upgrade().is_some_and(|selection| {
-            selected
-                .iter()
-                .any(|member| !selection.members.contains(member))
-        }) {
-            return Err(Cause::MissingMember);
-        }
-        // Registry then source-map is the common order for retention and cutover.
-        // New placement is not retainable until the actual selection is installed.
-        validate(&selected)?;
-        if selected
-            .iter()
-            .any(|member| state.counts.get(member) == Some(&usize::MAX))
-        {
-            return Err(Cause::MemoryExhausted);
-        }
-        for member in &selected {
-            *state.counts.entry(*member).or_default() += 1;
-        }
-        Ok(MemberCustodyOwner {
-            serving: Some(serving),
-            state: self.state.clone(),
-            members: selected,
-            next: 0,
+        self.admit(members, serving, None, |members| {
+            validate(members).map_err(Refusal::Storage)
+        })
+        .map_err(|cause| match cause {
+            Refusal::Storage(cause) => cause,
+            _ => Cause::MemoryExhausted,
         })
     }
-
-    pub(super) fn protect_selection(
+    pub(super) fn retain_for_request(
         &self,
-        next: impl IntoIterator<Item = RelationalDurableMemberLocator>,
-    ) -> Result<RetainedMemberPublication, Cause> {
-        let mut state = self
-            .state
-            .write()
-            .unwrap_or_else(|error| error.into_inner());
-        if state.selection.upgrade().is_some() {
-            return Err(Cause::SourceUnavailable);
-        }
-        // Acknowledged directories intrinsically own all their semantic members,
-        // so their basis and every inherited read obligation are in these counts.
-        let selection = Arc::new(FrozenSelection {
-            members: next
-                .into_iter()
-                .chain(state.counts.keys().copied())
-                .collect(),
-        });
-        state.selection = Arc::downgrade(&selection);
-        Ok(RetainedMemberPublication { selection })
+        members: &[Member],
+        serving: Arc<ServingPhysicalRuntime>,
+        request: &ExecutionRequest<'_, '_>,
+        validate: impl FnOnce(&[Member]) -> Result<(), Refusal>,
+    ) -> Result<MemberCustodyOwner, Refusal> {
+        self.admit(members, serving, Some(request), validate)
     }
-
+    #[cfg(test)]
     pub(super) fn select<R>(&self, install: impl FnOnce() -> R) -> R {
         let _state = self
             .state
@@ -113,8 +77,6 @@ impl MemberCustodyRegistry {
             .unwrap_or_else(|error| error.into_inner());
         install()
     }
-
-    /// The same custody-before-placement cut, without waiting for its owner.
     pub(super) fn try_select<R>(&self, install: impl FnOnce() -> R) -> Result<R, ()> {
         let _state = match self.state.try_write() {
             Ok(state) => state,
@@ -124,15 +86,32 @@ impl MemberCustodyRegistry {
         Ok(install())
     }
 }
-
 impl RetainedMemberPublication {
-    pub(crate) fn member_locators(
-        &self,
-    ) -> impl Iterator<Item = RelationalDurableMemberLocator> + '_ {
-        self.selection.members.iter().copied()
+    pub(crate) fn member_locators(&self) -> impl Iterator<Item = Member> + '_ {
+        self.selection.members.keys().copied()
     }
 }
 
+/// Remove only an actual original count row; its exact node stays in the guard.
+fn release_member(counts: &mut Counts, member: &Member, retired: &mut Vec<Cell>) -> bool {
+    let Some(count) = counts.get(member).copied().filter(|count| *count > 0) else {
+        return false;
+    };
+    if count == 1 {
+        if retired.len() == retired.capacity() {
+            return false;
+        }
+        let original=counts.remove_retaining_unique(member)
+            .expect(/* Proof: CustodyState.counts is private, initialized empty and NEVER cloned. Its sole ordinary/controlled writes use these Copy-unique ports; detached cells contain no children and expose no Arc. All live nodes/entries therefore remain uniquely owned under this same state gate. */ "private count storage stays unique")
+            .expect("the original positive count is present under this same exclusive gate");
+        retired.push(original);
+    } else {
+        counts.set_existing_unique(member,count-1)
+            .expect(/* Proof: The same private never-cloned unique counts invariant holds for Copy updates; the borrowed original count remains in this exclusive state. */ "private count storage stays unique")
+            .expect("original positive count remains present");
+    }
+    true
+}
 impl Drop for MemberCustodyOwner {
     fn drop(&mut self) {
         if self.next == self.members.len() {
@@ -142,16 +121,17 @@ impl Drop for MemberCustodyOwner {
             .state
             .write()
             .unwrap_or_else(|error| error.into_inner());
-        for member in &self.members[self.next..] {
-            let count = state
-                .counts
-                .get_mut(member)
-                .expect("owned member custody has a count");
-            *count -= 1;
-            if *count == 0 {
-                state.counts.remove(member);
-            }
+        while self.next < self.members.len() {
+            assert!(
+                release_member(
+                    &mut state.counts,
+                    &self.members[self.next],
+                    &mut self.retired_cells
+                ),
+                "original custody owns a positive count and preallocated retirement slot"
+            );
+            self.next += 1;
         }
-        self.next = self.members.len();
+        // The guard releases BEFORE original detached cells/roster/grants drop.
     }
 }

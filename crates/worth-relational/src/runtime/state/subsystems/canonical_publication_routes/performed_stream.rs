@@ -133,6 +133,7 @@ impl PerformedPublicationStream {
             &route.roots,
             medium,
             policy,
+            execution,
             original,
         )
         .map_err(CanonicalPublicationRecordError::Durable)?;

@@ -6,12 +6,13 @@ use crate::runtime::{HistorySubsystem, RelationalRuntime};
 use std::sync::Arc;
 
 pub(super) fn prepare_history(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     mut branch_roots: branch_root_images::RestoredBranchRootImages,
     symbols: &crate::symbols::data::StringInterner,
     work: &mut CheckpointRestoreWork,
-) -> Result<HistorySubsystem, DurabilityError> {
+) -> Result<HistorySubsystem, crate::durability::data::RelationalRecoveryStop> {
     let mut history = restored
         .history
         .detached_owner_snapshot()
@@ -21,21 +22,37 @@ pub(super) fn prepare_history(
                 format!("history snapshot denied: {denial:?}"),
             )
         })?;
-    let mut catalog = crate::history::RelationalCommitCatalog::default();
-    for commit in &checkpoint.envelopes {
-        catalog
-            .append_checkpoint_recovery(
-                commit.canonical_arc().clone(),
-                None,
-                checkpoint.commit_descriptors.get(&commit.commit.commit_id),
-            )
-            .map_err(|denial| {
-                DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                    format!("checkpoint canonical admission: {denial:?}"),
+    let catalog = if let Some(directory) = checkpoint
+        .directory
+        .as_ref()
+        .or(checkpoint.canonical_directory.as_ref())
+    {
+        super::selected_catalog::admit(execution, directory, |entry| {
+            let ordinal = usize::try_from(entry.position.0.checked_sub(1)?).ok()?;
+            checkpoint
+                .envelopes
+                .get(ordinal)
+                .filter(|commit| commit.position() == entry.position)
+                .cloned()
+        })?
+    } else {
+        let mut catalog = crate::history::RelationalCommitCatalog::default();
+        for commit in &checkpoint.envelopes {
+            catalog
+                .append_checkpoint_recovery(
+                    commit.canonical_arc().clone(),
+                    None,
+                    checkpoint.commit_descriptors.get(&commit.commit.commit_id),
                 )
-            })?;
-    }
+                .map_err(|denial| {
+                    DurabilityError::new(
+                        crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                        format!("checkpoint canonical admission: {denial:?}"),
+                    )
+                })?;
+        }
+        catalog
+    };
     history.install_commit_catalog(catalog);
     history.with_ledger_mut(|ledger| {
         ledger.patch_stream_index = checkpoint

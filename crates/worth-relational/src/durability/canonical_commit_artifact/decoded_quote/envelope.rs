@@ -45,11 +45,11 @@ pub(in super::super) fn canonical(
             // The old checkpoint wire ignored unknown fields. Its slice-backed
             // Serde IgnoredAny walks borrowed strings/maps without heap growth;
             // fields() has already visited the whole value under this request.
-            return if matches!(projection, EnvelopeProjection::Checkpoint) {
-                Ok(())
-            } else {
-                Err(Refusal::NonCanonicalPayload)
-            };
+            #[cfg(test)]
+            if matches!(projection, EnvelopeProjection::Checkpoint) {
+                return Ok(());
+            }
+            return Err(Refusal::NonCanonicalPayload);
         };
         let bit = 1_u32 << index;
         if seen & bit != 0 {

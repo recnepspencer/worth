@@ -58,10 +58,13 @@ pub(super) fn commit(
         .unwrap();
 }
 
-pub(super) fn artifacts(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
+pub(super) fn artifacts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> Vec<Vec<u8>> {
     runtime
         .durability()
-        .canonical_commit_artifacts(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .canonical_commit_artifacts(execution)
         .map(|artifact| artifact.unwrap().as_bytes().to_vec())
         .collect()
 }

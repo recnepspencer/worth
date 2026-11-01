@@ -36,7 +36,8 @@ fn a_home_serves_only_the_schema_its_main_head_records() {
             let home = open(&location, &execution).expect("a new home opens");
             let held = steps_before(&script, prefix);
             assert_eq!(apply(&home, &execution, held), prefix);
-            let acknowledged = crate::workload::artifacts_of(home.relational().runtime());
+            let acknowledged =
+                crate::workload::artifacts_of(&execution, home.relational().runtime());
             // Preserve the script's chosen checkpoint/tail boundary. This is
             // an interruption, not an orderly close with a new checkpoint.
             home.abort_for_test();
@@ -58,7 +59,7 @@ fn a_home_serves_only_the_schema_its_main_head_records() {
             }
             let home = open_declaring(&location, served, &execution)
                 .unwrap_or_else(|refusal| panic!("{case}: {refusal:?}"));
-            assert_holds(&home, &script, &acknowledged);
+            assert_holds(&execution, &home, &script, &acknowledged);
             assert_eq!(
                 basis_of(home.relational().runtime(), &branch("main")),
                 served,
@@ -70,16 +71,16 @@ fn a_home_serves_only_the_schema_its_main_head_records() {
                 "{case}"
             );
             apply(&home, &execution, steps_after(&script, prefix));
-            let everything = crate::workload::artifacts_of(home.relational().runtime());
+            let everything = crate::workload::artifacts_of(&execution, home.relational().runtime());
             assert_eq!(&everything[..prefix], &acknowledged[..], "{case}");
-            assert_holds(&home, &script, &everything);
+            assert_holds(&execution, &home, &script, &everything);
             // Preserve the script's chosen checkpoint/tail boundary. This is
             // an interruption, not an orderly close with a new checkpoint.
             home.abort_for_test();
 
             let home = open_declaring(&location, TARGET, &execution)
                 .unwrap_or_else(|refusal| panic!("{case}: second open: {refusal:?}"));
-            assert_holds(&home, &script, &everything);
+            assert_holds(&execution, &home, &script, &everything);
             home.close(&execution);
         }
     }
@@ -94,7 +95,7 @@ fn a_registry_with_other_kind_contracts_refuses_before_service() {
     let location = directory.path().join("home");
     let home = open(&location, &execution).expect("a new home opens");
     apply(&home, &execution, steps_before(&script, THROUGH_TRANSITION));
-    let acknowledged = crate::workload::artifacts_of(home.relational().runtime());
+    let acknowledged = crate::workload::artifacts_of(&execution, home.relational().runtime());
     home.close(&execution);
 
     let foreign = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
@@ -121,6 +122,6 @@ fn a_registry_with_other_kind_contracts_refuses_before_service() {
         refused.map(|_| ())
     );
     let home = open(&location, &execution).expect("the refusal left the home intact");
-    assert_holds(&home, &script, &acknowledged);
+    assert_holds(&execution, &home, &script, &acknowledged);
     home.close(&execution);
 }

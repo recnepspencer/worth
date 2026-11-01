@@ -2,7 +2,6 @@
 use std::sync::Arc;
 
 use super::{manifest_capture::corrupt, manifest_validation::ManifestDirectoryFacts};
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal;
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableColdSource;
 
@@ -12,6 +11,14 @@ pub(super) fn readmit(
     source: Arc<dyn RelationalDurableColdSource>,
     facts: ManifestDirectoryFacts,
 ) -> Result<DurableCheckpoint, RelationalRecoveryStop> {
+    let directory = Arc::new(
+        PreparedCheckpointDirectory {
+            manifest: manifest.clone(),
+            source,
+            history_members: facts.history_members,
+        }
+        .readmit(execution)?,
+    );
     let heads = facts.heads;
     let mut envelopes = Vec::new();
     let mut symbols = crate::symbols::data::StringInterner::default();
@@ -20,28 +27,22 @@ pub(super) fn readmit(
         .iter()
         .filter(|entry| heads.contains(&entry.commit.commit_id))
     {
-        let commit = crate::history::RelationalCommitArtifact::readmit_head(
-            entry.clone(),
-            source.clone(),
+        let commit = crate::history::RelationalCommitEnvelopeResidency::readmit_selected(
+            entry,
+            &directory,
             execution,
+            1 << 30,
         )?;
         symbols
             .import_canonical_snapshot(&commit.symbol_texts)
             .map_err(corrupt)?;
         envelopes.push(commit);
     }
-    let directory = PreparedCheckpointDirectory {
-        manifest: manifest.clone(),
-        source,
-        history_members: facts.history_members,
-    }
-    .readmit()
-    .map_err(|cause| corrupt(format!("checkpoint basis custody: {cause:?}")))?;
     let checkpoint = DurableCheckpoint {
         recorded_components: manifest.roots.iter().map(|root| (root.commit_id, root.recorded_components.clone())).collect(),
         retained_empty_components: manifest.retained_empty_components.clone(),
         root_kind_images: Default::default(), mirror_kind_images: Default::default(),
-        directory: Some(Arc::new(directory)),
+        directory: Some(directory), canonical_directory:None,
         coverage: manifest.coverage,
         commit_descriptors: manifest.commits.iter().map(|entry| (entry.commit.commit_id, entry.root.clone())).collect(),
         mirror_schema_digest: manifest.mirror_schema,
@@ -61,18 +62,4 @@ pub(super) fn readmit(
         runtime_name: manifest.runtime_name,
     };
     Ok(checkpoint)
-}
-
-pub(super) fn artifact_stop(
-    error: RelationalCanonicalCommitArtifactRefusal,
-) -> RelationalRecoveryStop {
-    match error {
-        RelationalCanonicalCommitArtifactRefusal::Request(cause) => {
-            RelationalRecoveryStop::Request(cause)
-        }
-        RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => {
-            crate::symbols::data::field_text_recovery_stop(cause)
-        }
-        error => corrupt(format!("checkpoint head readmission: {error:?}")).into(),
-    }
 }

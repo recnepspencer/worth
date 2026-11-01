@@ -89,7 +89,7 @@ impl CapturedCheckpointBasis {
             .map(|image| image.carrier_digest());
         Ok(DurableCheckpoint {
             recorded_components, retained_empty_components,
-            directory: None,
+            directory: None, canonical_directory:None,
             root_kind_images, mirror_kind_images,
             commit_descriptors,
             mirror_schema_digest,

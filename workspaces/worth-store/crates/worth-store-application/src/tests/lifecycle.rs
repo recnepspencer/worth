@@ -25,7 +25,7 @@ fn public_native_progression_closes_reopens_and_continues_without_a_partial_home
     let identity = home.home_identity();
     let incarnation = home.incarnation();
     super::native_schema::commit(home.relational().runtime(), &execution, "before");
-    let before = super::native_schema::artifacts(home.relational().runtime());
+    let before = super::native_schema::artifacts(&execution, home.relational().runtime());
     assert_eq!(before.len(), 1);
     assert!(matches!(
         home.checkpoint(&execution),
@@ -44,11 +44,11 @@ fn public_native_progression_closes_reopens_and_continues_without_a_partial_home
     assert_eq!(home.home_identity(), identity);
     assert_eq!(home.incarnation(), incarnation.successor().unwrap());
     assert_eq!(
-        super::native_schema::artifacts(home.relational().runtime()),
+        super::native_schema::artifacts(&execution, home.relational().runtime()),
         before
     );
     super::native_schema::commit(home.relational().runtime(), &execution, "after");
-    let after = super::native_schema::artifacts(home.relational().runtime());
+    let after = super::native_schema::artifacts(&execution, home.relational().runtime());
     assert_eq!(after.len(), 2);
     assert_eq!(&after[..1], before.as_slice());
     assert!(matches!(
@@ -86,7 +86,7 @@ fn cancelled_close_returns_the_same_usable_serving_home_and_does_not_seal_admiss
     assert_eq!(home.home_identity(), identity);
     super::native_schema::commit(home.relational().runtime(), &execution, "after-refusal");
     assert_eq!(
-        super::native_schema::artifacts(home.relational().runtime()).len(),
+        super::native_schema::artifacts(&execution, home.relational().runtime()).len(),
         1
     );
     assert!(matches!(

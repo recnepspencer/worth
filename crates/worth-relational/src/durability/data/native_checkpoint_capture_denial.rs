@@ -53,6 +53,9 @@ impl
         match error {
             Encode::Allocation(error) => Self::Allocation(error),
             Encode::Request(cause) => Self::Request(cause.into()),
+            Encode::Readmission(cause) => {
+                crate::durability::checkpoint_history::capture::capture_stop(cause)
+            }
             Encode::StorageUnavailable(failure) => Self::Durability(failure.into()),
             error => Self::Durability(super::DurabilityError::new(
                 super::RecoveryFailureClass::CorruptCheckpoint,

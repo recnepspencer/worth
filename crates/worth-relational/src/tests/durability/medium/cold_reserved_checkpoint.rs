@@ -21,7 +21,7 @@ fn publish_checkpoint(
         .unwrap();
     medium.file_checkpoint(native.clone());
     execution
-        .run_native_with_checkpoint(|context| native.acknowledge_selected(context))
+        .run_native_with_checkpoint(|context| native.acknowledge_selected(execution, context))
         .unwrap()
         .0
         .unwrap();

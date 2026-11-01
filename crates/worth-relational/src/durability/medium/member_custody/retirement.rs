@@ -6,6 +6,7 @@ use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelationalDurableMemberRetirementRefusal {
     UnsupportedProvider,
+    ProviderUnavailable,
     ForeignSource,
     ForeignCustody,
 }

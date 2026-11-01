@@ -36,7 +36,8 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
         assert_eq!(captured.leaf.content_digest, expected);
         assert!(captured.members.iter().any(|member| matches!(member, RelationalCheckpointMember::Carried { locator } if *locator == cold.history)));
         let members = place(&captured.members, &source.members);
-        captured.publication.acknowledge();
+        // Ordinary fixture disposal happens after try_acknowledge released its guard.
+        drop(captured.publication.try_acknowledge().unwrap());
         let current = members.keys().copied().collect::<BTreeSet<_>>();
         let repeated = cell
             .capture_checkpoint(

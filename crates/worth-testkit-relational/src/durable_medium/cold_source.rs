@@ -48,6 +48,25 @@ impl RelationalDurableColdSource for TestDurableMedium {
             snapshot,
         ))
     }
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_relational::facade::durability::RelationalDurableReadPayload,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        let contents = self.lock();
+        super::OwnedNativeReadSnapshot::capture(
+            request,
+            std::iter::empty(),
+            std::iter::empty(),
+            &contents.members,
+        )
+        .map(|original| {
+            original as worth_relational::facade::durability::RelationalDurableReadPayload
+        })
+        .map_err(owned_failure)
+    }
     fn read_commit_owned(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -92,6 +111,39 @@ impl RelationalDurableColdSource for TestDurableMedium {
         snapshot
             .member(request, locator.sha256, locator.length, limit)
             .map_err(owned_failure)
+    }
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), worth_relational::facade::durability::RelationalDurableMemberRetirementRefusal>
+    {
+        // These actual immutable payloads own bytes/metadata only, with no physical pin or registration.
+        if original.is::<()>() || original.is::<super::OwnedNativeReadSnapshot>() {
+            Ok(())
+        } else {
+            Err(worth_relational::facade::durability::RelationalDurableMemberRetirementRefusal::ForeignCustody)
+        }
+    }
+    fn advance_member_custody_retirement(
+        &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> worth_relational::facade::durability::RelationalDurableMemberRetirementObservation {
+        match self.validate_member_custody_retirement(original) {
+            Ok(()) => worth_relational::facade::durability::RelationalDurableMemberRetirementObservation::Complete,
+            Err(cause) => worth_relational::facade::durability::RelationalDurableMemberRetirementObservation::Refused(cause),
+        }
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        worth_relational::facade::durability::RelationalDurableMemberCustody,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        worth_relational::facade::durability::RelationalDurableMemberCustody::try_new_from_source_for_request(issuer,request,||Ok(()))
     }
     fn retain_members(
         &self,

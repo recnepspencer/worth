@@ -60,6 +60,7 @@ pub(super) fn refuse_missing_and_foreign() {
         );
         let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &changed,
+            execution,
             execution.allocation_policy(),
         )
         .unwrap();

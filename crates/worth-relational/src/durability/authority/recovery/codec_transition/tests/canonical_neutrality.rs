@@ -6,10 +6,13 @@ use super::fixture::*;
 use crate::mvcc::RelationalOperationControl;
 use crate::runtime::RelationalRuntime;
 
-fn artifacts(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
+fn artifacts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> Vec<Vec<u8>> {
     runtime
         .durability()
-        .canonical_commit_artifacts(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .canonical_commit_artifacts(execution)
         .map(|artifact| {
             artifact
                 .expect("retained commits encode")
@@ -79,7 +82,7 @@ fn output_origin_and_codec_retirement_artifacts_are_runtime_neutral() {
         first.runtime.runtime_instance_id(),
         second.runtime.runtime_instance_id()
     );
-    let published = artifacts(&first.runtime);
+    let published = artifacts(execution, &first.runtime);
     assert!(first
         .runtime
         .history
@@ -87,7 +90,7 @@ fn output_origin_and_codec_retirement_artifacts_are_runtime_neutral() {
         .iter()
         .any(|positioned| positioned.envelope().required_output_origin.is_some()));
     assert!(
-        published == artifacts(&second.runtime),
+        published == artifacts(execution, &second.runtime),
         "output publication artifacts differ"
     );
 
@@ -102,7 +105,7 @@ fn output_origin_and_codec_retirement_artifacts_are_runtime_neutral() {
             .required_output_codec_retirements
             .is_empty()));
     assert!(
-        artifacts(&first_target) == artifacts(&second_target),
+        artifacts(execution, &first_target) == artifacts(execution, &second_target),
         "codec retirement artifacts differ"
     );
 }

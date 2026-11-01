@@ -1,5 +1,4 @@
 //! Inspection is a projection of the native codec's actual decoded input.
-use super::checkpoint_wire::CheckpointWire;
 use crate::durability::data::*;
 use crate::history::data::RecordAllocationClass;
 use std::{
@@ -17,13 +16,7 @@ pub(crate) fn inspect<'a>(
     let payload = bytes
         .strip_prefix(super::CHECKPOINT_MAGIC)
         .ok_or_else(|| invalid("unknown native checkpoint frame"))?;
-    let wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
-        .map_err(|e| invalid(format!("native checkpoint inspection: {e}")))?;
-    let CheckpointWire {
-        manifest: _,
-        members: _,
-        envelopes: _,
-    } = wire;
+    // The one request-aware codec admits the roster/table before they grow.
     let decoded = super::decode_checkpoint(execution, bytes)?.checkpoint;
     let symbol_identity_frontier = decoded.symbol_identity_frontier;
     let record_identity = decoded.record_identity;

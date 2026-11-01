@@ -28,6 +28,15 @@ use worth_store::physical_runtime::{
 #[derive(Debug)]
 struct NoAcknowledgement;
 impl crate::RelationalCheckpointSelectionSource for NoAcknowledgement {
+    fn selected_version(
+        &self,
+        _: &OpaqueCapturedCheckpointSubject,
+    ) -> Result<
+        Option<worth_store::physical_runtime::AnchoredRecordVersion>,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        Ok(None)
+    }
     fn selected_membership(
         &self,
         _: &OpaqueCapturedCheckpointSubject,
@@ -131,7 +140,16 @@ pub(super) fn directory(execution: &ExecutionRequest<'_, '_>) -> Directory {
             .with_members(members),
         )
         .unwrap();
-    source.select_members(published.membership()).unwrap();
+    let original = crate::cold_source::selected_replacement::read_expected(
+        &source,
+        published.version(),
+        execution,
+    )
+    .unwrap();
+    source
+        .select_initial_members_from_read(&original, execution)
+        .unwrap();
+    drop(original);
     let read = records.read(anchor, 1 << 30).unwrap().unwrap();
     assert_eq!(read.bytes(), prepared.bytes());
     let generation = read.version().generation();

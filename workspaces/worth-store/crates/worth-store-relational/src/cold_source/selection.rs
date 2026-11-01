@@ -1,9 +1,13 @@
 //! One selected placement map; ordinary and controlled admission share storage.
 use super::{RelationalDurableMemberLocator, StoreColdSource};
-use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap, ExecutionOrderedMapDenial};
+#[cfg(test)]
+use worth_execution::ExecutionAllocationPolicy;
+use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
+#[cfg(test)]
+use worth_store::physical_runtime::AnchoredRecordMembership;
 use worth_store::physical_runtime::{
-    AnchoredRecordMemberLocator, AnchoredRecordMembership, AnchoredRecordReadFailure,
-    AnchoredRecordReadMembership, AnchoredRecordVersion, AnchoredRecordsDenial,
+    AnchoredRecordMemberLocator, AnchoredRecordReadFailure, AnchoredRecordReadMembership,
+    AnchoredRecordVersion, AnchoredRecordsDenial,
 };
 
 #[derive(Debug)]
@@ -13,6 +17,7 @@ pub enum RelationalStoreMemberSelectionDenial {
     ForeignAnchor,
     Busy,
     DifferentSelection,
+    Retirement(worth_store::physical_runtime::AnchoredRecordReadRetirementDenial),
     Execution(worth_execution::WorkCeilingDenial),
     Allocation(ExecutionOrderedMapDenial),
 }
@@ -61,6 +66,7 @@ pub(super) fn build(
 impl StoreColdSource {
     /// Existing standalone admission retains its ordinary unbudgeted allocation
     /// contract. It cannot replace a controlled original read or its grants.
+    #[cfg(test)]
     pub(crate) fn select_members(
         &self,
         membership: &AnchoredRecordMembership,
@@ -100,6 +106,7 @@ impl StoreColdSource {
     }
 }
 
+#[cfg(test)]
 fn same_controlled(
     current: &SelectedMembers,
     version: AnchoredRecordVersion,

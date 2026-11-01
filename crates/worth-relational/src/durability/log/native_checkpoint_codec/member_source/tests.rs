@@ -33,8 +33,17 @@ fn inline_member_read_funds_output_and_keeps_grant_until_last_clone() {
         ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.clone().into_boxed_slice()));
     assert_eq!(imported.charged_payload_bytes(), None);
     let source: Arc<dyn RelationalDurableColdSource> = Arc::new(InlineCheckpointSource {
-        members: BTreeMap::from([(locator, imported)]),
-        envelopes: BTreeMap::new(),
+        members: {
+            let mut members = worth_execution::ExecutionOrderedMap::default();
+            members
+                .insert_cloned_native_in(
+                    &locator,
+                    &imported,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            members
+        },
     });
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(Some(1 << 20)),
@@ -66,11 +75,19 @@ fn inline_member_read_funds_output_and_keeps_grant_until_last_clone() {
     drop(clone);
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
     let source: Arc<dyn RelationalDurableColdSource> = Arc::new(InlineCheckpointSource {
-        members: BTreeMap::from([(
-            locator,
-            ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.into_boxed_slice())),
-        )]),
-        envelopes: BTreeMap::new(),
+        members: {
+            let mut members = worth_execution::ExecutionOrderedMap::default();
+            let imported =
+                ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.into_boxed_slice()));
+            members
+                .insert_cloned_native_in(
+                    &locator,
+                    &imported,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            members
+        },
     });
     let small = SerialRequest::from_memory(
         SerialMemoryBudget::new(Some(

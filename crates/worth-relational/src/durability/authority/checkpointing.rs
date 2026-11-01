@@ -54,34 +54,36 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         let coverage = captured.manifest.covered_position;
         let transitions = captured.manifest.coverage.up_to_branch_transition;
         let component_holds = std::mem::take(&mut captured.component_holds);
+        let canonical_publication = captured.canonical_publication.take();
         let (bytes, sections, members, publications) =
             crate::durability::log::native_checkpoint_codec::encode_captured(
                 captured,
+                execution,
                 policy,
                 &artifact_policy,
             )?;
+        let checkpoint = crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(
+            bytes,
+            sections,
+            coverage,
+            transitions,
+        )
+        .with_component_holds(component_holds)
+        .with_canonical_publication(canonical_publication)
+        .with_captured_members(members)
+        .with_region_publications(if manifest_publication.is_some() {
+            publications
+        } else {
+            Vec::new()
+        })
+        .with_manifest_publication(manifest_publication)
+        .bind_publication(self.runtime.durability.medium(), execution)?;
         if self.runtime.durability.medium().is_some() {
             self.runtime
                 .history
                 .compact_branch_transitions_through(transitions);
         }
-        Ok(
-            crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(
-                bytes,
-                sections,
-                coverage,
-                transitions,
-            )
-            .with_component_holds(component_holds)
-            .with_captured_members(members)
-            .with_region_publications(if manifest_publication.is_some() {
-                publications
-            } else {
-                Vec::new()
-            })
-            .with_manifest_publication(manifest_publication)
-            .bind_publication(self.runtime.durability.medium()),
-        )
+        Ok(checkpoint)
     }
 
     pub fn checkpoint(

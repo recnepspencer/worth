@@ -43,6 +43,80 @@ struct PageSource {
     failure: Mutex<Option<Cause>>,
 }
 impl RelationalDurableColdSource for PageSource {
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableReadPayload,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        request.check_live().map_err(|cause| {
+            crate::durability::medium::RelationalDurableOwnedReadRefusal::Request(cause.into())
+        })?;
+        // This fixture's immutable member table is retained by its actual Source Arc.
+        Ok(Box::new(()))
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        crate::durability::medium::RelationalDurableMemberCustody::try_new_from_source_for_request(
+            issuer,
+            request,
+            || Ok(()),
+        )
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        use crate::durability::medium::RelationalDurableOwnedReadRefusal as R;
+        if !original.is::<()>() {
+            return Err(R::ForeignProtection);
+        }
+        if member.length > limit {
+            return Err(R::Storage(Cause::LimitExceeded {
+                length: member.length,
+                limit,
+            }));
+        }
+        self.reads.fetch_add(1, Ordering::SeqCst);
+        if self.failed_member.lock().unwrap().as_ref() == Some(&member)
+            || self.corrupt.load(Ordering::SeqCst)
+        {
+            return Err(R::Storage(Cause::Damaged));
+        }
+        if let Some(cause) = *self.failure.lock().unwrap() {
+            return Err(R::Storage(cause));
+        }
+        let bytes = self
+            .members
+            .get(&member)
+            .ok_or(R::Storage(Cause::MissingMember))?;
+        if bytes.len() as u64 != member.length
+            || crate::durability::log::native_checkpoint_codec::member_frame::locator(bytes.bytes())
+                != member
+        {
+            return Err(R::Storage(Cause::IntegrityMismatch));
+        }
+        let mut output =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, bytes.len())
+                .map_err(R::Buffer)?;
+        output.extend_from_slice(bytes.bytes()).map_err(R::Buffer)?;
+        Ok(output.seal().map_err(R::Buffer)?.into_immutable_bytes())
+    }
+
     fn retain_members(
         &self,
         _members: &[RelationalDurableMemberLocator],
@@ -168,7 +242,7 @@ fn checkpoint_dictionary(
         manifest: input.manifest,
         source: source.clone(),
     }
-    .readmit()
+    .readmit(execution)
     .unwrap();
     let table = RuntimeSymbolTable::default();
     table.install_cold_pages(&directory).unwrap();

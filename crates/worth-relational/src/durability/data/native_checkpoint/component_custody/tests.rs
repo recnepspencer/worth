@@ -69,7 +69,7 @@ fn delayed_selection(empty: bool) {
     let _interrupted = stopped_request.run_native_with_checkpoint(|context| {
         entered = true;
         cancellation.cancel();
-        let result = checkpoint.acknowledge_selected(context);
+        let result = checkpoint.acknowledge_selected(&stopped_request, context);
         assert!(matches!(
             result,
             Err(RelationalCheckpointAcknowledgementDenial::Stopped(_))
@@ -84,7 +84,7 @@ fn delayed_selection(empty: bool) {
         "partial acknowledgement and an old observer drop cannot retire the capture custody"
     );
     execution
-        .run_native_with_checkpoint(|context| observer.acknowledge_selected(context))
+        .run_native_with_checkpoint(|context| observer.acknowledge_selected(execution, context))
         .unwrap()
         .0
         .unwrap();

@@ -72,8 +72,8 @@ fn residency_child() {
         let home = crate::durable_run::open(&location, &execution).unwrap();
         crate::durable_run::apply(&home, &execution, &fixture.steps);
         assert_eq!(
-            crate::workload::artifacts_of(home.relational().runtime()),
-            crate::workload::artifacts_of(&fixture.reference)
+            crate::workload::artifacts_of(&execution, home.relational().runtime()),
+            crate::workload::artifacts_of(&execution, &fixture.reference)
         );
         crate::killed_child::announce(&markers.join("ready"), b"acknowledged checkpoint");
         crate::killed_child::park();

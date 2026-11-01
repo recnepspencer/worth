@@ -39,7 +39,7 @@ pub(crate) fn checkpoint(
                     caller_driver = Some(driver);
                     super::physical_start::start(serving, &attempt, input, context, lease)?;
                     drive_selection(serving, &attempt, context, observer)?;
-                    let result = acknowledge(owner, &attempt, context)?;
+                    let result = acknowledge(owner, &attempt, execution, context)?;
                     if let Some(observe) = after_acknowledgement {
                         observe();
                     }
@@ -85,7 +85,7 @@ pub(super) fn recover(
                 if attempt.observation().selected_generation.is_none() {
                     drive_selection(serving, &attempt, context, None)?;
                 }
-                let result = acknowledge(owner, &attempt, context)?;
+                let result = acknowledge(owner, &attempt, execution, context)?;
                 super::physical_checkpoint::complete(
                     serving,
                     &attempt,
@@ -172,7 +172,14 @@ pub(super) fn drive_selection(
         match attempt.advance_physical(&records, observer) {
             PublicationProgress::Pending => std::thread::sleep(std::time::Duration::from_millis(1)),
             PublicationProgress::Selected(receipt) => {
-                attempt.selected(receipt.membership().clone());
+                attempt.selected(match receipt {
+                    worth_store::physical_runtime::AnchoredRecordPublished::Published(
+                        membership,
+                    )
+                    | worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(
+                        membership,
+                    ) => membership,
+                });
                 return Ok(());
             }
             PublicationProgress::Failed(failure) => return Err(Denial::Publication(
@@ -193,6 +200,7 @@ pub(super) fn drive_selection(
 pub(super) fn acknowledge(
     owner: &HomeCheckpointOwner,
     attempt: &HomeCheckpointAttempt,
+    execution: &ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Summary, Denial> {
     if let Some(result) = *attempt
@@ -206,7 +214,7 @@ pub(super) fn acknowledge(
         .native()
         .ok_or_else(|| Denial::RecoveryRequired(attempt.observation()))?;
     native
-        .acknowledge_selected(context)
+        .acknowledge_selected(execution, context)
         .map_err(Denial::Native)?;
     owner.acknowledge_native([native.covered().0, native.covered_transitions().0]);
     let world = attempt

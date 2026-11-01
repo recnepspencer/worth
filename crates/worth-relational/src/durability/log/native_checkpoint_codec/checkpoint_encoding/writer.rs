@@ -2,25 +2,27 @@ use crate::durability::data::{
     DurabilityError, RecoveryFailureClass, RelationalNativeCheckpointCaptureDenial as Denial,
 };
 use std::io::{self, Write};
-use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
+use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
 
 pub(super) struct SizingWriter<'scope, 'authority> {
-    policy: ExecutionAllocationPolicy<'scope, 'authority>,
+    request: ExecutionRequest<'scope, 'authority>,
     total: usize,
     failure: Option<Denial>,
 }
 
 impl<'scope, 'authority> SizingWriter<'scope, 'authority> {
-    pub fn new(policy: ExecutionAllocationPolicy<'scope, 'authority>) -> Self {
+    pub fn new(request: ExecutionRequest<'scope, 'authority>) -> Self {
         Self {
-            policy,
+            request,
             total: 0,
             failure: None,
         }
     }
     pub fn finish(self, result: Result<(), impl std::fmt::Display>) -> Result<usize, Denial> {
         complete(result, self.failure)?;
-        self.policy.check_live()?;
+        self.request
+            .consult()
+            .map_err(|cause| Denial::Request(cause.into()))?;
         Ok(self.total)
     }
 }
@@ -30,8 +32,8 @@ impl Write for SizingWriter<'_, '_> {
         if self.failure.is_some() {
             return Err(stopped());
         }
-        if let Err(error) = self.policy.check_live() {
-            self.failure = Some(error.into());
+        if let Err(error) = self.request.consult() {
+            self.failure = Some(Denial::Request(error.into()));
             return Err(stopped());
         }
         match self
@@ -60,13 +62,13 @@ impl Write for SizingWriter<'_, '_> {
     }
 }
 
-pub(super) struct EmissionWriter<'a> {
-    bytes: &'a mut ExecutionByteBuffer,
+pub(super) struct EmissionWriter<'a, 'scope, 'authority> {
+    bytes: &'a mut ExecutionRequestArrayBuilder<'scope, 'authority, u8>,
     failure: Option<Denial>,
 }
 
-impl<'a> EmissionWriter<'a> {
-    pub fn new(bytes: &'a mut ExecutionByteBuffer) -> Self {
+impl<'a, 'scope, 'authority> EmissionWriter<'a, 'scope, 'authority> {
+    pub fn new(bytes: &'a mut ExecutionRequestArrayBuilder<'scope, 'authority, u8>) -> Self {
         Self {
             bytes,
             failure: None,
@@ -74,12 +76,11 @@ impl<'a> EmissionWriter<'a> {
     }
     pub fn finish(self, result: Result<(), impl std::fmt::Display>) -> Result<(), Denial> {
         complete(result, self.failure)?;
-        self.bytes.check_live()?;
         Ok(())
     }
 }
 
-impl Write for EmissionWriter<'_> {
+impl Write for EmissionWriter<'_, '_, '_> {
     fn write(&mut self, input: &[u8]) -> io::Result<usize> {
         if self.failure.is_some() {
             return Err(stopped());
@@ -87,7 +88,8 @@ impl Write for EmissionWriter<'_> {
         match self.bytes.extend_from_slice(input) {
             Ok(()) => Ok(input.len()),
             Err(error) => {
-                self.failure = Some(error.into());
+                self.failure =
+                    Some(crate::durability::checkpoint_history::capture::array_capture_stop(error));
                 Err(stopped())
             }
         }

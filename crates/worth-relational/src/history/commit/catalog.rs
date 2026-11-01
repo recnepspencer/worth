@@ -107,12 +107,26 @@ impl RelationalCommitCatalog {
             }
         }
         let artifact = match self.entries.get(&commit_id) {
-            Some(existing) => match existing.envelope_residency().journal_placement() {
-                Some((entry, source)) => RelationalCommitArtifact::from_index(
-                    entry.as_ref().clone(),
-                    source,
-                    Some(positioned.clone()),
-                )?,
+            Some(existing) => match existing.envelope_residency().source_placement() {
+                Some((entry, source)) => {
+                    let directory = existing.envelope_residency().selected_directory();
+                    let artifact = RelationalCommitArtifact::from_index(
+                        entry,
+                        source,
+                        Some(positioned.clone()),
+                    )?;
+                    if let Some(directory) = directory {
+                        let cell = artifact.envelope_residency();
+                        let actual = cell
+                            .journal_index()
+                            .ok_or(RelationalCommitArtifactDenial::CanonicalPayloadEncoding)?;
+                        let _displaced =
+                            cell.install_selected(actual, directory).map_err(|_| {
+                                RelationalCommitArtifactDenial::CanonicalPayloadEncoding
+                            })?;
+                    }
+                    artifact
+                }
                 None => RelationalCommitArtifact::from_envelope_with_descriptor(
                     envelope,
                     existing.roots().clone(),
@@ -159,7 +173,7 @@ impl RelationalCommitCatalog {
 
     pub(crate) fn append_indexed_recovery(
         &mut self,
-        entry: super::RelationalCommitIndexEntry,
+        entry: super::RetainedCanonicalIndex,
         source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
         admitted: Option<crate::history::data::PositionedCanonicalCommit>,
     ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {

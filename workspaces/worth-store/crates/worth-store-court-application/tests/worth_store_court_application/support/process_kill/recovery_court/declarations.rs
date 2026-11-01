@@ -62,7 +62,14 @@ pub(crate) fn assert_killed_home_recovers(stop: Stop) {
             "{case}: checkpoint reopen loads only the manifest"
         );
     }
-    let commits = assert_recovered(&home, &script, &killed.acknowledged, &in_flight, &case);
+    let commits = assert_recovered(
+        &execution,
+        &home,
+        &script,
+        &killed.acknowledged,
+        &in_flight,
+        &case,
+    );
     let transition_flight = match stop {
         crate::process_kill::Stop::BranchTransition(worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::BeforeWalAppend)
         | crate::process_kill::Stop::Archive(worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::BeforeWalAppend)

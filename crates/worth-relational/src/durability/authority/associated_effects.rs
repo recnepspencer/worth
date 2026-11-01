@@ -3,7 +3,7 @@ use super::DurabilityAuthority;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
 use crate::history::data::RelationalCallerAssociation;
-use crate::history::{RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry};
+use crate::history::RelationalCommitEnvelopeResidency;
 use crate::transactions::data::RecoveredRelationalSemanticResult;
 use std::sync::{Arc, Weak};
 
@@ -22,7 +22,7 @@ mod readmission;
 #[derive(Debug, Clone)]
 pub struct RelationalAssociatedEffectSubject {
     runtime_instance_id: u64,
-    entry: Arc<RelationalCommitIndexEntry>,
+    entry: crate::history::RetainedCanonicalIndex,
     source: Weak<dyn RelationalDurableColdSource>,
     residency: Weak<RelationalCommitEnvelopeResidency>,
 }
@@ -94,8 +94,8 @@ impl RelationalAssociatedEffectSubject {
         }
         let residency = self.residency.upgrade()?;
         let source = self.source.upgrade()?;
-        let (entry, actual_source) = residency.journal_placement()?;
-        if entry.as_ref() != self.entry.as_ref() || !Arc::ptr_eq(&actual_source, &source) {
+        let (entry, actual_source) = residency.source_placement()?;
+        if !entry.same_owner(&self.entry) || !Arc::ptr_eq(&actual_source, &source) {
             return None;
         }
         runtime
@@ -177,7 +177,7 @@ impl DurabilityAuthority<'_> {
         for (commit_id, residency) in cells {
             crate::execution::check_request(execution)
                 .map_err(|cause| Refusal::Recovery(RelationalRecoveryStop::Request(cause)))?;
-            let Some((entry, source)) = residency.journal_placement() else {
+            let Some((entry, source)) = residency.source_placement() else {
                 let envelope = residency
                     .get()
                     .ok_or(Refusal::MissingDiscovery { commit_id })?;

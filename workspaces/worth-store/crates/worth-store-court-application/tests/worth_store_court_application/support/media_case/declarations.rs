@@ -74,7 +74,7 @@ pub(crate) fn run_case(
 ) -> Ended {
     let (home, activations) = media.open(prepared.location(), prepared.schema(), execution);
     apply(&home, execution, lead);
-    let before = crate::workload::artifacts_of(home.relational().runtime());
+    let before = crate::workload::artifacts_of(execution, home.relational().runtime());
     let mut acknowledged_transitions = crate::branch_lifecycle::artifacts_of_home(&home);
     let mut transition_flight = crate::crash_oracle::InFlight::Nothing;
     let checkpoint_before = crate::selected_checkpoint::generation(&home);
@@ -183,7 +183,14 @@ pub(crate) fn run_case(
         checkpoints.contains(&selected),
         "{case}: checkpoint {selected} selected, expected one of {checkpoints:?}"
     );
-    let commits = assert_recovered(&recovered, script, &acknowledged, &in_flight, case);
+    let commits = assert_recovered(
+        execution,
+        &recovered,
+        script,
+        &acknowledged,
+        &in_flight,
+        case,
+    );
     let transition_landed = crate::transition_oracle::assert_recovered(
         &recovered,
         &acknowledged_transitions,
@@ -231,7 +238,8 @@ pub(crate) fn commit_outcome(
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) -> (Ended, Vec<Vec<u8>>, InFlight) {
-    let now = crate::workload::append_live_artifacts(home.relational().runtime(), &before);
+    let now =
+        crate::workload::append_live_artifacts(execution, home.relational().runtime(), &before);
     match outcome {
         Ok(_) => {
             assert_eq!(

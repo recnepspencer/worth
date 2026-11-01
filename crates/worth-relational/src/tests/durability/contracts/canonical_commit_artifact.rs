@@ -50,10 +50,13 @@ fn commit_schema_transition(execution: &ExecutionRequest<'_, '_>, runtime: &mut 
     release_test_commit_snapshot(runtime, &transitioned);
 }
 
-fn exported_artifacts(runtime: &RelationalRuntime) -> Vec<Artifact> {
+fn exported_artifacts(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> Vec<Artifact> {
     runtime
         .durability()
-        .canonical_commit_artifacts(ExecutionAllocationPolicy::SystemAllocation)
+        .canonical_commit_artifacts(execution)
         .collect::<Result<_, _>>()
         .expect("retained commits encode as artifacts")
 }
@@ -73,7 +76,7 @@ fn every_retained_commit_readmits_from_its_artifact_unchanged() {
         .iter()
         .any(|commit| commit.envelope().schema_transition.is_some()));
 
-    let artifacts = exported_artifacts(&runtime);
+    let artifacts = exported_artifacts(execution, &runtime);
     assert_eq!(artifacts.len(), originals.len());
     for (original, artifact) in originals.iter().zip(&artifacts) {
         let original_envelope = original.envelope();
@@ -128,7 +131,7 @@ fn retained_artifacts_follow_strictly_increasing_positions() {
     let execution = &ExecutionRequest::serial(&host_request);
     let runtime = memory_runtime_with_mixed_history(execution);
 
-    let artifacts = exported_artifacts(&runtime);
+    let artifacts = exported_artifacts(execution, &runtime);
     let positions = artifacts.iter().map(Artifact::position).collect::<Vec<_>>();
     assert!(positions.len() >= 5);
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));

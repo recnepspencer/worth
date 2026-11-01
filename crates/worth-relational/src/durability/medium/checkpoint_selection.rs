@@ -7,24 +7,54 @@ use worth_execution::ExecutionImmutableBytes;
 /// subject, and copied bytes cannot substitute for its process-local identity.
 #[derive(Debug, Clone)]
 pub struct OpaqueCapturedCheckpointSubject {
-    identity: Arc<()>,
+    identity: Arc<CapturedMembers>,
     bytes: ExecutionImmutableBytes,
     region: std::ops::Range<usize>,
-    required: Arc<[RelationalDurableMemberLocator]>,
 }
 
+#[derive(Debug)]
+struct CapturedMembers {
+    required: worth_execution::ExecutionArray<RelationalDurableMemberLocator>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
 impl OpaqueCapturedCheckpointSubject {
     pub(crate) fn new(
         bytes: ExecutionImmutableBytes,
         region: std::ops::Range<usize>,
-        required: Arc<[RelationalDurableMemberLocator]>,
-    ) -> Self {
-        Self {
-            identity: Arc::new(()),
+        members: &[crate::durability::data::RelationalCheckpointMember],
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::durability::data::RelationalNativeCheckpointCaptureDenial> {
+        use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
+        let size = std::alloc::Layout::new::<(usize, usize)>()
+            .extend(std::alloc::Layout::new::<CapturedMembers>())
+            .map_err(|_| {
+                Denial::Request(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)
+            })?
+            .0
+            .pad_to_align()
+            .size();
+        let memory = request
+            .reserve_retained_memory(size as u64)
+            .map_err(|cause| Denial::Request(cause.into()))?;
+        let mut required =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, members.len())
+                .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
+        for member in members {
+            required
+                .push(member.locator())
+                .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
+        }
+        let required = required
+            .seal()
+            .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
+        Ok(Self {
+            identity: Arc::new(CapturedMembers {
+                required,
+                _memory: memory,
+            }),
             bytes,
             region,
-            required,
-        }
+        })
     }
     pub fn same_capture(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.identity, &other.identity)
@@ -33,7 +63,7 @@ impl OpaqueCapturedCheckpointSubject {
         &self.bytes[self.region.clone()]
     }
     pub fn required_members(&self) -> &[RelationalDurableMemberLocator] {
-        &self.required
+        self.identity.required.elements()
     }
 }
 
@@ -60,4 +90,8 @@ pub enum RelationalCheckpointAcknowledgementDenial {
     SelectionNotKnown,
     Storage(crate::storage::data::RelationalStorageUnavailableCause),
     Stopped(worth_execution::MapKernelStop),
+    Busy,
+    Recovery(crate::durability::data::RelationalRecoveryStop),
+    OwnedRead(super::RelationalDurableOwnedReadRefusal),
+    Retirement(super::RelationalDurableMemberRetirementRefusal),
 }

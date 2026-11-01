@@ -1,5 +1,5 @@
 //! A physical component fixture, not an admitted application home.
-pub(super) fn initialize(
+pub(crate) fn initialize(
     root: &std::path::Path,
 ) -> worth_store::physical_runtime::ServingPhysicalRuntime {
     use worth_store::physical_runtime::{

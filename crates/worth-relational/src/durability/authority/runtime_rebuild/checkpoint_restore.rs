@@ -9,6 +9,7 @@ use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 mod branch_root_images;
 mod cold_directory;
 mod history_readmission;
+mod selected_catalog;
 use history_readmission::prepare_history;
 mod partition_images;
 mod record_identity;
@@ -53,6 +54,12 @@ pub(super) fn restore_checkpoint_state(
     let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
     let restored = super::unshared_state(restored)?;
     install_checkpoint_state(restored, prepared);
+    if let Some(directory) = checkpoint.canonical_directory.clone() {
+        restored
+            .durability
+            .checkpoint_selection()
+            .restore_data(directory);
+    }
     restored.durability.push_checkpoint(checkpoint);
     Ok(())
 }
@@ -74,7 +81,14 @@ fn prepare_checkpoint_state(
         &restored.config.schema.registry,
     )?;
     let partitions = prepare_partitions(restored, checkpoint, &branch_root_images, work)?;
-    let history = prepare_history(restored, checkpoint, branch_root_images, &symbols, work)?;
+    let history = prepare_history(
+        execution,
+        restored,
+        checkpoint,
+        branch_root_images,
+        &symbols,
+        work,
+    )?;
     let lineage = prepare_lineage(restored, checkpoint);
     let indexes = prepare_indexes(checkpoint, &history, work)?;
     Ok(PreparedCheckpointState {
@@ -213,9 +227,8 @@ pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
     // no region yet; clearing it must not materialize or mutate its leaves.
     if restored
         .durability
-        .checkpoint_selection()
-        .snapshot()
-        .is_some()
+        .latest_checkpoint()
+        .is_some_and(|checkpoint| checkpoint.directory.is_some())
     {
         return;
     }
@@ -233,11 +246,10 @@ pub(super) fn finalize_restored_runtime(
     // The eager image lane rebuilds this optional inspection cache. In the
     // native member lane, selected-state invariant scans remain authoritative;
     // index generations retain their explicit deferred readmission cell.
-    if restored
+    if !restored
         .durability
-        .checkpoint_selection()
-        .snapshot()
-        .is_none()
+        .latest_checkpoint()
+        .is_some_and(|checkpoint| checkpoint.directory.is_some())
     {
         restored
             .index_authority()

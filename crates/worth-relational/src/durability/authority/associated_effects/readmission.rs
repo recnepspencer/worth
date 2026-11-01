@@ -24,9 +24,9 @@ impl DurabilityAuthority<'_> {
             .ok_or(Refusal::OwnerUnavailable)?;
         let source = subject.source.upgrade().ok_or(Refusal::OwnerUnavailable)?;
         let (entry, actual_source) = residency
-            .journal_placement()
+            .source_placement()
             .ok_or(Refusal::CatalogSubjectChanged)?;
-        if entry.as_ref() != subject.entry.as_ref() || !Arc::ptr_eq(&actual_source, &source) {
+        if !entry.same_owner(&subject.entry) || !Arc::ptr_eq(&actual_source, &source) {
             return Err(Refusal::CatalogSubjectChanged);
         }
         let current = self
@@ -46,13 +46,9 @@ impl DurabilityAuthority<'_> {
                 .is_some_and(|actual| Arc::ptr_eq(&actual, &residency)) => {}
             _ => return Err(Refusal::CatalogSubjectChanged),
         }
-        let positioned = RelationalCommitEnvelopeResidency::readmit_positioned(
-            &subject.entry,
-            source.as_ref(),
-            execution,
-            1 << 30,
-        )
-        .map_err(Refusal::Recovery)?;
+        let positioned = residency
+            .demand_positioned(execution, 1 << 30)
+            .map_err(Refusal::Recovery)?;
         if positioned.envelope().caller_association() != subject.association()
             || subject.association().is_none()
         {

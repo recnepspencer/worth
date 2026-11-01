@@ -65,7 +65,9 @@ pub(super) fn start(
             Ok(())
         }
         AnchoredRecordPublicationStart::AlreadyPublished(receipt) => {
-            attempt.selected(receipt.membership().clone());
+            let (AnchoredRecordPublished::Published(membership)
+            | AnchoredRecordPublished::AlreadyPublished(membership)) = receipt;
+            attempt.selected(membership);
             Ok(())
         }
         AnchoredRecordPublicationStart::Refused(cause) => Err(Denial::PhysicalPublication(cause)),

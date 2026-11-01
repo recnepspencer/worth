@@ -100,7 +100,7 @@ impl RecoveredRootInventory {
                     .ok_or_else(|| corrupt("recorded component has no actual catalog source"))?;
                 let (entry, source) = artifact
                     .envelope_residency()
-                    .journal_placement()
+                    .source_placement()
                     .ok_or_else(|| corrupt("recorded component has no durable source"))?;
                 if !Arc::ptr_eq(&source, &directory.source)
                     || entry.commit != *target.receipt()
@@ -110,13 +110,9 @@ impl RecoveredRootInventory {
                 {
                     return Err(corrupt("recorded component source mismatch").into());
                 }
-                let positioned =
-                    crate::history::RelationalCommitEnvelopeResidency::readmit_positioned(
-                        &entry,
-                        source.as_ref(),
-                        execution,
-                        1 << 30,
-                    )?;
+                let positioned = artifact
+                    .envelope_residency()
+                    .demand_positioned(execution, 1 << 30)?;
                 let schema = regions
                     .schemas
                     .get(&header.schema_carrier_digest)

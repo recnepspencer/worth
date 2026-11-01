@@ -39,6 +39,23 @@ impl RelationalDurableColdSource for super::TestDurableMedium {
             snapshot,
         ))
     }
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableReadPayload,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        let journal = self.journal();
+        worth_testkit_relational::durable_medium::OwnedNativeReadSnapshot::capture(
+            request,
+            std::iter::empty(),
+            std::iter::empty(),
+            &journal.checkpoint_members,
+        )
+        .map(|original| original as crate::durability::medium::RelationalDurableReadPayload)
+        .map_err(owned_failure)
+    }
     fn read_commit_owned(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -95,6 +112,50 @@ impl RelationalDurableColdSource for super::TestDurableMedium {
         snapshot
             .member(request, locator.sha256, locator.length, limit)
             .map_err(owned_failure)
+    }
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        // These actual immutable payloads own bytes/metadata only, with no physical pin or registration.
+        if original.is::<()>()
+            || original.is::<worth_testkit_relational::durable_medium::OwnedNativeReadSnapshot>()
+        {
+            Ok(())
+        } else {
+            Err(crate::durability::medium::RelationalDurableMemberRetirementRefusal::ForeignCustody)
+        }
+    }
+    fn advance_member_custody_retirement(
+        &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        match self.validate_member_custody_retirement(original) {
+            Ok(()) => {
+                crate::durability::medium::RelationalDurableMemberRetirementObservation::Complete
+            }
+            Err(cause) => {
+                crate::durability::medium::RelationalDurableMemberRetirementObservation::Refused(
+                    cause,
+                )
+            }
+        }
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        crate::durability::medium::RelationalDurableMemberCustody::try_new_from_source_for_request(
+            issuer,
+            request,
+            || Ok(()),
+        )
     }
     fn retain_members(
         &self,

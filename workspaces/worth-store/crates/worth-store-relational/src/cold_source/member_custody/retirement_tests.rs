@@ -1,13 +1,14 @@
 //! Exact three private tests authorized by the M3 cold member prerequisite.
 use super::*;
 use crate::cold_source::StoreColdSource;
+use std::collections::BTreeMap;
 use std::{
     any::Any,
     sync::atomic::{AtomicBool, Ordering},
 };
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::durability::{
-    RelationalDurableColdSource, RelationalDurableMemberCustody,
+    RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
     RelationalDurableMemberRetirement as Task, RelationalDurableMemberRetirementObservation as O,
     RelationalDurableMemberRetirementRefusal as R,
 };
@@ -18,7 +19,15 @@ fn request(cancellation: &CancellationSource) -> SerialRequest {
     SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None)
 }
 fn counts(source: &StoreColdSource) -> BTreeMap<RelationalDurableMemberLocator, usize> {
-    source.custody.state.read().unwrap().counts.clone()
+    source
+        .custody
+        .state
+        .read()
+        .unwrap()
+        .counts
+        .iter()
+        .map(|(key, value)| (*key, *value))
+        .collect()
 }
 fn finish(task: &mut Task, execution: &ExecutionRequest<'_, '_>, source: &StoreColdSource) {
     loop {
@@ -51,7 +60,13 @@ fn selected_directory_guard_retirement_preserves_partial_custody_and_cold_reads(
         task.advance(&execution, fixture.source.as_ref()),
         O::Busy
     ));
-    assert_eq!(held.counts, registered);
+    assert_eq!(
+        held.counts
+            .iter()
+            .map(|(key, value)| (*key, *value))
+            .collect::<BTreeMap<_, _>>(),
+        registered
+    );
     drop(held);
     assert!(matches!(
         task.advance(&execution, fixture.source.as_ref()),

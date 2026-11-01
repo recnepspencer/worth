@@ -1020,6 +1020,42 @@
       ],
       "audit": "Coordinator exact private Memory-original-frame owner placement ruling against b9575d36de and corrected scalar-observation ruling9a602c9a1c. Only this named owner unit and exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine producer fixtures/prepare-publication ports are reused; no new Runtime factory, authority getter, validator bypass or Noop is authorized.",
       "private_subject": "Uses the genuine durable runtime and attached medium to inspect actual Journal placement and absence of Memory-only retained frame; preserves the existing original Journal route."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/journal_tests.rs",
+      "test": "section::checkpoint::journal_tests::journal_checkpoint_selection_rehomes_covered_history_and_preserves_uncovered_tail",
+      "constructors": [
+        "test_store::initialize",
+        "StoreJournalMedium::new",
+        "RelationalRuntimeApi::builder",
+        "runtime"
+      ],
+      "audit": "Coordinator exact real Store/Native composition-root placement ruling for strict CHK18 against b95b013237 and controlled custody6505a75d09. Only this named filesystem journey and observed ExecutionRequest/SerialRequest/RelationalRuntime file row are admitted. Existing real FS/StoreJournalMedium/runtime builder chain is reused; no fake original source, Noop, validator bypass or family-wide runtime factory audience. The journey is placed under the actual section/checkpoint owner to reuse private production admission without widening production helpers; only the existing cfg(test) physical initialization helper receives this exact additional crate-local caller. The local runtime helper has only this exact named journey as its caller; both producer and fresh reader use the real StoreJournalMedium and original source.",
+      "private_subject": "Actual producer frames and physical home selection/EOF receipt drive the original native capture ACK and fresh recovery. Covered journal records are made genuinely inaccessible in fixture family extents, checkpoint member bytes remain intact, and nonempty tails use their original journal. Source identity, original pending subject and full artifact/root predicates stay real; this is not Complete/Home2 evidence."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs",
+      "test": "durability::data::native_checkpoint::tests::selected_ack::selected_ack_partial_transfer_preserves_later_cells_and_resumes_same_capture",
+      "constructors": [
+        "durable_runtime_with_test_schema",
+        "attached_test_medium",
+        "create_entity_outcome",
+        "create_entity"
+      ],
+      "audit": "Coordinator exact original-checkpoint-owner child placement ruling for strict CHK18 against b95b013237 and6505a75d09. Only these two named owner controls and the exact ExecutionRequest/SerialRequest leaf are admitted. Existing genuine producer medium/runtime helpers are reused; no replacement operation, new Runtime factory, production test getter, Noop or performed-authority fabrication.",
+      "private_subject": "Genuine external-member capture and its original publication Arc transfer only frozen covered cells; a real work stop retains the same captured operation and later cells stay untouched before successful resume."
+    },
+    {
+      "source": "crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs",
+      "test": "durability::data::native_checkpoint::tests::selected_ack::selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion",
+      "constructors": [
+        "durable_runtime_with_test_schema",
+        "attached_test_medium",
+        "create_entity_outcome",
+        "create_entity"
+      ],
+      "audit": "Coordinator exact original-checkpoint-owner child placement ruling for strict CHK18 against b95b013237 and6505a75d09. Only these two named owner controls and the exact ExecutionRequest/SerialRequest leaf are admitted. Existing genuine producer medium/runtime helpers are reused; no replacement operation, new Runtime factory, production test getter, Noop or performed-authority fabrication.",
+      "private_subject": "Actual captured directory becomes available as data before displaced original read/member retirement completes; interrupted ACK retains the same original publication and component obligations until final completion. A real definition registered after the last covered canonical commit makes the captured frontier strictly newer; while ACK is stopped after data exposure, a genuine later canonical commit must still declare that pending definition. Only completed original ACK advances accepted catalog coverage."
     }
   ]
 }

@@ -14,7 +14,7 @@ use crate::storage::overlay::{PartitionContentCommitment, PartitionContentDigest
 use crate::symbols::data::StringInterner;
 
 #[derive(Debug, Clone)]
-pub(super) struct RecordedRegionCheckpoint {
+pub(crate) struct RecordedRegionCheckpoint {
     pub(super) leaf: RelationalCheckpointRegion,
     pub(super) history_members: Arc<RelationalHistoryMemberDirectory>,
 }
@@ -27,13 +27,18 @@ pub(crate) struct RelationalCheckpointRegionPublication {
 }
 
 impl RelationalCheckpointRegionPublication {
-    pub(crate) fn acknowledge(&self) {
-        if let Some(cell) = self.cell.upgrade() {
-            cell.checkpoint_bindings
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .insert(self.schema_digest, self.recorded.clone());
-        }
+    pub(crate) fn try_acknowledge(&self) -> Result<Option<RecordedRegionCheckpoint>, ()> {
+        let Some(cell) = self.cell.upgrade() else {
+            return Ok(None);
+        };
+        let mut bindings = match cell.checkpoint_bindings.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        let displaced = bindings.insert(self.schema_digest, self.recorded.clone());
+        drop(bindings);
+        Ok(displaced)
     }
 }
 

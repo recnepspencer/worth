@@ -46,6 +46,24 @@ fn ordinary_occurrences_reopen_original_history_after_later_native_advance() {
     let mut expected = bootstrap.product_branch().clone();
     drop(bootstrap);
     let cancellation = RuntimeWorldCancellationSource::new();
+    // Copy every public field of pure original meaning, retaining no live
+    // result, Native owner or source custody across the filesystem restart.
+    let semantics =
+        |value: &worth_relational::facade::transactions::RelationalCommitSemanticResult| {
+            (
+                value.receipt().clone(),
+                value.created_entities().to_vec(),
+                value.created_relations().to_vec(),
+                value.changed_records().to_vec(),
+                value.structural().clone(),
+                value.schema().clone(),
+                value.history().clone(),
+                value.change().clone(),
+                value.aspects().clone(),
+                value.publication().clone(),
+                value.validation().to_vec(),
+            )
+        };
     let mut originals = Vec::new();
     for round in 0..2 {
         let prepared = fixture.prepare_publication(
@@ -70,7 +88,7 @@ fn ordinary_occurrences_reopen_original_history_after_later_native_advance() {
                 performed.commit().identity().ordinal(),
             ),
             performed.attempt_identity().ordinal(),
-            native.semantic_result().clone(),
+            semantics(native.semantic_result()),
             native.patch_position(),
         ));
         let mut consumed = performed.consume();
@@ -165,7 +183,7 @@ fn ordinary_occurrences_reopen_original_history_after_later_native_advance() {
             index as u64 + 1
         );
         assert_eq!(original.attempt_identity().ordinal(), *attempt);
-        assert_eq!(original.semantic_result(), semantic);
+        assert_eq!(&semantics(original.semantic_result()), semantic);
         assert_eq!(original.native_patch_position(), *position);
         assert_eq!(original.journal_position(), index as u64 + 1);
         assert_eq!(original.admitted_incarnation(), fixture.home.incarnation());

@@ -291,7 +291,7 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
         .entity_aspect_history(&execution, &branch, entity, None)
         .unwrap();
     assert_eq!(exact_history.len(), expected_history.len() + 1);
-    let artifacts = crate::workload::artifacts_of(home.relational().runtime());
+    let artifacts = crate::workload::artifacts_of(&execution, home.relational().runtime());
     assert!(matches!(
         home.close(&execution),
         ApplicationHomeCloseOutcome::Closed {
@@ -301,7 +301,7 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
     ));
     let home = crate::durable_run::open(directory.path(), &execution).unwrap();
     assert_eq!(
-        crate::workload::artifacts_of(home.relational().runtime()),
+        crate::workload::artifacts_of(&execution, home.relational().runtime()),
         artifacts
     );
     assert_eq!(
@@ -337,7 +337,7 @@ fn known_checkpoint_failure_allows_close_and_reopen_preserves_the_journal_tail()
         .snapshots()
         .release_snapshot(&committed.snapshot)
         .unwrap();
-    let expected = crate::workload::artifacts_of(home.relational().runtime());
+    let expected = crate::workload::artifacts_of(&execution, home.relational().runtime());
     let closing = SerialRequest::from_memory(
         SerialMemoryBudget::new(Some(0)),
         CancellationSource::new().token(),
@@ -351,7 +351,7 @@ fn known_checkpoint_failure_allows_close_and_reopen_preserves_the_journal_tail()
     }
     let home = crate::durable_run::open(directory.path(), &execution).unwrap();
     assert_eq!(
-        crate::workload::artifacts_of(home.relational().runtime()),
+        crate::workload::artifacts_of(&execution, home.relational().runtime()),
         expected
     );
     assert!(matches!(

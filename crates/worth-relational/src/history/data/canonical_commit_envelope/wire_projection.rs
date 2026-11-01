@@ -8,6 +8,7 @@ use serde::ser::SerializeStruct;
 pub(crate) enum EnvelopeProjection {
     Full,
     Authoritative,
+    #[cfg(test)]
     Checkpoint,
 }
 pub(super) fn serialize<S: serde::Serializer>(

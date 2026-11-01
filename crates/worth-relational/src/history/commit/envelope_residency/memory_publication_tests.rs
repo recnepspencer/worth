@@ -50,7 +50,7 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     let before = budget.charged_memory_bytes();
     let exported = runtime
         .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
+        .canonical_commit_artifacts(&execution)
         .next()
         .unwrap()
         .unwrap();
@@ -69,7 +69,7 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
         .starts_with(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC));
     let again = runtime
         .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
+        .canonical_commit_artifacts(&execution)
         .next()
         .unwrap()
         .unwrap();
@@ -246,7 +246,7 @@ fn memory_frame_layout_preserves_scalar_tuple_observations() {
     );
     assert!(artifact.envelope_residency().payload_storage_bytes() > bytes.len() as u64);
     let cell = artifact.envelope_residency();
-    let original = cell.export_artifact(execution.allocation_policy()).unwrap();
+    let original = cell.export_artifact(&execution).unwrap();
     assert_ne!(
         original.payload_digest().as_bytes(),
         &artifact.canonical_payload_digest().unwrap()
@@ -314,8 +314,10 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
         .unwrap()
         .envelope_residency();
     let (entry, source) = cell.journal_placement().unwrap();
+    // Descriptive OLD-layout value only, outside funding/no-copy claims.
+    // Its exact historical Arc<Entry> type remains independent of the new owner.
     let old = OldBacking::Journal {
-        entry: entry.clone(),
+        entry: Arc::new(entry.as_ref().clone()),
         source: source.clone(),
         unsettled: None,
     };
@@ -327,12 +329,13 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
     {
         drop((entry, source, unsettled));
     }
+    assert!(entry.same_owner(&cell.journal_placement().unwrap().0));
     assert!(cell.resident_payload_bytes().is_none());
     assert_eq!(cell.payload_storage_bytes(), 0);
     let original = attached_test_medium(&runtime)
         .artifact_bytes(entry.position)
         .unwrap();
-    let exported = cell.export_artifact(execution.allocation_policy()).unwrap();
+    let exported = cell.export_artifact(&execution).unwrap();
     assert_eq!(exported.as_bytes(), original.as_ref());
     assert!(Arc::ptr_eq(
         &source,

@@ -9,7 +9,7 @@ use super::{
     RelationalDurableMediumBinding, RelationalDurableStepStop,
 };
 use crate::history::data::PositionedCanonicalCommit;
-use crate::history::RelationalCommitIndexEntry;
+use crate::history::RetainedCanonicalIndex;
 
 pub(crate) enum RelationalCommitPublication {
     MemoryOnly {
@@ -41,12 +41,15 @@ impl RelationalCommitPublication {
         roots: &crate::branch::RelationalBranchRootDescriptor,
         medium: Option<&RelationalDurableMediumBinding>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         original: Option<
             crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact,
         >,
     ) -> Result<Self, RelationalDurableStepStop> {
         match medium {
-            Some(medium) => medium.publish(positioned, roots, policy).map(Self::Durable),
+            Some(medium) => medium
+                .publish(positioned, roots, policy, execution)
+                .map(Self::Durable),
             None => Ok(Self::MemoryOnly {
                 positioned,
                 original: original.expect(
@@ -62,10 +65,7 @@ impl RelationalCommitPublication {
         self,
         apply: impl FnOnce(
             Arc<PositionedCanonicalCommit>,
-            Option<(
-                RelationalCommitIndexEntry,
-                Arc<dyn RelationalDurableColdSource>,
-            )>,
+            Option<(RetainedCanonicalIndex, Arc<dyn RelationalDurableColdSource>)>,
             Option<worth_execution::ExecutionImmutableBytes>,
         ) -> Output,
     ) -> Output {

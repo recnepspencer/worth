@@ -77,6 +77,7 @@ fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
         positioned,
         artifact.roots(),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        execution,
     );
 
     assert!(matches!(

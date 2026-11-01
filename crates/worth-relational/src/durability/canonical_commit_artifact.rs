@@ -19,7 +19,8 @@
 //! authoritative envelope projection. The position is inside the digested
 //! payload so a rewritten header position cannot pass readmission.
 
-mod borrowed_payload;
+pub(crate) mod borrowed_payload;
+#[cfg(test)]
 mod checkpoint_body;
 mod decoded_quote;
 mod encode_denial;

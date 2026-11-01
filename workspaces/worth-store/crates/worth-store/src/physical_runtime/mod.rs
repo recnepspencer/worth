@@ -392,3 +392,6 @@ pub mod production {
 pub use worth_store_physical_backend::{
     BackendCapabilityAdmissionDenial, PhysicalDurabilityAdmissionBasis,
 };
+
+// Existing public physical retirement errors already carry this nested cause.
+pub use worth_store_buffer_pool::PhysicalResidencyRetirementDenial;

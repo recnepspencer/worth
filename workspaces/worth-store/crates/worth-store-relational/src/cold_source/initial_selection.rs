@@ -45,6 +45,49 @@ impl StoreColdSource {
         let mut built = selection::build(membership.members(), |map, key, value| {
             map.insert_cloned_native_for_request(key, value, *request)
         })?;
+        self.install_initial_built(selected, &mut built, request)
+    }
+
+    /// Reuse the SAME verified read and its actual prepared map across ACK
+    /// Busy/stop. All original initial-state checks remain the one authority.
+    pub(in crate::cold_source) fn install_initial_built(
+        &self,
+        selected: &AnchoredRecordReadMembership,
+        built: &mut selection::MemberMap,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        let records = self
+            .serving
+            .anchored_records()
+            .map_err(Denial::Unavailable)?;
+        let membership = records
+            .validate_read_membership(selected)
+            .map_err(Denial::Read)?;
+        let version = membership.version();
+        if version.name() != AnchoredRecordName::new("home.checkpoint").expect("static anchor") {
+            return Err(Denial::ForeignAnchor);
+        }
+        // This private handoff accepts only the complete actual table image,
+        // including duplicate-content rows mapped to one real listed index.
+        for member in membership.members() {
+            request.consult().map_err(Denial::Execution)?;
+            let key = worth_relational::facade::durability::RelationalDurableMemberLocator {
+                sha256: member.sha256(),
+                length: member.length(),
+            };
+            if !built.contains_key(&key) {
+                return Err(Denial::DifferentSelection);
+            }
+        }
+        for (key, placed) in built.iter() {
+            request.consult().map_err(Denial::Execution)?;
+            if membership.members().get(placed.index) != Some(&placed.locator)
+                || placed.locator.sha256() != key.sha256
+                || placed.locator.length() != key.length
+            {
+                return Err(Denial::DifferentSelection);
+            }
+        }
         // No I/O, allocation, physical-share loss, or nonempty old-map disposal
         // occurs under custody -> placement. On refusal `built` drops outside.
         self.custody
@@ -55,7 +98,7 @@ impl StoreColdSource {
                     Denial::Execution(worth_execution::WorkCeilingDenial::Stopped(cause))
                 })?;
                 if !retry {
-                    std::mem::swap(&mut current.entries, &mut built);
+                    std::mem::swap(&mut current.entries, built);
                     current.read = Some(selected.clone());
                     current.version = Some(version);
                 }

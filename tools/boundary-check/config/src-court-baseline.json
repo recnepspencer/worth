@@ -3051,5 +3051,12 @@
 {"source":"crates/worth-relational/src/durability/log/native_checkpoint_codec/member_source/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/tests/support/durable_medium/cold_source.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
-{"source":"crates/worth-execution/src/storage/ordered/unique/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+{"source":"crates/worth-relational/src/durability/checkpoint_history/inventory/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/history/commit/retained_index/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"workspaces/worth-store/crates/worth-store-relational/src/cold_source/selected_replacement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-execution/src/storage/ordered/unique/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/journal_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest","RelationalRuntime"]},
+{"source":"crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/history/data/canonical_commit_envelope/semantic_patch_fixture.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-relational/src/durability/canonical_commit_artifact/checkpoint_body.rs","module":"file","roots":["ExecutionRequest"]}
 ]

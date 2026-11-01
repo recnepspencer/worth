@@ -4,7 +4,6 @@ use super::member_source::InlineCheckpointSource;
 use super::{DecodedNativeCheckpoint, DurabilityError, RecoveryFailureClass};
 use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
-use std::collections::BTreeMap;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
@@ -32,60 +31,82 @@ pub(crate) fn decode_checkpoint_from_source(
             ),
         )
     })?;
-    let wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
+    let memory =
+        crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
+    let _member_memory = super::member_sequence::reserve(payload, execution)?;
+    let mut wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
         .map_err(|error| corrupt(format!("native manifest: {error}")))?;
+    if let Err(memory) = wire.manifest.canonical_members.attach(memory) {
+        drop(wire);
+        drop(memory);
+        return Err(corrupt("canonical inventory shared before original admission").into());
+    }
+    crate::durability::checkpoint_history::inventory::validate(&wire.manifest, execution)?;
     let facts = super::manifest_validation::validate(&wire.manifest)?;
-    let mut inline = None;
-    let source: Arc<dyn RelationalDurableColdSource> = if wire.members.is_empty()
-        && wire.envelopes.is_empty()
-    {
+    let inline = !wire.members.is_empty();
+    let source: Arc<dyn RelationalDurableColdSource> = if !inline {
         external.ok_or_else(|| corrupt("external checkpoint requires its cold source"))?
     } else {
-        let mut members = BTreeMap::new();
+        let mut members = worth_execution::ExecutionOrderedMap::default();
+        let mut external_members = worth_execution::ExecutionOrderedMap::<
+            crate::durability::medium::RelationalDurableMemberLocator,
+            (),
+        >::default();
         for (locator, bytes) in wire.members {
             if super::member_frame::locator(bytes.0) != locator
-                || members
-                    .insert(
-                        locator,
-                        worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
-                            bytes.0.to_vec().into_boxed_slice(),
-                        )),
-                    )
-                    .is_some()
+                || members.contains_key(&locator)
+                || external_members.contains_key(&locator)
             {
                 return Err(
                     corrupt("inline checkpoint member digest or uniqueness mismatch").into(),
                 );
             }
-        }
-        let mut envelopes = BTreeMap::new();
-        let mut admitted = BTreeMap::new();
-        for bytes in wire.envelopes {
-            let commit = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit_embedded_checkpoint(bytes.0, None, execution)
-                .map_err(super::cold_checkpoint::artifact_stop)?;
-            let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_positioned(
-                &commit, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-                .map_err(|error| corrupt(format!("inline checkpoint journal projection: {error:?}")))?;
-            if envelopes
-                .insert(commit.position(), Arc::<[u8]>::from(artifact.as_bytes()))
-                .is_some()
-                || admitted.insert(commit.position(), commit).is_some()
-            {
-                return Err(corrupt("duplicate inline checkpoint envelope position").into());
+            if external.is_some() {
+                // Validate every inline original, but do not copy bytes when the
+                // actual supplied issuer can admit its installed selected read.
+                external_members
+                    .insert_cloned_native_for_request(&locator, &(), *execution)
+                    .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+                continue;
             }
+            let mut owned = worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(
+                *execution,
+                bytes.0.len(),
+            )
+            .map_err(|cause| {
+                RelationalRecoveryStop::from(
+                    crate::durability::checkpoint_history::capture::array_capture_stop(cause),
+                )
+            })?;
+            owned.extend_from_slice(bytes.0).map_err(|cause| {
+                RelationalRecoveryStop::from(
+                    crate::durability::checkpoint_history::capture::array_capture_stop(cause),
+                )
+            })?;
+            let owned = owned
+                .seal()
+                .map_err(|cause| {
+                    RelationalRecoveryStop::from(
+                        crate::durability::checkpoint_history::capture::array_capture_stop(cause),
+                    )
+                })?
+                .into_immutable_bytes();
+            members
+                .insert_cloned_native_for_request(&locator, &owned, *execution)
+                .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
         }
-        inline = Some(admitted);
-        Arc::new(InlineCheckpointSource { members, envelopes })
+        match external {
+            // Directory admission below still REQUIRES the actual installed
+            // selected read and full member custody; an Arc alone grants none.
+            Some(source) => source,
+            None => Arc::new(InlineCheckpointSource { members }),
+        }
     };
-    let checkpoint = match inline {
-        Some(envelopes) => super::expanded_checkpoint::expand(
-            execution,
-            wire.manifest,
-            source,
-            Some(envelopes),
-            facts.history_members,
-        )?,
-        None => super::cold_checkpoint::readmit(execution, wire.manifest, source, facts)?,
+    drop(_member_memory); // The borrowed wire member table has now been consumed.
+    let checkpoint = if inline {
+        super::expanded_checkpoint::expand(execution, wire.manifest, source, facts.history_members)?
+    } else {
+        super::cold_checkpoint::readmit(execution, wire.manifest, source, facts)?
     };
     Ok(DecodedNativeCheckpoint { checkpoint })
 }

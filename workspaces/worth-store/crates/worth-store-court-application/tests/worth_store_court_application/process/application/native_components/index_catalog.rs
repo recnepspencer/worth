@@ -125,7 +125,7 @@ fn tail_only_directory_reopen_preserves_catalog_ids_duplicates_allocator_and_der
         .snapshots()
         .release_snapshot(&second.snapshot)
         .unwrap();
-    let artifacts = crate::workload::artifacts_of(runtime);
+    let artifacts = crate::workload::artifacts_of(execution, runtime);
     let states = crate::workload::states_of(runtime, std::slice::from_ref(&record));
     // This fresh home has never requested a checkpoint. Independently inspect
     // its actual anchored record, then destroy the original runtime/OS owner.
@@ -153,7 +153,7 @@ fn tail_only_directory_reopen_preserves_catalog_ids_duplicates_allocator_and_der
     }
     assert_eq!(lookup.candidate_count_for_name("equal-duplicates"), 2);
     assert_eq!(
-        crate::workload::artifacts_of(runtime),
+        crate::workload::artifacts_of(execution, runtime),
         artifacts,
         "original positioned canonical bytes"
     );
@@ -268,7 +268,7 @@ fn failed_checkpoint_cannot_acknowledge_catalog_before_a_later_actual_journal_co
         .snapshots()
         .release_snapshot(&committed.snapshot)
         .unwrap();
-    let original = crate::workload::artifacts_of(runtime);
+    let original = crate::workload::artifacts_of(execution, runtime);
     drop((seed, committed, home));
     let reopened = crate::durable_run::open(directory.path(), execution).unwrap();
     assert_eq!(
@@ -280,7 +280,7 @@ fn failed_checkpoint_cannot_acknowledge_catalog_before_a_later_actual_journal_co
         Some(installed)
     );
     assert_eq!(
-        crate::workload::artifacts_of(reopened.relational().runtime()),
+        crate::workload::artifacts_of(execution, reopened.relational().runtime()),
         original
     );
     drop(reopened);

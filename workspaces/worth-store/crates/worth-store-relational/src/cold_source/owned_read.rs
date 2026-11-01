@@ -64,30 +64,34 @@ impl StoreColdSource {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<ExecutionImmutableBytes, Refusal> {
-        let cut = self.validate_native_read(original)?;
         if locator.length > limit {
             return Err(Refusal::Storage(Cause::LimitExceeded {
                 length: locator.length,
                 limit,
             }));
         }
-        self.member_reads.fetch_add(1, super::Ordering::Relaxed);
-        let membership = cut
-            .membership
-            .as_ref()
-            .ok_or(Refusal::Storage(Cause::MissingMember))?;
-        let member = membership
-            .member(locator.sha256, locator.length)
-            .ok_or(Refusal::Storage(Cause::MissingMember))?;
-        let records = self
-            .serving
-            .anchored_records()
-            .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?;
-        let mut stream = records
-            .open_protected_member(&cut.reader, membership, member, limit)
-            .map_err(|failure| {
-                Refusal::Storage(super::member_read::member_failure(failure, limit))
-            })?;
+        let mut stream = if let Some(stream) =
+            self.open_selected_owned_member(request, original, locator, limit)?
+        {
+            stream
+        } else {
+            let cut = self.validate_native_read(original)?;
+            self.member_reads.fetch_add(1, super::Ordering::Relaxed);
+            let membership = cut
+                .membership
+                .as_ref()
+                .ok_or(Refusal::Storage(Cause::MissingMember))?;
+            let member = membership
+                .member(locator.sha256, locator.length)
+                .ok_or(Refusal::Storage(Cause::MissingMember))?;
+            self.serving
+                .anchored_records()
+                .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
+                .open_protected_member(&cut.reader, membership, member, limit)
+                .map_err(|failure| {
+                    Refusal::Storage(super::member_read::member_failure(failure, limit))
+                })?
+        };
         let length = usize::try_from(locator.length)
             .map_err(|_| Refusal::Storage(Cause::MemoryExhausted))?;
         let mut builder = ExecutionRequestArrayBuilder::<u8>::allocate(*request, length)

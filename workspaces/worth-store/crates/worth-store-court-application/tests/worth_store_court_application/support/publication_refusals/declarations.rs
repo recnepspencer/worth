@@ -68,7 +68,7 @@ pub(crate) fn assert_published_nothing(
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) {
-    let live = crate::workload::artifacts_of(home.relational().runtime());
+    let live = crate::workload::artifacts_of(execution, home.relational().runtime());
     assert_eq!(live.len(), held, "{case}: live");
     if let Some(last) = live.last() {
         // Any commit's digest probes whether the next position is occupied.
@@ -85,7 +85,7 @@ pub(crate) fn assert_published_nothing(
     home.close(execution);
     let home = open(location, execution).expect("the home reopens");
     assert_eq!(
-        crate::workload::artifacts_of(home.relational().runtime()).len(),
+        crate::workload::artifacts_of(execution, home.relational().runtime()).len(),
         held,
         "{case}: reopened"
     );

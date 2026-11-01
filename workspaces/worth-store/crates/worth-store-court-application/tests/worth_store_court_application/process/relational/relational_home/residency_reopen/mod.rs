@@ -124,8 +124,8 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         .restore_native_checkpoint(&execution, &embedded)
         .unwrap();
     assert_eq!(
-        crate::workload::artifacts_of(&receiving),
-        crate::workload::artifacts_of(home.relational().runtime())
+        crate::workload::artifacts_of(&execution, &receiving),
+        crate::workload::artifacts_of(&execution, home.relational().runtime())
     );
     assert_eq!(
         crate::workload::states_of(&receiving, std::slice::from_ref(&record)),
@@ -225,12 +225,12 @@ fn a_cold_first_commit_on_a_fork_preserves_reference_artifacts_and_record_identi
         );
         crate::durable_run::apply(&home, &execution, &script.steps[target..target + 1]);
         crate::durable_run::assert_reference_artifacts(
-            &crate::workload::artifacts_of(home.relational().runtime()),
+            &crate::workload::artifacts_of(&execution, home.relational().runtime()),
             &script,
             &format!("cold fork seed {seed:#x}"),
         );
         crate::durable_run::apply(&home, &execution, &script.steps[target + 1..]);
-        crate::durable_run::assert_holds(&home, &script, &script.artifacts);
+        crate::durable_run::assert_holds(&execution, &home, &script, &script.artifacts);
         home.close(&execution);
     }
 }

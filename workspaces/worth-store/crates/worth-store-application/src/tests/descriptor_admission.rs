@@ -27,7 +27,7 @@ fn changed_implementation_build_preserves_authored_binding_and_exact_durable_his
     let build = ApplicationBuildIdentity::parse("22222222-2222-4222-8222-222222222222").unwrap();
     assert_ne!(home.build_identity(), build);
     super::native_schema::commit(home.relational().runtime(), &execution, "original-build");
-    let before = super::native_schema::artifacts(home.relational().runtime());
+    let before = super::native_schema::artifacts(&execution, home.relational().runtime());
     assert!(matches!(
         home.close(&execution),
         ApplicationHomeCloseOutcome::Closed { .. }
@@ -41,7 +41,7 @@ fn changed_implementation_build_preserves_authored_binding_and_exact_durable_his
     assert_eq!(home.binding(), &binding);
     assert_eq!(home.build_identity(), build);
     assert_eq!(
-        super::native_schema::artifacts(home.relational().runtime()),
+        super::native_schema::artifacts(&execution, home.relational().runtime()),
         before
     );
     assert!(matches!(

@@ -1,22 +1,25 @@
 //! Capture and placement preparation, retaining the actual selection fence.
 use super::RelationalStoreSection;
-use std::collections::BTreeMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 use worth_relational::facade::durability::{
-    RelationalCheckpointArtifactPolicy, RelationalCheckpointMember, RelationalNativeCheckpoint,
+    RelationalCheckpointArtifactPolicy, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial,
 };
 use worth_store::physical_runtime::{AnchoredRecordMember, AnchoredRecordMemberLocator};
+
+mod members;
 
 #[derive(Debug)]
 pub enum RelationalSectionCheckpointDenial {
     Capture(RelationalNativeCheckpointCaptureDenial),
     Execution(WorkCeilingDenial),
     MalformedSection,
+    ReadProtection(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal),
     MemberSelection(crate::RelationalStoreMemberSelectionDenial),
     StaleCapture,
     MissingCarriedMember,
     SizeLimit,
+    Allocation(std::collections::TryReserveError),
     Acknowledgement(
         worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial,
     ),
@@ -60,6 +63,7 @@ pub struct PreparedRelationalSection {
     bytes: Vec<u8>,
     _memory: Option<ExecutionMemoryReservation>,
     selection: Option<std::sync::Arc<dyn super::RelationalCheckpointSelectionSource>>,
+    replacement: std::sync::Mutex<crate::cold_source::selected_replacement::SelectedReplacement>,
 }
 
 /// Lifetime-only transport to an accepted physical step. No publication or
@@ -86,7 +90,9 @@ pub(super) fn prepare(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<PreparedRelationalSection, RelationalSectionCheckpointDenial> {
     use RelationalSectionCheckpointDenial as Denial;
-    let members = source.member_locators();
+    let members = source
+        .member_locators_for_request(execution)
+        .map_err(Denial::ReadProtection)?;
     let checkpoint = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
@@ -132,8 +138,11 @@ pub(crate) fn prepare_captured(
         .map_err(|stop| Denial::Execution(WorkCeilingDenial::Stopped(stop)))?
         .ok_or(Denial::MalformedSection)?;
     let retained = source
-        .protect_member_selection(checkpoint.members().iter().map(|member| member.locator()))
-        .map_err(|_| Denial::MissingCarriedMember)?;
+        .protect_member_selection_for_request(
+            checkpoint.members().iter().map(|member| member.locator()),
+            execution,
+        )
+        .map_err(Denial::ReadProtection)?;
     Ok(PreparedRelationalSection {
         checkpoint,
         source: source.clone(),
@@ -141,6 +150,7 @@ pub(crate) fn prepare_captured(
         bytes,
         _memory: memory,
         selection: None,
+        replacement: Default::default(),
     })
 }
 
@@ -206,78 +216,7 @@ impl PreparedRelationalSection {
         ),
         RelationalSectionCheckpointDenial,
     > {
-        use RelationalSectionCheckpointDenial as Denial;
-        let old = previous
-            .iter()
-            .map(|member| ((member.sha256(), member.length()), *member))
-            .collect::<BTreeMap<_, _>>();
-        let size = self
-            .checkpoint
-            .members()
-            .iter()
-            .try_fold(0_u64, |size, member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => {
-                    if old.contains_key(&(locator.sha256, locator.length)) {
-                        Some(size)
-                    } else {
-                        size.checked_add(bytes.len() as u64)
-                    }
-                }
-                RelationalCheckpointMember::Carried { .. } => Some(size),
-            })
-            .ok_or(Denial::SizeLimit)?;
-        let memory = execution
-            .reserve_retained_memory(size)
-            .map_err(Denial::Execution)?;
-        let (prepared, _) = execution
-            .run_native_with_checkpoint(|context| {
-                let mut members = BTreeMap::new();
-                for member in self.checkpoint.members() {
-                    if context.has_accounting() {
-                        context.checkpoint(1)?;
-                    } else {
-                        context.poll()?;
-                    }
-                    let key = member.locator();
-                    let placed = if let Some(locator) = old.get(&(key.sha256, key.length)) {
-                        AnchoredRecordMember::Carried { locator: *locator }
-                    } else {
-                        match member {
-                            RelationalCheckpointMember::New { locator, bytes } => {
-                                if context.has_accounting() {
-                                    context.checkpoint(bytes.len() as u64)?;
-                                }
-                                AnchoredRecordMember::New {
-                                    key: locator.sha256,
-                                    bytes: bytes.to_vec(),
-                                }
-                            }
-                            RelationalCheckpointMember::Carried { .. } => {
-                                return Ok(Err(Denial::MissingCarriedMember))
-                            }
-                        }
-                    };
-                    members.insert(key, placed);
-                }
-                for key in self.retained.member_locators() {
-                    if context.has_accounting() {
-                        context.checkpoint(1)?;
-                    } else {
-                        context.poll()?;
-                    }
-                    if let std::collections::btree_map::Entry::Vacant(entry) = members.entry(key) {
-                        let Some(locator) = old.get(&(key.sha256, key.length)) else {
-                            return Ok(Err(Denial::MissingCarriedMember));
-                        };
-                        entry.insert(AnchoredRecordMember::Carried { locator: *locator });
-                    }
-                }
-                Ok(Ok(members.into_values().collect()))
-            })
-            .map_err(Denial::Execution)?;
-        let members =
-            prepared.map_err(|stop| Denial::Execution(WorkCeilingDenial::Stopped(stop)))??;
-        Ok((members, memory))
+        members::prepare(self, previous, execution)
     }
 
     pub fn publication_subject(
@@ -304,29 +243,40 @@ impl PreparedRelationalSection {
     /// Neither a membership argument nor a public fate can authorize selection.
     pub fn acknowledge_selected(
         &self,
+        execution: &ExecutionRequest<'_, '_>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<(), RelationalSectionCheckpointDenial> {
-        use worth_relational::facade::durability::{
-            CheckpointSelectionObservation, RelationalCheckpointAcknowledgementDenial as Ack,
-        };
+        use worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial as Ack;
         let refused = || RelationalSectionCheckpointDenial::Acknowledgement(Ack::SelectionNotKnown);
         let subject = self.publication_subject().ok_or_else(refused)?;
         let selection = self.selection.as_ref().ok_or_else(refused)?;
-        if !matches!(
-            super::selection::observe(selection.as_ref(), subject),
-            CheckpointSelectionObservation::Selected(_)
-        ) {
-            return Err(refused());
-        }
-        let membership = selection.selected_membership(subject).ok_or_else(refused)?;
+        let expected = selection
+            .selected_version(subject)
+            .map_err(RelationalSectionCheckpointDenial::ReadProtection)?
+            .ok_or_else(refused)?;
         context.poll().map_err(|stop| {
             RelationalSectionCheckpointDenial::Acknowledgement(Ack::Stopped(stop))
         })?;
-        self.source
-            .select_members(&membership)
-            .map_err(RelationalSectionCheckpointDenial::MemberSelection)?;
+        {
+            let mut replacement = self.replacement.try_lock().map_err(|_| {
+                RelationalSectionCheckpointDenial::MemberSelection(
+                    crate::RelationalStoreMemberSelectionDenial::Busy,
+                )
+            })?;
+            replacement
+                .advance(
+                    &self.source,
+                    expected,
+                    subject.required_members(),
+                    execution,
+                )
+                .map_err(RelationalSectionCheckpointDenial::MemberSelection)?;
+        }
         self.checkpoint
-            .acknowledge_selected(context)
+            .acknowledge_selected(execution, context)
             .map_err(RelationalSectionCheckpointDenial::Acknowledgement)
     }
 }
+
+#[cfg(test)]
+mod journal_tests;

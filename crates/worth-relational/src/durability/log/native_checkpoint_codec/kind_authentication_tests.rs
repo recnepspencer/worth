@@ -4,7 +4,6 @@ use crate::durability::data::*;
 use crate::durability::medium::*;
 use crate::identity::data::PartitionId;
 use crate::tests::support::*;
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 #[test]
@@ -51,19 +50,18 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
     let mut bytes = CHECKPOINT_MAGIC.to_vec();
     bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
     let source = Arc::new(member_source::InlineCheckpointSource {
-        members: native
-            .members()
-            .iter()
-            .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-                _ => panic!("first capture owns its members"),
-            })
-            .collect(),
-        envelopes: attached_test_medium(&runtime)
-            .offered()
-            .iter()
-            .map(|commit| (commit.position(), Arc::<[u8]>::from(commit.as_bytes())))
-            .collect::<BTreeMap<_, _>>(),
+        members: {
+            let mut members = worth_execution::ExecutionOrderedMap::default();
+            for member in native.members() {
+                let RelationalCheckpointMember::New { locator, bytes } = member else {
+                    panic!("first capture owns its members")
+                };
+                members
+                    .insert_cloned_native_for_request(locator, bytes, execution)
+                    .unwrap();
+            }
+            members
+        },
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(

@@ -62,23 +62,35 @@ impl CapturedCheckpointBasis {
         // memory checkpoint door alone materializes its selected substrate.
         let journal_index = std::mem::take(&mut self.journal_index);
         let envelope_cells = std::mem::take(&mut self.envelope_cells);
+        let mut captured_cells = worth_execution::ExecutionOrderedMap::default();
+        for cell in envelope_cells {
+            if let Some(position) = cell.captured_position() {
+                captured_cells
+                    .insert_cloned_native_for_request(&position, &cell, *execution)
+                    .map_err(|cause| {
+                        crate::durability::checkpoint_history::capture::capture_stop(
+                            crate::durability::checkpoint_history::capture::map_stop(cause),
+                        )
+                    })?;
+            }
+        }
         let metadata = self.build_checkpoint_image()?;
         let mut captured = CapturedManifest::capture_metadata(
             &metadata,
             policy,
             prior.as_ref().map(|prior| &prior.manifest),
-            placement,
             journal_index,
+            |position| {
+                captured_cells
+                    .get(&position)
+                    .ok_or_else(|| corrupt("original Memory canonical cell unavailable"))?
+                    .original_memory_payload_digest()
+                    .map_err(Into::into)
+            },
         )?;
         captured.component_holds = component_holds;
         captured.append_lineage_events(event_rows, policy)?;
-        captured.envelope_cells = envelope_cells
-            .into_iter()
-            .filter_map(|cell| {
-                cell.journal_index()
-                    .map(|entry| (entry.position, cell.clone()))
-            })
-            .collect();
+        captured.envelope_cells = captured_cells;
         captured.cold_source = placement
             .publication_source()
             .or_else(|| prior.as_ref().map(|prior| prior.source.clone()))
@@ -284,6 +296,7 @@ impl CapturedCheckpointBasis {
             .readmit_history_members()
             .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
         captured.validate_lineage_events()?;
+        crate::durability::checkpoint_history::capture::capture(&mut captured, execution)?;
         Ok(captured)
     }
 }

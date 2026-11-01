@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use super::manifest_capture::corrupt;
 use super::member_frame::{self, MemberKind};
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 use crate::durability::checkpoints::images::partition_to_image_with_contracts;
 use crate::durability::data::*;
@@ -18,53 +17,26 @@ pub(super) fn expand(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     manifest: RelationalCheckpointManifest,
     source: Arc<dyn RelationalDurableColdSource>,
-    mut inline: Option<
-        BTreeMap<
-            crate::publication::patch::data::PatchStreamPosition,
-            crate::history::data::PositionedCanonicalCommit,
-        >,
-    >,
     history_members: Arc<RelationalHistoryMemberDirectory>,
 ) -> Result<DurableCheckpoint, RelationalRecoveryStop> {
+    let directory = Arc::new(
+        PreparedCheckpointDirectory {
+            manifest: manifest.clone(),
+            source: source.clone(),
+            history_members: history_members.clone(),
+        }
+        .readmit(execution)?,
+    );
     let mut envelopes = Vec::new();
     for entry in &manifest.commits {
-        let commit = if let Some(inline) = &mut inline {
-            inline
-                .remove(&entry.position)
-                .ok_or_else(|| corrupt("missing inline checkpoint envelope"))?
-        } else {
-            let subject = RelationalStorageSubject::Envelope(entry.position);
-            let bytes = source
-                .read_commit(entry.position, MEMBER_LIMIT)
-                .map_err(|cause| RelationalStorageUnavailable { subject, cause })?;
-            RelationalCanonicalCommitArtifact::readmit(&bytes, execution).map_err(|error| {
-                use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Refusal;
-                match error {
-                    Refusal::Request(cause) => RelationalRecoveryStop::Request(cause),
-                    Refusal::FieldText(cause) => crate::symbols::data::field_text_recovery_stop(cause),
-                    other => corrupt(format!("checkpoint envelope readmission: {other:?}")).into(),
-                }
-            })?.into_positioned()
-        };
-        if RelationalCanonicalCommitArtifact::positioned_payload_digest(&commit)
-            .map_err(|error| corrupt(error.to_string()))?
-            != entry.payload_digest
-        {
-            return Err(corrupt("checkpoint commit index digest mismatch").into());
-        }
-        if commit.commit != entry.commit
-            || commit.envelope().schema_version != entry.schema_version
-            || commit.envelope().association_discovery() != entry.association_discovery
-        {
-            return Err(corrupt("checkpoint commit index identity mismatch").into());
-        }
-        envelopes.push(commit);
-    }
-    if inline
-        .as_ref()
-        .is_some_and(|remaining| !remaining.is_empty())
-    {
-        return Err(corrupt("inline checkpoint has unindexed envelopes").into());
+        envelopes.push(
+            crate::history::RelationalCommitEnvelopeResidency::readmit_selected(
+                entry,
+                &directory,
+                execution,
+                MEMBER_LIMIT,
+            )?,
+        );
     }
     let mut symbol_table = crate::symbols::data::SymbolTableSnapshot::default();
     for page in &manifest.symbols {
@@ -201,6 +173,7 @@ pub(super) fn expand(
             .collect(),
         retained_empty_components: manifest.retained_empty_components.clone(),
         directory: None,
+        canonical_directory: Some(directory),
         root_kind_images,
         mirror_kind_images,
         coverage: manifest.coverage,

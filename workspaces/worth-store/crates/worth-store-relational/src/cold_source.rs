@@ -19,12 +19,14 @@ mod member_custody;
 mod member_read;
 mod owned_read;
 mod read_protection;
+mod selected_read;
+pub(crate) mod selected_replacement;
 mod selection;
 pub use selection::RelationalStoreMemberSelectionDenial;
 #[cfg(test)]
 mod member_custody_tests;
 #[cfg(test)]
-mod test_store;
+pub(crate) mod test_store;
 #[cfg(test)]
 mod tests;
 pub(crate) use member_custody::RetainedMemberPublication;
@@ -90,11 +92,15 @@ impl StoreColdSource {
             serving,
         })
     }
-    pub(crate) fn protect_member_selection(
+    pub(crate) fn protect_member_selection_for_request(
         &self,
         next: impl IntoIterator<Item = RelationalDurableMemberLocator>,
-    ) -> Result<RetainedMemberPublication, Cause> {
-        self.custody.protect_selection(next)
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        RetainedMemberPublication,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.custody.protect_selection_for_request(next, request)
     }
     pub(crate) fn member_locators(&self) -> Vec<RelationalDurableMemberLocator> {
         self.members
@@ -129,6 +135,15 @@ impl StoreColdSource {
 }
 
 impl RelationalDurableColdSource for StoreColdSource {
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_relational::facade::durability::RelationalDurableReadPayload,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.capture_selected_read(request)
+    }
     fn checkpoint_read_protection(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -191,6 +206,39 @@ impl RelationalDurableColdSource for StoreColdSource {
         original: &mut (dyn std::any::Any + Send + Sync),
     ) -> worth_relational::facade::durability::RelationalDurableMemberRetirementObservation {
         self.advance_custody_owner(execution, original)
+    }
+
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        use worth_relational::facade::durability::RelationalDurableOwnedReadRefusal as Refusal;
+        if issuer.as_ptr().cast::<()>() != self.weak_self.as_ptr().cast::<()>() {
+            return Err(Refusal::ForeignSource);
+        }
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
+            self.custody
+                .retain_for_request(members, self.serving.clone(), request, |selected| {
+                    let current = match self.members.try_read() {
+                        Ok(current) => current,
+                        Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+                        Err(std::sync::TryLockError::WouldBlock) => return Err(Refusal::Busy),
+                    };
+                    if selected
+                        .iter()
+                        .all(|member| current.entries.contains_key(member))
+                    {
+                        Ok(())
+                    } else {
+                        Err(Refusal::Storage(Cause::MissingMember))
+                    }
+                })
+        })
     }
 
     fn retain_members(

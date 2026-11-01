@@ -125,13 +125,20 @@ pub(crate) fn prove_stage(
 
     let home = open(&killed.location, execution)
         .unwrap_or_else(|refusal| panic!("{case}: recovery refused: {refusal:?}"));
-    let commits = assert_recovered(&home, script, &killed.acknowledged, &in_flight, &case);
-    let recovered = crate::workload::artifacts_of(home.relational().runtime());
+    let commits = assert_recovered(
+        execution,
+        &home,
+        script,
+        &killed.acknowledged,
+        &in_flight,
+        &case,
+    );
+    let recovered = crate::workload::artifacts_of(execution, home.relational().runtime());
     home.close(execution);
     for attempt in ["second", "third"] {
         let again = open(&killed.location, execution)
             .unwrap_or_else(|refusal| panic!("{case}: {attempt} recovery: {refusal:?}"));
-        assert_holds(&again, script, &recovered);
+        assert_holds(execution, &again, script, &recovered);
         if attempt == "third" {
             assert_continues(&killed.location, again, script, commits, execution, &case);
         } else {

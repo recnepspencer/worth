@@ -51,7 +51,7 @@ pub(crate) enum RelationalDurableStepStop {
 #[derive(Debug)]
 pub(crate) struct RelationalDurableCommitReadmission {
     positioned: Arc<PositionedCanonicalCommit>,
-    entry: crate::history::RelationalCommitIndexEntry,
+    entry: crate::history::RetainedCanonicalIndex,
     source: Arc<dyn super::RelationalDurableColdSource>,
 }
 impl RelationalDurableCommitReadmission {
@@ -59,7 +59,7 @@ impl RelationalDurableCommitReadmission {
         self,
     ) -> (
         Arc<PositionedCanonicalCommit>,
-        crate::history::RelationalCommitIndexEntry,
+        crate::history::RetainedCanonicalIndex,
         Arc<dyn super::RelationalDurableColdSource>,
     ) {
         (self.positioned, self.entry, self.source)
@@ -123,20 +123,20 @@ impl RelationalDurableMediumBinding {
         commit: Arc<PositionedCanonicalCommit>,
         roots: &crate::branch::RelationalBranchRootDescriptor,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DurablyCommitted<RelationalDurableCommitReadmission>, RelationalDurableStepStop>
     {
         let mut state = self.state();
         let medium = state.admitting_medium()?;
         let artifact = RelationalCanonicalCommitArtifact::from_positioned(&commit, policy)
             .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
-        let entry = crate::history::RelationalCommitIndexEntry {
-            association_discovery: commit.envelope().association_discovery(),
-            commit: commit.commit.clone(),
-            position: commit.position(),
-            root: roots.clone(),
-            payload_digest: *artifact.payload_digest().as_bytes(),
-            schema_version: commit.schema_version,
-        };
+        let entry = crate::history::RetainedCanonicalIndex::from_publication(
+            &commit,
+            roots,
+            *artifact.payload_digest().as_bytes(),
+            execution,
+        )
+        .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
         let answer = medium.publish(&artifact);
         state.settle(
             answer,

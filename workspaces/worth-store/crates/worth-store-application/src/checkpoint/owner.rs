@@ -324,6 +324,32 @@ impl std::fmt::Debug for HomeCheckpointSelectionSource {
     }
 }
 impl RelationalCheckpointSelectionSource for HomeCheckpointSelectionSource {
+    fn selected_version(
+        &self,
+        subject: &OpaqueCapturedCheckpointSubject,
+    ) -> Result<
+        Option<worth_store::physical_runtime::AnchoredRecordVersion>,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        use worth_relational::facade::durability::RelationalDurableOwnedReadRefusal as Refusal;
+        let owner = self.owner.upgrade().ok_or(Refusal::ForeignSource)?;
+        let attempt = owner.pending.try_lock().map_err(|_| Refusal::Busy)?.clone();
+        let Some(attempt) = attempt else {
+            return Ok(None);
+        };
+        if !attempt
+            .subject
+            .as_ref()
+            .is_some_and(|original| original.same_capture(subject))
+        {
+            return Err(Refusal::ForeignSource);
+        }
+        let receipt = attempt.receipt.try_lock().map_err(|_| Refusal::Busy)?;
+        let Some(receipt) = receipt.as_ref() else {
+            return Ok(None);
+        };
+        Ok(Some(receipt.version()))
+    }
     fn selected_membership(
         &self,
         subject: &OpaqueCapturedCheckpointSubject,

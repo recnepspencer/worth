@@ -84,9 +84,9 @@ impl RecoveredRelationalRuntimeAuthority {
                     .history
                     .commit_artifact(target.receipt().commit_id)
                     .ok_or_else(|| refused(Cause::MissingRecoveredImage))?;
-                let (entry, source) = artifact
+                let (entry, _) = artifact
                     .envelope_residency()
-                    .journal_placement()
+                    .source_placement()
                     .ok_or_else(|| refused(Cause::MemoryOnly))?;
                 if entry.commit != *target.receipt()
                     || entry.position != target.position()
@@ -95,13 +95,9 @@ impl RecoveredRelationalRuntimeAuthority {
                 {
                     return Err(refused(Cause::RecordedTargetMismatch));
                 }
-                let admitted =
-                    crate::history::RelationalCommitEnvelopeResidency::readmit_positioned(
-                        &entry,
-                        source.as_ref(),
-                        execution,
-                        1 << 30,
-                    )
+                let admitted = artifact
+                    .envelope_residency()
+                    .demand_positioned(execution, 1 << 30)
                     .map_err(|cause| refused(Cause::Source(cause)))?;
                 if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload(
                     &admitted, envelope,

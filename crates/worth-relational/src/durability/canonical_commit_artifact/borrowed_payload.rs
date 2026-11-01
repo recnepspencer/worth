@@ -3,10 +3,10 @@ use super::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use worth_execution::ExecutionRequest;
 
 #[derive(Clone, Copy)]
-pub(super) struct BorrowedPayload<'a>(pub(super) &'a [u8]);
+pub(crate) struct BorrowedPayload<'a>(pub(crate) &'a [u8]);
 
 impl<'a> BorrowedPayload<'a> {
-    pub(super) fn fields(
+    pub(crate) fn fields(
         self,
         execution: &ExecutionRequest<'_, '_>,
         mut visit: impl FnMut(&'a str, Self) -> Result<(), Refusal>,
@@ -21,7 +21,7 @@ impl<'a> BorrowedPayload<'a> {
         cursor.finish()
     }
 
-    pub(super) fn elements(
+    pub(crate) fn elements(
         self,
         execution: &ExecutionRequest<'_, '_>,
         mut visit: impl FnMut(Self) -> Result<(), Refusal>,
@@ -69,6 +69,7 @@ impl<'a> BorrowedPayload<'a> {
     }
 
     /// Borrow one actual MessagePack bin allocation without staging a Vec.
+    #[cfg(test)]
     pub(super) fn binary(self, execution: &ExecutionRequest<'_, '_>) -> Result<&'a [u8], Refusal> {
         let mut cursor = Cursor::new(self.0, execution);
         let marker = cursor.marker()?;

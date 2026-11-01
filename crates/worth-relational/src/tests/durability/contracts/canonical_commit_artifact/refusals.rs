@@ -28,7 +28,7 @@ fn exported_frame(execution: &ExecutionRequest<'_, '_>) -> ExportedFrame {
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "refusal-first");
     create_entity(execution, &runtime, "refusal-second");
-    let artifact = exported_artifacts(&runtime)
+    let artifact = exported_artifacts(execution, &runtime)
         .pop()
         .expect("committed history exports an artifact");
     Artifact::readmit(artifact.as_bytes(), execution).expect("the untouched frame readmits");

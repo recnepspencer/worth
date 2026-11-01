@@ -1,6 +1,8 @@
 //! Independent authenticated-frame rewrites exercise the codec's closed schema.
 use super::*;
-use crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC;
+use crate::durability::log::native_checkpoint_codec::{
+    checkpoint_wire::CheckpointWire, CHECKPOINT_MAGIC,
+};
 use crate::tests::support::*;
 fn original(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

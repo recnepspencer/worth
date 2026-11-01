@@ -43,9 +43,11 @@ pub use aspect_history::{
     LineageAspectHistory, LineageAspectHistoryQueryResult, LineageAspectResolutionDigest,
 };
 pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
+#[cfg(test)]
+pub(crate) use canonical_commit_envelope::EmbeddedCheckpointEnvelopeRef;
 pub(crate) use canonical_commit_envelope::{
     AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
-    CanonicalIndexDefinitionDelta, CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
+    CanonicalIndexDefinitionDelta, CommittedRecordChange,
 };
 pub(crate) use canonical_commit_envelope::{
     CanonicalCodecRetirementKind, CanonicalOutputMember, CanonicalRequiredOutputCodecRetirement,

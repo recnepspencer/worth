@@ -788,7 +788,7 @@ readers do not acquire that privileged door. See
 Native derived-index definitions retain their original owner-issued IDs through
 both checkpoint and canonical journal recovery. Register with `index_authority()`;
 the next actual authoritative commit carries the pending definition prefix.
-Checkpoint CHK17 captures the same full catalog/frontier cut, and artifact v4
+Checkpoint CHK18 captures the same full catalog/frontier cut, and artifact v4
 requires the delta in every envelope projection. Recovery accepts exact overlap
 without reallocating IDs; derived generations still use existing build/demand
 owners. Preparation and uncertain/refused publication never acknowledge catalog
@@ -799,7 +799,7 @@ Native callers can retain opaque caller meaning with
 bytes), then consume a validated proposal through `bind_caller_association`
 before its one existing canonical preparation. Candidates and canonical
 envelopes expose immutable association observations; prepared candidates cannot
-be rebound. Artifact v4 and checkpoint CHK17 preserve the bytes through Native
+be rebound. Artifact v4 and checkpoint CHK18 preserve the bytes through Native
 recovery and refuse older versions. Native interprets no World meaning, and the
 bytes confer no completion or durable-effect authority. See
 [opaque caller association](../crates/worth-relational/README.md#opaque-caller-association).
@@ -867,7 +867,7 @@ captured at acquisition; unrelated callbacks cannot release the payload.
 Complete releases only this local share. Unknown opaque/composite providers
 refuse. Retired payload reclamation and generic Drop remain unbudgeted; this
 does not qualify whole cold close. See [provider custody retirement](../crates/worth-relational/README.md#retire-one-provider-member-custody-share).
-Native never fabricates a live result. CHK17 preserves required exact canonical
+Native never fabricates a live result. CHK18 preserves required exact canonical
 component headers and explicit Empty/schema headers from current cells and live
 external component leases. One brief Native retention-owner cut linearizes external acquire/release/Drop
 with capture. Capture owns the selected actual bases through complete actual
@@ -1319,6 +1319,24 @@ residency cell, admitted under the actual publication request before head/positi
 cutover. The existing `canonical_commit_artifacts` iterator verifies and shares
 those bytes rather than encoding another frame. Legacy authoritative tuple
 length/digest observations are unchanged and no longer retain tuple bytes.
-Memory publication now pays the declared frame encoding/verification cost; the
-Journal route and CHK17 capture contract remain unchanged. See
+Memory publication pays the declared frame encoding/verification cost. CHK18
+capture uses those original frames alongside protected Journal or selected-member
+bytes, retaining complete indexed canonical coverage. See
 [original Memory frames](../crates/worth-relational/README.md#retain-original-memory-publication-frames).
+
+
+### Read covered canonical history from selected Native members
+
+CHK18 serialized checkpoints require a complete ordered inventory of original
+artifact v4 members. Covered head, historical, component and associated-effect
+admission use the selected member directory and actual protected reader rather
+than covered journal bytes. Uncovered tails keep their ordinary recovery path.
+Original-request artifact export remains lazy and shares retained Memory frames.
+
+The same prepared Home attempt retains interrupted placement transfer and old-read
+retirement; cadence advances after required acknowledgement completes. Initial
+selection guards and original source affinity remain in force. New scalable
+owners retain their own request reservations; this does not qualify Complete,
+service-free bare reconstruction or whole-provider close. See [selected canonical
+history](../crates/worth-relational/README.md#canonical-checkpoint-members)
+and [Store selected replacement](../workspaces/worth-store/crates/worth-store-relational/README.md#replace-selected-canonical-backing-in-the-same-home-attempt).

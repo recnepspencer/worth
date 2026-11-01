@@ -26,11 +26,13 @@ pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAut
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod authoritative_artifact_encoding;
 mod control_allocation;
+#[cfg(test)]
 mod embedded_checkpoint;
 mod payload_digest;
 mod shared;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
 pub(crate) use control_allocation::CanonicalEnvelopeControlAllocation;
+#[cfg(test)]
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
 pub use shared::SharedCanonicalCommitEnvelope;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
@@ -394,3 +396,5 @@ mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
 pub(crate) use text_wire::CanonicalEnvelopeWire;
+#[cfg(test)]
+mod semantic_patch_fixture;

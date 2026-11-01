@@ -177,7 +177,7 @@ impl RelationalCommitArtifact {
     }
 
     pub(crate) fn from_index(
-        entry: super::RelationalCommitIndexEntry,
+        entry: super::RetainedCanonicalIndex,
         source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
         admitted: Option<crate::history::data::PositionedCanonicalCommit>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {

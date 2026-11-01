@@ -242,10 +242,22 @@ fn native_capture_sections_count_current_directory_values() {
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
     let sections = native.captured_sections().unwrap();
     assert_eq!(sections.total, native.bytes().len());
-    assert_eq!(
-        sections.envelopes,
-        rmp_serde::to_vec_named(&wire.envelopes).unwrap().len()
-    );
+    let canonical_bytes: usize = wire
+        .manifest
+        .canonical_members
+        .entries()
+        .iter()
+        .map(|row| {
+            let (_, bytes) = wire
+                .members
+                .iter()
+                .find(|(member, _)| *member == row.member)
+                .unwrap();
+            rmp_serde::to_vec_named(bytes).unwrap().len()
+        })
+        .sum();
+    assert!(canonical_bytes > 0);
+    assert_eq!(sections.envelopes, canonical_bytes);
     assert_eq!(
         sections.branch_roots,
         rmp_serde::to_vec_named(&wire.manifest.roots).unwrap().len()
@@ -306,13 +318,18 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let mut old = b"WORTH-REL-CHK6\n".to_vec();
-    old.extend_from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap());
-    let stop = decode_checkpoint(execution, &old).unwrap_err();
-    assert_eq!(
-        expect_durability_failure(stop).class,
-        RecoveryFailureClass::UnsupportedLegacySemantics
-    );
+    for prefix in [
+        b"WORTH-REL-CHK6\n".as_slice(),
+        b"WORTH-REL-CHK17\n".as_slice(),
+    ] {
+        let mut old = prefix.to_vec();
+        old.extend_from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap());
+        let stop = decode_checkpoint(execution, &old).unwrap_err();
+        assert_eq!(
+            expect_durability_failure(stop).class,
+            RecoveryFailureClass::UnsupportedLegacySemantics
+        );
+    }
     for retired in [
         "partition_alias_format",
         "branch_root_partition_aliases_v2",

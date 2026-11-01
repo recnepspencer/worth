@@ -5,7 +5,6 @@ use std::sync::Arc;
 use crate::durability::checkpoints::region_directory::{corrupt, ReadmittedRegionDirectory};
 use crate::durability::data::{CheckpointRestoreWork, DurableCheckpoint, RelationalRecoveryStop};
 use crate::history::data::VersionNode;
-use crate::history::RelationalCommitCatalog;
 use crate::runtime::RelationalRuntime;
 use crate::storage::residency::RelationalRegionRetention;
 
@@ -39,16 +38,9 @@ pub(super) fn restore(
         .iter()
         .map(|entry| (entry.commit.commit_id, entry.clone()))
         .collect::<BTreeMap<_, _>>();
-    let mut catalog = RelationalCommitCatalog::default();
-    for entry in &directory.manifest.commits {
-        catalog
-            .append_indexed_recovery(
-                entry.clone(),
-                directory.source.clone(),
-                positioned.get(&entry.commit.commit_id).cloned(),
-            )
-            .map_err(|denial| corrupt(format!("indexed commit admission: {denial:?}")))?;
-    }
+    let catalog = super::selected_catalog::admit(execution, &directory, |entry| {
+        positioned.get(&entry.commit.commit_id).cloned()
+    })?;
     let head_cells = heads
         .keys()
         .map(|id| {
@@ -167,6 +159,9 @@ pub(super) fn restore(
     runtime
         .indexes
         .install_cold_checkpoint(directory.clone(), &runtime.history)?;
-    runtime.durability.checkpoint_selection().restore(directory);
+    runtime
+        .durability
+        .checkpoint_selection()
+        .restore_selected(directory);
     Ok(())
 }

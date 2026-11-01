@@ -30,6 +30,11 @@ pub enum NativeInvariantRuleId {
 /// Ordinary construction retains the existing explicitly unbudgeted contract.
 pub struct CustomInvariantRuleId(Arc<custom_rule_name::Backing>);
 
+// Public meaning is immutable shared text. The private one-shot grant slot
+// retains lifetime bookkeeping and exposes no mutable identifier semantics.
+impl std::panic::RefUnwindSafe for CustomInvariantRuleId {}
+impl std::panic::UnwindSafe for CustomInvariantRuleId {}
+
 impl CustomInvariantRuleId {
     pub fn new(id: impl Into<Arc<str>>) -> Self {
         Self(Arc::new(custom_rule_name::Backing::new(id.into())))

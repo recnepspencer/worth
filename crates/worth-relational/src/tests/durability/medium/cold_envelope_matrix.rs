@@ -54,7 +54,7 @@ impl EnvelopeDoor {
                     other => panic!("funded replay scope: {other:?}"),
                 }),
             Self::RetainedExport => runtime.durability()
-                .canonical_commit_artifacts(execution.allocation_policy())
+                .canonical_commit_artifacts(&execution)
                 .after_position(crate::publication::patch::data::PatchStreamPosition(position.0 - 1))
                 .next().expect("selected index entry exists")
                 .map(|artifact| artifact.as_bytes().len())

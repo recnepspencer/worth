@@ -10,10 +10,77 @@ use crate::storage::data::{
 };
 
 impl RelationalCommitEnvelopeResidency {
+    /// Capture metadata is read from the original Memory frame, never re-encoded.
+    pub(crate) fn original_memory_payload_digest(
+        &self,
+    ) -> Result<[u8; 32], crate::durability::data::DurabilityError> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        let fail = || {
+            crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                "original Memory artifact unavailable or damaged",
+            )
+        };
+        let EnvelopeBacking::Memory {
+            original: Some(bytes),
+            ..
+        } = &state.backing
+        else {
+            return Err(fail());
+        };
+        let artifact = Artifact::from_owned_bytes(bytes.clone()).map_err(|_| fail())?;
+        Ok(*artifact.payload_digest().as_bytes())
+    }
+    /// Strict capture reads original frames only; resident body encoding is forbidden.
+    pub(crate) fn require_original_artifact(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        original: Option<(
+            &std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+            &crate::durability::medium::RelationalDurableReadProtection,
+        )>,
+    ) -> Result<Artifact, crate::durability::data::RelationalRecoveryStop> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        let failure = |cause| {
+            crate::durability::data::RelationalRecoveryStop::from(RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Envelope(state.position.as_ref().map_or(
+                    crate::publication::patch::data::PatchStreamPosition(0),
+                    |position| position.position(),
+                )),
+                cause,
+            })
+        };
+        if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
+            return Self::selected_artifact(entry, directory, execution, 1 << 30);
+        }
+        let bytes = match &state.backing {
+            EnvelopeBacking::Memory {
+                original: Some(bytes),
+                ..
+            } => bytes.clone(),
+            EnvelopeBacking::Memory { .. } => return Err(failure(Cause::SourceUnavailable)),
+            EnvelopeBacking::SelectedCheckpoint { .. } => {
+                unreachable!("selected source handled before byte dispatch")
+            }
+            EnvelopeBacking::Journal { entry, source, .. } => {
+                let (actual, protection) =
+                    original.ok_or_else(|| failure(Cause::SourceUnavailable))?;
+                if !std::sync::Arc::ptr_eq(actual, source) {
+                    return Err(failure(Cause::SourceUnavailable));
+                }
+                protection
+                    .read_commit_owned_at(actual, execution, entry.position, 1 << 30)
+                    .map_err(crate::durability::checkpoint_history::capture::owned_stop)?
+            }
+        };
+        Artifact::from_owned_bytes(bytes).map_err(|_| failure(Cause::Damaged))
+    }
+
     pub(crate) fn export_artifact(
         &self,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Artifact, Denial> {
+        let policy = execution.allocation_policy();
         policy.check_live()?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(failure) = state.damage {
@@ -30,6 +97,10 @@ impl RelationalCommitEnvelopeResidency {
                     detail: "retained original Memory artifact failed verification".into(),
                 }
             });
+        }
+        if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
+            return Self::selected_artifact(entry, directory, execution, 1 << 30)
+                .map_err(Denial::Readmission);
         }
         if let Some(commit) = state
             .position

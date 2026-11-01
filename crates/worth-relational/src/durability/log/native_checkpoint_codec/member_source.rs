@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+#[cfg(test)]
 use std::sync::Arc;
 
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
@@ -9,9 +9,10 @@ use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 /// member verification and loading path independent of artifact placement.
 #[derive(Debug)]
 pub(super) struct InlineCheckpointSource {
-    pub(super) members:
-        BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
-    pub(super) envelopes: BTreeMap<PatchStreamPosition, Arc<[u8]>>,
+    pub(super) members: worth_execution::ExecutionOrderedMap<
+        RelationalDurableMemberLocator,
+        worth_execution::ExecutionImmutableBytes,
+    >,
 }
 
 impl RelationalDurableColdSource for InlineCheckpointSource {
@@ -36,6 +37,16 @@ impl RelationalDurableColdSource for InlineCheckpointSource {
             },
             Box::new(()),
         ))
+    }
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableReadPayload,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.checkpoint_read_protection(request)
+            .map(|(_, original)| original)
     }
     fn read_member_owned(
         &self,
@@ -82,6 +93,48 @@ impl RelationalDurableColdSource for InlineCheckpointSource {
             .into_immutable_bytes())
     }
 
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        // These actual immutable payloads own bytes/metadata only, with no physical pin or registration.
+        if original.is::<()>() {
+            Ok(())
+        } else {
+            Err(crate::durability::medium::RelationalDurableMemberRetirementRefusal::ForeignCustody)
+        }
+    }
+    fn advance_member_custody_retirement(
+        &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        match self.validate_member_custody_retirement(original) {
+            Ok(()) => {
+                crate::durability::medium::RelationalDurableMemberRetirementObservation::Complete
+            }
+            Err(cause) => {
+                crate::durability::medium::RelationalDurableMemberRetirementObservation::Refused(
+                    cause,
+                )
+            }
+        }
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        crate::durability::medium::RelationalDurableMemberCustody::try_new_from_source_for_request(
+            issuer,
+            request,
+            || Ok(()),
+        )
+    }
     fn retain_members(
         &self,
         _members: &[RelationalDurableMemberLocator],
@@ -97,8 +150,8 @@ impl RelationalDurableColdSource for InlineCheckpointSource {
         bounded(self.members.get(&locator).map(AsRef::as_ref), limit)
     }
 
-    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        bounded(self.envelopes.get(&position).map(AsRef::as_ref), limit)
+    fn read_commit(&self, _position: PatchStreamPosition, _limit: u64) -> Result<Vec<u8>, Cause> {
+        Err(Cause::SourceUnavailable)
     }
 }
 

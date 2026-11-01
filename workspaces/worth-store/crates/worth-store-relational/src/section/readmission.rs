@@ -87,8 +87,14 @@ pub(super) fn prepare_ordinary_source(
     selected
         .map(|(bytes, membership)| {
             let checkpoint = super::codec::decode(bytes, execution)?;
+            let original = crate::cold_source::selected_replacement::read_expected(
+                cold_source,
+                membership.version(),
+                execution,
+            )
+            .map_err(RelationalSectionReadmissionDenial::MemberSelection)?;
             cold_source
-                .select_members(membership)
+                .select_initial_members_from_read(&original, execution)
                 .map_err(RelationalSectionReadmissionDenial::MemberSelection)?;
             Ok(checkpoint)
         })

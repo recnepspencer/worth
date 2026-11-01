@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::member_frame::{self, MemberKind};
+#[cfg(test)]
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 #[cfg(test)]
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
@@ -16,12 +17,14 @@ pub(crate) struct CapturedManifest {
     pub(crate) component_holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
     pub(crate) manifest: RelationalCheckpointManifest,
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
-    pub(crate) envelopes: Vec<Vec<u8>>,
-    pub(crate) envelope_cells: BTreeMap<
+    pub(crate) canonical_publication:
+        Option<crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>,
+    pub(crate) canonical_payloads:
+        Option<worth_execution::ExecutionArray<RelationalCheckpointMember>>,
+    pub(crate) envelope_cells: worth_execution::ExecutionOrderedMap<
         crate::publication::patch::data::PatchStreamPosition,
         Arc<crate::history::RelationalCommitEnvelopeResidency>,
     >,
-    pub(crate) carried_envelopes: Vec<crate::history::RelationalCommitIndexEntry>,
     pub(crate) publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     pub(crate) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
     pub(crate) guarded_members: BTreeMap<
@@ -39,8 +42,10 @@ impl CapturedManifest {
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         prior: Option<&RelationalCheckpointManifest>,
-        placement: &RelationalCheckpointArtifactPolicy<'_>,
         journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
+        original_digest: impl Fn(
+            crate::publication::patch::data::PatchStreamPosition,
+        ) -> Result<[u8; 32], RelationalNativeCheckpointCaptureDenial>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut members = BTreeMap::new();
         let mut commits = BTreeMap::new();
@@ -57,8 +62,6 @@ impl CapturedManifest {
                 );
             }
         }
-        let mut envelopes = Vec::new();
-        let mut embedded_positions = std::collections::BTreeSet::new();
         for positioned in &checkpoint.envelopes {
             policy.check_live()?;
             let envelope = positioned.envelope();
@@ -77,11 +80,7 @@ impl CapturedManifest {
                     );
                 }
             } else {
-                let payload_digest =
-                    RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
-                        .map_err(|error| {
-                            corrupt(format!("canonical checkpoint digest: {error}"))
-                        })?;
+                let payload_digest = original_digest(positioned.position())?;
                 commits.insert(
                     positioned.position(),
                     crate::history::RelationalCommitIndexEntry {
@@ -94,26 +93,8 @@ impl CapturedManifest {
                     },
                 );
             }
-            if placement.is_embedded() {
-                embedded_positions.insert(positioned.position());
-                envelopes.push(
-                    rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::new(
-                        positioned,
-                    ))
-                    .map_err(|error| corrupt(format!("embedded checkpoint envelope: {error}")))?,
-                );
-            }
         }
         let commits = commits.into_values().collect::<Vec<_>>();
-        let carried_envelopes = if placement.is_embedded() {
-            commits
-                .iter()
-                .filter(|entry| !embedded_positions.contains(&entry.position))
-                .cloned()
-                .collect()
-        } else {
-            Vec::new()
-        };
         let dictionary =
             super::dictionary_capture::capture(&checkpoint.symbol_table, policy, &mut members)?;
         let symbol_pages = dictionary.by_id;
@@ -150,8 +131,7 @@ impl CapturedManifest {
         );
         Ok(Self {
             component_holds: Vec::new(),
-            carried_envelopes,
-            envelope_cells: BTreeMap::new(),
+            envelope_cells: Default::default(),
             manifest: RelationalCheckpointManifest {
                 coverage: checkpoint.coverage.clone(),
                 covered_position: commits.last().map_or(
@@ -174,6 +154,7 @@ impl CapturedManifest {
                 mirror: Vec::new(),
                 history_dependencies: Vec::new(),
                 commits,
+                canonical_members: Default::default(),
                 symbols: symbol_pages,
                 symbol_identity_frontier: checkpoint.symbol_identity_frontier,
                 symbol_buckets,
@@ -183,7 +164,8 @@ impl CapturedManifest {
                 derived_indexes,
             },
             members,
-            envelopes,
+            canonical_payloads: None,
+            canonical_publication: None,
             publications: Vec::new(),
             cold_source: None,
             guarded_members: BTreeMap::new(),
@@ -195,13 +177,18 @@ impl CapturedManifest {
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
-        let mut captured = Self::capture_metadata(
-            checkpoint,
-            policy,
-            None,
-            &RelationalCheckpointArtifactPolicy::Embedded,
-            Vec::new(),
-        )?;
+        // These four hostile-fixture callers intentionally encode changed producer DATA.
+        // The production capture callback only observes its retained original frame.
+        let mut captured =
+            Self::capture_metadata(checkpoint, policy, None, Vec::new(), |position| {
+                let positioned = checkpoint
+                    .envelopes
+                    .iter()
+                    .find(|commit| commit.position() == position)
+                    .ok_or_else(|| corrupt("fixture canonical position unavailable"))?;
+                RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
+                    .map_err(|error| corrupt(format!("fixture canonical digest: {error}")).into())
+            })?;
         let rows = checkpoint
             .envelopes
             .iter()

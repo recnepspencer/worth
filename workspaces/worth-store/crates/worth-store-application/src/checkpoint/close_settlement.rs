@@ -35,7 +35,10 @@ pub(crate) fn settle(
             }
             match attempt.advance_physical(&records, None) {
                 PublicationProgress::Selected(receipt) => {
-                    attempt.selected(receipt.membership().clone());
+                    attempt.selected(match receipt {
+                        worth_store::physical_runtime::AnchoredRecordPublished::Published(membership)
+                        | worth_store::physical_runtime::AnchoredRecordPublished::AlreadyPublished(membership) => membership,
+                    });
                     break;
                 }
                 PublicationProgress::Failed(actual) => {
@@ -89,7 +92,9 @@ fn acknowledge(
 ) -> Result<Summary, CloseCheckpointWaitDenial> {
     let mut result = None;
     let scope = execution.run_native_with_checkpoint(|context| {
-        result = Some(super::journey::acknowledge(owner, attempt, context));
+        result = Some(super::journey::acknowledge(
+            owner, attempt, execution, context,
+        ));
     });
     match (scope, result) {
         (_, Some(Ok(summary))) => Ok(summary),

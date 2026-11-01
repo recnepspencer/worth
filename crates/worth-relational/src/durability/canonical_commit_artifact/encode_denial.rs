@@ -6,6 +6,7 @@ use worth_execution::ExecutionAllocationDenial;
 #[non_exhaustive]
 pub enum RelationalCanonicalCommitArtifactEncodeDenial {
     Request(worth_execution::WorkCeilingDenial),
+    Readmission(crate::durability::data::RelationalRecoveryStop),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     /// The caller's allocation policy refused, was cancelled or expired.
     Allocation(ExecutionAllocationDenial),
@@ -49,6 +50,7 @@ impl std::fmt::Display for RelationalCanonicalCommitArtifactEncodeDenial {
             Self::Request(cause) => {
                 write!(formatter, "original canonical artifact request: {cause:?}")
             }
+            Self::Readmission(cause) => write!(formatter, "selected canonical source: {cause}"),
             Self::StorageUnavailable(failure) => write!(
                 formatter,
                 "canonical artifact storage unavailable: {failure:?}"

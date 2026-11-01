@@ -51,7 +51,7 @@ pub(crate) fn home_with(
     let location = directory.path().join("home");
     let home = open(&location, execution).expect("a new home opens");
     apply(&home, execution, steps_before(&script, commits));
-    let acknowledged = crate::workload::artifacts_of(home.relational().runtime());
+    let acknowledged = crate::workload::artifacts_of(execution, home.relational().runtime());
     home.abort_for_test();
     (directory, location, script, acknowledged)
 }
@@ -109,7 +109,7 @@ pub(crate) fn assert_refuses_before_service(
     match open(location, &execution) {
         Ok(home) => panic!(
             "{case}: a damaged home served {} commits",
-            crate::workload::artifacts_of(home.relational().runtime()).len()
+            crate::workload::artifacts_of(&execution, home.relational().runtime()).len()
         ),
         Err(refusal) => refusal,
     }

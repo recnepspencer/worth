@@ -29,6 +29,8 @@ pub(crate) struct RelationalCheckpointManifest {
     pub(crate) mirror: Vec<RelationalCheckpointRegion>,
     pub(crate) history_dependencies: Vec<RelationalCheckpointHistoryDependency>,
     pub(crate) commits: Vec<crate::history::RelationalCommitIndexEntry>,
+    pub(crate) canonical_members:
+        crate::durability::checkpoint_history::inventory::CanonicalCheckpointMembers,
     pub(crate) symbols: Vec<RelationalCheckpointPage>,
     pub(crate) symbol_identity_frontier: u32,
     pub(crate) symbol_buckets: Vec<RelationalCheckpointSymbolBucket>,
@@ -41,32 +43,71 @@ pub(crate) struct RelationalCheckpointManifest {
 impl RelationalCheckpointManifest {
     pub(crate) fn semantic_members(
         &self,
-        history: &RelationalHistoryMemberDirectory,
-    ) -> Vec<RelationalDurableMemberLocator> {
-        let mut members = std::collections::BTreeSet::new();
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_execution::ExecutionArray<RelationalDurableMemberLocator>,
+        super::RelationalRecoveryStop,
+    > {
+        let mut members =
+            worth_execution::ExecutionOrderedMap::<RelationalDurableMemberLocator, ()>::default();
+        let mut insert = |member| {
+            members
+                .insert_cloned_native_for_request(&member, &(), *request)
+                .map_err(crate::durability::checkpoint_history::capture::map_stop)
+        };
         for leaf in self
             .roots
             .iter()
             .flat_map(|root| &root.regions)
             .chain(&self.mirror)
         {
-            members.insert(leaf.head);
-            members.extend(history.members(leaf.history));
+            insert(leaf.head)?;
+            insert(leaf.history)?;
         }
-        members.extend(
-            self.symbols
-                .iter()
-                .chain(&self.lineage)
-                .map(|page| page.member),
-        );
-        members.extend(
-            self.symbol_buckets
-                .iter()
-                .flat_map(|bucket| bucket.pages.iter().copied()),
-        );
-        members.extend(self.lineage_events.iter().map(|page| page.member));
-        members.insert(self.derived_indexes);
-        members.into_iter().collect()
+        // Admitted declarations are exactly the reachable history graph.
+        for dependency in &self.history_dependencies {
+            insert(dependency.member)?;
+            for member in &dependency.bases {
+                insert(*member)?;
+            }
+        }
+        for page in self.symbols.iter().chain(&self.lineage) {
+            insert(page.member)?;
+        }
+        for member in self
+            .symbol_buckets
+            .iter()
+            .flat_map(|bucket| bucket.pages.iter().copied())
+        {
+            insert(member)?;
+        }
+        for page in &self.lineage_events {
+            insert(page.member)?;
+        }
+        for row in self.canonical_members.entries() {
+            insert(row.member)?;
+        }
+        insert(self.derived_indexes)?;
+        drop(insert);
+        let mut output =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, members.len())
+                .map_err(|cause| {
+                    super::RelationalRecoveryStop::from(
+                        crate::durability::checkpoint_history::capture::array_capture_stop(cause),
+                    )
+                })?;
+        for member in members.keys() {
+            output.push(*member).map_err(|cause| {
+                super::RelationalRecoveryStop::from(
+                    crate::durability::checkpoint_history::capture::array_capture_stop(cause),
+                )
+            })?;
+        }
+        output.seal().map_err(|cause| {
+            super::RelationalRecoveryStop::from(
+                crate::durability::checkpoint_history::capture::array_capture_stop(cause),
+            )
+        })
     }
 
     pub(crate) fn readmit_history_members(

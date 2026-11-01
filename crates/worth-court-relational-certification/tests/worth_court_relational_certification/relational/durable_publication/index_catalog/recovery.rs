@@ -106,7 +106,7 @@ fn checkpoint_catalog_ahead_of_frozen_tail_preserves_original_body_and_refuses_f
             .unwrap();
         let artifacts = recovered
             .durability()
-            .canonical_commit_artifacts(execution.allocation_policy())
+            .canonical_commit_artifacts(&execution)
             .map(|artifact| artifact.unwrap())
             .collect::<Vec<_>>();
         assert_eq!(
@@ -211,7 +211,7 @@ fn same_position_checkpoint_catalog_cannot_regress_selection_or_ack_later_regist
     assert_eq!(earlier.covered_position(), selected.covered_position());
     medium.file_checkpoint(selected.clone());
     let (ack, _) = execution
-        .run_native_with_checkpoint(|context| selected.acknowledge_selected(context))
+        .run_native_with_checkpoint(|context| selected.acknowledge_selected(execution, context))
         .unwrap();
     ack.unwrap();
     assert!(matches!(
@@ -237,43 +237,47 @@ fn same_position_checkpoint_catalog_cannot_regress_selection_or_ack_later_regist
 
 #[test]
 fn expanded_restore_reemits_checkpoint_only_definitions_without_fabricating_selection() {
-    let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&request);
-    let medium = TestDurableMedium::new();
-    let source = durable_runtime(&medium);
-    create_entity(execution, &source, "expanded-seed");
-    let installed = source
-        .index_authority()
-        .register(definition("expanded-checkpoint-only"))
-        .unwrap();
-    let checkpoint = source
-        .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
-        .unwrap();
-    let destination = TestDurableMedium::new();
-    let mut restored = durable_runtime(&destination);
-    restored
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
-        .unwrap();
-    assert_eq!(
-        restored.index_access().matching_definition(&installed),
-        Some(installed.clone())
-    );
-    // The newly attached medium has no original journal prefix, so use a
-    // reconstructive memory owner for the safe original-payload comparison.
-    let mut reconstructed = memory_runtime();
-    reconstructed
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
-        .unwrap();
-    let result = create_entity_outcome(execution, &reconstructed, "expanded-next");
-    assert_eq!(delta(&result)["base_next_index_id"], 1);
-    assert_eq!(
-        delta(&result)["definitions"][0]["index_id"],
-        installed.index_id.0
-    );
-    release_test_commit_snapshot(&reconstructed, &result);
+    for seeded in [false, true] {
+        let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+        let execution = &ExecutionRequest::serial(&request);
+        let medium = TestDurableMedium::new();
+        let source = durable_runtime(&medium);
+        if seeded {
+            create_entity(execution, &source, "expanded-seed");
+        }
+        let installed = source
+            .index_authority()
+            .register(definition("expanded-checkpoint-only"))
+            .unwrap();
+        let checkpoint = source
+            .durability_authority()
+            .native_checkpoint(execution, execution.allocation_policy())
+            .unwrap();
+        let destination = TestDurableMedium::new();
+        let mut restored = durable_runtime(&destination);
+        restored
+            .durability_recovery()
+            .restore_native_checkpoint(execution, &checkpoint)
+            .unwrap();
+        assert_eq!(
+            restored.index_access().matching_definition(&installed),
+            Some(installed.clone())
+        );
+        // The newly attached medium has no original journal prefix, so use a
+        // reconstructive memory owner for the safe original-payload comparison.
+        let mut reconstructed = memory_runtime();
+        reconstructed
+            .durability_recovery()
+            .restore_native_checkpoint(execution, &checkpoint)
+            .unwrap();
+        let result = create_entity_outcome(execution, &reconstructed, "expanded-next");
+        assert_eq!(delta(&result)["base_next_index_id"], 1);
+        assert_eq!(
+            delta(&result)["definitions"][0]["index_id"],
+            installed.index_id.0
+        );
+        release_test_commit_snapshot(&reconstructed, &result);
+    }
 }
 
 #[test]
@@ -308,7 +312,7 @@ fn unselected_original_capture_cannot_acknowledge_definition_introduction() {
         "actual source-bound original capture"
     );
     let (ack, _) = execution
-        .run_native_with_checkpoint(|context| capture.acknowledge_selected(context))
+        .run_native_with_checkpoint(|context| capture.acknowledge_selected(execution, context))
         .unwrap();
     assert!(
         matches!(
@@ -333,7 +337,7 @@ fn unselected_original_capture_cannot_acknowledge_definition_introduction() {
     );
     let replayed = recovered
         .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
+        .canonical_commit_artifacts(&execution)
         .last()
         .unwrap()
         .unwrap();

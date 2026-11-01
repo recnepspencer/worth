@@ -19,8 +19,7 @@ pub(super) fn prepare(
     let base = runtime.history.index_definition_frontier().max(
         runtime
             .checkpoint_selection
-            .snapshot()
-            .map_or(1, |directory| directory.manifest.index_definition_frontier),
+            .acknowledged_index_definition_frontier(),
     );
     let mut captured = runtime.index_definitions.capture_catalog();
     if let Some(original) = &runtime.recovered_index_catalog {

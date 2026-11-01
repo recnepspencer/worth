@@ -124,11 +124,12 @@ pub(crate) fn apply(
 /// (`acknowledged`), each byte-identical to the reference's artifact at its
 /// position (D11), and the reference's record states after that many commits.
 pub(crate) fn assert_holds(
+    execution: &ExecutionRequest<'_, '_>,
     home: &ReadmittedApplicationHome,
     script: &Script,
     acknowledged: &[Vec<u8>],
 ) {
-    let artifacts = crate::workload::artifacts_of(home.relational().runtime());
+    let artifacts = crate::workload::artifacts_of(execution, home.relational().runtime());
     let commits = acknowledged.len();
     assert_eq!(artifacts.len(), commits, "recovered commit count");
     for (index, (found, expected)) in artifacts.iter().zip(acknowledged).enumerate() {

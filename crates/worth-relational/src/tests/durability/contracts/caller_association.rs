@@ -196,7 +196,7 @@ fn caller_association_survives_cold_checkpoint_history_and_journal_tail() {
     );
     let actual = recovered
         .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
+        .canonical_commit_artifacts(&execution)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
     assert_eq!(actual.len(), 3);

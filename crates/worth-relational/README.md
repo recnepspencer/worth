@@ -131,16 +131,18 @@ missing generations from source records.
 this owner. The next authoritative canonical commit carries the newly introduced
 ordered definition prefix, including full names, kinds, scoping and duplicate
 equivalent definitions at distinct IDs. Artifact v4 requires this delta in full,
-authoritative and embedded checkpoint envelope projections; CHK17 carries the
+authoritative and embedded checkpoint envelope projections; CHK18 carries the
 catalog and issued frontier from one capture. Earlier development formats refuse.
 Only an actual performed canonical cutover or acknowledged checkpoint selection
 advances the accepted frontier. Preparation, refusal and uncertain fate do not.
 
 Recovery admits checkpoint definitions and exact overlapping tail declarations
 before replay, retaining the original tail payload and catalog-prefix coverage.
-The catalog is global; sibling schema bases do not prune it. Expanded checkpoint
-restore may reemit an exact overlap once because it has no admitted directory
-selection. Generations remain derived: use the existing owner build/demand doors.
+The catalog is global; sibling schema bases do not prune it. Embedded restoration
+retains original canonical backing as data; an unselected standalone checkpoint
+can re-emit checkpoint-only definitions. Actual selected cold restoration and
+completed selection acknowledgement install accepted catalog coverage.
+Generations remain derived: use the existing owner build/demand doors.
 Catalog coverage incarnation/epochs are live observations and never enter wire.
 
 ## Mental model
@@ -168,7 +170,7 @@ binding twice refuses and a prepared candidate cannot be rebound. Candidate
 `caller_association()` observes its retained sealed payload; the canonical
 envelope exposes the same immutable bytes. Native preserves the caller's bytes
 without interpreting them or granting completion authority. Canonical artifact
-v4 and native checkpoint CHK17 retain the field through journal and embedded or
+v4 and native checkpoint CHK18 retain the field through journal and embedded or
 cold checkpoint recovery. Older artifact and checkpoint versions refuse rather
 than acquiring the new grammar implicitly. Association bytes or successful
 artifact decoding alone establish no durable World effect or product movement.
@@ -305,7 +307,7 @@ Pending settlement must be completed by its existing actual owner first.
 An owning refusal preserves the original source image and any acquired pins;
 `into_effect()` explicitly releases partial new pins for a fresh request.
 
-CHK17 records exact current observations and live external component obligations.
+CHK18 records exact current observations and live external component obligations.
 Canonical root headers require `recorded_components`; explicit
 `retained_empty_components` bind Empty observations to their schema carriers.
 These fields come from the same actual observations that created the external
@@ -654,5 +656,39 @@ The exact byte buffer is admitted before growth; failure moves no head or positi
 Preparation keeps the legacy authoritative tuple's exact scalar length/digest
 using its existing serializer, without retaining tuple bytes. The positioned
 artifact digest remains separate. There is one retained frame allocation rather
-than both a frame and tuple payload. Existing Journal and legacy CHK17 export
-behavior remains; this prerequisite neither enables CHK18 nor qualifies Complete.
+than both a frame and tuple payload. Ordinary Journal and legacy resident export
+behavior remains; strict CHK18 capture requires an actual original frame.
+
+## Canonical checkpoint members
+
+CHK18 requires one ordered canonical member for every indexed position, including
+positions covered by an earlier checkpoint. Each member is the original complete
+artifact v4 frame. Its member SHA covers the whole frame; the index retains
+the separate positioned payload digest. Capture verifies original Memory backing,
+protected Journal reads, or the installed prior selected read. It cannot reconstruct
+a missing original from an image or resident body. Earlier CHK17 selections refuse.
+Embedded checkpoints include these same original byte strings; external checkpoints
+publish them as singleton members alongside the manifest.
+
+`durability().canonical_commit_artifacts(&request)` takes the original execution
+request so selected reads enforce its limits. Skipping with `nth` or
+`after_position` remains lazy. Memory export shares its original byte owner.
+
+After actual physical selection, `checkpoint.acknowledge_selected(&request, context)`
+progresses the same captured cells before releasing component holds. A stop or Busy
+retains the same pending capture and cursor. The new directory data pointer may be
+readable while old read/member retirement remains pending; that placement does not
+complete acknowledgement, advance the accepted index-definition frontier or
+advance completion cadence. Historical, component, associated-effect and head
+demands use the selected original member source, without
+covered canonical journal fallback. Ordinary uncovered tail replay keeps its existing
+contract.
+
+Capture now visits the full indexed canonical prefix and original artifact bytes;
+metadata ordering and validation cost O(C log C), plus actual artifact/image work.
+New roster, mixed member list, retained per-entry owner, selected-read and ACK storage
+use original-request admission and shared intrinsic custody. Existing schema/image
+and other untouched manifest heaps remain outside that funding claim. Fixed
+weak-retained control metadata keeps its existing ordinary allocation contract.
+This ordinary checkpoint path does not issue Complete, reconstruct every historical schema/root,
+or provide service-free reconstruction or a complete-checkpoint preparation port.

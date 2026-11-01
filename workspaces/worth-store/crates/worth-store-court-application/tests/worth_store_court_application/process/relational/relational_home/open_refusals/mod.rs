@@ -23,7 +23,7 @@ fn a_second_runtime_cannot_open_a_home_that_is_open() {
         "a second runtime opened the medium of a home that is open"
     );
     drop(second);
-    assert_holds(&home, &script, &acknowledged);
+    assert_holds(&execution, &home, &script, &acknowledged);
     home.close(&execution);
 }
 
@@ -58,7 +58,7 @@ fn a_home_opened_as_another_runtime_refuses_as_foreign() {
         refused.map(|_| ())
     );
     let home = open(&location, &execution).expect("the home is still its runtime's");
-    assert_holds(&home, &script, &acknowledged);
+    assert_holds(&execution, &home, &script, &acknowledged);
     home.close(&execution);
 }
 

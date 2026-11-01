@@ -70,7 +70,7 @@ impl WorthQueryApplicationCommittedChanges {
             .map_err(|_| invalid("committed approval request locator is invalid"))?;
         // The receipt must own this exact artifact; its native runtime identity
         // and canonical commit select the retained poststate, never current head.
-        if !Arc::ptr_eq(&self.envelope, &receipt.committed_changes().envelope) {
+        if !self.shares_original(receipt.committed_changes()) {
             return Err(invalid("committed approval receipt envelope differs"));
         }
         let Some(AspectValue::String(worth_foundational::facade::InternedString::Symbol(symbol))) =

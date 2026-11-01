@@ -99,10 +99,13 @@ fn transition_main_to_v2(
     assert!(transitioned.envelope().schema_transition.is_some());
 }
 
-fn artifacts(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
+fn artifacts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> Vec<Vec<u8>> {
     runtime
         .durability()
-        .canonical_commit_artifacts(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .canonical_commit_artifacts(execution)
         .map(|artifact| {
             artifact
                 .expect("retained commits encode")
@@ -164,7 +167,7 @@ fn independent_runtimes_publish_byte_identical_canonical_artifacts() {
     assert_ne!(first.runtime_instance_id(), second.runtime_instance_id());
     run_script(execution, &mut first);
     run_script(execution, &mut second);
-    assert_same_artifacts(&first, &second, "independent runtimes");
+    assert_same_artifacts(execution, &first, &second, "independent runtimes");
 }
 
 /// A durable runtime that stops partway, is recovered by another process from
@@ -191,12 +194,17 @@ fn a_recovered_runtime_continues_with_the_reference_artifacts() {
         } else {
             "recovered from the journal"
         };
-        assert_same_artifacts(&reference, &recovered, case);
+        assert_same_artifacts(execution, &reference, &recovered, case);
     }
 }
 
-fn assert_same_artifacts(expected: &RelationalRuntime, found: &RelationalRuntime, case: &str) {
-    let (left, right) = (artifacts(expected), artifacts(found));
+fn assert_same_artifacts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    expected: &RelationalRuntime,
+    found: &RelationalRuntime,
+    case: &str,
+) {
+    let (left, right) = (artifacts(execution, expected), artifacts(execution, found));
     assert_eq!(left.len(), 6, "{case}: every script commit is retained");
     assert_eq!(left.len(), right.len(), "{case}: commit count");
     for (index, (l, r)) in left.iter().zip(&right).enumerate() {

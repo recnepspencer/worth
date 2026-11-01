@@ -191,8 +191,8 @@ impl Script {
                 steps.push(crate::workload::Step::Checkpoint);
             }
         }
-        let artifacts = artifacts_of(&runtime);
-        let transitions = crate::branch_lifecycle::artifacts_of(&runtime);
+        let artifacts = artifacts_of(&execution, &runtime);
+        let transitions = crate::branch_lifecycle::artifacts_of(&execution, &runtime);
         assert_eq!(
             artifacts.len(),
             commits,
@@ -268,10 +268,13 @@ pub(crate) fn commit(
 }
 
 /// Every retained canonical commit, as artifact bytes in position order.
-pub(crate) fn artifacts_of(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
+pub(crate) fn artifacts_of(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> Vec<Vec<u8>> {
     runtime
         .durability()
-        .canonical_commit_artifacts(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .canonical_commit_artifacts(execution)
         .map(|artifact| {
             artifact
                 .expect("retained commits encode")
@@ -285,12 +288,11 @@ pub(crate) fn artifacts_of(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
 /// The acknowledged prefix is retained by the oracle before arming the fault;
 /// full byte agreement is checked independently after reopening the home.
 pub(crate) fn append_live_artifacts(
+    execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     before: &[Vec<u8>],
 ) -> Vec<Vec<u8>> {
-    let artifacts = runtime
-        .durability()
-        .canonical_commit_artifacts(worth_execution::ExecutionAllocationPolicy::SystemAllocation);
+    let artifacts = runtime.durability().canonical_commit_artifacts(execution);
     assert!(
         artifacts.len() >= before.len(),
         "live selection lost an acknowledged index prefix"

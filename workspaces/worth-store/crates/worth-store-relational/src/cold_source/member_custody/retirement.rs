@@ -16,6 +16,9 @@ impl StoreColdSource {
         &self,
         original: &(dyn Any + Send + Sync),
     ) -> Result<(), R> {
+        if original.is::<crate::cold_source::selected_read::StoreSelectedRead>() {
+            return self.validate_selected_custody(original);
+        }
         let owner = original
             .downcast_ref::<MemberCustodyOwner>()
             .ok_or(R::ForeignCustody)?;
@@ -35,6 +38,9 @@ impl StoreColdSource {
         execution: &ExecutionRequest<'_, '_>,
         original: &mut (dyn Any + Send + Sync),
     ) -> O {
+        if original.is::<crate::cold_source::selected_read::StoreSelectedRead>() {
+            return self.advance_selected_custody(execution, original);
+        }
         if let Err(cause) = self.validate_custody_owner(original) {
             return O::Refused(cause);
         }
@@ -51,12 +57,8 @@ impl StoreColdSource {
                 Err(TryLockError::Poisoned(error)) => error.into_inner(),
             };
             let member = owner.members[owner.next];
-            let Some(count) = state.counts.get_mut(&member).filter(|count| **count > 0) else {
+            if !super::release_member(&mut state.counts, &member, &mut owner.retired_cells) {
                 return O::Refused(R::ForeignCustody);
-            };
-            *count -= 1;
-            if *count == 0 {
-                state.counts.remove(&member);
             }
             owner.next += 1;
         }

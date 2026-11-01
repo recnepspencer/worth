@@ -116,10 +116,14 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
                         .clone()
                 })
                 .collect();
+            // Make the actual hostile patch pass full artifact semantics first;
+            // the later route oracle must still reject this hidden authored write.
+            entry.synchronize_patch_semantics_for_test(execution);
         }
         assert!(entry.codec_retirement_headers_valid());
         let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &changed,
+            execution,
             execution.allocation_policy(),
         )
         .unwrap();
@@ -236,6 +240,7 @@ pub(super) fn cold_retired_route(
         }
         let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &changed,
+            execution,
             execution.allocation_policy(),
         )
         .unwrap();

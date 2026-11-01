@@ -144,8 +144,8 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
         );
     }
     assert_eq!(
-        crate::workload::artifacts_of(home.relational().runtime()),
-        crate::workload::artifacts_of(&reference)
+        crate::workload::artifacts_of(&execution, home.relational().runtime()),
+        crate::workload::artifacts_of(&execution, &reference)
     );
     drop(selected);
     home.close(&execution);

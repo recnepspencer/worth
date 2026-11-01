@@ -27,7 +27,9 @@ mod strategy;
 mod symbols;
 mod touches;
 pub(super) mod validation;
-pub(super) use envelope::{canonical as quote_canonical, quote};
+#[cfg(test)]
+pub(super) use envelope::canonical as quote_canonical;
+pub(super) use envelope::quote;
 
 /// Concrete retained storage and additional simultaneous decode/check storage.
 #[derive(Clone, Copy, Default)]

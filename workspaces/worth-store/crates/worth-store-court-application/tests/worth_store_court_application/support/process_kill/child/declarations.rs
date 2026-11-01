@@ -34,7 +34,7 @@ pub(crate) fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
     ) {
         home.checkpoint(&execution).unwrap();
     }
-    let acknowledged = crate::workload::artifacts_of(home.relational().runtime());
+    let acknowledged = crate::workload::artifacts_of(&execution, home.relational().runtime());
     crate::killed_child::announce(&markers.join("acknowledged"), &encode(&acknowledged));
     let transitions = crate::branch_lifecycle::artifacts_of_home(&home);
     crate::killed_child::announce(&markers.join("transitions"), &encode(&transitions));

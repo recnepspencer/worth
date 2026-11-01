@@ -28,21 +28,21 @@ fn a_home_recovers_exactly_what_it_committed_and_keeps_going() {
     let half = COMMITS / 2;
     let home = open(&location, &execution).expect("a new home opens");
     assert_eq!(apply(&home, &execution, steps_before(&script, half)), half);
-    let first_half = crate::workload::artifacts_of(home.relational().runtime());
-    assert_holds(&home, &script, &first_half);
+    let first_half = crate::workload::artifacts_of(&execution, home.relational().runtime());
+    assert_holds(&execution, &home, &script, &first_half);
     home.close(&execution);
 
     let home = open(&location, &execution).expect("the home reopens");
-    assert_holds(&home, &script, &first_half);
+    assert_holds(&execution, &home, &script, &first_half);
     let applied = apply(&home, &execution, steps_after(&script, half));
     assert_eq!(applied, COMMITS - half);
-    let everything = crate::workload::artifacts_of(home.relational().runtime());
+    let everything = crate::workload::artifacts_of(&execution, home.relational().runtime());
     assert_eq!(&everything[..half], &first_half[..]);
-    assert_holds(&home, &script, &everything);
+    assert_holds(&execution, &home, &script, &everything);
     drop(home);
 
     let home = open(&location, &execution).expect("an abandoned home recovers");
-    assert_holds(&home, &script, &everything);
+    assert_holds(&execution, &home, &script, &everything);
     home.close(&execution);
 }
 
@@ -55,10 +55,10 @@ fn a_fork_committed_after_a_checkpoint_recovers() {
     let execution = worth_execution::ExecutionRequest::serial(&request);
     let home = open(&location, &execution).expect("a new home opens");
     assert_eq!(apply(&home, &execution, &script.steps), COMMITS);
-    let everything = crate::workload::artifacts_of(home.relational().runtime());
+    let everything = crate::workload::artifacts_of(&execution, home.relational().runtime());
     drop(home);
     let home = open(&location, &execution).expect("the home recovers");
-    assert_holds(&home, &script, &everything);
+    assert_holds(&execution, &home, &script, &everything);
     home.close(&execution);
 }
 

@@ -169,10 +169,13 @@ pub(crate) fn steps() -> Vec<Step> {
     ]
 }
 
-pub(crate) fn artifacts_of(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
+pub(crate) fn artifacts_of(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> Vec<Vec<u8>> {
     runtime
         .durability()
-        .branch_transition_artifacts(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .branch_transition_artifacts(execution.allocation_policy())
         .map(|artifact| artifact.unwrap().as_bytes().to_vec())
         .collect()
 }

@@ -51,6 +51,17 @@ impl PositionedCanonicalCommit {
     }
 
     #[cfg(test)]
+    pub(crate) fn synchronize_patch_semantics_for_test(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
+        self.canonical = Arc::new(self.canonical.copy_original_for_test(request));
+        Arc::get_mut(&mut self.canonical)
+            .expect("the complete original-request fixture copy is actually unique")
+            .synchronize_patch_semantics_for_test(request);
+    }
+
+    #[cfg(test)]
     pub(crate) fn envelope_mut_for_test(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,

@@ -13,7 +13,14 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    if home.home.context.world_close_checkpoint.is_none() {
+    let needs_checkpoint = home
+        .home
+        .context
+        .world_close_checkpoint
+        .get_mut()
+        .unwrap_or_else(|error| error.into_inner())
+        .is_none();
+    if needs_checkpoint {
         let prior = crate::checkpoint::close_settlement::settle(
             &home.home.context.serving,
             &home.home.context.checkpoint,
@@ -24,7 +31,12 @@ where
         if let Some(pending) = home.home.checkpoint_observation() {
             return Err(Denial::CheckpointRecoveryRequired(pending));
         }
-        home.home.context.world_close_checkpoint = Some(result);
+        *home
+            .home
+            .context
+            .world_close_checkpoint
+            .get_mut()
+            .unwrap_or_else(|error| error.into_inner()) = Some(result);
     }
     // A settled failure does not veto otherwise lawful release. Actual
     // cancellation/deadline still returns this SAME stopped, owning World.

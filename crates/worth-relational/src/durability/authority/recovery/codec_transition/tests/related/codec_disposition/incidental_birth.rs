@@ -187,6 +187,7 @@ pub(super) fn refuse_late_claim() {
         }
         let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &forged,
+            execution,
             execution.allocation_policy(),
         )
         .unwrap();

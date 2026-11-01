@@ -3,11 +3,11 @@ pub(in crate::domain_computation::primary_graph) use materialized_field::Materia
 mod actor_observation;
 mod field_effect;
 mod output_effect;
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::{
-    history::{CanonicalCommitEnvelope, RelationalCommitReceipt},
+    history::{RelationalCommitReceipt, SharedCanonicalCommitEnvelope},
     identity::EntityId,
     lineage::LineageEventRecord,
     publication::{PublishedAuthoritativeRecordPatch, RecordStructuralChange},
@@ -21,7 +21,7 @@ use worth_relational::facade::{
 /// exact committed fields, without granting execution authority.
 #[derive(Clone, Eq, PartialEq)]
 pub struct WorthQueryApplicationCommittedChanges {
-    envelope: Arc<CanonicalCommitEnvelope>,
+    envelope: SharedCanonicalCommitEnvelope,
 }
 
 impl WorthQueryApplicationCommittedChanges {
@@ -29,12 +29,12 @@ impl WorthQueryApplicationCommittedChanges {
         &self,
         other: &Self,
     ) -> bool {
-        Arc::ptr_eq(&self.envelope, &other.envelope)
+        std::ptr::eq(self.envelope.as_ref(), other.envelope.as_ref())
     }
 
     pub(in crate::domain_computation::primary_graph) fn from_commit(commit: &CommitResult) -> Self {
         Self {
-            envelope: Arc::clone(&commit.publication().envelope),
+            envelope: commit.publication().envelope.clone(),
         }
     }
 

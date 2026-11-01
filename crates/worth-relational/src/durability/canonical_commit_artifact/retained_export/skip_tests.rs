@@ -41,7 +41,7 @@ fn seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies() 
     }
     let artifacts = runtime
         .durability()
-        .canonical_commit_artifacts(ExecutionAllocationPolicy::SystemAllocation)
+        .canonical_commit_artifacts(execution)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
     let source = Arc::new(SelectedJournal {
@@ -67,7 +67,7 @@ fn seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies() 
             RetainedArtifact {
                 position: entry.position,
                 cell: Arc::new(crate::history::RelationalCommitEnvelopeResidency::cold(
-                    entry,
+                    crate::history::RetainedCanonicalIndex::from_ordinary_owned(entry),
                     source.clone(),
                     None,
                     None,
@@ -77,7 +77,7 @@ fn seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies() 
         .collect::<Vec<_>>();
     let iter = RelationalCanonicalCommitArtifacts {
         retained: retained.into_iter(),
-        policy: ExecutionAllocationPolicy::SystemAllocation,
+        execution: *execution,
     };
     let selected = iter
         .after_position(PatchStreamPosition(3))

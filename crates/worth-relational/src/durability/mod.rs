@@ -10,6 +10,7 @@ pub(crate) mod artifact_canonical_payload;
 pub(crate) mod artifact_payload_emission;
 pub(crate) mod branch_transition_artifact;
 pub(crate) mod canonical_commit_artifact;
+pub(crate) mod checkpoint_history;
 pub(crate) mod checkpoints;
 pub mod data;
 pub(crate) mod derived_index_artifacts;

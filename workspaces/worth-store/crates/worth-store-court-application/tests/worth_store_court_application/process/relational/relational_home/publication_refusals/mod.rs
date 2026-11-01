@@ -102,13 +102,13 @@ fn a_commit_the_medium_refuses_before_any_effect_is_denied_and_not_installed() {
         denied.map(|_| ())
     );
     assert_eq!(
-        crate::workload::artifacts_of(home.relational().runtime()).len(),
+        crate::workload::artifacts_of(&execution, home.relational().runtime()).len(),
         1
     );
     home.abort_for_test();
     let home = open(&location, &execution).expect("the home reopens");
     assert_eq!(
-        crate::workload::artifacts_of(home.relational().runtime()).len(),
+        crate::workload::artifacts_of(&execution, home.relational().runtime()).len(),
         1,
         "a denied commit recovered"
     );
@@ -152,7 +152,7 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     );
     let (home, activations) =
         crate::media_faults::open_with_faults(&location, SOURCE, &[fault], &execution).unwrap();
-    let acknowledged = crate::workload::artifacts_of(home.relational().runtime());
+    let acknowledged = crate::workload::artifacts_of(&execution, home.relational().runtime());
     crate::media_faults::arm(&activations);
     let unresolved = crate::workload::commit(
         home.relational().runtime(),
@@ -173,7 +173,12 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
         .clone();
     assert_eq!(crate::crash_oracle::commit_subject(&fate).0 .0, 3);
     assert_eq!(
-        crate::workload::append_live_artifacts(home.relational().runtime(), &acknowledged).len(),
+        crate::workload::append_live_artifacts(
+            &execution,
+            home.relational().runtime(),
+            &acknowledged
+        )
+        .len(),
         2,
         "installed while unresolved"
     );
@@ -209,7 +214,7 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     home.abort_for_test();
 
     let home = open(&location, &execution).expect("the home reopens");
-    let recovered = crate::workload::artifacts_of(home.relational().runtime());
+    let recovered = crate::workload::artifacts_of(&execution, home.relational().runtime());
     assert_eq!(
         recovered.len(),
         3,

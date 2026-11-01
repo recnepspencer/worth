@@ -69,13 +69,14 @@ pub(crate) fn commit_subject(
 /// Check the recovered home against the stopped run. Returns how many commits
 /// it recovered.
 pub(crate) fn assert_recovered(
+    execution: &ExecutionRequest<'_, '_>,
     home: &ReadmittedApplicationHome,
     script: &Script,
     acknowledged: &[Vec<u8>],
     in_flight: &InFlight,
     case: &str,
 ) -> usize {
-    let recovered = crate::workload::artifacts_of(home.relational().runtime());
+    let recovered = crate::workload::artifacts_of(execution, home.relational().runtime());
     let held = acknowledged.len();
     assert!(
         recovered.len() >= held,
@@ -155,23 +156,23 @@ pub(crate) fn assert_continues(
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) {
-    let before = crate::workload::artifacts_of(home.relational().runtime());
+    let before = crate::workload::artifacts_of(execution, home.relational().runtime());
     let transitions = crate::branch_lifecycle::artifacts_of_home(&home).len();
     apply(
         &home,
         execution,
         crate::branch_lifecycle::steps_after(script, recovered, transitions),
     );
-    let everything = crate::workload::artifacts_of(home.relational().runtime());
+    let everything = crate::workload::artifacts_of(execution, home.relational().runtime());
     assert!(
         everything[..recovered] == before[..],
         "{case}: history moved"
     );
-    assert_holds(&home, script, &everything);
+    assert_holds(execution, &home, script, &everything);
     home.close(execution);
     let again = open_declaring(location, served_schema(&script.steps), execution)
         .unwrap_or_else(|refusal| panic!("{case}: reopen: {refusal:?}"));
-    assert_holds(&again, script, &everything);
+    assert_holds(execution, &again, script, &everything);
     crate::identity_safety::assert_creates_are_fresh(&again, script, execution, case);
     again.close(execution);
 }

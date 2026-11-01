@@ -55,7 +55,7 @@ weak source identity and original private guard. `into_retirement()` and
 at a time. Issuance identity is checked before callbacks; Store additionally
 checks the original registry and Serving Arc identities. Validation takes no
 locks or I/O; registry advancement uses `try_write`. Busy/stop/refusal retain the
-same original guard, member Vec and cursor, so retry cannot release a member
+same original guard, member roster and cursor, so retry cannot release a member
 twice. Other clones and independent cold readers keep their own protection.
 
 After the final member, including an originally empty registration, the guard's
@@ -65,10 +65,14 @@ Ordinary incomplete Drop retires only the remaining suffix and is unbudgeted
 abandonment, not successful close. Legacy opaque and composite Native providers
 remain unsupported by this protocol.
 
-Acquisition adds one allocation and indirection. Each Store member step is
-O(log distinct registered members); node rebalancing/deallocation and small Arc
-control-allocation reclamation may occur. Advance performs no new allocation,
-reservation, rehash, shrink or arbitrary payload/final physical-owner Drop.
+Acquisition prepares the actual roster, count cells and release slots before
+registry effects. Each Store member step is
+O(log distinct registered members). Unique SDK edits consume prepared cells and
+retain detached cells for disposal outside the registry guard. Advance and
+ordinary owner Drop allocate no new backing. Final inert metadata disposal and
+small Arc control-allocation reclamation retain their ordinary contract. Advance
+performs no new reservation, rehash, shrink or arbitrary payload/final
+physical-owner Drop.
 This prerequisite qualifies one registration/share only, not cold graph,
 ApplicationHome or physical close. See the [Native facade](../../../../crates/worth-relational/README.md#retire-one-provider-member-custody-share).
 
@@ -129,3 +133,26 @@ growth and return only after exact length and verified EOF. Foreign original
 sources refuse before provider I/O. The initial selected-map contract remains
 unchanged; this ordinary read capability does not implement Complete capture
 or selected-backing replacement.
+
+
+## Replace selected canonical backing in the same Home attempt
+
+Native CHK18 selection retains the actual verified selected read, its member
+map and original source identity. The selected-read callback exposes that fixed
+member cut with zero journal heads; later roots cannot redirect member reads.
+Foreign source registries refuse even when they share the same Serving owner.
+
+The existing Home checkpoint attempt passes its original request through Native
+acknowledgement. Replacement uses the pending selection's fixed version and
+verified EOF read. Stop or Busy after admission preserves the same candidate,
+old read and retirement work; retry neither republishes nor obtains a latest
+reader. Initial selection retains its existing same-read and different-selection
+refusals. Explicit ordinary admission failure cleanup remains separate from
+successful controlled retirement.
+
+Custody counts remain one private, never-cloned SDK ordered map. Controlled
+admission prepares its owned member roster, singleton cells and detached-cell
+slots before registry effects. Unique edits retain actual node/entry owners;
+controlled advance and ordinary owner Drop allocate no new backing. Detached
+cells and independent grants survive until disposal outside the registry guard.
+Fixed weak-retained control metadata keeps its existing ordinary contract.

@@ -27,6 +27,14 @@ pub trait RelationalDurableColdSource: Send + Sync + std::fmt::Debug {
     > {
         Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
     }
+    /// Retain only the provider's already installed verified selected read.
+    /// This must never recapture its latest physical root or reader.
+    fn checkpoint_selected_read_protection(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::RelationalDurableReadPayload, super::RelationalDurableOwnedReadRefusal> {
+        Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
+    }
     fn read_commit_owned(
         &self,
         _request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -80,6 +88,17 @@ pub trait RelationalDurableColdSource: Send + Sync + std::fmt::Debug {
         super::RelationalDurableMemberRetirementObservation::Refused(
             super::RelationalDurableMemberRetirementRefusal::UnsupportedProvider,
         )
+    }
+
+    /// Controlled selected-basis custody; legacy retention is never a fallback.
+    fn retain_members_for_request(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        _issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<super::RelationalDurableMemberCustody, super::RelationalDurableOwnedReadRefusal>
+    {
+        Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
     }
 
     /// Retain selected placement without reading member payloads. The provider

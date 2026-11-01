@@ -1,4 +1,4 @@
-//! The runtime's last acknowledged native directory. Payloads remain in Store.
+//! Selected directory DATA and the independently completed catalog frontier.
 use crate::durability::data::{
     PreparedCheckpointDirectory, RelationalCheckpointDirectory, RelationalCheckpointManifest,
 };
@@ -7,7 +7,20 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct RelationalCheckpointManifestSelection {
-    selected: Arc<Mutex<Option<Arc<RelationalCheckpointDirectory>>>>,
+    selected: Arc<Mutex<CheckpointSelectionState>>,
+}
+#[derive(Debug, Clone)]
+struct CheckpointSelectionState {
+    directory: Option<Arc<RelationalCheckpointDirectory>>,
+    acknowledged_index_definition_frontier: u64,
+}
+impl Default for CheckpointSelectionState {
+    fn default() -> Self {
+        Self {
+            directory: None,
+            acknowledged_index_definition_frontier: 1,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -21,11 +34,24 @@ impl RelationalCheckpointManifestSelection {
         self.selected
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .directory
             .clone()
     }
+    pub(crate) fn acknowledged_index_definition_frontier(&self) -> u64 {
+        self.selected
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .acknowledged_index_definition_frontier
+    }
     pub(crate) fn detached(&self) -> Self {
+        // Pointer and completed semantic frontier come from ONE owner observation.
+        let state = self
+            .selected
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
         Self {
-            selected: Arc::new(Mutex::new(self.snapshot())),
+            selected: Arc::new(Mutex::new(state)),
         }
     }
     pub(crate) fn prepare(
@@ -43,11 +69,27 @@ impl RelationalCheckpointManifestSelection {
             },
         }
     }
-    pub(crate) fn restore(&self, directory: Arc<RelationalCheckpointDirectory>) {
-        *self
-            .selected
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(directory);
+    pub(crate) fn restore_data(&self, directory: Arc<RelationalCheckpointDirectory>) {
+        let prior = {
+            let mut state = self
+                .selected
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            state.directory.replace(directory)
+        };
+        drop(prior);
+    }
+    pub(crate) fn restore_selected(&self, directory: Arc<RelationalCheckpointDirectory>) {
+        let prior = {
+            let mut state = self
+                .selected
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            state.acknowledged_index_definition_frontier =
+                directory.manifest.index_definition_frontier;
+            state.directory.replace(directory)
+        };
+        drop(prior);
     }
 }
 
@@ -61,6 +103,7 @@ impl RelationalCheckpointManifestPublication {
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         if selected
+            .directory
             .as_ref()
             .is_some_and(|prior| self.regresses(&prior.manifest))
         {
@@ -79,22 +122,47 @@ impl RelationalCheckpointManifestPublication {
     pub(crate) fn source_matches(&self, source: &Arc<dyn RelationalDurableColdSource>) -> bool {
         Arc::ptr_eq(&self.directory.source, source)
     }
-    pub(crate) fn acknowledge(
+    pub(crate) fn begin_selected_directory_admission(
         &self,
-    ) -> Result<(), crate::storage::data::RelationalStorageUnavailableCause> {
-        let directory = Arc::new(self.directory.clone().readmit()?);
-        let mut selected = self
-            .selection
-            .selected
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+    ) -> crate::durability::data::CheckpointDirectoryAdmission {
+        crate::durability::data::CheckpointDirectoryAdmission::new(self.directory.clone())
+    }
+    pub(crate) fn complete_acknowledgement(
+        &self,
+    ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
+        use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Denial;
+        let mut selected = match self.selection.selected.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
+        };
+        // THIS operation's retired, original selection is the completed fact.
+        // The data pointer may already belong to another incomplete capture.
+        selected.acknowledged_index_definition_frontier = selected
+            .acknowledged_index_definition_frontier
+            .max(self.directory.manifest.index_definition_frontier);
+        Ok(())
+    }
+    pub(crate) fn acknowledge_directory(
+        &self,
+        directory: Arc<RelationalCheckpointDirectory>,
+    ) -> Result<
+        Option<Arc<RelationalCheckpointDirectory>>,
+        crate::durability::medium::RelationalCheckpointAcknowledgementDenial,
+    > {
+        use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Denial;
+        let mut selected = match self.selection.selected.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
+        };
         if selected
+            .directory
             .as_ref()
             .is_some_and(|prior| self.regresses(&prior.manifest))
         {
-            return Err(crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable);
+            return Err(Denial::StaleCapture);
         }
-        *selected = Some(directory);
-        Ok(())
+        Ok(selected.directory.replace(directory))
     }
 }

@@ -1,5 +1,5 @@
 //! Concrete, distinct recovery custody payloads. None constructs application service.
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use worth_proof::AuthorityMarker;
 use worth_relational::facade::runtime::RelationalRuntimeDefinition;
 use worth_store::physical_runtime::{RecoveryStorePresence, ServingPhysicalRuntime};
@@ -76,8 +76,11 @@ pub(crate) struct HomeContext {
     pub(crate) initialization: crate::relational_preparation::HomeInitializationOrigin,
     pub(crate) world_publications: Arc<crate::world_section::WorldPublications>,
     pub(crate) world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
-    pub(crate) world_close_checkpoint:
+    // The cached failure may own a Send-only original physical write source.
+    // Exclusive close accesses use get_mut; no gate is held across callbacks.
+    pub(crate) world_close_checkpoint: Mutex<
         Option<Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial>>,
+    >,
     pub(crate) world_slot: Option<crate::world_section::UnclaimedWorldSlot>,
     pub(crate) checkpoint: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     pub(crate) location: std::path::PathBuf,

@@ -20,9 +20,11 @@ pub struct RelationalNativeCheckpoint {
     region: std::ops::Range<usize>,
     captured_sections: Option<NativeCheckpointSectionBytes>,
     captured_coverage: Option<NativeCheckpointCoverage>,
-    members: Arc<[super::RelationalCheckpointMember]>,
+    members: super::CapturedCheckpointMembers,
     publications: Arc<[crate::storage::residency::RelationalCheckpointRegionPublication]>,
     manifest_publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
+    canonical_publication:
+        Option<crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>,
     publication: Option<Arc<crate::durability::medium::CheckpointPublication>>,
 }
 
@@ -58,6 +60,7 @@ impl Clone for RelationalNativeCheckpoint {
             members: self.members.clone(),
             publications: self.publications.clone(),
             manifest_publication: self.manifest_publication.clone(),
+            canonical_publication: self.canonical_publication.clone(),
             publication: self.publication.clone(),
         }
     }
@@ -90,9 +93,10 @@ impl RelationalNativeCheckpoint {
             region,
             captured_sections: None,
             captured_coverage: None,
-            members: Arc::from([]),
+            members: Default::default(),
             publications: Arc::from([]),
             manifest_publication: None,
+            canonical_publication: None,
             publication: None,
         }
     }
@@ -113,9 +117,10 @@ impl RelationalNativeCheckpoint {
             region,
             captured_sections: None,
             captured_coverage: None,
-            members: Arc::from([]),
+            members: Default::default(),
             publications: Arc::from([]),
             manifest_publication: None,
+            canonical_publication: None,
             publication: None,
         })
     }
@@ -127,7 +132,7 @@ impl RelationalNativeCheckpoint {
     /// Members to publish atomically with the manifest. Inline artifacts also
     /// expose their selected members; their bytes already contain the same set.
     pub fn members(&self) -> &[super::RelationalCheckpointMember] {
-        &self.members
+        self.members.entries()
     }
 
     pub(crate) fn with_component_holds(
@@ -144,9 +149,9 @@ impl RelationalNativeCheckpoint {
 
     pub(crate) fn with_captured_members(
         mut self,
-        members: Vec<super::RelationalCheckpointMember>,
+        members: super::CapturedCheckpointMembers,
     ) -> Self {
-        self.members = members.into();
+        self.members = members;
         self
     }
 
@@ -154,10 +159,11 @@ impl RelationalNativeCheckpoint {
     /// its actual selection. Progress remains owned across caller interruption.
     pub fn acknowledge_selected(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
         self.publication.as_ref().ok_or(crate::durability::medium::RelationalCheckpointAcknowledgementDenial::CaptureNotBound)?
-            .advance(context)
+            .advance(execution,context)
     }
 
     pub fn publication_subject(
@@ -195,7 +201,8 @@ impl RelationalNativeCheckpoint {
     pub(crate) fn bind_publication(
         mut self,
         binding: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
-    ) -> Self {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::RelationalNativeCheckpointCaptureDenial> {
         if let Some(binding) = binding
             && self
                 .manifest_publication
@@ -205,16 +212,33 @@ impl RelationalNativeCheckpoint {
             let subject = crate::durability::medium::OpaqueCapturedCheckpointSubject::new(
                 self.bytes.clone(),
                 self.region.clone(),
-                self.members.iter().map(|member| member.locator()).collect(),
-            );
+                self.members.entries(),
+                execution,
+            )?;
             self.publication = Some(Arc::new(
                 crate::durability::medium::CheckpointPublication::new(
                     subject,
                     Arc::downgrade(&binding),
                     self.clone(),
-                ),
+                    execution,
+                )?,
             ));
         }
+        Ok(self)
+    }
+    pub(crate) fn canonical_publication(
+        &self,
+    ) -> Option<&crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>
+    {
+        self.canonical_publication.as_ref()
+    }
+    pub(crate) fn with_canonical_publication(
+        mut self,
+        publication: Option<
+            crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication,
+        >,
+    ) -> Self {
+        self.canonical_publication = publication;
         self
     }
 
@@ -262,9 +286,10 @@ impl RelationalNativeCheckpoint {
             component_custody: ComponentCaptureCustody::default(),
             bytes,
             region,
-            members: Arc::from([]),
+            members: Default::default(),
             publications: Arc::from([]),
             manifest_publication: None,
+            canonical_publication: None,
             publication: None,
             captured_sections: Some(sections),
             captured_coverage: Some(NativeCheckpointCoverage {

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use worth_execution::ExecutionAllocationPolicy;
+use worth_execution::ExecutionRequest;
 
 use super::{RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial};
 use crate::durability::access::DurabilityAccess;
@@ -18,7 +18,7 @@ impl DurabilityAccess<'_> {
     /// verifying an original costs O(artifact bytes), with no new payload copy.
     pub fn canonical_commit_artifacts<'scope, 'authority>(
         &self,
-        policy: ExecutionAllocationPolicy<'scope, 'authority>,
+        execution: &ExecutionRequest<'scope, 'authority>,
     ) -> RelationalCanonicalCommitArtifacts<'scope, 'authority> {
         let mut selected = std::collections::BTreeMap::new();
         for artifact in self.runtime.history.commit_artifacts() {
@@ -51,7 +51,7 @@ impl DurabilityAccess<'_> {
         let retained = selected.into_values().collect::<Vec<_>>();
         RelationalCanonicalCommitArtifacts {
             retained: retained.into_iter(),
-            policy,
+            execution: *execution,
         }
     }
 }
@@ -66,7 +66,7 @@ struct RetainedArtifact {
 /// the iteration; the caller decides whether to continue.
 pub struct RelationalCanonicalCommitArtifacts<'scope, 'authority> {
     retained: std::vec::IntoIter<RetainedArtifact>,
-    policy: ExecutionAllocationPolicy<'scope, 'authority>,
+    execution: ExecutionRequest<'scope, 'authority>,
 }
 
 impl RelationalCanonicalCommitArtifacts<'_, '_> {
@@ -102,7 +102,7 @@ impl Iterator for RelationalCanonicalCommitArtifacts<'_, '_> {
         // Skipping an immutable index prefix does not demand its bodies.
         self.retained
             .nth(n)
-            .map(|commit| commit.cell.export_artifact(self.policy))
+            .map(|commit| commit.cell.export_artifact(&self.execution))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

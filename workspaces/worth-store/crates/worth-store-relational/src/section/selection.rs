@@ -7,6 +7,17 @@ use worth_store::physical_runtime::AnchoredRecordMembership;
 /// The Home implementation consults its original attempt and actual receipt.
 /// It neither publishes nor acknowledges Native work through this port.
 pub trait RelationalCheckpointSelectionSource: Send + Sync + std::fmt::Debug {
+    /// Observe the SAME pending capture and its actual receipt without copying
+    /// membership. This observes receipt identity; it does not certify membership.
+    fn selected_version(
+        &self,
+        _subject: &OpaqueCapturedCheckpointSubject,
+    ) -> Result<
+        Option<worth_store::physical_runtime::AnchoredRecordVersion>,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        Err(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
+    }
     fn selected_membership(
         &self,
         subject: &OpaqueCapturedCheckpointSubject,
@@ -17,19 +28,14 @@ pub(crate) fn observe(
     source: &dyn RelationalCheckpointSelectionSource,
     subject: &OpaqueCapturedCheckpointSubject,
 ) -> CheckpointSelectionObservation {
-    let Some(membership) = source.selected_membership(subject) else {
-        return CheckpointSelectionObservation::NotSelected;
-    };
-    if !subject.required_members().iter().all(|required| {
-        membership
-            .members()
-            .iter()
-            .any(|member| member.sha256() == required.sha256 && member.length() == required.length)
-    }) {
-        return CheckpointSelectionObservation::Unknown;
+    match source.selected_version(subject) {
+        Ok(Some(version)) => {
+            CheckpointSelectionObservation::Selected(CheckpointSelectionIdentity {
+                generation: version.generation(),
+                manifest_sha256: version.payload_sha256(),
+            })
+        }
+        Ok(None) => CheckpointSelectionObservation::NotSelected,
+        Err(_) => CheckpointSelectionObservation::Unknown,
     }
-    CheckpointSelectionObservation::Selected(CheckpointSelectionIdentity {
-        generation: membership.version().generation(),
-        manifest_sha256: membership.version().payload_sha256(),
-    })
 }

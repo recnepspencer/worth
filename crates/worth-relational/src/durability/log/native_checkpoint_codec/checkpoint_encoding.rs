@@ -7,13 +7,16 @@ use crate::durability::data::{
     RelationalNativeCheckpointCaptureDenial,
 };
 use std::io::Write;
-use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer, ExecutionImmutableBytes};
+use worth_execution::{
+    ExecutionAllocationPolicy, ExecutionImmutableBytes, ExecutionRequestArrayBuilder,
+};
 mod writer;
 use writer::{frame_mismatch, EmissionWriter, SizingWriter};
 
 #[cfg(test)]
 pub(crate) fn encode_checkpoint(
     checkpoint: &DurableCheckpoint,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     policy: ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     (ExecutionImmutableBytes, NativeCheckpointSectionBytes),
@@ -21,6 +24,7 @@ pub(crate) fn encode_checkpoint(
 > {
     let (bytes, sections, _) = encode_checkpoint_members(
         checkpoint,
+        execution,
         policy,
         &RelationalCheckpointArtifactPolicy::Embedded,
     )?;
@@ -30,57 +34,77 @@ pub(crate) fn encode_checkpoint(
 #[cfg(test)]
 pub(crate) fn encode_checkpoint_members(
     checkpoint: &DurableCheckpoint,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     policy: ExecutionAllocationPolicy<'_, '_>,
     placement: &RelationalCheckpointArtifactPolicy<'_>,
 ) -> Result<
     (
         ExecutionImmutableBytes,
         NativeCheckpointSectionBytes,
-        Vec<RelationalCheckpointMember>,
+        crate::durability::data::CapturedCheckpointMembers,
     ),
     RelationalNativeCheckpointCaptureDenial,
 > {
     policy.check_live()?;
-    let captured = CapturedManifest::capture(checkpoint, policy)?;
-    let (bytes, sections, members, _) = encode_captured(captured, policy, placement)?;
+    let mut captured = CapturedManifest::capture(checkpoint, policy)?;
+    // These existing hostile codec fixtures deliberately encode changed DATA.
+    // They are never an original-source capture or publication witness.
+    let memory =
+        crate::durability::checkpoint_history::inventory::CanonicalCheckpointMembers::reserve(
+            checkpoint.envelopes.len(),
+            execution,
+        )
+        .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
+    let mut rows = Vec::with_capacity(checkpoint.envelopes.len());
+    let mut payloads =
+        ExecutionRequestArrayBuilder::allocate(*execution, checkpoint.envelopes.len())
+            .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
+    for commit in &checkpoint.envelopes {
+        let artifact=crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_memory_publication(commit.position(),commit.envelope(),execution)?;
+        let bytes = artifact.into_bytes();
+        let member = super::member_frame::locator(bytes.bytes());
+        rows.push(
+            crate::durability::checkpoint_history::inventory::CanonicalCheckpointMember {
+                position: commit.position(),
+                member,
+            },
+        );
+        payloads
+            .push(RelationalCheckpointMember::New {
+                locator: member,
+                bytes,
+            })
+            .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
+    }
+    captured.manifest.canonical_members =
+        crate::durability::checkpoint_history::inventory::CanonicalCheckpointMembers::from_reserved(
+            rows, memory,
+        );
+    captured.canonical_payloads = Some(
+        payloads
+            .seal()
+            .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?,
+    );
+    let (bytes, sections, members, _) = encode_captured(captured, execution, policy, placement)?;
     Ok((bytes, sections, members))
 }
 
 pub(crate) fn encode_captured(
     mut captured: CapturedManifest,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     policy: ExecutionAllocationPolicy<'_, '_>,
     placement: &RelationalCheckpointArtifactPolicy<'_>,
 ) -> Result<
     (
         ExecutionImmutableBytes,
         NativeCheckpointSectionBytes,
-        Vec<RelationalCheckpointMember>,
+        crate::durability::data::CapturedCheckpointMembers,
         Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     ),
     RelationalNativeCheckpointCaptureDenial,
 > {
     let embedded = placement.is_embedded();
     if embedded {
-        for entry in &captured.carried_envelopes {
-            policy.check_live()?;
-            let cell = captured
-                .envelope_cells
-                .get(&entry.position)
-                .ok_or_else(|| {
-                    super::manifest_capture::corrupt(
-                        "inline capture lacks indexed envelope custody",
-                    )
-                })?;
-            let artifact = cell
-                .export_artifact(policy)
-                .map_err(RelationalNativeCheckpointCaptureDenial::from)?;
-            captured.envelopes.push(
-                rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::Journal(
-                    ByteString(artifact.as_bytes()),
-                ))
-                .map_err(writer::encoding_failure)?,
-            );
-        }
         for member in captured.members.values_mut() {
             policy.check_live()?;
             if let RelationalCheckpointMember::Carried { locator } = member {
@@ -123,41 +147,53 @@ pub(crate) fn encode_captured(
             }
         }
     }
+    let ordinary_members = captured.members.len();
+    let canonical = captured.canonical_payloads.take();
+    let count = ordinary_members
+        .checked_add(canonical.as_ref().map_or(0, |rows| rows.len()))
+        .ok_or_else(|| frame_mismatch("captured member list overflow"))?;
+    let members = crate::durability::data::CapturedCheckpointMembers::capture(
+        execution,
+        count,
+        captured
+            .members
+            .into_values()
+            .chain(canonical.into_iter().flat_map(IntoIterator::into_iter)),
+    )?;
+    let borrowed_count = if embedded { count } else { 0 };
+    let borrowed_bytes = std::alloc::Layout::array::<(
+        crate::durability::medium::RelationalDurableMemberLocator,
+        ByteString<'_>,
+    )>(borrowed_count)
+    .map_err(|_| frame_mismatch("borrowed member table size overflow"))?
+    .size();
+    let _wire_memory = execution
+        .reserve_retained_memory(borrowed_bytes as u64)
+        .map_err(|cause| RelationalNativeCheckpointCaptureDenial::Request(cause.into()))?;
+    let mut inline = Vec::with_capacity(borrowed_count);
+    if embedded {
+        for member in members.entries() {
+            let RelationalCheckpointMember::New { locator, bytes } = member else {
+                return Err(frame_mismatch(
+                    "inline capture has unresolved carried members",
+                ));
+            };
+            inline.push((*locator, ByteString(bytes.bytes())));
+        }
+    }
     let wire = CheckpointWire {
         manifest: captured.manifest,
-        members: if embedded {
-            captured
-                .members
-                .iter()
-                .map(|(key, member)| {
-                    let RelationalCheckpointMember::New { bytes, .. } = member else {
-                        return Err(super::manifest_capture::corrupt(
-                            "inline capture still carries an unresolved member",
-                        ));
-                    };
-                    Ok((*key, ByteString(bytes)))
-                })
-                .collect::<Result<Vec<_>, crate::durability::data::DurabilityError>>()?
-        } else {
-            Vec::new()
-        },
-        envelopes: if embedded {
-            captured
-                .envelopes
-                .iter()
-                .map(|bytes| ByteString(bytes))
-                .collect()
-        } else {
-            Vec::new()
-        },
+        members: inline,
+        envelopes: Vec::new(),
     };
-    let mut sizing = SizingWriter::new(policy);
+    let mut sizing = SizingWriter::new(*execution);
     let counted = rmp_serde::encode::write_named(&mut sizing, &wire);
     let total = sizing
         .finish(counted)?
         .checked_add(super::CHECKPOINT_MAGIC.len())
         .ok_or_else(|| frame_mismatch("native checkpoint frame size overflow"))?;
-    let mut bytes = ExecutionByteBuffer::allocate(total, policy)?;
+    let mut bytes = ExecutionRequestArrayBuilder::<u8>::allocate(*execution, total)
+        .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
     let mut emission = EmissionWriter::new(&mut bytes);
     let emitted = emission.write_all(super::CHECKPOINT_MAGIC).and_then(|()| {
         rmp_serde::encode::write_named(&mut emission, &wire).map_err(std::io::Error::other)
@@ -179,9 +215,24 @@ pub(crate) fn encode_captured(
     let partition_mirror = rmp_serde::to_vec_named(&wire.manifest.mirror)
         .map_err(writer::encoding_failure)?
         .len();
-    let envelopes = rmp_serde::to_vec_named(&wire.envelopes)
-        .map_err(writer::encoding_failure)?
-        .len();
+    let envelopes = if embedded {
+        let mut count = SizingWriter::new(*execution);
+        for member in members.entries().iter().skip(ordinary_members) {
+            let RelationalCheckpointMember::New { bytes, .. } = member else {
+                return Err(frame_mismatch("canonical original missing"));
+            };
+            let result = serde::Serialize::serialize(
+                &ByteString(bytes.bytes()),
+                &mut rmp_serde::Serializer::new(&mut count),
+            );
+            if let Err(cause) = result {
+                return Err(writer::encoding_failure(cause));
+            }
+        }
+        count.finish(Ok::<(), std::io::Error>(()))?
+    } else {
+        0
+    };
     let derived_indexes = rmp_serde::to_vec_named(&wire.manifest.index_definitions)
         .map_err(writer::encoding_failure)?
         .len();
@@ -198,6 +249,13 @@ pub(crate) fn encode_captured(
             .ok_or_else(|| frame_mismatch("native checkpoint section accounting overflow"))?,
     };
     drop(wire);
-    let members = captured.members.into_values().collect();
-    Ok((bytes.seal()?, sections, members, captured.publications))
+    Ok((
+        bytes
+            .seal()
+            .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?
+            .into_immutable_bytes(),
+        sections,
+        members,
+        captured.publications,
+    ))
 }

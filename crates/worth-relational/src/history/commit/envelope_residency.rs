@@ -1,6 +1,9 @@
 //! One envelope cell owns memory history or a journal-backed publication flight.
 mod artifact_export;
 mod authored_writes;
+mod selected_checkpoint;
+pub(crate) use selected_checkpoint::RetiredCanonicalPlacement;
+mod source_readmission;
 use super::RelationalCommitIndexEntry;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalRecoveryStop;
@@ -24,8 +27,12 @@ enum EnvelopeBacking {
         envelope: Arc<CanonicalCommitEnvelope>,
         original: Option<worth_execution::ExecutionImmutableBytes>,
     },
+    SelectedCheckpoint {
+        entry: super::RetainedCanonicalIndex,
+        directory: Arc<crate::durability::data::RelationalCheckpointDirectory>,
+    },
     Journal {
-        entry: Arc<RelationalCommitIndexEntry>,
+        entry: super::RetainedCanonicalIndex,
         source: Arc<dyn RelationalDurableColdSource>,
         unsettled: Option<Arc<CanonicalCommitEnvelope>>,
     },
@@ -48,7 +55,7 @@ impl EnvelopeState {
                 unsettled: Some(envelope),
                 ..
             } => Some(envelope.clone()),
-            EnvelopeBacking::Journal { .. } => self
+            EnvelopeBacking::Journal { .. } | EnvelopeBacking::SelectedCheckpoint { .. } => self
                 .position
                 .as_ref()
                 .and_then(|retained| retained.resident())
@@ -78,7 +85,7 @@ impl RelationalCommitEnvelopeResidency {
         }
     }
     pub(crate) fn cold(
-        entry: RelationalCommitIndexEntry,
+        entry: super::RetainedCanonicalIndex,
         source: Arc<dyn RelationalDurableColdSource>,
         admitted: Option<PositionedCanonicalCommit>,
         payload_digest: Option<[u8; 32]>,
@@ -87,7 +94,7 @@ impl RelationalCommitEnvelopeResidency {
             state: Mutex::new(EnvelopeState {
                 authored_writes: None,
                 backing: EnvelopeBacking::Journal {
-                    entry: Arc::new(entry),
+                    entry,
                     source,
                     unsettled: None,
                 },
@@ -153,18 +160,31 @@ impl RelationalCommitEnvelopeResidency {
     )> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         let position = match &state.backing {
-            EnvelopeBacking::Journal { entry, .. } => entry.position,
+            EnvelopeBacking::Journal { entry, .. }
+            | EnvelopeBacking::SelectedCheckpoint { entry, .. } => entry.position,
             EnvelopeBacking::Memory { .. } => state.position.as_ref()?.position(),
         };
         Some((position, state.lineage.clone()?))
     }
-    pub(crate) fn journal_index(&self) -> Option<Arc<RelationalCommitIndexEntry>> {
-        self.journal_placement().map(|(entry, _)| entry)
+    pub(crate) fn captured_position(
+        &self,
+    ) -> Option<crate::publication::patch::data::PatchStreamPosition> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        match &state.backing {
+            EnvelopeBacking::Journal { entry, .. }
+            | EnvelopeBacking::SelectedCheckpoint { entry, .. } => Some(entry.position),
+            EnvelopeBacking::Memory { .. } => {
+                state.position.as_ref().map(|position| position.position())
+            }
+        }
+    }
+    pub(crate) fn journal_index(&self) -> Option<super::RetainedCanonicalIndex> {
+        self.source_placement().map(|(entry, _)| entry)
     }
     pub(crate) fn journal_placement(
         &self,
     ) -> Option<(
-        Arc<RelationalCommitIndexEntry>,
+        super::RetainedCanonicalIndex,
         Arc<dyn RelationalDurableColdSource>,
     )> {
         match &self
@@ -174,6 +194,21 @@ impl RelationalCommitEnvelopeResidency {
             .backing
         {
             EnvelopeBacking::Journal { entry, source, .. } => Some((entry.clone(), source.clone())),
+            EnvelopeBacking::Memory { .. } | EnvelopeBacking::SelectedCheckpoint { .. } => None,
+        }
+    }
+    pub(crate) fn source_placement(
+        &self,
+    ) -> Option<(
+        super::RetainedCanonicalIndex,
+        Arc<dyn RelationalDurableColdSource>,
+    )> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        match &state.backing {
+            EnvelopeBacking::Journal { entry, source, .. } => Some((entry.clone(), source.clone())),
+            EnvelopeBacking::SelectedCheckpoint { entry, directory } => {
+                Some((entry.clone(), directory.source.clone()))
+            }
             EnvelopeBacking::Memory { .. } => None,
         }
     }
@@ -183,7 +218,7 @@ impl RelationalCommitEnvelopeResidency {
         &self,
         positioned: &PositionedCanonicalCommit,
         journal: Option<(
-            RelationalCommitIndexEntry,
+            super::RetainedCanonicalIndex,
             Arc<dyn RelationalDurableColdSource>,
         )>,
         original: Option<worth_execution::ExecutionImmutableBytes>,
@@ -193,7 +228,7 @@ impl RelationalCommitEnvelopeResidency {
         if let Some((entry, source)) = journal {
             state.canonical_payload_bytes = None;
             state.backing = EnvelopeBacking::Journal {
-                entry: Arc::new(entry),
+                entry,
                 source,
                 unsettled: Some(positioned.canonical_arc().clone()),
             };
@@ -255,7 +290,11 @@ impl RelationalCommitEnvelopeResidency {
                 positioned,
             });
         }
-        let (entry, source) = match &state.backing {
+        let position = state.position.as_ref().map_or(
+            crate::publication::patch::data::PatchStreamPosition(0),
+            |position| position.position(),
+        );
+        let result = match &state.backing {
             EnvelopeBacking::Memory { envelope, .. } => {
                 return Ok(ResidentEnvelopeRead {
                     envelope: envelope.clone(),
@@ -265,26 +304,28 @@ impl RelationalCommitEnvelopeResidency {
                         .and_then(RetainedCanonicalPosition::resident),
                 })
             }
-            EnvelopeBacking::Journal { entry, source, .. } => (entry, source),
-        };
-        let result =
-            Self::readmit_positioned(entry, source.as_ref(), execution, limit).map_err(|stop| {
-                match stop {
-                    RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
-                    RelationalRecoveryStop::Allocation(_) => RelationalStorageUnavailable {
-                        subject: RelationalStorageSubject::Envelope(entry.position),
-                        cause: Cause::MemoryExhausted,
-                    }
-                    .into(),
-                    RelationalRecoveryStop::Durability(error) => error
-                        .storage_unavailable
-                        .unwrap_or(RelationalStorageUnavailable {
-                            subject: RelationalStorageSubject::Envelope(entry.position),
-                            cause: Cause::Damaged,
-                        })
-                        .into(),
-                }
-            });
+            EnvelopeBacking::Journal { entry, source, .. } => {
+                Self::readmit_positioned(entry, source.as_ref(), execution, limit)
+            }
+            EnvelopeBacking::SelectedCheckpoint { entry, directory } => {
+                Self::readmit_selected(entry, directory, execution, limit)
+            }
+        }
+        .map_err(|stop| match stop {
+            RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
+            RelationalRecoveryStop::Allocation(_) => RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Envelope(position),
+                cause: Cause::MemoryExhausted,
+            }
+            .into(),
+            RelationalRecoveryStop::Durability(error) => error
+                .storage_unavailable
+                .unwrap_or(RelationalStorageUnavailable {
+                    subject: RelationalStorageSubject::Envelope(position),
+                    cause: Cause::Damaged,
+                })
+                .into(),
+        });
         match result {
             Ok(commit) => {
                 let digest = commit.authoritative_payload_digest().map_err(|_| {
@@ -313,44 +354,6 @@ impl RelationalCommitEnvelopeResidency {
                 Err(stop)
             }
         }
-    }
-    pub(crate) fn readmit_positioned(
-        entry: &RelationalCommitIndexEntry,
-        source: &dyn RelationalDurableColdSource,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
-        let failure = |cause| RelationalStorageUnavailable {
-            subject: RelationalStorageSubject::Envelope(entry.position),
-            cause,
-        };
-        let bytes = source.read_commit(entry.position, limit).map_err(failure)?;
-        let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
-            .map_err(|_| failure(Cause::Damaged))?;
-        if artifact.position() != entry.position
-            || artifact.commit_id() != entry.commit.commit_id
-            || artifact.payload_digest().as_bytes() != &entry.payload_digest
-        {
-            return Err(failure(Cause::IntegrityMismatch).into());
-        }
-        let admitted = RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
-            .map_err(|error| match error {
-                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => RelationalRecoveryStop::Request(cause),
-                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => crate::symbols::data::field_text_recovery_stop(cause),
-                _ => failure(Cause::Damaged).into(),
-            })?.into_positioned();
-        if admitted.commit != entry.commit
-            || admitted.envelope().association_discovery() != entry.association_discovery
-            || admitted.schema_version != entry.schema_version
-            || entry.root.schema_root()
-                != &crate::schema::data::schema_authority_snapshot_digest_bytes(
-                    &admitted.schema_authority,
-                )
-        {
-            return Err(failure(Cause::IntegrityMismatch).into());
-        }
-        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        Ok(admitted)
     }
 }
 
