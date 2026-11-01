@@ -129,7 +129,8 @@ pub(super) fn delete_entity_with_cascade(
     outcome.record_change(RecordMutation::EntityDeleted {
         entity_id,
         kind_id,
-        authoritative_patch,
+        authoritative_patch: authoritative_patch
+            .map(super::outcomes::MutationAspectPatch::from_ordinary),
     });
 
     let mut attached = BTreeSet::new();

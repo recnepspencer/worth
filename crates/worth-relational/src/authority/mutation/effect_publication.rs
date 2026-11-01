@@ -195,7 +195,7 @@ fn record_entity_publication_fragment(
     canonical_delta: crate::authority::mutation::CanonicalRecordAspectDelta,
     detail_kind: EntityPatchDetailKind,
     entity_id: crate::identity::data::EntityId,
-    authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+    authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
 ) -> Result<(), crate::transactions::data::CommitConflict> {
     effect
         .publication
@@ -217,7 +217,7 @@ fn record_relation_publication_fragment(
     relation_id: crate::identity::data::RelationId,
     source: crate::identity::data::EntityId,
     target: crate::identity::data::EntityId,
-    authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+    authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
 ) -> Result<(), crate::transactions::data::CommitConflict> {
     let relation_birth = (canonical_delta.structural_change
         == crate::publication::patch::data::RecordStructuralChange::Created)
@@ -271,7 +271,7 @@ fn record_patch_fragment(
     effect: &mut MutationEffect,
     canonical_delta: crate::authority::mutation::CanonicalRecordAspectDelta,
     detail: PatchDetail,
-    authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+    authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
     relation_birth: Option<crate::publication::patch::data::PublishedRelationBirth>,
 ) -> Result<(), crate::transactions::data::CommitConflict> {
     let mut patch_fragment =
@@ -285,7 +285,7 @@ fn record_patch_fragment(
 pub(super) fn canonical_publication_fragment(
     canonical_delta: &crate::authority::mutation::CanonicalRecordAspectDelta,
     detail: PatchDetail,
-    authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+    authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
 ) -> Result<
     crate::authority::mutation::FoundationalPatchFragment,
     crate::transactions::data::CommitConflict,

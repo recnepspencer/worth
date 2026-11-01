@@ -1,9 +1,10 @@
+use super::MutationAspectPatch;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::substrate::{EntityExtra, RelationExtra, StorageAllocation};
 
 use super::{MutationEvent, RecordMutation};
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub(crate) struct MutationOutcome {
     pub(crate) changes: Vec<RecordMutation>,
     pub(crate) events: Vec<MutationEvent>,
@@ -20,7 +21,7 @@ impl MutationOutcome {
     pub(crate) fn entity_created(
         entity_id: EntityId,
         kind_id: KindId,
-        authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+        authoritative_patch: Option<MutationAspectPatch>,
     ) -> Self {
         let mut outcome = Self::with_capacity(1, 1);
         outcome.record_change(RecordMutation::EntityCreated {
@@ -37,7 +38,7 @@ impl MutationOutcome {
         kind_id: KindId,
         old_authoritative_aspect_state: Option<StorageAllocation<EntityExtra>>,
         new_authoritative_aspect_state: Option<StorageAllocation<EntityExtra>>,
-        authoritative_patch: worth_foundational::facade::AuthoritativeRecordAspectPatch,
+        authoritative_patch: MutationAspectPatch,
     ) -> Self {
         let mut outcome = Self::with_capacity(1, 1);
         outcome.record_change(RecordMutation::EntityUpdated {
@@ -73,7 +74,7 @@ impl MutationOutcome {
         replaced_entity_id: EntityId,
         replacement_entity_id: EntityId,
         kind_id: KindId,
-        authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+        authoritative_patch: Option<MutationAspectPatch>,
     ) -> Self {
         let mut outcome = Self::with_capacity(1, 1);
         outcome.record_change(RecordMutation::EntityCreated {
@@ -94,7 +95,7 @@ impl MutationOutcome {
         source: EntityId,
         target: EntityId,
         kind_id: KindId,
-        authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+        authoritative_patch: Option<MutationAspectPatch>,
     ) -> Self {
         let mut outcome = Self::with_capacity(1, 1);
         outcome.record_change(RecordMutation::RelationCreated {
@@ -122,7 +123,7 @@ impl MutationOutcome {
         new_target: EntityId,
         old_authoritative_aspect_state: Option<StorageAllocation<RelationExtra>>,
         new_authoritative_aspect_state: Option<StorageAllocation<RelationExtra>>,
-        authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+        authoritative_patch: Option<MutationAspectPatch>,
     ) -> Self {
         let mut outcome = Self::with_capacity(1, 1);
         outcome.record_change(RecordMutation::RelationUpdated {

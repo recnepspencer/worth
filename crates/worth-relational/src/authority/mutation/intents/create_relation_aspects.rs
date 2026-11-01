@@ -21,12 +21,20 @@ pub(super) fn apply(
     };
     let plan = workspace.relation_aspect_plan(intent.kind_id);
     let candidate = relation_endpoint_candidate::append_authoritative_endpoints(
-        intent.aspect_patch.clone(),
+        &workspace.execution(),
+        super::field_authoring_candidate::FieldCandidate::copy_portable(
+            &workspace.execution(),
+            &intent.aspect_patch,
+        )
+        .map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?,
         plan,
         source,
         target_entity,
-    );
-    let patch = record_aspect_patch::readmit(
+    )?;
+    let patch = record_aspect_patch::readmit_candidate(
+        &workspace.execution(),
         candidate,
         PortablePatchReadmissionPurpose::RecordCreation,
         plan,

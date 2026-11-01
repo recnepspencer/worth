@@ -512,9 +512,27 @@ its six original wire fields and order, and funding is excluded from extra
 serialization and relation-content hashing. Ordinary extra cloning makes an
 independent copy and carries no old reservation.
 
-This qualifies applied state and extra custody. Field-lowering scratch, replay
-staging, radix backing, rollback, Complete capture and selected-backing handoff
-remain separate funding obligations.
+Successful field-authored construction also admits its borrowed ordering scratch,
+selected value copies, portable buffers and readmitted patch against the same
+original request. Endpoint augmentation moves the original operations rather
+than cloning them again; the relation-aspect prefix copy is admitted before it
+is made. The move-only private `MutationAspectPatch` retains the bill until its
+actual original patch is destroyed in publication filtering, including failure.
+Dead construction/admission scratch refunds before applied Extra growth. Checked
+Foundation `clone_allocation_bytes()` descriptions count actual copied lengths;
+retained-capacity reports measure existing output, not future copies.
+
+On the qualified target the Foundation patch is 48 bytes, its private funded
+owner is 96 bytes, and `RecordMutation` is 200 bytes. This adds no Arc or generic
+storage footer. Explicit ordinary-unfunded constructors remain available only
+for the existing independent portable/deletion data routes; they qualify no
+funding. No wire format or scalar/struct winner and validation order changes.
+
+These are successful-path backing guarantees. Existing semantic-error locator,
+path, key and formatted-detail copies, and returned-error Clone/Serde, retain
+their ordinary allocation contract. Other portable-input copies, supplemental
+and canonical projection copies, replay staging, radix backing, rollback,
+Complete capture and selected-backing handoff remain separate obligations.
 
 ## Retire an immutable Memory runtime
 

@@ -170,17 +170,23 @@ fn apply_staged_relation_row(
     };
     let plan = workspace.relation_aspect_plan(intent.kind_id);
     let candidate = field_authoring_candidate::lower(
+        &workspace.execution(),
         &fields,
         PortablePatchReadmissionPurpose::RecordCreation,
         plan,
         intent.kind_id,
         FieldAuthoringDomain::Relation,
     )
-    .map_err(|denial| record_aspect_patch::conflict(patch_target, denial))?;
+    .map_err(|denial| record_aspect_patch::MutationPatchDenial::candidate(patch_target, denial))?;
     let candidate = relation_endpoint_candidate::append_authoritative_endpoints(
-        candidate, plan, source_id, target_id,
-    );
-    let authoritative_patch = record_aspect_patch::readmit(
+        &workspace.execution(),
+        candidate,
+        plan,
+        source_id,
+        target_id,
+    )?;
+    let authoritative_patch = record_aspect_patch::readmit_candidate(
+        &workspace.execution(),
         candidate,
         PortablePatchReadmissionPurpose::RecordCreation,
         plan,

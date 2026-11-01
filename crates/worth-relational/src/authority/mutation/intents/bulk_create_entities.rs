@@ -29,7 +29,7 @@ use crate::transactions::data::{
     RecordAspectPatchTarget, TransactionCommitError,
 };
 use crate::validation::data::InvariantGroupSet;
-use worth_foundational::facade::{AuthoritativeRecordAspectPatch, PortablePatchReadmissionPurpose};
+use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::field_authoring_candidate::FieldAuthoringDomain;
 use super::record_aspect_patch;
@@ -95,7 +95,7 @@ fn stage_bulk_entity_aspect_plans(
     field_patches: &[crate::transactions::data::AspectFieldPatch],
 ) -> Result<
     Vec<(
-        AuthoritativeRecordAspectPatch,
+        crate::authority::mutation::outcomes::MutationAspectPatch,
         crate::storage::substrate::EntityExtra,
     )>,
     TransactionCommitError,
@@ -108,6 +108,7 @@ fn stage_bulk_entity_aspect_plans(
         .iter()
         .map(|fields| {
             let patch = record_aspect_patch::readmit_field_authoring(
+                &workspace.execution(),
                 fields,
                 PortablePatchReadmissionPurpose::RecordCreation,
                 lowered_plan,

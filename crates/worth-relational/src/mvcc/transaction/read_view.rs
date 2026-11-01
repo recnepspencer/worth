@@ -102,7 +102,12 @@ impl super::BranchBoundRelationalTransaction {
             .entity_mutations(entity_id)
             .cloned()
             .collect::<Vec<_>>();
-        let effective = project_entity(self.schema_authority.as_ref(), base.clone(), &staged)?;
+        let effective = project_entity(
+            execution,
+            self.schema_authority.as_ref(),
+            base.clone(),
+            &staged,
+        )?;
         Ok(RelationalTransactionEntityRead {
             base,
             staged,

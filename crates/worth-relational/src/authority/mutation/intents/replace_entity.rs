@@ -20,6 +20,7 @@ pub(super) fn apply(
         kind_id: intent.replacement.kind_id,
     };
     let patch = record_aspect_patch::readmit_field_authoring(
+        &workspace.execution(),
         &intent.replacement.fields,
         PortablePatchReadmissionPurpose::RecordCreation,
         workspace.entity_aspect_plan(intent.replacement.kind_id),

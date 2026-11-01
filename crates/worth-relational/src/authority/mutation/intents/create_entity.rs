@@ -18,6 +18,7 @@ pub(super) fn apply(
         kind_id: spec.kind_id,
     };
     let patch = record_aspect_patch::readmit_field_authoring(
+        &workspace.execution(),
         &spec.fields,
         PortablePatchReadmissionPurpose::RecordCreation,
         workspace.entity_aspect_plan(spec.kind_id),

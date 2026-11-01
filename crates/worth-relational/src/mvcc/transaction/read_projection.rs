@@ -36,10 +36,11 @@ impl From<RelationReadRecord> for RelationalTransactionRelationValue {
 }
 
 pub(super) fn project_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     schema: &impl AspectPlanSource,
     mut effective: Option<EntityReadRecord>,
     staged: &[EntityMutationIntent],
-) -> Result<Option<EntityReadRecord>, CommitConflict> {
+) -> Result<Option<EntityReadRecord>, super::RelationalTransactionReadDenial> {
     for intent in staged {
         match intent {
             EntityMutationIntent::UpdateFields(intent) => {
@@ -51,6 +52,7 @@ pub(super) fn project_entity(
                     kind_id: record.kind.kind_id,
                 };
                 let patch = record_aspect_patch::readmit_field_authoring(
+                    execution,
                     &intent.fields,
                     PortablePatchReadmissionPurpose::RecordMutation,
                     schema.entity_aspect_plan(record.kind.kind_id),
@@ -59,7 +61,7 @@ pub(super) fn project_entity(
                 )?;
                 record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
-                    &patch,
+                    patch.as_patch(),
                     target,
                 )?;
             }
@@ -79,7 +81,7 @@ pub(super) fn project_entity(
                 )?;
                 record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
-                    &patch,
+                    patch.as_patch(),
                     target,
                 )?;
             }
@@ -123,7 +125,7 @@ pub(super) fn project_relation(
                 )?;
                 record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
-                    &patch,
+                    patch.as_patch(),
                     target,
                 )?;
             }

@@ -1,3 +1,4 @@
+use crate::authority::mutation::outcomes::MutationAspectPatch;
 use worth_foundational::facade::{ContractValidatedAspectValueView, FieldKey, StructAspectValue};
 use worth_foundational::{
     AspectKey as FoundationalAspectKey, AspectValue as FoundationalAspectValue,
@@ -39,7 +40,7 @@ fn entity_field_delta_materializes_authoritative_aspect_patch() {
     let mutation = RecordMutation::EntityCreated {
         entity_id: EntityId::new(PartitionId(1), 0, 1),
         kind_id: KindId(1),
-        authoritative_patch: Some(authoritative_patch),
+        authoritative_patch: Some(MutationAspectPatch::from_ordinary(authoritative_patch)),
     };
 
     let delta = canonical_delta_for_mutation(
@@ -91,7 +92,7 @@ fn entity_struct_delta_materializes_authoritative_patch_value() {
     let mutation = RecordMutation::EntityCreated {
         entity_id: EntityId::new(PartitionId(1), 0, 1),
         kind_id: KindId(1),
-        authoritative_patch: Some(authoritative_patch),
+        authoritative_patch: Some(MutationAspectPatch::from_ordinary(authoritative_patch)),
     };
 
     let delta = canonical_delta_for_mutation(
@@ -152,7 +153,7 @@ fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
     let mutation = RecordMutation::EntityCreated {
         entity_id: EntityId::new(PartitionId(1), 0, 1),
         kind_id: KindId(1),
-        authoritative_patch: Some(authoritative_patch),
+        authoritative_patch: Some(MutationAspectPatch::from_ordinary(authoritative_patch)),
     };
 
     let delta = canonical_delta_for_mutation(
@@ -222,7 +223,7 @@ fn relation_field_delta_materializes_authoritative_aspect_patch() {
         kind_id: KindId(2),
         source,
         target,
-        authoritative_patch: Some(authoritative_patch),
+        authoritative_patch: Some(MutationAspectPatch::from_ordinary(authoritative_patch)),
     };
 
     let delta = canonical_delta_for_mutation(

@@ -22,17 +22,23 @@ pub(super) fn apply(
     };
     let plan = workspace.relation_aspect_plan(spec.kind_id);
     let candidate = field_authoring_candidate::lower(
+        &workspace.execution(),
         &spec.fields,
         PortablePatchReadmissionPurpose::RecordCreation,
         plan,
         spec.kind_id,
         FieldAuthoringDomain::Relation,
     )
-    .map_err(|denial| record_aspect_patch::conflict(target_record, denial))?;
+    .map_err(|denial| record_aspect_patch::MutationPatchDenial::candidate(target_record, denial))?;
     let candidate = relation_endpoint_candidate::append_authoritative_endpoints(
-        candidate, plan, source, target,
-    );
-    let patch = record_aspect_patch::readmit(
+        &workspace.execution(),
+        candidate,
+        plan,
+        source,
+        target,
+    )?;
+    let patch = record_aspect_patch::readmit_candidate(
+        &workspace.execution(),
         candidate,
         PortablePatchReadmissionPurpose::RecordCreation,
         plan,

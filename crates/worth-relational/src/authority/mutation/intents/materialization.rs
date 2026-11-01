@@ -140,6 +140,7 @@ fn rematerialize_entity(
         kind_id: intent.kind_id,
     };
     let patch = record_aspect_patch::readmit_field_authoring(
+        &workspace.execution(),
         &intent.fields,
         PortablePatchReadmissionPurpose::RecordCreation,
         workspace.entity_aspect_plan(intent.kind_id),
@@ -204,20 +205,23 @@ fn rematerialize_relation(
     };
     let plan = workspace.relation_aspect_plan(intent.kind_id);
     let candidate = field_authoring_candidate::lower(
+        &workspace.execution(),
         &intent.fields,
         PortablePatchReadmissionPurpose::RecordCreation,
         plan,
         intent.kind_id,
         FieldAuthoringDomain::Relation,
     )
-    .map_err(|denial| record_aspect_patch::conflict(target_record, denial))?;
+    .map_err(|denial| record_aspect_patch::MutationPatchDenial::candidate(target_record, denial))?;
     let candidate = relation_endpoint_candidate::append_authoritative_endpoints(
+        &workspace.execution(),
         candidate,
         plan,
         intent.source,
         intent.target,
-    );
-    let patch = record_aspect_patch::readmit(
+    )?;
+    let patch = record_aspect_patch::readmit_candidate(
+        &workspace.execution(),
         candidate,
         PortablePatchReadmissionPurpose::RecordCreation,
         plan,

@@ -28,7 +28,7 @@ pub(crate) fn canonical_delta_for_mutation(
             plans,
             *entity_id,
             *kind_id,
-            authoritative_patch.as_ref(),
+            authoritative_patch.as_ref().map(|patch| patch.as_patch()),
             RecordStructuralChange::Created,
         ),
         RecordMutation::EntityUpdated {
@@ -52,7 +52,7 @@ pub(crate) fn canonical_delta_for_mutation(
                     .as_ref()
                     .and_then(|extra| extra.authoritative_aspect_state()),
             },
-            authoritative_patch.as_ref(),
+            authoritative_patch.as_ref().map(|patch| patch.as_patch()),
         ),
         RecordMutation::EntityDeleted {
             entity_id,
@@ -63,7 +63,7 @@ pub(crate) fn canonical_delta_for_mutation(
             plans,
             *entity_id,
             *kind_id,
-            authoritative_patch.as_ref(),
+            authoritative_patch.as_ref().map(|patch| patch.as_patch()),
             RecordStructuralChange::Deleted,
         ),
         RecordMutation::EntityMaterializationSuspended {
@@ -93,7 +93,7 @@ pub(crate) fn canonical_delta_for_mutation(
             plans,
             *entity_id,
             *kind_id,
-            authoritative_patch.as_ref(),
+            authoritative_patch.as_ref().map(|patch| patch.as_patch()),
             RecordStructuralChange::Rematerialized,
         ),
         RecordMutation::RelationCreated {
@@ -109,7 +109,7 @@ pub(crate) fn canonical_delta_for_mutation(
             *kind_id,
             *source,
             *target,
-            authoritative_patch.as_ref(),
+            authoritative_patch.as_ref().map(|patch| patch.as_patch()),
             RecordStructuralChange::Created,
         ),
         RecordMutation::RelationUpdated {
@@ -140,7 +140,7 @@ pub(crate) fn canonical_delta_for_mutation(
                     .as_ref()
                     .and_then(|extra| extra.authoritative_aspect_state()),
             },
-            authoritative_patch.as_ref(),
+            authoritative_patch.as_ref().map(|patch| patch.as_patch()),
         ),
         RecordMutation::RelationDeleted {
             relation_id,
@@ -235,7 +235,7 @@ pub(crate) fn canonical_delta_for_mutation(
             *kind_id,
             *source,
             *target,
-            authoritative_patch.as_ref(),
+            authoritative_patch.as_ref().map(|patch| patch.as_patch()),
             RecordStructuralChange::Rematerialized,
         ),
     }

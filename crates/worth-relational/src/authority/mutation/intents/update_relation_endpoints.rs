@@ -10,7 +10,7 @@ use crate::transactions::data::{
     CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
     RelationEndpointUpdateMissingState, UpdateRelationEndpointsIntent,
 };
-use worth_foundational::facade::{PortablePatchReadmissionPurpose, PortableRecordAspectPatch};
+use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::{record_aspect_patch, relation_endpoint_candidate};
 
@@ -99,12 +99,14 @@ pub(super) fn apply(
     };
     let plan = workspace.relation_aspect_plan(kind_id);
     let candidate = relation_endpoint_candidate::append_authoritative_endpoints(
-        PortableRecordAspectPatch::new([]),
+        &workspace.execution(),
+        super::field_authoring_candidate::FieldCandidate::empty(),
         plan,
         source,
         target,
-    );
-    let authoritative_patch = record_aspect_patch::readmit(
+    )?;
+    let authoritative_patch = record_aspect_patch::readmit_candidate(
+        &workspace.execution(),
         candidate,
         PortablePatchReadmissionPurpose::RecordMutation,
         plan,
