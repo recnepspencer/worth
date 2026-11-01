@@ -1,6 +1,6 @@
 # Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
 
-**Status:** in progress; Phases 1–2 implemented and verified; Phases 3–7 remain open.
+**Status:** in progress; Phases 1–3 implemented and verified; Phases 4–7 remain open.
 **Public boundary:** process-local Decl/Host consumers.
 **Prerequisites:** qualified branch/correction owners from
 [9.18](./milestone-9.18.md) and retained-read, guarded adoption and history
@@ -195,6 +195,7 @@ permission or a current-source proof.
 
 ## Phase 3: Checkout A Historical State And Preserve Both Futures
 
+**Status:** implemented and verified.
 **Depends on:** completed Phases 1-2.
 **Outcome:** one click can prepare and select an exact old model state, then an
 ordinary edit creates a new future while the original future remains available.
