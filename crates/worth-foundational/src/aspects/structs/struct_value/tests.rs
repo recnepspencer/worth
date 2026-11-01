@@ -142,3 +142,29 @@ fn decode_bounds_cover_backing_growth_and_reject_layout_overflow() {
     assert!(StructAspectValue::decode_storage_bounds(usize::MAX).is_none());
     assert!(StructAspectValue::decode_storage_bounds(isize::MAX as usize).is_none());
 }
+
+#[test]
+fn shape_construction_preserves_sorted_declarations_and_rejects_duplicate_keys() {
+    use crate::aspects::{AbsenceLaw, AspectEvolutionPolicy, FieldRequirement};
+    use crate::values::ScalarAspectType;
+    let declaration = |name: &str, value_type| {
+        FieldDeclaration::new(
+            FieldKey::new(name).unwrap(),
+            value_type,
+            FieldRequirement::Required,
+            AbsenceLaw::Required,
+            AspectEvolutionPolicy::Frozen,
+        )
+        .unwrap()
+    };
+    let a = declaration("a", ScalarAspectType::String);
+    let m = declaration("m", ScalarAspectType::Bool);
+    let z = declaration("z", ScalarAspectType::UInt64);
+    let shape = StructAspectShape::new([z.clone(), a.clone(), m.clone()]).unwrap();
+    assert_eq!(shape.fields(), &[a.clone(), m.clone(), z.clone()]);
+    assert_eq!(shape.field(a.key()), Some(&a));
+    // Unequal declarations still duplicate the same field key after sorting.
+    let repeated_a = declaration("a", ScalarAspectType::Int64);
+    assert!(StructAspectShape::new([z, a, m, repeated_a]).is_none());
+    assert!(StructAspectShape::new([]).unwrap().fields().is_empty());
+}

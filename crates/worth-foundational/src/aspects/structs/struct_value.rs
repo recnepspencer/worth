@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use super::{FieldDeclaration, FieldKey};
 use crate::values::AspectValue;
@@ -20,11 +20,8 @@ impl StructAspectShape {
         let mut fields: Vec<_> = fields.into_iter().collect();
         fields.sort_by(|left, right| left.key().cmp(right.key()));
 
-        let mut seen = BTreeSet::new();
-        for field in &fields {
-            if !seen.insert(field.key().clone()) {
-                return None;
-            }
+        if fields.windows(2).any(|pair| pair[0].key() == pair[1].key()) {
+            return None;
         }
 
         Some(Self { fields })
