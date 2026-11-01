@@ -774,6 +774,47 @@ large subtree bill pin unrelated surviving owners. Do not add a generic grant
 footer, registry, ledger, mode enum or blanket arena bill. Full radix, replay,
 capture and Complete qualification still require those actual successor paths.
 
+Node/page ownership follows one private representation cutover. Existing column
+pages and AVL nodes store their explicit element carrier: slot-directory scalar
+values are inline, while independently shared Meta/Extra/Digest payloads use the
+existing StorageAllocation<Payload> explicitly. Preserve independent payload
+identity through COW, adoption, rotations and delta walking. Do not add a second
+scalar tree, ownership-mode enum, backing Arc or generic allocation framework.
+StorageAllocation<T> source/layout stays unchanged, including its wire surface.
+
+A closed private shallow-copy constraint admits only supported scalar copies and
+existing allocation-handle copies in controlled node operations; arbitrary deep
+T::clone cannot enter a node-only quote. Key copying must likewise introduce no
+unquoted owned heap. Existing tree codecs serialize/deserialize the original plain
+values through their owner views, preserving named/compact checkpoint meaning.
+Report actual node/page/shared-payload allocations; inline scalars have no separate
+value allocation identity and must receive no fabricated per-value IDs.
+
+Each actual column/AVL node retains its own LAST original-request reservation.
+Column bills cover that node's Arc layout and its owned fixed page capacity; map
+bills cover their actual node allocation. Never include independently shared
+payload Arcs in a parent bill. Unique edits within existing fixed backing allocate
+no replacement backing; COW and height growth admit each actual new node/page
+before shallow copying. Verify fixed-capacity assumptions; any real backing
+replacement must admit overlap and release old backing before its old bill.
+Dense construction separately admits temporary level Vecs, including overlapping
+parent/child directories, and refunds them after their actual destruction rather
+than pinning construction peak in surviving nodes.
+
+Controlled writes use the original ExecutionRequest from the actual arena/
+MutationContext seam. Serial allocation_policy() is System and cannot witness
+this admission. Move partial constructed data with its own grants until the
+unpublished mutation workspace is discarded on failure; add no rollback ledger
+or caller-facing accounting API. Keep old published roots readable throughout.
+Prove entered allocation refusal with an independent layout/controller oracle,
+unique versus shared paths, scalar slot bijection across growth/rotations,
+escaped payload lifetime, zero displaced-payload clones and final-owner refund.
+Reuse the genuine metadata/publication/recovery journeys after the cutover.
+
+Ordinary image/maintenance constructors and independently allocated Digest/
+default payloads remain explicit obligations wherever not actually admitted.
+Node/page qualification cannot claim whole-arena, full replay, capture or Complete.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
