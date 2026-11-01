@@ -530,6 +530,20 @@ the invoked decode admission must have a checked funded path too. The 1 GiB
 wire/read limit is not a reconstruction heap budget. Refusal or stop before Home
 publication preserves prior selection and the actual live runtime.
 
+The invoked Foundational patch/readmission/application path also needs known
+storage. Its authoritative patch families and canonical aspect state use
+private sorted boxed streams, with existing borrowed access, semantics and
+canonical state's `{ entries: MAP }` wire preserved. Readmission retains the
+original validation/duplicate-denial order, assembles once and sorts once;
+application linearly merges canonical streams rather than cloning a standard
+tree. Remove invoked touched/mask/overlap scratch trees and hidden stable-sort
+allocation. Pure checked owner bounds name retained storage and simultaneous
+construction overlap. They may inspect borrowed actual contracts but cannot
+invoke an owned contract lookup before Native admission. Native separately
+funds portable input construction, actual nested clones and owner bounds from
+the original request; no tree-node guess, eight-times multiplier, general
+collection framework or Foundation-to-Execution dependency is permitted.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
@@ -540,6 +554,22 @@ commit or share one ticket across separate deep copies. Grants do not enter
 wire meaning or semantic equality. Moving `ReadmittedCanonicalCommit` into a
 positioned value must retain these grants; its discarded sidecar is not their
 owner. Document the added inline ownership footprint.
+
+Public Replay and CommitPublication expose an opaque shared envelope handle
+over that SAME original Arc, with borrowed envelope access and Clone only.
+No public Arc/Weak/unwrap/FromArc escapes. The private/test snapshot routes
+remain private. This data owner is distinct from positioned admission authority.
+The existing RetainedCanonicalPosition intentionally holds an actual weak body
+reference after payload Drop. Split the fixed Envelope Arc allocation from the
+body-heap grant: its original reservation also funds one concrete private
+control-ticket Arc, shared by the decoded Envelope and those actual weak-owner
+records. The ticket contains no body, source, runtime or authority. Each weak
+reference drops before its ticket share. Last payload Drop releases payload,
+input and transient charges; only the fixed control bill survives until the
+last actual weak owner is reclaimed. Quote both concrete fixed layouts before
+growth. Ordinary live seal builders have no such ticket and allocate no added
+hot-path Arc. No weak ticket, global ledger, extra reservation per clone or
+whole-body peak pinned by a weak record is permitted.
 
 Merge authority has smaller escaping owners too: witness row buffers, resolved
 base ancestor buffers, identity key sets and custom identity/policy names can

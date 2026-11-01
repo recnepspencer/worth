@@ -3023,5 +3023,8 @@
 {"source":"workspaces/worth-store/crates/worth-store-buffer-pool/src/physical_residency/observation/allocation_events/trace_storage/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"workspaces/worth-store/crates/worth-store/src/physical_runtime/stability/retention/registrations/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-runtime-world/src/lifecycle/close/admission/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
-{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/history/authority/test_mutation.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-relational/src/symbols/data/stored_text.rs","module":"tests","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
 ]
