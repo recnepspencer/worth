@@ -4,7 +4,6 @@ use worth_relational::facade::durability::{
     RecoveredRelationalBranchBasis, RelationalRecoveredPublicationCustody,
 };
 
-#[derive(Debug)]
 pub struct WorldNativeReadmissionCustody {
     pub(crate) root: Option<RecoveredRelationalBranchBasis>,
     pub(crate) publications:
@@ -16,6 +15,23 @@ pub struct WorldNativeReadmissionCustody {
     pub(crate) observations: Vec<crate::branch::ProductBranchObservation>,
     pub(crate) slots: Vec<Option<crate::recovery::ReservedProductUnpublishedSlot>>,
     pub(crate) capacities: Vec<crate::history::ReservedCompositeCommitCapacity>,
+}
+
+impl std::fmt::Debug for WorldNativeReadmissionCustody {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorldNativeReadmissionCustody")
+            .field("root_retained", &self.root.is_some())
+            .field("publication_slots", &self.publications.len())
+            .field("readmitted_records", &self.records.len())
+            .field("history_retained", &self.history.is_some())
+            .field("branches_retained", &self.branches.is_some())
+            .field("recovery_retained", &self.recovery.is_some())
+            .field("observation_slots", &self.observations.len())
+            .field("recovery_slots", &self.slots.len())
+            .field("capacity_slots", &self.capacities.len())
+            .finish()
+    }
 }
 
 impl WorldNativeReadmissionCustody {
