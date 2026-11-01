@@ -4,6 +4,11 @@
 > **Scope revised 2026-10-27:** the general managed derived-index extension owns
 > the spatial-index finding formerly assigned to 9.18.1 Phase 12 and the dependent
 > CAD locality qualification from Phase 15. Proprietary cutover is the final phase.
+> **Scope corrected 2026-11-01:** Phase 5 certifies the generic public provider
+> contracts through Bank and the existing bounded provider fixtures. It does not
+> require a public CAD application, Scene/Face authoring, a new contact engine or
+> actual-face scale qualification. Real CAD integration and its geometry/topology
+> acceptance belong to Phase 6, using the existing private application owners.
 
 ## Goal
 
@@ -38,9 +43,10 @@ without making spatial meaning part of the generic runtime.
 - Ordinary local work follows the semantic delta, relevant dependency closure,
   index structure and actual candidates. Hidden full-source rebuilds, scans of all
   retained queries and per-result child lookups cannot satisfy locality claims.
-- Public bank/geometry journeys, a genuinely nonspatial provider and the final
-  Proprietary adoption pass on the integrated implementation. Superseded consumer
-  caches/orchestration are removed during their respective adoption phases.
+- Public Bank journeys and existing box/prefix provider contract fixtures pass
+  on the integrated implementation. The real Proprietary CAD application then
+  passes its adoption and domain acceptance. Superseded consumer caches and
+  orchestration are removed during their respective adoption phases.
 
 ### Scope Boundaries
 
@@ -108,9 +114,10 @@ the index. Independent exhaustive reference results must expose omissions, stale
 roots, fabricated membership and unauthorized influence. Full-scan references
 belong only to certification, not ordinary execution.
 
-In a 1,000-vertex geometry chain, move a middle vertex so an incident edge meets a
-non-incident cell. Preparation discovers candidates from the committed index;
-the installed invariant queries the candidate index and refuses the new contact.
+In Phase 6's real CAD application, move a middle vertex of a 1,000-vertex chain so
+an incident edge meets a non-incident cell. Preparation discovers candidates from
+the committed index; the installed invariant queries the candidate index and
+refuses the new contact.
 A non-contacting twin commits. At 2,000 vertices, hold the edit, incidence and
 candidate density fixed: work may change with tree height, not a full rebuild.
 Repeat discovery beside 50,000 unrelated faces. Separately increase unrelated
@@ -118,10 +125,14 @@ retained index queries to expose a scan-all-query invalidation implementation.
 Dense legitimate overlap may increase output and candidate work; no constant-time
 claim applies to arbitrary distributions.
 
-Early phases qualify this sequence on public production-valid fixtures. Final
-Proprietary acceptance repeats the decisive geometry boundary through the actual
-CAD installation and METABOSS workload. Earlier public passes do not claim private
-adoption, and private production code is not rewritten after each public phase.
+Public phases qualify the generic contracts on existing production-valid box and
+prefix fixtures, including indirect dependencies, proposed-state refusal and
+whole-path source/query growth. Reuse their accepted 1,000/2,000/+50,000 evidence
+unless an affected contract changes; no public face/contact application is needed
+to repeat it. Actual non-incident contact, topology and face-scale acceptance run
+through the real CAD installation and METABOSS in Phase 6. Public passes do not
+claim private adoption, and private production code is not rewritten after each
+public phase.
 
 ### Phase 2 Court: The Unopened Affected Scope
 
@@ -1945,7 +1956,7 @@ not implement 9.20's path language or set execution and needs no private cutover
 
 ### Phase 5: Public Consumer Qualification And Stable Facades
 
-**Owner:** Query public facades/certification and public Bank/geometry entries.
+**Owner:** Query public facades/certification and the existing public Bank entry.
 **Depends on:** Phases 1–4. **Result:** one integrated public candidate is qualified
 for consumer adoption, with stable Decl/Host contracts and executable guidance.
 
@@ -1962,30 +1973,31 @@ admission may be copied into a shared Source. Add the managed access declaration
 and provider through the same contribution/configuration owner, preserving query
 identity/version compatibility and the actual ordinary server receiver.
 
-Public geometry extends the existing
-[planar invariant preparation](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant/preparation.rs)
-and [evaluation](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant/evaluation.rs)
-with the generic box provider; numerical meaning remains in the Query-free value
-owner. Grow the qualified Phase 2 provider fixture rather than creating another
-schema solely for the size court. Before adoption edits, name the actual affected
-public discovery/cache paths and their replacement receivers in the slice plan;
-delete displaced executable state/orchestration as that slice cuts over. A grep
-for old names alone cannot establish deletion of an equivalent fallback.
+Use the existing qualified box and prefix fixtures for generic provider evidence.
+Their accepted indirect-dependency, candidate-refusal, exact-refinement and scale
+journeys remain evidence for those contracts. Phase 5 adds no public Scene/Face
+application, authoring operations, triangle contact implementation or actual-face
+scale court. These would duplicate domain behavior owned by the real CAD app.
+Keep numerical meaning in the existing Query-free value owner. Before a public
+adoption edit, name the actual displaced cache/orchestration and replacement
+receiver; do not invent application state merely to create a cutover to test.
 
 Extend Bank's [ordinary read journeys](../../workspaces/worth-query-bank-world/crates/bank-server/tests/ordinary_reads.rs),
-the public consumer-entry provider family and existing `application_graph`
+the existing consumer-entry provider family and `application_graph`
 target at their real boundaries. Phase 6 receives reviewed public facades,
 compiled examples and integrated evidence; no public pass supplies a private pin
 or excuses a missing private runtime journey.
 
-**Requirements.** Adopt the extension in Bank's existing public entry and the
-public geometry/topology entry, reusing their schemas and bindings. Include the
-nonspatial prefix provider and geometry provider without specialized framework
-branches. Bank exercises capability/purpose, ranking and cursor disclosure;
-geometry exercises indirect motion dependencies, candidate invariants and exact
-refinement. Remove displaced public-local index/cache orchestration at this
-public cutover. Keep reconstruction, retention, expiry and original-request
-failure posture consistent across providers and both read contexts.
+**Requirements and caller contract.** Bank adopts the unchanged Decl/Host provider
+contract established in Phases 1–4 through its existing installed server receiver;
+this phase introduces no CAD or numerical API. Preserve the compiled box/prefix
+caller examples and their typed allocation, cancellation, basis and version
+refusals. Both providers exercise both read contexts without specialized framework
+branches. Bank exercises actual capability/purpose and applicable ranking/cursor
+disclosure. Remove any displaced public-local cache/orchestration at its actual
+cutover. Keep reconstruction, retention, expiry and original-request failure
+posture consistent. Reuse accepted evidence unless a changed boundary invalidates
+it; domain realism alone is not a reason to grow the fixtures.
 
 **Failure and cost.** Check cancellation, exhausted original allocation, refused
 candidate publication, eviction/rebuild and final release on the integrated
@@ -1995,22 +2007,33 @@ must cover build, maintenance, query, routing, verification and cleanup separate
 using existing owners. No covered per-result child lookups, scan-all predicates,
 hidden rebuilds or unregistered retained state may survive this phase.
 
-**Verification.** Run the relevant grouped bank/geometry/provider journeys with
-independent full-scan and storage/lifecycle observations, parameterized hostile
-changes, provider parity and realistic distributions. The public spatial court
-includes the 1,000/2,000 chain and discovery beside 50,000 unrelated faces; it
-must include setup/scope work and distinguish candidate discovery from already
-partitioned pair certification. Check public facade imports, portable versions,
-cert-only replay exclusion and displaced-path residue. No private pass is
-inferred from these public results.
+**Verification.** Select affected cases in Bank's existing `ordinary_reads` and
+Query's grouped `application_graph`/consumer-entry provider courts. Testing Laws
+2–3 and 5 require the narrowest honest boundary, independent expectations and
+distinct evidence; they do not require a second CAD implementation.
+
+| Boundary | Required evidence | Defect exposed |
+|---|---|---|
+| Bank ordinary installed receiver | Actual principal/capability, current/pinned posture and applicable disclosure/continuation journeys | Shared Source authority replacing per-query admission or stale disclosure |
+| Existing box and prefix providers | Both read contexts; indirect changes, empty-range entrants and candidate refusal against independent reference results | Missing membership dependencies, provider-specific runtime branches or publication leaks |
+| Managed lifecycle | Affected cancellation, allocation, rebuild/eviction and final-release cases through existing owners | Stale roots, hidden retained state or charged work escaping the original request |
+| Generic whole-path locality | Existing paired 1,000/2,000/+50,000 source-width and retained-query growth evidence, rerun only where changed | Hidden source rebuilds, scan-all-query routing or omitted scope/setup work |
+| Public facade and adoption | Compiled imports/examples, portable versions, cert-only replay exclusion and actual displaced-path inventory | Internal imports, incompatible contracts or surviving ordinary fallbacks |
+
+Candidate discovery and already partitioned pair certification remain distinct.
+Private application correctness and actual-face scale are Phase 6 claims.
 
 **Documentation and completion.** Finish the capability index and application
-guide, compiled bank/geometry/prefix examples, ordinary front-door lifecycle in
+guide, compiled Bank and existing box/prefix examples, ordinary front-door lifecycle in
 `workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md`,
 and schema-validation semantics. Run required boundary/context, formatting and
 line-cap checks for implementation changes. Close when the integrated public
 candidate passes review, focused runtime evidence and documentation/facade checks.
 Its public contracts are then the baseline for one final Proprietary cutover.
+Review any Scene/triangle expansion already landed or in flight against the
+generic contracts above. Retain distinct framework regression evidence and
+necessary shared fixes; remove redundant public CAD scaffolding in a coherent
+cleanup. Existing domain fixture work creates no new Phase 5 acceptance obligation.
 
 ### Phase 6: Proprietary Cutover And Integrated CAD Acceptance
 
@@ -2018,6 +2041,12 @@ Its public contracts are then the baseline for one final Proprietary cutover.
 **Depends on:** completed Phases 1–5 and their integrated public candidate.
 **Result:** Proprietary uses the stable public extension and closes the actual
 retained spatial-discovery and scoped-invariant gaps.
+
+**Integration checkout.** Fetch the current Proprietary `main` and create a new
+worktree from that updated branch for this integration. Record the selected
+revision and resolve the real owners there; preserve other private worktrees and
+their in-progress work. The public candidate is integrated into the real CAD app
+in this worktree, rather than extending a public substitute for that app.
 
 **Private implementation anchors.** Paths here are relative to the Proprietary
 repository, not this public checkout. In the existing 9.18.1 adoption tree,
@@ -2054,7 +2083,10 @@ freshness. Preparation reads the committed index; candidate validation reads the
 staged candidate index. Remove the displaced executable path/private cache rather
 than preserving two ordinary implementations. Do not add phase-by-phase SDK pin
 updates or private production adapter refactors to Phases 1–5. Read-only private
-inspection and realistic public fixture development may happen earlier.
+inspection may happen earlier. Reuse the actual private numerical/contact and
+topology implementation; do not develop a public duplicate as an adoption
+prerequisite. Only a demonstrated generic contract gap justifies extending a
+bounded public regression fixture.
 
 **Failure and cost.** A refused non-incident contact or interrupted maintenance
 leaves committed graph/index truth unchanged. Local edit work includes source
@@ -2156,9 +2188,11 @@ they introduce no evidence ledger or required test count.
 
 ### Milestone Closure
 
-All six phases must close. Bank, public geometry and the nonspatial provider use
-the real facade; Proprietary then adopts that integrated public result in Phase
-6. Displaced consumer implementations are removed at those respective cutovers.
+All six phases must close. Bank and the existing box/prefix contract fixtures use
+the real facade; the actual Proprietary CAD app adopts that integrated public
+result and qualifies application-specific geometry/topology in Phase 6. A public
+CAD substitute is not a closure requirement. Displaced consumer implementations
+are removed at their respective cutovers.
 Membership stays complete across lifecycle change, protected candidates do not
 leak, actual footprints narrow without losing influence, provider work/storage
 is honestly observed and alternate providers converge on semantic meaning.
@@ -2409,9 +2443,9 @@ remain excluded. See the [boundary](milestone-9.19-phase5-query-maintenance-boun
 [plan](milestone-9.19-phase5-query-maintenance-plan.md) and
 [evidence](milestone-9.19-phase5-query-maintenance-evidence.md) for exact invoices,
 legacy byte hashes, receiving proof, scope and final QA receipts. This is partial
-Phase5 progress. Next is retained conventional Source authorization custody before
-Bank v1 Source adoption; actual public topology face discovery, public closure and
-Phase6's final private pin/adoption remain unfinished.
+Phase5 progress at this slice's boundary. Subsequent Source authorization and Bank
+adoption are recorded below. The current Phase 5 completion gate is public
+contract/facade qualification; actual CAD acceptance belongs to Phase 6.
 
 
 ### Phase5 Source authorization progress (2026-11-01)
@@ -2427,7 +2461,7 @@ Native/Completed non-querying expectation refusal, separately admitted semantic
 replay and owning correction refusal plus lawful regrant/inverse completion.
 The boundary and implementation plan are recorded in
 [milestone-9.19-phase5-source-authorization-plan.md](milestone-9.19-phase5-source-authorization-plan.md).
-Bank and actual topology discovery qualification remain open; this is not Phase5
+Bank adoption was still open at this slice's boundary; this is not Phase5
 or Phase6 completion. [Final slice evidence](milestone-9.19-phase5-source-authorization-evidence.md)
 records854 distinct passes and the final independent review.
 
@@ -2452,13 +2486,16 @@ See the [boundary](milestone-9.19-phase5-bank-current-accounts-boundary-review.m
 [plan](milestone-9.19-phase5-bank-current-accounts-plan.md) and
 [evidence](milestone-9.19-phase5-bank-current-accounts-evidence.md).
 
-Phase5 remains open for actual public topology face discovery and integrated
-public closure. Existing PlanarDiscoveryRead v1 follows authored membership;
-positive-turn preparation checks touched component/orbit triples. Neither is
-spatial discovery. The next boundary review must resolve genuine face/universe
-meaning and topology's full u64 metre/model-local numerical contract before
-adapting the generic provider. Phase6 still requires the single final private
-pin/adoption and integrated CAD acceptance.
+Phase5 remains open for integrated public contract/facade closure under the
+2026-11-01 scope correction. Existing PlanarDiscoveryRead v1 follows authored
+membership; positive-turn preparation checks touched component/orbit triples.
+Neither claims real CAD spatial discovery. That integration and its domain
+acceptance belong to Phase6, with the single final private pin/adoption.
+
+The following Scene/triangle slice records describe work undertaken before this
+scope correction. Their evidence retains its stated, bounded meaning. Their
+former follow-on public CAD requirements are superseded by the Phase 5 section;
+they do not require completing or maintaining a parallel public CAD application.
 
 ### Phase5 topology exact orientation prerequisite (2026-11-01)
 
@@ -2470,8 +2507,8 @@ the head. Native scope, units, frame, budgets, schema and v1 receivers are uncha
 207 distinct selected tests pass: six numerical owner tests and201 ordinary
 consumer tests. The two established cleanup failures and prior large geometry
 receipt remain explicit in the [slice evidence](milestone-9.19-phase5-topology-integer-orientation-evidence.md).
-Actual Scene/Face composition, unsigned box mechanics, bounded spatial preparation
-and integrated topology discovery remain unfinished; Phase6 is still pending.
+This numerical correction does not establish real CAD integration. Phase6 is
+still pending; further public Scene/Face composition is not a completion gate.
 
 ### Phase5 Scene/Face model and structural Source progress (2026-11-01)
 
@@ -2489,8 +2526,7 @@ custody or spatial lookup. Attachment preserves Native context; later same-Scene
 growth requires genuine scene-context contour creation. A lawful rewire proves
 projection freshness but does not yet prove rejection of a later Body-only invalid
 contour-length change. See the [slice evidence](milestone-9.19-phase5-scene-face-evidence.md).
-Unsigned boxes, actual maintained provider/contact integration, spatial cost courts,
-public closure and Phase6 remain unfinished.
+This slice does not establish private CAD integration or public phase closure.
 
 ### Phase5 typed topology bounds progress (2026-11-01)
 
@@ -2504,8 +2540,7 @@ Scene/context custody still supplies model affinity and Native contour authority
 
 220 distinct selected checks pass:13 numerical owner tests, two doctests and205
 ordinary consumer tests. See the [typed-box evidence](milestone-9.19-phase5-typed-boxes-evidence.md).
-Maintained Scene Source/provider, exact face-contact integration, genuine same-Scene
-authoring, spatial locality courts, public closure and Phase6 remain unfinished.
+This slice does not establish private CAD integration or public phase closure.
 
 ### Phase5 maintained Scene Source and enclosure candidates (2026-11-01)
 
@@ -2528,8 +2563,8 @@ preserving the exact cancellation oracle and genuine-root guards.
 209 selected consumer tests and37 checker tests pass. The final eight Scene courts
 protect replacement extent, original cancellation and Source-pinned/Parent-current-only
 posture. See the [provider evidence](milestone-9.19-phase5-scene-box-provider-evidence.md).
-Exact face-contact validation, genuine same-Scene creation, invalid Body-only
-contour-length mutation, spatial scale, public closure and Phase6 remain unfinished.
+Candidate enclosure evidence does not establish exact contact or private CAD
+acceptance. The superseded public expansion is not a Phase5 closure requirement.
 
 
 ### Phase5 Scene-context authoring and Body-only contour routing (2026-11-01)
@@ -2553,6 +2588,6 @@ complete Source/candidate rows and unknown-D posture. Separate real-key collisio
 and old-successor courts protect early refusal. See the
 [authoring evidence](milestone-9.19-phase5-scene-authoring-evidence.md).
 
-Exact face-contact validation, spatial1000/2000/+50000 locality, public closure and
-Phase6 remain unfinished. Earlier progress paragraphs record their historical
-slice boundaries; this paragraph updates same-Scene and Body-only routing status.
+This records same-Scene and Body-only routing evidence. Actual CAD contact and
+face-scale acceptance remain Phase6 work; public closure follows the revised
+Phase5 gate rather than further expansion of this public model.

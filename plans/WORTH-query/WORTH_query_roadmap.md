@@ -6006,6 +6006,9 @@ candidate staging, dependency routing and verified footprints; providers own
 their data structures and algorithms. Geometry boxes and nonspatial name-prefix
 queries must use the same extension. Real CAD adoption follows public qualification
 in one final cutover, rather than a private SDK refactor after each phase.
+Phase 5 certifies generic public contracts with Bank and existing bounded box/prefix
+fixtures. Application-specific geometry/topology and actual-face scale acceptance
+use the real private CAD application in Phase 6; no public CAD substitute is required.
 
 ### Specification
 
@@ -6031,8 +6034,10 @@ all original budgets/populations and pinned v1 reads. The
 [Bank adoption evidence](milestone-9.19-phase5-bank-current-accounts-evidence.md)
 records524 distinct passes, two established unrelated cleanup failures and the
 unchanged paired1000/2000/+50000 maintenance court. Phases1 through4 are complete;
-Phase5 remains open for actual public topology face discovery and integrated
-public closure, then Phase6 performs the single final private pin and CAD cutover.
+Phase5 remains open for integrated public contract/facade closure. Under the
+2026-11-01 scope correction, further public Scene/triangle/contact development is
+not a prerequisite. Phase6 performs the single final private pin and real CAD
+cutover in a new worktree based on the updated Proprietary main.
 
 
 ### Committed Provider Indexes
@@ -6062,8 +6067,9 @@ for the declaration, read, rebuild and cleanup sequence.
 - six self-contained required phases: provider lifecycle; incremental/candidate
   roots; complete membership/refinement/disclosure; verified footprints; public
   consumer/facade qualification; final Proprietary cutover and CAD acceptance
-- bank/compliance, public geometry and nonspatial provider qualification with
-  executable docs and independent full-scan/resource courts before private cutover
+- Bank/compliance and existing box/prefix provider contract qualification with
+  executable docs and independent full-scan/resource courts before private cutover;
+  application-specific CAD behavior is qualified against the real private app
 - one final SDK adoption deleting displaced CAD discovery/validation paths and
   qualifying 1,000/2,000-vertex and 50,000-face locality on the actual installation
 
