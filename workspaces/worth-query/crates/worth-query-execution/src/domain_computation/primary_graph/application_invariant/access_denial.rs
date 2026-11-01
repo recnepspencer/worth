@@ -12,6 +12,7 @@ pub enum WorthQueryInvariantAccessDenialKind {
     NotOrbitRelation,
     InvalidOrbit,
     InvalidComponent,
+    InvalidEventChain,
     AggregateSourceUnavailable,
     AggregatePreparationRefused,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),

@@ -43,6 +43,12 @@ pub enum ApplicationDerivedRelationNode {
         left: usize,
         right: usize,
     },
+    /// Newest-first physical event chain; retirement precedes introduction.
+    OrderedEvents {
+        predecessor: usize,
+        introduced: usize,
+        retired: usize,
+    },
 }
 
 /// Finite endpoint-set meaning. Every supporting physical dependency survives
@@ -116,6 +122,15 @@ impl ApplicationDerivedRelationExpression {
                         right: right + offset,
                     }
                 }
+                ApplicationDerivedRelationNode::OrderedEvents {
+                    predecessor,
+                    introduced,
+                    retired,
+                } => ApplicationDerivedRelationNode::OrderedEvents {
+                    predecessor: predecessor + offset,
+                    introduced: introduced + offset,
+                    retired: retired + offset,
+                },
             });
         }
         let right = self.nodes.len() - 1;
@@ -148,7 +163,8 @@ impl ApplicationDerivedRelationExpression {
             | ApplicationDerivedRelationNode::WithoutSelfEdges { .. } => true,
             ApplicationDerivedRelationNode::CarrierLift { .. }
             | ApplicationDerivedRelationNode::Union { .. }
-            | ApplicationDerivedRelationNode::Intersection { .. } => false,
+            | ApplicationDerivedRelationNode::Intersection { .. }
+            | ApplicationDerivedRelationNode::OrderedEvents { .. } => false,
         })
     }
 }

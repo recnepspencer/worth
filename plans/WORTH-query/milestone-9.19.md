@@ -2711,3 +2711,20 @@ This Native-only prerequisite leaves Query typed authoring/archive/lowering and
 private codec/profile/sharing integration open. SDK adoption, actual CAD contact/
 topology/face-scale/Acceptance8 and the complete clean private gate remain open.
 It closes neither Phase6 nor milestone9.19 and changes no SDK pin.
+
+
+### Phase6 typed Query ordered-event recipe prerequisite (2026-11-01)
+
+Query now authors the Native event recipe through typed stored references and
+preserves its role indices, canonical identity, portable versioned grammar and
+exact installed Native handle/physical audience. Legacy archive bytes remain;
+untrusted malformed roles refuse. InvalidEventChain retains a typed Query denial.
+The [typed recipe evidence](milestone-9.19-phase6-query-ordered-event-evidence.md)
+records10 archive plus6 selected Execution passes (16 distinct), with explicit
+metadata/runtime evidence limits and compile receipts.
+
+Maintained Source/root-path acquisition, shared complete dependency/currentness,
+private codec/profile/COW, integrated SDK adoption and real CAD contacts/topology/
+face-scale/Acceptance8/full private gate remain open. Native pinned caller control
+and failed-read work receipts are a required root-path handoff. This prerequisite
+closes neither Phase6 nor milestone9.19 and changes no SDK pin.

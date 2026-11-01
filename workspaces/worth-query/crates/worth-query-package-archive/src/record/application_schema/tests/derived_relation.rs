@@ -1,5 +1,6 @@
 //! Fresh transport and completed-schema closure for descriptive derived sources.
 mod logical;
+mod ordered_events;
 use super::{decode_member, encode_member, try_decode_member};
 use worth_query_declaration::facade::application_schema::{
     validate_portable_application_schema_freshly as readmit,

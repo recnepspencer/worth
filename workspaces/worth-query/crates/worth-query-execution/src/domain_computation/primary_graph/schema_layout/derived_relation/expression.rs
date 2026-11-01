@@ -39,6 +39,15 @@ pub(super) fn lower(
                     },
                     SourceKind::Derived => Native::Derived(identity(&source.relation)),
                 },
+                Node::OrderedEvents {
+                    predecessor,
+                    introduced,
+                    retired,
+                } => Native::OrderedEvents {
+                    predecessor: *predecessor,
+                    introduced: *introduced,
+                    retired: *retired,
+                },
                 Node::Compose { left, right } => Native::Compose {
                     left: *left,
                     right: *right,
