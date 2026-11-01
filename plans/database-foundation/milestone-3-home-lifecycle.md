@@ -208,6 +208,70 @@ unsupported because its RuntimePublicationSnapshotReader owns an operational
 RelationalRuntimeHandle. These lease ports do not retire that handle, prove full
 Native root/publication-cell inertness, or establish whole Host D11.
 
+## Immutable Native alias and retained-reader decomposition prerequisite
+
+RelationalRuntimeHandle adds a pure validate_immutable_owner_alias(&Runtime)
+validator and consuming try_retire_immutable_alias(&ExecutionRequest, &Runtime).
+Reject Shared representation before effects, require the borrowed runtime's
+actual Owner tenure, and compare the immutable Arc's live pointee with that
+borrowed owner. A cached instance ID or reference-count observation is not the
+identity proof. The consuming port repeats validation and consults before
+relinquishing only its original Arc share; the matching owner borrow guarantees
+another strong owner remains, so no Runtime destructor runs in that step.
+Failure returns the SAME original handle. RetiredRelationalRuntimeHandleAlias
+retains only original cached metadata and lock-observation slot until unbudgeted
+reclaim, with no Runtime/RuntimeHandle or serving accessor. The slot contains a
+Weak listener, not its callback payload. Add no Weak<Runtime>, lifecycle binding,
+owner counter, ownership mode or close witness. The SAME Native owner stays
+serving for Complete capture/select/ack; this is local alias discharge only.
+
+The actual non-Clone RelationalBridgeRetainedSnapshot has one closed production
+constructor: open_retained_snapshot consumes its non-Clone lease, resolves the
+SAME issuer row, and clones that row's observation into its private concrete
+RuntimePublicationSnapshotReader. While this RAW lease remains untouched, its
+registry Arc anchors that row and Native's TWO original observation shares.
+Only consuming that lease removes the row; the cached-runtime insertion fence
+prevents supported replacement. Therefore dropping the reader's ONE observation
+share FIRST is provably nonfinal by construction. Use no count proxy, existing
+Memory root-clearing helper, new Native one-share port or fake replacement reader.
+
+A pure retained-snapshot try_into_retirement validation failure returns the SAME
+usable snapshot. The resulting non-Clone RelationalBridgeRetainedSnapshotRetirement
+borrows original request, actual source and matching Native owner on advance;
+each live call rechecks original source issuer and authentic owner. Decompose the
+private reader into takeable ORIGINAL fields, then use structural order:
+1. Discharge its immutable runtime-handle alias.
+2. Consult and relinquish its original observation share while the RAW lease
+   still anchors Native's two shares; do not advance or detach that lease first.
+3. Convert the original lease into the qualified Bridge observation task.
+4. Delegate until that authentic retired lease result is obtained.
+
+Busy/stop/refusal retains the same original parts and remaining work. Completed
+calls perform no further poll/effect. Abandonment field order releases reader
+observation BEFORE the raw lease; lease conversion is legal only after that
+observation field is empty. RetiredRelationalBridgeRetainedSnapshot keeps original
+snapshot/partition metadata, Native alias data and retired lease custody for
+unbudgeted reclaim, with no source or operational handle. Original independent
+readers retain their genuine Native alias/read vetoes.
+
+Place Native alias handling under change_source/runtime_handle/alias_retirement.rs,
+private reader parts under relational_source/snapshot_reading/retirement.rs, and
+public composite under runtime_source/retained_snapshot/retirement.rs. Use existing
+facade chains and owner-specific progress/denial wrapping actual alias/binding
+causes; no general retirement framework or new registry is introduced. Test exact
+original snapshot restoration on foreign/unsupported entry, stop at each stage,
+nonfinal observation-before-lease release and abandonment, unchanged Native release
+counters at that stage, existing-reader protection, and genuine Native work AFTER
+alias discharge. Source/caller tests use existing genuine owner fixtures; Root
+records only exact observed SDK classes and named owner-private assertions.
+
+Shared support and actual Directory Native business/graph retirement remain
+unimplemented. Current Memory source-affinity refusal and ordinary prepare_close/
+finish cannot substitute. Later coupled proof must still capture/select/ack
+while Native serves, then retire genuine original graph/provider/root/member
+obligations and issue actual business-complete allocation custody. These local
+ports establish neither that witness nor whole Host D11.
+
 ## Cold member custody retirement prerequisite
 
 This prerequisite retires one actual source-issued registration, or one local
