@@ -585,6 +585,13 @@ savings or bounds.
 The actual Patricia and HistoryLastValue child owners stay shared and unchanged.
 Their funding and general nonshallow defaults remain separate obligations.
 
+Borrowed map walks keep their bounded path stack inline and report zero heap
+scratch while preserving original work and stop polling. On the qualified
+64-bit target each iterator occupies 1,040 bytes, including when empty; a pair
+occupies 2,080 bytes before adapters and compiler temporaries. This exchanges
+heap scratch for stack space. Owned IntoIterator and mutable iteration keep
+their existing allocation contracts. No whole-operation funding is implied.
+
 This qualifies controlled column/map nodes, fixed pages and scalar-directory
 writes. Ordinary image and maintenance construction, legacy adjacency/bitset
 backing, revision-map payloads, independently constructed Digest/default payloads

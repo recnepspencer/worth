@@ -1,14 +1,16 @@
 use super::node::MapNode;
 
 pub(crate) struct SharedMapIter<'a, K: Ord + Copy, V: super::StoredValue> {
-    pending: Vec<&'a MapNode<K, V>>,
+    pending: [Option<&'a MapNode<K, V>>; MAXIMUM_ADDRESSABLE_AVL_HEIGHT],
+    pending_len: usize,
     remaining: usize,
 }
 
 impl<'a, K: Ord + Copy, V: super::StoredValue> SharedMapIter<'a, K, V> {
     pub(super) fn new(root: Option<&'a MapNode<K, V>>) -> Self {
         let mut iterator = Self {
-            pending: Vec::with_capacity(root.map_or(0, |_| MAXIMUM_ADDRESSABLE_AVL_HEIGHT)),
+            pending: [None; MAXIMUM_ADDRESSABLE_AVL_HEIGHT],
+            pending_len: 0,
             remaining: root.map_or(0, |node| node.len),
         };
         iterator.descend(root);
@@ -19,35 +21,35 @@ impl<'a, K: Ord + Copy, V: super::StoredValue> SharedMapIter<'a, K, V> {
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<Self, Stop> {
         let height = root.map_or(0, |node| node.height);
-        let bytes = height.saturating_mul(std::mem::size_of::<&MapNode<K, V>>());
-        prepare(height as u64 + 1, u64::try_from(bytes).unwrap_or(u64::MAX))?;
-        let mut iterator = Self {
-            pending: Vec::with_capacity(height),
-            remaining: root.map_or(0, |node| node.len),
-        };
-        iterator.descend(root);
-        Ok(iterator)
+        prepare(height as u64 + 1, 0)?;
+        Ok(Self::new(root))
     }
     pub(crate) fn try_next<Stop>(
         &mut self,
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<Option<(&'a K, &'a V::Value)>, Stop> {
-        let Some(next) = self.pending.last().copied() else {
+        let Some(index) = self.pending_len.checked_sub(1) else {
             return Ok(None);
         };
+        let next =
+            self.pending[index].expect(/* Proof: descend initializes each prefix slot before incrementing pending_len. Only advance takes a slot, after decrementing that same length, so a live prefix slot is always Some. */ "the nonempty pending prefix contains its original node");
         let descent = next.right.as_ref().map_or(0, |right| right.height);
         prepare(descent as u64 + 1, 0)?;
-        let node = self
-            .pending
-            .pop()
-            .expect(/* Proof: The iterator admits a next node only after pushing it onto pending; exclusive &mut iteration pops that same nonempty stack. */ "the admitted next node remains present");
+        Ok(self.advance())
+    }
+    fn advance(&mut self) -> Option<(&'a K, &'a V::Value)> {
+        self.pending_len = self.pending_len.checked_sub(1)?;
+        let node = self.pending[self.pending_len]
+            .take()
+            .expect(/* Proof: descend initializes each prefix slot before incrementing pending_len. Only advance takes a slot, after decrementing that same length, so a live prefix slot is always Some. */ "the nonempty pending prefix contains its original node");
         self.descend(node.right.as_deref());
         self.remaining -= 1;
-        Ok(Some((&node.key, node.value.value())))
+        Some((&node.key, node.value.value()))
     }
     fn descend(&mut self, mut current: Option<&'a MapNode<K, V>>) {
         while let Some(node) = current {
-            self.pending.push(node);
+            self.pending[self.pending_len] = Some(node);
+            self.pending_len += 1;
             current = node.left.as_deref();
         }
     }
@@ -56,10 +58,7 @@ impl<'a, K: Ord + Copy, V: super::StoredValue> SharedMapIter<'a, K, V> {
 impl<'a, K: Ord + Copy, V: super::StoredValue> Iterator for SharedMapIter<'a, K, V> {
     type Item = (&'a K, &'a V::Value);
     fn next(&mut self) -> Option<Self::Item> {
-        let node = self.pending.pop()?;
-        self.descend(node.right.as_deref());
-        self.remaining -= 1;
-        Some((&node.key, node.value.value()))
+        self.advance()
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.remaining, Some(self.remaining))
@@ -69,6 +68,9 @@ impl<K: Ord + Copy, V: super::StoredValue> ExactSizeIterator for SharedMapIter<'
 
 // Every two AVL levels at least double the minimum node count plus one.
 // A tree whose length fits in usize therefore cannot exceed this height.
-// Reserve the addressable bound rather than the current height: unvisited
-// fanout must not grow the allocation of an ordinary bounded traversal.
+// The pending prefix contains at most one path through that admitted topology;
+// its inline slots need no growth or heap reservation, including for empty maps.
 const MAXIMUM_ADDRESSABLE_AVL_HEIGHT: usize = 2 * usize::BITS as usize;
+
+#[cfg(test)]
+mod tests;

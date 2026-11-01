@@ -1,4 +1,4 @@
-//! The native borrowed field walk admits its real AVL navigation before allocation.
+//! Native borrowed field walks use inline navigation and retain original request stops.
 use super::*;
 use crate::config::data::CascadeDeletePolicy;
 use crate::execution::{
@@ -11,14 +11,17 @@ use std::{
     sync::atomic::{AtomicU64, AtomicUsize, Ordering},
 };
 use worth_execution::{
-    CancellationToken, ExecutionRequest, LeaseRequest, MapKernelFailure, MapStop,
+    CancellationSource, CancellationToken, ExecutionRequest, LeaseRequest, MapKernelFailure,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     PartitionIdentity,
 };
 
-fn lease(limit: Option<u64>) -> worth_execution::ExecutionResourceLease<'static> {
+fn lease(
+    limit: Option<u64>,
+    cancellation: CancellationToken,
+) -> worth_execution::ExecutionResourceLease<'static> {
     test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
@@ -27,7 +30,7 @@ fn lease(limit: Option<u64>) -> worth_execution::ExecutionResourceLease<'static>
                 ExecutionBudget::new(NonZeroUsize::MIN, limit, None),
             ),
             deadline: None,
-            cancellation: CancellationToken::new(),
+            cancellation,
         })
         .unwrap()
 }
@@ -60,16 +63,16 @@ fn native_field_navigation_boundary(relations: bool) {
     } else {
         &partition.entity_arena.live_bitset
     };
-    let mut navigation = 0;
-    // The original storage owner supplies its actual quote without allocating.
+    let mut navigation = None;
+    // The original owner still admits navigation, but has no heap scratch.
     assert!(slots
         .try_set_slots(|_units, bytes| {
-            navigation = bytes;
+            navigation = Some(bytes);
             Err(())
         })
         .is_err());
-    assert!(navigation > 0);
-    let probe = lease(None);
+    assert_eq!(navigation, Some(0));
+    let probe = lease(None, CancellationToken::new());
     let opening = AtomicU64::new(0);
     execute_read_only_packets(
         packet(),
@@ -88,111 +91,116 @@ fn native_field_navigation_boundary(relations: bool) {
     let left_value = string_aspect_value("left");
     let right_value = string_aspect_value("right");
     let edge_value = string_aspect_value("edge");
-    for funded in [false, true] {
-        let limit = opening.checked_add(navigation).unwrap() - u64::from(!funded);
-        let lease = lease(Some(limit));
-        let request = ExecutionRequest::leased(&lease);
-        let visited = AtomicUsize::new(0);
-        let preparation = AtomicUsize::new(0);
-        let settlement = AtomicUsize::new(0);
-        let work = AtomicU64::new(0);
-        let result = execute_read_only_packets(
-            packet(),
-            &lease,
-            |(), context| {
-                let before = |units, bytes| {
-                    work.fetch_add(units, Ordering::Relaxed);
-                    context.checkpoint(units)?;
-                    context.settle_temporary_scratch(bytes)?;
-                    if units == 0 && bytes != 0 {
-                        assert_eq!(bytes, navigation);
-                        preparation.fetch_add(1, Ordering::Relaxed);
-                    } else if units == 0 {
-                        assert_eq!(lease.charged_memory_bytes(), opening);
-                        settlement.fetch_add(1, Ordering::Relaxed);
-                    }
-                    Ok::<_, MapKernelFailure<PacketBudgetDenial>>(())
-                };
-                let check_live = || {
-                    assert_eq!(
-                        lease.charged_memory_bytes(),
-                        opening + navigation,
-                        "the original temporary payer stays live during borrowed visits"
-                    );
-                    visited.fetch_add(1, Ordering::Relaxed);
-                };
-                let result = if relations {
-                    source.try_for_each_relation_field(
-                        &request,
-                        KindId(2),
-                        &field,
-                        before,
-                        |id, value| {
-                            check_live();
-                            assert_eq!(id, relation);
-                            assert_eq!(value, Some(&edge_value));
-                            Ok(())
-                        },
-                    )
-                } else {
-                    source.try_for_each_entity_field(
-                        &request,
-                        KindId(1),
-                        &field,
-                        before,
-                        |id, value| {
-                            check_live();
-                            assert!(id == left || id == right);
-                            assert_eq!(
-                                value,
-                                Some(if id == left {
-                                    &left_value
-                                } else {
-                                    &right_value
-                                })
-                            );
-                            Ok(())
-                        },
-                    )
-                };
-                result.map_err(crate::indexes::projected_field_values::checked_entry_map::read_stop)
-            },
-            |_| 0,
-        );
-        if funded {
-            result.unwrap();
-            let rows = if relations { 1 } else { 2 };
-            assert_eq!(visited.load(Ordering::Relaxed), rows);
-            assert_eq!(work.load(Ordering::Relaxed), rows as u64);
-            assert_eq!(preparation.load(Ordering::Relaxed), 1);
-            assert_eq!(settlement.load(Ordering::Relaxed), 1);
-        } else {
-            assert!(matches!(result, Err(crate::execution::PacketExecutionStop::Execution {
-                reason: MapStop::Failure { cause: MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(
-                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-                )), .. }, ..
-            })));
-            assert_eq!(
-                visited.load(Ordering::Relaxed),
-                0,
-                "refuse before any native field visit"
-            );
-            assert_eq!(
-                work.load(Ordering::Relaxed),
-                0,
-                "navigation preparation does no candidate work"
-            );
-        }
-        assert_eq!(lease.charged_memory_bytes(), 0);
-    }
+    let lease = lease(Some(opening), CancellationToken::new());
+    let request = ExecutionRequest::leased(&lease);
+    let visited = AtomicUsize::new(0);
+    let boundary_polls = AtomicUsize::new(0);
+    let work = AtomicU64::new(0);
+    execute_read_only_packets(
+        packet(),
+        &lease,
+        |(), context| {
+            let before = |units, bytes| {
+                assert_eq!(bytes, 0);
+                work.fetch_add(units, Ordering::Relaxed);
+                context.checkpoint(units)?;
+                context.settle_temporary_scratch(bytes)?;
+                assert_eq!(lease.charged_memory_bytes(), opening);
+                if units == 0 {
+                    boundary_polls.fetch_add(1, Ordering::Relaxed);
+                }
+                Ok::<_, MapKernelFailure<PacketBudgetDenial>>(())
+            };
+            let check_live = || {
+                assert_eq!(
+                    lease.charged_memory_bytes(),
+                    opening,
+                    "borrowed visits need no memory beyond the original packet opening"
+                );
+                visited.fetch_add(1, Ordering::Relaxed);
+            };
+            let result = if relations {
+                source.try_for_each_relation_field(
+                    &request,
+                    KindId(2),
+                    &field,
+                    before,
+                    |id, value| {
+                        check_live();
+                        assert_eq!(id, relation);
+                        assert_eq!(value, Some(&edge_value));
+                        Ok(())
+                    },
+                )
+            } else {
+                source.try_for_each_entity_field(
+                    &request,
+                    KindId(1),
+                    &field,
+                    before,
+                    |id, value| {
+                        check_live();
+                        assert!(id == left || id == right);
+                        assert_eq!(
+                            value,
+                            Some(if id == left {
+                                &left_value
+                            } else {
+                                &right_value
+                            })
+                        );
+                        Ok(())
+                    },
+                )
+            };
+            result.map_err(crate::indexes::projected_field_values::checked_entry_map::read_stop)
+        },
+        |_| 0,
+    )
+    .unwrap();
+    let rows = if relations { 1 } else { 2 };
+    assert_eq!(visited.load(Ordering::Relaxed), rows);
+    assert_eq!(work.load(Ordering::Relaxed), rows as u64);
+    assert_eq!(boundary_polls.load(Ordering::Relaxed), 2);
+    assert_eq!(lease.charged_memory_bytes(), 0);
+
+    let cancellation = CancellationSource::new();
+    let stopped_lease = self::lease(Some(0), cancellation.token());
+    let stopped_request = ExecutionRequest::leased(&stopped_lease);
+    let mut reached_opening = false;
+    let before = |units, bytes| {
+        assert_eq!((units, bytes), (0, 0));
+        reached_opening = true;
+        cancellation.cancel();
+        Ok::<_, ()>(())
+    };
+    let stopped = if relations {
+        source.try_for_each_relation_field(&stopped_request, KindId(2), &field, before, |_, _| {
+            panic!("the original cancelled request must stop before visiting a field")
+        })
+    } else {
+        source.try_for_each_entity_field(&stopped_request, KindId(1), &field, before, |_, _| {
+            panic!("the original cancelled request must stop before visiting a field")
+        })
+    };
+    assert!(reached_opening);
+    assert!(matches!(
+        stopped,
+        Err(
+            crate::visibility::materialization::read_records::read_stop::ReadStop::Request(
+                crate::execution::RelationalExecutionDenialCause::Cancelled
+            )
+        )
+    ));
+    assert_eq!(stopped_lease.charged_memory_bytes(), 0);
     release_test_commit_snapshot(&runtime, &created);
 }
 
 #[test]
-fn native_entity_field_navigation_refuses_before_visit_and_retains_original_payer() {
+fn native_entity_field_navigation_uses_inline_stack_and_keeps_request_stops() {
     native_field_navigation_boundary(false);
 }
 #[test]
-fn native_relation_field_navigation_refuses_before_visit_and_retains_original_payer() {
+fn native_relation_field_navigation_uses_inline_stack_and_keeps_request_stops() {
     native_field_navigation_boundary(true);
 }

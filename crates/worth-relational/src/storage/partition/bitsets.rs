@@ -195,7 +195,7 @@ impl DenseSlotBitSet {
     }
 }
 
-/// A borrowed word walk with its original preclaimed AVL stack.
+/// A borrowed word walk with its addressably bounded inline AVL stack.
 pub(crate) struct DenseSlotIterator<'a> {
     words: crate::storage::substrate::SharedMapIter<'a, usize, u64>,
     word_index: usize,
