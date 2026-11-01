@@ -4,6 +4,12 @@ use super::{FieldDeclaration, FieldKey};
 use crate::values::AspectValue;
 use serde::{Deserialize, Serialize};
 
+mod field_map;
+mod storage_bounds;
+pub use storage_bounds::StructAspectValueStorageBounds;
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructAspectShape {
     fields: Vec<FieldDeclaration>,
@@ -47,7 +53,11 @@ impl StructAspectShape {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructAspectValue {
-    fields: BTreeMap<FieldKey, AspectValue>,
+    #[serde(
+        serialize_with = "field_map::serialize",
+        deserialize_with = "field_map::deserialize"
+    )]
+    fields: Box<[(FieldKey, AspectValue)]>,
 }
 
 impl StructAspectValue {
@@ -75,27 +85,75 @@ impl StructAspectValue {
         }
 
         Ok(Self {
-            fields: canonical_fields,
+            fields: canonical_fields.into_iter().collect(),
         })
     }
 
+    /// Consumes strictly key-ordered, unique fields in O(n), without allocating.
+    /// This constructs value meaning; contract admission remains separate.
+    pub fn from_sorted_fields(
+        fields: Box<[(FieldKey, AspectValue)]>,
+    ) -> Result<Self, StructAspectValueSortedFieldsDenied> {
+        if let Some(invalid_pair_index) = fields.windows(2).position(|pair| pair[0].0 >= pair[1].0)
+        {
+            return Err(StructAspectValueSortedFieldsDenied {
+                fields,
+                invalid_pair_index,
+            });
+        }
+        Ok(Self { fields })
+    }
+
+    /// Checked backing-storage bounds for decoding this many map entries.
+    /// Key/value-owned heaps are excluded and must be quoted separately.
+    pub fn decode_storage_bounds(entry_count: usize) -> Option<StructAspectValueStorageBounds> {
+        storage_bounds::decode(entry_count)
+    }
+
     pub fn fields(&self) -> impl Iterator<Item = (&FieldKey, &AspectValue)> {
-        self.fields.iter()
+        self.fields.iter().map(|(key, value)| (key, value))
     }
 
     pub fn get(&self, key: &FieldKey) -> Option<&AspectValue> {
-        self.fields.get(key)
+        self.fields
+            .binary_search_by(|(field, _)| field.cmp(key))
+            .ok()
+            .map(|index| &self.fields[index].1)
     }
 
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        self.fields
-            .iter()
-            .map(|(key, value)| {
-                std::mem::size_of::<(FieldKey, AspectValue)>()
+        self.fields.iter().fold(
+            self.fields
+                .len()
+                .saturating_mul(std::mem::size_of::<(FieldKey, AspectValue)>()),
+            |bytes, (key, value)| {
+                bytes
                     .saturating_add(key.owned_allocation_capacity_bytes())
                     .saturating_add(value.owned_allocation_capacity_bytes())
-            })
-            .sum()
+            },
+        )
+    }
+}
+
+/// Original owned fields rejected for nonascending or duplicate adjacent keys.
+#[derive(Debug)]
+pub struct StructAspectValueSortedFieldsDenied {
+    fields: Box<[(FieldKey, AspectValue)]>,
+    invalid_pair_index: usize,
+}
+
+impl StructAspectValueSortedFieldsDenied {
+    pub fn fields(&self) -> &[(FieldKey, AspectValue)] {
+        &self.fields
+    }
+
+    /// Index of the left field in the first invalid adjacent pair.
+    pub fn invalid_pair_index(&self) -> usize {
+        self.invalid_pair_index
+    }
+
+    pub fn into_fields(self) -> Box<[(FieldKey, AspectValue)]> {
+        self.fields
     }
 }
 

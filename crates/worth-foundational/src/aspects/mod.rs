@@ -56,7 +56,8 @@ pub use state::{
 };
 pub use structs::{
     CanonicalFieldPath, FieldDeclaration, FieldKey, FieldRequirement, StructAspectShape,
-    StructAspectValue, StructAspectValueConstructionDenial,
+    StructAspectValue, StructAspectValueConstructionDenial, StructAspectValueSortedFieldsDenied,
+    StructAspectValueStorageBounds,
 };
 pub use validation::{
     validate_aspect_value, ContractValidatedAspectArtifact, ContractValidatedAspectValue,

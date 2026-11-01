@@ -7,7 +7,6 @@ use crate::aspects::state::{
     AuthoritativeRecordAspectState, AuthoritativeRecordAspectStateAdmitted,
     AuthoritativeRecordAspectStateArtifact, CanonicalAspectStateMap,
 };
-use crate::aspects::structs::StructAspectValue;
 use crate::aspects::validation::{
     validate_aspect_value, ContractValidatedAspectValue, ContractValidatedAspectValueView,
     ContractValidationInput,
@@ -110,21 +109,7 @@ fn apply_field_patch_to_entry(
         );
     };
 
-    let mut next_fields = current_struct
-        .fields()
-        .map(|(field_key, field_value)| (field_key.clone(), field_value.clone()))
-        .collect::<std::collections::BTreeMap<_, _>>();
-
-    for field_key in field_patch.field_clears() {
-        next_fields.remove(field_key);
-    }
-
-    for (field_key, field_value) in field_patch.field_sets() {
-        next_fields.insert(field_key.clone(), field_value.clone());
-    }
-
-    let next_struct = StructAspectValue::new(next_fields)
-        .map_err(AuthoritativePatchApplicationDenial::StructValueConstructionDenied)?;
+    let next_struct = super::struct_field_application::apply(current_struct, field_patch);
     let validation = validate_aspect_value(
         field_patch.contract(),
         ContractValidationInput::Struct(next_struct),

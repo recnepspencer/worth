@@ -27,7 +27,8 @@ pub use crate::aspects::{
     PortableAspectFieldSet, PortableAspectPatchOperation, PortableAspectReadmissionDenial,
     PortablePatchReadmissionPurpose, PortableRecordAspectPatch, PortableRecordAspectState,
     PortableRecordAspectStateEntry, ProjectionMask, ProjectionMaskFrontDoor, ReferenceAspectType,
-    StructAspectShape, StructAspectValue, StructAspectValueConstructionDenial, StructFieldBuilder,
+    StructAspectShape, StructAspectValue, StructAspectValueConstructionDenial,
+    StructAspectValueSortedFieldsDenied, StructAspectValueStorageBounds, StructFieldBuilder,
     StructFieldsFrontDoor, StructValueBuilder, TruthPartitionRole, WholeAspectPatchBuilder,
 };
 pub use crate::boundary::{
