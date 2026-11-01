@@ -47,6 +47,17 @@ where
     type Terminal = T<S, I, P, R, A>;
     type ClosedTerminal = CT<S, I>;
     type Outcome = F<S, I, P, R, A>;
+    type GroupClosing = super::super::fixed_group_disposal::WorthQueryClosingFixedGroupOperation<S,I,P,R,A>;
+    type GroupCompletion = WorthQueryClosedFixedDelivery<S,I,P,R,A>;
+
+    fn begin_group_disposal(operation:Self::Operation)->Result<Self::GroupClosing,(Self::Operation,WorthQueryOperationCloseDenial)>{Self::GroupClosing::from_operation(operation)}
+    fn begin_group_terminal_disposal(terminal:Self::Terminal)->Result<Self::GroupClosing,(Self::Terminal,WorthQueryOperationCloseDenial)>{Self::GroupClosing::from_terminal(terminal)}
+    fn group_disposal_target(closing:&Self::GroupClosing)->worth_query_execution::facade::product::WorthQueryProductBranch{closing.target()}
+    fn close_group_disposal(closing:Self::GroupClosing,request:&WorthQueryApplicationRequest<'_, '_, '_,S>,aborting:Option<&worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryGroupAborting>)->Result<WorthQueryClosedOperation,(Self::GroupClosing,WorthQueryOperationCloseDenial)>{closing.close(request,aborting)}
+    fn finish_group_member(completed:Self::Completed,request:&WorthQueryApplicationRequest<'_, '_, '_,S>)->Result<Self::GroupCompletion,(Self::Completed,WorthQueryOperationCloseDenial)>{
+        completed.close_for_delivery(request).map(|mut delivery|{delivery.delivery.description.history=None;delivery})
+    }
+    fn can_resume_group_cleanup(_: &Self::Operation)->bool{false}
 }
 
 impl<S, I, P, A, R, Q>

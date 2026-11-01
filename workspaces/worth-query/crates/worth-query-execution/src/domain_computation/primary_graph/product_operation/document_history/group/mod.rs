@@ -37,7 +37,7 @@ pub struct WorthQueryHistoryGroupMemberAdmission {
 pub struct WorthQueryDocumentHistoryGroupReservation {
     reservation: WorthQueryDocumentHistoryReservation,
     members: Box<[WorthQueryApplicationIdempotencyBinding]>,
-    completed: Vec<Arc<WorthQueryApplicationReadObservation>>,
+    completed: Vec<CapturedMember>,
     candidate: Option<(
         crate::basis::WorthQueryProductBranch,
         Option<WorthQueryProductBranchReadIdentity>,
@@ -53,7 +53,37 @@ pub enum WorthQueryDocumentHistoryGroupPreparation {
 #[must_use = "close the actual candidate before cancelling this reserved group edge"]
 pub struct WorthQueryDocumentHistoryGroupAborting {
     reservation: WorthQueryDocumentHistoryReservation,
+    runtime_authority: u64,
+    candidate: Option<crate::basis::WorthQueryProductBranch>,
     _allocation: allocation::HistoryInsertionAllocation,
+}
+
+struct CapturedMember {
+    endpoint: Arc<WorthQueryApplicationReadObservation>,
+    root_posture:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
+}
+
+impl WorthQueryDocumentHistoryGroupAborting {
+    /// Disposal correspondence for this original private candidate only. This
+    /// grants no execution, output fulfillment or document-selection entrance.
+    pub fn validate_candidate_cleanup<S: ApplicationSchema>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        _access: &WorthQueryProgramPublicationAccess,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryDocumentHistoryDenial> {
+        phase
+            .checked_execution_request_for(&runtime.product_runtime)
+            .map_err(WorthQueryDocumentHistoryDenial::Stopped)?;
+        if self.runtime_authority != runtime.runtime.authority_identity().as_u64()
+            || self.candidate != Some(branch)
+        {
+            return Err(WorthQueryDocumentHistoryDenial::ForeignRecording);
+        }
+        Ok(())
+    }
 }
 
 impl WorthQueryDocumentHistoryGroupReservation {

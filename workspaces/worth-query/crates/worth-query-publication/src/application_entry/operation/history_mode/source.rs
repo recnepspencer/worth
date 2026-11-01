@@ -7,6 +7,7 @@ use worth_query_declaration::facade::{
     application_operation::NoApplicationMutationSource,
     application_program::ApplicationSourceCompletion,
 };
+mod group;
 
 type O<S, I, P, A> = WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationSourceCompletion>;
 type C<S, I, P, A> = WorthQueryCompletedSourceOperation<S, I, P, A, ApplicationSourceCompletion>;
@@ -29,6 +30,55 @@ where
     type Terminal = T<S, I, P, A>;
     type ClosedTerminal = CT<S, I, P, A>;
     type Outcome = R<S, I, P, A>;
+    type GroupClosing = group::SourceGroupDisposal<S, I, P, A>;
+    type GroupCompletion = (
+        WorthQueryClosedOperation,
+        WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
+    );
+
+    fn begin_group_disposal(
+        operation: Self::Operation,
+    ) -> Result<Self::GroupClosing, (Self::Operation, WorthQueryOperationCloseDenial)> {
+        operation
+            .into_original_disposal()
+            .map(group::SourceGroupDisposal::from_operation)
+    }
+    fn begin_group_terminal_disposal(
+        terminal: Self::Terminal,
+    ) -> Result<Self::GroupClosing, (Self::Terminal, WorthQueryOperationCloseDenial)> {
+        Ok(group::SourceGroupDisposal::from_terminal(terminal))
+    }
+    fn group_disposal_target(
+        closing: &Self::GroupClosing,
+    ) -> worth_query_execution::facade::product::WorthQueryProductBranch {
+        closing.target()
+    }
+    fn close_group_disposal(
+        closing: Self::GroupClosing,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        _:Option<&worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryGroupAborting>,
+    ) -> Result<WorthQueryClosedOperation, (Self::GroupClosing, WorthQueryOperationCloseDenial)>
+    {
+        closing.close(request)
+    }
+    fn finish_group_member(
+        completed: Self::Completed,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<Self::GroupCompletion, (Self::Completed, WorthQueryOperationCloseDenial)> {
+        completed.close_with_evidence(request)
+    }
+    fn can_resume_group_cleanup(operation: &Self::Operation) -> bool {
+        use crate::application_entry::WorthQuerySourceOnlyPosture as Native;
+        matches!(
+            operation.posture(),
+            Native::Indeterminate
+                | Native::ProvedAborted
+                | Native::RetainedDeliveryPending
+                | Native::RecoveryPerformed
+                | Native::ProductUnpublished
+                | Native::Terminal
+        )
+    }
 }
 impl<S, I, P, A>
     Driver<S, I, P, A, O<S, I, P, A>, C<S, I, P, A>, T<S, I, P, A>, CT<S, I, P, A>, R<S, I, P, A>>

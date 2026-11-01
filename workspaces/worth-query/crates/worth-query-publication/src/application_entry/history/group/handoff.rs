@@ -15,8 +15,10 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
-        A,
+        A: ApplicationAction<S, I::Binding>,
     > WorthQueryHistoryGroupExecution<'_, S, H, I, P, A>
+where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     #[doc(hidden)]
     pub fn pause_on_group_handoff_for_test(

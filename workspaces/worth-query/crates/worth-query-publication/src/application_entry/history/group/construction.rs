@@ -1,8 +1,13 @@
 //! Freeze a bounded list without effects; every constructed owner stays in the root.
 use super::*;
 
-impl<'runtime, S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>>
-    WorthQueryApplicationHistoryDocument<'runtime, S, H>
+impl<
+        'runtime,
+        S: ApplicationSchema + 'static,
+        H: ApplicationHistoryBinding<S>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs,
+    > WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>
 {
     /// A group cannot enroll an operation whose scope is unrelated to its model.
     /// ```compile_fail,E0271
@@ -58,7 +63,7 @@ impl<'runtime, S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>>
         key: u128,
         members: [(I, Key<S, I>); N],
     ) -> Result<
-        WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A>,
+        WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A, Payload, Outputs>,
         (Self, WorthQueryHistoryGroupDenial),
     >
     where
@@ -70,7 +75,7 @@ impl<'runtime, S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>>
         <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
         <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
             ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
-        A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = Mode>,
+        Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     {
         use WorthQueryHistoryGroupDenial as Denial;
         if !std::ptr::eq(self.owner.application(), request.application)
@@ -121,7 +126,7 @@ impl<'runtime, S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>>
             let bytes = N
                 .checked_mul(
                     std::mem::size_of::<Member<S, I, P, A>>()
-                        + std::mem::size_of::<(WorthQueryClosedOperation, Completion<S, I>)>(),
+                        + std::mem::size_of::<Completion<S, I, P, A>>(),
                 )
                 .ok_or(Denial::Capacity)? as u64;
             match execution

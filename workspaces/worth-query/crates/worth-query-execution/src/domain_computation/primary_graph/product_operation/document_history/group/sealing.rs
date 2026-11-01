@@ -47,7 +47,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             {
                 return Err(Denial::ForeignRecording);
             }
-            let source = Arc::clone(group.completed.last().ok_or(Denial::GroupNotComplete)?);
+            let last = group.completed.last().ok_or(Denial::GroupNotComplete)?;
+            let source = Arc::clone(&last.endpoint);
             if source.branch_incarnation() != candidate.branch().occurrence() {
                 return Err(Denial::ReceiptMismatch);
             }
@@ -68,7 +69,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 node: RecordedNode {
                     step: step.clone(),
                     _source: source,
-                    root_posture: None,
+                    root_posture: last.root_posture,
                 },
                 endpoint,
                 exact,

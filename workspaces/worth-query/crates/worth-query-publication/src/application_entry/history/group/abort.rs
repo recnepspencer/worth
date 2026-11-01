@@ -2,14 +2,9 @@
 use super::*;
 
 fn close_original<S, I, P, A>(
-    closing: crate::application_entry::operation::WorthQueryClosingSourceOperation<
-        S,
-        I,
-        P,
-        A,
-        Mode,
-    >,
+    closing: Closing<S, I, P, A>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    aborting:Option<&worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryGroupAborting>,
 ) -> Result<
     (),
     (
@@ -21,27 +16,29 @@ where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
+    A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     let current = WorthQueryApplicationRequest {
         application: request.application,
         principal: request.principal,
         scope: request.scope,
-        branch: closing.target(),
+        branch: Mode::<S, I, A>::group_disposal_target(&closing),
     };
-    closing
-        .close(&current)
-        .map(|_| ())
+    Mode::<S, I, A>::close_group_disposal(closing, &current, aborting)
+        .map(drop)
         .map_err(|(closing, cause)| (Member::ClosingOriginal(Some(closing)), cause))
 }
 
-impl<'runtime, S, H, I, P, A> WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
+    WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A, Payload, Outputs>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
-    A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = Mode>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
 {
@@ -51,7 +48,7 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
-        WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         (Self, WorthQueryHistoryGroupDenial),
     > {
         use WorthQueryHistoryGroupDenial as Denial;
@@ -82,41 +79,55 @@ where
             return Err((self, Denial::NotReady));
         }
         self.execution.posture = WorthQueryHistoryGroupPosture::Aborting;
+        if let Some(reservation) = self.execution.reservation.take() {
+            match self
+                .document
+                .owner
+                .begin_history_group_abort(&program_publication_access(), reservation)
+            {
+                Ok(aborting) => self.execution.aborting = Some(aborting),
+                Err((reservation, cause)) => {
+                    self.execution.reservation = Some(reservation);
+                    return Err((
+                        self,
+                        Denial::History(WorthQueryApplicationHistoryDenial::Document(cause)),
+                    ));
+                }
+            }
+        }
         while self.execution.closing < self.execution.members.len() {
             let index = self.execution.closing;
             let member = std::mem::replace(&mut self.execution.members[index], Member::Closed);
             let result = match member {
                 Member::Description(_) => Ok(()),
                 Member::Unbound(Some(operation)) | Member::Operation(Some(operation)) => {
-                    match operation.into_original_disposal() {
-                        Ok(closing) => close_original(closing, request),
+                    match Mode::<S, I, A>::begin_group_disposal(operation) {
+                        Ok(closing) => {
+                            close_original(closing, request, self.execution.aborting.as_ref())
+                        }
                         Err((operation, cause)) => Err((Member::Operation(Some(operation)), cause)),
                     }
                 }
-                Member::ClosingOriginal(Some(closing)) => close_original(closing, request),
+                Member::ClosingOriginal(Some(closing)) => {
+                    close_original(closing, request, self.execution.aborting.as_ref())
+                }
                 Member::Completed(Some(completed)) => {
                     let current = WorthQueryApplicationRequest {
                         application: request.application,
                         principal: request.principal,
                         scope: request.scope,
-                        branch: Mode::completed_target(&completed),
+                        branch: Mode::<S, I, A>::completed_target(&completed),
                     };
-                    completed
-                        .close_with_evidence(&current)
-                        .map(drop)
+                    Mode::<S, I, A>::discard_completed(completed, &current)
                         .map_err(|(completed, cause)| (Member::Completed(Some(completed)), cause))
                 }
-                Member::Terminal(Some(mut terminal)) => {
-                    let current = WorthQueryApplicationRequest {
-                        application: request.application,
-                        principal: request.principal,
-                        scope: request.scope,
-                        branch: Mode::terminal_target(&terminal),
-                    };
-                    terminal
-                        .close_for_history(&current)
-                        .map(|_| ())
-                        .map_err(|cause| (Member::Terminal(Some(terminal)), cause))
+                Member::Terminal(Some(terminal)) => {
+                    match Mode::<S, I, A>::begin_group_terminal_disposal(terminal) {
+                        Ok(closing) => {
+                            close_original(closing, request, self.execution.aborting.as_ref())
+                        }
+                        Err((terminal, cause)) => Err((Member::Terminal(Some(terminal)), cause)),
+                    }
                 }
                 _ => unreachable!("every unclosed original owner is retained"),
             };
@@ -133,22 +144,6 @@ where
                     self,
                     Denial::Member(WorthQueryHistoryEditDenial::ForkRecovery),
                 ));
-            }
-        }
-        if let Some(reservation) = self.execution.reservation.take() {
-            match self
-                .document
-                .owner
-                .begin_history_group_abort(&program_publication_access(), reservation)
-            {
-                Ok(aborting) => self.execution.aborting = Some(aborting),
-                Err((reservation, cause)) => {
-                    self.execution.reservation = Some(reservation);
-                    return Err((
-                        self,
-                        Denial::History(WorthQueryApplicationHistoryDenial::Document(cause)),
-                    ));
-                }
             }
         }
         if let Some(candidate) = self.execution.candidate.take() {

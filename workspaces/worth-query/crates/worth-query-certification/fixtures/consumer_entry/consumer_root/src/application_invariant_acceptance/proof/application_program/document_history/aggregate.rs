@@ -8,6 +8,7 @@ use worth_query_topology_entry::{
 };
 
 mod branching;
+mod group;
 mod navigation;
 mod race;
 type App = installation::ConsumerRuntime<FixedProgram>;

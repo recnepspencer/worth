@@ -69,6 +69,7 @@ mod discovered_handoff_contract;
 mod fixed;
 mod fixed_advance;
 mod fixed_close;
+mod fixed_group_disposal;
 mod fixed_outputs;
 mod fixed_publication;
 mod fixed_recovery;

@@ -127,7 +127,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .len()
             .checked_mul(
                 std::mem::size_of::<WorthQueryApplicationIdempotencyBinding>()
-                    + std::mem::size_of::<Arc<WorthQueryApplicationReadObservation>>(),
+                    + std::mem::size_of::<CapturedMember>(),
             )
             .ok_or(Denial::GroupMemberLimitExceeded)?;
         let (allocation, _) =
@@ -219,13 +219,15 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             reservation,
             members,
             completed,
-            candidate: _,
+            candidate,
             _allocation,
         } = group;
         drop(completed);
         drop(members);
         Ok(WorthQueryDocumentHistoryGroupAborting {
             reservation,
+            runtime_authority: self.application().runtime.authority_identity().as_u64(),
+            candidate: candidate.map(|(branch, _)| branch),
             _allocation,
         })
     }

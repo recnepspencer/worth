@@ -6,11 +6,17 @@ pub struct WorthQueryHistoryGroupFinish<
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
-> {
-    pub document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+    P: ApplicationProgramDefinition<S>,
+    A: ApplicationAction<S, I::Binding>,
+    Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
+> where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
+    pub document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     pub step: WorthQueryHistoryStep,
     pub kind: WorthQueryHistoryGroupCompletionKind,
-    pub completions: WorthQueryHistoryGroupCompletions<S, I>,
+    pub completions: WorthQueryHistoryGroupCompletions<Completion<S, I, P, A>>,
 }
 
 impl<'runtime, S, H, I, P, A> WorthQueryHistoryGroupExecution<'runtime, S, H, I, P, A>
@@ -20,7 +26,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
-    A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = Mode>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
@@ -28,9 +34,9 @@ where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
-    pub fn complete(
+    pub fn complete<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
         &mut self,
-        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryHistoryStep, WorthQueryHistoryGroupDenial> {
         use WorthQueryHistoryGroupDenial as Denial;
@@ -66,10 +72,12 @@ where
                 let Member::Completed(Some(completed)) = self.members.last().unwrap() else {
                     unreachable!("all members completed")
                 };
-                let (prepared, selected) = Mode::prepare_completed(completed, &phase, &current)
-                    .map_err(|cause| {
-                        Denial::History(WorthQueryApplicationHistoryDenial::Mutation(cause))
-                    })?;
+                let (prepared, selected) = Mode::<S, I, A>::prepare_completed(
+                    completed, &phase, &current,
+                )
+                .map_err(|cause| {
+                    Denial::History(WorthQueryApplicationHistoryDenial::Mutation(cause))
+                })?;
                 let installed = runtime
                     .installed_schema()
                     .installed_history::<H>()
@@ -120,14 +128,15 @@ where
     }
 }
 
-impl<'runtime, S, H, I, P, A> WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
+    WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A, Payload, Outputs>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
-    A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = Mode>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
 {
@@ -135,8 +144,10 @@ where
     pub fn finish(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> Result<WorthQueryHistoryGroupFinish<'runtime, S, H, I>, (Self, WorthQueryHistoryGroupDenial)>
-    {
+    ) -> Result<
+        WorthQueryHistoryGroupFinish<'runtime, S, H, I, P, A, Payload, Outputs>,
+        (Self, WorthQueryHistoryGroupDenial),
+    > {
         if self.execution.document_identity
             != self
                 .document
@@ -176,9 +187,9 @@ where
                         application: request.application,
                         principal: request.principal,
                         scope: request.scope,
-                        branch: Mode::completed_target(&completed),
+                        branch: Mode::<S, I, A>::completed_target(&completed),
                     };
-                    match completed.close_with_evidence(&current) {
+                    match Mode::<S, I, A>::finish_group_member(completed, &current) {
                         Ok(completion) => {
                             self.execution.completed.push(completion);
                             Ok(())
@@ -191,9 +202,9 @@ where
                         application: request.application,
                         principal: request.principal,
                         scope: request.scope,
-                        branch: Mode::target(&operation),
+                        branch: Mode::<S, I, A>::target(&operation),
                     };
-                    Mode::close_operation(operation, &current)
+                    Mode::<S, I, A>::close_operation(operation, &current)
                         .map(|_| ())
                         .map_err(|(operation, cause)| (Member::Unbound(Some(operation)), cause))
                 }

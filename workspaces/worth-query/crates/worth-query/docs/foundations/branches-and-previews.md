@@ -1345,13 +1345,38 @@ outcome and call `group.abort(request)`. A denied second edit does not undo an
 earlier private publication or select a partial group. Abort closes original
 partial-effect custody and the candidate; it never reruns a handler or presents
 cleanup as business rollback. Abort refusal returns the same owning root. Retry
-its close, or use `execution.resume_cleanup(document, request)` for a retained
-unresolved original fate; this route cannot start another business attempt.
+its close. For a source-completion action's retained unresolved original fate,
+`execution.resume_cleanup(document, request)` can inspect/deliver that original
+fate; this route cannot start another business attempt. Fixed groups dispose
+their original required-output interests and native partials through abort,
+including when the selected document has moved. This disposal does not declare
+an unfinished output fulfilled or unavailable.
 
 After `Selected` or `AlreadyRecorded`, call `group.finish(request)` to discharge
-each operation and recover the document, the one step, and original source
-completions. An equivalent whole-group retry returns the original step without
-moving today's selection or running members again; its completion vector is
+each operation and recover the document, the one step, and original member
+completions. Source-completion actions return their original closed/source
+evidence pairs. Fixed actions return original `WorthQueryClosedFixedDelivery`
+owners, each with its actual source, root and dependent settlements. Use a
+delivery's retained observation for historical reads; fresh current delivery
+can refuse as superseded after a later member. The next member starts from the
+preceding complete tree's endpoint, and the group records the last complete
+endpoint with its actual root posture.
+
+For a fresh request on the fixed delivery's own branch, validate the original
+complete set at its retained observation:
+
+<!-- compiled: document_history_group_fixed_delivery.rs -->
+```rust
+    let original = request.at(delivery.settlement().observation());
+    delivery.deliver_current_at(&original)
+```
+
+This preserves each output's ordinary disclosure requirements. Query historical
+artifacts through ordinary retained queries with their independently required
+READ authority.
+
+An equivalent whole-group retry returns the original step without
+moving today's selection or running members again; its completion collection is
 empty and `kind` is `AlreadyRecorded`. Changed membership or inputs under that key refuse. If delivery stops
 after selection, retry completion/finish on the original root. Competing
 navigation can make an unselected group stale; retain and abort its candidate.
@@ -1361,6 +1386,7 @@ member and retained-result counts. Both default to 64; the document admits one
 unfinished group. Capacity refusal precedes candidate effects. Nested groups
 cannot consume the document through its shared borrow. Groups retain the
 ordinary operation's current authorization and invariants; workflow and external
-effects are ineligible. These calls accept source-completion actions on ordinary
-payload/no-output documents.
+effects are ineligible. A homogeneous member list can use source-completion or
+fixed required-output actions. Group creation, finish and abort preserve the
+document's payload and configured output mode.
 

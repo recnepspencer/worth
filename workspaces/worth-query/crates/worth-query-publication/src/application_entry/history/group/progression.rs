@@ -8,7 +8,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
-    A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = Mode>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
@@ -16,9 +16,9 @@ where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
-    pub fn advance(
+    pub fn advance<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
         &mut self,
-        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryHistoryGroupPosture, WorthQueryHistoryGroupDenial> {
         self.validate_document(document, request)?;
@@ -32,9 +32,9 @@ where
         Ok(self.posture)
     }
 
-    fn run_member(
+    fn run_member<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
         &mut self,
-        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), WorthQueryHistoryGroupDenial> {
         use WorthQueryHistoryGroupDenial as Denial;
@@ -65,7 +65,10 @@ where
                 .map_err(|cause| {
                     Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause))
                 })??;
-            match Mode::bind_candidate(operation.take().expect("initial SDK owner"), restriction) {
+            match Mode::<S, I, A>::bind_candidate(
+                operation.take().expect("initial SDK owner"),
+                restriction,
+            ) {
                 Ok(operation) => self.members[self.next] = Member::Operation(Some(operation)),
                 Err((original, cause)) => {
                     *operation = Some(original);
@@ -85,7 +88,8 @@ where
             scope: request.scope,
             branch: self.candidate.as_ref().expect("private candidate").branch(),
         };
-        match Mode::advance(operation.take().expect("original SDK operation"), &current) {
+        match Mode::<S, I, A>::advance(operation.take().expect("original SDK operation"), &current)
+        {
             HistoryOperationAdvance::Progress(next) => *operation = Some(next),
             HistoryOperationAdvance::Refused {
                 operation: next,
@@ -105,9 +109,9 @@ where
         Ok(())
     }
 
-    fn capture_member(
+    fn capture_member<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
         &mut self,
-        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), WorthQueryHistoryGroupDenial> {
         use WorthQueryHistoryGroupDenial as Denial;
@@ -127,23 +131,39 @@ where
                     scope: request.scope,
                     branch: self.candidate.as_ref().unwrap().branch(),
                 };
-                let Some(HistoryRecordingSource::Source(receipt)) =
-                    Mode::recording_source(completed, &phase, &current).map_err(Denial::Member)?
-                else {
-                    unreachable!("SourceOnly profile")
-                };
-                document
-                    .owner
-                    .capture_history_group_member(
-                        &phase,
-                        &program_publication_access(),
-                        self.reservation.as_mut().expect("reserved group"),
-                        self.candidate.as_ref().unwrap(),
-                        receipt,
-                    )
-                    .map_err(|cause| {
-                        Denial::History(WorthQueryApplicationHistoryDenial::Document(cause))
-                    })?;
+                let source = Mode::<S, I, A>::recording_source(completed, &phase, &current)
+                    .map_err(Denial::Member)?
+                    .ok_or(Denial::History(
+                        WorthQueryApplicationHistoryDenial::Document(
+                            WorthQueryDocumentHistoryDenial::ReceiptMismatch,
+                        ),
+                    ))?;
+                let reservation = self.reservation.as_mut().expect("reserved group");
+                let candidate = self.candidate.as_ref().unwrap();
+                match source {
+                    HistoryRecordingSource::Source(receipt) => {
+                        document.owner.capture_history_group_member(
+                            &phase,
+                            &program_publication_access(),
+                            reservation,
+                            candidate,
+                            receipt,
+                        )
+                    }
+                    HistoryRecordingSource::RequiredOutputs { source, completed } => {
+                        document.owner.capture_history_group_required_outputs(
+                            &phase,
+                            &program_publication_access(),
+                            reservation,
+                            candidate,
+                            source,
+                            &completed,
+                        )
+                    }
+                }
+                .map_err(|cause| {
+                    Denial::History(WorthQueryApplicationHistoryDenial::Document(cause))
+                })?;
                 self.next += 1;
                 if self.next == self.members.len() {
                     self.posture = WorthQueryHistoryGroupPosture::ReadyToComplete;
@@ -157,9 +177,9 @@ where
 
     /// Query the actual staged head under fresh ordinary READ. This creates no
     /// history node or permission and exposes no candidate mutation selector.
-    pub fn read_staged(
+    pub fn read_staged<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
         &self,
-        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
         crate::domain_computation::WorthQueryPublishedApplicationResult<Query<S, H>, Rows<S, H>>,

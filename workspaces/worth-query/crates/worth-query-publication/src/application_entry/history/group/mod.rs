@@ -1,10 +1,11 @@
-//! A typed owning root retains the original document and all group cleanup.
+//! A typed owning root retains the original document and every ordinary group owner.
 use super::*;
 use crate::application_entry::{
-    operation::{HistoryOperationAdvance, HistoryOperationDriver, HistoryRecordingSource},
-    WorthQueryClosedOperation, WorthQueryCompletedSourceOperation, WorthQueryOperationDescription,
-    WorthQuerySourceCompletion, WorthQuerySourceOnlyOperation, WorthQuerySourceOperationBinding,
-    WorthQueryTerminalSourceOperation,
+    operation::{
+        HistoryMode as Mode, HistoryOperationAdvance, HistoryOperationDriver,
+        HistoryRecordingSource, WorthQueryHistoryOperationMode,
+    },
+    WorthQueryOperationDescription, WorthQuerySourceOperationBinding,
 };
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryModel,
@@ -12,10 +13,7 @@ use worth_query_declaration::facade::{
         ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
         NoApplicationMutationSource,
     },
-    application_program::{
-        ApplicationAction, ApplicationActionDelivery, ApplicationProgramDefinition,
-        ApplicationSourceCompletion as Mode,
-    },
+    application_program::{ApplicationAction, ApplicationProgramDefinition},
 };
 use worth_query_execution::{
     facade::{
@@ -27,7 +25,6 @@ use worth_query_execution::{
         WorthQueryDocumentHistoryOperation,
     },
 };
-
 mod admission;
 mod cleanup;
 mod completion;
@@ -46,9 +43,15 @@ pub use results::{
 };
 mod abort;
 
-type Operation<S, I, P, A> = WorthQuerySourceOnlyOperation<S, I, P, A, Mode>;
-type Completed<S, I, P, A> = WorthQueryCompletedSourceOperation<S, I, P, A, Mode>;
-type Terminal<S, I, P, A> = WorthQueryTerminalSourceOperation<S, I, P, A, Mode>;
+type Operation<S, I, P, A> =
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::Operation;
+type Completed<S, I, P, A> =
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::Completed;
+type Terminal<S, I, P, A> = <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::Terminal;
+type Closing<S, I, P, A> =
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::GroupClosing;
+type Completion<S, I, P, A> =
+    <Mode<S, I, A> as WorthQueryHistoryOperationMode<S, I, P, A>>::GroupCompletion;
 type Key<S, I> =
     <<I as ApplicationMutationIntent<S>>::Binding as ApplicationMutationBinding<S>>::IdempotencyKey;
 
@@ -64,7 +67,6 @@ pub enum WorthQueryHistoryGroupDenial {
     Capacity,
     NotReady,
 }
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryHistoryGroupPosture {
     Constructing,
@@ -84,27 +86,20 @@ enum Member<
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A,
-> {
+    A: ApplicationAction<S, I::Binding>,
+> where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
     Description(Option<WorthQueryOperationDescription<S, I>>),
     Unbound(Option<Operation<S, I, P, A>>),
     Operation(Option<Operation<S, I, P, A>>),
     Completed(Option<Completed<S, I, P, A>>),
     Terminal(Option<Terminal<S, I, P, A>>),
-    ClosingOriginal(
-        Option<
-            crate::application_entry::operation::WorthQueryClosingSourceOperation<S, I, P, A, Mode>,
-        >,
-    ),
+    ClosingOriginal(Option<Closing<S, I, P, A>>),
     Closed,
 }
 
-type Completion<S, I> = WorthQuerySourceCompletion<
-    <<I as ApplicationMutationIntent<S>>::Binding as ApplicationMutationBinding<S>>::Result,
->;
-
-/// The transient split borrow cannot extract the original document or any live
-/// SDK owner. Dropping that borrow leaves this root's actual cleanup intact.
+/// A transient split borrow leaves every real owner inside this root.
 #[must_use = "complete or abort the group and discharge its real owners explicitly"]
 pub struct WorthQueryGroupedHistoryDocument<
     'runtime,
@@ -112,31 +107,35 @@ pub struct WorthQueryGroupedHistoryDocument<
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A,
-> {
-    document: WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+    A: ApplicationAction<S, I::Binding>,
+    Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
+> where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
+    document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     execution: WorthQueryHistoryGroupExecution<'runtime, S, H, I, P, A>,
 }
-
 #[must_use = "retain this execution inside its grouped document until cleanup finishes"]
-pub struct WorthQueryHistoryGroupExecution<'runtime,S:ApplicationSchema,H:ApplicationHistoryBinding<S>,I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,A> {
-    program: WorthQueryProgramApplicationRuntime<S,P>,
-    key: u128,
+pub struct WorthQueryHistoryGroupExecution<'runtime,S:ApplicationSchema,H:ApplicationHistoryBinding<S>,I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,A:ApplicationAction<S,I::Binding>>
+where Mode<S,I,A>:WorthQueryHistoryOperationMode<S,I,P,A> {
+    program:WorthQueryProgramApplicationRuntime<S,P>,
+    key:u128,
     handoff:Option<(WorthQueryHistoryGroupHandoffPointForTest,std::sync::Arc<super::owner_handoff::OwnerHandoff>)>,
-    document_identity: worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryIdentity,
-    members: Vec<Member<S,I,P,A>>,
-    completed: Vec<(WorthQueryClosedOperation,Completion<S,I>)>,
-    reservation: Option<WorthQueryDocumentHistoryGroupReservation>,
-    candidate: Option<WorthQueryExpectedProductBranch<'runtime,S>>,
-    recovery: Option<super::edit::ForkRecovery>,
-    cleanup: Option<super::edit::DiscardedCandidate<'runtime,S>>,
-    aborting: Option<worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryGroupAborting>,
-    selected: Option<WorthQueryHistoryStep>,
-    next: usize,
-    closing: usize,
-    posture: WorthQueryHistoryGroupPosture,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
-    marker: std::marker::PhantomData<fn()->H>,
+    document_identity:worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryIdentity,
+    members:Vec<Member<S,I,P,A>>,
+    completed:Vec<Completion<S,I,P,A>>,
+    reservation:Option<WorthQueryDocumentHistoryGroupReservation>,
+    candidate:Option<WorthQueryExpectedProductBranch<'runtime,S>>,
+    recovery:Option<super::edit::ForkRecovery>,
+    cleanup:Option<super::edit::DiscardedCandidate<'runtime,S>>,
+    aborting:Option<worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryGroupAborting>,
+    selected:Option<WorthQueryHistoryStep>,
+    next:usize,
+    closing:usize,
+    posture:WorthQueryHistoryGroupPosture,
+    _memory:Option<worth_execution::ExecutionMemoryReservation>,
+    marker:std::marker::PhantomData<fn()->H>,
 }
 
 impl<
@@ -145,18 +144,24 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
-        A,
-    > WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A>
+        A: ApplicationAction<S, I::Binding>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs,
+    > WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A, Payload, Outputs>
+where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     pub fn parts(
         &mut self,
     ) -> (
-        &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         &mut WorthQueryHistoryGroupExecution<'runtime, S, H, I, P, A>,
     ) {
         (&self.document, &mut self.execution)
     }
-    pub fn document(&self) -> &WorthQueryApplicationHistoryDocument<'runtime, S, H> {
+    pub fn document(
+        &self,
+    ) -> &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs> {
         &self.document
     }
     pub fn posture(&self) -> WorthQueryHistoryGroupPosture {
@@ -172,12 +177,14 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
-        A,
+        A: ApplicationAction<S, I::Binding>,
     > WorthQueryHistoryGroupExecution<'_, S, H, I, P, A>
+where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
-    fn validate_document(
+    fn validate_document<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
         &self,
-        document: &WorthQueryApplicationHistoryDocument<'_, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<'_, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), WorthQueryHistoryGroupDenial> {
         if !std::ptr::eq(self.program.runtime(), request.application)
@@ -200,17 +207,8 @@ impl<
         }
         Ok(())
     }
-
     pub fn completed_members(&self) -> usize {
-        self.reservation.as_ref().map_or_else(
-            || {
-                self.members
-                    .iter()
-                    .filter(|member| matches!(member, Member::Completed(_) | Member::Closed))
-                    .count()
-            },
-            |reservation| reservation.completed_members(),
-        )
+        self.next
     }
     pub fn selected_step(&self) -> Option<&WorthQueryHistoryStep> {
         self.selected.as_ref()
@@ -237,14 +235,17 @@ impl<
         }
     }
 }
-
 impl<
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         P: ApplicationProgramDefinition<S>,
-        A,
-    > std::fmt::Debug for WorthQueryGroupedHistoryDocument<'_, S, H, I, P, A>
+        A: ApplicationAction<S, I::Binding>,
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs,
+    > std::fmt::Debug for WorthQueryGroupedHistoryDocument<'_, S, H, I, P, A, Payload, Outputs>
+where
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryGroupedHistoryDocument")

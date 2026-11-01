@@ -2062,7 +2062,7 @@ and preserves the document's output mode. Navigation selects an existing state;
 [semantic correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
 publishes a new inverse, compensation or reapplication under its own contract.
 
-For a gesture containing several ordinary source-completion actions, use an
+For a gesture containing several ordinary actions, use an
 owning group. It keeps the original model selected until all members complete,
 then records one history edge:
 
@@ -2111,12 +2111,30 @@ an alias for `WorthQueryHistoryGroupPosture`:
 The caller keeps `group` after every refusal. On a terminal member, inspect its
 original native outcome and abort the group; earlier candidate publications
 remain real effects with their own cleanup. After selection, finish the group
-to obtain its document, one history step and original source completions. Keep
-any returned cleanup owner on refusal. These calls support a homogeneous list
-of source-completion actions on an ordinary no-output document, bounded by the
-history binding's installed `GROUP_RESOURCES` (64 members/results by default,
-one unfinished group). See [group completion, retries and disposal](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step)
+to obtain its document, one history step and original member completions. Keep
+any returned cleanup owner on refusal. A group accepts a homogeneous list of
+source-completion or fixed required-output actions and preserves the document's
+payload and output modes. Each fixed member completes its actual root and
+children before the next member starts. Its completion is an original
+`WorthQueryClosedFixedDelivery`; earlier deliveries keep their historical
+settlements even when a later member makes current delivery stale. The final
+step names the last complete tree's endpoint. Installed `GROUP_RESOURCES` bounds
+members/results (64 each by default, one unfinished group). See
+[group completion, retries and disposal](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step)
 for cancellation, competing navigation and partial effects.
+
+For a fixed member, supply a fresh request on `delivery.branch()` and validate
+its original complete output set at the retained observation:
+
+<!-- compiled: document_history_group_fixed_delivery.rs -->
+```rust
+    let original = request.at(delivery.settlement().observation());
+    delivery.deliver_current_at(&original)
+```
+
+An ordinary retained query can then read that member's historical artifacts
+under its own READ contract. A later group member does not replace this
+delivery's original settlement.
 
 For a fixed required-output tree, configure the document with
 `document.with_outputs::<Program, Root>(&phase, &request, &application, demand, controls)`

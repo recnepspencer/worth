@@ -9,7 +9,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
-    A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = Mode>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
@@ -20,7 +20,7 @@ where
     pub(super) fn construct(&mut self) -> Result<(), WorthQueryHistoryGroupDenial> {
         for member in &mut self.members {
             if let Member::Description(description) = member {
-                match Mode::construct(
+                match Mode::<S, I, A>::construct(
                     description.take().expect("original description"),
                     &self.program,
                 ) {
@@ -36,9 +36,9 @@ where
         Ok(())
     }
 
-    pub(super) fn admit(
+    pub(super) fn admit<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
         &mut self,
-        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), WorthQueryHistoryGroupDenial> {
         use WorthQueryHistoryGroupDenial as Denial;
@@ -74,7 +74,7 @@ where
                                 let Member::Unbound(Some(operation)) = member else {
                                     unreachable!("all members constructed before admission")
                                 };
-                                let (prepared, selected) = Mode::prepare(
+                                let (prepared, selected) = Mode::<S, I, A>::prepare(
                                     operation, &phase, &current,
                                 )
                                 .map_err(|cause| {
@@ -154,9 +154,9 @@ where
             })?
     }
 
-    pub(super) fn fork(
+    pub(super) fn fork<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
         &mut self,
-        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H>,
+        document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), WorthQueryHistoryGroupDenial> {
         if let Some(recovery) = self.recovery.take() {

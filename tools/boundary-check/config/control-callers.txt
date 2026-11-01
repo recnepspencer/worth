@@ -79,6 +79,10 @@ workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces
 workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal/source.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal/source.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal/producer.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal/producer.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs
 # Deliberate sort qualification refusal; actual compiler identity cannot be replaced or qualified.
 crates/worth-foundational/ crates/worth-foundational/src/canonicalization/basis/construction/sort_qualification/tests.rs

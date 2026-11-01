@@ -1,23 +1,16 @@
-//! Result backing keeps its original execution grant when transferred out of the group.
-use super::*;
-
+//! Result backing retains its original execution grant through owned iteration.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryHistoryGroupCompletionKind {
     Recorded,
     AlreadyRecorded,
 }
-
-pub struct WorthQueryHistoryGroupCompletions<S: ApplicationSchema, I: ApplicationMutationIntent<S>>
-{
-    items: Vec<(WorthQueryClosedOperation, Completion<S, I>)>,
+pub struct WorthQueryHistoryGroupCompletions<T> {
+    items: Vec<T>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
-
-impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>>
-    WorthQueryHistoryGroupCompletions<S, I>
-{
+impl<T> WorthQueryHistoryGroupCompletions<T> {
     pub(super) fn new(
-        items: Vec<(WorthQueryClosedOperation, Completion<S, I>)>,
+        items: Vec<T>,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Self {
         Self {
@@ -31,29 +24,20 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>>
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
-    pub fn iter(&self) -> std::slice::Iter<'_, (WorthQueryClosedOperation, Completion<S, I>)> {
+    pub fn iter(&self) -> std::slice::Iter<'_, T> {
         self.items.iter()
     }
-    pub fn iter_mut(
-        &mut self,
-    ) -> std::slice::IterMut<'_, (WorthQueryClosedOperation, Completion<S, I>)> {
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, T> {
         self.items.iter_mut()
     }
 }
-
-pub struct WorthQueryHistoryGroupCompletionIter<
-    S: ApplicationSchema,
-    I: ApplicationMutationIntent<S>,
-> {
-    items: std::vec::IntoIter<(WorthQueryClosedOperation, Completion<S, I>)>,
+pub struct WorthQueryHistoryGroupCompletionIter<T> {
+    items: std::vec::IntoIter<T>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
-
-impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> IntoIterator
-    for WorthQueryHistoryGroupCompletions<S, I>
-{
-    type Item = (WorthQueryClosedOperation, Completion<S, I>);
-    type IntoIter = WorthQueryHistoryGroupCompletionIter<S, I>;
+impl<T> IntoIterator for WorthQueryHistoryGroupCompletions<T> {
+    type Item = T;
+    type IntoIter = WorthQueryHistoryGroupCompletionIter<T>;
     fn into_iter(self) -> Self::IntoIter {
         WorthQueryHistoryGroupCompletionIter {
             items: self.items.into_iter(),
@@ -61,10 +45,8 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> IntoIterator
         }
     }
 }
-impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> Iterator
-    for WorthQueryHistoryGroupCompletionIter<S, I>
-{
-    type Item = (WorthQueryClosedOperation, Completion<S, I>);
+impl<T> Iterator for WorthQueryHistoryGroupCompletionIter<T> {
+    type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.items.next()
     }
@@ -72,7 +54,4 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> Iterator
         self.items.size_hint()
     }
 }
-impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> ExactSizeIterator
-    for WorthQueryHistoryGroupCompletionIter<S, I>
-{
-}
+impl<T> ExactSizeIterator for WorthQueryHistoryGroupCompletionIter<T> {}

@@ -161,7 +161,10 @@ impl WorthQueryOperationCleanup {
     }
     /// One original partial transfers its vector exactly once, at promotion or terminality.
     /// Keep an already absorbed managed failure and its runtime keepalive intact.
-    pub(super) fn retain_original_failures(&mut self, failures: Vec<Failure>) {
+    pub(in crate::application_entry) fn retain_original_failures(
+        &mut self,
+        failures: Vec<Failure>,
+    ) {
         assert!(
             self.original_failures.is_none(),
             "one original partial cleanup transfer"
