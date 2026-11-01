@@ -1,22 +1,22 @@
 //! Borrow changed values while pruning exact retained storage owners.
 use super::{SharedColumn, PAGE_LEN};
 
-impl<T: Clone> SharedColumn<T> {
+impl<T: super::StoredValue> SharedColumn<T> {
     pub(crate) fn visit_changed_values(
         &self,
         previous: &Self,
-        visit: &mut impl FnMut(usize, Option<&T>, Option<&T>),
+        visit: &mut impl FnMut(usize, Option<&T::Value>, Option<&T::Value>),
     ) {
         walk(self, previous, self.height.max(previous.height), 0, visit);
     }
 }
 
-fn walk<T: Clone>(
+fn walk<T: super::StoredValue>(
     current: &SharedColumn<T>,
     previous: &SharedColumn<T>,
     height: usize,
     start: usize,
-    visit: &mut impl FnMut(usize, Option<&T>, Option<&T>),
+    visit: &mut impl FnMut(usize, Option<&T::Value>, Option<&T::Value>),
 ) {
     if start >= current.len.max(previous.len) {
         return;
@@ -24,8 +24,11 @@ fn walk<T: Clone>(
     let current_node = current.node_at(start, height);
     let previous_node = previous.node_at(start, height);
     if current_node.map(|node| node.id()) == previous_node.map(|node| node.id())
-        && current.default.as_ref().map(|value| value.id())
-            == previous.default.as_ref().map(|value| value.id())
+        && match (&current.default, &previous.default) {
+            (None, None) => true,
+            (Some(a), Some(b)) => a.same_storage(b),
+            _ => false,
+        }
         && current.len.min(start.saturating_add(PAGE_LEN << height))
             == previous.len.min(start.saturating_add(PAGE_LEN << height))
     {
@@ -35,11 +38,15 @@ fn walk<T: Clone>(
         for index in start..(start + PAGE_LEN).min(current.len.max(previous.len)) {
             let new = current.get_shared(index);
             let old = previous.get_shared(index);
-            if new.map(|value| value.id()) != old.map(|value| value.id()) {
+            if match (new, old) {
+                (None, None) => false,
+                (Some(a), Some(b)) => !a.same_storage(b),
+                _ => true,
+            } {
                 visit(
                     index,
-                    new.map(|value| value.as_ref()),
-                    old.map(|value| value.as_ref()),
+                    new.map(super::StoredValue::value),
+                    old.map(super::StoredValue::value),
                 );
             }
         }

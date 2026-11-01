@@ -52,8 +52,15 @@ impl RecordArena<EntityRecordKind> {
             .map_err(ExtraLineageDenial::Request)?;
         metadata.lineage_id = Some(lineage);
         metadata.extra = replacement.clone();
-        self.metadata_history[physical].set(index, metadata);
-        self.extra.set_shared(physical, replacement);
+        self.metadata_history
+            .carrier_mut_for_request(physical, request)
+            .map_err(ExtraLineageDenial::Request)?
+            .expect("existing metadata history")
+            .set_for_request(index, metadata, request)
+            .map_err(ExtraLineageDenial::Request)?;
+        self.extra
+            .set_shared_for_request(physical, replacement, request)
+            .map_err(ExtraLineageDenial::Request)?;
         Ok(())
     }
 }

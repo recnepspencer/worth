@@ -5,7 +5,7 @@ use crate::storage::substrate::{SharedMap, StorageAllocationVisitor};
 #[derive(Debug, Clone, Default)]
 pub(super) struct AdjacencyContentIndex {
     slots: DigestIndex,
-    memberships: SharedMap<usize, DigestIndex>,
+    memberships: SharedMap<usize, crate::storage::substrate::StorageAllocation<DigestIndex>>,
     membership_bytes: u64,
 }
 
@@ -84,7 +84,7 @@ impl AdjacencyContentIndex {
         self.slots.visit_allocations(visitor);
         self.memberships
             .visit_allocations(false, visitor, &mut |set, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     set.visit_allocations(visitor);
                 }
             });

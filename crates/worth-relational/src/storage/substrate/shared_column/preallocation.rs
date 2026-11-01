@@ -2,7 +2,7 @@
 use super::{ColumnNode, SharedColumn, PAGE_LEN};
 use crate::storage::substrate::StorageAllocation;
 
-impl<T: Clone> SharedColumn<T> {
+impl<T: super::StoredValue> SharedColumn<T> {
     pub(crate) fn lookup_work_bound(&self) -> u64 {
         self.height as u64 + 1
     }
@@ -14,7 +14,7 @@ impl<T: Clone> SharedColumn<T> {
     /// with the old column while the selected path/page is detached.
     pub(crate) fn overwrite_allocation_bound(&self, index: usize) -> Option<u64> {
         self.adoption_allocation_bound(index)?
-            .checked_add(StorageAllocation::<T>::layout_bytes())
+            .checked_add(T::allocation_bytes())
     }
 
     pub(crate) fn adoption_allocation_bound(&self, index: usize) -> Option<u64> {
@@ -23,9 +23,9 @@ impl<T: Clone> SharedColumn<T> {
         let nodes = self.height.max(height).checked_add(2)?;
         StorageAllocation::<ColumnNode<T>>::layout_bytes()
             .checked_mul(nodes as u64)?
-            .checked_add((PAGE_LEN * std::mem::size_of::<Option<StorageAllocation<T>>>()) as u64)
+            .checked_add((PAGE_LEN * std::mem::size_of::<Option<T>>()) as u64)
     }
     pub(crate) fn sparse_default_allocation_bytes() -> u64 {
-        StorageAllocation::<T>::layout_bytes()
+        T::allocation_bytes()
     }
 }

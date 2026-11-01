@@ -1,11 +1,12 @@
-//! Persistent structure-of-arrays column. A write detaches an index path and
-//! one value, never the other records in a retained partition.
-
-use super::StorageAllocation as Arc;
-
+//! Persistent pages of explicit shallow element carriers.
+use super::{StorageAllocation as Arc, StoredValue};
+use crate::execution::RelationalExecutionDenialCause as Cause;
+use worth_execution::ExecutionRequest;
 mod allocation;
 mod allocation_delta;
 mod bulk_bootstrap;
+#[cfg(test)]
+mod custody_tests;
 mod iteration;
 mod node;
 mod preallocation;
@@ -13,24 +14,19 @@ mod preallocation;
 mod tests;
 mod traits;
 mod value_delta;
-
 pub(crate) use iteration::SharedColumnIter;
 use node::ColumnNode;
-
 const PAGE_LEN: usize = 32;
 
 #[derive(Debug, Clone)]
-pub(crate) struct SharedColumn<T: Clone> {
+pub(crate) struct SharedColumn<T: StoredValue> {
     root: Option<Arc<ColumnNode<T>>>,
     height: usize,
     len: usize,
-    default: Option<Arc<T>>,
+    default: Option<T>,
 }
-
-impl<T: Clone> SharedColumn<T> {
+impl<T: StoredValue> SharedColumn<T> {
     pub(crate) fn with_capacity(_capacity: usize) -> Self {
-        // Pages are allocated only as records are installed. A reserved logical
-        // shape must not allocate proportional to a sparse record address.
         Self {
             root: None,
             height: 0,
@@ -38,16 +34,13 @@ impl<T: Clone> SharedColumn<T> {
             default: None,
         }
     }
-
     pub(crate) fn len(&self) -> usize {
         self.len
     }
-
     pub(crate) fn is_empty(&self) -> bool {
         self.len == 0
     }
-
-    pub(crate) fn partition_point(&self, mut predicate: impl FnMut(&T) -> bool) -> usize {
+    pub(crate) fn partition_point(&self, mut predicate: impl FnMut(&T::Value) -> bool) -> usize {
         let (mut low, mut high) = (0, self.len);
         while low < high {
             let middle = low + (high - low) / 2;
@@ -59,16 +52,17 @@ impl<T: Clone> SharedColumn<T> {
         }
         low
     }
-
-    /// Explicit retention compaction. Shifted values receive new allocations;
-    /// unchanged prefixes preserve their owners and positional identity.
-    pub(crate) fn retain(&mut self, mut keep: impl FnMut(&T) -> bool) {
+    pub(crate) fn retain(&mut self, mut keep: impl FnMut(&T::Value) -> bool) {
         let Some(first_removed) = self.iter().position(|value| !keep(value)) else {
             return;
         };
         let mut retained = Self::default();
         for index in 0..first_removed {
-            retained.push_shared(self.get_shared(index).unwrap(/* Proof: This loop is bounded by the same unchanged column length; construction materializes every in-range value or supplies its default. */ ).clone());
+            retained.push_shared(
+                self.get_shared(index)
+                    .expect("selected original carrier")
+                    .clone(),
+            );
         }
         for index in first_removed + 1..self.len {
             if keep(&self[index]) {
@@ -77,29 +71,40 @@ impl<T: Clone> SharedColumn<T> {
         }
         *self = retained;
     }
-
-    /// A logical overlay shape with one shared empty value and no materialized pages.
-    pub(crate) fn with_default(len: usize, value: T) -> Self {
+    pub(crate) fn with_default(len: usize, value: T::Value) -> Self {
         let pages = len.div_ceil(PAGE_LEN).max(1);
         Self {
             root: None,
             height: pages.next_power_of_two().trailing_zeros() as usize,
             len,
-            default: Some(Arc::new(value)),
+            default: Some(T::from_value(value)),
         }
     }
-
-    pub(crate) fn get(&self, index: usize) -> Option<&T> {
-        self.get_shared(index).map(Arc::as_ref)
+    pub(crate) fn get(&self, index: usize) -> Option<&T::Value> {
+        self.get_shared(index).map(T::value)
     }
-
-    pub(in crate::storage) fn retained_value(&self, index: usize) -> Option<Arc<T>> {
+    pub(in crate::storage) fn retained_value(&self, index: usize) -> Option<T> {
         self.get_shared(index).cloned()
     }
-
-    pub(crate) fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+    pub(crate) fn get_mut(&mut self, index: usize) -> Option<&mut T::Value> {
+        self.carrier_mut_using(index, None)
+            .expect("ordinary node construction has no request refusal")
+            .map(T::value_mut)
+    }
+    pub(crate) fn carrier_mut_for_request(
+        &mut self,
+        index: usize,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<&mut T>, Cause> {
+        self.carrier_mut_using(index, Some(request))
+    }
+    pub(in crate::storage::substrate) fn carrier_mut_using(
+        &mut self,
+        index: usize,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<Option<&mut T>, Cause> {
         if index >= self.len {
-            return None;
+            return Ok(None);
         }
         if self
             .root
@@ -107,33 +112,80 @@ impl<T: Clone> SharedColumn<T> {
             .and_then(|root| root.get(index, self.height))
             .is_none()
         {
-            self.set_shared(
-                index,
-                self.default
-                    .as_ref()
-                    .expect(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ "sparse column default")
-                    .clone(),
-            );
+            let value = self
+                .default
+                .as_ref()
+                .expect("sparse column retains a default")
+                .clone();
+            self.set_shared_using(index, value, request)?;
         }
-        Some(Arc::make_mut(self.root.as_mut().unwrap(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ )).get_mut(index, self.height))
+        Ok(Some(ColumnNode::carrier_mut(
+            self.root.as_mut().expect("materialized root"),
+            index,
+            self.height,
+            &mut 0,
+            request,
+        )?))
     }
-
-    pub(crate) fn push(&mut self, value: T) -> u64 {
-        self.push_shared(Arc::new(value))
+    pub(in crate::storage::substrate) fn push_value_using(
+        &mut self,
+        value: T::Value,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<u64, Cause> {
+        if let Some(request) = request {
+            request.consult()?;
+        }
+        self.push_using(T::from_value(value), request)
     }
-
-    pub(in crate::storage) fn push_shared(&mut self, value: Arc<T>) -> u64 {
-        let next_len = self.len.checked_add(1).expect(/* Proof: Columns are populated from addressable arena rows, each retaining at least one allocated value; a live column cannot contain usize::MAX rows in this process. */ "column length exhausted");
+    pub(in crate::storage::substrate) fn set_value_using(
+        &mut self,
+        index: usize,
+        value: T::Value,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<(), Cause> {
+        if let Some(request) = request {
+            request.consult()?;
+        }
+        assert!(index < self.len, "column index out of bounds");
+        self.set_shared_using(index, T::from_value(value), request)?;
+        Ok(())
+    }
+    pub(crate) fn push(&mut self, value: T::Value) -> u64 {
+        self.push_shared(T::from_value(value))
+    }
+    pub(in crate::storage) fn push_shared(&mut self, value: T) -> u64 {
+        self.push_using(value, None)
+            .expect("ordinary node construction has no request refusal")
+    }
+    pub(crate) fn push_for_request(
+        &mut self,
+        value: T::Value,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<u64, Cause> {
+        request.consult()?;
+        self.push_using(T::from_value(value), Some(request))
+    }
+    pub(in crate::storage) fn push_shared_for_request(
+        &mut self,
+        value: T,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<u64, Cause> {
+        self.push_using(value, Some(request))
+    }
+    fn push_using(
+        &mut self,
+        value: T,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<u64, Cause> {
+        let next = self.len.checked_add(1).ok_or(Cause::ChargedBytesOverflow)?;
         if self.len / PAGE_LEN == 1usize << self.height {
-            self.root = Some(Arc::new(ColumnNode::branch(self.root.take(), None)));
+            self.root = Some(ColumnNode::allocated_branch(self.root.clone(), request)?);
             self.height += 1;
         }
-        let copied_bytes = self.set_shared(self.len, value);
-        self.len = next_len;
-        copied_bytes
+        let copied = self.set_shared_using(self.len, value, request)?;
+        self.len = next;
+        Ok(copied)
     }
-
-    /// Publish a selected value without copying its payload or the displaced one.
     pub(crate) fn copy_value_from(
         &mut self,
         index: usize,
@@ -142,27 +194,22 @@ impl<T: Clone> SharedColumn<T> {
     ) -> u64 {
         let value = source
             .get_shared(source_index)
-            .expect(/* Proof: Owner callers derive these indices from the same arena/column length or admitted source slot; the private indexing API is not an external unchecked read door. */ "source column index out of bounds")
+            .expect("selected source carrier")
             .clone();
         if self
             .get_shared(index)
-            .is_some_and(|current| current.id() == value.id())
+            .is_some_and(|current| current.same_storage(&value))
         {
             return 0;
         }
         if index == self.len {
             self.push_shared(value)
         } else {
-            assert!(
-                /* Proof: SharedColumn is private native storage with an Index-style in-range precondition; arena callers derive physical indices from their admitted slot directory, whose readmission validates every column length before construction. */
-                index < self.len,
-                "column index out of bounds"
-            );
+            assert!(index < self.len, "column index out of bounds");
             self.set_shared(index, value)
         }
     }
-
-    fn get_shared(&self, index: usize) -> Option<&Arc<T>> {
+    fn get_shared(&self, index: usize) -> Option<&T> {
         if index >= self.len {
             return None;
         }
@@ -171,46 +218,63 @@ impl<T: Clone> SharedColumn<T> {
             .and_then(|root| root.get(index, self.height))
             .or(self.default.as_ref())
     }
-
-    pub(in crate::storage) fn set_shared(&mut self, index: usize, value: Arc<T>) -> u64 {
-        let root = self
-            .root
-            .get_or_insert_with(|| Arc::new(ColumnNode::empty(self.height)));
-        let mut copied_bytes = 0;
-        ColumnNode::detach(root, &mut copied_bytes).set(
-            index,
-            self.height,
-            value,
-            &mut copied_bytes,
-        );
-        copied_bytes
+    pub(in crate::storage) fn set_shared(&mut self, index: usize, value: T) -> u64 {
+        self.set_shared_using(index, value, None)
+            .expect("ordinary node construction has no request refusal")
     }
-
-    /// Replace without detaching or cloning the displaced value.
-    pub(crate) fn set(&mut self, index: usize, value: T) {
-        assert!(
-            /* Proof: SharedColumn is private native storage with an Index-style in-range precondition; arena callers derive physical indices from their admitted slot directory, whose readmission validates every column length before construction. */
-            index < self.len,
-            "column index out of bounds"
-        );
-        self.set_shared(index, Arc::new(value));
+    pub(in crate::storage) fn set_shared_for_request(
+        &mut self,
+        index: usize,
+        value: T,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<u64, Cause> {
+        self.set_shared_using(index, value, Some(request))
     }
-
+    pub(in crate::storage::substrate) fn set_shared_using(
+        &mut self,
+        index: usize,
+        value: T,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<u64, Cause> {
+        if self.root.is_none() {
+            self.root = Some(ColumnNode::allocate(self.height, request)?);
+        }
+        let mut copied = 0;
+        ColumnNode::detach(
+            self.root.as_mut().expect("installed root"),
+            &mut copied,
+            request,
+        )?
+        .set(index, self.height, value, &mut copied, request)?;
+        Ok(copied)
+    }
+    pub(crate) fn set(&mut self, index: usize, value: T::Value) {
+        assert!(index < self.len, "column index out of bounds");
+        self.set_shared(index, T::from_value(value));
+    }
+    pub(crate) fn set_for_request(
+        &mut self,
+        index: usize,
+        value: T::Value,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Cause> {
+        request.consult()?;
+        assert!(index < self.len, "column index out of bounds");
+        self.set_shared_using(index, T::from_value(value), Some(request))?;
+        Ok(())
+    }
     pub(crate) fn iter(&self) -> SharedColumnIter<'_, T> {
         SharedColumnIter::new(
             self.root.as_deref(),
             self.height,
             self.len,
-            self.default.as_deref(),
+            self.default.as_ref().map(T::value),
         )
     }
-
-    pub(crate) fn to_vec(&self) -> Vec<T> {
+    pub(crate) fn to_vec(&self) -> Vec<T::Value> {
         self.iter().cloned().collect()
     }
-
-    /// Explicit whole-column materialization for checkpoint/export consumers.
-    pub(crate) fn into_vec(self) -> Vec<T> {
+    pub(crate) fn into_vec(self) -> Vec<T::Value> {
         if self.default.is_some() {
             return self.to_vec();
         }
@@ -220,25 +284,48 @@ impl<T: Clone> SharedColumn<T> {
         }
         values
     }
-
-    /// Backing allocations, excluding the separately measured owned payloads
-    /// inside T. The column object itself is inline in its owning arena.
     pub(crate) fn allocation_bytes(&self) -> u64 {
-        let default_bytes = self
-            .default
-            .as_ref()
-            .map_or(0, |_| Arc::<T>::layout_bytes());
-        self.root.as_ref().map_or(default_bytes, |root| {
-            let node_bytes = Arc::<ColumnNode<T>>::layout_bytes();
-            let value_bytes = Arc::<T>::layout_bytes();
+        let default = self.default.as_ref().map_or(0, |_| T::allocation_bytes());
+        self.root.as_ref().map_or(default, |root| {
             (root.node_count as u64)
-                .saturating_mul(node_bytes)
+                .saturating_mul(Arc::<ColumnNode<T>>::layout_bytes())
                 .saturating_add(
                     (root.page_count as u64)
-                        .saturating_mul((PAGE_LEN * std::mem::size_of::<Arc<T>>()) as u64),
+                        .saturating_mul((PAGE_LEN * std::mem::size_of::<Option<T>>()) as u64),
                 )
-                .saturating_add((root.value_count as u64).saturating_mul(value_bytes))
-                .saturating_add(default_bytes)
+                .saturating_add((root.value_count as u64).saturating_mul(T::allocation_bytes()))
+                .saturating_add(default)
         })
+    }
+}
+impl<T: StoredValue> StoredValue for SharedColumn<T> {
+    type Value = Self;
+    fn from_value(value: Self) -> Self {
+        value
+    }
+    fn value(&self) -> &Self {
+        self
+    }
+    fn value_mut(&mut self) -> &mut Self {
+        self
+    }
+    fn into_value(self) -> Self {
+        self
+    }
+    fn same_storage(&self, other: &Self) -> bool {
+        self.len == other.len
+            && self.height == other.height
+            && self.root.as_ref().map(Arc::id) == other.root.as_ref().map(Arc::id)
+            && match (&self.default, &other.default) {
+                (None, None) => true,
+                (Some(a), Some(b)) => a.same_storage(b),
+                _ => false,
+            }
+    }
+    fn allocation(&self, _: bool) -> Option<super::StorageAllocationObservation> {
+        None
+    }
+    fn allocation_bytes() -> u64 {
+        0
     }
 }

@@ -17,25 +17,54 @@ impl<K: RecordKind> RecordArena<K> {
         self.suspend_materialization_with_extra(slot, extra)
     }
 
+    pub(crate) fn suspend_materialization_with_extra_for_request(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        slot: usize,
+        extra: K::Extra,
+    ) -> Result<(), MetadataWriteDenial> {
+        self.suspend_using(slot, extra, Some(request))
+    }
+    /// Existing ordinary fixture/maintenance construction is unqualified.
+    #[cfg(test)]
     pub(crate) fn suspend_materialization_with_extra(
         &mut self,
         slot: usize,
         extra: K::Extra,
     ) -> Result<(), &'static str> {
+        self.suspend_using(slot, extra, None)
+            .map_err(metadata::ordinary_denial)
+    }
+    fn suspend_using(
+        &mut self,
+        slot: usize,
+        extra: K::Extra,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<(), MetadataWriteDenial> {
         let physical = self
             .physical_index(slot)
             .ok_or("materialization suspension requires an existing slot")?;
         if self.lifecycle[physical] != RecordLifecycleState::Live {
-            return Err("materialization suspension requires a live record");
+            return Err(MetadataWriteDenial::Invalid(
+                "materialization suspension requires a live record",
+            ));
         }
-        self.lifecycle[physical] = RecordLifecycleState::MaterializationUnavailable;
-        self.extra.set(physical, extra);
-        self.metadata_history.set(physical, Default::default());
-        self.history_prefixes.set(physical, None);
-        self.aspect_versions.set(physical, Default::default());
-        self.field_revisions.set(physical, None);
+        self.lifecycle.set_value_using(
+            physical,
+            RecordLifecycleState::MaterializationUnavailable,
+            request,
+        )?;
+        self.extra.set_value_using(physical, extra, request)?;
+        self.metadata_history
+            .set_value_using(physical, Default::default(), request)?;
+        self.history_prefixes
+            .set_value_using(physical, None, request)?;
+        self.aspect_versions
+            .set_value_using(physical, Default::default(), request)?;
+        self.field_revisions
+            .set_value_using(physical, None, request)?;
         self.diagnostics_enrichment
-            .set(physical, Default::default());
+            .set_value_using(physical, Default::default(), request)?;
         self.live_bitset.set(slot, false);
         self.reclaimable_bitset.set(slot, false);
         Ok(())
@@ -47,6 +76,7 @@ impl<K: RecordKind> RecordArena<K> {
         kind_id: crate::identity::data::KindId,
         version_id: VersionId,
         extra: K::Extra,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
         prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
     ) -> Result<(), MetadataWriteDenial> {
         let slot = crate::storage::substrate::slot_of::<K>(id);
@@ -77,11 +107,16 @@ impl<K: RecordKind> RecordArena<K> {
             "record extra cannot construct its native metadata",
         ))?;
         let metadata = prepare(metadata)?;
-        self.metadata_history[physical].push(metadata);
-        self.extra.set_shared(physical, extra);
-        self.field_revisions.set(physical, Some(Default::default()));
-        self.lifecycle[physical] = RecordLifecycleState::Live;
-        self.retired_at[physical] = None;
+        self.metadata_history
+            .carrier_mut_using(physical, request)?
+            .expect("existing metadata history")
+            .push_value_using(metadata, request)?;
+        self.extra.set_shared_using(physical, extra, request)?;
+        self.field_revisions
+            .set_value_using(physical, Some(Default::default()), request)?;
+        self.lifecycle
+            .set_value_using(physical, RecordLifecycleState::Live, request)?;
+        self.retired_at.set_value_using(physical, None, request)?;
         self.live_bitset.set(slot, true);
         self.reclaimable_bitset.set(slot, false);
         Ok(())
@@ -92,6 +127,7 @@ impl<K: RecordKind> RecordArena<K> {
         slot: usize,
         extra: K::Extra,
         version_id: VersionId,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
         prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
     ) -> Result<Option<()>, Cause> {
         let Some(physical) = self.physical_index(slot) else {
@@ -111,9 +147,12 @@ impl<K: RecordKind> RecordArena<K> {
         };
         let metadata = prepare(metadata)?;
         let retired = self.prepare_retired_metadata(physical, version_id, prepare)?;
-        self.install_retired_metadata(physical, retired);
-        self.metadata_history[physical].push(metadata);
-        self.extra.set_shared(physical, extra);
+        self.install_retired_metadata(physical, retired, request)?;
+        self.metadata_history
+            .carrier_mut_using(physical, request)?
+            .expect("existing metadata history")
+            .push_value_using(metadata, request)?;
+        self.extra.set_shared_using(physical, extra, request)?;
         Ok(Some(()))
     }
 
@@ -121,17 +160,20 @@ impl<K: RecordKind> RecordArena<K> {
         &mut self,
         slot: usize,
         version_id: VersionId,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
         prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
     ) -> Result<Option<()>, Cause> {
         let Some(physical) = self.physical_index(slot) else {
             return Ok(None);
         };
         let retired = self.prepare_retired_metadata(physical, version_id, prepare)?;
-        self.retired_at[physical] = Some(version_id);
-        self.lifecycle[physical] = RecordLifecycleState::DeletedRetained;
+        self.retired_at
+            .set_value_using(physical, Some(version_id), request)?;
+        self.lifecycle
+            .set_value_using(physical, RecordLifecycleState::DeletedRetained, request)?;
         self.live_bitset.set(slot, false);
         self.reclaimable_bitset.set(slot, true);
-        self.install_retired_metadata(physical, retired);
+        self.install_retired_metadata(physical, retired, request)?;
         Ok(Some(()))
     }
 
@@ -193,5 +235,18 @@ impl<K: RecordKind> RecordArena<K> {
         };
         self.lifecycle.set(physical, lifecycle);
         true
+    }
+    pub(crate) fn set_lifecycle_for_slot_for_request(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        slot: usize,
+        lifecycle: RecordLifecycleState,
+    ) -> Result<bool, Cause> {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(false);
+        };
+        self.lifecycle
+            .set_for_request(physical, lifecycle, request)?;
+        Ok(true)
     }
 }

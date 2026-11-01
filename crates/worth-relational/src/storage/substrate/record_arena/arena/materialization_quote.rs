@@ -72,13 +72,13 @@ impl<K: RecordKind> RecordArena<K> {
 
     pub(crate) fn sparse_shell_allocation_bound(&self) -> Option<u64> {
         [
-            SharedColumn::<SharedColumn<K::Meta>>::sparse_default_allocation_bytes(),
-            SharedColumn::<K::Extra>::sparse_default_allocation_bytes(),
-            SharedColumn::<BTreeMap<Symbol, u64>>::sparse_default_allocation_bytes(),
+            SharedColumn::<SharedColumn<crate::storage::substrate::StorageAllocation<K::Meta>>>::sparse_default_allocation_bytes(),
+            SharedColumn::<crate::storage::substrate::StorageAllocation<K::Extra>>::sparse_default_allocation_bytes(),
+            SharedColumn::<crate::storage::substrate::StorageAllocation<BTreeMap<Symbol, u64>>>::sparse_default_allocation_bytes(),
             SharedColumn::<
-                Option<BTreeMap<(Symbol, Symbol), crate::storage::data::RelationalFieldRevision>>,
+                crate::storage::substrate::StorageAllocation<Option<BTreeMap<(Symbol, Symbol), crate::storage::data::RelationalFieldRevision>>>,
             >::sparse_default_allocation_bytes(),
-            SharedColumn::<BTreeMap<Symbol, String>>::sparse_default_allocation_bytes(),
+            SharedColumn::<crate::storage::substrate::StorageAllocation<BTreeMap<Symbol, String>>>::sparse_default_allocation_bytes(),
         ]
         .into_iter()
         .try_fold(0u64, u64::checked_add)

@@ -1,11 +1,11 @@
 use super::node::MapNode;
 
-pub(crate) struct SharedMapIter<'a, K: Ord + Copy, V: Clone> {
+pub(crate) struct SharedMapIter<'a, K: Ord + Copy, V: super::StoredValue> {
     pending: Vec<&'a MapNode<K, V>>,
     remaining: usize,
 }
 
-impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
+impl<'a, K: Ord + Copy, V: super::StoredValue> SharedMapIter<'a, K, V> {
     pub(super) fn new(root: Option<&'a MapNode<K, V>>) -> Self {
         let mut iterator = Self {
             pending: Vec::with_capacity(root.map_or(0, |_| MAXIMUM_ADDRESSABLE_AVL_HEIGHT)),
@@ -31,7 +31,7 @@ impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
     pub(crate) fn try_next<Stop>(
         &mut self,
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
-    ) -> Result<Option<(&'a K, &'a V)>, Stop> {
+    ) -> Result<Option<(&'a K, &'a V::Value)>, Stop> {
         let Some(next) = self.pending.last().copied() else {
             return Ok(None);
         };
@@ -43,7 +43,7 @@ impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
             .expect(/* Proof: The iterator admits a next node only after pushing it onto pending; exclusive &mut iteration pops that same nonempty stack. */ "the admitted next node remains present");
         self.descend(node.right.as_deref());
         self.remaining -= 1;
-        Ok(Some((&node.key, &node.value)))
+        Ok(Some((&node.key, node.value.value())))
     }
     fn descend(&mut self, mut current: Option<&'a MapNode<K, V>>) {
         while let Some(node) = current {
@@ -53,19 +53,19 @@ impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
     }
 }
 
-impl<'a, K: Ord + Copy, V: Clone> Iterator for SharedMapIter<'a, K, V> {
-    type Item = (&'a K, &'a V);
+impl<'a, K: Ord + Copy, V: super::StoredValue> Iterator for SharedMapIter<'a, K, V> {
+    type Item = (&'a K, &'a V::Value);
     fn next(&mut self) -> Option<Self::Item> {
         let node = self.pending.pop()?;
         self.descend(node.right.as_deref());
         self.remaining -= 1;
-        Some((&node.key, &node.value))
+        Some((&node.key, node.value.value()))
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.remaining, Some(self.remaining))
     }
 }
-impl<K: Ord + Copy, V: Clone> ExactSizeIterator for SharedMapIter<'_, K, V> {}
+impl<K: Ord + Copy, V: super::StoredValue> ExactSizeIterator for SharedMapIter<'_, K, V> {}
 
 // Every two AVL levels at least double the minimum node count plus one.
 // A tree whose length fits in usize therefore cannot exceed this height.

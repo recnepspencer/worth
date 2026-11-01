@@ -23,14 +23,16 @@ impl Clone for Counted {
 #[test]
 fn adoption_counts_actual_path_copies_without_cloning_values() {
     let copies = Arc::new(AtomicUsize::new(0));
-    let original: SharedColumn<_> = (0..1024)
+    let original: SharedColumn<crate::storage::substrate::StorageAllocation<Counted>> = (0..1024)
         .map(|value| Counted {
             value,
             copies: copies.clone(),
         })
         .collect();
     let mut changed = original.clone();
-    let node_bytes = std::mem::size_of::<ColumnNode<Counted>>() as u64;
+    let node_bytes = std::mem::size_of::<
+        ColumnNode<crate::storage::substrate::StorageAllocation<Counted>>,
+    >() as u64;
     let page_bytes = (PAGE_LEN
         * std::mem::size_of::<Option<crate::storage::substrate::StorageAllocation<Counted>>>())
         as u64;
@@ -51,7 +53,7 @@ fn adoption_counts_actual_path_copies_without_cloning_values() {
 #[test]
 fn retained_columns_copy_only_the_mutated_value_across_page_and_tree_boundaries() {
     let copies = Arc::new(AtomicUsize::new(0));
-    let original: SharedColumn<_> = (0..10_000)
+    let original: SharedColumn<crate::storage::substrate::StorageAllocation<Counted>> = (0..10_000)
         .map(|value| Counted {
             value,
             copies: copies.clone(),
@@ -84,10 +86,14 @@ fn retained_columns_copy_only_the_mutated_value_across_page_and_tree_boundaries(
 fn serialization_preserves_sequence_meaning_and_bounds() {
     for len in [0, 1, 31, 32, 33, 64, 65, 1025] {
         let flat: Vec<u64> = (0..len).collect();
-        let column: SharedColumn<_> = flat.clone().into();
+        let column: SharedColumn<u64> = flat.clone().into();
         assert_eq!(
             rmp_serde::to_vec(&column).unwrap(),
             rmp_serde::to_vec(&flat).unwrap()
+        );
+        assert_eq!(
+            rmp_serde::to_vec_named(&column).unwrap(),
+            rmp_serde::to_vec_named(&flat).unwrap()
         );
         assert_eq!(column.get(len as usize), None);
         assert_eq!(column.iter().len(), len as usize);
@@ -98,7 +104,7 @@ fn serialization_preserves_sequence_meaning_and_bounds() {
 fn dense_restore_bootstrap_preserves_pages_and_future_copy_on_write() {
     for len in [0_usize, 1, 31, 32, 33, 63, 64, 65, 1025, 8192] {
         let flat = (0..len).collect::<Vec<_>>();
-        let column: SharedColumn<_> = flat.clone().into();
+        let column: SharedColumn<usize> = flat.clone().into();
         assert_eq!(column.iter().copied().collect::<Vec<_>>(), flat);
         assert_eq!(column.iter().rev().copied().collect::<Vec<_>>(), {
             let mut reversed = flat.clone();
@@ -146,7 +152,7 @@ fn dense_restore_bootstrap_moves_values_without_cloning_them() {
             copies: copies.clone(),
         })
         .collect::<Vec<_>>();
-    let column: SharedColumn<_> = values.into();
+    let column: SharedColumn<crate::storage::substrate::StorageAllocation<Counted>> = values.into();
     assert_eq!(copies.load(Ordering::Relaxed), 0);
     let restored = column.into_vec();
     assert_eq!(restored.len(), 1025);
@@ -165,7 +171,7 @@ fn synthetic_dense_column_bootstrap_benchmark() {
         let started = std::time::Instant::now();
         for input in inputs {
             let input = std::hint::black_box(input);
-            let column: SharedColumn<_> = if bulk {
+            let column: SharedColumn<usize> = if bulk {
                 input.into()
             } else {
                 input.into_iter().collect()
@@ -184,7 +190,7 @@ fn synthetic_dense_column_bootstrap_benchmark() {
 #[test]
 fn sparse_shapes_allocate_only_selected_pages_and_preserve_sequence_export() {
     for len in [0, 1, 31, 32, 33, 64, 65, 1025, 10_000] {
-        let mut column = SharedColumn::with_default(len, 0u64);
+        let mut column = SharedColumn::<u64>::with_default(len, 0u64);
         let mut flat = vec![0u64; len];
         assert!(column.root.is_none());
         let retained = column.clone();

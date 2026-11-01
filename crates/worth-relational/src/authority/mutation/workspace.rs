@@ -104,10 +104,26 @@ impl<'a> MutationWorkspace<'a> {
         &mut self,
         delta: &super::canonical_deltas::CanonicalRecordAspectDelta,
         version: VersionId,
-    ) -> Result<(), crate::runtime::SymbolReservationDenial> {
+    ) -> Result<(), super::MutationApplyDenial> {
         let admitted = super::delta_symbols::AdmittedDeltaSymbols::admit(delta, self.symbols)?;
-        super::aspect_versions::write_aspect_versions_for_delta(self.state, &admitted, version);
-        super::field_versions::write_field_versions_for_delta(self.state, &admitted, version);
+        super::aspect_versions::write_aspect_versions_for_delta_for_request(
+            &self.execution,
+            self.state,
+            &admitted,
+            version,
+        )
+        .map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?;
+        super::field_versions::write_field_versions_for_delta(
+            &self.execution,
+            self.state,
+            &admitted,
+            version,
+        )
+        .map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?;
         Ok(())
     }
 

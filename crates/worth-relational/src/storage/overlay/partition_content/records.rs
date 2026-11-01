@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, Default)]
 pub(super) struct RecordContentIndex {
     records: DigestIndex,
-    histories: SharedMap<u64, DigestIndex>,
+    histories: SharedMap<u64, crate::storage::substrate::StorageAllocation<DigestIndex>>,
     history_bytes: u64,
     live_words: DigestIndex,
     reclaimable_words: DigestIndex,
@@ -200,7 +200,7 @@ impl RecordContentIndex {
         self.reclaimable_words.visit_allocations(visitor);
         self.histories
             .visit_allocations(false, visitor, &mut |history, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     history.visit_allocations(visitor);
                 }
             });

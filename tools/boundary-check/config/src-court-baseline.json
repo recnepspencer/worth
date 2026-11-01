@@ -3042,5 +3042,8 @@
 {"source":"crates/worth-runtime-bridge/src/relational_source/bridge_snapshot_reader_tests/retained_snapshot_retirement.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","RuntimeBridgeRelationalSource"]},
 {"source":"crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
-{"source":"crates/worth-relational/src/storage/substrate/record_arena/values/metadata/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+{"source":"crates/worth-relational/src/storage/substrate/record_arena/values/metadata/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/storage/substrate/shared_column/custody_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/storage/substrate/shared_map/custody_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/storage/substrate/record_arena/arena/slot_directory/custody_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
 ]

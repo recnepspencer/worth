@@ -7,7 +7,7 @@ use super::AdjacencySet;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct SparseAdjacencyTable {
-    entries: SharedMap<usize, AdjacencySet>,
+    entries: SharedMap<usize, crate::storage::substrate::StorageAllocation<AdjacencySet>>,
 }
 
 impl SparseAdjacencyTable {
@@ -55,7 +55,7 @@ impl SparseAdjacencyTable {
             &previous.entries,
             visitor,
             &mut |set, previous, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     if let Some(previous) = previous {
                         set.visit_new_authoritative_allocations(previous, visitor);
                     } else {
@@ -115,7 +115,7 @@ impl SparseAdjacencyTable {
     ) {
         self.entries
             .visit_allocations(unique, visitor, &mut |set, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     set.visit_authoritative_allocations(allocation.unique, visitor);
                 }
             });

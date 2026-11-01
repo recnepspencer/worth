@@ -1,14 +1,14 @@
 use super::{node::MapNode, SharedMap};
 use crate::storage::substrate::{
-    StorageAllocation, StorageAllocationObservation, StorageAllocationVisitor,
+    StorageAllocation, StorageAllocationVisitor, StoredValueObservation,
 };
 
-impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
+impl<K: Ord + Copy, V: super::StoredValue> SharedMap<K, V> {
     pub(crate) fn visit_allocations(
         &self,
         ancestor_unique: bool,
         visitor: &mut dyn StorageAllocationVisitor,
-        value: &mut dyn FnMut(&V, StorageAllocationObservation, &mut dyn StorageAllocationVisitor),
+        value: &mut dyn FnMut(&V::Value, StoredValueObservation, &mut dyn StorageAllocationVisitor),
     ) {
         if let Some(root) = &self.root {
             visit_node(root, ancestor_unique, visitor, value);
@@ -16,19 +16,19 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
     }
 }
 
-fn visit_node<K: Ord + Copy, V: Clone>(
+fn visit_node<K: Ord + Copy, V: super::StoredValue>(
     node: &StorageAllocation<MapNode<K, V>>,
     ancestor_unique: bool,
     visitor: &mut dyn StorageAllocationVisitor,
-    value: &mut dyn FnMut(&V, StorageAllocationObservation, &mut dyn StorageAllocationVisitor),
+    value: &mut dyn FnMut(&V::Value, StoredValueObservation, &mut dyn StorageAllocationVisitor),
 ) {
     let allocation = node.observation(ancestor_unique);
     if !visitor.visit(allocation) {
         return;
     }
     value(
-        &node.value,
-        node.value.observation(allocation.unique),
+        node.value.value(),
+        StoredValueObservation::new(&node.value, allocation.unique),
         visitor,
     );
     for child in [&node.left, &node.right].into_iter().flatten() {

@@ -55,17 +55,27 @@ fn suspend_entity(
         let old_state = Some(slot.retained_extra());
         partition
             .entity_arena
-            .suspend_materialization_with_extra(entity_id.slot_index(), unavailable)
-            .map_err(|detail| {
-                materialization_conflict(
-                    crate::transactions::data::RecordRef::Entity(entity_id),
-                    detail,
-                )
+            .suspend_materialization_with_extra_for_request(
+                &context.execution,
+                entity_id.slot_index(),
+                unavailable,
+            )
+            .map_err(|denial| match denial {
+                crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
+                    crate::transactions::data::TransactionCommitError::execution(cause.into())
+                }
+                crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => {
+                    materialization_conflict(
+                        crate::transactions::data::RecordRef::Entity(entity_id),
+                        detail,
+                    )
+                    .into()
+                }
             })?;
         context
             .state
             .mark_entity_slot_touched(entity_id.partition_id, entity_id.slot_index());
-        Ok::<_, CommitConflict>((kind_id, old_state))
+        Ok::<_, crate::transactions::data::TransactionCommitError>((kind_id, old_state))
     })?;
     let mut outcome = MutationOutcome::with_capacity(1, 1);
     outcome.record_change(RecordMutation::EntityMaterializationSuspended {
@@ -108,17 +118,27 @@ fn suspend_relation(
         let old_state = Some(slot.retained_extra());
         partition
             .relation_arena
-            .suspend_materialization_with_extra(relation_id.slot_index(), unavailable)
-            .map_err(|detail| {
-                materialization_conflict(
-                    crate::transactions::data::RecordRef::Relation(relation_id),
-                    detail,
-                )
+            .suspend_materialization_with_extra_for_request(
+                &context.execution,
+                relation_id.slot_index(),
+                unavailable,
+            )
+            .map_err(|denial| match denial {
+                crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
+                    crate::transactions::data::TransactionCommitError::execution(cause.into())
+                }
+                crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => {
+                    materialization_conflict(
+                        crate::transactions::data::RecordRef::Relation(relation_id),
+                        detail,
+                    )
+                    .into()
+                }
             })?;
         context
             .state
             .mark_relation_slot_touched(relation_id.partition_id, relation_id.slot_index());
-        Ok::<_, CommitConflict>((kind_id, endpoints, old_state))
+        Ok::<_, crate::transactions::data::TransactionCommitError>((kind_id, endpoints, old_state))
     })?;
     let mut outcome = MutationOutcome::with_capacity(1, 1);
     outcome.record_change(RecordMutation::RelationMaterializationSuspended {

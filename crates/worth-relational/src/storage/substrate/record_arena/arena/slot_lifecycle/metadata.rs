@@ -18,7 +18,7 @@ impl From<&'static str> for MetadataWriteDenial {
     }
 }
 #[cfg(test)]
-fn ordinary_denial(denial: MetadataWriteDenial) -> &'static str {
+pub(super) fn ordinary_denial(denial: MetadataWriteDenial) -> &'static str {
     match denial {
         MetadataWriteDenial::Invalid(detail) => detail,
         MetadataWriteDenial::Request(_) => {
@@ -46,10 +46,15 @@ impl<K: RecordKind> RecordArena<K> {
         &mut self,
         physical: usize,
         prepared: Option<(usize, K::Meta)>,
-    ) {
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<(), Cause> {
         if let Some((index, metadata)) = prepared {
-            self.metadata_history[physical].set(index, metadata);
+            self.metadata_history
+                .carrier_mut_using(physical, request)?
+                .expect("existing metadata history")
+                .set_value_using(index, metadata, request)?;
         }
+        Ok(())
     }
     pub(crate) fn write_reserved_slot_for_request(
         &mut self,
@@ -58,7 +63,7 @@ impl<K: RecordKind> RecordArena<K> {
         slot: usize,
         generation: u32,
     ) -> Result<bool, MetadataWriteDenial> {
-        self.write_reserved_slot_using(init, slot, generation, &mut |metadata| {
+        self.write_reserved_slot_using(init, slot, generation, Some(request), &mut |metadata| {
             metadata.fund_for_request(request)
         })
     }
@@ -70,7 +75,7 @@ impl<K: RecordKind> RecordArena<K> {
         slot: usize,
         generation: u32,
     ) -> Result<bool, &'static str> {
-        self.write_reserved_slot_using(init, slot, generation, &mut Ok)
+        self.write_reserved_slot_using(init, slot, generation, None, &mut Ok)
             .map_err(ordinary_denial)
     }
     pub(crate) fn rematerialize_for_request(
@@ -81,9 +86,14 @@ impl<K: RecordKind> RecordArena<K> {
         version_id: VersionId,
         extra: K::Extra,
     ) -> Result<(), MetadataWriteDenial> {
-        self.rematerialize_using(id, kind_id, version_id, extra, &mut |metadata| {
-            metadata.fund_for_request(request)
-        })
+        self.rematerialize_using(
+            id,
+            kind_id,
+            version_id,
+            extra,
+            Some(request),
+            &mut |metadata| metadata.fund_for_request(request),
+        )
     }
     /// Existing ordinary fixture/maintenance entry; its independent metadata is unqualified.
     #[cfg(test)]
@@ -94,7 +104,7 @@ impl<K: RecordKind> RecordArena<K> {
         version_id: VersionId,
         extra: K::Extra,
     ) -> Result<(), &'static str> {
-        self.rematerialize_using(id, kind_id, version_id, extra, &mut Ok)
+        self.rematerialize_using(id, kind_id, version_id, extra, None, &mut Ok)
             .map_err(ordinary_denial)
     }
     pub(crate) fn apply_extra_update_for_request(
@@ -104,7 +114,7 @@ impl<K: RecordKind> RecordArena<K> {
         extra: K::Extra,
         version_id: VersionId,
     ) -> Result<Option<()>, Cause> {
-        self.apply_extra_update_using(slot, extra, version_id, &mut |metadata| {
+        self.apply_extra_update_using(slot, extra, version_id, Some(request), &mut |metadata| {
             metadata.fund_for_request(request)
         })
     }
@@ -116,7 +126,7 @@ impl<K: RecordKind> RecordArena<K> {
         extra: K::Extra,
         version_id: VersionId,
     ) -> Option<()> {
-        self.apply_extra_update_using(slot, extra, version_id, &mut Ok)
+        self.apply_extra_update_using(slot, extra, version_id, None, &mut Ok)
             .expect("the ordinary metadata identity callback cannot refuse")
     }
     pub(crate) fn retire_for_request(
@@ -125,14 +135,14 @@ impl<K: RecordKind> RecordArena<K> {
         slot: usize,
         version_id: VersionId,
     ) -> Result<Option<()>, Cause> {
-        self.retire_using(slot, version_id, &mut |metadata| {
+        self.retire_using(slot, version_id, Some(request), &mut |metadata| {
             metadata.fund_for_request(request)
         })
     }
     /// Existing ordinary fixture/maintenance entry; its independent metadata is unqualified.
     #[cfg(test)]
     pub(crate) fn retire(&mut self, slot: usize, version_id: VersionId) -> Option<()> {
-        self.retire_using(slot, version_id, &mut Ok)
+        self.retire_using(slot, version_id, None, &mut Ok)
             .expect("the ordinary metadata identity callback cannot refuse")
     }
 }

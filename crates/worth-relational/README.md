@@ -542,14 +542,36 @@ Metadata's six wire fields and Debug meaning exclude funding.
 Ordinary image construction and maintenance cloning remain independently
 unfunded. Controlled metadata replacement creates a fresh existing-type owner
 even when the previous metadata was unique; no additional wrapper Arc is added.
-Radix nodes, page buffers, scalar/default owners and slot-directory backing are
-separate obligations. This does not qualify whole-arena or Complete funding.
+The controlled node/page and scalar-directory guarantees below cover separate
+backing allocations. This does not qualify whole-arena or Complete funding.
 
 These are successful-path backing guarantees. Existing semantic-error locator,
 path, key and formatted-detail copies, and returned-error Clone/Serde, retain
 their ordinary allocation contract. Other portable-input copies, supplemental
-and canonical projection copies, replay staging, radix backing, rollback,
-Complete capture and selected-backing handoff remain separate obligations.
+and canonical projection copies, remaining replay construction, ordinary radix
+construction, Complete capture and selected-backing handoff remain separate obligations.
+
+## Retain controlled node and page backing
+
+Request-driven column, AVL and scalar slot-directory writes use the original
+mutation request. Each actual node owns its own reservation; a column leaf also
+owns its fixed page buffer. Temporary dense-build directories release their
+separate bills after destruction. Unique fixed-capacity edits need no replacement
+allocation. Shared edits admit each replacement before shallow copying; partial
+construction retains its admitted nodes until the unpublished workspace drops.
+Published roots remain readable after refusal.
+
+Scalars and shallow nested column headers are inline. Independently shared
+metadata, Extra, Digest and adjacency values keep explicit existing allocation
+handles. Node bills exclude these payloads; escaped payload handles retain their
+own independent bills. Allocation observation reports actual node and payload
+identities without inventing scalar or inline-header identities. Generic storage
+handle layout and tree wire meaning remain unchanged.
+
+This qualifies controlled column/map nodes, fixed pages and scalar-directory
+writes. Ordinary image and maintenance construction, legacy adjacency/bitset
+backing, revision-map payloads, independently constructed Digest/default payloads
+and Complete capture retain separate allocation obligations.
 
 ## Retire an immutable Memory runtime
 

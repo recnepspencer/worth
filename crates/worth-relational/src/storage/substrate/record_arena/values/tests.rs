@@ -197,7 +197,8 @@ fn unique_extra_move_and_borrowed_export_preserve_original_funding() {
     let execution = ExecutionRequest::serial(&host);
     let value = extra(&execution, "move-and-export");
     let bill = expected(&value);
-    let mut column = SharedColumn::default();
+    let mut column =
+        SharedColumn::<crate::storage::substrate::StorageAllocation<super::EntityExtra>>::default();
     column.push(value);
     let moved = column.into_vec();
     assert_eq!(
@@ -297,4 +298,28 @@ fn extra_and_metadata_wire_preserve_legacy_named_and_compact_fields() {
         assert!(!format!("{actual:?}").contains("_funding"));
     }
     assert_eq!(budget.charged_memory_bytes(), 0);
+}
+
+#[test]
+fn escaped_extra_carrier_keeps_only_its_own_bill_after_node_drop() {
+    let payload_budget = SerialMemoryBudget::new(Some(65536));
+    let payload_host = request(&payload_budget);
+    let payload_request = ExecutionRequest::serial(&payload_host);
+    let value = extra(&payload_request, "independent escaped extra");
+    let bill = expected(&value);
+    let node_budget = SerialMemoryBudget::new(Some(65536));
+    let node_host = request(&node_budget);
+    let node_request = ExecutionRequest::serial(&node_host);
+    let mut column = SharedColumn::<StorageAllocation<EntityExtra>>::default();
+    column
+        .push_shared_for_request(StorageAllocation::new(value), &node_request)
+        .unwrap();
+    let escaped = column.retained_value(0).unwrap();
+    assert_eq!(payload_budget.charged_memory_bytes(), bill);
+    assert!(node_budget.charged_memory_bytes() > 0);
+    drop(column);
+    assert_eq!(node_budget.charged_memory_bytes(), 0);
+    assert_eq!(payload_budget.charged_memory_bytes(), bill);
+    drop(escaped);
+    assert_eq!(payload_budget.charged_memory_bytes(), 0);
 }

@@ -1,8 +1,11 @@
 mod allocation_visitor;
+mod node_memory;
 mod record_arena;
 mod shared_column;
 mod shared_map;
 mod storage_allocation;
+mod stored_value;
+pub(crate) use stored_value::{StoredValue, StoredValueObservation};
 
 pub(crate) use allocation_visitor::{
     visit_inline_value, visit_new_inline_value, StorageAllocationObservation,

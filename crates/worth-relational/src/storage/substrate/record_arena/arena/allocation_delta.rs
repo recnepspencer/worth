@@ -16,8 +16,8 @@ impl<K: RecordKind> RecordArena<K> {
             &previous.diagnostics_enrichment,
             visitor,
             &mut |entries, _, mut allocation, visitor| {
-                allocation.bytes += diagnostic_enrichment_bytes(entries);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(diagnostic_enrichment_bytes(entries));
+                allocation.visit(visitor);
             },
         );
     }
@@ -71,19 +71,19 @@ impl<K: RecordKind> RecordArena<K> {
             &previous.metadata_history,
             visitor,
             &mut |history, previous, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     if let Some(previous) = previous {
                         history.visit_new_allocations(
                             previous,
                             visitor,
                             &mut |metadata, _, allocation, visitor| {
                                 let _ = metadata;
-                                visitor.visit(allocation);
+                                allocation.visit(visitor);
                             },
                         );
                     } else {
                         history.visit_allocations(false, visitor, &mut |_, allocation, visitor| {
-                            visitor.visit(allocation);
+                            allocation.visit(visitor);
                         });
                     }
                 }
@@ -96,16 +96,16 @@ impl<K: RecordKind> RecordArena<K> {
             &previous.aspect_versions,
             visitor,
             &mut |versions, _, mut allocation, visitor| {
-                allocation.bytes += aspect_version_bytes(versions);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(aspect_version_bytes(versions));
+                allocation.visit(visitor);
             },
         );
         self.field_revisions.visit_new_allocations(
             &previous.field_revisions,
             visitor,
             &mut |revisions, _, mut allocation, visitor| {
-                allocation.bytes += field_revision_bytes(revisions);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(field_revision_bytes(revisions));
+                allocation.visit(visitor);
             },
         );
     }

@@ -34,7 +34,14 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
         })?;
     partition
         .relation_arena
-        .set_lifecycle_for_slot(slot, RecordLifecycleState::RetainedDanglingForAudit);
+        .set_lifecycle_for_slot_for_request(
+            execution,
+            slot,
+            RecordLifecycleState::RetainedDanglingForAudit,
+        )
+        .map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?;
     partition.relation_arena.live_bitset.set(slot, true);
     partition.relation_arena.reclaimable_bitset.set(slot, false);
 
@@ -81,7 +88,10 @@ pub(in crate::authority::mutation) fn delete_relation(
     let lifecycle = deletion_retention_lifecycle(partition, slot);
     partition
         .relation_arena
-        .set_lifecycle_for_slot(slot, lifecycle);
+        .set_lifecycle_for_slot_for_request(execution, slot, lifecycle)
+        .map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?;
 
     let Some(snapshot) = snapshot else {
         return Ok(());

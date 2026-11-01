@@ -19,7 +19,7 @@ use pin_counts::RecordPinCounts;
 pub(crate) use slot_directory::RecordSlotDirectory;
 pub(crate) use slot_visitation::RecordSlotVisit;
 
-use crate::storage::substrate::SharedColumn;
+use crate::storage::substrate::{SharedColumn, StorageAllocation};
 use std::collections::BTreeMap;
 
 use crate::identity::data::{KindId, PartitionId, RecordId, VersionId};
@@ -47,15 +47,17 @@ pub(crate) struct RecordArena<K: RecordKind> {
     pub(crate) generations: SharedColumn<u32>,
     pub(crate) lifecycle: SharedColumn<RecordLifecycleState>,
     pub(crate) kind_ids: SharedColumn<Option<KindId>>,
-    pub(crate) metadata_history: SharedColumn<SharedColumn<K::Meta>>,
-    pub(crate) history_prefixes: SharedColumn<Option<super::RecordHistoryPrefix>>,
+    pub(crate) metadata_history: SharedColumn<SharedColumn<StorageAllocation<K::Meta>>>,
+    pub(crate) history_prefixes:
+        SharedColumn<StorageAllocation<Option<super::RecordHistoryPrefix>>>,
     pub(crate) created_at: SharedColumn<VersionId>,
     pub(crate) retired_at: SharedColumn<Option<VersionId>>,
-    pub(crate) extra: SharedColumn<K::Extra>,
-    pub(crate) aspect_versions: SharedColumn<BTreeMap<Symbol, u64>>,
-    pub(crate) field_revisions:
-        SharedColumn<Option<BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>>,
-    pub(crate) diagnostics_enrichment: SharedColumn<BTreeMap<Symbol, String>>,
+    pub(crate) extra: SharedColumn<StorageAllocation<K::Extra>>,
+    pub(crate) aspect_versions: SharedColumn<StorageAllocation<BTreeMap<Symbol, u64>>>,
+    pub(crate) field_revisions: SharedColumn<
+        StorageAllocation<Option<BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>>,
+    >,
+    pub(crate) diagnostics_enrichment: SharedColumn<StorageAllocation<BTreeMap<Symbol, String>>>,
     pub(crate) branch_pins: RecordPinCounts,
     pub(crate) replay_pins: RecordPinCounts,
     pub(crate) snapshot_pins: RecordPinCounts,
@@ -139,7 +141,10 @@ impl<K: RecordKind> RecordArena<K> {
             .and_then(|physical| self.retired_at.get(physical).copied().flatten())
     }
 
-    pub(crate) fn metadata_history_at(&self, slot: usize) -> Option<&SharedColumn<K::Meta>> {
+    pub(crate) fn metadata_history_at(
+        &self,
+        slot: usize,
+    ) -> Option<&SharedColumn<StorageAllocation<K::Meta>>> {
         self.physical_index(slot)
             .and_then(|physical| self.metadata_history.get(physical))
     }
@@ -147,7 +152,7 @@ impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn metadata_history_at_mut(
         &mut self,
         slot: usize,
-    ) -> Option<&mut SharedColumn<K::Meta>> {
+    ) -> Option<&mut SharedColumn<StorageAllocation<K::Meta>>> {
         let physical = self.physical_index(slot)?;
         self.metadata_history.get_mut(physical)
     }
@@ -157,6 +162,7 @@ impl<K: RecordKind> RecordArena<K> {
             .and_then(|physical| self.aspect_versions.get(physical))
     }
 
+    #[cfg(test)]
     pub(crate) fn aspect_versions_at_mut(
         &mut self,
         slot: usize,
@@ -174,14 +180,38 @@ impl<K: RecordKind> RecordArena<K> {
             .and_then(Option::as_ref)
     }
 
-    pub(crate) fn field_revisions_at_mut(
+    /// Node-path admission only; the independent version-map payload remains
+    /// its existing ordinary allocation obligation.
+    pub(crate) fn aspect_versions_at_mut_using(
         &mut self,
         slot: usize,
-    ) -> Option<&mut BTreeMap<(Symbol, Symbol), RelationalFieldRevision>> {
-        let physical = self.physical_index(slot)?;
-        self.field_revisions.get_mut(physical)?.as_mut()
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<Option<&mut BTreeMap<Symbol, u64>>, crate::execution::RelationalExecutionDenialCause>
+    {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(None);
+        };
+        Ok(self
+            .aspect_versions
+            .carrier_mut_using(physical, request)?
+            .map(StorageAllocation::make_mut))
     }
-
+    pub(crate) fn field_revisions_at_mut_using(
+        &mut self,
+        slot: usize,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<
+        Option<&mut BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(None);
+        };
+        Ok(self
+            .field_revisions
+            .carrier_mut_using(physical, request)?
+            .and_then(|carrier| StorageAllocation::make_mut(carrier).as_mut()))
+    }
     pub(crate) fn retained_extra(
         &self,
         slot: usize,

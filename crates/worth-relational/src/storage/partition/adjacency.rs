@@ -18,8 +18,10 @@ pub(crate) enum AdjacencySet {
 // Keeping them indirect preserves the small ordinary adjacency value layout.
 pub(crate) struct AdjacencyEntries {
     current: RelationSet,
-    current_by_kind: Option<SharedMap<KindId, RelationSet>>,
-    historical_by_kind: Option<SharedMap<KindId, RelationSet>>,
+    current_by_kind:
+        Option<SharedMap<KindId, crate::storage::substrate::StorageAllocation<RelationSet>>>,
+    historical_by_kind:
+        Option<SharedMap<KindId, crate::storage::substrate::StorageAllocation<RelationSet>>>,
     structural_revision_by_kind: Option<SharedMap<KindId, VersionId>>,
 }
 
@@ -270,7 +272,9 @@ impl AdjacencySet {
 }
 
 fn insert_kind_relation(
-    buckets: &mut Option<SharedMap<KindId, RelationSet>>,
+    buckets: &mut Option<
+        SharedMap<KindId, crate::storage::substrate::StorageAllocation<RelationSet>>,
+    >,
     kind_id: KindId,
     relation_id: RelationId,
 ) {

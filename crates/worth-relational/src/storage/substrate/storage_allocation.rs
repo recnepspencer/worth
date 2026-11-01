@@ -46,6 +46,9 @@ impl<T> StorageAllocation<T> {
         // during that comparison, including when T is zero-sized (Arc header).
         Arc::as_ptr(&self.0) as usize as u64
     }
+    pub(in crate::storage::substrate) fn get_mut(this: &mut Self) -> Option<&mut T> {
+        Arc::get_mut(&mut this.0)
+    }
     pub(crate) fn is_unique(&self) -> bool {
         Arc::strong_count(&self.0) == 1
     }

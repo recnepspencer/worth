@@ -50,6 +50,24 @@ impl RecordPinCounts {
             self.values.insert(index, value);
         }
     }
+    pub(super) fn set_using(
+        &mut self,
+        index: usize,
+        value: u32,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        if let Some(request) = request {
+            assert!(index < self.len, "pin row is absent");
+            if value == 0 {
+                self.values.remove_for_request(&index, request)?;
+            } else {
+                self.values.insert_for_request(index, value, request)?;
+            }
+        } else {
+            self.set(index, value);
+        }
+        Ok(())
+    }
     pub(super) fn adjust(&mut self, index: usize, delta: i32) -> Option<()> {
         let value = self.get(index)?.saturating_add_signed(delta);
         self.set(index, value);

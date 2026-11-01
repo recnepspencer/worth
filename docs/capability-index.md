@@ -160,12 +160,17 @@ their original owners. Successful field lowering and readmission also retain
 the original request's bill with the actual private patch until consumption;
 checked clone bounds exclude source spare capacity. Request-driven historical
 metadata production also reserves each existing metadata allocation before
-history edits; snapshots and moved values retain that fixed bill. Ordinary image
-and maintenance copies, radix/page/scalar/slot-directory backing remain open. Existing diagnostic/error
-allocation and other replay/canonical-copy paths remain separate. This qualifies
-specific backing owners, with a localized inline footprint cost, rather than
-whole replay or Complete capture funding.
-See [applied aspect custody](../crates/worth-relational/README.md#retain-applied-aspect-payloads).
+history edits; snapshots and moved values retain that fixed bill. Controlled
+column/map nodes, fixed pages and scalar-directory writes independently retain
+their actual backing bills; inline scalars add no fictitious value allocation.
+Partial construction keeps admitted nodes until workspace destruction, while
+escaped payloads keep only their own bills. Ordinary image/maintenance copies,
+legacy adjacency/bitset backing, revision-map and independently constructed
+Digest/default payloads remain open. Existing diagnostic/error allocation and
+remaining replay/canonical-copy paths remain separate. These are specific backing
+contracts with localized footprint costs, not whole replay or Complete funding.
+See [applied aspect custody](../crates/worth-relational/README.md#retain-applied-aspect-payloads)
+and [controlled node backing](../crates/worth-relational/README.md#retain-controlled-node-and-page-backing).
 
 Native storage statistics, partition statistics, chunk summaries and chunk
 diagnostics take the caller's execution request and return a fallible result.

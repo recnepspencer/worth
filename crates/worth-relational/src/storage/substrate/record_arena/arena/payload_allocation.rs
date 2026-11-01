@@ -5,10 +5,10 @@ use std::collections::BTreeMap;
 
 pub(super) fn visit_history_prefix(
     prefix: &Option<super::super::RecordHistoryPrefix>,
-    allocation: crate::storage::substrate::StorageAllocationObservation,
+    allocation: crate::storage::substrate::StoredValueObservation,
     visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
 ) {
-    if visitor.visit(allocation) {
+    if allocation.visit(visitor) {
         visit_prefix_opening(prefix, allocation.unique, visitor);
     }
 }
@@ -16,10 +16,10 @@ pub(super) fn visit_history_prefix(
 pub(super) fn visit_new_history_prefix(
     prefix: &Option<super::super::RecordHistoryPrefix>,
     previous: Option<&Option<super::super::RecordHistoryPrefix>>,
-    allocation: crate::storage::substrate::StorageAllocationObservation,
+    allocation: crate::storage::substrate::StoredValueObservation,
     visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
 ) {
-    if visitor.visit(allocation)
+    if allocation.visit(visitor)
         && prefix.as_ref().map(|prefix| prefix.history_opening.id())
             != previous
                 .and_then(|prefix| prefix.as_ref())
@@ -43,10 +43,10 @@ fn visit_prefix_opening(
 
 pub(super) fn visit_metadata<K: RecordKind>(
     metadata: &K::Meta,
-    allocation: crate::storage::substrate::StorageAllocationObservation,
+    allocation: crate::storage::substrate::StoredValueObservation,
     visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
 ) {
-    if visitor.visit(allocation) {
+    if allocation.visit(visitor) {
         let extra = K::metadata_extra(metadata);
         let mut payload = extra.observation(allocation.unique);
         payload.bytes = payload

@@ -36,30 +36,30 @@ impl<K: RecordKind> RecordArena<K> {
             unique,
             visitor,
             &mut |history, allocation, visitor| {
-                if visitor.visit(allocation) {
+                if allocation.visit(visitor) {
                     history.visit_allocations(allocation.unique, visitor, &mut visit_metadata::<K>);
                 }
             },
         );
         self.extra
             .visit_allocations(unique, visitor, &mut |extra, mut allocation, visitor| {
-                allocation.bytes += K::extra_owned_allocation_bytes(extra);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(K::extra_owned_allocation_bytes(extra));
+                allocation.visit(visitor);
             });
         self.aspect_versions.visit_allocations(
             unique,
             visitor,
             &mut |versions, mut allocation, visitor| {
-                allocation.bytes += aspect_version_bytes(versions);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(aspect_version_bytes(versions));
+                allocation.visit(visitor);
             },
         );
         self.field_revisions.visit_allocations(
             unique,
             visitor,
             &mut |revisions, mut allocation, visitor| {
-                allocation.bytes += field_revision_bytes(revisions);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(field_revision_bytes(revisions));
+                allocation.visit(visitor);
             },
         );
     }
@@ -73,8 +73,8 @@ impl<K: RecordKind> RecordArena<K> {
             unique,
             visitor,
             &mut |entries, mut allocation, visitor| {
-                allocation.bytes += diagnostic_enrichment_bytes(entries);
-                visitor.visit(allocation);
+                allocation.add_owned_bytes(diagnostic_enrichment_bytes(entries));
+                allocation.visit(visitor);
             },
         );
     }

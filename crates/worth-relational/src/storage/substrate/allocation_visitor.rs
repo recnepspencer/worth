@@ -16,16 +16,16 @@ pub(crate) trait StorageAllocationVisitor {
 
 pub(crate) fn visit_inline_value<T>(
     _value: &T,
-    allocation: StorageAllocationObservation,
+    allocation: super::StoredValueObservation,
     visitor: &mut dyn StorageAllocationVisitor,
 ) {
-    visitor.visit(allocation);
+    allocation.visit(visitor);
 }
 
 pub(crate) fn visit_new_inline_value<T>(
     value: &T,
     _previous: Option<&T>,
-    allocation: StorageAllocationObservation,
+    allocation: super::StoredValueObservation,
     visitor: &mut dyn StorageAllocationVisitor,
 ) {
     visit_inline_value(value, allocation, visitor);

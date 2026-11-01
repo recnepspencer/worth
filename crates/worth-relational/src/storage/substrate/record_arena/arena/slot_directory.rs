@@ -1,4 +1,6 @@
 use crate::storage::substrate::{SharedColumn, SharedMap};
+#[cfg(test)]
+mod custody_tests;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct RecordSlotDirectory {
@@ -69,6 +71,28 @@ impl RecordSlotDirectory {
         Ok(copied_bytes.saturating_add(self.physical_by_logical.insert(logical_slot, physical)))
     }
 
+    pub(super) fn insert_for_request(
+        &mut self,
+        logical_slot: u64,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, super::MetadataWriteDenial> {
+        if self.physical_by_logical.contains_key(&logical_slot) {
+            return Err(super::MetadataWriteDenial::Invalid(
+                "record slot directory contains a duplicate logical slot",
+            ));
+        }
+        let physical = self.logical_by_physical.len();
+        let copied = self
+            .logical_by_physical
+            .push_for_request(logical_slot, request)?;
+        Ok(
+            copied.saturating_add(self.physical_by_logical.insert_for_request(
+                logical_slot,
+                physical,
+                request,
+            )?),
+        )
+    }
     pub(crate) fn try_occupied_slots<Stop>(
         &self,
         prepare: impl FnMut(u64, u64) -> Result<(), Stop>,

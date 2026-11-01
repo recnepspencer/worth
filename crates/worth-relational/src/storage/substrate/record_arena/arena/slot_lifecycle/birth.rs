@@ -6,13 +6,14 @@ impl<K: RecordKind> RecordArena<K> {
         init: SlotInit<K>,
         slot: usize,
         generation: u32,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
         prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
     ) -> Result<bool, MetadataWriteDenial> {
         if let Some(physical) = self.physical_index(slot) {
-            self.install_reused_slot_using(init, physical, generation, prepare)?;
+            self.install_reused_slot_using(init, physical, generation, request, prepare)?;
             return Ok(true);
         }
-        self.append_reserved_slot_using(init, slot, generation, prepare)?;
+        self.append_reserved_slot_using(init, slot, generation, request, prepare)?;
         Ok(false)
     }
 
@@ -21,6 +22,7 @@ impl<K: RecordKind> RecordArena<K> {
         init: SlotInit<K>,
         physical: usize,
         generation: u32,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
         prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
     ) -> Result<(), MetadataWriteDenial> {
         let SlotInit {
@@ -36,22 +38,32 @@ impl<K: RecordKind> RecordArena<K> {
             ))?;
         let metadata = prepare(metadata)?;
         let retired = self.prepare_retired_metadata(physical, version_id, prepare)?;
-        self.install_retired_metadata(physical, retired);
-        self.partition_ids[physical] = partition_id;
-        self.generations[physical] = generation;
-        self.lifecycle[physical] = RecordLifecycleState::Live;
-        self.kind_ids[physical] = Some(kind_id);
-        self.metadata_history[physical].push(metadata);
-        self.created_at[physical] = version_id;
-        self.retired_at[physical] = None;
-        self.extra.set_shared(physical, extra);
-        self.aspect_versions.set(physical, Default::default());
-        self.field_revisions.set(physical, Some(Default::default()));
+        self.install_retired_metadata(physical, retired, request)?;
+        self.partition_ids
+            .set_value_using(physical, partition_id, request)?;
+        self.generations
+            .set_value_using(physical, generation, request)?;
+        self.lifecycle
+            .set_value_using(physical, RecordLifecycleState::Live, request)?;
+        self.kind_ids
+            .set_value_using(physical, Some(kind_id), request)?;
+        self.metadata_history
+            .carrier_mut_using(physical, request)?
+            .expect("existing history")
+            .push_value_using(metadata, request)?;
+        self.created_at
+            .set_value_using(physical, version_id, request)?;
+        self.retired_at.set_value_using(physical, None, request)?;
+        self.extra.set_shared_using(physical, extra, request)?;
+        self.aspect_versions
+            .set_value_using(physical, Default::default(), request)?;
+        self.field_revisions
+            .set_value_using(physical, Some(Default::default()), request)?;
         self.diagnostics_enrichment
-            .set(physical, Default::default());
-        self.branch_pins.set(physical, 0);
-        self.replay_pins.set(physical, 0);
-        self.snapshot_pins.set(physical, 0);
+            .set_value_using(physical, Default::default(), request)?;
+        self.branch_pins.set_using(physical, 0, request)?;
+        self.replay_pins.set_using(physical, 0, request)?;
+        self.snapshot_pins.set_using(physical, 0, request)?;
         let logical = self.slots.slots()[physical] as usize;
         self.live_bitset.set(logical, true);
         self.reclaimable_bitset.set(logical, false);
@@ -63,6 +75,7 @@ impl<K: RecordKind> RecordArena<K> {
         init: SlotInit<K>,
         logical_slot: usize,
         generation: u32,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
         prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
     ) -> Result<(), MetadataWriteDenial> {
         let SlotInit {
@@ -77,21 +90,43 @@ impl<K: RecordKind> RecordArena<K> {
                 "record extra cannot construct its native metadata",
             ))?;
         let metadata = prepare(metadata)?;
-        self.slots.insert(logical_slot as u64)?;
-        self.partition_ids.push(partition_id);
-        self.generations.push(generation);
-        self.lifecycle.push(RecordLifecycleState::Live);
-        self.kind_ids.push(Some(kind_id));
-        self.metadata_history.push(vec![metadata].into());
-        self.history_prefixes.push(None);
-        self.created_at.push(version_id);
-        self.retired_at.push(None);
-        self.extra.push_shared(extra);
-        self.aspect_versions.push(std::collections::BTreeMap::new());
+        if let Some(request) = request {
+            self.slots
+                .insert_for_request(logical_slot as u64, request)?;
+        } else {
+            self.slots.insert(logical_slot as u64)?;
+        }
+        self.partition_ids.push_value_using(partition_id, request)?;
+        self.generations.push_value_using(generation, request)?;
+        self.lifecycle
+            .push_value_using(RecordLifecycleState::Live, request)?;
+        self.kind_ids.push_value_using(Some(kind_id), request)?;
+        let input_memory = crate::storage::substrate::node_memory::reserve(
+            request,
+            crate::storage::substrate::node_memory::array::<K::Meta>(1),
+        )?;
+        let values = vec![metadata];
+        let history = if let Some(request) = request {
+            crate::storage::substrate::SharedColumn::from_dense_values_for_request(values, request)?
+        } else {
+            values.into()
+        };
+        drop(input_memory);
+        self.metadata_history.push_value_using(history, request)?;
+        self.history_prefixes.push_value_using(None, request)?;
+        self.created_at.push_value_using(version_id, request)?;
+        self.retired_at.push_value_using(None, request)?;
+        if let Some(request) = request {
+            self.extra.push_shared_for_request(extra, request)?;
+        } else {
+            self.extra.push_shared(extra);
+        }
+        self.aspect_versions
+            .push_value_using(std::collections::BTreeMap::new(), request)?;
         self.field_revisions
-            .push(Some(std::collections::BTreeMap::new()));
+            .push_value_using(Some(std::collections::BTreeMap::new()), request)?;
         self.diagnostics_enrichment
-            .push(std::collections::BTreeMap::new());
+            .push_value_using(std::collections::BTreeMap::new(), request)?;
         self.branch_pins.push(0);
         self.replay_pins.push(0);
         self.snapshot_pins.push(0);

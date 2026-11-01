@@ -19,7 +19,7 @@ impl AdjacencySet {
                     old.as_ref().unwrap_or(&empty),
                     visitor,
                     &mut |relations: &RelationSet, previous, allocation, visitor| {
-                        if visitor.visit(allocation) {
+                        if allocation.visit(visitor) {
                             if let Some(previous) = previous {
                                 relations.visit_new_allocations(
                                     previous,
@@ -81,7 +81,7 @@ impl AdjacencySet {
                 false,
                 visitor,
                 &mut |relations: &RelationSet, allocation, visitor| {
-                    if visitor.visit(allocation) {
+                    if allocation.visit(visitor) {
                         relations.visit_allocations(false, visitor, &mut visit_inline_value);
                     }
                 },

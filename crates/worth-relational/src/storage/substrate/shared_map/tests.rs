@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 proptest! {
     #[test]
     fn persistent_edits_match_an_independent_ordered_map(actions in prop::collection::vec((0u16..200, any::<bool>(), any::<u64>()), 0..500)) {
-        let mut map = SharedMap::new();
+        let mut map = SharedMap::<u16,u64>::new();
         let mut expected = BTreeMap::new();
         for (key, insert, value) in actions {
             let retained = map.clone();
@@ -26,7 +26,7 @@ proptest! {
     }
 }
 
-fn assert_balanced<K: Ord + Copy, V: Clone>(
+fn assert_balanced<K: Ord + Copy, V: StoredValue>(
     root: &Option<Arc<node::MapNode<K, V>>>,
 ) -> (usize, usize) {
     let Some(node) = root else { return (0, 0) };
@@ -51,7 +51,7 @@ fn cold_sorted_construction_matches_ordered_map_and_remains_mutable() {
             .map(|key| (key, key + 1))
             .collect::<Vec<_>>();
         let expected = values.iter().copied().collect::<BTreeMap<_, _>>();
-        let mut map = SharedMap::from_sorted_unique(values);
+        let mut map = SharedMap::<u64, u64>::from_sorted_unique(values);
         assert!(map.iter().eq(expected.iter()));
         assert_balanced(&map.root);
         map.insert(10_000, 10_001);
@@ -92,7 +92,7 @@ fn replacing_and_removing_retained_values_never_clone_displaced_payloads() {
         }
     }
     let clones = Arc::new(AtomicUsize::new(0));
-    let mut map: SharedMap<_, _> = (0..1024)
+    let mut map: SharedMap<_, crate::storage::substrate::StorageAllocation<Counted>> = (0..1024)
         .map(|key| (key, Counted(clones.clone())))
         .collect();
     let retained = map.clone();
@@ -109,7 +109,8 @@ fn replacing_and_removing_retained_values_never_clone_displaced_payloads() {
 
 #[test]
 fn targeted_mutation_does_not_change_a_retained_map() {
-    let mut map: SharedMap<_, _> = (0..10_000).map(|key| (key, key.to_string())).collect();
+    let mut map: SharedMap<_, crate::storage::substrate::StorageAllocation<String>> =
+        (0..10_000).map(|key| (key, key.to_string())).collect();
     let retained = map.clone();
     map.get_mut(&5_000).unwrap().push('!');
     assert_eq!(retained.get(&5_000).unwrap(), "5000");

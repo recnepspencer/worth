@@ -1,11 +1,11 @@
 use super::node::{ColumnNode, ColumnStorage};
 use super::PAGE_LEN;
-use crate::storage::substrate::StorageAllocation as Arc;
+use crate::storage::substrate::StoredValue;
 
-pub(crate) struct SharedColumnIter<'a, T: Clone> {
+pub(crate) struct SharedColumnIter<'a, T: StoredValue> {
     pending: Vec<(Option<&'a ColumnNode<T>>, usize)>,
-    page: std::slice::Iter<'a, Option<Arc<T>>>,
-    default: Option<&'a T>,
+    page: std::slice::Iter<'a, Option<T>>,
+    default: Option<&'a T::Value>,
     default_run: usize,
     remaining: usize,
     root: Option<&'a ColumnNode<T>>,
@@ -13,12 +13,12 @@ pub(crate) struct SharedColumnIter<'a, T: Clone> {
     back: usize,
 }
 
-impl<'a, T: Clone> SharedColumnIter<'a, T> {
+impl<'a, T: StoredValue> SharedColumnIter<'a, T> {
     pub(super) fn new(
         root: Option<&'a ColumnNode<T>>,
         height: usize,
         remaining: usize,
-        default: Option<&'a T>,
+        default: Option<&'a T::Value>,
     ) -> Self {
         Self {
             pending: vec![(root, height)],
@@ -33,8 +33,8 @@ impl<'a, T: Clone> SharedColumnIter<'a, T> {
     }
 }
 
-impl<'a, T: Clone> Iterator for SharedColumnIter<'a, T> {
-    type Item = &'a T;
+impl<'a, T: StoredValue> Iterator for SharedColumnIter<'a, T> {
+    type Item = &'a T::Value;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.remaining == 0 {
@@ -53,7 +53,7 @@ impl<'a, T: Clone> Iterator for SharedColumnIter<'a, T> {
                 self.remaining -= 1;
                 return Some(
                     value
-                        .as_deref()
+                        .as_ref().map(T::value)
                         .or(self.default)
                         .expect(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ "column value must exist"),
                 );
@@ -77,10 +77,10 @@ impl<'a, T: Clone> Iterator for SharedColumnIter<'a, T> {
     }
 }
 
-impl<T: Clone> ExactSizeIterator for SharedColumnIter<'_, T> {}
+impl<T: StoredValue> ExactSizeIterator for SharedColumnIter<'_, T> {}
 
-impl<'a, T: Clone> DoubleEndedIterator for SharedColumnIter<'a, T> {
-    fn next_back(&mut self) -> Option<&'a T> {
+impl<'a, T: StoredValue> DoubleEndedIterator for SharedColumnIter<'a, T> {
+    fn next_back(&mut self) -> Option<&'a T::Value> {
         if self.remaining == 0 {
             return None;
         }
@@ -88,7 +88,7 @@ impl<'a, T: Clone> DoubleEndedIterator for SharedColumnIter<'a, T> {
         self.back -= 1;
         self.root
             .and_then(|root| root.get(self.back, self.height))
-            .map(Arc::as_ref)
+            .map(T::value)
             .or(self.default)
     }
 }

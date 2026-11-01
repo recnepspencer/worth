@@ -95,30 +95,37 @@ fn metadata_controls_follow_actual_history_snapshots_and_refund() {
     let cancel = CancellationSource::new();
     let host = SerialRequest::from_memory(budget.clone(), cancel.token(), None);
     let request = ExecutionRequest::serial(&host);
-    let mut current = EntityArena::with_capacity(1);
-    current
-        .write_reserved_slot_for_request(&request, init(1), 0, 1)
-        .unwrap();
-    assert_eq!(budget.charged_memory_bytes(), bill);
-    let old = current.clone();
-    current
-        .apply_extra_update_for_request(&request, 0, EntityExtra::default(), VersionId(2))
-        .unwrap()
-        .unwrap();
-    assert_eq!(old.metadata_history[0].len(), 1);
-    assert_eq!(old.metadata_history[0][0].retired_at, None);
-    assert_eq!(
-        current.metadata_history[0][0].retired_at,
-        Some(VersionId(2))
-    );
-    assert_eq!(current.metadata_history[0][1].effective_at, VersionId(2));
+    let (original, retired, latest) = {
+        let mut current = EntityArena::with_capacity(1);
+        current
+            .write_reserved_slot_for_request(&request, init(1), 0, 1)
+            .unwrap();
+        let old = current.clone();
+        current
+            .apply_extra_update_for_request(&request, 0, EntityExtra::default(), VersionId(2))
+            .unwrap()
+            .unwrap();
+        assert_eq!(old.metadata_history[0].len(), 1);
+        assert_eq!(old.metadata_history[0][0].retired_at, None);
+        assert_eq!(
+            current.metadata_history[0][0].retired_at,
+            Some(VersionId(2))
+        );
+        assert_eq!(current.metadata_history[0][1].effective_at, VersionId(2));
+        // Retain the actual three producer allocations. Both arena snapshots and
+        // every column node die here, so only these independent footers remain.
+        (
+            old.metadata_history[0].retained_value(0).unwrap(),
+            current.metadata_history[0].retained_value(0).unwrap(),
+            current.metadata_history[0].retained_value(1).unwrap(),
+        )
+    };
     assert_eq!(budget.charged_memory_bytes(), 3 * bill);
-    drop(old);
+    drop(original);
     assert_eq!(budget.charged_memory_bytes(), 2 * bill);
-    let history = current.metadata_history[0].clone();
-    drop(current);
-    assert_eq!(budget.charged_memory_bytes(), 2 * bill);
-    drop(history);
+    drop(retired);
+    assert_eq!(budget.charged_memory_bytes(), bill);
+    drop(latest);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 #[test]

@@ -26,19 +26,19 @@ fn column_owner_walk_deduplicates_retained_pages_and_values() {
     let mut current = Inventory::default();
     changed.visit_allocations(true, &mut current, &mut visit_inline_value);
     // A full 32-page binary column has five branch levels plus its leaf page;
-    // changing one value detaches those six nodes and that one value only.
+    // changing an inline scalar detaches those six nodes, with no scalar owner.
     assert_eq!(
         current
             .0
             .keys()
             .filter(|id| !original.0.contains_key(id))
             .count(),
-        7
+        6
     );
     let mut combined = Inventory::default();
     column.visit_allocations(true, &mut combined, &mut visit_inline_value);
     changed.visit_allocations(true, &mut combined, &mut visit_inline_value);
-    assert_eq!(combined.0.len(), original.0.len() + 7);
+    assert_eq!(combined.0.len(), original.0.len() + 6);
     assert_eq!(column[500], 500);
 }
 
@@ -65,7 +65,7 @@ fn map_walk_matches_owner_bytes_and_missing_mutations_reuse_every_owner() {
 fn visit_delta_inline<T>(
     value: &T,
     _previous: Option<&T>,
-    allocation: StorageAllocationObservation,
+    allocation: crate::storage::substrate::StoredValueObservation,
     visitor: &mut dyn StorageAllocationVisitor,
 ) {
     visit_inline_value(value, allocation, visitor);
