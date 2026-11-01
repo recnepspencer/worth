@@ -666,6 +666,29 @@ owned_decode_index_predecode_denial_and_alias_keep_original_grant. These are
 actual private backing/alias/refusal proofs, not Native runtime, coverage or
 complete-artifact authority. Register only that exact leaf and two SDK names.
 
+CanonicalStrategyInputArtifact and StrategyMergeDescriptor retain their two
+existing private shared data Arcs. Each owner gains a last, serde-skipped
+Option<Arc<ExecutionMemoryReservation>>; ordinary construction uses None and
+adds no hot allocation. Existing Clone shares that same leaf grant. Semantic
+Debug/Eq and named/compact wire bytes ignore funding. Before Serde, reserve each
+actual data Arc layout (including empty slices), its one cold grant Arc, and
+locator-owned nested allocations; subtract those same retained bills from the
+envelope. Move the fresh actual Bundle through its private mutable attachment
+before any clone or exposure. Scratch remains transient. No additional backing
+wrapper or whole-strategy/Envelope reservation may survive a small leaf clone.
+
+The exact private history/commit/artifact_tests/strategy_readmission.rs leaf may
+construct only SDK SerialRequest/ExecutionRequest roots for
+strategy_input_clone_retains_only_its_original_decoded_bytes_grant and
+strategy_descriptor_clone_retains_only_its_original_decoded_locator_grant.
+These drive the real installed strategy through canonicalization, execution,
+lowering, validation, commit and positioned-artifact owned decode. Independently
+compute each original leaf bill, retain its clone after raw artifact and Envelope
+Drop, and require final-clone refund to zero. Include zero-budget refusal before
+decode. Pure owner-local named/compact legacy-wire twins need no runtime roots.
+This is the existing Native owner court, not a new runtime audience or Complete
+capture claim. Register only that exact resource leaf and those two SDK names.
+
 Full/embedded admission retains the actual typed diagnostic language. Replace
 RelationalDiagnosticValue::Object's hidden standard-tree nodes with its owner's immutable
 DiagnosticObjectFields: private boxed ordered key/value pairs, borrowed map
