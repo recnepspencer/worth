@@ -847,6 +847,27 @@ replace selective adoption with whole-header installation or add fallible
 admission after durable acceptance. Published funding still requires a separately
 closed selective preallocation or publication-ordering design.
 
+DigestIndex is also a shallow header: one Patricia-root handle and one optional
+HistoryLastValue handle. Store that exact header directly in records.histories
+and adjacency.memberships, preserving both child owners and their identities.
+Add its storage-private sealed carrier in
+storage/overlay/partition_content/digest_index/carrier.rs, with owner proofs in
+digest_index/carrier_tests.rs; update digest_index.rs and the existing records.rs
+and adjacency.rs consumers. Substrate gains no dependency on this domain.
+Header observation contributes no invented allocation identity; actual Patricia
+and last-value nodes remain separately observed. Change no update/hash/frontier
+algorithm or wire meaning. General SharedColumn defaults remain untouched.
+
+This removes an independent header allocation, not a universal memory saving.
+On the measured target, each map node grows from 112 to 120 bytes and each unique
+32-byte outer header Arc disappears. Actual retained-root unions can therefore
+grow when old header Arcs were shared across copied nodes: measured 64 append
+roots grow 51,312 to 52,344 bytes, and 129 hot-history roots grow 160,864 to 161,376.
+Dense 64-entry ownership falls 15,360 to 13,824 bytes. Preserve these explicit
+tradeoffs in owner proofs and documentation; do not extrapolate a fixed savings
+per logical entry. The accepted cost simplifies actual allocation custody;
+Patricia/last-value funding, general defaults and publication funding stay open.
+
 Bare Complete reconstruction also needs original admitted schema authority.
 Canonical records and branch transitions alone do not contain full executable
 contracts: schema snapshots retain references, diff atoms are descriptive, and
