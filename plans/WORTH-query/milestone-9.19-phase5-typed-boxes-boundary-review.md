@@ -1,5 +1,10 @@
 # Phase5 typed topology bounds: boundary review
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 The next numerical boundary is actual SceneFaceRow u64 Metre/model-local points
 entering the same Query-free box/tree mechanics currently used by signed Catalog
 geometry. Existing Box2 uses full i64 coordinates, fixture-integer-length-v1 and

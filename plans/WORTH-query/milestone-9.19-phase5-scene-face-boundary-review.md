@@ -1,5 +1,10 @@
 # Phase5 Scene/Face and triangle Source boundary review
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 The next unfinished spatial path needs a real universe before an index can derive
 candidate bounds. This slice establishes that model, Native eligibility and its
 ordinary structural query in the existing topology entry and ConsumerSchema.

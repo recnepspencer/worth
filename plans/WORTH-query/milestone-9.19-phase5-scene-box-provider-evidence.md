@@ -1,5 +1,10 @@
 # Phase5 maintained Scene Source and box candidates: evidence
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 Boundary review and plan preceded Rust edits. Runtime findings expanded those
 documents before the concrete admitted-codec and checker repairs.
 

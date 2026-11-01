@@ -1,5 +1,10 @@
 # Phase5 maintained Scene box Source: implementation plan
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 Boundary review and independent rulings precede Rust edits. The result is an actual
 Native-maintained Source and current-only SceneFaceBoxesRead candidate query over
 existing SceneFacesRead v1. Enclosure overlap is explicitly weaker than face contact.

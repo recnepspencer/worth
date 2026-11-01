@@ -44,7 +44,6 @@ pub(crate) static DECISION_ENTRIES: std::sync::atomic::AtomicUsize =
 
 pub struct PlanarHandler;
 pub(crate) mod checkpoint_polling;
-mod insertion;
 trait PlanarHandlerBinding<Schema: TopologySchemaBinding>:
     worth_query_decl::facade::application_operation::ApplicationMutationBinding<
     Schema,
@@ -92,14 +91,6 @@ where
                     return HandlerResult::DomainDenied(PlanarMutationDenial::EmptyCycle);
                 }
             }
-            PlanarOperation::InsertVertexAfter {
-                after_key,
-                previous_next_key,
-                vertex,
-            } => match insertion::decide(reader, after_key, previous_next_key, vertex) {
-                HandlerResult::Completed(()) => {}
-                denied => return denied,
-            },
             PlanarOperation::Adjust(adjustments) => {
                 for adjustment in adjustments {
                     let entity = match reader
@@ -301,11 +292,6 @@ where
             }
             Ok(allocated.len())
         }
-        PlanarOperation::InsertVertexAfter {
-            after_key,
-            previous_next_key,
-            vertex,
-        } => insertion::insert(writer, after_key, previous_next_key, vertex),
         PlanarOperation::Adjust(adjustments) => {
             for adjustment in adjustments {
                 let entity = writer

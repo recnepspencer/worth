@@ -1,5 +1,10 @@
 # Phase5 typed topology bounds: implementation plan
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 Boundary review and independent API ruling are complete before Rust edits.
 
 1. Add sealed SignedFixture/ModelLocalMetre spaces to consumer_values. Generalize

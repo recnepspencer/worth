@@ -1,5 +1,10 @@
 # Phase5 Scene/Face and triangle Source implementation plan
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 The boundary review is complete before Rust edits. Developer-facing result:
 AttachPlanarFace { scope_key, scene_key, face_key } attaches an existing genuine
 triangle to a Scene through the ordinary mutation receiver. SceneFacesRead {

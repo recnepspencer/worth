@@ -2591,3 +2591,27 @@ and old-successor courts protect early refusal. See the
 This records same-Scene and Body-only routing evidence. Actual CAD contact and
 face-scale acceptance remain Phase6 work; public closure follows the revised
 Phase5 gate rather than further expansion of this public model.
+
+
+### Revised Phase5 public CAD cleanup (2026-11-01)
+
+The complete public Scene/Face model, authoring/actions, contour rule, spatial
+Source/Parent adapter, configuration/observers and dedicated application courts
+are removed under the corrected scope. Its solely related InsertVertexAfter path
+is also removed. Existing ConsumerSchema2.0 and planar handler v4 fence the narrowed
+fixture composition; original operations/input/command/result meaning stays.
+
+Generic Query/Native/Execution providers, Bank adoption, the BC9002 classifier fix,
+exact integer/typed-box/full-width mechanics, original segment refinement and
+explicit bounded length decoding remain. Two codec cases and the literal old-wire
+fence stay in the existing consumer test binary. Historical receipts retain their
+old outcomes with superseded-scope banners. Preserved uncommitted triangle work
+supplies no revised completion claim. See the
+[cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
+Fresh cleanup evidence:204 selected consumer tests,13 numerical owner cases and
+2 doctests pass, plus the actual ordinary consumer executable. Required repository
+gates pass. Public Phase5 closure and actual private Phase6 adoption remain
+subsequent gates.
+The new private integration tree is based on freshly fetched Proprietary main
+7d582d94c08d906dbcb2e0f84da72f0b2c33b7fc; existing private work stays untouched.

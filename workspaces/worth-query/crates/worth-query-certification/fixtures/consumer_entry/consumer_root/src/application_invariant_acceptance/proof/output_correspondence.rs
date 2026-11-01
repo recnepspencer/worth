@@ -247,7 +247,7 @@ pub(super) fn observed_source(
         .clone()
 }
 
-pub(super) fn preserved_identity(
+fn preserved_identity(
     request: &Request<'_>,
     application: &ProgramApplication,
     key: &str,

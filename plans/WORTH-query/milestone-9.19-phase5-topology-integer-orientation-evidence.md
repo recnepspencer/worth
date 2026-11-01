@@ -1,5 +1,10 @@
 # Phase5 topology integer orientation: evidence
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 The boundary review and implementation plan preceded Rust edits. One Query-free
 sealed i64/u64 predicate now owns exact orientation. It compares signed u128
 product magnitudes after i128 coordinate differences; it never forms an

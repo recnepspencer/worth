@@ -1,5 +1,10 @@
 # Phase5 maintained Scene box Source: boundary review
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 Status: boundary review complete before the separate implementation plan and Rust
 edits for this slice.
 Current committed baseline0b06d080ca includes genuine Scene/Face/contour meaning,

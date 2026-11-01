@@ -960,34 +960,18 @@ over its full u64 metre/model-local domain; opposite and zero turns retain typed
 invariant refusal. This numerical prerequisite does not supply spatial discovery.
 See the [orientation evidence](../plans/WORTH-query/milestone-9.19-phase5-topology-integer-orientation-evidence.md).
 
-The topology entry also exposes optional `SceneFaceContribution`: actual Scene and
-Face records, required Scene membership and Body anchor, a Native exact-three
-contour rule, `AttachPlanarFace`, `CreateSceneTriangle` and the parameter-free
-`SceneFacesRead` structural
-query. Coordinates remain on Body in Metre/model-local.v1. Attachment derives
-context from the actual anchor; each Scene contains faces from that Native context.
-`CreateSceneTriangle` grows an existing Scene with actual contextual Face/Body
-allocation and tracked fresh keys. The ordinary `InsertVertexAfter` planar edit
-atomically inserts a genuine vertex; anchored nontriangles refuse through Native
-`TriangleFaceContour`, even when all three Source points stay unchanged. See the
-[Scene authoring evidence](../plans/WORTH-query/milestone-9.19-phase5-scene-authoring-evidence.md).
-The ordinary complete query also supplies the actual Native-maintained Source
-profile for `SceneFaceBoxesRead`, a current-only enclosure-candidate query with
-inverse predicate routing. `SceneFaceConfiguration` installs its actual provider
-at the existing contribution boundary. Exact face-contact validation and large
-spatial discovery qualification remain unfinished. See the
-[Scene/Face evidence](../plans/WORTH-query/milestone-9.19-phase5-scene-face-evidence.md).
+The existing Query-free box/tree/segment-contact owner supports the sealed signed
+fixture and full-u64 Metre/model-local coordinate classes through one typed
+`IntegerBox2<Space>` implementation. Cross-domain operations are type errors;
+a unit/frame class alone does not establish model-instance affinity. The concrete
+`TopologyLengthBinding` also retains its original UInt64/nonzero wire meaning and
+supplies bounded admitted decoding with the original refusal. These generic fixes
+remain qualified independently of the removed public Scene/Face application.
 
-`SceneFaceRow::bounds()` derives an exact `IntegerBox2<ModelLocalMetre>` enclosure
-from those projected u64 points. The shared numerical box/tree/contact owner also
-retains the existing concrete signed `Box2` domain and raw serde carrier meaning.
-Cross-domain box operations are type errors. The type identifies the unit/frame
-class; Scene/context custody still supplies actual model affinity. These bounds
-are candidates and do not certify contour validity or exact face contact.
-The concrete `TopologyLengthBinding` now supplies bounded admitted decoding of its
-unchanged UInt64 wire so strict managed reads can consume PositionX/Y lawfully.
-It preserves original admission refusal; the generic manual-scalar macro remains
-unchanged. See the [Scene box provider evidence](../plans/WORTH-query/milestone-9.19-phase5-scene-box-provider-evidence.md).
+Phase5 qualifies Bank and the existing bounded box/prefix provider contracts.
+Real CAD geometry/topology/contact integration and actual-face scale acceptance
+belong to Phase6 in the private application. See the
+[public cleanup evidence](../plans/WORTH-query/milestone-9.19-phase5-public-cad-cleanup-evidence.md).
 
 ### Native managed Source impact history
 

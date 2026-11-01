@@ -18,7 +18,7 @@ use worth_query_topology_entry::{
     PlanarOutputFeature, PlanarOutputToAlternateFinalConnection, PlanarOutputToFinalConnection,
     PlanarSourceAdjustmentBinding, PlanarSourceFeature, PlanarSourceToOutputConnection,
     PlanarSummaryFeature, PlanarSummaryInput, PositivePlanarTurn, PriorCycleAdjustmentBinding,
-    PublishAlternatePlanarOutput, TriangleFaceContour, VertexReplacementBinding,
+    PublishAlternatePlanarOutput, VertexReplacementBinding,
 };
 
 use crate::ConsumerSchema;
@@ -297,13 +297,7 @@ type ConsumerRules = ApplicationRuleList<
             ApplicationSharedRuleRef<ConsumerSchema, PositivePlanarTurn>,
             ApplicationCommitBoundary,
         >,
-        ApplicationRuleList<
-            ApplicationRuleAt<
-                ApplicationSharedRuleRef<ConsumerSchema, TriangleFaceContour>,
-                ApplicationCommitBoundary,
-            >,
-            ApplicationRuleLeaf,
-        >,
+        ApplicationRuleLeaf,
     >,
 >;
 

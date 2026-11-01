@@ -6022,80 +6022,23 @@ selection succeeds, while an explicit retained `.at(...)` read returns
 one snapshot selected at admission. This does not enable historical managed
 reads or continuation without pinned support. The
 [public geometry consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/public_only.rs)
-uses a distinct maintained index with no invariant requirement. Bank and topology
-adoption are tracked separately in Query 9.19 Phase5.
+uses a distinct maintained index with no invariant requirement. Bank integration
+and the generic provider qualification are tracked in Query9.19 Phase5; real CAD
+adoption belongs to Phase6.
 
-The topology entry's optional `SceneFaceContribution` supplies a genuine face
-universe before spatial indexing. A Face belongs to exactly one Scene and anchors
-one actual Body contour. Its Native `TriangleFaceContour` rule requires three
-distinct vertices and closure on the third successor. The existing positive-turn
-rule continues to own orientation. `SceneFacesRead` is a complete ordinary
-structural query with exact root/successor/predecessor coordinates and actual
-Face/anchor identities. The same profile supplies the actual Native-maintained
-Source for `SceneFaceBoxesRead`, which discovers enclosure candidates through the
-shared typed box tree. Candidate overlap does not promise exact face contact.
+The shared Query-free box/tree/segment-contact mechanics support both the signed
+fixture `Box2` and unsigned `IntegerBox2<ModelLocalMetre>` domain. The raw
+`{ lower, upper }` serde carrier retains its default i64 meaning. Typed domain
+classes cannot be combined accidentally and do not establish model-instance
+origin affinity. The concrete topology length binding retains explicit bounded
+admitted UInt64 decoding, its original identity/wire/Metre/frame and nonzero
+constructor, and original admission refusal. Strict managed reads never silently
+fall back to an unadmitted decoder.
 
-The existing ConsumerSchema demonstrates explicit opt-in through minor1.4, a
-fourth contribution with required `SceneFaceConfiguration`, dedicated scene
-actions and the installed rule roster. With its ordinary authenticated request and program:
-
-```rust
-use worth_query_topology_entry::{AttachPlanarFace, SceneFacesRead};
-use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
-
-let outcome = request.advanced().mutate(AttachPlanarFace {
-    scope_key: "anchor-a".into(),
-    scene_key: "scene".into(),
-    face_key: "first".into(),
-}).idempotency(&1_u64)
-  .execute_in_program(application, ExecutionAllocationPolicy::SystemAllocation)?;
-let rows = request.query(SceneFacesRead { scene_key: "scene".into() }).execute()?;
-```
-
-Attachment creates a missing Scene and the Face in the actual anchor's Native
-context. A Scene cannot absorb a contour issued into another context by a later
-legacy `CreateCycle`. Use `CreateSceneTriangle { scene_key, face_key, points }` to grow an existing
-Scene: all three vertices and the Face are allocated in that actual Scene context.
-The action tracks FaceKey and all generated BodyKey absences before allocation.
-`PlanarOperation::InsertVertexAfter` is an ordinary atomic contour edit; it may
-create a positive quad in an unanchored contour, while the same edit on an anchored
-triangle reaches the original typed `TriangleFaceContour` refusal. See the
-[authoring courts](../plans/WORTH-query/milestone-9.19-phase5-scene-authoring-evidence.md). The structural read has an explicit100,000-result
-binding limit and current/pinned support. The
-[receiving courts](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/scene_faces.rs)
-exercise this exact mutation/read path, indirect motion, replacement, Native
-cardinality refusal and triangle eligibility. Existing `PlanarDiscoveryRead` v1
-continues to follow authored links.
-
-Each returned `SceneFaceRow` can derive `bounds()`, an exact
-`IntegerBox2<ModelLocalMetre>` in the original full-u64 Metre/model-local domain.
-The same Query-free box, tree and segment-contact algorithms serve this domain
-and the existing signed fixture `Box2`; the raw `{ lower, upper }` serde carrier
-keeps its old default i64 meaning. Typed bounds cannot be combined across these
-unit/frame classes. A shared frame class does not prove that two model instances
-share an origin: actual Scene/context custody remains necessary. The enclosure is
-derived from real projected points, and supplies no contour or publication proof.
-
-For the maintained candidate read, provide a probe in the selected Scene's local
-frame. The Source remains parameter-free/current-and-pinned; the Parent has its
-own probe and refuses retained bases before provider work:
-
-```rust
-use worth_query_topology_entry::{SceneFaceBoxesRead, SceneBoxProbe};
-let candidates = request.query(SceneFaceBoxesRead {
-    scene_key: "scene".into(),
-    probe: SceneBoxProbe { lower_x: 9, lower_y: 9, upper_x: 9, upper_y: 9 },
-}).execute()?;
-```
-
-The actual cold root may be built during Attach's Native preparation, before any
-Parent read. Warm coordinate motion and vertex replacement maintain that root.
-A box hit outside the triangle remains a candidate, as the finite receiving court
-demonstrates. No implicit cross-model transform or private cache is introduced.
-The concrete topology length binding supplies an explicit bounded admitted
-UInt64 decoder for these managed field reads, preserving its old identity,
-wire, Metre/frame and nonzero domain constructor. Strict managed decoding never
-falls back to an unadmitted manual decoder.
+Phase5 uses Bank and the existing bounded provider fixtures for contract evidence.
+The former public Scene/Face application has been removed; real CAD adaptation
+uses its private numerical/topology/contact owners in Phase6. See the
+[cleanup evidence](../plans/WORTH-query/milestone-9.19-phase5-public-cad-cleanup-evidence.md).
 
 A result-set/source expectation also retains the original Source READ support.
 Revoking a Source-only permission refuses a later non-querying mutation before

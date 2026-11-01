@@ -78,8 +78,6 @@ mod length_binding;
 pub use length_binding::TopologyLengthBinding;
 mod schema_binding;
 pub use schema_binding::TopologySchemaBinding;
-mod scene_faces;
-pub use scene_faces::*;
 
 worth_query_application_contribution! {
     pub contribution TopologyContribution for Schema: TopologySchemaBinding {

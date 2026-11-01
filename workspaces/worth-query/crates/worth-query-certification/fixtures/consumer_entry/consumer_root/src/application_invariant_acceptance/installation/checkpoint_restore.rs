@@ -27,9 +27,6 @@ where
         },
         Arc::new(AtomicUsize::new(0)),
         (),
-        worth_query_topology_entry::SceneFaceConfiguration {
-            observations: Arc::clone(&world.scene_box_observations),
-        },
     );
     installation::in_memory_rostered_program_from_checkpoint(
         program,

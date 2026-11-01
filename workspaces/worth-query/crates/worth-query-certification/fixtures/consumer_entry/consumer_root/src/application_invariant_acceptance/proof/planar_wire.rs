@@ -1,9 +1,11 @@
-//! New authoring must preserve the published externally tagged legacy inputs.
+//! Literal compatibility fence for existing externally tagged operation inputs.
 use super::*;
-use worth_query_consumer_values::{PlanarCurrentOutputExpectation, PlanarDerivedOutput};
+use worth_query_consumer_values::{
+    PlanarCurrentOutputExpectation, PlanarDerivedOutput, PlanarVertex,
+};
 
 #[test]
-fn scene_authoring_preserves_literal_legacy_planar_operation_wire_shapes() {
+fn preexisting_planar_operation_wire_shapes_stay_canonical() {
     let cases = [
         (
             PlanarOperation::CreateCycle(vec![PlanarVertex {

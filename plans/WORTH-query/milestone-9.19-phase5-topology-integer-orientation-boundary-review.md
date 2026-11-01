@@ -1,5 +1,10 @@
 # Phase5 topology integer orientation: boundary review
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 Selected slice: repair the exact numerical prerequisite at the existing
 Query-free value owner and its real Native positive-turn consumer. Actual
 Scene/Face discovery remains the next slice; no schema/composition or spatial

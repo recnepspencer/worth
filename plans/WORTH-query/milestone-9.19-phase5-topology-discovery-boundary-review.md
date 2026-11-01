@@ -1,5 +1,10 @@
 # Phase5 actual topology spatial discovery: boundary review
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 Status: exact contact and spatial scale integration remain in progress. Exact integer orientation,
 typed bounds and the Scene/Face model with actual maintained Source/candidate query have separate
 boundary reviews, plans and evidence. Those implemented prerequisites do not

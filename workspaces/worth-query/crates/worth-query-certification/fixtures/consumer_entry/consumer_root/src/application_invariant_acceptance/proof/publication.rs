@@ -75,7 +75,7 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
             .mutation_work()
             .expect("the real primary mutation carries work evidence");
         assert!(work.invariant_work_units() > 0);
-        assert_eq!(work.relational_invariant_execution_count(), 4);
+        assert_eq!(work.relational_invariant_execution_count(), 3);
         assert!(
             receipt.take_performed_relational_product_change().is_some(),
             "a real committed World publication must carry one consumable change"

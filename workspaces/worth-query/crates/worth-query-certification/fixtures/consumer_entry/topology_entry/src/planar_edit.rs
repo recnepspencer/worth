@@ -55,7 +55,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type SourceExpectation = ApplicationQueryMutationSource<PlanarQuery>;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-edit.v1";
-    const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-edit-handler.v3";
+    const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-edit-handler.v4";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-edit-command.v1";
 
     fn scope_field() -> ApplicationFieldRef<

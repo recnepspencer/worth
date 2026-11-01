@@ -1,5 +1,10 @@
 # Phase5 Scene-context authoring and Body-only contour routing: evidence
 
+> Scope update2026-11-01: this is a historical receipt/plan under the superseded
+> public CAD scope. The Scene/Face application and its authoring/contact expansion
+> are removed. Distinct generic numerical/provider fixes remain. This record does
+> not reopen a public CAD prerequisite; see the [cleanup evidence](milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+
 ## Boundary and implementation
 
 Reviewed and planned before Rust in the adjacent scene-authoring boundary-review
