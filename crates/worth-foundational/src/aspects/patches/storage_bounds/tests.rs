@@ -39,3 +39,103 @@ fn owned_patch_storage_bounds_cover_actual_backings_and_checked_overflow() {
     assert!(FieldLevelAspectPatch::construction_storage_bounds(0, 0, usize::MAX).is_none());
     assert!(CanonicalAspectStateMap::construction_storage_bytes(usize::MAX).is_none());
 }
+
+#[test]
+fn application_allocation_bounds_follow_selected_output_and_cloned_string_lengths() {
+    use crate::aspects::*;
+    use crate::values::{InternedString, ScalarAspectType};
+    use worth_proof::TransitionOutcome;
+    let key = AspectKey::new("data").unwrap();
+    let contract = AspectContract::scalar(
+        key.clone(),
+        AspectIdentity(1),
+        AspectContractRevision(1),
+        ScalarAspectType::String,
+    );
+    let mut spare = String::with_capacity(4096);
+    spare.push_str("x");
+    let TransitionOutcome::Success(value) = validate_aspect_value(
+        &contract,
+        ContractValidationInput::Scalar(AspectValue::String(InternedString::Raw(spare))),
+    ) else {
+        panic!("scalar")
+    };
+    let current =
+        AuthoritativeRecordAspectState::from_validated_entries([value.into_parts().into_parts().0])
+            .unwrap();
+    let patch = AuthoritativeRecordAspectPatch::empty();
+    let bounds = patch.application_allocation_bounds(Some(&current)).unwrap();
+    let TransitionOutcome::Success(result) = patch.apply_to(&current) else {
+        panic!("copy current")
+    };
+    let actual = result.into_parts().into_parts().0;
+    assert_eq!(
+        bounds.retained_bytes,
+        actual.owned_allocation_capacity_bytes()
+    );
+    assert!(bounds.retained_bytes < current.owned_allocation_capacity_bytes());
+}
+
+#[test]
+fn application_allocation_bounds_count_struct_winners_once_with_sets_after_clears() {
+    use crate::aspects::*;
+    use crate::values::{InternedString, ScalarAspectType};
+    use worth_proof::TransitionOutcome;
+    let field = |name| FieldKey::new(name).unwrap();
+    let text = |value: &str| AspectValue::String(InternedString::Raw(value.to_owned()));
+    let contract = AspectContract::struct_aspect(
+        AspectKey::new("data").unwrap(),
+        AspectIdentity(1),
+        AspectContractRevision(1),
+        StructAspectShape::new(["a", "b"].map(|name| {
+            FieldDeclaration::new(
+                field(name),
+                ScalarAspectType::String,
+                FieldRequirement::Optional,
+                AbsenceLaw::Optional,
+                AspectEvolutionPolicy::AdditiveFieldsAllowed,
+            )
+            .unwrap()
+        }))
+        .unwrap(),
+    );
+    let value = StructAspectValue::new([
+        (field("a"), text(&"discard".repeat(1024))),
+        (field("b"), text("keep")),
+    ])
+    .unwrap();
+    let TransitionOutcome::Success(value) =
+        validate_aspect_value(&contract, ContractValidationInput::Struct(value))
+    else {
+        panic!("struct")
+    };
+    let current =
+        AuthoritativeRecordAspectState::from_validated_entries([value.into_parts().into_parts().0])
+            .unwrap();
+    let mask = AspectMask::new([CanonicalFieldPath::single(field("a"))]);
+    let TransitionOutcome::Success(patch) = AuthoritativeRecordAspectPatch::field_level(
+        &contract,
+        &mask,
+        [(field("a"), text("new"))],
+        [field("a")],
+    ) else {
+        panic!("genuine set and clear")
+    };
+    let bounds = patch.application_allocation_bounds(Some(&current)).unwrap();
+    let TransitionOutcome::Success(result) = patch.apply_to(&current) else {
+        panic!("apply")
+    };
+    let actual = result.into_parts().into_parts().0;
+    assert_eq!(
+        bounds.retained_bytes,
+        actual.owned_allocation_capacity_bytes()
+    );
+    assert!(bounds.retained_bytes < current.owned_allocation_capacity_bytes());
+    let ContractValidatedAspectValueView::Struct(value) =
+        actual.get(contract.key()).unwrap().view()
+    else {
+        panic!("struct")
+    };
+    assert_eq!(value.get(&field("a")), Some(&text("new")));
+    assert_eq!(value.get(&field("b")), Some(&text("keep")));
+}

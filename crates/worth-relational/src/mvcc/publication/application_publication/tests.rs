@@ -77,11 +77,23 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
             field: field_key("name"),
         },
     }];
+    // Genuine publication/preparation above is ordinary setup. Only actual
+    // cold derive/readmission/application below uses this finite original request.
+    let budget = worth_execution::SerialMemoryBudget::new(Some(1024 * 1024));
+    let cancellation = worth_execution::CancellationSource::new();
+    let bounded =
+        worth_execution::SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
+    let bounded_request = worth_execution::ExecutionRequest::serial(&bounded);
     let basis = test_owner_main_basis(&runtime).unwrap();
     assert_eq!(
-        crate::history::data::derive_codec_retirement_closure(execution, &runtime, &basis, &loci)
-            .unwrap()
-            .entities,
+        crate::history::data::derive_codec_retirement_closure(
+            &bounded_request,
+            &runtime,
+            &basis,
+            &loci
+        )
+        .unwrap()
+        .entities,
         vec![entity]
     );
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -100,8 +112,13 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     release_test_commit_snapshot(&runtime, &result);
     let basis = test_owner_main_basis(&runtime).unwrap();
     assert!(
-        crate::history::data::derive_codec_retirement_closure(execution, &runtime, &basis, &loci)
-            .is_err(),
+        crate::history::data::derive_codec_retirement_closure(
+            &bounded_request,
+            &runtime,
+            &basis,
+            &loci
+        )
+        .is_err(),
         "equal supplied bytes must not preserve the prior producer's migration permission"
     );
 }

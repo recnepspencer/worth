@@ -47,6 +47,76 @@ impl AuthoritativeRecordAspectPatch {
         })
     }
 
+    /// All newly allocated output storage and simultaneous application scratch.
+    /// Existing input is borrowed. Selection and struct-field winners are the
+    /// same streams used by application, not a second reconstruction policy.
+    pub fn application_allocation_bounds(
+        &self,
+        current: Option<&crate::aspects::AuthoritativeRecordAspectState>,
+    ) -> Option<AspectPatchStorageBounds> {
+        let mut bounds = self.application_storage_bounds(current)?;
+        let mut fields = self.field_patches.iter().peekable();
+        for entry in self.selected_entries(current) {
+            while fields.peek().is_some_and(|field| field.key() < entry.key()) {
+                fields.next();
+            }
+            let field = fields
+                .peek()
+                .filter(|field| field.key() == entry.key())
+                .copied();
+            let nested = if let (
+                Some(field),
+                crate::aspects::ContractValidatedAspectValueView::Struct(value),
+            ) = (field, entry.view())
+            {
+                fields.next();
+                let mut bytes = contract_clone_bytes(field.contract())?
+                    .checked_add(field.key().as_str().len())?;
+                for (key, value) in super::struct_field_application::selected_fields(value, field) {
+                    bytes = bytes
+                        .checked_add(key.as_str().len())?
+                        .checked_add(value_clone_bytes(value)?)?;
+                }
+                bytes
+            } else {
+                let mut bytes = entry
+                    .key()
+                    .as_str()
+                    .len()
+                    .checked_add(contract_clone_bytes(entry.contract())?)?;
+                bytes = bytes.checked_add(match entry.view() {
+                    crate::aspects::ContractValidatedAspectValueView::Scalar(value) => {
+                        value_clone_bytes(value)?
+                    }
+                    crate::aspects::ContractValidatedAspectValueView::Struct(value) => {
+                        let mut bytes = 0usize;
+                        for (key, value) in value.fields() {
+                            bytes = bytes
+                                .checked_add(key.as_str().len())?
+                                .checked_add(value_clone_bytes(value)?)?;
+                        }
+                        bytes.checked_add(backing_bytes::<(FieldKey, AspectValue)>(value.len())?)?
+                    }
+                })?;
+                bytes
+            };
+            bounds.retained_bytes = bounds.retained_bytes.checked_add(nested)?;
+        }
+        // A missing aspect/required field can clone its descriptive key before
+        // refusal. That temporary never becomes retained output.
+        let mut denial_key = 0;
+        for field in &self.field_patches {
+            denial_key = denial_key.max(field.key().as_str().len());
+            if let crate::aspects::AspectShape::Struct(shape) = field.contract().shape() {
+                for declaration in shape.fields() {
+                    denial_key = denial_key.max(declaration.key().as_str().len());
+                }
+            }
+        }
+        bounds.transient_bytes = bounds.transient_bytes.checked_add(denial_key)?;
+        Some(bounds)
+    }
+
     /// Canonical output backing and per-field merge backing/boxing overlap.
     /// Nested cloned values/contracts/keys remain explicitly excluded.
     pub fn application_storage_bounds(
@@ -114,4 +184,31 @@ impl FieldLevelAspectPatch {
             transient_bytes: transient,
         })
     }
+}
+
+fn contract_clone_bytes(contract: &AspectContract) -> Option<usize> {
+    let mut bytes = contract.key().as_str().len();
+    if let crate::aspects::AspectShape::Struct(shape) = contract.shape() {
+        bytes = bytes.checked_add(backing_bytes::<crate::aspects::FieldDeclaration>(
+            shape.fields().len(),
+        )?)?;
+        for field in shape.fields() {
+            bytes = bytes.checked_add(field.key().as_str().len())?;
+        }
+    }
+    Some(bytes)
+}
+fn value_clone_bytes(value: &AspectValue) -> Option<usize> {
+    use crate::values::InternedString;
+    Some(match value {
+        AspectValue::Decimal(value) => value.as_str().len(),
+        AspectValue::BigInt(value) => value.as_str().len(),
+        AspectValue::Rational(value) => value
+            .numerator
+            .as_str()
+            .len()
+            .checked_add(value.denominator.as_str().len())?,
+        AspectValue::String(InternedString::Raw(value)) => value.len(),
+        _ => 0,
+    })
 }
