@@ -619,6 +619,23 @@ needs no runtime. These prove actual private leaf custody and predecode refusal
 using owner values, not Native/foreign runtime or positive artifact authority.
 Register only the exact file and two SDK runtime-root names.
 
+CanonicalIndexDefinitionDelta and CanonicalAuthoredIndexWrites already own
+private shared backings with final memory slots. Reserve each actual backing
+separately before Serde and remove those same charges from the envelope grant.
+Transfer each original grant through authentic Arc::get_mut before replay can
+clone it. Alias/existing-slot refusal preserves the unused grant in wire-owned
+last-field custody; it never after-charges or substitutes clone counts. Preserve
+empty/Unavailable allocation behavior, wire and meaning without another wrapper.
+Nested definition/comparison descriptions own String/Vec data; their independent
+caller clones do not extend the original backing's allocation lifetime.
+
+The exact private decoded_quote/indexes/tests.rs leaf may construct only SDK
+SerialRequest/ExecutionRequest for
+owned_decode_index_backings_keep_only_their_original_grants and
+owned_decode_index_predecode_denial_and_alias_keep_original_grant. These are
+actual private backing/alias/refusal proofs, not Native runtime, coverage or
+complete-artifact authority. Register only that exact leaf and two SDK names.
+
 ### Selected canonical backing without covered-journal replay
 
 Actual root images alone are insufficient. Directory CHK17 omits complete
