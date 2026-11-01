@@ -17,6 +17,7 @@ pub struct AnchoredRecordPayloadStream<'request, 'authority> {
     request: ExecutionRequest<'request, 'authority>,
     observed: AnchoredRecordVersion,
     root: crate::physical_runtime::PhysicalProtectedRootObservation,
+    shared_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl AnchoredRecords<'_> {
     /// Open the exact anchor selected by this caller's reader. Header lengths
@@ -39,6 +40,9 @@ impl AnchoredRecords<'_> {
         let Some(anchor) = self.current_anchor(reader, name) else {
             return Ok(None);
         };
+        // Reserve the fixed future shared carrier BEFORE record I/O and table
+        // growth, including when this caller ultimately retains only payload.
+        let shared_memory = super::AnchoredRecordReadMembership::reserve_shared_memory(request)?;
         let stream = AnchoredValueStream::open(
             reader,
             name,
@@ -58,6 +62,7 @@ impl AnchoredRecords<'_> {
             request: *request,
             observed,
             root: reader.protected_root(),
+            shared_memory,
         }))
     }
 }
@@ -74,15 +79,23 @@ impl AnchoredRecordPayloadStream<'_, '_> {
     pub fn verified_version(&self) -> Option<AnchoredRecordVersion> {
         self.stream.complete().then_some(self.observed)
     }
-    /// Move the original verified table, its grant and its actual physical
-    /// session without allocation, copying, re-reading or releasing a lease.
-    /// Before verified EOF (including refusal), return this SAME stream.
+    /// Move the original verified table, its grants, session and reader into
+    /// ONE pre-funded private Arc allocation; no copying, re-reading or lease
+    /// release. There is no fresh request consultation after actual EOF.
+    /// Before verified EOF (including refusal), or for a mismatching reader,
+    /// return BOTH the SAME stream and supplied reader. No registration is
+    /// created or released by this conversion.
     /// A completed fact wins over cancellation observed after its EOF.
-    pub fn into_verified_membership(self) -> Result<super::AnchoredRecordReadMembership, Self> {
-        if !self.stream.complete() {
-            return Err(self);
+    pub fn into_verified_membership(
+        self,
+        reader: PhysicalRecordReader,
+    ) -> Result<super::AnchoredRecordReadMembership, (Self, PhysicalRecordReader)> {
+        if !self.stream.complete() || reader.protected_root() != self.root {
+            return Err((self, reader));
         }
-        Ok(self.stream.into_read_membership(self.observed, self.root))
+        Ok(self
+            .stream
+            .into_read_membership(self.observed, self.root, reader, self.shared_memory))
     }
 
     /// Copy at most 64 KiB. `Ok(0)` means frame, payload and whole-record

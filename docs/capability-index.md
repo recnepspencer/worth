@@ -1235,12 +1235,17 @@ newer physical roots cannot expand its selected anchor or journal heads.
 Payload streams retain the same request and stop after a refusal. Only actual
 verified EOF validates payload bytes; pre-EOF sizes and coordinates are
 metadata. Anchor EOF additionally validates the full anchor-record SHA. Consuming
-`into_verified_membership` then moves the original table, grant and session into
-an opaque `AnchoredRecordReadMembership`; before EOF it returns the same stream.
-`AnchoredRecords::validate_read_membership` checks owner, exact protected root
-and live protection without waiting or I/O before loaning the existing member
-table. Keep this carrier with its original reader through all selected consumers;
-generic disposal remains explicitly unbudgeted.
+`into_verified_membership(original_reader)` then moves both original resources
+into opaque, cheaply Clone `AnchoredRecordReadMembership`. Controlled open
+pre-reserves its fixed Arc metadata before I/O and table growth; conversion
+performs ONE already-funded allocation, with no fresh request consultation.
+Refusal returns both same resources. The table and metadata grants remain
+inside its PRIVATE shared allocation; no public Arc/Weak/unwrap exists.
+`validate_read_membership` checks its owner, original root and live protection.
+`open_read_member` selects an actual table index in O(1), and journal
+`head_position_from_read`, `describe_entry_from_read` and
+`open_payload_from_read` use the same private reader. No latest-root recapture
+or raw-reader getter participates. Generic disposal is unbudgeted.
 Historical journal linkage uses protected physical identities and frame
 integrity, with no transitive journal-hash promise. Callers admit their own
 payload storage and perform I/O outside logical reservations. This physical

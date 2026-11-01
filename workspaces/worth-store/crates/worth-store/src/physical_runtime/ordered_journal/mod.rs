@@ -26,6 +26,7 @@ use crate::physical_runtime::{
 mod frame;
 mod lookup;
 mod payload_stream;
+mod selected_read;
 pub use payload_stream::OrderedJournalPayloadStream;
 mod name;
 mod publication;

@@ -109,16 +109,27 @@ fn one_checkpoint_reader_preserves_anchor_and_three_journals_across_root_advance
     assert_eq!(stream.read_next(&mut scratch).unwrap(), 0);
     assert_eq!(stream.verified_version(), Some(selected.version()));
     let membership = stream
-        .into_verified_membership()
+        .into_verified_membership(reader)
         .unwrap_or_else(|_| panic!("completed fact wins over late cancellation"));
     assert_eq!(
-        records
-            .validate_read_membership(&reader, &membership)
-            .unwrap(),
+        records.validate_read_membership(&membership).unwrap(),
         selected.membership()
     );
+    let charge = serial.memory().unwrap().charged_memory_bytes();
+    let consumer = membership.clone();
     drop(membership);
-    drop(reader);
+    assert_eq!(serial.memory().unwrap().charged_memory_bytes(), charge);
+    for name in JOURNALS {
+        let journal = serving
+            .ordered_journal(OrderedJournalName::new(name).unwrap())
+            .unwrap();
+        assert_eq!(journal.head_position_from_read(&consumer).unwrap(), 1);
+        assert!(matches!(
+            journal.describe_entry_from_read(&consumer, &request, 1),
+            Err(OrderedJournalReadFailure::Execution(_))
+        ));
+    }
+    drop(consumer);
     drop(bytes);
     serving.close();
 }

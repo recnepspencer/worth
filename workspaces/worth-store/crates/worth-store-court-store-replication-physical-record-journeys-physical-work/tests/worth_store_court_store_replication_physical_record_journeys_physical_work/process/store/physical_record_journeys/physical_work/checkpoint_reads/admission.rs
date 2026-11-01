@@ -45,6 +45,7 @@ fn checkpoint_reader_and_streams_refuse_busy_foreign_limits_and_original_stop() 
         gate.release();
         drop(paused.join().unwrap());
     });
+    publish_anchor(&foreign, 0, b"metadata-only calibration".to_vec());
     let reader = serving.try_records_for_checkpoint(&request).unwrap();
     let foreign_reader = foreign.try_records_for_checkpoint(&request).unwrap();
     let records = serving.anchored_records().unwrap();
@@ -81,8 +82,70 @@ fn checkpoint_reader_and_streams_refuse_busy_foreign_limits_and_original_stop() 
             payload_bytes: 100_000
         })
     ));
+    // Calibrate actual fixed metadata using a genuine selected empty table.
+    // This isolates table funding from the earlier Arc admission.
+    let before_calibration = serial.memory().unwrap().charged_memory_bytes();
+    let calibration = foreign
+        .anchored_records()
+        .unwrap()
+        .open_payload_from(&foreign_reader, &request, anchor(), 1 << 20)
+        .unwrap()
+        .unwrap();
+    let shared_metadata = serial.memory().unwrap().charged_memory_bytes() - before_calibration;
+    assert!(shared_metadata > 0);
+    // Admission itself temporarily retains the SDK's actual execution scope.
+    // Measure that real scope while fixed metadata is held, without guessing
+    // its private layout or confusing scope refusal with table refusal.
+    let mut metadata_admission_peak = 0;
+    request
+        .run_native_with_checkpoint(|_| {
+            metadata_admission_peak =
+                serial.memory().unwrap().charged_memory_bytes() - before_calibration;
+        })
+        .unwrap();
+    assert!(metadata_admission_peak > shared_metadata);
+    // Ordinary generic session disposal is explicit unbudgeted fixture cleanup.
+    drop(calibration);
+    assert_eq!(
+        serial.memory().unwrap().charged_memory_bytes(),
+        before_calibration
+    );
+    let table_request = SerialRequest::from_memory(
+        SerialMemoryBudget::new(Some(metadata_admission_peak)),
+        cancellation.token(),
+        None,
+    );
+    let empty_table = foreign
+        .anchored_records()
+        .unwrap()
+        .open_payload_from(
+            &foreign_reader,
+            &ExecutionRequest::serial(&table_request),
+            anchor(),
+            1 << 20,
+        )
+        .unwrap()
+        .unwrap();
+    drop(empty_table);
+    let denied = match records.open_payload_from(
+        &reader,
+        &ExecutionRequest::serial(&table_request),
+        anchor(),
+        1 << 20,
+    ) {
+        Err(cause) => cause,
+        Ok(_) => panic!("fixed metadata funding cannot impersonate funding the nonempty table"),
+    };
+    assert!(
+        matches!(denied,
+        AnchoredRecordReadFailure::Execution(worth_execution::WorkCeilingDenial::Admission(
+            worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity { requested, .. })
+        )) if requested == std::mem::size_of::<AnchoredRecordMemberLocator>() as u64),
+        "actual table denial: {denied:?}"
+    );
     let exhausted =
         SerialRequest::from_memory(SerialMemoryBudget::new(Some(0)), cancellation.token(), None);
+    let before_metadata_denial = serving.media_counters();
     assert!(matches!(
         records.open_payload_from(
             &reader,
@@ -92,6 +155,11 @@ fn checkpoint_reader_and_streams_refuse_busy_foreign_limits_and_original_stop() 
         ),
         Err(AnchoredRecordReadFailure::Execution(_))
     ));
+    assert_eq!(
+        serving.media_counters(),
+        before_metadata_denial,
+        "fixed metadata refusal precedes record I/O"
+    );
     let mut empty_journal = journal
         .open_payload_from(&reader, &request, 1, 1 << 20)
         .unwrap();
@@ -158,7 +226,7 @@ fn checkpoint_reader_and_streams_refuse_busy_foreign_limits_and_original_stop() 
     ));
     assert_eq!(anchor_stream.verified_version(), None);
     drop(journal_stream);
-    let anchor_stream = match anchor_stream.into_verified_membership() {
+    let (anchor_stream, reader) = match anchor_stream.into_verified_membership(reader) {
         Err(same) => same,
         Ok(_) => panic!("a refused stream cannot issue verified membership"),
     };

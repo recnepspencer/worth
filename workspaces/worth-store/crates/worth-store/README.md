@@ -49,12 +49,21 @@ for the selected head, its full record hash. Older journal linkage uses the
 selected physical manifest's immutable identities and validated frames, not a
 transitive journal hash chain. Metadata is admitted before growth; payload
 storage belongs to the caller. Perform payload I/O outside logical reservations.
-After verified anchor EOF, `into_verified_membership` moves the original table,
-its grant and its physical session into `AnchoredRecordReadMembership` without
-copying or releasing a lease. Before EOF or after refusal it returns the same
-stream. `validate_read_membership` loans the existing membership only for the
-same owner, exact protected root and live protection; its registry check is
-nonwaiting. Keep this carrier and its reader through selected-section consumers.
+Controlled open reserves the fixed future carrier Arc BEFORE record I/O and
+member-table growth, including payload-only readers. The table has its separate
+actual reservation. After verified EOF,
+`into_verified_membership(original_reader)` moves both original owners into
+`AnchoredRecordReadMembership` with ONE pre-funded private Arc allocation.
+Before EOF, after refusal or for a mismatching root, both resources and their
+grants return unchanged. No new request consultation discards completed EOF.
+Clone shares only that private Arc; callers receive no Arc/Weak/unwrap escape.
+Both table and Arc grants stay inside the original shared backing through its
+last owner. `validate_read_membership` checks its physical owner, original root
+and live protection without waiting. `open_read_member(carrier, table_index,
+limit)` selects the actual verified table entry in O(1), and journal
+`*_from_read` methods delegate through the same private reader. No latest-anchor
+recapture, second reader registration or source wrapper participates. Retain
+this same carrier through all selected-section consumers.
 Disposal follows ordinary unbudgeted physical protection release, not a Home
 close or complete semantic-checkpoint proof.
 

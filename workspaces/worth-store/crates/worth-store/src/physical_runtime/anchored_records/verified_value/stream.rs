@@ -126,17 +126,21 @@ impl AnchoredValueStream {
         self,
         version: super::super::AnchoredRecordVersion,
         root: crate::physical_runtime::PhysicalProtectedRootObservation,
+        reader: PhysicalRecordReader,
+        shared_memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> super::super::AnchoredRecordReadMembership {
         assert!(self.complete, "membership requires actual verified EOF");
-        super::super::AnchoredRecordReadMembership {
-            membership: super::super::AnchoredRecordMembership {
+        super::super::AnchoredRecordReadMembership::from_verified(
+            super::super::AnchoredRecordMembership {
                 version,
                 members: self.members,
             },
-            _session: self.session,
+            self.session,
+            reader,
             root,
-            _memory: self.memory,
-        }
+            self.memory,
+            shared_memory,
+        )
     }
     pub(super) fn into_verified(self, payload: Option<Vec<u8>>) -> VerifiedAnchoredValue {
         assert!(
