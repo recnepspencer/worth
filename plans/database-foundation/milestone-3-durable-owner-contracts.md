@@ -577,6 +577,18 @@ actual responsibilities. Prove predecode finite-budget refusal, intrinsic
 small-leaf clone/drop lifetime, and unchanged prior wire/digest bytes. These are
 causal Native funding prerequisites, not complete capture/reconstruction or D12.
 
+The exact owner-private leaf
+crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/merge/admission/tests.rs
+may construct original SDK SerialRequest/ExecutionRequest inputs for four local
+allocation-handoff proofs: merge_readmission_refuses_zero_memory_before_decode;
+decoded_identity_name_keeps_only_its_own_original_grant;
+decoded_identity_keys_keep_only_their_original_grant;
+decoded_witness_and_basis_clones_keep_original_backings_funded. They exercise
+the actual private grant tree/leaf handoff with pure merge descriptions, not a
+Native runtime, emitted publication or recovered authority. Memory budgets and
+cancellation tokens remain ordinary SDK values. Register only this exact leaf
+and the two runtime-root names, without hiding constructors in another helper.
+
 ### Selected canonical backing without covered-journal replay
 
 Actual root images alone are insufficient. Directory CHK17 omits complete
