@@ -376,8 +376,11 @@ export repair alone does not preserve that root. Copying all World descriptions
 into a checkpoint would still lose executable history.
 
 The coupled Home path requires a distinct Native complete-source-history
-capture operation. Existing standalone Native capture keeps its contract and
-ordinary cost. Do not introduce a history-policy mode enum, persistent pin
+capture operation. Existing standalone Native capture keeps its public contract
+and current-root selection, without complete-history reconstruction. Shared
+capture metadata uses the existing original request for before-growth admission;
+its concrete map/array representation and per-entry allocation/reference-count
+costs must be reported, not described as free or unchanged constants. Do not introduce a history-policy mode enum, persistent pin
 registry, second serving runtime, or a second recovery/selection authority.
 
 Use the existing Native selection/revalidation path to freeze the ORIGINAL
@@ -595,8 +598,29 @@ Use a private RAII capture reservation in the existing
 flights to have no active caller, retained subject or barrier, plus settled
 actual adapter task slots. Publication checks that SAME reservation under the
 same gates. While reserved, acquire an immutable protected cut of the actual
-three heads/digests and their source obligations. Release the reservation after
-that cut; normalize, encode and perform I/O outside gate guards. Unwind releases
+three heads and their source obligations from one nonwaiting physical-reader
+acquisition. Release the reservation after that cut; normalize, encode and
+perform I/O outside gate guards. Fixed existing reader-port construction costs
+remain real allocation work; nonwaiting owner-lock admission is not an
+allocation-free or hard wall-clock guarantee. The original request pays the
+provider metadata and all owned read buffers before growth.
+
+The actual Store source returns opaque selected World bytes and the fixed three
+cut-head positions. World admits its selected image and coverage before asking
+that SAME source for exact coverage-plus-one through head records. Store never
+parses World coverage or stages an uncharged Vec of all frames. Each record owns
+its original-request-funded immutable bytes and validated position/digest. Read
+selected Home payloads through the actual provided-reader anchored stream, and
+journal payloads through the same reader. Metadata exposed before EOF is
+descriptive; full frame/anchor SHA, payload SHA and exact length must verify
+before record/source admission.
+
+Only the actual Home checkpoint owner constructs World selection acknowledgement
+from the SAME pending World subject and actual anchored completion/resolution.
+Retain the emitted complete Home-manifest payload SHA and generation expectation
+before effect; match the returned membership and original included World section.
+The exact closed source/selection factories grant no constructor through copied
+coordinates, an asserted fate or an unrelated same-content subject. Unwind releases
 the reservation. Do not require unrelated active operations to be zero: the
 image covers durable meaning, including opened unpublished attempts, not a
 speculative live CAS.
@@ -616,6 +640,14 @@ tail from its actual coverage plus one. The complete image-plus-tail meaning
 feeds existing Native association reconciliation before service. Missing opens,
 orphan effects, conflicting lineage, duplicate association and missing Native
 evidence retain their refusals and genuine acquired custody.
+
+A Home checkpoint before an actual World is attached refuses with
+WorldSectionRequired before Native capture or effects. Home manifest version 2
+has one coupled publication path; no partial old-format selector or
+descriptor-derived empty-World proof is introduced. Standalone Native capture
+remains its owner contract. A settled pre-World checkpoint refusal may be carried
+by otherwise lawful Native-only Home close; it does not turn into checkpoint
+success or veto actual teardown.
 
 Close invokes this SAME checkpoint after stopping admission/settling actual
 publications while World is still alive, before World Drop. A settled failure

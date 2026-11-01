@@ -17,6 +17,9 @@ const FACTORIES: &[&str] = &[
     "discover_recovered_associated_effects",
     "capture_complete_checkpoint",
     "from_native_checkpoint_source",
+    "from_home_checkpoint_selection",
+    "from_protected_home_source",
+    "from_protected_world_journal",
     "query_runtime_handle",
     "prepare_home_program",
     "install_home_native_schema",
@@ -267,6 +270,18 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     )
                 } else if *name == "discover_recovered_associated_effects" {
                     ("native-recovered-inventory", "crates/worth-relational/")
+                } else if *name == "from_home_checkpoint_selection" {
+                    (
+                        "world-home-checkpoint-selection",
+                        "crates/worth-runtime-world/",
+                    )
+                } else if ["from_protected_home_source", "from_protected_world_journal"]
+                    .contains(name)
+                {
+                    (
+                        "world-home-checkpoint-source",
+                        "crates/worth-runtime-world/",
+                    )
                 } else if *name == "from_native_checkpoint_source" {
                     (
                         "native-checkpoint-read-protection",
