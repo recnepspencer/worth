@@ -27,6 +27,7 @@ where
         },
         Arc::new(AtomicUsize::new(0)),
         (),
+        (),
     );
     installation::in_memory_rostered_program_from_checkpoint(
         program,

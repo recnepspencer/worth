@@ -31,6 +31,8 @@ mod integer_orientation;
 mod output_correspondence;
 mod prior_output_family;
 mod publication;
+#[cfg(test)]
+mod scene_faces;
 
 type Request<'a> = WorthQueryApplicationRequest<'a, 'a, 'a, ConsumerSchema>;
 

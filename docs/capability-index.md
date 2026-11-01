@@ -960,6 +960,15 @@ over its full u64 metre/model-local domain; opposite and zero turns retain typed
 invariant refusal. This numerical prerequisite does not supply spatial discovery.
 See the [orientation evidence](../plans/WORTH-query/milestone-9.19-phase5-topology-integer-orientation-evidence.md).
 
+The topology entry also exposes optional `SceneFaceContribution`: actual Scene and
+Face records, required Scene membership and Body anchor, a Native exact-three
+contour rule, `AttachPlanarFace` and the parameter-free `SceneFacesRead` structural
+query. Coordinates remain on Body in Metre/model-local.v1. Attachment derives
+context from the actual anchor; each Scene contains faces from that Native context.
+This ordinary complete query is the future provider's Source profile; maintained
+Source custody and spatial discovery remain unfinished. See the
+[Scene/Face evidence](../plans/WORTH-query/milestone-9.19-phase5-scene-face-evidence.md).
+
 ### Native managed Source impact history
 
 Native `authored_managed_source_selector` accepts the actual installed

@@ -2472,3 +2472,22 @@ consumer tests. The two established cleanup failures and prior large geometry
 receipt remain explicit in the [slice evidence](milestone-9.19-phase5-topology-integer-orientation-evidence.md).
 Actual Scene/Face composition, unsigned box mechanics, bounded spatial preparation
 and integrated topology discovery remain unfinished; Phase6 is still pending.
+
+### Phase5 Scene/Face model and structural Source progress (2026-11-01)
+
+The existing ConsumerSchema owner now opts into SceneFaceContribution at minor1.2,
+with matching installation/checkpoint configuration, dedicated scene action and
+actual Native rule roster. Faces have one Scene and anchor; Body remains optional
+as an anchor. TriangleFaceContour reads actual full-generation successor identities
+through bounded both-image preparation and admits exactly three distinct vertices
+closing on the anchor. Ordinary SceneFacesRead projects actual Face/anchor identities
+and root/predecessor/successor coordinates, including indirect motion and rewiring.
+Existing v1 authored discovery keeps its meaning.
+
+The model is an ordinary structural Source query, not maintained Native Source
+custody or spatial lookup. Attachment preserves Native context; later same-Scene
+growth requires genuine scene-context contour creation. A lawful rewire proves
+projection freshness but does not yet prove rejection of a later Body-only invalid
+contour-length change. See the [slice evidence](milestone-9.19-phase5-scene-face-evidence.md).
+Unsigned boxes, actual maintained provider/contact integration, spatial cost courts,
+public closure and Phase6 remain unfinished.

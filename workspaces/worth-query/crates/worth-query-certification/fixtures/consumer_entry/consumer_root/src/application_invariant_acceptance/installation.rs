@@ -49,6 +49,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
         },
         Arc::new(AtomicUsize::new(0)),
         (),
+        (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -100,6 +101,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
+        (),
         (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
@@ -153,6 +155,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
+        (),
         (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(

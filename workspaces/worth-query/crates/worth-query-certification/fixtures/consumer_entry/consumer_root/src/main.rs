@@ -32,18 +32,20 @@ use worth_query_parameter_entry::{
     ParameterContribution, ParameterCountBinding, ParameterSchemaBinding,
 };
 use worth_query_topology_entry::{
-    TopologyContribution, TopologyLengthBinding, TopologySchemaBinding,
+    SceneFaceContribution, SceneFaceSchemaBinding, TopologyContribution, TopologyLengthBinding,
+    TopologySchemaBinding,
 };
 
 worth_query_application! {
     pub ConsumerSchema {
         owner: "worth.query.certification.consumer",
-        version: (1, 1),
-        contributions: [TopologyContribution, ParameterContribution, ConsumerProgramDeployment],
+        version: (1, 2),
+        contributions: [TopologyContribution, ParameterContribution, ConsumerProgramDeployment, SceneFaceContribution],
     }
 }
 
 impl TopologySchemaBinding for ConsumerSchema {}
+impl SceneFaceSchemaBinding for ConsumerSchema {}
 impl ParameterSchemaBinding for ConsumerSchema {}
 
 #[expect(
@@ -65,7 +67,7 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
     let declaration = ConsumerSchema::declaration()
         .expect("the root-owned contributions form one closed schema declaration");
 
-    assert_eq!(declaration.contributions().len(), 3);
+    assert_eq!(declaration.contributions().len(), 4);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY
@@ -101,7 +103,7 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
     let installed = installed_index
         .bind_application_schema(declaration)
         .expect("the installed authority binds the exact root declaration");
-    assert_eq!(installed.contributions().len(), 3);
+    assert_eq!(installed.contributions().len(), 4);
     assert!(installed
         .contributions()
         .get("worth.query.certification.topology.v2")

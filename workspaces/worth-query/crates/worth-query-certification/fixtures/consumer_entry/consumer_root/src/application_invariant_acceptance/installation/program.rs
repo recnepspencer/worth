@@ -42,6 +42,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         },
         Arc::clone(&parameter_calls),
         (),
+        (),
     );
     let limits = resources::application_limits();
     let deployment_scopes: std::collections::BTreeSet<_> = std::iter::once(*program.revision())

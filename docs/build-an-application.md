@@ -6025,6 +6025,43 @@ reads or continuation without pinned support. The
 uses a distinct maintained index with no invariant requirement. Bank and topology
 adoption are tracked separately in Query 9.19 Phase5.
 
+The topology entry's optional `SceneFaceContribution` supplies a genuine face
+universe before spatial indexing. A Face belongs to exactly one Scene and anchors
+one actual Body contour. Its Native `TriangleFaceContour` rule requires three
+distinct vertices and closure on the third successor. The existing positive-turn
+rule continues to own orientation. `SceneFacesRead` is a complete ordinary
+structural query with exact root/successor/predecessor coordinates and actual
+Face/anchor identities; it does not yet perform spatial lookup or install a
+managed provider.
+
+The existing ConsumerSchema demonstrates explicit opt-in through minor1.2, a
+fourth contribution/configuration element, a dedicated scene action and the
+installed rule roster. With its ordinary authenticated request and program:
+
+```rust
+use worth_query_topology_entry::{AttachPlanarFace, SceneFacesRead};
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
+
+let outcome = request.advanced().mutate(AttachPlanarFace {
+    scope_key: "anchor-a".into(),
+    scene_key: "scene".into(),
+    face_key: "first".into(),
+}).idempotency(&1_u64)
+  .execute_in_program(application, ExecutionAllocationPolicy::SystemAllocation)?;
+let rows = request.query(SceneFacesRead { scene_key: "scene".into() }).execute()?;
+```
+
+Attachment creates a missing Scene and the Face in the actual anchor's Native
+context. A Scene cannot absorb a contour issued into another context by a later
+legacy `CreateCycle`. Same-Scene growth will need genuine scene-context contour
+creation; dividing a discovery universe across per-face Scenes does not establish
+the intended spatial locality. The structural read has an explicit100,000-result
+binding limit and current/pinned support. The
+[receiving courts](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/scene_faces.rs)
+exercise this exact mutation/read path, indirect motion, replacement, Native
+cardinality refusal and triangle eligibility. Existing `PlanarDiscoveryRead` v1
+continues to follow authored links.
+
 A result-set/source expectation also retains the original Source READ support.
 Revoking a Source-only permission refuses a later non-querying mutation before
 publication. Recorded correction includes those policy fields and adjacency in
