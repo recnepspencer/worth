@@ -17,10 +17,12 @@ native-recovered-inventory crates/worth-runtime-world/src/lifecycle/builder/home
 native-recovered-inventory crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recovered_associated_effects.rs
 # D1/D17: only Host opening composes the consuming fresh-Home Query stages.
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
+query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
 # The source attachment derives Native custody from the actual registered source.
 query-registered-native workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/attachment.rs
 # The actual Home retains raw Native custody through schema and Query preparation.
 native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
+native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
 native-home-attachment workspaces/worth-store/crates/worth-store-application/src/relational_preparation/attachment.rs
 native-home-schema-installation workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
 native-home-query-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs

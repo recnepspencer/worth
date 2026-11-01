@@ -1,4 +1,5 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/journal_absence.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/unresolved.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/child.rs
