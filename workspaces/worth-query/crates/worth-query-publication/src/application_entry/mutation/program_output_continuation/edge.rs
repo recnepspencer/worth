@@ -106,6 +106,15 @@ where
             ChildDemand<Schema, Connection>,
         >,
 {
+    fn validate_history_group_outputs(
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial> {
+        application.validate_history_group_output::<ChildDemand<Schema, Connection>>(
+            &worth_query_execution::publication_boundary::program_publication_access(),
+        )?;
+        Children::validate_history_group_outputs(application)
+    }
+
     fn start(
         _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,

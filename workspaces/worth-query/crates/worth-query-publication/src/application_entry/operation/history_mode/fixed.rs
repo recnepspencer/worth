@@ -50,6 +50,16 @@ where
     type GroupClosing = super::super::fixed_group_disposal::WorthQueryClosingFixedGroupOperation<S,I,P,R,A>;
     type GroupCompletion = WorthQueryClosedFixedDelivery<S,I,P,R,A>;
 
+    fn validate_group_outputs(
+        application: &WorthQueryProgramApplicationRuntime<S, P>,
+    ) -> Result<(), NativeDenial> {
+        use crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory;
+        application.validate_history_group_output::<Demand<S, R>>(
+            &worth_query_execution::publication_boundary::program_publication_access(),
+        )?;
+        R::Dependents::validate_history_group_outputs(application)
+    }
+
     fn begin_group_disposal(operation:Self::Operation)->Result<Self::GroupClosing,(Self::Operation,WorthQueryOperationCloseDenial)>{Self::GroupClosing::from_operation(operation)}
     fn begin_group_terminal_disposal(terminal:Self::Terminal)->Result<Self::GroupClosing,(Self::Terminal,WorthQueryOperationCloseDenial)>{Self::GroupClosing::from_terminal(terminal)}
     fn group_disposal_target(closing:&Self::GroupClosing)->worth_query_execution::facade::product::WorthQueryProductBranch{closing.target()}

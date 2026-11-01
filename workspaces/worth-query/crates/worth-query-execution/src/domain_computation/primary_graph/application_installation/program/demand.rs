@@ -18,6 +18,7 @@ mod discovered_roots;
 mod fulfillment;
 mod handle;
 mod history;
+mod history_group;
 mod read_close;
 mod root_completion;
 pub(in crate::domain_computation::primary_graph) use root_completion::OriginalProgramRootCompletion;

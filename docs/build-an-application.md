@@ -2118,8 +2118,14 @@ payload and output modes. Each fixed member completes its actual root and
 children before the next member starts. Its completion is an original
 `WorthQueryClosedFixedDelivery`; earlier deliveries keep their historical
 settlements even when a later member makes current delivery stale. The final
-step names the last complete tree's endpoint. Installed `GROUP_RESOURCES` bounds
-members/results (64 each by default, one unfinished group). See
+step names the last complete tree's endpoint.
+
+The group also checks every installed producer that its declared root and child
+families can select. A workflow or external-effect contract in one of those
+families refuses the group before candidate creation or source effects.
+An unrelated producer family does not prevent grouping. Installed
+`GROUP_RESOURCES` bounds members/results (64 each by default, one unfinished
+group). See
 [group completion, retries and disposal](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step)
 for cancellation, competing navigation and partial effects.
 

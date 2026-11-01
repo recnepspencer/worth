@@ -1386,7 +1386,10 @@ member and retained-result counts. Both default to 64; the document admits one
 unfinished group. Capacity refusal precedes candidate effects. Nested groups
 cannot consume the document through its shared borrow. Groups retain the
 ordinary operation's current authorization and invariants; workflow and external
-effects are ineligible. A homogeneous member list can use source-completion or
+effects are ineligible. For fixed actions, preflight checks every installed
+producer in each declared root and child family before candidate creation or
+source effects. An ineligible producer in an unrelated family does not refuse
+the group. A homogeneous member list can use source-completion or
 fixed required-output actions. Group creation, finish and abort preserve the
 document's payload and configured output mode.
 

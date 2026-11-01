@@ -8,6 +8,7 @@ use worth_query_decl::facade::application_program::{
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 
 mod disposal;
+mod eligibility;
 mod original_delivery;
 mod profile;
 mod refusal;

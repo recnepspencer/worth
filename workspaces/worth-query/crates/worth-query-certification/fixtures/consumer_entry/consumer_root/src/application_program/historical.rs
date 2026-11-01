@@ -82,6 +82,7 @@ historical_program!(
 );
 
 pub(crate) mod branching;
+pub(crate) mod eligibility;
 pub(crate) mod owner_discovery;
 
 // Initiation/replay can move this intent; no runtime source observation enters its durable identity.

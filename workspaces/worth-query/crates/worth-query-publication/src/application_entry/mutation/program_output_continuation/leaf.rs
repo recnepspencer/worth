@@ -56,6 +56,12 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
 {
+    fn validate_history_group_outputs(
+        _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial>{
+        Ok(())
+    }
+
     fn unavailable_completion<Root>() -> Option<ProgramOutputUnavailableCompletion<Schema, Program, Root>>
     where
         Schema: 'static,

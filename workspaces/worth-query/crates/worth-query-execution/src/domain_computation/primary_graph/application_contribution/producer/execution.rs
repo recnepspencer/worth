@@ -81,6 +81,8 @@ type Operation<Schema, Binding> =
 pub(super) trait InstalledProducerExecutor<Schema>:
     InstalledSelectedProducerExecutor<Schema> + Send + Sync
 {
+    fn supports_history_group(&self) -> bool;
+
     fn recover_publication(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -128,6 +130,19 @@ where
             > + 'static,
     SourceQuery<Schema, Binding>: 'static,
 {
+    fn supports_history_group(&self) -> bool {
+        use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+        !Operation::<Schema, Binding>::WORKFLOW_CONTROL
+            && !Operation::<Schema, Binding>::REQUIRES_WORKFLOW_AUTHORITY
+            && !Operation::<Schema, Binding>::workflow_execution_requirements().is_applicable()
+            && !self
+                .mutation
+                .operation()
+                .contracts()
+                .external_effect()
+                .is_declared()
+    }
+
     fn recover_publication(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

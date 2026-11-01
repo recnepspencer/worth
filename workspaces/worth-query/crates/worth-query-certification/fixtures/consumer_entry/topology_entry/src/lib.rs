@@ -41,7 +41,9 @@ mod owner_discovery;
 pub use owner_discovery::*;
 mod membership;
 pub use membership::*;
+mod escaping_output;
 mod mutation;
+pub use escaping_output::*;
 mod owning_entry;
 pub use owning_entry::capture_original;
 mod island_coupling;
@@ -89,6 +91,7 @@ worth_query_application_contribution! {
             #[cfg(test)]
             let schema = checkpoint_recovery::required_chain::declare(schema);
             let schema = alternate_output::declare_alternate_output(schema);
+            let schema = if Schema::ESCAPING_PLANAR_OUTPUT { escaping_output::declare(schema) } else { schema };
             let schema = island_coupling::declare(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);

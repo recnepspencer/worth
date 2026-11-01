@@ -43,7 +43,9 @@ worth_query_application! {
     }
 }
 
-impl TopologySchemaBinding for ConsumerSchema {}
+impl TopologySchemaBinding for ConsumerSchema {
+    const ESCAPING_PLANAR_OUTPUT: bool = true;
+}
 impl ParameterSchemaBinding for ConsumerSchema {}
 
 #[expect(

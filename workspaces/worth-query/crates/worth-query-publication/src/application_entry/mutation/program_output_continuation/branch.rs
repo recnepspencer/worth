@@ -35,6 +35,13 @@ where
     Right: ApplicationOutputEdgesShape<Schema>
         + ProgramOutputContinuationFactory<Schema, Program, ParentDemand>,
 {
+    fn validate_history_group_outputs(
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial>{
+        Left::validate_history_group_outputs(application)?;
+        Right::validate_history_group_outputs(application)
+    }
+
     fn start(
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,

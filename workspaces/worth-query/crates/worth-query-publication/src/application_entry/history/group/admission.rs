@@ -102,6 +102,13 @@ where
                                         })?,
                                 );
                             }
+                            Mode::<S, I, A>::validate_group_outputs(&self.program).map_err(
+                                |cause| {
+                                    Denial::History(WorthQueryApplicationHistoryDenial::Document(
+                                        cause,
+                                    ))
+                                },
+                            )?;
                             let prepared = document
                                 .owner
                                 .reserve_history_group(

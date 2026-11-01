@@ -43,6 +43,11 @@ where
             .into_original_disposal()
             .map(group::SourceGroupDisposal::from_operation)
     }
+    fn validate_group_outputs(
+        _: &WorthQueryProgramApplicationRuntime<S, P>,
+    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial>{
+        Ok(())
+    }
     fn begin_group_terminal_disposal(
         terminal: Self::Terminal,
     ) -> Result<Self::GroupClosing, (Self::Terminal, WorthQueryOperationCloseDenial)> {

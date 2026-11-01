@@ -39,6 +39,10 @@ where
     type GroupClosing;
     type GroupCompletion;
 
+    fn validate_group_outputs(
+        application: &WorthQueryProgramApplicationRuntime<S, P>,
+    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial>;
+
     fn begin_group_disposal(
         operation: Self::Operation,
     ) -> Result<Self::GroupClosing, (Self::Operation, WorthQueryOperationCloseDenial)>;

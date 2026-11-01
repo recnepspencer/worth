@@ -132,6 +132,11 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
 {
+    /// Inspect the declared descendants without running authored discovery.
+    fn validate_history_group_outputs(
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial>;
+
     /// Nonleaf shapes carry no negative-completion capability.
     fn unavailable_completion<Root>() -> Option<ProgramOutputUnavailableCompletion<Schema, Program, Root>>
     where
