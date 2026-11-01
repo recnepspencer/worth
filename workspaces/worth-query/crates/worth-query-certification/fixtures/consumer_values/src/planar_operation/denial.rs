@@ -4,6 +4,7 @@ pub enum PlanarMutationDenial {
     EmptyCycle,
     MissingCoordinate,
     UnexpectedSuccessor,
+    VertexKeyTaken,
     CurrentOutputMissing,
     CurrentOutputAmbiguous,
     CurrentOutputObsolete,

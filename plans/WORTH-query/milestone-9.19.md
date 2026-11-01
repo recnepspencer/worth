@@ -2530,3 +2530,29 @@ protect replacement extent, original cancellation and Source-pinned/Parent-curre
 posture. See the [provider evidence](milestone-9.19-phase5-scene-box-provider-evidence.md).
 Exact face-contact validation, genuine same-Scene creation, invalid Body-only
 contour-length mutation, spatial scale, public closure and Phase6 remain unfinished.
+
+
+### Phase5 Scene-context authoring and Body-only contour routing (2026-11-01)
+
+ConsumerSchema minor1.4 registers CreateSceneTriangle in the existing Scene feature
+and required contribution configuration. It resolves the actual existing Scene,
+tracks fresh Face/three generated Body keys, and creates one closed triangle in
+that Scene context. Shared planar initialization owns only four initial Body fields;
+legacy CreateCycle and replacement retain their actual allocation contexts/outputs.
+
+InsertVertexAfter is appended to the existing externally tagged PlanarOperation;
+both affected handler identities move to v3 while old input/command/result IDs and
+all old serialized variants stay unchanged. It observes actual outgoing/incoming
+correspondence and fresh key, creates D in B's context with a genuine created-output
+member, and atomically changes B->C to B->D->C. The identical edit accepts on an
+unanchored triangle and reaches exact Native TriangleFaceContour(1,0) refusal on an
+anchored triangle, even though A/succB/predC Source points remain unchanged.
+Actual published entity patches plus preserved full IDs protect old A/B/C; this is
+patch evidence, not a new direct full-coordinate query. Rejection keeps head,
+complete Source/candidate rows and unknown-D posture. Separate real-key collision
+and old-successor courts protect early refusal. See the
+[authoring evidence](milestone-9.19-phase5-scene-authoring-evidence.md).
+
+Exact face-contact validation, spatial1000/2000/+50000 locality, public closure and
+Phase6 remain unfinished. Earlier progress paragraphs record their historical
+slice boundaries; this paragraph updates same-Scene and Body-only routing status.

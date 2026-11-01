@@ -37,6 +37,11 @@ pub enum PlanarOperation {
     },
     VerifyCurrentOutputs(Vec<PlanarCurrentOutputExpectation>),
     VerifyFinalCurrentOutputs(Vec<PlanarCurrentOutputExpectation>),
+    InsertVertexAfter {
+        after_key: String,
+        previous_next_key: String,
+        vertex: PlanarVertex,
+    },
 }
 
 mod denial;

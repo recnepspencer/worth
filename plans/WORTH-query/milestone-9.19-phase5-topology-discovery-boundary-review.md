@@ -30,7 +30,7 @@ Bank receiving is committed as6a8d81886a2a985ef6e701086a7947120ecdc967.
   own identity. Reuse the numerical mechanics and generic lifecycle through an
   actual topology adapter, not that Catalog-specific provider wholesale.
 - ConsumerSchema now composes TopologyContribution, ParameterContribution,
-  ConsumerProgramDeployment and SceneFaceContribution at minor1.3, with required
+  ConsumerProgramDeployment and SceneFaceContribution at minor1.4, with required
   SceneFaceConfiguration installing the real box provider and predicate routing.
   worth_query_application fixes that declaration
   and host contribution tuple together. No dynamic optional-contribution builder
@@ -65,22 +65,24 @@ not discharge this face-discovery requirement.
    epsilon, clamp or duplicated geometry. SceneFaceRow::bounds() is the actual
    unsigned consumer. Model-instance affinity remains with Scene/context custody.
 3. Established by the Scene/Face slice: the existing ConsumerSchema owner adopts
-   a fourth contribution, now at minor1.3 with its actual provider, preserving v1 query meanings and using the
+   a fourth contribution, now at minor1.4 with its actual provider and Scene authoring, preserving v1 query meanings and using the
    matching host tuple and actual program roster. No new schema is created solely
    for the size court, and no competing declaration authority is introduced.
 
 ## Material facts still to resolve before the plan
 
 - Exact-three eligibility, both-image bounded incidence and ordinary structural
-  Source profile are implemented in the Scene/Face slice. A later invalid Body-only
-  contour-length edit remains an explicit hostile receiver target; lawful vertex
-  replacement alone proves projection freshness.
+  Source profile are implemented in the Scene/Face slice. The Scene authoring slice now
+  exercises an actual Body-only triangle-to-quad insertion: the lawful unanchored
+  twin accepts and the anchored twin retains exact Native TriangleFaceContour
+  refusal, independent of unchanged three-point Source tuples.
 - The implemented managed binding consumes that exact Scene->Face->anchor Source
   profile, including root, predecessor/successor coordinates and reverse FaceAnchor
   identity. Native Source custody and ordinary AABB candidate reading are now real;
   exact contact validation and large spatial qualification remain unfinished.
-- AttachPlanarFace preserves actual Native context. Later same-Scene growth needs
-  genuine scene-context contour creation; legacy CreateCycle issues a fresh context.
+- AttachPlanarFace preserves actual Native context. CreateSceneTriangle now supplies
+  genuine same-Scene contextual contour creation; legacy CreateCycle still issues
+  a fresh context.
   Never divide the50000-face universe into per-face Scenes to obtain locality.
 - Typed numerical domains and existing signed callers are established by the
   typed-box slice. The maintained provider must consume these actual typed bounds

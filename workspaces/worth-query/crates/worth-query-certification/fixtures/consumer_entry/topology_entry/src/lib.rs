@@ -45,6 +45,7 @@ mod planar_islands;
 mod planar_output_read;
 mod planar_read;
 mod planar_topology;
+mod planar_vertex;
 mod principal;
 mod prior_cycle_adjustment;
 mod producer;

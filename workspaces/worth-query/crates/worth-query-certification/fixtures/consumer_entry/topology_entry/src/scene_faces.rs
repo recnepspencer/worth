@@ -5,12 +5,14 @@ use worth_query_host::facade::application_contribution::*;
 
 mod box_provider;
 mod box_query;
+mod creation;
 mod model;
 mod mutation;
 mod query;
 mod triangle;
 pub use box_provider::{SceneBoxObservations, SceneFaceBoxIndex, SceneFaceConfiguration};
 pub use box_query::*;
+pub use creation::*;
 pub use model::*;
 pub use mutation::*;
 pub use query::*;
@@ -32,7 +34,7 @@ worth_query_application_contribution! {
         identity: "worth.query.certification.scene-faces.v1",
         members: |schema| {
             let schema = model::declare(schema);
-            let schema = mutation::declare(schema);
+            let schema = creation::declare(mutation::declare(schema));
             schema.invariant(triangle::definition::<S>())
                 .application_query(query::definition::<S>())
                 .application_query_binding::<SceneFacesReadBinding<S>>()
@@ -57,6 +59,7 @@ impl<S: SceneFaceSchemaBinding> WorthQueryApplicationContribution<S> for SceneFa
             .with_predicate_routing()
             .install()?;
         setup.handler::<AttachPlanarFaceBinding<S>, _>(mutation::AttachFaceHandler)?;
+        setup.handler::<CreateSceneTriangleBinding<S>, _>(creation::CreateTriangleHandler)?;
         setup.invariant(
             TriangleFaceContour::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,

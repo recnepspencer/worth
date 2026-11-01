@@ -22,6 +22,8 @@ fn consumer_specs_with_source(source: ApplicationFeatureSpec) -> Vec<Application
         ApplicationFeatureSpec::root::<ConsumerSchema, worth_query_topology_entry::SceneFacesFeature>()
             .action::<worth_query_topology_entry::AttachPlanarFaceBinding<ConsumerSchema>, ConsumerSourceCompletion>()
             .finish_action()
+            .action::<worth_query_topology_entry::CreateSceneTriangleBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+            .finish_action()
             .finish(),
         ApplicationFeatureSpec::at::<ConsumerSchema, SecondaryPlanarRoot, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()

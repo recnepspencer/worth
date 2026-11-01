@@ -6035,9 +6035,9 @@ Face/anchor identities. The same profile supplies the actual Native-maintained
 Source for `SceneFaceBoxesRead`, which discovers enclosure candidates through the
 shared typed box tree. Candidate overlap does not promise exact face contact.
 
-The existing ConsumerSchema demonstrates explicit opt-in through minor1.3, a
-fourth contribution with required `SceneFaceConfiguration`, a dedicated scene
-action and the installed rule roster. With its ordinary authenticated request and program:
+The existing ConsumerSchema demonstrates explicit opt-in through minor1.4, a
+fourth contribution with required `SceneFaceConfiguration`, dedicated scene
+actions and the installed rule roster. With its ordinary authenticated request and program:
 
 ```rust
 use worth_query_topology_entry::{AttachPlanarFace, SceneFacesRead};
@@ -6054,9 +6054,13 @@ let rows = request.query(SceneFacesRead { scene_key: "scene".into() }).execute()
 
 Attachment creates a missing Scene and the Face in the actual anchor's Native
 context. A Scene cannot absorb a contour issued into another context by a later
-legacy `CreateCycle`. Same-Scene growth will need genuine scene-context contour
-creation; dividing a discovery universe across per-face Scenes does not establish
-the intended spatial locality. The structural read has an explicit100,000-result
+legacy `CreateCycle`. Use `CreateSceneTriangle { scene_key, face_key, points }` to grow an existing
+Scene: all three vertices and the Face are allocated in that actual Scene context.
+The action tracks FaceKey and all generated BodyKey absences before allocation.
+`PlanarOperation::InsertVertexAfter` is an ordinary atomic contour edit; it may
+create a positive quad in an unanchored contour, while the same edit on an anchored
+triangle reaches the original typed `TriangleFaceContour` refusal. See the
+[authoring courts](../plans/WORTH-query/milestone-9.19-phase5-scene-authoring-evidence.md). The structural read has an explicit100,000-result
 binding limit and current/pinned support. The
 [receiving courts](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/scene_faces.rs)
 exercise this exact mutation/read path, indirect motion, replacement, Native

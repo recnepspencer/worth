@@ -1,8 +1,11 @@
 //! Real model, Native eligibility and complete structural Source receivers.
 use super::*;
+mod authoring;
 mod bounds;
 mod box_candidates;
+mod insertion;
 mod length_codec;
+mod serialization;
 mod structural;
 use worth_query_consumer_values::{PlanarVertex, PlanarVertexReplacement};
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;

@@ -962,9 +962,15 @@ See the [orientation evidence](../plans/WORTH-query/milestone-9.19-phase5-topolo
 
 The topology entry also exposes optional `SceneFaceContribution`: actual Scene and
 Face records, required Scene membership and Body anchor, a Native exact-three
-contour rule, `AttachPlanarFace` and the parameter-free `SceneFacesRead` structural
+contour rule, `AttachPlanarFace`, `CreateSceneTriangle` and the parameter-free
+`SceneFacesRead` structural
 query. Coordinates remain on Body in Metre/model-local.v1. Attachment derives
 context from the actual anchor; each Scene contains faces from that Native context.
+`CreateSceneTriangle` grows an existing Scene with actual contextual Face/Body
+allocation and tracked fresh keys. The ordinary `InsertVertexAfter` planar edit
+atomically inserts a genuine vertex; anchored nontriangles refuse through Native
+`TriangleFaceContour`, even when all three Source points stay unchanged. See the
+[Scene authoring evidence](../plans/WORTH-query/milestone-9.19-phase5-scene-authoring-evidence.md).
 The ordinary complete query also supplies the actual Native-maintained Source
 profile for `SceneFaceBoxesRead`, a current-only enclosure-candidate query with
 inverse predicate routing. `SceneFaceConfiguration` installs its actual provider
