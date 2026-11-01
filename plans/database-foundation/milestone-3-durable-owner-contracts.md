@@ -579,6 +579,70 @@ unchanged clear/set behavior, plus actual producer readmission and its existing
 ordinary equal-write authority refusal. Freeze and independently review this
 causal slice before proceeding to replay staging, Complete capture or Home close.
 
+Applied Native aspect-state custody is a separate predecessor to full replay
+funding. Keep generic StorageAllocation<T> unchanged: its one-word handle appears
+in 32-slot pages, binary branches, scalars, map nodes and history openings. A
+generic grant sidecar/footer would tax all of those owners. Add LAST, move-only,
+Serde/Debug-excluded funding ONLY to existing EntityExtra and RelationExtra.
+Ordinary construction adds no new Arc or public state wrapper; document the real
+localized inline footprint with actual target size_of/layout_bytes evidence.
+
+The typed producer reserves ONE original-request bill for actual Foundation
+application output plus StorageAllocation<Extra>'s concrete fixed layout before
+growth. Reuse pure owner clone/application bounds, including actual clone lengths,
+without Native private-layout guesses, blanket multipliers or an accounting
+registry. Ordinary Extra::clone produces an independent deep copy with no old
+ticket. Every controlled extra copy/COW/replacement must pre-admit its typed copy;
+eliminate production get_mut extra paths, including lineage finalization. A new
+small state owns its own bill; it cannot inherit or pin the old large-state bill.
+Old snapshots retain their actual old extra allocation and funding.
+
+Current rows, private mutation old/new views and historical metadata retain the
+SAME existing extra StorageAllocation handle. No second state Arc is introduced.
+Metadata COW clones that handle, not the Foundation state. Project the original
+six named fields and compact slots in their existing order/None behavior;
+authoritative_aspect_state remains borrowed Foundation state in the wire. Extra
+funding is also absent from direct relation-extra content hashing. Public exact-
+state APIs remain borrowed and materialized public read records remain independent
+copies, with no public Arc/Weak or funded bare-state extraction.
+
+Unique unwrap_or_clone/SharedColumn::into_vec must move the entire extra WITH its
+footer. Its small fixed layout bill may remain conservatively charged until the
+moved value drops; any earlier shrink follows actual deallocation. Hide the bare
+state field behind owner accessors/whole-owner constructors. Borrow export_state
+and retain the whole extra/metadata through arena_images export; do not move State
+then lose its ticket. No legacy generic T clone or extraction may silently stand
+in for an admitted controlled copy. Preserve ordinary snapshot isolation.
+
+Borrow the ORIGINAL ExecutionRequest into MutationWorkspace from the two actual
+applied_mutation/aggregate_consequences callers; carry the same request through
+publication preparation into install_lineage_id. Retain no request in rows,
+outcomes or metadata. Propagate actual Request/Allocation causes through existing
+TransactionCommitError/MutationApplyDenial channels, preserving semantic conflict
+meaning/stages rather than formatting budget failure as a conflict or string.
+The qualified codec in_scope contract remains unchanged.
+
+Keep concrete lifetime/serialization policy in record_arena/values owner children,
+handle adoption and metadata/insertion mechanics under the existing arena, and
+application/error propagation at actual mutation/outcome/lineage callers.
+Checkpoint aspect_state_images/arena_images own the borrowed export cutover.
+Update kinds and arena allocation/payload/walk/delta observers to visit the actual
+shared extra identity through the EXISTING visitor/pruning: current-plus-history
+must not double-count payloads or omit metadata-only surviving owners. No new
+persistent identity table, counter, ledger, allocator or ownership mode is allowed.
+
+Prove pre-growth refusal/typed cause with prior state unchanged; current/history/
+private-outcome ownership and final refund; genuine old-root snapshot isolation;
+large-to-small replacement when actual old holders disappear; unique moved-extra
+and borrowed-export lifetime; independent public copies; exact old/current named
+and compact metadata/extra bytes and relation-content hashes. Reuse the genuine
+publication court for application, lineage, retained old-root reads and refused
+publication. Exact pure owner allocation leaves and any owner-private assertions
+receive only named, observed SDK classes after Root's closed-placement ruling.
+Field-lowering scratch, replay input/plan copies, radix/path backing, per-commit
+whole-history rollback, capture, ACK and Complete remain explicit unqualified
+successors; this state-and-extra slice cannot claim whole replay or Host closure.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
