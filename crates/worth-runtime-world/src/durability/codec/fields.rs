@@ -79,6 +79,26 @@ impl<'a> Read<'a> {
     pub(in crate::durability) fn number(&mut self) -> Result<u64, Denial> {
         Ok(u64::from_le_bytes(self.fixed()?))
     }
+    pub(in crate::durability) fn take(&mut self, size: usize) -> Result<&'a [u8], Denial> {
+        let (value, rest) = self.bytes.split_at_checked(size).ok_or(Denial::Malformed)?;
+        self.bytes = rest;
+        Ok(value)
+    }
+    pub(in crate::durability) fn remaining(&self) -> usize {
+        self.bytes.len()
+    }
+    pub(in crate::durability) fn matches_branch(
+        &mut self,
+        branch: &DurableProductBranchIdentity,
+    ) -> Result<(), Denial> {
+        let owner = self.owner()?;
+        let size = u16::from_le_bytes(self.fixed()?) as usize;
+        let name = self.take(size)?;
+        if owner != branch.owner() || name != branch.name().as_bytes() {
+            return Err(Denial::IdentityMismatch);
+        }
+        Ok(())
+    }
     pub(in crate::durability) fn owner(&mut self) -> Result<DurableWorldOwnerIdentity, Denial> {
         let observed =
             HomeIdentity::from_observed_bytes(self.fixed()?).map_err(|_| Denial::Malformed)?;
@@ -99,6 +119,14 @@ impl<'a> Read<'a> {
             .to_owned();
         self.bytes = rest;
         DurableProductBranchIdentity::from_recorded(owner, name).map_err(|_| Denial::Malformed)
+    }
+    pub(super) fn branch_name_bytes(&mut self) -> Result<usize, Denial> {
+        self.owner()?;
+        let len = u16::from_le_bytes(self.fixed()?) as usize;
+        let (name, rest) = self.bytes.split_at_checked(len).ok_or(Denial::Malformed)?;
+        std::str::from_utf8(name).map_err(|_| Denial::Malformed)?;
+        self.bytes = rest;
+        Ok(len)
     }
     pub(in crate::durability) fn association(
         &mut self,
@@ -156,11 +184,21 @@ impl<'a> Read<'a> {
     }
     pub(super) fn recorded_components(
         &mut self,
-    ) -> Result<super::super::RecordedWorldInitialComponents, Denial> {
-        self.owner_value()
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::super::RecordedWorldInitialComponents, super::super::WorldDurableMediumDenial>
+    {
+        let components =
+            super::super::RecordedWorldInitialComponents::from_json_in(execution, self.bytes)?;
+        self.bytes = &[];
+        Ok(components)
     }
-    pub(super) fn owner_value<T: serde::de::DeserializeOwned>(&mut self) -> Result<T, Denial> {
-        let recorded = serde_json::from_slice(self.bytes).map_err(|_| Denial::Malformed)?;
+    pub(super) fn release_evidence(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::super::WorldRelationalReleaseEvidence, super::super::WorldDurableMediumDenial>
+    {
+        let recorded =
+            super::super::WorldRelationalReleaseEvidence::from_json_in(execution, self.bytes)?;
         self.bytes = &[];
         Ok(recorded)
     }

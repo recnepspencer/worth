@@ -2,7 +2,10 @@
 use super::{Denial, Emit};
 use std::io::{self, Write};
 
-pub(super) fn emit<T: serde::Serialize>(out: &mut Emit<'_>, reference: &T) -> Result<(), Denial> {
+pub(in crate::durability) fn emit<T: serde::Serialize>(
+    out: &mut Emit<'_>,
+    reference: &T,
+) -> Result<(), Denial> {
     let mut refused = None;
     serde_json::to_writer(
         ComponentWriter {

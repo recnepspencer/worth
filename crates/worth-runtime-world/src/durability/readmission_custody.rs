@@ -15,6 +15,7 @@ pub struct WorldNativeReadmissionCustody {
     pub(crate) observations: Vec<crate::branch::ProductBranchObservation>,
     pub(crate) slots: Vec<Option<crate::recovery::ReservedProductUnpublishedSlot>>,
     pub(crate) capacities: Vec<crate::history::ReservedCompositeCommitCapacity>,
+    _metadata_funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl std::fmt::Debug for WorldNativeReadmissionCustody {
@@ -35,18 +36,48 @@ impl std::fmt::Debug for WorldNativeReadmissionCustody {
 }
 
 impl WorldNativeReadmissionCustody {
-    pub(crate) fn empty() -> Self {
-        Self {
+    pub(crate) fn allocate(
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        occurrences: usize,
+        opens: usize,
+    ) -> Result<Self, super::WorldReadmissionDenial> {
+        use super::{WorldDurableMediumDenial as Medium, WorldReadmissionDenial as Denial};
+        let failed = || Denial::RecoveryCapacity;
+        let publications = occurrences.checked_add(opens).ok_or_else(failed)?;
+        let observations = occurrences.checked_add(1).ok_or_else(failed)?;
+        let quote = [
+            std::mem::size_of::<
+                Option<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>,
+            >()
+            .checked_mul(publications),
+            std::mem::size_of::<std::sync::Arc<crate::history::ReadmittedPublicationRecord>>()
+                .checked_mul(occurrences),
+            std::mem::size_of::<crate::branch::ProductBranchObservation>()
+                .checked_mul(observations),
+            std::mem::size_of::<Option<crate::recovery::ReservedProductUnpublishedSlot>>()
+                .checked_mul(opens),
+            std::mem::size_of::<crate::history::ReservedCompositeCommitCapacity>()
+                .checked_mul(occurrences),
+        ]
+        .into_iter()
+        .try_fold(0usize, |total, bytes| total.checked_add(bytes?))
+        .and_then(|bytes| u64::try_from(bytes).ok())
+        .ok_or_else(failed)?;
+        let funding = request
+            .reserve_retained_memory(quote)
+            .map_err(|cause| Denial::Medium(Medium::Request(cause)))?;
+        Ok(Self {
             root: None,
-            publications: Vec::new(),
-            records: Vec::new(),
+            publications: Vec::with_capacity(publications),
+            records: Vec::with_capacity(occurrences),
             history: None,
             branches: None,
             recovery: None,
-            observations: Vec::new(),
-            slots: Vec::new(),
-            capacities: Vec::new(),
-        }
+            observations: Vec::with_capacity(observations),
+            slots: Vec::with_capacity(opens),
+            capacities: Vec::with_capacity(occurrences),
+            _metadata_funding: funding,
+        })
     }
     pub(crate) fn refuse(
         self,

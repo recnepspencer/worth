@@ -1,7 +1,9 @@
 mod aspect_history;
 mod association_discovery;
 pub use association_discovery::RelationalAssociationDiscovery;
+pub(crate) mod recorded_json_allocation;
 mod replay_retention_denial;
+pub use recorded_json_allocation::RecordedRelationalJsonHeapQuote;
 pub use replay_retention_denial::RelationalReplayRetentionDenial;
 mod branch_creation;
 mod caller_association;

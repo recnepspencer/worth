@@ -1,6 +1,6 @@
 //! Install the original recorded root from concrete component-owner admissions.
 use super::{preparation::ReadmittedRootPreparation, *};
-use crate::durability::{WorldDurableArtifact, WorldReadmissionDenial as Denial, WorldRecord};
+use crate::durability::{DecodedWorldRecord, WorldReadmissionDenial as Denial, WorldRecord};
 use crate::identity::readmission::{readmit_bootstrap, readmit_commit, readmit_incarnation};
 use worth_relational::facade::durability::RecoveredRelationalBranchBasis;
 use worth_runtime_bridge::facade::AdmittedRuntimeWorldCorrespondenceBasis;
@@ -17,7 +17,7 @@ where
     /// the product's original predecessor after an unpublished Native effect.
     pub(crate) fn install_readmitted_root(
         &self,
-        artifact: &WorldDurableArtifact,
+        artifact: &DecodedWorldRecord,
         native: RecoveredRelationalBranchBasis,
         signal: AdmittedSignalInitialEmptyRoot,
         bridge: AdmittedRuntimeWorldCorrespondenceBasis,

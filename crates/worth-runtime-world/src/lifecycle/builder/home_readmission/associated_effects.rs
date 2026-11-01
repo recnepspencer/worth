@@ -1,13 +1,9 @@
 //! Complete actual metadata discovery precedes any recovered World stage.
 use crate::durability::{
     decode_association, is_world_association, RecoveredCustodyDisposition, WorldDurableHomeBinding,
-    WorldReadmissionDenial as Denial, WorldRecoveredJournalState, WorldRelationalReleaseEvidence,
+    WorldReadmissionDenial as Denial, WorldRecoveredJournalState,
 };
-use std::collections::BTreeMap;
-use worth_foundational::facade::DurableCompositePublicationAttemptIdentity;
-use worth_relational::facade::durability::{
-    ReadmittedRelationalAssociatedEffect, RelationalAssociatedEffectSettlement,
-};
+use worth_relational::facade::durability::RelationalAssociatedEffectSettlement;
 
 pub(super) fn readmit(
     native: &worth_relational::facade::runtime::RelationalRuntime,
@@ -15,15 +11,24 @@ pub(super) fn readmit(
     recovered: &WorldRecoveredJournalState,
     binding: &WorldDurableHomeBinding,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<
-    BTreeMap<DurableCompositePublicationAttemptIdentity, ReadmittedRelationalAssociatedEffect>,
-    Denial,
-> {
-    let mut effects = BTreeMap::new();
-    for subject in native_recovery
+) -> Result<super::native_effects::ReadmittedNativeEffects, Denial> {
+    let subjects = native_recovery
         .discover_recovered_associated_effects(execution, native)
-        .map_err(Denial::NativeDiscovery)?
-    {
+        .map_err(Denial::NativeDiscovery)?;
+    let mut count = 0usize;
+    for subject in &subjects {
+        execution.consult().map_err(|cause| {
+            Denial::Medium(crate::durability::WorldDurableMediumDenial::Request(cause))
+        })?;
+        if subject
+            .association()
+            .is_some_and(|association| is_world_association(association.as_bytes()))
+        {
+            count = count.checked_add(1).ok_or(Denial::RecoveryCapacity)?;
+        }
+    }
+    let mut effects = super::native_effects::NativeEffectAdmission::allocate(*execution, count)?;
+    for subject in subjects {
         let Some(bytes) = subject
             .association()
             .map(|association| association.as_bytes())
@@ -45,7 +50,7 @@ pub(super) fn readmit(
         if association != open.association {
             return Err(Denial::ConflictingOpenAttempt);
         }
-        if effects.contains_key(&association.attempt()) {
+        if effects.contains(&association.attempt()) {
             return Err(Denial::DuplicateNativeEffect);
         }
         let effect = native
@@ -55,26 +60,28 @@ pub(super) fn readmit(
         if effect.settlement() == RelationalAssociatedEffectSettlement::PerformedPending {
             return Err(Denial::NativeSettlementRequired);
         }
-        if let Some(RecoveredCustodyDisposition::Released(recorded)) =
-            recovered.dispositions.get(&association.attempt())
+        if let Some(RecoveredCustodyDisposition::Released(recorded)) = recovered
+            .dispositions
+            .get(&association.attempt())
+            .map(|row| row.disposition())
         {
-            let actual = WorldRelationalReleaseEvidence {
-                receipt: subject.receipt().clone(),
-                position: subject.position().0,
-                digest: *subject.artifact_digest(),
-            };
-            if recorded.as_ref() != Some(&actual) {
+            if recorded.as_ref().is_none_or(|recorded| {
+                recorded.receipt() != subject.receipt()
+                    || recorded.position() != subject.position().0
+                    || recorded.digest() != subject.artifact_digest()
+            }) {
                 return Err(Denial::DispositionEvidenceMismatch);
             }
         }
-        effects.insert(association.attempt(), effect);
+        effects.push(&association.attempt(), effect, execution)?;
     }
-    for (attempt, disposition) in &recovered.dispositions {
+    for (attempt, row) in &recovered.dispositions {
+        let disposition = row.disposition();
         if let RecoveredCustodyDisposition::Released(recorded) = disposition
-            && recorded.is_some() != effects.contains_key(attempt)
+            && recorded.is_some() != effects.contains(attempt)
         {
             return Err(Denial::DispositionEvidenceMismatch);
         }
     }
-    Ok(effects)
+    effects.seal()
 }

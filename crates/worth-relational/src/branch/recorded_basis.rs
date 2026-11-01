@@ -1,21 +1,38 @@
 //! Runtime-neutral descriptions exported from an actual current Native basis.
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use super::{RelationalBranchBasisDescriptor, RelationalBranchRootDescriptor};
 use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
 
+mod copying;
 mod export;
+mod json;
 mod readmission;
 
 /// Recorded Native meaning, never an admitted basis or recovery capability.
 /// Empty has no fabricated commit, journal position, or artifact digest.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(transparent)]
 pub struct RecordedRelationalComponentReference {
+    meaning: Arc<RecordedComponentMeaning>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RecordedComponentMeaning {
     descriptor: RelationalBranchBasisDescriptor,
     target: RecordedRelationalComponentTarget,
+    #[serde(skip)]
+    _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
+impl PartialEq for RecordedComponentMeaning {
+    fn eq(&self, other: &Self) -> bool {
+        self.descriptor == other.descriptor && self.target == other.target
+    }
+}
+impl Eq for RecordedComponentMeaning {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecordedRelationalComponentTarget {
@@ -34,30 +51,39 @@ pub struct RecordedRelationalCanonicalComponent {
 
 impl RecordedRelationalComponentReference {
     pub(crate) fn from_readmitted_source(
-        descriptor: RelationalBranchBasisDescriptor,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        descriptor: &RelationalBranchBasisDescriptor,
         entry: &crate::history::RelationalCommitIndexEntry,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, RelationalRecordedComponentRefusal> {
+        Self::copy_original(
+            execution,
             descriptor,
-            target: RecordedRelationalComponentTarget::Canonical(
-                RecordedRelationalCanonicalComponent {
-                    receipt: entry.commit.clone(),
-                    position: entry.position,
-                    artifact_digest: entry.payload_digest,
-                    roots: entry.root.clone(),
-                },
-            ),
-        }
+            Some(copying::CanonicalDescription {
+                receipt: &entry.commit,
+                position: entry.position,
+                artifact_digest: entry.payload_digest,
+                roots: &entry.root,
+            }),
+        )
+    }
+
+    /// Decode descriptive owner data with the original request's retained
+    /// payload and temporary parser backing. This admits no Native basis.
+    pub fn from_json_in(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        bytes: &[u8],
+    ) -> Result<Self, RelationalRecordedComponentRefusal> {
+        json::decode(execution, bytes)
     }
 
     /// Descriptor in Native's canonical runtime frame. It cannot be used as
     /// a live descriptor by rewriting its runtime or allocation identity.
     pub fn descriptor(&self) -> &RelationalBranchBasisDescriptor {
-        &self.descriptor
+        &self.meaning.descriptor
     }
 
     pub fn target(&self) -> &RecordedRelationalComponentTarget {
-        &self.target
+        &self.meaning.target
     }
 }
 

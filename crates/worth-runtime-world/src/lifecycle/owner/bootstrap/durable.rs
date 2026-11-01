@@ -103,7 +103,7 @@ where
             .state
             .signal
             .basis_port()
-            .export_recorded_initial_empty_root(intent.signal_basis())
+            .export_recorded_initial_empty_root_in(execution, intent.signal_basis())
         {
             Ok(recorded) => recorded,
             Err(cause) => return Outcome::Refused(Refusal::SignalInitialRoot(cause)),
@@ -111,7 +111,7 @@ where
         let bridge = match self
             .state
             .bridge
-            .export_recorded_runtime_world_baseline(intent.correspondence_basis())
+            .export_recorded_runtime_world_baseline_in(execution, intent.correspondence_basis())
         {
             Ok(recorded) => recorded,
             Err(cause) => return Outcome::Refused(Refusal::BridgeBaseline(cause)),

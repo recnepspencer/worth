@@ -1,6 +1,8 @@
-mod fields;
+pub(in crate::durability) mod decoded;
+pub(in crate::durability) mod fields;
+pub(crate) use decoded::DecodedWorldRecord;
 pub(in crate::durability) mod occurrence_backing;
-mod owner_value;
+pub(in crate::durability) mod owner_value;
 use super::artifact::WORLD_ARTIFACT_VERSION;
 use super::{WorldDurableFrameDenial as Denial, WorldDurableMediumDenial, WorldRecord};
 use fields::*;
@@ -66,8 +68,29 @@ pub(super) fn encode_payload(
     })?;
     builder.seal().map_err(WorldDurableMediumDenial::Backing)
 }
-pub(crate) fn decode(bytes: &[u8], home: HomeIdentity) -> Result<WorldRecord, Denial> {
+pub(crate) fn decode(
+    bytes: &[u8],
+    home: HomeIdentity,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<std::sync::Arc<DecodedWorldRecord>, WorldDurableMediumDenial> {
+    if bytes.len() > MAXIMUM {
+        return Err(Denial::SizeLimit.into());
+    }
+    execution
+        .run_native_with_checkpoint(|context| context.checkpoint(bytes.len() as u64))
+        .map_err(WorldDurableMediumDenial::Request)?
+        .0
+        .map_err(|cause| {
+            WorldDurableMediumDenial::Request(worth_execution::WorkCeilingDenial::Stopped(cause))
+        })?;
     let payload = payload(bytes, MAGIC)?;
+    decoded::admit(payload, home, execution)
+}
+fn decode_record(
+    payload: &[u8],
+    home: HomeIdentity,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<WorldRecord, WorldDurableMediumDenial> {
     let mut read = Read::new(payload, home);
     let tag = read.fixed::<1>()?[0];
     let record = match tag {
@@ -85,7 +108,7 @@ pub(crate) fn decode(bytes: &[u8], home: HomeIdentity) -> Result<WorldRecord, De
                 head,
                 bootstrap,
                 program_revision: read.fixed()?,
-                components: read.recorded_components()?,
+                components: read.recorded_components(execution)?,
             }
         }
         3 => WorldRecord::OpenAttempt(read.open()?),
@@ -109,8 +132,8 @@ pub(crate) fn decode(bytes: &[u8], home: HomeIdentity) -> Result<WorldRecord, De
                     custody,
                     relational: match read.fixed::<1>()? {
                         [0] => None,
-                        [1] => Some(read.owner_value()?),
-                        _ => return Err(Denial::Malformed),
+                        [1] => Some(read.release_evidence(execution)?),
+                        _ => return Err(Denial::Malformed.into()),
                     },
                 }
             } else {
@@ -120,7 +143,7 @@ pub(crate) fn decode(bytes: &[u8], home: HomeIdentity) -> Result<WorldRecord, De
                 }
             }
         }
-        _ => return Err(Denial::Malformed),
+        _ => return Err(Denial::Malformed.into()),
     };
     read.finished()?;
     Ok(record)
@@ -147,7 +170,10 @@ pub(super) fn payload<'a>(bytes: &'a [u8], magic: &[u8; 8]) -> Result<&'a [u8], 
     }
     Ok(payload)
 }
-fn write_record(record: &WorldRecord, out: &mut Emit<'_>) -> Result<(), Denial> {
+pub(in crate::durability) fn write_record(
+    record: &WorldRecord,
+    out: &mut Emit<'_>,
+) -> Result<(), Denial> {
     match record {
         WorldRecord::Owner { owner: value } => {
             out(&[1])?;

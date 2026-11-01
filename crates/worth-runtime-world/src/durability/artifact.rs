@@ -1,10 +1,11 @@
+use super::WorldRelationalReleaseEvidence;
 use std::sync::Arc;
 use worth_foundational::facade::{
     BoundaryProtocolIdentity, BoundaryProtocolUnsupportedVersion, BoundaryProtocolVersion,
     CompositeAttemptAssociation, DurableCompositeCommitIdentity, DurableProductBranchIdentity,
     DurableProductBranchIncarnation, DurableProductReferenceGeneration,
-    DurableProductUnpublishedOwnerEffectsIdentity, DurableWorldOwnerIdentity, HomeIdentity,
-    HomeIncarnation, WorldDurableJournal,
+    DurableProductUnpublishedOwnerEffectsIdentity, DurableWorldOwnerIdentity, HomeIncarnation,
+    WorldDurableJournal,
 };
 pub const WORLD_ARTIFACT_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.world.artifact");
@@ -33,13 +34,6 @@ pub(crate) enum WorldOpenComponentIntent {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct WorldRelationalEvidence {
     pub(crate) commit: u64,
-    pub(crate) position: u64,
-    pub(crate) digest: [u8; 32],
-}
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct WorldRelationalReleaseEvidence {
-    pub(crate) receipt: worth_relational::facade::history::RelationalCommitReceipt,
     pub(crate) position: u64,
     pub(crate) digest: [u8; 32],
 }
@@ -130,15 +124,6 @@ impl WorldDurableArtifact {
             record,
             bytes: Arc::new(bytes),
         }
-    }
-    pub(crate) fn readmit(
-        bytes: &[u8],
-        home: HomeIdentity,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, super::WorldDurableMediumDenial> {
-        let record =
-            super::codec::decode(bytes, home).map_err(super::WorldDurableMediumDenial::Frame)?;
-        Self::from_record(record, execution)
     }
     pub fn as_bytes(&self) -> &[u8] {
         self.bytes.bytes()

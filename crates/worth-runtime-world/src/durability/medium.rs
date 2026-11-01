@@ -2,7 +2,7 @@ use super::{WorldDurableArtifact, WorldDurableFrameDenial};
 use std::fmt::Debug;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::{
-    DurablePublicationFate, DurableWorldOwnerIdentity, HomeIncarnation, WorldDurableJournal,
+    DurablePublicationFate, DurableWorldOwnerIdentity, HomeIncarnation,
 };
 
 #[derive(Clone, Debug)]
@@ -39,55 +39,22 @@ impl WorldDurableHomeBinding {
 pub enum WorldDurableMediumDenial {
     Allocation(worth_execution::ExecutionAllocationDenial),
     Backing(worth_execution::ExecutionRequestArrayDenial),
+    Ordered(worth_execution::ExecutionOrderedMapDenial),
     Request(WorkCeilingDenial),
     Frame(WorldDurableFrameDenial),
+    NativeDescription(Box<worth_relational::facade::branch::RelationalRecordedComponentRefusal>),
+    SignalDescription(worth_signal::facade::branch::SignalInitialEmptyRootRefusal),
+    BridgeDescription(worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal),
     Unavailable,
     PublicationBusy,
     PublicationUnresolved,
+    StaleCheckpoint,
+    CheckpointSelectionRequired,
     Storage(String),
 }
-#[derive(Debug)]
-pub struct WorldDurableRecoverySource {
-    pub(crate) branches: Vec<WorldRecoveredJournalRecord>,
-    pub(crate) occurrences: Vec<WorldRecoveredJournalRecord>,
-    pub(crate) custody: Vec<WorldRecoveredJournalRecord>,
-}
-/// Source coordinates supplied by the admitted Home adapter. These values are
-/// untrusted input until World validates the owner frame and contiguous stream.
-#[derive(Debug, Clone)]
-pub struct WorldRecoveredJournalRecord {
-    pub(crate) position: u64,
-    pub(crate) digest: [u8; 32],
-    pub(crate) bytes: Vec<u8>,
-}
-impl WorldRecoveredJournalRecord {
-    pub fn from_owner_record(position: u64, digest: [u8; 32], bytes: Vec<u8>) -> Self {
-        Self {
-            position,
-            digest,
-            bytes,
-        }
-    }
-}
-impl WorldDurableRecoverySource {
-    /// Untrusted owner bytes. Only World readmission can turn them into facts.
-    pub fn from_owner_records(
-        branches: Vec<WorldRecoveredJournalRecord>,
-        occurrences: Vec<WorldRecoveredJournalRecord>,
-        custody: Vec<WorldRecoveredJournalRecord>,
-    ) -> Self {
-        Self {
-            branches,
-            occurrences,
-            custody,
-        }
-    }
-    pub(crate) fn stream(&self, journal: WorldDurableJournal) -> &[WorldRecoveredJournalRecord] {
-        match journal {
-            WorldDurableJournal::Branches => &self.branches,
-            WorldDurableJournal::Occurrences => &self.occurrences,
-            WorldDurableJournal::Custody => &self.custody,
-        }
+impl From<WorldDurableFrameDenial> for WorldDurableMediumDenial {
+    fn from(cause: WorldDurableFrameDenial) -> Self {
+        Self::Frame(cause)
     }
 }
 #[derive(Debug)]
@@ -112,10 +79,13 @@ pub trait RuntimeWorldDurableMedium: Debug + Send + Sync {
     /// terminal indeterminate custody: it permits teardown, never serving or
     /// a NoEffect conclusion. Home retains those tasks through physical close.
     fn publication_task_posture(&self) -> WorldPublicationTaskPosture;
-    fn recover(
+    /// Acquire one actual protected physical W root without payload I/O.
+    /// Called only while the actual durable publication reservation is held.
+    /// The same original request funds metadata and nonwaiting admission.
+    fn capture_checkpoint_source(
         &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<WorldDurableRecoverySource, WorldDurableMediumDenial>;
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Box<dyn super::checkpoint::WorldCheckpointReadSource>, WorldDurableMediumDenial>;
     /// Query/advance the actual retained publication for this original subject.
     /// Implementations must never pair a caller-supplied fate with another receipt.
     fn advance_publication(

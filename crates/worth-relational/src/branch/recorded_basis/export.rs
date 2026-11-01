@@ -1,6 +1,5 @@
 use super::{
-    RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
-    RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal as Refusal,
+    copying, RecordedRelationalComponentReference, RelationalRecordedComponentRefusal as Refusal,
 };
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
@@ -36,12 +35,8 @@ impl RelationalRuntime {
             basis.identity(),
         )
         .map_err(Refusal::Basis)?;
-        let descriptor = basis
-            .descriptor()
-            .in_canonical_frame()
-            .map_err(Refusal::Frame)?;
         let target = match basis.reference().target() {
-            FoundationalBranchTarget::Empty => RecordedRelationalComponentTarget::Empty,
+            FoundationalBranchTarget::Empty => None,
             FoundationalBranchTarget::Basis(target) => {
                 let commit_id = crate::history::data::CommitId(target.selected_commit_id());
                 let cell = self
@@ -86,15 +81,15 @@ impl RelationalRuntime {
                         }
                     })?,
                 };
-                RecordedRelationalComponentTarget::Canonical(RecordedRelationalCanonicalComponent {
-                    receipt: envelope.commit.clone(),
+                Some(copying::CanonicalDescription {
+                    receipt: &envelope.commit,
                     position: positioned.position(),
                     artifact_digest,
-                    roots: target.roots().clone(),
+                    roots: target.roots(),
                 })
             }
         };
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
-        Ok(RecordedRelationalComponentReference { descriptor, target })
+        RecordedRelationalComponentReference::copy_original(execution, basis.descriptor(), target)
     }
 }

@@ -33,6 +33,7 @@ pub use crate::branch::{
     RelationalRootCorrectnessIndex, ResolvedRelationalBasisDescriptor,
     SuspendRelationalMaterialization, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
+pub use crate::history::data::RecordedRelationalJsonHeapQuote;
 pub use crate::history::retention::{
     RelationalBasisRetentionReason, RelationalBranchRetentionLease,
     RelationalBranchRetentionReleaseDenial, RelationalBranchRetentionReleaseReceipt,

@@ -29,6 +29,19 @@ impl std::fmt::Debug for RuntimeWorldCorrespondencePort {
 }
 
 impl RuntimeWorldCorrespondencePort {
+    pub fn export_recorded_runtime_world_baseline_in(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRuntimeWorldCorrespondenceBasis,
+    ) -> Result<RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal> {
+        if basis.dependency().is_some() {
+            return Err(RuntimeWorldBaselineRefusal::UninstalledBaselineRequired);
+        }
+        self.compare_current_exact(basis)
+            .map_err(|_| RuntimeWorldBaselineRefusal::CurrentBasisRequired)?;
+        crate::correspondence::recorded_baseline_in(execution, &self.runtime)
+    }
+
     pub fn export_recorded_runtime_world_baseline(
         &self,
         basis: &AdmittedRuntimeWorldCorrespondenceBasis,

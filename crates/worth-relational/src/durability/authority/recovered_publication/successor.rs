@@ -6,7 +6,6 @@ use crate::durability::authority::{
     ReadmittedRelationalAssociatedEffect, RecoveredRelationalRuntimeAuthority,
 };
 use crate::runtime::RelationalRuntime;
-use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub enum RelationalRecordedSuccessorRefusal {
@@ -17,6 +16,7 @@ pub enum RelationalRecordedSuccessorRefusal {
     MissingRecoveredImage,
     AmbiguousRecoveredImage,
     CanonicalEncoding { detail: String },
+    Description(Box<crate::branch::RelationalRecordedComponentRefusal>),
 }
 impl RecoveredRelationalRuntimeAuthority {
     /// Describe the exact original successor from owner-recovered observations.
@@ -46,7 +46,7 @@ impl RecoveredRelationalRuntimeAuthority {
             .recovered_roots
             .publication_observations(entry.commit.commit_id)
             .ok_or(Refusal::MissingRecoveredImage)?;
-        let mut selected = BTreeMap::new();
+        let mut selected: Option<Recorded> = None;
         for descriptor in observations {
             if descriptor.branch_id() != &effect.source_envelope().branch_context
                 || descriptor.posture() != RelationalBranchBasisPosture::Live
@@ -69,24 +69,18 @@ impl RecoveredRelationalRuntimeAuthority {
             {
                 continue;
             }
-            let descriptor = descriptor
-                .in_canonical_frame()
-                .map_err(|_| Refusal::SubjectMismatch)?;
-            let key = rmp_serde::to_vec_named(&descriptor).map_err(|cause| {
-                Refusal::CanonicalEncoding {
-                    detail: cause.to_string(),
-                }
-            })?;
-            selected.insert(key, descriptor);
+            let candidate = Recorded::from_readmitted_source(execution, descriptor, entry)
+                .map_err(|cause| Refusal::Description(Box::new(cause)))?;
+            if selected
+                .as_ref()
+                .is_some_and(|previous| previous != &candidate)
+            {
+                return Err(Refusal::AmbiguousRecoveredImage);
+            }
+            selected = Some(candidate);
         }
-        if selected.len() > 1 {
-            return Err(Refusal::AmbiguousRecoveredImage);
-        }
-        let descriptor = selected
-            .into_values()
-            .next()
-            .ok_or(Refusal::MissingRecoveredImage)?;
+        let selected = selected.ok_or(Refusal::MissingRecoveredImage)?;
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
-        Ok(Recorded::from_readmitted_source(descriptor, entry))
+        Ok(selected)
     }
 }

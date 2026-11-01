@@ -1,6 +1,6 @@
 //! Materialize an original occurrence using concrete recovered Native custody.
 use super::*;
-use crate::durability::{WorldReadmissionDenial as Denial, WorldRecord};
+use crate::durability::{AdmittedWorldOccurrence, WorldReadmissionDenial as Denial};
 use crate::history::ReadmittedPublicationRecord;
 use worth_proof::RelationalPublicationReadmitted;
 use worth_relational::facade::durability::RelationalRecoveredPublicationCustody;
@@ -14,8 +14,7 @@ where
     pub(crate) fn prepare_readmitted_occurrence(
         &self,
         before: &ProductBranchObservation,
-        artifact: &crate::durability::WorldDurableArtifact,
-        source: crate::durability::WorldRecoveredJournalRecord,
+        occurrence: &AdmittedWorldOccurrence,
         native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
         identity: worth_relational::facade::history::RelationalCommitIdentity,
     ) -> Result<
@@ -25,11 +24,16 @@ where
             Denial,
         ),
     > {
-        let WorldRecord::Occurrence { open, .. } = &artifact.record else {
-            unreachable!("validated occurrence")
-        };
+        let open = occurrence.open();
         let owner = self.owner_identity();
         let prepared = (|| {
+            let location = occurrence.location();
+            if Some(location.owner()) != owner.durable()
+                || location.attempt() != open.association.attempt()
+                || location.commit() != open.commit
+            {
+                return Err(Denial::OccurrenceEvidenceMismatch);
+            }
             if native.custody().predecessor().admission_identity()
                 != before.basis().relational_basis().admission_identity()
             {
@@ -85,7 +89,7 @@ where
                 before.snapshot().clone(),
                 after,
                 attempt,
-                source,
+                occurrence.location().clone(),
                 self.state
                     .durable
                     .as_ref()

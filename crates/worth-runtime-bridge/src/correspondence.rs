@@ -70,7 +70,9 @@ pub(crate) use runtime_world_admission::RuntimeWorldCorrespondenceInspectionLedg
 pub(crate) use runtime_world_admission::{
     admit_baseline, admit_installed_basis, compare_current_basis,
 };
-pub(crate) use runtime_world_admission::{readmit_baseline, recorded_baseline};
+pub(crate) use runtime_world_admission::{
+    readmit_baseline, recorded_baseline, recorded_baseline_in,
+};
 pub use runtime_world_admission::{
     AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldCorrespondenceAdmissionDenial,
     RuntimeWorldCorrespondenceInspectionCounters,

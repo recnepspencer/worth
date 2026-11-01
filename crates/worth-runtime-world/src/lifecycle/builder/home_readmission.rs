@@ -2,6 +2,7 @@
 use super::super::RuntimeWorldOwnerRoot;
 use super::*;
 mod associated_effects;
+mod native_effects;
 mod reconcile;
 
 /// Home configuration lacks caller-supplied Relational and Bridge owners.
@@ -39,19 +40,29 @@ where
             WorldDurableMediumBinding, WorldReadmissionDenial as Denial, WorldRecoveredJournalState,
         };
         let binding = WorldDurableMediumBinding::new(medium);
-        let source = binding.recover(request).map_err(Denial::Medium)?;
-        let recovered = WorldRecoveredJournalState::readmit(source, binding.binding(), request)?;
+        let source = binding
+            .capture_checkpoint_source(request)
+            .map_err(Denial::Medium)?;
+        let (recovered, selected_coverage) = WorldRecoveredJournalState::read_protected_source(
+            source.as_ref(),
+            binding.binding(),
+            request,
+        )?;
+        binding
+            .admit_recovered_checkpoint_coverage(selected_coverage)
+            .map_err(Denial::Medium)?;
         if recovered.branches.len() > 1
             || recovered.dispositions.values().any(|disposition| {
                 matches!(
-                    disposition,
+                    disposition.disposition(),
                     crate::durability::RecoveredCustodyDisposition::Continued
                 )
             })
         {
             return Err(Denial::OccurrenceReadmissionRequired);
         }
-        for artifact in &recovered.branches {
+        for origin in recovered.branch_origins() {
+            let artifact = origin.record();
             let crate::durability::WorldRecord::Branch {
                 program_revision, ..
             } = &artifact.record

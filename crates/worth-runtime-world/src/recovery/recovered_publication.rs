@@ -1,7 +1,8 @@
 //! Distinct cold-recovered custody; it never fabricates a live Native result.
 use crate::branch::ProductBranchObservation;
 use crate::durability::{
-    ActualWorldPublication, WorldDurableArtifact, WorldDurableMediumBinding, WorldOpenAttemptRecord,
+    ActualWorldPublication, AdmittedWorldOpenAttempt, WorldDurableArtifact,
+    WorldDurableMediumBinding,
 };
 use crate::identity::{
     CompositeCommitIdentity, CompositePublicationAttemptIdentity,
@@ -28,7 +29,7 @@ pub(crate) struct RecoveredWorldPublicationRecord {
     pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(crate) attempt: CompositePublicationAttemptIdentity,
     pub(crate) commit: CompositeCommitIdentity,
-    pub(crate) open: WorldOpenAttemptRecord,
+    pub(crate) open: AdmittedWorldOpenAttempt,
     pub(crate) expected: ProductBranchObservation,
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) native: Mutex<RecoveredNativeCustody>,
@@ -89,7 +90,7 @@ pub(crate) struct RecoveredWorldPublicationInputs {
     pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(crate) attempt: CompositePublicationAttemptIdentity,
     pub(crate) commit: CompositeCommitIdentity,
-    pub(crate) open: WorldOpenAttemptRecord,
+    pub(crate) open: AdmittedWorldOpenAttempt,
     pub(crate) expected: ProductBranchObservation,
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) native:

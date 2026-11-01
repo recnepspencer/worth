@@ -83,7 +83,7 @@ where
             )
             .map_err(|_| Refusal::RetentionRequired)?;
         Ok(AdmittedSignalInitialEmptyRoot::new(
-            witness.recorded.clone(),
+            recorded.unwrap_or(&witness.recorded).clone(),
             basis,
         ))
     }

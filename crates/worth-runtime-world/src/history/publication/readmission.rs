@@ -13,7 +13,7 @@ pub(crate) struct ReadmittedPublicationRecord {
     pub(crate) before: ProductBranchReferenceSnapshot,
     pub(crate) after: ProductBranchReferenceSnapshot,
     pub(crate) attempt: CompositePublicationAttemptIdentity,
-    pub(crate) source: crate::durability::WorldRecoveredJournalRecord,
+    pub(crate) location: crate::durability::AdmittedWorldOccurrenceLocation,
     pub(crate) incarnation: worth_foundational::facade::HomeIncarnation,
     native: RelationalRecoveredPublicationCustody,
 }
@@ -22,7 +22,7 @@ impl ReadmittedPublicationRecord {
         before: ProductBranchReferenceSnapshot,
         after: ProductBranchReferenceSnapshot,
         attempt: CompositePublicationAttemptIdentity,
-        source: crate::durability::WorldRecoveredJournalRecord,
+        location: crate::durability::AdmittedWorldOccurrenceLocation,
         incarnation: worth_foundational::facade::HomeIncarnation,
         native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
     ) -> Arc<Self> {
@@ -30,7 +30,7 @@ impl ReadmittedPublicationRecord {
             before,
             after,
             attempt,
-            source,
+            location,
             incarnation,
             native: native.consume(|native| native),
         })
@@ -113,10 +113,10 @@ impl WorldReadmittedPublication {
         self.semantic_result().receipt()
     }
     pub fn journal_position(&self) -> u64 {
-        self.record.source.position
+        self.record.location.position()
     }
     pub fn artifact_digest(&self) -> &[u8; 32] {
-        &self.record.source.digest
+        self.record.location.digest()
     }
     pub fn native_patch_position(
         &self,

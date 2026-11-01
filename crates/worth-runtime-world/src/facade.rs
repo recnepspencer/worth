@@ -4,10 +4,13 @@
 //! owner modules so callers cannot reach around the composition boundary.
 
 pub use crate::durability::{
-    RuntimeWorldDurableMedium, WorldDurableArtifact, WorldDurableFrameDenial,
-    WorldDurableHomeBinding, WorldDurableMediumDenial, WorldDurableRecoverySource,
+    PreparedWorldCheckpoint, RuntimeWorldDurableMedium, WorldCheckpointJournalRecord,
+    WorldCheckpointPort, WorldCheckpointReadSource, WorldCheckpointReadView,
+    WorldCheckpointSelection, WorldCheckpointSubject, WorldDurableArtifact,
+    WorldDurableFrameDenial, WorldDurableHomeBinding, WorldDurableMediumDenial,
     WorldPublicationObservation, WorldPublicationTaskPosture, WorldReadmissionDenial,
-    WorldRecoveredJournalRecord, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
+    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL,
+    WORLD_CHECKPOINT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and

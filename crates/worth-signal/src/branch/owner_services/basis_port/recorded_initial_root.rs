@@ -11,6 +11,15 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub fn export_recorded_initial_empty_root_in(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedSignalBranchBasis,
+    ) -> Result<RecordedSignalInitialEmptyRoot, SignalInitialEmptyRootRefusal> {
+        self.export_recorded_initial_empty_root(basis)?
+            .retained_copy_in(execution)
+    }
+
     pub fn export_recorded_initial_empty_root(
         &self,
         basis: &AdmittedSignalBranchBasis,

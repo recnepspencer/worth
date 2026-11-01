@@ -59,19 +59,30 @@ impl WorldRecoveredUnpublishedEffects {
                 None => {
                     let relational =
                         match &*self.record.native.lock().unwrap_or_else(|e| e.into_inner()) {
-                            RecoveredNativeCustody::OpenOnly => None,
+                            RecoveredNativeCustody::OpenOnly => Ok(None),
                             RecoveredNativeCustody::Relational(native) => {
                                 let actual = native.custody().effect().subject();
-                                Some(crate::durability::WorldRelationalReleaseEvidence {
-                                    receipt: actual.receipt().clone(),
-                                    position: actual.position().0,
-                                    digest: *actual.artifact_digest(),
-                                })
+                                crate::durability::WorldRelationalReleaseEvidence::from_original(
+                                    execution,
+                                    actual.receipt(),
+                                    actual.position().0,
+                                    *actual.artifact_digest(),
+                                )
+                                .map(Some)
                             }
                             RecoveredNativeCustody::Released => {
                                 unreachable!("same unreleased claim")
                             }
                         };
+                    let relational = match relational {
+                        Ok(relational) => relational,
+                        Err(cause) => {
+                            return WorldRecoveredReleaseOutcome::Refused {
+                                cause,
+                                custody: self,
+                            }
+                        }
+                    };
                     let subject = match WorldDurableArtifact::from_record(
                         WorldRecord::Released {
                             association: self.record.open.association.clone(),

@@ -229,6 +229,15 @@ where
             self.root.clone();
         RuntimeWorldRecoveryPort::new(Arc::downgrade(&service))
     }
+    /// Clone only a weak reference to the actual attached durable binding.
+    /// Capture remains available for stopped-but-owned close settlement.
+    pub fn checkpoint_port(&self) -> Option<crate::durability::WorldCheckpointPort> {
+        self.root
+            .state
+            .durable
+            .as_ref()
+            .map(crate::durability::WorldCheckpointPort::new)
+    }
 }
 impl<D, I, E, Ctx, T> Drop for RuntimeWorldOwner<D, I, E, Ctx, T>
 where

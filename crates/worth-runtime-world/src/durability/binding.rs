@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{DurablePublicationFate, WorldDurableJournal};
 use worth_proof::{AuthorityMarker, DurablyCommitted};
+mod capture_reservation;
 
 /// The exact subject acknowledged by the attached medium. Its constructor is
 /// private to this binding's actual Committed branch.
@@ -43,6 +44,7 @@ struct PublicationGates {
     branches: JournalFlight,
     occurrences: JournalFlight,
     custody: JournalFlight,
+    capture_reserved: bool,
 }
 impl PublicationGates {
     fn journal(&mut self, journal: WorldDurableJournal) -> &mut JournalFlight {
@@ -59,22 +61,38 @@ impl PublicationGates {
 pub(crate) struct WorldDurableMediumBinding {
     medium: Arc<dyn RuntimeWorldDurableMedium>,
     gates: Mutex<PublicationGates>,
+    pub(in crate::durability) checkpoint_acknowledgement:
+        Mutex<super::checkpoint::WorldCheckpointAcknowledgement>,
 }
 impl WorldDurableMediumBinding {
     pub(crate) fn new(medium: Arc<dyn RuntimeWorldDurableMedium>) -> Arc<Self> {
         Arc::new(Self {
             medium,
             gates: Mutex::new(PublicationGates::default()),
+            checkpoint_acknowledgement: Mutex::new(Default::default()),
         })
     }
     pub(crate) fn binding(&self) -> &WorldDurableHomeBinding {
         self.medium.binding()
     }
-    pub(crate) fn recover(
+    pub(crate) fn capture_checkpoint_source(
+        self: &Arc<Self>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Box<dyn super::checkpoint::WorldCheckpointReadSource>, WorldDurableMediumDenial>
+    {
+        let reservation = self.reserve_checkpoint_capture()?;
+        let source = self.medium.capture_checkpoint_source(request);
+        drop(reservation);
+        source
+    }
+    pub(crate) fn admit_recovered_checkpoint_coverage(
         &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<super::WorldDurableRecoverySource, WorldDurableMediumDenial> {
-        self.medium.recover(execution)
+        coverage: super::checkpoint::WorldCheckpointCoverage,
+    ) -> Result<(), WorldDurableMediumDenial> {
+        self.checkpoint_acknowledgement
+            .try_lock()
+            .map_err(|_| WorldDurableMediumDenial::PublicationBusy)?
+            .admit_recovered(coverage)
     }
     pub(crate) fn occurrence_unresolved(&self) -> bool {
         self.gates
@@ -87,6 +105,9 @@ impl WorldDurableMediumBinding {
     pub(crate) fn try_admit_close(&self) -> Result<(), crate::lifecycle::RuntimeWorldCloseDenial> {
         use crate::lifecycle::RuntimeWorldCloseDenial as Denial;
         let gates = self.gates.try_lock().map_err(|_| Denial::Busy)?;
+        if gates.capture_reserved {
+            return Err(Denial::Busy);
+        }
         if gates.branches.in_caller || gates.custody.in_caller || gates.occurrences.in_caller {
             return Err(Denial::DurablePublicationUnsettled);
         }
@@ -105,6 +126,9 @@ impl WorldDurableMediumBinding {
     ) -> Result<DurablyCommitted<ActualWorldPublication>, WorldDurablePublicationStop> {
         {
             let mut gates = self.gates.lock().unwrap_or_else(|e| e.into_inner());
+            if gates.capture_reserved {
+                return Err(WorldDurablePublicationStop::Busy);
+            }
             let flight = gates.journal(subject.journal());
             if let Some(barrier) = flight.barrier {
                 return Err(match barrier {
