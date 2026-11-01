@@ -46,9 +46,11 @@ pub(super) fn readmit_transition_tail(
                 expected.0
             )));
         }
-        let positioned =
-            RelationalBranchTransitionArtifact::readmit(artifact.as_bytes(), execution)
-                .map_err(|refusal| artifact_refusal_stop(expected, refusal))?;
+        let positioned = RelationalBranchTransitionArtifact::readmit_owned(
+            artifact.clone().into_bytes(),
+            execution,
+        )
+        .map_err(|refusal| artifact_refusal_stop(expected, refusal))?;
         let follows = positioned.follows();
         if follows < earliest_follows {
             return Err(out_of_order(format!(

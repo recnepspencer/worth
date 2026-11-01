@@ -106,3 +106,5 @@ pub(crate) struct RecoverySourceParts {
     pub(crate) transitions: Vec<RelationalBranchTransitionArtifact>,
     pub(crate) cold_source: std::sync::Arc<dyn super::RelationalDurableColdSource>,
 }
+
+mod owned;

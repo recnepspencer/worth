@@ -1291,3 +1291,16 @@ reclaim. These owner primitives neither invoke general Signal cleanup nor
 certify Bridge/Native/Store or full Host close. See the
 [Signal owner workflow](../crates/worth-signal/README.md#retain-an-initial-empty-owner-during-composite-close)
 and [World lifecycle](../crates/worth-runtime-world/README.md).
+
+
+### Read original Native bytes from a protected source cut
+
+Native `RelationalDurableReadProtection` binds the original provider allocation
+and frozen canonical/transition heads. Store recovery uses one physical reader
+and its verified selected member table; owned reads admit the original request's
+exact byte output before growth and require verified EOF. Unsupported providers
+refuse without legacy `Vec` fallback. The ordinary protected source assembly
+feeds existing Native frame and semantic readmission. It does not certify a
+Complete checkpoint or fund recovery-plan/decoded-transition collections. See
+[Native protected source reads](../crates/worth-relational/README.md#read-an-original-protected-source-cut)
+and [Store provider ownership](../workspaces/worth-store/crates/worth-store-relational/README.md#protected-native-source-reads).

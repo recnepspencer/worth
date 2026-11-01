@@ -17,6 +17,8 @@ use worth_store::physical_runtime::{
 mod initial_selection;
 mod member_custody;
 mod member_read;
+mod owned_read;
+mod read_protection;
 mod selection;
 pub use selection::RelationalStoreMemberSelectionDenial;
 #[cfg(test)]
@@ -127,6 +129,54 @@ impl StoreColdSource {
 }
 
 impl RelationalDurableColdSource for StoreColdSource {
+    fn checkpoint_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            worth_relational::facade::durability::RelationalDurableReadBounds,
+            worth_relational::facade::durability::RelationalDurableReadPayload,
+        ),
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.capture_native_read(request)
+    }
+    fn read_commit_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        position: PatchStreamPosition,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.owned_commit(request, original, position, limit)
+    }
+    fn read_transition_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.owned_transition(request, original, sequence, limit)
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        self.owned_member(request, original, locator, limit)
+    }
     fn validate_member_custody_retirement(
         &self,
         original: &(dyn std::any::Any + Send + Sync),

@@ -85,7 +85,7 @@ fn collect_member(
     }
 }
 
-fn member_failure(failure: Failure, limit: u64) -> Cause {
+pub(super) fn member_failure(failure: Failure, limit: u64) -> Cause {
     match failure {
         Failure::NotCurrentMember => Cause::MissingMember,
         Failure::LimitExceeded { length } => Cause::LimitExceeded { length, limit },

@@ -11,8 +11,8 @@ use crate::publication::patch::data::PatchStreamPosition;
 #[derive(Debug, Default)]
 pub(super) struct TestDurableJournal {
     pub(super) selected_capture: Option<crate::durability::medium::OpaqueCapturedCheckpointSubject>,
-    artifacts: ByteJournal,
-    checkpoint_members: worth_testkit_relational::durable_medium::bytes::MemberBytes,
+    pub(super) artifacts: ByteJournal,
+    pub(super) checkpoint_members: worth_testkit_relational::durable_medium::bytes::MemberBytes,
     pub(super) checkpoint: Option<RelationalDurableCheckpointSource>,
     pub(super) scripted: VecDeque<ScriptedPublication>,
     pub(super) offered: Vec<RelationalCanonicalCommitArtifact>,

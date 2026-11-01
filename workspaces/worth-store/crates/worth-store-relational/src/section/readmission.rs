@@ -26,6 +26,7 @@ pub enum RelationalSectionReadmissionDenial {
     Journal(crate::RelationalStoreJournalRefusal),
     Transitions(crate::RelationalStoreTransitionJournalRefusal),
     Native(RelationalRecoveryStop),
+    OwnedSource(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal),
 }
 
 impl RelationalStoreSection {
@@ -143,7 +144,7 @@ pub(super) fn recover_runtime(
 fn recover_in_scope(
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     cold_source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
-    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    _serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     checkpoint: Option<RelationalDurableCheckpointSource>,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<ReadmittedRuntime, RelationalSectionReadmissionDenial> {
@@ -151,15 +152,21 @@ fn recover_in_scope(
     let selected_coverage = checkpoint
         .as_ref()
         .map(|section| [section.covered().0, section.covered_transitions().0]);
-    let covered = checkpoint.as_ref().map_or(0, |section| section.covered().0);
-    let transitions = checkpoint
-        .as_ref()
-        .map_or(0, |section| section.covered_transitions().0);
-    let tail = crate::recovered_history::journal_tail(serving, covered).map_err(Denial::Journal)?;
-    let transitions = crate::recovered_transitions::transition_tail(serving, transitions)
-        .map_err(Denial::Transitions)?;
-    let source =
-        RelationalDurableRecoverySource::new(checkpoint, tail, transitions, cold_source.clone());
+    let original: std::sync::Arc<
+        dyn worth_relational::facade::durability::RelationalDurableColdSource,
+    > = cold_source.clone();
+    let protection =
+        worth_relational::facade::durability::RelationalDurableReadProtection::capture(
+            &original, execution,
+        )
+        .map_err(Denial::OwnedSource)?;
+    let source = RelationalDurableRecoverySource::from_protected_source(
+        execution,
+        checkpoint,
+        original,
+        &protection,
+    )
+    .map_err(Denial::OwnedSource)?;
     let plan = runtime
         .durability()
         .recovery_plan_from_source(

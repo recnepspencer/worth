@@ -9,6 +9,13 @@ use crate::branch::{PositionedBranchTransition, RelationalBranchTransition};
 use crate::durability::artifact_canonical_payload::is_canonical_payload;
 
 impl RelationalBranchTransitionArtifact {
+    /// Read original owned bytes without reencoding or losing their grant during admission.
+    pub(crate) fn readmit_owned(
+        bytes: worth_execution::ExecutionImmutableBytes,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<PositionedBranchTransition, Refusal> {
+        Self::readmit(bytes.bytes(), execution)
+    }
     /// The only door from artifact bytes back to a positioned transition.
     ///
     /// Phases, cheapest first, each refusing before the next runs: request

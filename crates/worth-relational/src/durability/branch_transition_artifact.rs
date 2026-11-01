@@ -66,7 +66,13 @@ impl RelationalBranchTransitionArtifact {
     pub fn from_untrusted_bytes(
         bytes: impl Into<Box<[u8]>>,
     ) -> Result<Self, RelationalBranchTransitionArtifactFrameRefusal> {
-        let bytes = ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.into()));
+        Self::from_owned_bytes(ExecutionImmutableBytes::from_external_bytes(Arc::new(
+            bytes.into(),
+        )))
+    }
+    pub(crate) fn from_owned_bytes(
+        bytes: ExecutionImmutableBytes,
+    ) -> Result<Self, RelationalBranchTransitionArtifactFrameRefusal> {
         let (header, _) = BranchTransitionArtifactHeader::verify(bytes.bytes())?;
         Ok(Self { bytes, header })
     }

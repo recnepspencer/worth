@@ -3,7 +3,9 @@
 mod attachment;
 pub mod bytes;
 mod cold_source;
+mod owned_snapshot;
 use bytes::{ByteJournal, MemberBytes};
+pub use owned_snapshot::{OwnedNativeReadSnapshot, OwnedSnapshotDenial};
 use std::sync::{Arc, Mutex, MutexGuard};
 use worth_relational::facade::{
     branch::RelationalBranchTransitionSequence, durability::*, publication::PatchStreamPosition,

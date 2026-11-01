@@ -29,6 +29,11 @@ pub use member_custody::{
     RelationalDurableMemberRetirementObservation, RelationalDurableMemberRetirementRefusal,
     RetiredRelationalDurableMemberCustody,
 };
+mod read_protection;
+pub use read_protection::{
+    RelationalDurableOwnedReadRefusal, RelationalDurableReadBounds, RelationalDurableReadPayload,
+    RelationalDurableReadProtection,
+};
 mod recovery_source;
 mod transition_read;
 mod unresolved;

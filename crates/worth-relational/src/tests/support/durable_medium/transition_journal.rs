@@ -12,7 +12,7 @@ use crate::durability::medium::DurablePublicationFate;
 
 #[derive(Debug, Default)]
 pub(super) struct TestTransitionJournal {
-    artifacts: ByteJournal,
+    pub(super) artifacts: ByteJournal,
     pub(super) scripted: VecDeque<ScriptedPublication>,
     pub(super) offered: Vec<RelationalBranchTransitionArtifact>,
 }

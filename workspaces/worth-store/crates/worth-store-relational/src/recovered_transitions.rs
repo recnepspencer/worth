@@ -4,12 +4,12 @@
 //! journal frame and the artifact frame; Relational readmits the transitions
 //! and decides whether they continue the checkpoint.
 
-use worth_relational::facade::durability::{
-    RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactFrameRefusal,
-};
-use worth_store::physical_runtime::{
-    OrderedJournalDenial, OrderedJournalReadFailure, ServingPhysicalRuntime,
-};
+#[cfg(test)]
+use worth_relational::facade::durability::RelationalBranchTransitionArtifact;
+use worth_relational::facade::durability::RelationalBranchTransitionArtifactFrameRefusal;
+#[cfg(test)]
+use worth_store::physical_runtime::ServingPhysicalRuntime;
+use worth_store::physical_runtime::{OrderedJournalDenial, OrderedJournalReadFailure};
 
 /// The largest transition artifact one journal read admits. A transition
 /// names branches and one head, so a larger record is refused, not
@@ -38,9 +38,11 @@ pub enum RelationalStoreTransitionJournalRefusal {
     CheckpointAheadOfJournal { covered: u64, head: u64 },
 }
 
+#[cfg(test)]
 type Refusal = RelationalStoreTransitionJournalRefusal;
 
 /// Every transition artifact after `covered`, oldest first.
+#[cfg(test)]
 pub(crate) fn transition_tail(
     serving: &ServingPhysicalRuntime,
     covered: u64,

@@ -29,6 +29,9 @@ impl MemberBytes {
     pub fn insert(&mut self, digest: [u8; 32], length: u64, bytes: ExecutionImmutableBytes) {
         self.entries.insert((digest, length), bytes);
     }
+    pub fn iter(&self) -> impl Iterator<Item = (&([u8; 32], u64), &[u8])> {
+        self.entries.iter().map(|(key, bytes)| (key, bytes.bytes()))
+    }
     pub fn get(&self, digest: [u8; 32], length: u64) -> Option<&[u8]> {
         self.entries.get(&(digest, length)).map(AsRef::as_ref)
     }

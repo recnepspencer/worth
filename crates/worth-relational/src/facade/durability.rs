@@ -52,3 +52,8 @@ pub use crate::durability::data::{
     CheckpointReservationAdvanceDenial, NativeCheckpointModelBytes, RelationalCheckpointInspection,
 };
 pub use crate::history::data::RecordAllocationClass;
+
+pub use crate::durability::medium::{
+    RelationalDurableOwnedReadRefusal, RelationalDurableReadBounds, RelationalDurableReadPayload,
+    RelationalDurableReadProtection,
+};

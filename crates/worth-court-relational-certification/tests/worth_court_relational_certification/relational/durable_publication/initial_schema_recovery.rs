@@ -40,11 +40,19 @@ fn source_recovery_preserves_original_installed_executor_and_readmits_genuine_re
             .is_err(),
         "a live original receipt is not already a recovered installation"
     );
+    let original: Arc<dyn worth_relational::facade::durability::RelationalDurableColdSource> =
+        medium.clone();
+    let protection =
+        worth_relational::facade::durability::RelationalDurableReadProtection::capture(
+            &original, execution,
+        )
+        .unwrap();
+    let protected=worth_relational::facade::durability::RelationalDurableRecoverySource::from_protected_source(execution,None,original,&protection).unwrap();
     let plan = runtime
         .durability()
         .recovery_plan_from_source(
             execution,
-            medium.recovery_source(),
+            protected,
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();

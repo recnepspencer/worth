@@ -14,6 +14,50 @@ pub struct RelationalDurableMemberLocator {
 /// Read-only committed storage, injected before recovery readmission. A fork
 /// may share this port without acquiring any publication authority.
 pub trait RelationalDurableColdSource: Send + Sync + std::fmt::Debug {
+    /// Capture the provider's actual immutable native cut. No legacy read fallback.
+    fn checkpoint_read_protection(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            super::RelationalDurableReadBounds,
+            super::RelationalDurableReadPayload,
+        ),
+        super::RelationalDurableOwnedReadRefusal,
+    > {
+        Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
+    }
+    fn read_commit_owned(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        _original: &(dyn std::any::Any + Send + Sync),
+        _position: PatchStreamPosition,
+        _limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, super::RelationalDurableOwnedReadRefusal>
+    {
+        Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
+    }
+    fn read_transition_owned(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        _original: &(dyn std::any::Any + Send + Sync),
+        _sequence: crate::branch::RelationalBranchTransitionSequence,
+        _limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, super::RelationalDurableOwnedReadRefusal>
+    {
+        Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
+    }
+    fn read_member_owned(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        _original: &(dyn std::any::Any + Send + Sync),
+        _member: RelationalDurableMemberLocator,
+        _limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, super::RelationalDurableOwnedReadRefusal>
+    {
+        Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
+    }
+
     /// Provider-only admission of the ORIGINAL opaque payload. This callback
     /// must perform no I/O, allocation, locking or payload destruction. Native
     /// has already checked the immutable issuing source's data identity.

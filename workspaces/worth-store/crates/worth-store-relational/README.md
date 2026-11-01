@@ -116,3 +116,16 @@ The `relational_home` oracle compares recovered owner artifacts and graph state
 against a memory-only Relational reference. Incarnation media sweeps and real
 process kills cover open-time publication. Independent processes probe the OS
 lease at recovery yieldpoints and the serving handoff.
+
+
+## Protected Native source reads
+
+Native recovery captures one actual protected physical reader, the two journal
+heads and the verified selected member table from that reader. Its provider
+payload retains the same Serving owner until the reader retires. Later journal
+or anchor publication cannot expand that cut or replace its member route.
+Owned outputs use the original request's fixed array allocation before payload
+growth and return only after exact length and verified EOF. Foreign original
+sources refuse before provider I/O. The initial selected-map contract remains
+unchanged; this ordinary read capability does not implement Complete capture
+or selected-backing replacement.

@@ -144,14 +144,38 @@ fn recovery_plan_after_native_capture_keeps_covered_forks() {
     create_entity(execution, &runtime, "source");
     fork(execution, &runtime, "A");
     let target = create_entity_outcome_on_branch(execution, &runtime, "on-A", BranchId("A".into()));
-    runtime
+    let native = runtime
         .durability_authority()
         .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
+    let contents = crate::tests::support::attached_durable_medium(&runtime).unwrap();
+    contents.file_checkpoint(native);
+    let selected = contents
+        .recovery_source()
+        .unwrap()
+        .checkpoint()
+        .cloned()
+        .expect("actual selected native capture");
+    let covered = selected.covered();
+    let later = create_entity_outcome(execution, &runtime, "main-after-selected-checkpoint");
+    let source: Arc<dyn crate::durability::medium::RelationalDurableColdSource> = contents;
+    let protection =
+        crate::durability::medium::RelationalDurableReadProtection::capture(&source, execution)
+            .unwrap();
+    assert_eq!(protection.bounds().canonical.0, covered.0 + 1);
+    let original =
+        crate::durability::medium::RelationalDurableRecoverySource::from_protected_source(
+            execution,
+            Some(selected),
+            source,
+            &protection,
+        )
+        .unwrap();
     let plan = runtime
         .durability()
-        .recovery_plan(
+        .recovery_plan_from_source(
             execution,
+            original,
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
@@ -167,6 +191,14 @@ fn recovery_plan_after_native_capture_keeps_covered_forks() {
             .unwrap()
             .commit_id,
         target.commit.commit_id
+    );
+    assert_eq!(
+        recovered
+            .history()
+            .branch_head(&BranchId("main".into()))
+            .unwrap()
+            .commit_id,
+        later.commit.commit_id
     );
 }
 

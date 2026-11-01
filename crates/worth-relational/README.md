@@ -598,3 +598,20 @@ stops and lost responses. This Native Memory contract grants no durable/cold Hom
 close or arbitrary destructor deadline. Dense cache/head tables retain their
 existing allocation semantics; metadata footprint and worst-case O(1) cost are
 not claimed, and close never allocates/reserves/rehashes/shrinks those tables.
+
+
+## Read an original protected source cut
+
+`RelationalDurableReadProtection::capture` binds the original source allocation
+and the provider's frozen canonical/transition bounds. Its owned read methods
+reject foreign sources before callbacks and never fall back to legacy `Vec`
+reads. Unknown providers return `UnsupportedProvider`. The two original test
+media copy/fund immutable snapshots; inline checkpoint images expose members
+with zero journal bounds and do not manufacture an original journal prefix.
+
+`RelationalDurableRecoverySource::from_protected_source` feeds exact original
+owned artifacts into the existing recovery admission. Canonical admission
+retains the funded original raw buffer. Transport/plan collections and decoded
+transition heaps retain their ordinary allocation contract. This capability
+confers no Complete checkpoint, CHK18 coverage, schema reconstruction, selected
+residency transfer or acknowledgement authority.

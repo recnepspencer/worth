@@ -167,7 +167,8 @@ fn readmit_contiguous_tail(
             )
             .into());
         }
-        let readmitted = RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
+        let readmitted = artifact
+            .readmit_owned(execution)
             .map_err(|refusal| artifact_refusal_stop(expected, refusal))?;
         tail.push(readmitted);
     }
