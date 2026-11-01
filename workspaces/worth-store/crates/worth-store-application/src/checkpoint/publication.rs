@@ -13,9 +13,16 @@ pub enum ApplicationHomeCheckpointDenial {
     /// Native readmission or pre-service Query initialization is incomplete;
     /// no capture or checkpoint task is attempted by preparation cleanup.
     HomePreparationIncomplete,
+    ReadSourceBusy,
+    Payload(worth_execution::ExecutionRequestArrayDenial),
     WorldSectionRequired,
-    WorldJournalUnavailable(worth_store::physical_runtime::OrderedJournalDenial),
-    WorldJournalRead(worth_store::physical_runtime::OrderedJournalReadFailure),
+    CoverageAheadOfJournal,
+    JournalDescriptionMismatch,
+    CheckpointReadProtection(worth_store::physical_runtime::PhysicalCheckpointReadProtectionDenial),
+    World(worth_runtime_world::facade::WorldDurableMediumDenial),
+    WorldReadmission(worth_runtime_world::facade::WorldReadmissionDenial),
+    JournalUnavailable(worth_store::physical_runtime::OrderedJournalDenial),
+    JournalRead(worth_store::physical_runtime::OrderedJournalReadFailure),
     Unavailable(AnchoredRecordsDenial),
     Read(AnchoredRecordReadFailure),
     Manifest(super::HomeManifestDenial),
@@ -63,23 +70,18 @@ impl ApplicationHomeCheckpoint {
 impl crate::ReadmittedApplicationHome {
     pub fn checkpoint(
         &self,
-        execution: &ExecutionRequest<'_, '_>,
+        _execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial> {
-        checkpoint(
-            &self.context.serving,
-            &self.context.checkpoint,
-            execution,
-            || self.relational.prepare_checkpoint(execution),
-        )
+        Err(ApplicationHomeCheckpointDenial::WorldSectionRequired)
     }
 
     /// Finish only the original accepted physical step and Native acknowledgement.
     /// A fresh request never restarts members or anchor publication.
     pub fn recover_checkpoint(
         &self,
-        execution: &ExecutionRequest<'_, '_>,
+        _execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial> {
-        super::journey::recover(&self.context.serving, &self.context.checkpoint, execution)
+        Err(ApplicationHomeCheckpointDenial::WorldSectionRequired)
     }
 
     pub fn checkpoint_observation(&self) -> Option<super::ApplicationHomeCheckpointRecovery> {
@@ -99,5 +101,5 @@ pub(crate) fn checkpoint(
         worth_store_relational::RelationalSectionCheckpointDenial,
     >,
 ) -> Result<ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial> {
-    super::journey::checkpoint(serving, owner, execution, capture, None, None)
+    super::journey::checkpoint(serving, owner, None, execution, capture, None, None)
 }

@@ -103,6 +103,7 @@ impl UnclaimedWorldSlot {
     pub(crate) fn from_admitted_home(
         serving: Arc<ServingPhysicalRuntime>,
         descriptor: &crate::descriptor::HomeDescriptor,
+        checkpoint: &Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     ) -> Self {
         let owner = DurableWorldOwnerIdentity::from_recorded(
             descriptor.identity,
@@ -118,6 +119,7 @@ impl UnclaimedWorldSlot {
                 ),
                 placement: crate::open::physical_admission::placement(),
                 publications: Arc::new(super::WorldPublications::default()),
+                checkpoint: Arc::downgrade(checkpoint),
             }),
         }
     }

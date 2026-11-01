@@ -15,12 +15,19 @@ pub(super) fn start(
         .expect("unsubmitted attempt owns its capture")
         .validate_publication()
         .map_err(Denial::Native)?;
+    attempt
+        .world()
+        .ok_or_else(|| Denial::RecoveryRequired(attempt.observation()))?
+        .validate_publication()
+        .map_err(Denial::World)?;
     let super::preparation::PreparedHomeInput {
         payload,
         members,
         member_memory,
         generation,
+        identity,
     } = prepared;
+    attempt.bind_manifest(identity)?;
     let crate::frame_encoding::EncodedHomeFrame { bytes, memory } = payload;
     *attempt
         .input_memory

@@ -13,7 +13,7 @@ fn open(path: &std::path::Path, execution: &ExecutionRequest<'_, '_>) -> Readmit
 }
 
 #[test]
-fn public_native_progression_checkpoints_closes_reopens_and_continues_exact_history() {
+fn public_native_progression_closes_reopens_and_continues_without_a_partial_home_checkpoint() {
     let directory = tempfile::tempdir().unwrap();
     let request = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
@@ -27,11 +27,16 @@ fn public_native_progression_checkpoints_closes_reopens_and_continues_exact_hist
     super::native_schema::commit(home.relational().runtime(), &execution, "before");
     let before = super::native_schema::artifacts(home.relational().runtime());
     assert_eq!(before.len(), 1);
-    let checkpoint = home.checkpoint(&execution).unwrap();
-    assert_eq!(checkpoint.covered().0, 1);
+    assert!(matches!(
+        home.checkpoint(&execution),
+        Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired)
+    ));
     match home.close(&execution) {
         ApplicationHomeCloseOutcome::Closed { checkpoint, .. } => {
-            checkpoint.unwrap();
+            assert!(matches!(
+                checkpoint,
+                Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired)
+            ));
         }
         ApplicationHomeCloseOutcome::CloseRefused { .. } => panic!("quiescent owner must close"),
     }

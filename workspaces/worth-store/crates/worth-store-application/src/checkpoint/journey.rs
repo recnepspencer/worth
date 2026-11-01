@@ -10,6 +10,7 @@ use worth_store::physical_runtime::ServingPhysicalRuntime;
 pub(crate) fn checkpoint(
     serving: &ServingPhysicalRuntime,
     owner: &HomeCheckpointOwner,
+    world: Option<&worth_runtime_world::facade::WorldCheckpointPort>,
     execution: &ExecutionRequest<'_, '_>,
     capture: impl FnOnce() -> Result<
         worth_store_relational::PreparedRelationalSection,
@@ -22,7 +23,7 @@ pub(crate) fn checkpoint(
         return Err(Denial::RecoveryRequired(attempt.observation()));
     }
     execution.consult().map_err(Denial::Execution)?;
-    super::world_coverage::refuse_uncovered_world(serving)?;
+    let world = world.ok_or(Denial::WorldSectionRequired)?;
     let mut retained = None;
     let mut returned = None;
     let mut caller_driver = None;
@@ -30,15 +31,15 @@ pub(crate) fn checkpoint(
         execution
             .run_native_with_checkpoint(|context| {
                 returned = Some((|| {
-                    let (native, input) =
-                        super::preparation::capture(serving, execution, capture)?.into_parts();
-                    let (attempt, driver) =
-                        owner.install(native).map_err(Denial::RecoveryRequired)?;
+                    let (native, world, input) =
+                        super::preparation::capture(serving, execution, world, capture)?
+                            .into_parts();
+                    let (attempt, driver) = owner.install(native, world, execution)?;
                     retained = Some(attempt.clone());
                     caller_driver = Some(driver);
                     super::physical_start::start(serving, &attempt, input, context, lease)?;
                     drive_selection(serving, &attempt, context, observer)?;
-                    let result = acknowledge(&attempt, context)?;
+                    let result = acknowledge(owner, &attempt, context)?;
                     if let Some(observe) = after_acknowledgement {
                         observe();
                     }
@@ -84,7 +85,7 @@ pub(super) fn recover(
                 if attempt.observation().selected_generation.is_none() {
                     drive_selection(serving, &attempt, context, None)?;
                 }
-                let result = acknowledge(&attempt, context)?;
+                let result = acknowledge(owner, &attempt, context)?;
                 super::physical_checkpoint::complete(
                     serving,
                     &attempt,
@@ -190,6 +191,7 @@ pub(super) fn drive_selection(
 }
 
 pub(super) fn acknowledge(
+    owner: &HomeCheckpointOwner,
     attempt: &HomeCheckpointAttempt,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Summary, Denial> {
@@ -206,6 +208,11 @@ pub(super) fn acknowledge(
     native
         .acknowledge_selected(context)
         .map_err(Denial::Native)?;
+    owner.acknowledge_native([native.covered().0, native.covered_transitions().0]);
+    let world = attempt
+        .world()
+        .ok_or_else(|| Denial::RecoveryRequired(attempt.observation()))?;
+    world.acknowledge_selected(context).map_err(Denial::World)?;
     let result = Summary {
         covered: native.covered(),
         covered_transitions: native.covered_transitions(),
@@ -213,7 +220,7 @@ pub(super) fn acknowledge(
             .observation()
             .selected_generation
             .ok_or_else(|| Denial::RecoveryRequired(attempt.observation()))?,
-        bytes: native.bytes().len(),
+        bytes: super::manifest::HEADER_BYTES + native.bytes().len() + world.bytes().len(),
     };
     attempt.finish(result);
     Ok(result)

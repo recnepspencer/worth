@@ -79,19 +79,23 @@ pub fn admit_home(
             execution,
         )
         .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
+        let checkpoint = Arc::new(Default::default());
         let world_slot = crate::world_section::UnclaimedWorldSlot::from_admitted_home(
             Arc::clone(&recovered.serving),
             &descriptor,
+            &checkpoint,
         );
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             context: HomeContext {
+                selected_home_source: None,
                 initialization: crate::relational_preparation::HomeInitializationOrigin::Available(
                     recovered.origin,
                 ),
                 world_publications: world_slot.publications(),
                 world_close_report: None,
+                world_close_checkpoint: None,
                 world_slot: Some(world_slot),
-                checkpoint: Arc::new(Default::default()),
+                checkpoint,
                 location,
                 descriptor,
                 serving: recovered.serving,
@@ -107,11 +111,13 @@ pub fn readmit_relational(
     admitted: HomeAdmitted<AdmittedApplicationHome>,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<RelationalReadmitted<ReadmittedApplicationHome>, ApplicationHomeOpenRefusal> {
-    admitted.consume(|admitted| {
+    admitted.consume(|mut admitted| {
         execution
             .consult()
             .map_err(ApplicationHomeOpenRefusal::Execution)?;
-        let manifest = crate::checkpoint::read(&admitted.context.serving)
+        let manifest = admitted
+            .context
+            .selected_home_manifest(execution)
             .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
         #[cfg(not(feature = "certification-test-authority"))]
         let relational = worth_store_relational::RelationalStoreSection::attach(
@@ -139,12 +145,16 @@ pub fn readmit_relational(
             ),
         };
         let mut relational = relational.map_err(ApplicationHomeOpenRefusal::RuntimeConstruction)?;
-        relational
-            .readmit(
-                manifest.as_ref().map(|manifest| manifest.relational()),
+        let selected_coverage = relational
+            .readmit_home_from_read(
+                manifest.as_ref().map(|manifest| manifest.relational_read()),
                 execution,
             )
             .map_err(ApplicationHomeOpenRefusal::Relational)?;
+        admitted
+            .context
+            .checkpoint
+            .admit_selected_native_coverage(selected_coverage);
         Ok(RelationalReadmitted::from_owner(
             ReadmittedApplicationHome {
                 relational,

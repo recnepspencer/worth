@@ -72,14 +72,38 @@ pub struct ReadmittedApplicationHome {
 impl AuthorityMarker for ReadmittedApplicationHome {}
 
 pub(crate) struct HomeContext {
+    pub(crate) selected_home_source: Option<crate::checkpoint::SelectedHomeSource>,
     pub(crate) initialization: crate::relational_preparation::HomeInitializationOrigin,
     pub(crate) world_publications: Arc<crate::world_section::WorldPublications>,
     pub(crate) world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
+    pub(crate) world_close_checkpoint:
+        Option<Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial>>,
     pub(crate) world_slot: Option<crate::world_section::UnclaimedWorldSlot>,
     pub(crate) checkpoint: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     pub(crate) location: std::path::PathBuf,
     pub(crate) descriptor: crate::descriptor::HomeDescriptor,
     pub(crate) serving: Arc<ServingPhysicalRuntime>,
+}
+
+impl HomeContext {
+    pub(crate) fn selected_home_manifest(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<crate::checkpoint::SelectedHomeManifest>,
+        crate::ApplicationHomeCheckpointDenial,
+    > {
+        if self.selected_home_source.is_none() {
+            self.selected_home_source = Some(crate::checkpoint::SelectedHomeSource::capture(
+                &self.serving,
+                request,
+            )?);
+        }
+        self.selected_home_source
+            .as_ref()
+            .expect("original selected source retained before admission")
+            .selected(&self.serving, request)
+    }
 }
 
 impl ReadmittedApplicationHome {

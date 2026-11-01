@@ -62,7 +62,7 @@ pub(crate) fn settle(
     let result = if let Some(cause) = failure {
         Err(cause)
     } else if attempt.observation().selected_generation.is_some() {
-        let result = acknowledge(&attempt, execution)?;
+        let result = acknowledge(owner, &attempt, execution)?;
         super::physical_checkpoint::settle_for_close(serving, &attempt, execution)
             .map_err(CloseCheckpointWaitDenial::Interrupted)?
             .map(|()| result)
@@ -83,12 +83,13 @@ pub(crate) fn settle(
 }
 
 fn acknowledge(
+    owner: &HomeCheckpointOwner,
     attempt: &super::owner::HomeCheckpointAttempt,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Summary, CloseCheckpointWaitDenial> {
     let mut result = None;
     let scope = execution.run_native_with_checkpoint(|context| {
-        result = Some(super::journey::acknowledge(attempt, context));
+        result = Some(super::journey::acknowledge(owner, attempt, context));
     });
     match (scope, result) {
         (_, Some(Ok(summary))) => Ok(summary),

@@ -98,11 +98,17 @@ where
         .as_ref()
         .expect("one original exclusive World slot")
         .medium();
+    let source = super::checkpoint::readmission_source(home, request).map_err(|cause| {
+        crate::ApplicationHomeOpenRefusal::World(
+            worth_runtime_world::facade::WorldReadmissionDenial::Medium(cause),
+        )
+    })?;
     builder
         .readmit_world_home(
             home.relational.runtime().owner_component_services(),
             bridge,
             medium,
+            source,
             request,
             home.relational.runtime(),
             native_recovery,
@@ -127,6 +133,10 @@ where
             .take()
             .expect("only actual admission consumes the same slot"),
     );
+    // Both owners consumed this SAME initial image and tails. Any required
+    // Native member route owns its actual opaque read share independently.
+    // Release only this completed context share, outside admission locks.
+    drop(home.context.selected_home_source.take());
     WorldReconciled::from_owner(WorldReadmittedApplicationHome {
         home,
         world,

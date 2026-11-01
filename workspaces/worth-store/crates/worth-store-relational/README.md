@@ -17,6 +17,36 @@ existing byte-returning, unbudgeted allocation contract. This prerequisite is
 not coupled Home readmission, later selection replacement, Complete Native
 acknowledgement or bounded final physical-reader retirement.
 
+## Controlled application readmission
+
+Store Application retains one private, funded `SelectedHomeSource` before
+Native admission. Its original physical reader, verified EOF membership and
+immutable Home payload supply both owner sections and World's frozen journal
+bounds. A missing or loaned reader is a refusal; only that actual reader's
+anchor lookup can establish no selected checkpoint. Later anchor replacement
+does not select another source during an owning readmission retry.
+
+The closed `readmit_home_from_read` entry installs the actual selected-member
+route before the shared Native recovery core. The core performs no legacy
+reselection; ordinary standalone entries retain their explicit ordinary setup.
+Selected canonical and transition coverage can leave that core only after
+`recover_with_authority` succeeds. Zero scheduling baselines are not empty-owner
+or no-effect evidence.
+
+The qualified Native format currently lacks the required Complete source
+admission. Selected coupled Home2 therefore returns `CompleteNativeRequired`
+before Native recovery, preserving the owning unshared Home and its original
+source. Ordinary checkpoint output or a format marker cannot substitute for
+Complete admission. This containment remains unfinished integration work;
+genuine no-checkpoint recovery continues through the existing Native owner.
+
+After both actual Native and World admissions consume the initial image and
+tails, successful attachment releases the context's local source share outside
+admission locks. Any required Native member route retains its own actual read
+share. Refusal preserves the initial source. The older bare-error generic API
+retains its ordinary abandonment semantics; this slice does not qualify full
+Home close or bounded physical-reader retirement.
+
 ## Cooperative release of one cold member registration
 
 Store's cold source issues the existing Native member-custody token with its

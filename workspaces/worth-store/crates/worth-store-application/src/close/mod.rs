@@ -131,7 +131,7 @@ impl crate::ReadmittedApplicationHome {
     }
 }
 
-fn checkpoint_settlement_denial(
+pub(crate) fn checkpoint_settlement_denial(
     cause: crate::checkpoint::close_settlement::CloseCheckpointWaitDenial,
 ) -> ApplicationHomeCloseDenial {
     use crate::checkpoint::close_settlement::CloseCheckpointWaitDenial;

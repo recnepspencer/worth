@@ -10,7 +10,8 @@ use worth_relational::facade::{
     },
 };
 use worth_store::physical_runtime::{
-    AdmittedRecordPlacementPolicy, AnchoredRecordMembership, ServingPhysicalRuntime,
+    AdmittedRecordPlacementPolicy, AnchoredRecordMembership, AnchoredRecordReadMembership,
+    ServingPhysicalRuntime,
 };
 
 pub(super) struct AttachedRelationalRuntime {
@@ -125,18 +126,74 @@ impl UnrecoveredRelationalSection {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<UnsharedReadmittedRelationalSection, (Self, RelationalSectionReadmissionDenial)>
     {
+        let checkpoint = match super::readmission::prepare_ordinary_source(
+            &self.attached.cold_source,
+            selected,
+            execution,
+        ) {
+            Ok(checkpoint) => checkpoint,
+            Err(cause) => return Err((self, cause)),
+        };
         match super::readmission::recover_runtime(
             &mut self.attached.runtime,
             &self.attached.cold_source,
             &self.attached.serving,
+            checkpoint,
+            execution,
+        ) {
+            Ok(admitted) => Ok(UnsharedReadmittedRelationalSection {
+                attached: self.attached,
+                recovered: admitted.authority,
+                outcome: admitted.outcome,
+            }),
+            Err(cause) => Err((self, cause)),
+        }
+    }
+
+    /// Admit the closed Home's actual selected read before the shared Native
+    /// recovery core. A refusal preserves this SAME unshared Native owner.
+    pub fn readmit_home_from_read(
+        mut self,
+        selected: Option<(
+            worth_execution::ExecutionImmutableBytes,
+            std::ops::Range<usize>,
+            &AnchoredRecordReadMembership,
+        )>,
+        expected: &RelationalInitialSchemaInstallationReceipt,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (UnsharedReadmittedRelationalSection, Option<[u64; 2]>),
+        (Self, RelationalSectionReadmissionDenial),
+    > {
+        if expected.runtime_instance_id() != self.attached.runtime.runtime_instance_id() {
+            return Err((
+                self,
+                RelationalSectionReadmissionDenial::InitialSchemaRuntimeMismatch,
+            ));
+        }
+        let checkpoint = match super::readmission::prepare_home_source(
+            &self.attached.cold_source,
             selected,
             execution,
         ) {
-            Ok((outcome, recovered)) => Ok(UnsharedReadmittedRelationalSection {
-                attached: self.attached,
-                recovered,
-                outcome,
-            }),
+            Ok(checkpoint) => checkpoint,
+            Err(cause) => return Err((self, cause)),
+        };
+        match super::readmission::recover_runtime(
+            &mut self.attached.runtime,
+            &self.attached.cold_source,
+            &self.attached.serving,
+            checkpoint,
+            execution,
+        ) {
+            Ok(admitted) => Ok((
+                UnsharedReadmittedRelationalSection {
+                    attached: self.attached,
+                    recovered: admitted.authority,
+                    outcome: admitted.outcome,
+                },
+                admitted.selected_coverage,
+            )),
             Err(cause) => Err((self, cause)),
         }
     }

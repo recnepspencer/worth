@@ -81,6 +81,7 @@ impl crate::ReadmittedApplicationHome {
         crate::checkpoint::journey::checkpoint(
             &self.context.serving,
             &self.context.checkpoint,
+            None,
             execution,
             || self.relational.prepare_checkpoint(execution),
             Some(&observer),
@@ -96,6 +97,7 @@ impl crate::ReadmittedApplicationHome {
         crate::checkpoint::journey::checkpoint(
             &self.context.serving,
             &self.context.checkpoint,
+            None,
             execution,
             || self.relational.prepare_checkpoint(execution),
             None,

@@ -83,13 +83,15 @@ impl ApplicationHomeRecoveryCustody {
         world_composition: Option<crate::world_section::ApplicationHomeBridgeComposition>,
     ) -> Self {
         let crate::ReadmittedApplicationHome {
-            context,
+            mut context,
             relational,
         } = home;
         Self {
             location: context.location,
             descriptor: context.descriptor,
-            checkpoint: Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired),
+            checkpoint: context.world_close_checkpoint.take().expect(
+                "actual World seal retained its settled checkpoint result before World Drop",
+            ),
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Serving(relational),
             world_close_report: context.world_close_report,
@@ -324,11 +326,7 @@ impl ApplicationHomeRecoveryCustody {
             crate::checkpoint::close_settlement::settle(serving, &self.checkpoint_owner, execution)
                 .map_err(super::checkpoint_settlement_denial)?
         {
-            self.checkpoint = if self.world_close_report.is_some() {
-                Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired)
-            } else {
-                checkpoint
-            };
+            self.checkpoint = checkpoint;
         }
         Ok(())
     }

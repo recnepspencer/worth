@@ -3,6 +3,7 @@
 use super::WorldReadmittedApplicationHome;
 use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::RuntimeWorldOwnerLifecycleObservation;
+mod checkpoint;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum WorldHomeClosePosture {
@@ -169,6 +170,9 @@ where
                     reason: crate::ApplicationHomeCloseDenial::WorldResultSnapshot(cause),
                 }),
             }
+        }
+        if let Err(reason) = checkpoint::settle_before_world_drop(&mut self, request) {
+            return Err(WorldHomeCloseRefused { home: self, reason });
         }
         let Self {
             home,

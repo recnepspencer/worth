@@ -1,15 +1,22 @@
 //! The Home's single actual checkpoint attempt; returned observers own no work.
 use std::sync::{Arc, Mutex, Weak};
 use worth_relational::facade::durability::OpaqueCapturedCheckpointSubject;
+use worth_runtime_world::facade::{
+    PreparedWorldCheckpoint, WorldCheckpointSubject, WorldDurableMediumDenial,
+};
 use worth_store::physical_runtime::AnchoredRecordMembership;
 use worth_store_relational::{PreparedRelationalSection, RelationalCheckpointSelectionSource};
 
 #[derive(Default)]
 pub(crate) struct HomeCheckpointOwner {
     pending: Mutex<Option<Arc<HomeCheckpointAttempt>>>,
+    acknowledged_native: Mutex<[u64; 2]>,
 }
 
 pub(crate) struct HomeCheckpointAttempt {
+    pub(super) world: Mutex<Option<Arc<PreparedWorldCheckpoint>>>,
+    world_subject: WorldCheckpointSubject,
+    manifest: Mutex<Option<HomeManifestPublication>>,
     pub(super) native: Mutex<Option<Arc<PreparedRelationalSection>>>,
     subject: Option<OpaqueCapturedCheckpointSubject>,
     receipt: Mutex<Option<AnchoredRecordMembership>>,
@@ -17,6 +24,13 @@ pub(crate) struct HomeCheckpointAttempt {
     pub(super) input_memory: Mutex<Option<Arc<super::input_memory::CheckpointInputMemory>>>,
     pub(super) physical: Mutex<super::physical_publication::HomePhysicalPublication>,
     pub(super) wal: Mutex<super::physical_checkpoint::HomeWalCheckpoint>,
+    _metadata_funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(crate) struct HomeManifestPublication {
+    pub(crate) generation: u64,
+    pub(crate) payload_sha256: [u8; 32],
+    pub(crate) payload_bytes: usize,
 }
 
 /// A description of work still owned by the Home. Dropping this value neither
@@ -52,6 +66,26 @@ impl std::fmt::Debug for ApplicationHomeCheckpointRecovery {
 }
 
 impl HomeCheckpointOwner {
+    /// Only the actual successful section readmission supplies this seed.
+    /// Zero denotes no selected scheduling prefix, never absent owner state.
+    pub(crate) fn admit_selected_native_coverage(&self, selected: Option<[u64; 2]>) {
+        *self
+            .acknowledged_native
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = selected.unwrap_or([0; 2]);
+    }
+    pub(crate) fn acknowledged_native(&self) -> [u64; 2] {
+        *self
+            .acknowledged_native
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+    }
+    pub(super) fn acknowledge_native(&self, coverage: [u64; 2]) {
+        *self
+            .acknowledged_native
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = coverage;
+    }
     #[cfg(feature = "certification-test-authority")]
     pub(crate) fn input_memory_bytes_for_test(&self) -> Option<u64> {
         self.pending()?
@@ -70,21 +104,36 @@ impl HomeCheckpointOwner {
     pub(super) fn install(
         &self,
         native: PreparedRelationalSection,
+        world: PreparedWorldCheckpoint,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         (
             Arc<HomeCheckpointAttempt>,
             super::physical_publication::PublicationDriverLoan,
         ),
-        ApplicationHomeCheckpointRecovery,
+        super::ApplicationHomeCheckpointDenial,
     > {
+        let quote = std::mem::size_of::<HomeCheckpointAttempt>()
+            .checked_add(std::mem::size_of::<PreparedRelationalSection>())
+            .and_then(|bytes| bytes.checked_add(std::mem::size_of::<PreparedWorldCheckpoint>()))
+            .and_then(|bytes| bytes.checked_add(6 * std::mem::size_of::<usize>()))
+            .ok_or(super::ApplicationHomeCheckpointDenial::SizeLimit)?;
+        let funding = request
+            .reserve_retained_memory(quote as u64)
+            .map_err(super::ApplicationHomeCheckpointDenial::Execution)?;
         let mut pending = self
             .pending
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         if let Some(attempt) = pending.as_ref() {
-            return Err(attempt.observation());
+            return Err(super::ApplicationHomeCheckpointDenial::RecoveryRequired(
+                attempt.observation(),
+            ));
         }
         let attempt = Arc::new(HomeCheckpointAttempt {
+            world_subject: world.publication_subject().clone(),
+            world: Mutex::new(Some(Arc::new(world))),
+            manifest: Mutex::new(None),
             subject: native.publication_subject().cloned(),
             native: Mutex::new(Some(Arc::new(native))),
             receipt: Mutex::new(None),
@@ -92,6 +141,7 @@ impl HomeCheckpointOwner {
             input_memory: Mutex::new(None),
             physical: Mutex::new(Default::default()),
             wal: Mutex::new(Default::default()),
+            _metadata_funding: funding,
         });
         let driver = attempt
             .try_driver()
@@ -118,9 +168,65 @@ impl HomeCheckpointOwner {
             owner: Arc::downgrade(self),
         })
     }
+    pub(crate) fn with_selected_world<R>(
+        &self,
+        subject: &WorldCheckpointSubject,
+        consume: impl FnOnce(
+            &PreparedWorldCheckpoint,
+            HomeManifestPublication,
+            &AnchoredRecordMembership,
+        ) -> R,
+    ) -> Result<Option<R>, WorldDurableMediumDenial> {
+        let Some(attempt) = self.pending() else {
+            return Ok(None);
+        };
+        if !attempt.world_subject.same_capture(subject) {
+            return Ok(None);
+        }
+        let world = attempt
+            .world
+            .try_lock()
+            .map_err(|_| WorldDurableMediumDenial::PublicationBusy)?;
+        let manifest = attempt
+            .manifest
+            .try_lock()
+            .map_err(|_| WorldDurableMediumDenial::PublicationBusy)?;
+        let receipt = attempt
+            .receipt
+            .try_lock()
+            .map_err(|_| WorldDurableMediumDenial::PublicationBusy)?;
+        let (Some(world), Some(manifest), Some(receipt)) =
+            (world.as_ref(), *manifest, receipt.as_ref())
+        else {
+            return Ok(None);
+        };
+        Ok(Some(consume(world, manifest, receipt)))
+    }
 }
 
 impl HomeCheckpointAttempt {
+    pub(super) fn bind_manifest(
+        &self,
+        manifest: HomeManifestPublication,
+    ) -> Result<(), super::ApplicationHomeCheckpointDenial> {
+        let mut original = self
+            .manifest
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if original.is_some_and(|before| before != manifest) {
+            return Err(super::ApplicationHomeCheckpointDenial::World(
+                WorldDurableMediumDenial::StaleCheckpoint,
+            ));
+        }
+        *original = Some(manifest);
+        Ok(())
+    }
+    pub(super) fn world(&self) -> Option<Arc<PreparedWorldCheckpoint>> {
+        self.world
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
+    }
     pub(super) fn selected(&self, receipt: AnchoredRecordMembership) {
         *self
             .receipt
@@ -141,11 +247,18 @@ impl HomeCheckpointAttempt {
         self.clear_settled_payload();
     }
     pub(super) fn clear_settled_payload(&self) {
-        self.native
+        let world = self
+            .world
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .take();
-        self.input_memory
+        let native = self
+            .native
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .take();
+        let input = self
+            .input_memory
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .take();
@@ -153,6 +266,9 @@ impl HomeCheckpointAttempt {
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .clear();
+        drop(world);
+        drop(native);
+        drop(input);
     }
     pub(super) fn observation(&self) -> ApplicationHomeCheckpointRecovery {
         let (accepted_mutation, terminal) = {

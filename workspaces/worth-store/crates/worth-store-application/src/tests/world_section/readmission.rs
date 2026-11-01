@@ -4,6 +4,8 @@ use worth_foundational::facade::{AspectKey, ScalarAspectType};
 use worth_runtime_bridge::facade::*;
 use worth_runtime_world::facade::*;
 use worth_signal::facade::{SignalGraph, SignalRuntime};
+#[path = "readmission/selected_source.rs"]
+mod selected_source;
 
 struct Clock;
 impl RuntimeWorldClockSource for Clock {
@@ -24,21 +26,24 @@ impl InvalidationSink for UnboundDelivery {
         ))
     }
 }
-fn native_home(
-    location: &std::path::Path,
-    execution: &ExecutionRequest<'_, '_>,
-) -> crate::ReadmittedApplicationHome {
+fn native_request(location: &std::path::Path) -> crate::ApplicationHomeRequest {
     let binding = worth_query_testkit_installation::facade::installation::application_home_binding::admitted_home_binding();
     let build = worth_foundational::facade::ApplicationBuildIdentity::parse(
         "11111111-1111-4111-8111-111111111111",
     )
     .unwrap();
-    let opening = crate::ApplicationHomeRequest::new(
+    crate::ApplicationHomeRequest::new(
         location.to_owned(),
         worth_relational::facade::runtime::RelationalRuntimeApi::builder().resolve(),
         binding,
         build,
-    );
+    )
+}
+fn native_home(
+    location: &std::path::Path,
+    execution: &ExecutionRequest<'_, '_>,
+) -> crate::ReadmittedApplicationHome {
+    let opening = native_request(location);
     execution
         .in_scope(|_| {
             let recovered = crate::recover_home(opening, execution).unwrap();
@@ -105,7 +110,7 @@ fn empty_world_requires_its_actual_native_recovery_authority_before_construction
     let directory_a = tempfile::tempdir().unwrap();
     let directory_b = tempfile::tempdir().unwrap();
     let policy = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::SerialMemoryBudget::new(Some(16 << 20)),
         worth_execution::CancellationToken::new(),
         None,
     );
@@ -119,6 +124,7 @@ fn empty_world_requires_its_actual_native_recovery_authority_before_construction
         home_a.relational.runtime().owner_component_services(),
         bridge,
         medium.clone(),
+        crate::world_section::checkpoint::readmission_source(&home_a, &execution).unwrap(),
         &execution,
         home_a.relational.runtime(),
         home_b.relational.world_recovery_authority().unwrap(),
@@ -140,23 +146,34 @@ fn empty_world_requires_its_actual_native_recovery_authority_before_construction
             home_a.relational.runtime().owner_component_services(),
             bridge,
             medium.clone(),
+            crate::world_section::checkpoint::readmission_source(&home_a, &execution).unwrap(),
             &execution,
             home_a.relational.runtime(),
             home_a.relational.world_recovery_authority().unwrap(),
         )
         .unwrap();
+    let before_attachment = policy.memory().unwrap().charged_memory_bytes();
+    let home_a = super::finish_attachment(home_a, world, None).consume(|home| home);
     assert!(
-        world
+        policy.memory().unwrap().charged_memory_bytes() < before_attachment,
+        "successful attachment retires the actual initial source admission"
+    );
+    assert!(
+        home_a
+            .world
             .observation_port()
             .observe_root_product_branch()
             .is_err(),
         "genuine empty World was admitted without inventing a root"
     );
-    let report = world.lifecycle_port().close(&execution, &world).unwrap();
-    assert!(report.retained_records().is_empty());
-    drop((world, signal, medium));
+    let sealed = match home_a.seal_world(&execution) {
+        Ok(sealed) => sealed,
+        Err(refused) => panic!("genuine empty World seal refused: {:?}", refused.reason()),
+    };
+    assert!(sealed.world_close_report().retained_records().is_empty());
+    drop((signal, medium));
     assert!(matches!(
-        home_a.close(&execution),
+        sealed.finish_close(&execution),
         crate::ApplicationHomeCloseOutcome::Closed { .. }
     ));
     assert!(matches!(

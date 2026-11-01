@@ -1,5 +1,6 @@
 //! The Home's private World adapter. Only World decodes owner payloads.
 mod attachment;
+mod checkpoint;
 mod close;
 mod definition;
 pub use close::{WorldHomeClosePosture, WorldHomeCloseRefused, WorldSealedApplicationHome};
@@ -12,10 +13,9 @@ pub use ports::ApplicationWorldPorts;
 pub(crate) use publication_task::WorldPublications;
 mod query_root;
 mod readmission;
-pub use query_root::ApplicationHomeQueryRootDenial;
-mod recovery;
 pub(crate) use attachment::ApplicationHomeBridgeComposition;
 pub(crate) use attachment::UnclaimedWorldSlot;
+pub use query_root::ApplicationHomeQueryRootDenial;
 pub use readmission::{readmit_query_world, ApplicationHomeQueryCompositionDenial};
 pub use readmission::{readmit_world, WorldHomeReadmissionRefused, WorldReadmittedApplicationHome};
 pub use readmission::{ApplicationHomeOwnerAdmissionRefused, NoPendingApplicationHomeTransition};
@@ -27,6 +27,7 @@ pub(crate) struct ApplicationWorldMedium {
     binding: WorldDurableHomeBinding,
     placement: AdmittedRecordPlacementPolicy,
     publications: Arc<WorldPublications>,
+    checkpoint: std::sync::Weak<crate::checkpoint::owner::HomeCheckpointOwner>,
 }
 impl std::fmt::Debug for ApplicationWorldMedium {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -42,14 +43,14 @@ impl worth_runtime_world::facade::RuntimeWorldDurableMedium for ApplicationWorld
     fn publication_task_posture(&self) -> worth_runtime_world::facade::WorldPublicationTaskPosture {
         self.publications.posture()
     }
-    fn recover(
+    fn capture_checkpoint_source(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
-        worth_runtime_world::facade::WorldDurableRecoverySource,
+        Box<dyn worth_runtime_world::facade::WorldCheckpointReadSource>,
         worth_runtime_world::facade::WorldDurableMediumDenial,
     > {
-        recovery::read(self, execution)
+        checkpoint::capture(self, request)
     }
     fn advance_publication(
         &self,

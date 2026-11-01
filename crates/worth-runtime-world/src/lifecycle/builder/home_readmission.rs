@@ -32,6 +32,7 @@ where
         relational: RelationalOwnerServicePorts,
         bridge: RuntimeWorldCorrespondencePort,
         medium: Arc<dyn crate::durability::RuntimeWorldDurableMedium>,
+        source: Box<dyn crate::durability::WorldCheckpointReadSource>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
         native_recovery: &worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
@@ -40,9 +41,6 @@ where
             WorldDurableMediumBinding, WorldReadmissionDenial as Denial, WorldRecoveredJournalState,
         };
         let binding = WorldDurableMediumBinding::new(medium);
-        let source = binding
-            .capture_checkpoint_source(request)
-            .map_err(Denial::Medium)?;
         let (recovered, selected_coverage) = WorldRecoveredJournalState::read_protected_source(
             source.as_ref(),
             binding.binding(),

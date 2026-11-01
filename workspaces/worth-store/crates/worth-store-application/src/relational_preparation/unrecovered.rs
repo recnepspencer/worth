@@ -21,7 +21,7 @@ impl UnrecoveredApplicationHome {
         self.relational.home_schema_installation_runtime()
     }
     pub fn readmit(
-        self,
+        mut self,
         expected: &RelationalInitialSchemaInstallationReceipt,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
@@ -34,7 +34,7 @@ impl UnrecoveredApplicationHome {
                 home: Box::new(self),
             });
         }
-        let manifest = match crate::checkpoint::read(&self.context.serving) {
+        let manifest = match self.context.selected_home_manifest(request) {
             Ok(manifest) => manifest,
             Err(cause) => {
                 return Err(RelationalHomeReadmissionRefused {
@@ -47,17 +47,22 @@ impl UnrecoveredApplicationHome {
             relational,
             context,
         } = self;
-        match relational.readmit(
-            manifest.as_ref().map(|manifest| manifest.relational()),
+        match relational.readmit_home_from_read(
+            manifest.as_ref().map(|manifest| manifest.relational_read()),
             expected,
             request,
         ) {
-            Ok(relational) => Ok(RelationalReadmitted::from_owner(
-                UnsharedReadmittedApplicationHome {
-                    relational,
-                    context,
-                },
-            )),
+            Ok((relational, selected_coverage)) => {
+                context
+                    .checkpoint
+                    .admit_selected_native_coverage(selected_coverage);
+                Ok(RelationalReadmitted::from_owner(
+                    UnsharedReadmittedApplicationHome {
+                        relational,
+                        context,
+                    },
+                ))
+            }
             Err((relational, cause)) => Err(RelationalHomeReadmissionRefused {
                 cause: crate::ApplicationHomeOpenRefusal::Relational(cause),
                 home: Box::new(Self {
