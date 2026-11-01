@@ -3,6 +3,47 @@
 Specification: [Milestone 3](milestone-3.md), Phase 3, D1–D17; the Phase 4
 handoff and shared roadmap requirements also bind the work.
 
+## Required companion registration retirement prerequisite
+
+An authentic PublicationCompanionRegistrationPort may consume its exact issued
+registration through try_retire_required_for_request(registration, request).
+This releases callback routing only; it grants no service, publication, read or
+runtime-close authority and does not establish D11. The owner need not stop:
+ordinary publication close closes settlements, not the companion registry.
+
+Under the existing companion try_write gate, verify the original publication
+owner identity and current active generation, then consult the original request
+before replacing RequiredActive with RequiredRebind at the SAME generation.
+The gate excludes actual publisher epochs and begin/activate. Contention,
+foreign/superseded registrations and stopped requests return the same original
+registration, without effects. Poison recovery preserves existing typed-state
+semantics. Do not enter ordinary owner.admit(): last-operation release may lock
+the close waiter and is not a bounded cleanup path.
+
+The returned opaque RetiredPublicationCompanionRegistration keeps the removed
+original participant/client and registration/port, with no callback or data
+extraction surface. No removed payload, last registry/lifecycle Arc or client
+control allocation is destroyed in the controlled step. Final Drop/reclaim is
+explicitly unbudgeted. Existing remove_required remains its ordinary contract;
+Bridge's later consuming port must use this authentic bounded result.
+
+Place the production release and its local typed denial/retired owner under
+mvcc/publication/companion/registration/retirement.rs. Its tests.rs child drives
+actual owner-issued registration, original lock contention, request cancellation,
+foreign owner, superseded generation and service stop. A participant Drop probe
+must survive successful detach until retired-owner reclamation; the registry
+must retain RequiredRebind at its original generation and refuse delivery.
+Only that exact owner-private leaf may construct SDK ExecutionRequest and
+SerialRequest roots. It uses the existing genuine Native owner fixture; it does
+not add a runtime audience, fake participant authority or Home-close claim.
+
+Implementation order: add the consuming release and explicit facade exports;
+prove refusal/retry and deferred destruction against actual registry state;
+run the focused owner tests, boundary/context guards, formatting and line caps;
+then independently review the exact causal diff before integration. Full Bridge
+observation/branch-head retirement, Native Directory close, Complete capture and
+Host D11 remain separate unfinished obligations.
+
 ## Cold member custody retirement prerequisite
 
 This prerequisite retires one actual source-issued registration, or one local

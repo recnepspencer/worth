@@ -25,12 +25,12 @@ pub use publication::{
     PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
-    PublicationCompanionRegistrationStop, PublishRelationalCommit, RelationalPublicationCompanion,
-    RelationalPublicationDeferred, RelationalPublicationDenial,
-    RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
-    RelationalPublicationFailureKind, RelationalPublicationOutcome, RelationalPublicationPort,
-    RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
-    StaleRelationalBranchObservation,
+    PublicationCompanionRegistrationStop, PublicationCompanionRetirementDenial,
+    PublishRelationalCommit, RelationalPublicationCompanion, RelationalPublicationDeferred,
+    RelationalPublicationDenial, RelationalPublicationDurabilityPosture,
+    RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
+    RelationalPublicationPort, RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
+    RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
 };
 pub(crate) use publication::{
     PreparedIndexRefreshBasis, PreparedRelationalCandidateAdmissionStop,

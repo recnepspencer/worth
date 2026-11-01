@@ -35,8 +35,9 @@ pub use companion::{
     PendingCompanionRegistration, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
     PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
-    PublicationCompanionRegistrationStop, RelationalPublicationCompanion,
-    ReservedCompanionBranchCell,
+    PublicationCompanionRegistrationStop, PublicationCompanionRetirementDenial,
+    RelationalPublicationCompanion, ReservedCompanionBranchCell,
+    RetiredPublicationCompanionRegistration,
 };
 pub use outcome::{
     PerformedRelationalCommit, PublishRelationalCommit, RelationalPublicationDeferred,

@@ -13,6 +13,10 @@ mod head_cell;
 #[cfg(test)]
 mod poison_recovery;
 mod registry_guard;
+mod retirement;
+pub use retirement::{
+    PublicationCompanionRetirementDenial, RetiredPublicationCompanionRegistration,
+};
 
 #[derive(Debug)]
 pub(crate) enum CompanionRegistrationState {
