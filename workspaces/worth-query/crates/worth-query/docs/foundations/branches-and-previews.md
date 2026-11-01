@@ -339,6 +339,14 @@ capability and operation through the ordinary schema declaration.
 The model kind must be separate from installed principal, principal-mapping and
 capability-grant roles; those live control records cannot be historical payload.
 
+Use `navigate::<Navigation>().undo_step()` to select the recorded parent, or
+`.redo_to(child)` to select an explicitly chosen completed child. Both use the
+same expected-selection, idempotency, preparation and owned advancement stages
+as `.checkout(node)`. A root undo returns `NoParent`; redo to a node that is not
+the selected step's child returns `NotChild`. Preserve the original command,
+expected selection and key for retries. Navigation selects state without running
+an inverse or reapplication handler.
+
 READ and navigation are separate permissions. Listing or previewing a node does
 not authorize selecting it. Each preparation and advancement executes the
 original current model READ, metadata disclosure and current NAV admission.

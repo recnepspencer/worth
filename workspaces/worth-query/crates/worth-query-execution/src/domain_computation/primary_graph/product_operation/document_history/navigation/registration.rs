@@ -1,7 +1,7 @@
 //! One document-scoped attempt index, funded before candidate effects.
 use super::super::{
     allocation::{reserve_arc, HistoryInsertionAllocation},
-    WorthQueryDocumentHistory, WorthQueryHistoryNodeId,
+    WorthQueryDocumentHistory,
 };
 use super::*;
 use crate::domain_computation::primary_graph::{
@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::document_his
     document: &WorthQueryDocumentHistory<'runtime, S, H>,
     installed: &WorthQueryInstalledDocumentHistory<S, H>,
     expected: WorthQueryHistorySelection,
-    requested: WorthQueryHistoryNodeId,
+    intent: WorthQueryHistoryNavigationIntent,
     meaning: WorthQueryApplicationIdempotencyBinding,
     output_profile: Option<WorthQueryHistoryOutputProfile>,
 ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, WorthQueryHistoryNavigationDenial>
@@ -64,18 +64,19 @@ where
             document,
             attempt,
             &expected,
-            requested,
+            intent,
             meaning,
             output_profile.as_ref(),
         );
     }
-    let (source, view_after) = {
+    let (requested, source, view_after) = {
         let selected = document.selection.lock();
         if selected.expected != expected.physical
             || selected.journal.current_step() != &expected.step
         {
             return Err(Denial::HeadChanged);
         }
+        let requested = selected.journal.resolve_navigation(intent)?;
         let view_after = selected
             .journal
             .prepare_navigation(requested)
@@ -84,7 +85,7 @@ where
             .journal
             .preview(requested, document.model.clone())
             .map_err(Denial::Document)?;
-        (source, view_after)
+        (requested, source, view_after)
     };
     let application = document.application();
     let current = application
@@ -132,6 +133,7 @@ where
             model: document.model.clone(),
             source: Some(source),
             requested,
+            intent,
             view_after,
             phase: NavigationPhase::Prepared,
             previous: None,
@@ -154,7 +156,7 @@ where
             document,
             existing,
             &expected,
-            requested,
+            intent,
             meaning,
             output_profile.as_ref(),
         );
@@ -190,7 +192,7 @@ fn bind<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     document: &WorthQueryDocumentHistory<'runtime, S, H>,
     attempt: Arc<NavigationAttempt<'runtime, S>>,
     expected: &WorthQueryHistorySelection,
-    requested: WorthQueryHistoryNodeId,
+    intent: WorthQueryHistoryNavigationIntent,
     meaning: WorthQueryApplicationIdempotencyBinding,
     output_profile: Option<&WorthQueryHistoryOutputProfile>,
 ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, WorthQueryHistoryNavigationDenial> {
@@ -203,7 +205,7 @@ fn bind<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         Err(std::sync::TryLockError::Poisoned(poison)) => poison.into_inner(),
     };
     if progress.expected != *expected
-        || progress.requested != requested
+        || progress.intent != intent
         || !progress.meaning.has_same_intent(meaning)
         || !compared.matches_current(progress.output_profile.as_ref())
     {

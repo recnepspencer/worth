@@ -2,6 +2,33 @@
 use super::*;
 
 impl<S> HistoryJournal<'_, S> {
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn resolve_navigation(
+        &self,
+        intent: super::super::navigation::WorthQueryHistoryNavigationIntent,
+    ) -> Result<WorthQueryHistoryNodeId, super::super::navigation::WorthQueryHistoryNavigationDenial>
+    {
+        use super::super::navigation::{
+            WorthQueryHistoryNavigationDenial as Failure,
+            WorthQueryHistoryNavigationIntent as Intent,
+        };
+        match intent {
+            Intent::Checkout(node) => Ok(node),
+            Intent::UndoStep => self.current_step().parent().ok_or(Failure::NoParent),
+            Intent::RedoTo(node) => {
+                if !self.owns_node(node) {
+                    return Err(Failure::Document(Denial::ForeignHistoryNode));
+                }
+                let step = self
+                    .step(node)
+                    .ok_or(Failure::Document(Denial::HistoryNodeUnavailable))?;
+                if step.parent() != Some(self.current) {
+                    return Err(Failure::NotChild);
+                }
+                Ok(node)
+            }
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn prepare_navigation(
         &self,
         node: WorthQueryHistoryNodeId,

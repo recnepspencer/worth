@@ -86,7 +86,8 @@ pub use navigation::{
     WorthQueryHistoryNavigationAdvance, WorthQueryHistoryNavigationAdvanceDenial,
     WorthQueryHistoryNavigationBuilder, WorthQueryHistoryNavigationCompletion,
     WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
-    WorthQueryHistoryNavigationPosture, WorthQueryHistorySelection,
+    WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPosture,
+    WorthQueryHistorySelection,
 };
 mod observation;
 mod outputs;

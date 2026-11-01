@@ -4,7 +4,7 @@ mod outputs;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryDocumentHistoryNavigation,
     WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial as NavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNodeId,
+    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
     WorthQueryHistorySelection,
 };
 use worth_query_declaration::facade::{
@@ -90,7 +90,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         history_access: &H::Access,
         read: WorthQueryDocumentHistoryRead<'_, S, H>,
         expected: WorthQueryHistorySelection,
-        requested: WorthQueryHistoryNodeId,
+        intent: WorthQueryHistoryNavigationIntent,
         key: u128,
     ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, NavigationDenial>
     where
@@ -102,7 +102,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let (read, admission) =
             read.admit_navigation::<N>(self, phase, access, document, N::input(history_access))?;
         document.prepare_navigation::<N>(
-            phase, read, installed, admission, expected, requested, key, None,
+            phase, read, installed, admission, expected, intent, key, None,
         )
     }
 

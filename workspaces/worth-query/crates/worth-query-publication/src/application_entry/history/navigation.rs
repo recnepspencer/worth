@@ -64,8 +64,8 @@ pub use builder::{
 };
 pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationPosture,
-    WorthQueryHistorySelection,
+    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
+    WorthQueryHistoryNavigationPosture, WorthQueryHistorySelection,
 };
 
 #[derive(Debug)]

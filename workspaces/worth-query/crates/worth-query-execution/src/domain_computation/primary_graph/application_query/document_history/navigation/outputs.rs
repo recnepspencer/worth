@@ -54,7 +54,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         history_access: &H::Access,
         read: WorthQueryDocumentHistoryRead<'_, S, H>,
         expected: WorthQueryHistorySelection,
-        requested: WorthQueryHistoryNodeId,
+        intent: WorthQueryHistoryNavigationIntent,
         key: u128,
         profile: WorthQueryHistoryOutputProfile,
         source_binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
@@ -87,7 +87,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 installed,
                 admission,
                 expected,
-                requested,
+                intent,
                 key,
                 Some(profile),
             )

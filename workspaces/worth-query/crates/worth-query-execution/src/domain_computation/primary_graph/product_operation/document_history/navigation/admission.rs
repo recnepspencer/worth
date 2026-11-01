@@ -97,7 +97,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             ApplicationHistoryModel<S, H>,
         >,
         expected: WorthQueryHistorySelection,
-        requested: super::super::WorthQueryHistoryNodeId,
+        intent: WorthQueryHistoryNavigationIntent,
         key: u128,
         output_profile: Option<WorthQueryHistoryOutputProfile>,
     ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, WorthQueryHistoryNavigationDenial>
@@ -123,7 +123,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             self,
             installed,
             expected,
-            requested,
+            intent,
             meaning,
             output_profile,
         )

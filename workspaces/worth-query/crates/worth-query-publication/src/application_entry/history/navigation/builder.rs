@@ -23,7 +23,7 @@ pub struct WorthQueryHistoryCheckoutTarget<
     Outputs = WorthQueryHistoryNoOutputs,
 > {
     builder: WorthQueryHistoryNavigationBuilder<'d, 'r, S, H, N, P, Outputs>,
-    node: WorthQueryHistoryNodeId,
+    intent: WorthQueryHistoryNavigationIntent,
 }
 pub struct WorthQueryHistoryExpectedCheckout<
     'd,
@@ -83,7 +83,26 @@ impl<
     ) -> WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P, Outputs> {
         WorthQueryHistoryCheckoutTarget {
             builder: self,
-            node,
+            intent: WorthQueryHistoryNavigationIntent::Checkout(node),
+        }
+    }
+
+    /// Select the recorded parent of the original expected user step.
+    pub fn undo_step(self) -> WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P, Outputs> {
+        WorthQueryHistoryCheckoutTarget {
+            builder: self,
+            intent: WorthQueryHistoryNavigationIntent::UndoStep,
+        }
+    }
+
+    /// Select an explicit completed child; preparation revalidates membership.
+    pub fn redo_to(
+        self,
+        child: WorthQueryHistoryNodeId,
+    ) -> WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P, Outputs> {
+        WorthQueryHistoryCheckoutTarget {
+            builder: self,
+            intent: WorthQueryHistoryNavigationIntent::RedoTo(child),
         }
     }
 }
@@ -190,7 +209,7 @@ where
                 &document.access,
                 read,
                 self.checkout.expected,
-                self.checkout.target.node,
+                self.checkout.target.intent,
                 self.key,
             )
         })?;

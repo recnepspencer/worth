@@ -13,6 +13,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::do
 mod authority;
 mod cancellation;
 mod closing;
+mod commands;
 mod eligibility;
 mod race;
 mod recovery;

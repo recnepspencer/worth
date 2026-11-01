@@ -1,5 +1,6 @@
 //! Real public checkout drives the document's original SDK output tree.
 use super::*;
+use worth_query_host::facade::application_entry::WorthQueryHistoryNavigationIntent;
 use worth_query_topology_entry::PlanarHistoryNavigation;
 mod authority;
 mod checkout;
@@ -104,7 +105,7 @@ fn checkout_with_required_outputs_preserves_both_futures_and_the_document_mode()
         .validated_program()
         .unwrap();
     // Root, two attached documents, three authored steps, the new future and
-    // three checkout contexts are genuine live owners in this finite journey.
+    // five navigation contexts are genuine live owners in this finite journey.
     let world = installation::install_selected_program_with_limits(
         &crate::installed_schema(),
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
@@ -187,6 +188,53 @@ fn checkout_with_required_outputs_preserves_both_futures_and_the_document_mode()
             .value),
         length(7)
     );
+    for (intent, node, expected_length, key) in [
+        (
+            WorthQueryHistoryNavigationIntent::UndoStep,
+            nodes[0],
+            3,
+            0x9182_e203,
+        ),
+        (
+            WorthQueryHistoryNavigationIntent::RedoTo(other),
+            other,
+            7,
+            0x9182_e204,
+        ),
+    ] {
+        let mut owner = with_request(app, |request| {
+            let builder = document.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+            let target = match intent {
+                WorthQueryHistoryNavigationIntent::UndoStep => builder.undo_step(),
+                WorthQueryHistoryNavigationIntent::RedoTo(child) => builder.redo_to(child),
+                WorthQueryHistoryNavigationIntent::Checkout(_) => unreachable!(),
+            };
+            target
+                .expected_selection(document.selection(request).unwrap())
+                .idempotency(key)
+                .prepare(request)
+                .unwrap()
+        });
+        let mut completed = None;
+        for _ in 0..96 {
+            owner = match with_request(app, |request| owner.advance(request)) {
+                WorthQueryHistoryNavigationAdvance::Pending(owner) => owner,
+                WorthQueryHistoryNavigationAdvance::Selected(done) => {
+                    completed = Some(done);
+                    break;
+                }
+                WorthQueryHistoryNavigationAdvance::Refused { cause, .. } => {
+                    panic!("edge output navigation: {cause:?}")
+                }
+            };
+        }
+        assert_eq!(completed.unwrap().requested_node(), node);
+        assert_eq!(
+            with_request(app, |request| document.read(request).unwrap().rows()[0]
+                .value),
+            length(expected_length)
+        );
+    }
     assert_eq!(
         with_request(app, |request| sibling
             .read(request)

@@ -72,7 +72,7 @@ where
         history_access: &H::Access,
         read: WorthQueryDocumentHistoryRead<'_, S, H>,
         expected: WorthQueryHistorySelection,
-        requested: WorthQueryHistoryNodeId,
+        intent: WorthQueryHistoryNavigationIntent,
         key: u128,
     ) -> Result<
         WorthQueryDocumentHistoryNavigation<'runtime, S>,
@@ -99,7 +99,7 @@ where
                         history_access,
                         read,
                         expected,
-                        requested,
+                        intent,
                         key,
                         self.profile.clone(),
                         binding,

@@ -17,6 +17,7 @@ mod progression;
 mod publication;
 mod registration;
 mod selection;
+mod target;
 mod transition;
 
 #[doc(hidden)]
@@ -42,6 +43,7 @@ pub use output_source::{
 };
 pub(super) use registration::NavigationJournal;
 pub use selection::{WorthQueryHistoryNavigationCompletion, WorthQueryHistorySelection};
+pub use target::WorthQueryHistoryNavigationIntent;
 
 use super::{selection::HistorySelectionCell, WorthQueryDocumentHistoryDenial};
 use crate::domain_computation::primary_graph::{
@@ -69,6 +71,8 @@ pub enum WorthQueryHistoryNavigationDenial {
     DocumentClosed,
     ForeignDocument,
     HeadChanged,
+    NoParent,
+    NotChild,
     IntentDrift,
     Busy,
     Discarded,

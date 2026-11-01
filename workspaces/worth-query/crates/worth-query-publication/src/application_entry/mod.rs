@@ -58,13 +58,14 @@ pub use history::{
     WorthQueryHistoryNavigation, WorthQueryHistoryNavigationAdvance,
     WorthQueryHistoryNavigationAdvanceDenial, WorthQueryHistoryNavigationBuilder,
     WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationPosture,
-    WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
-    WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode,
-    WorthQueryHistoryPage, WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial,
-    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryPayloadMode,
-    WorthQueryHistoryPreviewResult, WorthQueryHistoryRootOutputAdmissionDenial,
-    WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryWithOutputs,
+    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
+    WorthQueryHistoryNavigationPosture, WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId,
+    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputDenial,
+    WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode, WorthQueryHistoryPage,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
+    WorthQueryHistoryPageRow, WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult,
+    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
+    WorthQueryHistoryWithOutputs,
 };
 mod live;
 mod mandatory_review;

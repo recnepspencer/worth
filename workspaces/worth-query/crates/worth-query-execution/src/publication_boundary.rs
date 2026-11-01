@@ -64,11 +64,12 @@ pub mod document_history {
         WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
         WorthQueryHistoryContextRefreshPauseForTest, WorthQueryHistoryNavigationCompletion,
         WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
-        WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId,
-        WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
-        WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
-        WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
-        WorthQueryHistoryPreview, WorthQueryHistorySelection, WorthQueryHistoryStep,
+        WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPosture,
+        WorthQueryHistoryNodeId, WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource,
+        WorthQueryHistoryPage, WorthQueryHistoryPageAssemblyPauseForTest,
+        WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
+        WorthQueryHistoryPageRow, WorthQueryHistoryPreview, WorthQueryHistorySelection,
+        WorthQueryHistoryStep,
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{

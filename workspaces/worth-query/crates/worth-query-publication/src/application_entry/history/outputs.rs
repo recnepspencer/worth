@@ -12,7 +12,7 @@ pub use retained::WorthQueryHistoryWithOutputs;
 use worth_query_declaration::facade::application_history::ApplicationHistoryNavigationBinding;
 use worth_query_execution::publication_boundary::document_history::{
     WorthQueryDocumentHistoryNavigation, WorthQueryHistoryNavigationCompletion,
-    WorthQueryHistorySelection,
+    WorthQueryHistoryNavigationIntent, WorthQueryHistorySelection,
 };
 pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputReadDenial,
@@ -66,7 +66,7 @@ pub(super) trait OutputDriver<S: ApplicationSchema, H: ApplicationHistoryBinding
         history_access: &H::Access,
         read: WorthQueryDocumentHistoryRead<'_, S, H>,
         expected: WorthQueryHistorySelection,
-        requested: WorthQueryHistoryNodeId,
+        intent: WorthQueryHistoryNavigationIntent,
         key: u128,
     ) -> Result<
         WorthQueryDocumentHistoryNavigation<'runtime, S>,
@@ -123,7 +123,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> OutputDriver<S, H>
         history_access: &H::Access,
         read: WorthQueryDocumentHistoryRead<'_, S, H>,
         expected: WorthQueryHistorySelection,
-        requested: WorthQueryHistoryNodeId,
+        intent: WorthQueryHistoryNavigationIntent,
         key: u128,
     ) -> Result<
         WorthQueryDocumentHistoryNavigation<'runtime, S>,
@@ -141,7 +141,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> OutputDriver<S, H>
                 history_access,
                 read,
                 expected,
-                requested,
+                intent,
                 key,
             )
             .map_err(WorthQueryHistoryNavigationAdvanceDenial::Navigation)

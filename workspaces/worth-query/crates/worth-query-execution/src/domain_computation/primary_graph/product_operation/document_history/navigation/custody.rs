@@ -73,6 +73,7 @@ pub(super) struct NavigationProgress<'runtime, S> {
     pub(super) model: super::super::HistoryModelIdentity,
     pub(super) source: Option<super::super::WorthQueryHistoryPreview>,
     pub(super) requested: super::super::WorthQueryHistoryNodeId,
+    pub(super) intent: WorthQueryHistoryNavigationIntent,
     pub(super) view_after: u64,
     pub(super) phase: NavigationPhase<'runtime, S>,
     // Preallocated in the attempt before fork; filled in the adoption transition.

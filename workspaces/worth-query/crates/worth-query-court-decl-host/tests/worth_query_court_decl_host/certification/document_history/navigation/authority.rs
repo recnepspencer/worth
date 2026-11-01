@@ -52,7 +52,7 @@ fn read_and_history_metadata_do_not_authorize_navigation_after_its_own_grant_is_
     assert_eq!(value(&host, &document), 3);
     let cause = document
         .navigate::<Navigation>()
-        .checkout(root.step().id())
+        .undo_step()
         .expected_selection(expected.clone())
         .idempotency(0x9182_c402)
         .prepare(&request)
@@ -65,13 +65,8 @@ fn read_and_history_metadata_do_not_authorize_navigation_after_its_own_grant_is_
     // Restoring the real current grant supplies the lawful twin; historical permission alone did not.
     super::super::metadata::grant_named(&host, branch, GRANT, "active", 0x9182_c403);
     refresh(&host, &mut document);
-    checkout(
-        &host,
-        &document,
-        root.step().id(),
-        selection(&host, &document),
-        0x9182_c402,
-    );
+    let done = super::commands::undo(&host, &document, 0x9182_c402);
+    assert_eq!(done.selection().step(), root.step());
     assert_eq!(value(&host, &document), SEED_RETENTION);
     close(&host, document, 3);
 }

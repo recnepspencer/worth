@@ -29,12 +29,13 @@ pub use navigation::{
     WorthQueryAdmittedHistoryProgramOutput, WorthQueryCompletedHistoryOutputs,
     WorthQueryDocumentHistoryNavigation, WorthQueryHistoryDependentOutputRead,
     WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationPosture,
-    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputAuthority,
-    WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputNavigationAdvance,
-    WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource,
-    WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
-    WorthQueryHistorySelection, WorthQuerySettledHistoryProgramOutput,
+    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
+    WorthQueryHistoryNavigationPosture, WorthQueryHistoryOutputAdvanceDenial,
+    WorthQueryHistoryOutputAuthority, WorthQueryHistoryOutputDiscovery,
+    WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
+    WorthQueryHistoryOutputSource, WorthQueryHistoryProgramOutputAdvance,
+    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection,
+    WorthQuerySettledHistoryProgramOutput,
 };
 mod observation;
 mod operation_context;
