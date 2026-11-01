@@ -36,7 +36,6 @@ pub struct RelationalStoreColdReadCounters {
 
 pub(crate) struct StoreColdSource {
     weak_self: Weak<Self>,
-    serving: Arc<ServingPhysicalRuntime>,
     members: RwLock<selection::SelectedMembers>,
     custody: member_custody::MemberCustodyRegistry,
     member_reads: AtomicU64,
@@ -44,6 +43,8 @@ pub(crate) struct StoreColdSource {
     #[cfg(feature = "certification-test-authority")]
     commit_read_observer:
         Option<Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>>,
+    // Local selected readers/pins retire before a possible final pool-owner Drop.
+    serving: Arc<ServingPhysicalRuntime>,
 }
 
 impl std::fmt::Debug for StoreColdSource {
@@ -56,13 +57,13 @@ impl StoreColdSource {
     pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Arc<Self> {
         Arc::new_cyclic(|weak_self| Self {
             weak_self: weak_self.clone(),
-            serving,
             members: RwLock::new(Default::default()),
             custody: Default::default(),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
             #[cfg(feature = "certification-test-authority")]
             commit_read_observer: None,
+            serving,
         })
     }
     pub(crate) fn counters(&self) -> RelationalStoreColdReadCounters {
@@ -79,12 +80,12 @@ impl StoreColdSource {
         let observer = Box::new(observer);
         Arc::new_cyclic(|weak_self| Self {
             weak_self: weak_self.clone(),
-            serving,
             members: RwLock::new(Default::default()),
             custody: Default::default(),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
             commit_read_observer: Some(observer),
+            serving,
         })
     }
     pub(crate) fn protect_member_selection(
