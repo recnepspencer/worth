@@ -9,6 +9,8 @@ use worth_relational::facade::mvcc::{
 use worth_relational::facade::{branch::RelationalBranchIdentity, runtime::RelationalRuntime};
 
 use super::RuntimeBridgeRelationalSource;
+mod retirement;
+pub use retirement::RetiredRelationalBridgeCanonicalSubscription;
 
 /// Preparation of one full canonical-envelope subscription, without Signal
 /// targets. Required registration blocks writers until activation completes.

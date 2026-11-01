@@ -1,5 +1,7 @@
 use std::sync::Arc;
+mod retained_retirement;
 mod retirement;
+pub(crate) use retained_retirement::RelationalRetainedObservationShares;
 pub(crate) use retirement::RelationalObservationRetirement;
 
 use crate::branch::{

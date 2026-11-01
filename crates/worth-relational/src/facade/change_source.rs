@@ -39,7 +39,9 @@ pub use crate::change_source::{
     RelationalChangeReceiptOutcome, RelationalChangeReceiptStale, RelationalCommitSelection,
     RelationalCommitSelectionDenial, RelationalCommitSelectionWork, RelationalMemoryClose,
     RelationalMemoryCloseDenial, RelationalMemoryCloseObservation, RelationalMemoryCloseRefused,
-    RelationalObservationReadDenial, RelationalRetainedObservation, RelationalRuntimeHandle,
+    RelationalObservationReadDenial, RelationalRetainedObservation,
+    RelationalRetainedObservationRetirement, RelationalRetainedObservationRetirementDenial,
+    RelationalRetainedObservationRetirementProgress, RelationalRuntimeHandle,
     RelationalRuntimeLockObservationForTest, RelationalSelectedCommit,
-    RetiredMemoryRelationalAllocation,
+    RetiredMemoryRelationalAllocation, RetiredRelationalRetainedObservation,
 };

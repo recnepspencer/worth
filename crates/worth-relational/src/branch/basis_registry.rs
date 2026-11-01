@@ -1,6 +1,13 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
+mod retirement;
+pub(crate) use retirement::RelationalBasisRegistryRetirementCustody;
+#[cfg(test)]
+pub(crate) use retirement::{
+    assert_original_registry_busy, assert_pruned_original_registration,
+    assert_successor_registration_preserved,
+};
 #[cfg(test)]
 mod retirement_tests;
 
@@ -142,13 +149,16 @@ impl RelationalBranchBasisRegistry {
             std::mem::forget(uninstalled);
             return Err(super::RelationalBranchBasisDenial::OwnerFailure);
         }
-        retained.entries.insert(
+        let replaced = retained.entries.insert(
             key,
             RelationalRetainedBasisEntry {
                 registration_id,
                 basis: Arc::downgrade(&basis.inner),
             },
         );
+        if replaced.is_some() {
+            self.metrics.record_remove();
+        }
         self.metrics.record_insert();
         Ok(basis)
     }

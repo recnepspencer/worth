@@ -835,6 +835,38 @@
       "constructors": ["directory::directory", "cold_source::test_store::initialize", "RelationalRuntimeApi::builder().build_durable", "StoreJournalMedium::new", "ordinary branch transactions", "section::checkpoint::prepare_captured", "AnchoredRecordPublication::new", "RelationalDurableRecoverySource::new", "recovery_plan_from_source", "recover_with_authority", "retain_members", "into_retirement"],
       "audit": "The same exact three-test governing exception and private directory.rs fixture; no additional named test, runtime door or Store baseline row. Actual controls and fresh source QA passed at the source checkpoint.",
       "private_subject": "Observes the genuine local shared-token release without falsely asserting all registration counts vanished, remaining-suffix-only unbudgeted Drop, independent actual cold-read obligations, retained physical protection after source loss, and final Serving detach for an originally empty registration while its disarmed opaque guard remains alive. Native Arc/payload ownership fences and certification-only observer compilation separately qualify those boundaries. No successful bounded whole-runtime or physical close is inferred."
+    },
+    {
+      "source": "crates/worth-relational/src/history/retention/lane/retained_release/tests.rs",
+      "test": "history::retention::lane::retained_release::tests::assert_external_cut_and_lane_busy",
+      "constructors": [],
+      "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_original_cut_and_lane_busy_retry_same_request.",
+      "private_subject": "Holds the actual original external-cut and lane gates locally, invokes the same task, and checks original counters/obligations/root multiplicities without exposing a gate. Genuine basis and request come only from the named caller."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/basis_registry/retirement/tests.rs",
+      "test": "branch::basis_registry::retirement::tests::assert_original_registry_busy",
+      "constructors": [],
+      "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_registry_busy_retries_after_original_observation_release.",
+      "private_subject": "Holds the real original basis registry gate after unique-inner extraction, proves repeat Busy preserves the exact registration and metrics, then permits once-only removal. No synthetic entry or replacement authority is installed."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/basis_registry/retirement/tests.rs",
+      "test": "branch::basis_registry::retirement::tests::assert_pruned_original_registration",
+      "constructors": [
+        "RelationalBranchBasisRegistry::readmit_retained"
+      ],
+      "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_original_prune_is_not_decremented_twice.",
+      "private_subject": "Ordinary readmission genuinely prunes the original expired Weak between task stages; final advancement preserves the already-decremented real metrics and completes the same lease idempotently."
+    },
+    {
+      "source": "crates/worth-relational/src/branch/basis_registry/retirement/tests.rs",
+      "test": "branch::basis_registry::retirement::tests::assert_successor_registration_preserved",
+      "constructors": [
+        "RelationalRuntime::observe_branch"
+      ],
+      "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_successor_registration_and_metrics_survive_original_retirement.",
+      "private_subject": "The borrowed genuine owner admits an actual successor after the original Weak expires. Verify exact successor identity and real entries.len versus metrics, original-task noninterference, and final successor release to zero. No hand-inserted positive registration is used."
     }
   ]
 }

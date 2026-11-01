@@ -6,6 +6,8 @@ mod historical_retirement;
 pub(crate) use historical_retirement::RelationalHistoricalObservationRetirement;
 mod index_liveness;
 mod lane;
+#[cfg(test)]
+pub(crate) use lane::assert_external_cut_and_lane_busy;
 mod lease;
 mod obligation;
 mod owner;
@@ -23,8 +25,10 @@ pub(crate) use head_retirement::{
 };
 pub(crate) use lane::{
     RelationalBranchRetentionBinding, RelationalRetentionGuard,
-    RelationalRetentionOwnerRelationship,
+    RelationalRetentionOwnerRelationship, RelationalRetentionRetirementCustody,
+    RelationalRetentionRetirementError,
 };
+pub(crate) use lease::RelationalExternalLeaseRetirement;
 pub use lease::{
     RelationalBranchRetentionLease, RelationalBranchRetentionReleaseDenial,
     RelationalBranchRetentionReleaseReceipt, RelationalBranchRetentionTerminalOutcome,

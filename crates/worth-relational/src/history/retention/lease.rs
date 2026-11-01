@@ -1,4 +1,6 @@
 use std::sync::Arc;
+mod retirement;
+pub(crate) use retirement::RelationalExternalLeaseRetirement;
 
 use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchIdentity};
 use crate::mvcc::RelationalBranchObservation;

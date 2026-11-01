@@ -26,6 +26,14 @@ pub(crate) struct RelationalObservationRetentionObligation {
 }
 
 impl RelationalObservationRetentionObligation {
+    pub(crate) fn try_retire_retaining(
+        &mut self,
+        custody: &mut super::RelationalRetentionRetirementCustody,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::RelationalRetentionRetirementError> {
+        self._guard
+            .try_retire_observation_retaining(custody, request)
+    }
     pub(crate) fn try_retire(&mut self) -> bool {
         self._guard.try_retire_observation()
     }
@@ -162,6 +170,16 @@ pub(crate) struct RelationalExternalBasisRetentionObligation {
 }
 
 impl RelationalExternalBasisRetentionObligation {
+    pub(crate) fn try_retire_retaining(
+        &mut self,
+        custody: &mut super::RelationalRetentionRetirementCustody,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::RelationalRetentionRetirementError> {
+        self.guard
+            .as_mut()
+            .ok_or(super::RelationalRetentionRetirementError::RegistrationMismatch)?
+            .try_retire_external_retaining(custody, request)
+    }
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
         basis: &crate::branch::AdmittedRelationalBranchBasis,

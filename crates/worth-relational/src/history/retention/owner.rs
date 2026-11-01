@@ -309,6 +309,10 @@ pub(super) fn release_live_obligation_capacity(owner: &RelationalBranchRetention
     owner.live_retention_count.fetch_sub(1, Ordering::Release);
 }
 
+pub(super) fn has_live_obligation_capacity(owner: &RelationalBranchRetentionOwnerInner) -> bool {
+    owner.live_retention_count.load(Ordering::Acquire) != 0
+}
+
 pub(super) fn release_live_head_capacity(owner: &RelationalBranchRetentionOwnerInner) {
     owner.live_head_count.fetch_sub(1, Ordering::Relaxed);
     owner.live_retention_count.fetch_sub(1, Ordering::Release);

@@ -24,6 +24,7 @@ pub use branch_head_bindings::{
 };
 pub use canonical_subscription::{
     PendingRelationalBridgeCanonicalSubscription, RelationalBridgeCanonicalSubscription,
+    RetiredRelationalBridgeCanonicalSubscription,
 };
 pub use observation_bindings::{
     RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,

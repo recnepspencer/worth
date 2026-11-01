@@ -32,7 +32,11 @@ pub use receipt::{
     RelationalChangeReceipt, RelationalChangeReceiptDeferred, RelationalChangeReceiptOutcome,
     RelationalChangeReceiptStale,
 };
-pub use retained_observation::RelationalRetainedObservation;
+pub use retained_observation::{
+    RelationalRetainedObservation, RelationalRetainedObservationRetirement,
+    RelationalRetainedObservationRetirementDenial, RelationalRetainedObservationRetirementProgress,
+    RetiredRelationalRetainedObservation,
+};
 pub use runtime_handle::{
     RelationalMemoryClose, RelationalMemoryCloseDenial, RelationalMemoryCloseObservation,
     RelationalMemoryCloseRefused, RetiredMemoryRelationalAllocation,

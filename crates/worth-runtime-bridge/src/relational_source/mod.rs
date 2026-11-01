@@ -42,7 +42,7 @@ pub use runtime_source::{
     RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeCanonicalSubscription,
     RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
     RelationalBridgeRetainedSnapshot, RelationalBridgeSourceConfigurationError,
-    RuntimeBridgeRelationalSource,
+    RetiredRelationalBridgeCanonicalSubscription, RuntimeBridgeRelationalSource,
 };
 #[cfg(test)]
 pub use test_catalog::{PublicationBridgeCatalog, PublicationBridgeSnapshot};

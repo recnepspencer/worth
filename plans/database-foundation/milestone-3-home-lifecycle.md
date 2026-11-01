@@ -44,6 +44,24 @@ then independently review the exact causal diff before integration. Full Bridge
 observation/branch-head retirement, Native Directory close, Complete capture and
 Host D11 remain separate unfinished obligations.
 
+The Bridge canonical subscription adds a consuming
+try_retire_for_request(self, request) adapter over that SAME Native registration
+release. Success retains the returned Native retired owner and original Bridge
+port in opaque RetiredRelationalBridgeCanonicalSubscription; refusal reconstructs
+the SAME subscription from the returned original registration and its original
+port. No callback, source/runtime keepalive, replacement allocation or authority
+extraction is added. Preserve ordinary close(). The existing private
+canonical_subscription/head_cell_tests.rs audience adds only
+canonical_subscription_retirement_retries_original_publication_epoch_and_defers_consumer_drop
+and canonical_subscription_retirement_after_owner_stop_defers_consumer_drop.
+Drive actual Native publication contention and original owner stop; retain the
+original consumer until explicit unbudgeted reclaim. Use the existing fixture
+and SDK audience without new runtime roots. Place the adapter in the existing
+canonical_subscription/retirement.rs child and export only its opaque retired
+owner through the explicit Bridge facade chain. Query's later consuming source
+cleanup must use this port; this alone does not retire branch-head or observation
+registrations or establish full D11.
+
 ## Retained Native observation custody retirement prerequisite
 
 RelationalRetainedObservation::into_retirement consumes the actual issued value
@@ -77,6 +95,10 @@ concurrent readmission may prune that dead entry and decrement metrics, or a new
 registration may replace it before this stage. Absence or a different original
 registration ID completes this lease idempotently, without removing a successor
 or decrementing again. Preserve the ordinary exact-ID conditional accounting.
+When ordinary registration replaces an expired original entry, its existing
+metrics must record that actual removal and insertion, so the live-entry count
+stays equal to real rows. This is causal to the newly exposed serving-owner
+handoff; use the existing counters, with no extra accounting framework.
 No root-vector clear, descriptor clone, replacement ownership
 allocation, ordinary runtime admission or last upgraded-owner destruction occurs
 inside the controlled step, including Busy/stop/refusal returns. Each committed
@@ -97,7 +119,17 @@ owner-issued bases and the actual gates for external-cut Busy, lane Busy,
 original stop after external removal, registry Busy after Observation removal,
 once-only terminal accounting, concurrent original-entry pruning or successor
 registration after unique-inner handoff, and an independent readable observation alias.
-The alias must preserve its genuine close veto. Review the exact causal source,
+The alias must preserve its genuine close veto. The exact private cfg(test)
+assertion children history/retention/lane/retained_release/tests.rs and
+branch/basis_registry/retirement/tests.rs borrow that caller's original request,
+runtime, basis and task, and hold/assert their actual owner gates locally. They
+construct no SDK request or runtime and return no guard/Arc/authority. Register
+only their mechanically observed borrowed-type classes: ExecutionRequest for
+the lane assertion leaf, ExecutionRequest/RelationalRuntime for the registry
+assertion leaf. No SerialRequest or constructor/factory audience is added.
+Record the four exact helper/caller pairs in src-court-private-logic-audit.json;
+no family-wide exception or production test door is permitted.
+Review the exact causal source,
 run these controls plus relevant existing retirement evidence, then boundary,
 context, formatting and line-cap gates before integration. No full D11, Bridge
 source, Directory Native-close or physical inertness claim follows from this

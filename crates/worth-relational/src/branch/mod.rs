@@ -10,6 +10,11 @@ mod basis_identity_validation;
 mod basis_observation;
 mod basis_readmission;
 mod basis_registry;
+#[cfg(test)]
+pub(crate) use basis_registry::{
+    assert_original_registry_busy, assert_pruned_original_registration,
+    assert_successor_registration_preserved,
+};
 mod basis_retention;
 mod canonical_runtime_frame;
 mod coordination;
@@ -68,7 +73,8 @@ pub(crate) use basis_observation::{
     descriptor_for_cell, issue_admitted_relational_branch_basis_with_retention,
 };
 pub(crate) use basis_registry::{
-    RelationalBranchBasisRegistry, RelationalBranchBasisRegistryMetrics,
+    RelationalBasisRegistryRetirementCustody, RelationalBranchBasisRegistry,
+    RelationalBranchBasisRegistryMetrics,
 };
 pub(crate) use canonical_runtime_frame::{CANONICAL_RUNTIME_INSTANCE_ID, CANONICAL_TRANSACTION_ID};
 pub use coordination::RelationalBranchCoordinationCellId;
