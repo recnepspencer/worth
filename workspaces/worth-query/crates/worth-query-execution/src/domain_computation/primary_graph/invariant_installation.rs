@@ -181,9 +181,6 @@ where
                 execution,
                 &self.managed_indexes,
                 layout,
-                self.expected
-                    .values()
-                    .flat_map(|rule| rule.managed_index_sources().iter().cloned()),
             )?;
         let mut lowered = Vec::with_capacity(self.expected.len());
         for key in self.installed_order {

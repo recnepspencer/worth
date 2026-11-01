@@ -1,5 +1,8 @@
 //! Keyed box mechanics borrow Native-issued edge occurrences and endpoint regions.
-use super::super::{bounds::Coordinates, schema::Catalog};
+use super::super::{
+    bounds::{Coordinates, CoordinatesBinding},
+    schema::Catalog,
+};
 use super::{query, schema::Edge};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -18,14 +21,16 @@ mod refinement;
 mod storage;
 #[cfg(test)]
 mod summary_fault;
+pub(super) const PROVIDER_IDENTITY: &str = "maintained-geometry.closed-box2.v1";
+pub(super) const PROVIDER_VERSION: u32 = 1;
 pub struct BoxIndex;
 impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     type SourceBinding = query::SourceBinding;
     type ProbeBinding = super::super::bounds::CoordinatesBinding;
     type Entity = Edge;
     const NAME: &'static str = "maintained_geometry_boxes";
-    const PROVIDER: &'static str = "maintained-geometry.closed-box2.v1";
-    const PROVIDER_VERSION: u32 = 1;
+    const PROVIDER: &'static str = PROVIDER_IDENTITY;
+    const PROVIDER_VERSION: u32 = self::PROVIDER_VERSION;
     const REFINEMENT: Option<
         worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
     > = Some(
@@ -64,15 +69,31 @@ pub struct Calls {
 }
 pub struct Provider(pub Arc<Calls>);
 
-fn bounds(
-    sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
+fn bounds<Index>(
+    sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, Index>,
     slot: WorthQueryManagedIndexSourceSlot,
     calls: &Calls,
-) -> Result<Box2, Stop> {
+) -> Result<Box2, Stop>
+where
+    Index: ApplicationManagedIndexBinding<
+        Catalog,
+        SourceBinding = query::SourceBinding,
+        ProbeBinding = CoordinatesBinding,
+        Entity = Edge,
+    >,
+{
     calls.source_bounds.fetch_add(1, Ordering::SeqCst);
     row_bounds(sources.get(slot)?)
 }
-fn row_bounds(row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>) -> Result<Box2, Stop> {
+fn row_bounds<Index>(row: WorthQueryManagedIndexSourceRow<'_, Catalog, Index>) -> Result<Box2, Stop>
+where
+    Index: ApplicationManagedIndexBinding<
+        Catalog,
+        SourceBinding = query::SourceBinding,
+        ProbeBinding = CoordinatesBinding,
+        Entity = Edge,
+    >,
+{
     let a = row
         .one(query::start())
         .and_then(|row| row.field(query::start_region()))
@@ -86,7 +107,15 @@ fn row_bounds(row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>) -> Re
     Ok(a.union(b))
 }
 
-impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
+impl<Index> WorthQueryManagedIndexProvider<Catalog, Index> for Provider
+where
+    Index: ApplicationManagedIndexBinding<
+        Catalog,
+        SourceBinding = query::SourceBinding,
+        ProbeBinding = CoordinatesBinding,
+        Entity = Edge,
+    >,
+{
     fn decompose(
         &self,
         node: Node,
@@ -108,12 +137,12 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     type Node = Node;
     type Summary = Box2;
     type Denial = BoxIndexDenial;
-    const IDENTITY: &'static str = BoxIndex::PROVIDER;
-    const VERSION: u32 = BoxIndex::PROVIDER_VERSION;
+    const IDENTITY: &'static str = PROVIDER_IDENTITY;
+    const VERSION: u32 = PROVIDER_VERSION;
     fn source_summary(
         &self,
         _slot: WorthQueryManagedIndexSourceSlot,
-        row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, Index>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
         #[cfg(test)]
@@ -125,7 +154,7 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     fn merge_summaries(
         &self,
         parts: [Option<Self::Summary>; 3],
-        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
+        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, Index>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
         #[cfg(test)]
@@ -148,7 +177,7 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     fn summary_may_match(
         &self,
         bounds: Self::Summary,
-        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, BoxIndex>,
+        _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, Index>,
         probe: &Coordinates,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {
@@ -175,7 +204,7 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     }
     fn build(
         &self,
-        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
+        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, Index>,
         nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
@@ -199,8 +228,8 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     }
     fn update(
         &self,
-        _before: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
-        after: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
+        _before: &WorthQueryManagedIndexSourceRows<'_, Catalog, Index>,
+        after: &WorthQueryManagedIndexSourceRows<'_, Catalog, Index>,
         changes: &[WorthQueryManagedIndexSourceChange],
         mut root: Option<WorthQueryManagedIndexNodeId>,
         nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
@@ -269,7 +298,7 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
     }
     fn matches_source(
         &self,
-        row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>,
+        row: WorthQueryManagedIndexSourceRow<'_, Catalog, Index>,
         probe: &Coordinates,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, Stop> {

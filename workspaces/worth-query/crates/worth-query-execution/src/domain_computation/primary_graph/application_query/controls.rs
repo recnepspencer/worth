@@ -35,6 +35,7 @@ pub enum WorthQueryApplicationQueryFreshness {
 pub struct WorthQueryApplicationQueryControls<'a, Schema> {
     producer: Option<Arc<OriginalSettledProducerObservation>>,
     basis: WorthQueryApplicationQueryBasis,
+    selection_origin: super::super::product_operation::SelectedQueryOrigin,
     security_product: crate::basis::WorthQueryProductObservationLease,
     publication_product: Option<crate::basis::WorthQueryProductBranchLease>,
     lane: WorthQueryApplicationQueryLane,
@@ -79,6 +80,18 @@ pub(super) enum WorthQueryApplicationQueryBasis {
 }
 
 impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
+    pub(in crate::domain_computation::primary_graph) fn with_selection_origin(
+        mut self,
+        origin: super::super::product_operation::SelectedQueryOrigin,
+    ) -> Self {
+        self.selection_origin = origin;
+        self
+    }
+
+    pub(super) fn selected_current_at_selection(&self) -> bool {
+        self.selection_origin.is_current()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn with_original_settled_producer(
         mut self,
         producer: Option<Arc<OriginalSettledProducerObservation>>,
@@ -113,6 +126,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -137,6 +151,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -161,6 +176,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -185,6 +201,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -264,6 +281,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope: controls.request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }

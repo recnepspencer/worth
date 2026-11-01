@@ -22,6 +22,7 @@ pub use source::{
 mod validation;
 pub use worth_foundational::facade::{
     ManagedIndexColdSourcePosture as ApplicationManagedIndexColdSource,
+    ManagedIndexMaintenance as ApplicationManagedIndexMaintenance,
     ManagedIndexMembership as ApplicationManagedIndexMembership,
     ManagedIndexSourceStructure as ApplicationManagedIndexSourceStructure,
 };

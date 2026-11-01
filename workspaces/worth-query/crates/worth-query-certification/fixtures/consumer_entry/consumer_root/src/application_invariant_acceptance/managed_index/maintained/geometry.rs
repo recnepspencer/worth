@@ -4,6 +4,7 @@ pub(super) mod authoring;
 mod court;
 pub(super) mod generated;
 pub(super) mod provider;
+mod public_only;
 pub(super) mod query;
 pub(super) mod refinement;
 pub(super) mod refresh;
@@ -22,12 +23,14 @@ use worth_query_host::facade::{
 pub(super) struct Configuration {
     pub provider: Arc<provider::Calls>,
     pub rules: Arc<rule::Calls>,
+    pub public_source: Arc<provider::Calls>,
 }
 impl Configuration {
     pub fn new(provider: Arc<provider::Calls>) -> Self {
         Self {
             rules: Arc::new(rule::Calls::new(Arc::clone(&provider))),
             provider,
+            public_source: Arc::new(provider::Calls::default()),
         }
     }
 }
@@ -39,7 +42,7 @@ impl Default for Configuration {
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
-    refresh::declare(authoring::declare(
+    public_only::declare(refresh::declare(authoring::declare(
         schema::declare(schema)
             .application_query(query::source_definition())
             .application_query_binding::<query::SourceBinding>()
@@ -52,12 +55,13 @@ pub(super) fn declare(
                 provider::BoxIndex,
             >::new())
             .invariant(rule::definition()),
-    ))
+    )))
 }
 pub(super) fn configure(
     configuration: Configuration,
     setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    public_only::configure(configuration.public_source, setup)?;
     setup
         .managed_index_provider::<provider::BoxIndex, _>(provider::Provider(Arc::clone(
             &configuration.provider,

@@ -2383,3 +2383,32 @@ Independent qa-loop, qa-tests and code-quality-qa approve the supported-contract
 closure. Phases1–4 are complete; Phases5/6 remain unfinished. See the matrix for
 actual currentness/reuse/cutoff/correction scope, explicit conservative/refused
 modes, unchanged causal evidence and baseline/large-geometry exclusions.
+
+
+### Phase5 public-only Source maintenance and Query receiving slice
+
+Explicit public Native maintenance now flows from defaulted Decl binding meaning
+through one compiled requirement roster, Source services and Native bootstrap's
+exact full-roster receipt. No dummy invariant is introduced. Public/invariant
+cold requirements join with Refuse winning. Default v3/v4 bytes remain frozen;
+explicit v5 carries maintenance/cold and optional refinement. Actual current-only
+admission carries current-at-selection provenance; same-head retained reads refuse
+before provider execution, while public snapshot receipts remain unchanged.
+
+The existing maintained geometry Catalog qualifies a distinct public-only index
+with real indirect edits, unopened shared scopes, original-request cancellation,
+retained rows and lawful retry. Mechanical AVL read reuse and exact-equal node
+write elision preserve numerical meaning and Source influence. The corrected
+paired-scope1000/2000/+50000 geometry court passes unchanged25%/50%/8x guards;
+its prior asymmetric calibration failure is preserved and explained, not relabeled
+as a passing original workload. Sparse-B locality remains exercised separately.
+
+Current evidence848 distinct passes:480 declaration,173 archive,195 consumer
+including the corrected large court. Two unrelated established cleanup failures
+remain excluded. See the [boundary](milestone-9.19-phase5-query-maintenance-boundary-review.md),
+[plan](milestone-9.19-phase5-query-maintenance-plan.md) and
+[evidence](milestone-9.19-phase5-query-maintenance-evidence.md) for exact invoices,
+legacy byte hashes, receiving proof, scope and final QA receipts. This is partial
+Phase5 progress. Next is retained conventional Source authorization custody before
+Bank v1 Source adoption; actual public topology face discovery, public closure and
+Phase6's final private pin/adoption remain unfinished.

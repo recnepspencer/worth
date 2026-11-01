@@ -136,6 +136,8 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// An invariant factory does not match its invariant's declared meaning.
     InvariantFactoryMeaningMismatch,
     UnsupportedInvariantSource,
+    UnsupportedManagedSource,
+    ManagedSourceInstallationReceiptMismatch,
     /// An invariant factory rejected installation.
     InvariantFactoryRejected,
     /// A program-rostered rule's declared work budget cannot carry the platform

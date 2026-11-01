@@ -6012,6 +6012,18 @@ in one final cutover, rather than a private SDK refactor after each phase.
 The governing milestone spec is
 [milestone-9.19.md](./milestone-9.19.md).
 
+### Phase5 public maintenance progress
+
+Explicit public Native Source requirements and current-only receiving now use the
+existing Decl/Host installation path, preserving default v3/v4 bytes and real rule
+requirements. The existing Catalog's independent public-only geometry index and
+corrected paired1000/2000/+50000 maintenance court pass; the old asymmetric cost
+calibration failure remains explicit. [Current evidence](milestone-9.19-phase5-query-maintenance-evidence.md)
+records848 distinct passes and the two established unrelated cleanup exclusions.
+Phases1–4 are complete; Phase5 remains open for conventional Source authorization
+custody, Bank and actual public topology adoption, then Phase6 performs the single
+final private pin and integrated CAD cutover.
+
 ### Committed Provider Indexes
 
 Declare and install a box or versioned-prefix provider through the same Decl/Host

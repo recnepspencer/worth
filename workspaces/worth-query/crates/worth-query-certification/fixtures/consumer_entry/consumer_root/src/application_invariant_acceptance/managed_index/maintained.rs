@@ -33,3 +33,7 @@ const PREFIX_REFINEMENT: Option<
         1,
     ),
 );
+
+const PREFIX_MAINTENANCE:
+    worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance =
+    worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance::WhenRequired;

@@ -28,13 +28,13 @@ pub use managed_index::{
     ApplicationInvariantManagedIndexSource, ApplicationManagedIndexBinding,
     ApplicationManagedIndexBindingDescriptor, ApplicationManagedIndexColdSource,
     ApplicationManagedIndexDefinition, ApplicationManagedIndexDefinitionDenial,
-    ApplicationManagedIndexMembership, ApplicationManagedIndexProbeMeaning,
-    ApplicationManagedIndexRef, ApplicationManagedIndexSelectionRecipe,
-    ApplicationManagedIndexSourceMeaning, ApplicationManagedIndexSourceParameters,
-    ApplicationManagedIndexSourceScope, ApplicationManagedIndexSourceStructure,
-    ApplicationQueryManagedIndexMeaning, ErasedApplicationManagedIndexDefinition,
-    WorthQueryPortableManagedIndexParts, WorthQueryPortableManagedIndexProbeParts,
-    WorthQueryPortableQueryManagedIndexParts,
+    ApplicationManagedIndexMaintenance, ApplicationManagedIndexMembership,
+    ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexRef,
+    ApplicationManagedIndexSelectionRecipe, ApplicationManagedIndexSourceMeaning,
+    ApplicationManagedIndexSourceParameters, ApplicationManagedIndexSourceScope,
+    ApplicationManagedIndexSourceStructure, ApplicationQueryManagedIndexMeaning,
+    ErasedApplicationManagedIndexDefinition, WorthQueryPortableManagedIndexParts,
+    WorthQueryPortableManagedIndexProbeParts, WorthQueryPortableQueryManagedIndexParts,
 };
 mod orbit;
 mod ordering;

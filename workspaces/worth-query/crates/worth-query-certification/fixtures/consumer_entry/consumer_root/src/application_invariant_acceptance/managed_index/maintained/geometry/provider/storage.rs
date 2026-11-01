@@ -36,6 +36,11 @@ impl BoxEditStorage for Edit<'_, '_, '_> {
         Ok(id)
     }
     fn replace(&mut self, id: Self::Id, node: Node) -> Result<(), Stop> {
+        // The actual writer validates the coordinate before exact data equality
+        // can omit an ineffective backing edit. Source deltas remain independent.
+        if self.read(id)? == node {
+            return self.control.poll().map_err(Into::into);
+        }
         self.nodes.replace(id, node)?;
         self.observe_write();
         Ok(())

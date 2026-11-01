@@ -1,4 +1,6 @@
 //! Versioned provider meaning never serializes an executable provider or root.
+mod legacy_wire;
+mod maintenance;
 mod refinement;
 use super::{decode_member, encode_member, try_decode_member};
 use crate::facade::WorthQueryPackageArchiveDenialKind as Kind;
@@ -99,7 +101,7 @@ fn managed_index_v1_round_trips_full_probe_and_rejects_future_version_before_pay
     assert_eq!(decode_member(&bytes), member);
     // No payload follows: version refusal must precede any source/profile read.
     assert_eq!(
-        try_decode_member(&[0, 48, 0, 5]).unwrap_err().kind(),
+        try_decode_member(&[0, 48, 0, 6]).unwrap_err().kind(),
         Kind::UnsupportedRecordVariant
     );
     let mut parts = definition().parts().clone();

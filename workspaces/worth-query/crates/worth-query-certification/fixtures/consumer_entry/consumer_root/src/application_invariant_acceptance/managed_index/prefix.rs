@@ -18,6 +18,8 @@ mod installed_version;
 #[path = "prefix/storage.rs"]
 mod storage;
 pub use installed_version::IncompatibleVersion;
+#[path = "prefix/definition.rs"]
+mod definition;
 #[path = "prefix/predicate.rs"]
 mod predicate;
 #[path = "prefix/refinement.rs"]
@@ -29,26 +31,8 @@ mod summary;
 #[cfg(test)]
 #[path = "prefix/text_read.rs"]
 mod text_read;
-pub struct PrefixIndex;
+pub use definition::PrefixIndex;
 const OBSERVED_COORDINATES: usize = 8;
-// compiled-example: begin
-impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
-    type SourceBinding = query::SourceBinding;
-    type ProbeBinding = query::ProbeBinding;
-    type Entity = super::schema::Item;
-    const NAME: &'static str = "catalog_prefix_index";
-    const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
-    const PROVIDER_VERSION: u32 = 1;
-    const REFINEMENT: Option<
-        worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
-    > = super::PREFIX_REFINEMENT;
-    const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
-        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
-    const MEMBERSHIP:
-        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
-        super::PREFIX_MEMBERSHIP;
-}
-// compiled-example: end
 pub type Node = PrefixNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
 pub type Stop = WorthQueryManagedIndexProviderStop<PrefixIndexDenial>;
 fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {

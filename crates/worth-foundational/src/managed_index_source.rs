@@ -1,4 +1,4 @@
-//! Portable invariant Source requirements. These values describe meaning, not admission.
+//! Portable managed Source requirements. These values describe meaning, not admission.
 
 /// Fixed platform meaning for logical invariant Source and physical availability.
 /// It cannot choose a transaction posture or authorize any live Source read.
@@ -59,6 +59,33 @@ impl ManagedIndexSourceStructure {
         match self {
             Self::Opaque => "opaque",
             Self::BinarySourceTree => "binary-source-tree-v1",
+        }
+    }
+}
+
+/// An additional public maintenance requirement, never a Source READ grant.
+/// Existing invariant requirements apply independently in either variant.
+#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+pub enum ManagedIndexMaintenance {
+    /// Add no public requirement; existing cache and invariant behavior remains.
+    #[default]
+    WhenRequired,
+    /// Use Native's fixed logical-materialization interpretation before publication.
+    Native { cold: ManagedIndexColdSourcePosture },
+}
+
+impl ManagedIndexMaintenance {
+    pub const fn native_cold(self) -> Option<ManagedIndexColdSourcePosture> {
+        match self {
+            Self::WhenRequired => None,
+            Self::Native { cold } => Some(cold),
+        }
+    }
+
+    pub const fn canonical_token(self) -> &'static str {
+        match self {
+            Self::WhenRequired => "when-required",
+            Self::Native { .. } => "native-prepared-v1",
         }
     }
 }

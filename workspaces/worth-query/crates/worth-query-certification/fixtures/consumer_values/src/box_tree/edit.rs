@@ -149,8 +149,8 @@ fn insert<S: BoxEditStorage>(
             }
         }
     };
-    write_branch(id, left, right, storage)?;
-    balance(id, storage)
+    let children = write_branch(id, left, right, storage)?;
+    balance(id, children, storage)
 }
 
 fn extract<S: BoxEditStorage>(
@@ -188,8 +188,8 @@ fn extract<S: BoxEditStorage>(
         };
     detached.root = match (left, right) {
         (Some(left), Some(right)) => {
-            write_branch(id, left, right, storage)?;
-            Some(balance(id, storage)?)
+            let children = write_branch(id, left, right, storage)?;
+            Some(balance(id, children, storage)?)
         }
         (None, sibling) | (sibling, None) => {
             debug_assert!(detached.parent.is_none());
@@ -209,11 +209,16 @@ fn checkpoint<S: BoxEditStorage>(depth: u32, storage: &mut S) -> Result<(), S::S
     }
 }
 
+struct Branch<Id, Source> {
+    node: BoxNode<Id, Source>,
+    children: [BoxNode<Id, Source>; 2],
+}
+
 fn branch<S: BoxEditStorage>(
     left: S::Id,
     right: S::Id,
     storage: &mut S,
-) -> Result<BoxNode<S::Id, S::Source>, S::Stop> {
+) -> Result<Branch<S::Id, S::Source>, S::Stop> {
     let a = storage.read(left)?;
     let b = storage.read(right)?;
     if key(a.last_bounds, a.last_source) >= key(b.last_bounds, b.last_source) {
@@ -224,12 +229,15 @@ fn branch<S: BoxEditStorage>(
         .max(b.height)
         .checked_add(1)
         .ok_or_else(|| storage.invalid())?;
-    Ok(BoxNode {
-        bounds: a.bounds.union(b.bounds),
-        links: BoxNodeLinks::Branch { left, right },
-        last_source: b.last_source,
-        last_bounds: b.last_bounds,
-        height,
+    Ok(Branch {
+        node: BoxNode {
+            bounds: a.bounds.union(b.bounds),
+            links: BoxNodeLinks::Branch { left, right },
+            last_source: b.last_source,
+            last_bounds: b.last_bounds,
+            height,
+        },
+        children: [a, b],
     })
 }
 fn append_branch<S: BoxEditStorage>(
@@ -237,17 +245,18 @@ fn append_branch<S: BoxEditStorage>(
     right: S::Id,
     storage: &mut S,
 ) -> Result<S::Id, S::Stop> {
-    let node = branch(left, right, storage)?;
-    storage.append(node)
+    let branch = branch(left, right, storage)?;
+    storage.append(branch.node)
 }
 fn write_branch<S: BoxEditStorage>(
     id: S::Id,
     left: S::Id,
     right: S::Id,
     storage: &mut S,
-) -> Result<(), S::Stop> {
-    let node = branch(left, right, storage)?;
-    storage.replace(id, node)
+) -> Result<Branch<S::Id, S::Source>, S::Stop> {
+    let branch = branch(left, right, storage)?;
+    storage.replace(id, branch.node)?;
+    Ok(branch)
 }
 
 fn children<S: BoxEditStorage>(id: S::Id, storage: &mut S) -> Result<(S::Id, S::Id), S::Stop> {
@@ -257,10 +266,17 @@ fn children<S: BoxEditStorage>(id: S::Id, storage: &mut S) -> Result<(S::Id, S::
     }
 }
 
-fn balance<S: BoxEditStorage>(id: S::Id, storage: &mut S) -> Result<S::Id, S::Stop> {
-    let (left, right) = children(id, storage)?;
-    let a = storage.read(left)?;
-    let b = storage.read(right)?;
+/// Consume the actual child values used by the immediately preceding branch write.
+/// The exclusive storage borrow has not changed either child in between.
+fn balance<S: BoxEditStorage>(
+    id: S::Id,
+    branch: Branch<S::Id, S::Source>,
+    storage: &mut S,
+) -> Result<S::Id, S::Stop> {
+    let BoxNodeLinks::Branch { left, right } = branch.node.links else {
+        return Err(storage.invalid());
+    };
+    let [a, b] = branch.children;
     if i16::from(a.height) - i16::from(b.height) > 1 {
         let (a_left, a_right) = children(left, storage)?;
         if storage.read(a_left)?.height < storage.read(a_right)?.height {

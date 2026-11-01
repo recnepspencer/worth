@@ -77,6 +77,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         };
         let execution = &request;
 
+        let selection_origin = self.selection_origin();
         let producer = self.original_settled_producer().cloned();
         let (application, product, application_basis) = self.into_parts();
         application.admit_application_query(
@@ -90,6 +91,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 controls.maximum_results,
                 controls.request,
             )
+            .with_selection_origin(selection_origin)
             .with_original_settled_producer(producer),
         )
     }
@@ -268,6 +270,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         };
         let execution = &request;
 
+        let selection_origin = self.selection_origin();
         let producer = self.original_settled_producer().cloned();
         let (application, product, application_basis) = self.into_parts();
         application.admit_governed_application_query(
@@ -282,6 +285,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 controls.maximum_results,
                 controls.request,
             )
+            .with_selection_origin(selection_origin)
             .with_original_settled_producer(producer),
         )
     }

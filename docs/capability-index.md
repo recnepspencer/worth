@@ -945,8 +945,15 @@ registry validates actual membership/projection owners and derives structural
 access; original request controls and the existing Source participant own all
 maintenance. Live installation receipts bind the complete Source roster through
 checkpoint readmission; Source-affected codec transitions remain unsupported.
-This is Native substrate only: Query public maintenance declarations and Bank
-adoption remain unfinished. See the [boundary and implementation plan](../plans/WORTH-query/milestone-9.19-phase5-public-source-plan.md).
+Query bindings can request `ApplicationManagedIndexMaintenance::Native { cold }`
+through their defaulted `MAINTENANCE` constant and existing provider installation
+entrance. One combined roster supplies public and invariant audiences; Refuse
+wins. Explicit portable v5 supports optional refinement; default v3/v4 meanings
+remain unchanged. One-shot Parents can use `ApplicationQueryBasisSupport::current_only()`;
+explicit retained reads refuse before provider execution. See the
+[public maintenance plan](../plans/WORTH-query/milestone-9.19-phase5-query-maintenance-plan.md)
+and [authoring guide](build-an-application.md#construct-committed-provider-indexes).
+Bank and topology adoption remain unfinished.
 
 ### Native managed Source impact history
 

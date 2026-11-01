@@ -41,7 +41,7 @@ fn all(directory: &str) -> query::FindBoxes {
         probe: Coordinates::new(-1, -1, 100, 1),
     }
 }
-fn values(rows: &[query::Row]) -> Vec<(String, Coordinates, Coordinates)> {
+pub(super) fn values(rows: &[query::Row]) -> Vec<(String, Coordinates, Coordinates)> {
     let mut values: Vec<_> = rows
         .iter()
         .map(|row| (row.identity.clone(), row.start, row.end))
@@ -52,7 +52,7 @@ fn values(rows: &[query::Row]) -> Vec<(String, Coordinates, Coordinates)> {
 /// The independent universe comes from the authored coordinates and edge roster.
 /// This interpreter uses closed coordinate comparisons, never provider nodes,
 /// Box2, Source descriptors, or another managed result as its expected answer.
-fn expected(
+pub(super) fn expected(
     directory: &str,
     end: i64,
     probe: Coordinates,
@@ -94,7 +94,7 @@ pub(super) fn commit(
         "{result:?}"
     );
 }
-fn setup(world: &host::Host, principal: &Principal, scope: &WorthQueryRequestScope) {
+pub(super) fn setup(world: &host::Host, principal: &Principal, scope: &WorthQueryRequestScope) {
     let vertices = [0, 10, 50, 60, 70, 30]
         .into_iter()
         .enumerate()

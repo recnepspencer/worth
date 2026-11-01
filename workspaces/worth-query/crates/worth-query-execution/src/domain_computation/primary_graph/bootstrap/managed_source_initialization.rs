@@ -33,7 +33,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<S> {
         }
         if self.source_initializer.is_none() {
             return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedInvariantSource,
+                WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedManagedSource,
                 I::NAME,
             ));
         }

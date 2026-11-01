@@ -25,6 +25,21 @@ pub(super) fn append(
             parts.membership.canonical_token(),
         );
     }
+    if parts.semantic_version >= 5 {
+        let maintenance = definition.maintenance();
+        basis.text(
+            format!("{prefix}.public-maintenance"),
+            maintenance.canonical_token(),
+        );
+        basis.optional_text(
+            format!("{prefix}.public-maintenance.cold"),
+            maintenance.native_cold().map(|cold| cold.canonical_token()),
+        );
+        basis.bool(
+            format!("{prefix}.refinement.present"),
+            definition.refinement().is_some(),
+        );
+    }
     if let Some(refinement) = definition.refinement() {
         let refinement = refinement.parts();
         basis.u64(

@@ -7,6 +7,7 @@ mod cleanup;
 mod close;
 mod conditional_definition;
 mod context;
+pub(in crate::domain_computation::primary_graph) use context::SelectedQueryOrigin;
 pub(in crate::domain_computation::primary_graph) mod correction_source;
 pub use correction_source::{
     WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,

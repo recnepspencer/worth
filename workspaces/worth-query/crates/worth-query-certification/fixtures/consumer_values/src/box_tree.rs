@@ -30,13 +30,13 @@ impl std::error::Error for BoxIndexDenial {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BoxNodeLinks<Id, Source = usize> {
     Leaf { source: Source },
     Branch { left: Id, right: Id },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BoxNode<Id, Source = usize> {
     pub bounds: Box2,
     pub links: BoxNodeLinks<Id, Source>,

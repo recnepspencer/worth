@@ -57,6 +57,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             self.request,
         )
         .map_err(|stop| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(stop)))?
+        .with_selection_origin(selected.selection_origin())
         .with_original_settled_producer(selected.original_settled_producer().cloned());
         let (parameters, controls) = application
             .prepare_source_query_admission(query, &access, parameters, controls)

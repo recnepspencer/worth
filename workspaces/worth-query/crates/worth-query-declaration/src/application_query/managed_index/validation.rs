@@ -5,7 +5,7 @@ use super::{
 pub(super) fn validate_definition(
     parts: &WorthQueryPortableManagedIndexParts,
 ) -> Result<(), Denial> {
-    if !matches!(parts.semantic_version, 1 | 2 | 3 | 4) {
+    if !matches!(parts.semantic_version, 1..=5) {
         return Err(Denial::UnsupportedVersion {
             observed: parts.semantic_version,
         });

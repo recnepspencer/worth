@@ -5998,6 +5998,27 @@ a handle from another branch, installation or generation cannot be reused.
 Keep result owners only as long as needed, and close the shared registration
 when the application no longer needs the index.
 
+Declare `ApplicationManagedIndexBinding::MAINTENANCE` as
+`ApplicationManagedIndexMaintenance::Native { cold:
+ApplicationManagedIndexColdSource::AdmitRebuild }` to require Native maintenance
+for public reads even when no invariant consumes the index. Use the same
+contribution `setup.managed_index::<Index, _>(provider)` entrance. The default
+`WhenRequired` adds no public requirement; existing invariant requirements still
+apply. When public and invariant audiences share an index, `Refuse` wins over
+`AdmitRebuild`. Unsupported Source shapes return a typed installation refusal.
+Initialization and updates retain the original request's controls and budget.
+
+Explicit maintenance is portable v5 meaning, with optional refinement. Existing
+default definitions retain their v3/v4 bytes and canonical meaning. A one-shot
+Parent can declare `ApplicationQueryBasisSupport::current_only()`; actual current
+selection succeeds, while an explicit retained `.at(...)` read returns
+`BasisUnsupported` even at the same unchanged head. Result rows still come from
+one snapshot selected at admission. This does not enable historical managed
+reads or continuation without pinned support. The
+[public geometry consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/public_only.rs)
+uses a distinct maintained index with no invariant requirement. Bank and topology
+adoption are tracked separately in Query 9.19 Phase5.
+
 The
 [public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
 shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and
@@ -6016,18 +6037,19 @@ contract. Their probe codecs retain their complete canonical meaning:
 impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     type SourceBinding = query::SourceBinding;
     type ProbeBinding = query::ProbeBinding;
-    type Entity = super::schema::Item;
+    type Entity = super::super::schema::Item;
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const MAINTENANCE: ApplicationManagedIndexMaintenance = super::super::PREFIX_MAINTENANCE;
     const REFINEMENT: Option<
         worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
-    > = super::PREFIX_REFINEMENT;
+    > = super::super::PREFIX_REFINEMENT;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
     const MEMBERSHIP:
         worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
-        super::PREFIX_MEMBERSHIP;
+        super::super::PREFIX_MEMBERSHIP;
 }
 ```
 
@@ -6341,7 +6363,7 @@ occurrence and checks its declared cardinality before provider maintenance:
 
 <!-- compiled: managed_geometry_source.rs -->
 ```rust
-fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
+pub(super) fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
 ) -> TypedApplicationQueryResultShape<Catalog, Q, Edge, Row, ResultBinding> {
     ApplicationQueryResultShapeBuilder::new(Edge::reference())
         .field(identity())

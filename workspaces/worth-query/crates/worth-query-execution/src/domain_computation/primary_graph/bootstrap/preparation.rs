@@ -116,21 +116,13 @@ impl WorthQueryExecutionInstallationAuthority {
         )?;
         let (registrations, managed_sources, source_initializer) =
             invariant_factories.lower(&execution, installed_schema.binding_identity(), &layout)?;
-        let expected_invariant_inventory_digest =
-            worth_relational::facade::runtime::custom_invariant_inventory_digest(&registrations);
-        let mut invariant_installation_receipt = relational_runtime
-            .prepare_initial_schema_installation()
-            .map_err(map_initial_schema_installation_denial)?
-            .install_with_custom_invariants(additions, registrations)
-            .map_err(map_initial_schema_installation_denial)?;
-        if invariant_installation_receipt.custom_invariant_inventory_digest()
-            != &expected_invariant_inventory_digest
-        {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::InvariantInstallationReceiptMismatch,
-                "Relational installed an invariant inventory outside the application catalog",
-            ));
-        }
+        let (mut invariant_installation_receipt, expected_invariant_inventory_digest) =
+            super::initial_installation::install(
+                &mut relational_runtime,
+                additions,
+                registrations,
+                &layout,
+            )?;
         let (recovered_relational_authority, recovered_checkpoint_restore_work) = match checkpoint {
             Some(checkpoint) => {
                 let mut recovery = relational_runtime.durability_recovery();
