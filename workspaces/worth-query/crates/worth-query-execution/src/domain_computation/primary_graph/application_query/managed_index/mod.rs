@@ -12,6 +12,8 @@ mod execution;
 mod handle;
 pub(in crate::domain_computation::primary_graph) mod invariant_read;
 mod invocation;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph::application_query) use invocation::tests::with_original_content_scope;
 mod maintained_read;
 pub(in crate::domain_computation::primary_graph) mod realized_footprint;
 pub use invariant_read::WorthQueryManagedIndexInvariantDenial;

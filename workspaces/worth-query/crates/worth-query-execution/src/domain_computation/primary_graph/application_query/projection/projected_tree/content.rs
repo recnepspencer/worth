@@ -1,4 +1,5 @@
-//! Complete one-hop projected content, never a revision or equality witness.
+//! Complete projected content, never a revision or equality witness.
+mod nested;
 use super::*;
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{write_aspect_value_identity_material, CanonicalMaterialSink};

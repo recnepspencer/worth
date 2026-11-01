@@ -112,3 +112,6 @@ fn complete_raw_shape_compares_fields_relations_negative_support_order_and_depth
 }
 
 mod deep;
+
+mod encoding;
+mod lifetime;

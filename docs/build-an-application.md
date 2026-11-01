@@ -5900,8 +5900,8 @@ uses the same installed forward provider and exact evaluator to verify complete
 candidate coverage again. Equal membership, exact decisions and complete
 candidate bodies can preserve an expectation across edits to noncandidates or
 restoration of candidate content. Shared immutable bodies provide the fast path;
-otherwise Query pays for exact occurrence, dependency and full one-hop projection
-comparison. Commitments only shortlist that comparison. A previously nonmatching
+otherwise Query pays for exact occurrence, dependency and the complete declared
+scalar/relation projection comparison. Commitments only shortlist that comparison. A previously nonmatching
 record entering an empty range invalidates it. A changed candidate input prevents
 equality even if the returned exact rows stay empty. Installed slot correspondence,
 full-generation relation/row identities, predicate support and order remain part
@@ -6013,6 +6013,21 @@ contribution `setup.managed_index::<Index, _>(provider)` entrance. The default
 apply. When public and invariant audiences share an index, `Refuse` wins over
 `AdmitRebuild`. Unsupported Source shapes return a typed installation refusal.
 Initialization and updates retain the original request's controls and budget.
+
+A Source and its Parent can declare the same finite nested direct-relation shape
+with the existing `.relation(selector, child_builder)` surface. Forward and reverse
+routes preserve every physical occurrence, including convergent paths and empty
+child collections. Native parent-occurrence custody supplies the projected fields;
+entity coordinates and caller-owned DTOs cannot issue them. Complete projected
+candidate influence includes every declared descendant, even for rejected candidates.
+Original work, memory and cancellation controls apply to acquisition, comparison
+and nested Entry content. Child predicates and OptionalAspect Source fields remain
+unsupported. Existing one-hop Entry content retains its v1 bytes; the compiled
+nested profile uses framed v2 content, including currently empty children.
+See the executable [nested shape](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/shape.rs)
+and [ordinary integration courts](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/court.rs).
+This qualifies the finite nested Source profile, not arbitrary payload traversal,
+new historical correction policy, or a new public CAD model.
 
 Explicit maintenance is portable v5 meaning, with optional refinement. Existing
 default definitions retain their v3/v4 bytes and canonical meaning. A one-shot

@@ -178,4 +178,4 @@ pub(super) fn decoded_provider<R>(
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

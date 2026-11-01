@@ -2673,3 +2673,23 @@ Installed nested Source lowering/materialization/content/footprint acceptance,
 the ordinary nested text composition and all private CAD adoption/contact/scale/
 full-gate obligations remain open. Phase6 and milestone9.19 remain incomplete;
 this prerequisite changes no SDK pin or application build root.
+
+
+### Phase6 Query finite nested Source prerequisite (2026-11-01)
+
+Finite unpredicated direct Source forests now flow through real Native parent
+occurrences, complete projected rows, Entryv2 content, exact retained influence,
+ordinary Parent footprint/currentness, expectations and watch refresh. Shallow
+Entryv1 content and allocation-free specializations remain. Deep Entry partial
+cleanup/disposal carries its original funded owner; ordinary Parent result
+construction retains its existing lifecycle and receives no all-depth guarantee.
+A real convergent-parent allocation quote bug was corrected at its ordinary
+receiving owner with no budget/limit relaxation.
+
+The [nested evidence](milestone-9.19-phase6-query-nested-projection-evidence.md)
+records46 owner plus97 bounded consumer passes (143 distinct), including six
+new ordinary nested/forest/hostile cases and preserved existing compatibility.
+No new Cargo root, schema filter, checker exception, public CAD model or SDK pin.
+Ordered event membership, private codec/profile/sharing integration and actual
+CAD SDK adoption/contact/topology/face-scale/Acceptance8/full gate remain open.
+This is a prerequisite, not Phase6 or milestone9.19 completion.

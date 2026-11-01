@@ -142,3 +142,73 @@ multiple nested workspace roots, including with an explicit exclusion. Those
 manifest changes are removed; both existing roots/configurations are preserved.
 No dependency, Cargo root, profile, feature or product authority is added.
 These owner test repairs imply no installed nested Source or private CAD gate.
+
+## Full admission lifecycle refinement at e53a55d8b9
+
+The downstream audit found recursive Row retained-byte sizing/default Vec Drop,
+recursive Source footprint traversal and unnecessary recursive Public disclosure.
+Fix these before enabling nested Source lowering. The existing DisclosedRows::Owned
+and OriginalProjection.rows handoff owns one private OwnedProjectionRows carrier,
+with read-only Vec dereference and no post-freeze mutation. For actual deep managed
+Source trees it retains one original-funded, fixed-capacity depth-first DropFrames
+workspace, the exact carried immutable projection payload quote and the original
+SourceFactsAllocation. Row backing and DropFrames backing die before that payer.
+Ordinary/shallow rows retain their existing behavior; no allocator-owner aggregate
+claims can substitute for this tree's exact payload. Public disclosure skips its
+no-op recursive traversal at its existing governance owner.
+
+The iterative Native materializer owns every completed partial subtree immediately
+in its finite Node/Relation frames. Its Drop drains each partial tree through the
+same preallocated workspace, including request/cardinality/physical errors before
+final handoff. No completed deep Row escapes as a naked fallible local. Allocate
+all control/drop backing before acquiring deep ownership. Drop never allocates,
+checks a request or makes fallible admission; process sibling vectors serially,
+so workspace is bounded by compiled depth rather than graph breadth. Final root
+moves non-fallibly into the same sealed carrier, preserved through take/clear/retain.
+The separate Source footprint visitor uses its actual original execution to fund
+finite iterative traversal; fixing disposal cannot qualify a recursive visitor.
+
+Payload sizing accumulates each actual vector's capacity and fields' actual owned
+heaps once as the producer builds the tree, with checked additions while the
+partial owner guard still owns all material. It is a descriptive immutable byte
+quote, not authority, a cache of graph truth or a second budget. The existing
+compiled forest bounds rows, encoder/comparer and disposal continuations. Preserve
+legacy one-hop content bytes; select Entryv2 from the declared forest, including
+rows with currently empty nested children. Qualify actual failures/lifetime and
+ordinary committed/proposed nested text composition before committing admission.
+
+The compiled shallow profile retains its unrolled direct traversal (matching the
+accepted shallow comparer specialization), while the nested profile uses finite
+Node/Relation continuations. They share the same Native acquisition/support/
+cardinality and field/node construction owners; this is a physical traversal
+strategy, not a second semantic or currentness authority. Do not impose nested
+scratch/Native-read Arc allocation on existing one-hop profiles. New deep rows
+always enter the guarded carrier before a later fallible handoff.
+
+The footprint visitor uses the same compiled profile distinction: root/direct
+shapes remain allocation-free and unrolled over the shared one-node content
+collector; actual nested contracts admit one original-funded continuation stack
+per complete footprint batch. Do not charge existing shallow reads nested scratch.
+
+The first cheap topology precheck refused two new source-court construction
+locations. Keep all actual runtime alias/creation/bootstrap for the new capability
+in the existing registered maintained/host.rs owner, extracting its original
+catalog contribution/configuration/program declarations to host/catalog.rs while
+preserving identities and tuple. nested/composition.rs owns declaration/setup;
+nested/host.rs honestly reexports the existing construction owner. The lifetime
+unit reuses an actual borrowed request/memory/cancellation callback fixture created
+inside the existing registered invocation/tests.rs owner. It creates no request in
+the new projection test and exposes no production test door. No baseline/checker,
+Cargo root or policy exception changes; rerun the boundary precheck before building.
+
+The first real nested consumer journey exposed an ordinary Parent capacity bug:
+relation_attachment groups physical targets by entity, but allocates flattened
+projection targets from targets.values() while emitting once per projected parent.
+In a legal diamond the repeated z parent emits the same z->c record twice. Managed
+materialization correctly refuses the underquoted vector as ResultBufferLimitExceeded.
+Correct both pre-predicate and selected target quotes to count each parent
+occurrence, preserving checked arithmetic, actual original storage and physical
+records. Keep every acceptance limit unchanged; this is not a result-limit failure.
+The distinct Native Source and ordinary Parent paths plus authored graph oracle
+are the regression evidence. Targeted collection admission still requires one
+actual parent and is not given ambiguous multi-parent semantics by this repair.

@@ -150,3 +150,20 @@ fn original_content_reservation_keeps_its_payer_and_first_memory_or_cancel_refus
         Stop::Request(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
     );
 }
+
+/// Reuse this original-controls fixture without creating another source-court root.
+pub(in crate::domain_computation::primary_graph::application_query) fn with_original_content_scope<
+    R,
+>(
+    body: impl FnOnce(
+        &ExecutionRequest<'_, '_>,
+        &worth_execution::SerialMemoryBudget,
+        &CancellationSource,
+    ) -> R,
+) -> R {
+    let cancel = CancellationSource::new();
+    let memory = worth_execution::SerialMemoryBudget::new(Some(1_000_000));
+    let backing = SerialRequest::from_memory(memory.clone(), cancel.token(), None);
+    let execution = ExecutionRequest::serial(&backing);
+    body(&execution, &memory, &cancel)
+}

@@ -20,6 +20,10 @@ pub(in crate::domain_computation::primary_graph::application_query) mod content;
 mod content_comparison;
 mod disclosure_boundary;
 mod field;
+mod owned_rows;
+pub(in crate::domain_computation::primary_graph::application_query) use owned_rows::{
+    OwnedProjectionRows, ProjectionDisposal,
+};
 
 pub(in crate::domain_computation::primary_graph::application_query) use disclosure_boundary::{
     WorthQueryApplicationDisclosedProjectionNode, WorthQueryApplicationDisclosedProjectionTree,
@@ -145,6 +149,24 @@ impl WorthQueryApplicationProjectionNode {
             self.relations.push(relation);
             true
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn owned_shallow_bytes(
+        &self,
+    ) -> usize {
+        self.fields
+            .iter()
+            .fold(
+                self.fields
+                    .capacity()
+                    .saturating_mul(size_of::<WorthQueryApplicationProjectedField>()),
+                |bytes, field| bytes.saturating_add(field.retained_bytes()),
+            )
+            .saturating_add(
+                self.relations
+                    .capacity()
+                    .saturating_mul(size_of::<WorthQueryApplicationProjectedRelation>()),
+            )
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn retained_bytes(

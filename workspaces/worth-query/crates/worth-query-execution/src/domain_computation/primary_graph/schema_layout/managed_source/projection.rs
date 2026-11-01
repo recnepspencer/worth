@@ -31,11 +31,14 @@ pub(super) fn lower(
     }
     let root_fields = scalar_fields(source.result_shape(), fields, source.name())?;
     let mut routes = Vec::new();
-    for relation in source.result_shape().relations() {
-        // The direct endpoint grammar preserves every physical occurrence.
-        // Deeper shapes and predicate-dependent child membership need their
-        // own complete acquisition semantics before becoming an accepted Source.
-        if !relation.nested_shape().relations().is_empty() || relation.predicate().is_some() {
+    // Preorder keeps every Native parent route earlier than its descendants.
+    let mut stack = vec![(source.result_shape(), None, 0usize)];
+    while let Some((shape, parent_route, position)) = stack.pop() {
+        let Some(relation) = shape.relations().get(position) else {
+            continue;
+        };
+        stack.push((shape, parent_route, position + 1));
+        if relation.predicate().is_some() {
             return Err(unsupported(source.name()));
         }
         let from = required_kind(entities, relation.from())?;
@@ -50,7 +53,7 @@ pub(super) fn lower(
             nodes.push(Node::Reverse { input: 0 });
         }
         let (parent, endpoint) = if reverse { (to, from) } else { (from, to) };
-        if parent != required_kind(entities, source.root_entity())?
+        if parent != required_kind(entities, shape.root_entity())?
             || endpoint != required_kind(entities, relation.nested_shape().root_entity())?
         {
             return Err(unsupported(source.name()));
@@ -73,14 +76,15 @@ pub(super) fn lower(
         let path = registry
             .derived_relation(&route_identity)
             .ok_or_else(|| unsupported(source.name()))?;
-        routes.push(
-            ManagedIndexSourceProjectionRoute::new(
-                name,
-                path,
-                scalar_fields(relation.nested_shape(), fields, source.name())?,
-            )
-            .map_err(|_| unsupported(source.name()))?,
-        );
+        let index = routes.len();
+        let columns = scalar_fields(relation.nested_shape(), fields, source.name())?;
+        let route = match parent_route {
+            None => ManagedIndexSourceProjectionRoute::new(name, path, columns),
+            Some(parent) => ManagedIndexSourceProjectionRoute::nested(name, parent, path, columns),
+        }
+        .map_err(|_| unsupported(source.name()))?;
+        routes.push(route);
+        stack.push((relation.nested_shape(), Some(index), 0));
     }
     Ok((registry, root_fields, routes))
 }
