@@ -265,6 +265,261 @@ owner/real filesystem courts, format, scoped caps, boundary/context and fresh
 independent source QA. Existing Query readmission remains unqualified until
 this prerequisite is integrated and its real recovery evidence passes.
 
+## Coupled World checkpoint and automatic maintenance (D12)
+
+This is the governing destination for the next checkpoint slice, not an
+implementation or completion claim. It replaces the Native-only refusal when
+World journals are nonempty with one actual multi-owner Home checkpoint.
+Full original-result retry (D9) and bounded cold teardown (D11) remain separate
+obligations. Neither may be inferred from a selected checkpoint.
+
+The decisive court crosses a real process restart with a selected normalized
+World image AND nonempty tails. Include Native ahead of the World business
+basis, durably opened unpublished custody, and a business error after accepted
+work. Interrupt selection and the interval between owner acknowledgements.
+The original business result or denial must survive maintenance failure; a
+later usable request must rejoin the same accepted checkpoint attempt. Missing
+members, corrupt owner meaning and a mismatched Native association must refuse,
+not disappear behind the selected image. Hold cold readers and the retired
+allocation through actual close; checkpoint selection alone proves no close.
+
+### World image and admitted historical meaning
+
+World owns a normalized image, its versioned codec, validation and coverage.
+Preserve the exact Home/owner/program binding; three journal positions and
+digests; branch origins and bootstrap/component descriptions; every durable
+open's complete association, predecessor, commit, custody and program revision;
+all occurrence/history/head facts, generations, Native commit/position/digest,
+publishing incarnation and original World occurrence coordinates; all terminal
+release/continuation dispositions and actual Native release evidence; and all
+identity maxima. Enumerate these fields against the actual associated-effect
+reconciler before source implementation. Live catalog reclamation does not
+authorize omission of historical opens, associations or dispositions.
+
+Capture folds the SAME selected World image and only its uncovered tails into
+this state. Without a selected World image, initial capture validates the
+original streams once. This is not concatenated journal frames, replay
+instructions or a new live mirror/registry. Readmission validates normalized
+tables and their complete graph, then uses actual Native association admission
+and existing World materialization. No business handler or canonical mutation
+is replayed. Image processing is O(all retained authoritative state plus the
+uncovered tails); it is not an O(tail) or constant-heap claim. Authoritative
+history remains retained until Milestone 4 permits reclamation.
+
+Replace the independently paired occurrence artifact and raw source map with
+owner-private `AdmittedWorldOccurrence`: complete typed occurrence meaning and
+an inline admitted location correlating owner, attempt, commit, position and
+digest. Journal admission constructs it after actual byte/SHA/frame/contiguity
+validation. Checkpoint admission constructs it only after validating the actual
+selected World section, Home/source affinity, protected membership, image
+integrity, coverage bounds and graph. Retain checkpoint read protection through
+validation and materialization. `prepare_readmitted_occurrence` consumes that
+correlated fact; the installed record retains its location and SAME genuine
+Native publication custody, immutable identity and history protections.
+
+Remove `occurrence_sources` and the unused original-byte backing in materialized
+readmitted records. Do not reencode parsed meaning into purported original
+journal bytes, reread covered history, or construct `DurablyCommitted`. Image
+coordinates are checkpoint-admitted historical facts, not a claim that reopen
+read the original payload or that the selection receipt created the occurrence.
+`WorldReadmittedPublication` keeps its existing historical accessors and cannot
+become `PublicationEvidence::Live` or a performed delivery.
+
+World checkpoint codec version 1 and Home manifest version 2 are the clean
+development-format cutover. Selected unsupported versions refuse explicitly;
+missing World coverage cannot mean empty state. Native artifact v4/CHK17 and
+the Relational WSRCKPT1 version-3 section remain unchanged. Store transports
+opaque owner sections; it does not parse World or Native semantic payloads.
+Keep the existing 1 GiB combined Home-manifest ceiling and 64 KiB individual
+World journal-frame ceiling. Check lengths/counts/arithmetic against remaining
+input and the original request before allocation. Fund retained maps/buffers
+and poll during encoding/decoding. Limit refusal preserves prior selection and
+all journals; it never prunes history to make a checkpoint fit.
+
+### Source cut, one selection and acknowledgement
+
+Use a private RAII capture reservation in the existing
+`WorldDurableMediumBinding.gates`. Nonwaiting admission requires all three
+flights to have no active caller, retained subject or barrier, plus settled
+actual adapter task slots. Publication checks that SAME reservation under the
+same gates. While reserved, acquire an immutable protected cut of the actual
+three heads/digests and their source obligations. Release the reservation after
+that cut; normalize, encode and perform I/O outside gate guards. Unwind releases
+the reservation. Do not require unrelated active operations to be zero: the
+image covers durable meaning, including opened unpublished attempts, not a
+speculative live CAS.
+
+Capture World first, retaining actual component/source observations, then
+Native. Native may be ahead; current Native head is never a substitute for
+World coverage. Extend the existing `HomeCheckpointAttempt` with both prepared
+sections, their original funding/affinity and union of physical memberships.
+Publish one manifest under `home.checkpoint`. Both acknowledgements consume the
+SAME actual physical selection receipt and enforce owner coverage monotonicity;
+Native also preserves transition/catalog monotonicity. An uncertain selection
+or interrupted acknowledgement retains the exact attempt and remaining work.
+Do not recapture, republish, move a head or change disposition to retry it.
+
+Opening selects once, passes each opaque section to its owner, and reads every
+tail from its actual coverage plus one. The complete image-plus-tail meaning
+feeds existing Native association reconciliation before service. Missing opens,
+orphan effects, conflicting lineage, duplicate association and missing Native
+evidence retain their refusals and genuine acquired custody.
+
+Close invokes this SAME checkpoint after stopping admission/settling actual
+publications while World is still alive, before World Drop. A settled failure
+is reported and does not veto otherwise lawful close. Unknown selection or
+unfinished acknowledgement retains actual recovery custody. No checkpoint
+result upgrades incomplete Native/physical teardown to Closed. The capture port
+must admit this stopped-but-owned close phase without reopening ordinary
+service or requiring an Open-only service gate.
+
+### Finite cadence and unavoidable advancement handoff
+
+Host checkpoint policy defaults to 4,096 uncovered entries OR 64 MiB of owner
+payload in ANY participating journal: Native canonical/transitions and World
+branches/custody/occurrences. Expose this policy in Host Home request limits;
+count and byte overrides are finite, nonzero, checked values. Memory-only has
+no Directory checkpoint port. Use only owner-issued acknowledged coverage;
+unpublished/unacknowledged captures never advance the cadence baseline.
+
+For each journal, inspect its actual metadata head and refuse a baseline ahead
+of it. A count reaching the selected threshold is immediately due. Otherwise
+page/fund at most that uncovered suffix's headers, summing checked payload bytes
+and stopping at the byte threshold. Default worst-case admission examines five
+heads and at most 4,095 suffix headers per journal, independent of older
+history and owner payload size. Charge/poll the SAME original request.
+
+Add a narrowly owned request-funded scheduling-metadata operation to Store's
+ordered journal. Existing `head()` reads/hashes the whole latest payload and
+`range_descending()` has no request/funding parameter; they do not establish this
+cost. Header-only metadata checks framing, journal/position/spine/length under
+actual read protection. It is scheduling information, NOT full-payload SHA,
+checkpoint coverage or recovery authority. The selected record digest covers
+the entire record, and the header has no independent equivalent digest. Actual
+capture/recovery still validates payloads; no cadence-only wire version change
+or cumulative counter is introduced.
+
+Every installed-opening advancement route with a Directory port must use one
+private completion orchestrator around
+`QueryRequestExecution::run_admitted_advancement`:
+
+```text
+original_accounted_or_native_completion_scope(|| {
+    business_result = run_admitted_advancement(body)
+    maintenance_attempt_using_the_same_original_request()
+    return business_result
+})
+```
+
+Run maintenance after EVERY returned business Result, including Err, while the
+SAME execution owner, lease, placement and opening custody remain alive. The
+outer original completion scope MUST begin before the inner business run and
+retain its actual meter until maintenance ends. A lease alone does not retain
+remaining work after a scope closes: restarting the full policy is forbidden.
+Existing nested meter charging carries consumed work, remaining ceiling and
+latched stops; do not replace it with a copied remainder or counter.
+
+For accounted placement, use the existing value-preserving
+`ExecutionRequest::run`/`ExecutionWorkCeiling::run` contract. Its callback value
+is the complete original business Result, returned whenever the callback ran,
+even if later maintenance causes a final scope stop. Maintenance lies after the
+INNER business result handoff, but inside the outer accounted completion scope.
+Return the exact business R/denial; an outer refusal before callback entry still
+returns its normal typed advancement denial.
+
+For worker-only placement, add the narrow Execution-owned
+`ExecutionRequest::run_native_completion` counterpart to `run_native`, with the
+same original request/backing, native scope, callback lease and physical-only
+report. Its explicit effectful custody contract returns the callback value
+whenever the callback returned, alongside the actual physical report; admission
+or stop before invocation returns the existing typed denial. Keep the value
+inside the Execution owner, using its existing scope/result-carriage mechanics.
+Do not drain a Query-side result slot or force an accounted scope on a native
+request. Existing `run_native` remains unchanged: its final poll may discard a
+value, so it is insufficient for this completion boundary. `prepare_native` is
+pre-effect-only and must not publish checkpoints. Nested stop ownership remains
+latched; preserving an effectful callback result does not clear stops or grant
+fresh allowance. Test both native posture and accounted-parent inheritance.
+
+Use Query's existing catch/resume-unwind pattern around the whole completion;
+Execution containment must not convert business or maintenance panic into a
+different ordinary result. Preserve ordinary Memory/bootstrap paths without
+the extra Directory completion scope. Do not mint another allowance, clock,
+deadline or cancellation token. A stopped original request produces an honest
+stopped maintenance attempt with unchanged coverage. An unwind preserves
+existing semantics/barriers and performs no acknowledgement.
+
+Store issues an opaque automatic-checkpoint port from the actual Directory
+Home. It retains the same checkpoint owner, Serving and Native checkpoint
+capability plus World's capture port. Host implements the narrow Query adapter;
+both fresh and existing attachment REQUIRE it before QueryReadmitted. The
+clone-carried product runtime retains it, so `home.runtime()` and existing
+advancement entry points cannot bypass cadence. The six public installed entry
+doors currently share four actual execution sites in `installed_opening.rs`:
+direct Host, funded Host/application, direct application, and product opening.
+All four must enter the single completion orchestrator. Enumerate those routes
+in the implementation plan. No optional wrapper, global registry, daemon or
+scheduler is permitted. Document retained handle/allocation costs and release
+them in existing `drop(query)` before Native teardown; external runtime clones
+retain real custody and may defer close.
+
+Inspection is request-funded typed observation derived from actual selected
+coverage, current scheduling metadata/due decision and the existing pending
+attempt. Add no last-error history, report ledger or sequence counter. A failed
+pre-effect attempt remains due; a later usable request re-evaluates the backlog.
+Permanently stopped/insufficient requests promise no eventual success. Explicit
+checkpoint and close return/report their actual detailed outcomes.
+
+### Destination, proof and continuing documentation
+
+Extend existing owners; do not create placeholder bodies:
+
+```text
+worth-runtime-world/src/durability/checkpoint/ [create owner boundary]
+  image.rs, codec/, capture.rs, readmission.rs [distinct owner responsibilities]
+worth-runtime-world/src/lifecycle/ports/checkpoint.rs [create actual capture port]
+worth-runtime-world/src/history/publication/readmission.rs [revise admitted location]
+worth-store/src/physical_runtime/ordered_journal/metadata.rs [create scheduling read]
+worth-store-application/src/checkpoint/ [extend existing single attempt]
+  cadence.rs, maintenance.rs, inspection.rs [create bounded policy/port/observation]
+worth-store-application/src/world_section/checkpoint/ [create opaque owner adapter]
+worth-store-relational/src/section/checkpoint_port.rs [create actual section capability]
+worth-query-host/src/application_home/checkpoint.rs [create closed composition adapter]
+worth-query-execution/.../request_execution/advancement/installed_completion.rs
+  [create mandatory installed-operation completion]
+worth-execution/src/authority/request/native_completion.rs
+  [create native effectful completion; preserve existing scope/report owner]
+```
+
+World alone owns image meaning/admission. Store alone owns journal metadata,
+lease/membership and physical selection. Query owns advancement completion;
+Host composes the owners without exporting raw source/runtime getters. Keep
+exact caller seals and the D1 dependency direction. No competing selector,
+raw-byte reconstructed authority, shadow catalog or generic maintenance engine.
+
+Real filesystem proofs cover manual, count, byte and close triggers of the same
+operation; normalized image plus tails across process restart; continued work;
+Native-ahead-World and unpublished custody; missing/corrupt members; failed and
+unknown selection; interrupted second acknowledgement; original-request stop;
+and a business failure after accepted effects. Include a request whose business
+work leaves insufficient work for maintenance: no second full allowance may
+reach checkpoint selection, and the original result survives. Exercise native
+worker-only completion under cancellation after the business result and a
+genuine accounted ancestor; no fabricated accounting or swallowed parent stop.
+Assert preserved exact business outcomes, unchanged baseline on failure,
+same-attempt rejoin, no handler replay,
+and bounded suffix metadata work through ordinary `home.runtime()`. Owner tests
+validate every image field/graph/limit and genuine admitted-source correlation.
+Fresh source QA and boundary/context/format/cap checks precede integration.
+
+Revise the existing Host README and `docs/build-an-application.md` open/close/
+checkpoint guidance with the actual limits, explicit checkpoint/inspection,
+independent maintenance failures, retained custody, format refusals and restart
+cost. Revise the World and Store owner READMEs for their exact source/coverage
+contracts and `docs/capability-index.md` for the real public capability. Examples
+must use Decl/Host and the actual mandatory path; selected Native-only evidence
+must not be described as multi-owner checkpoint completion.
+
 ## Recovery and service contract
 
 Store Application consumes named Proof stages in order:
