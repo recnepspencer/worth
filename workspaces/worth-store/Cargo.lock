@@ -2151,6 +2151,7 @@ version = "0.1.0"
 dependencies = [
  "sha2",
  "tempfile",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-signal",
