@@ -1,3 +1,4 @@
+mod initial_empty_stop;
 use crate::data::error::SignalError;
 use crate::logic::transaction::BranchState;
 use crate::logic::transaction::{

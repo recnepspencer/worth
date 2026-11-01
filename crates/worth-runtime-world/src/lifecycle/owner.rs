@@ -34,7 +34,8 @@ pub(crate) use construction::{
 };
 pub(crate) use operation::{
     ReservedPublicationAttemptCapacity, RuntimeWorldOperationLedger,
-    RuntimeWorldOperationReservation, RuntimeWorldPublicationCapacityLedger,
+    RuntimeWorldOperationLedgerState, RuntimeWorldOperationReservation,
+    RuntimeWorldPublicationCapacityLedger,
 };
 pub use owned_async_product::{
     RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,

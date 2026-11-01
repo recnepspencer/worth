@@ -1,3 +1,4 @@
+mod initial_empty_stop;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 

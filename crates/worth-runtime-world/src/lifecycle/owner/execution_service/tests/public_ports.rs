@@ -44,15 +44,22 @@ fn query_home_selection_never_downgrades_an_unavailable_root_to_memory() {
         Err(Refusal::IdentityScope)
     ));
     let before = owner.root.state.publication_capacity.active();
-    // Actual private lifecycle state: ordinary service admission must not use
+    // Genuine owner close admission: ordinary service admission must not use
     // a merely retained, partly closed root as evidence of live memory.
-    owner.root.state.close.lock().unwrap().begin().unwrap();
+    let policy = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&policy);
+    owner.try_prepare_close_admission(&request).unwrap().begin();
     assert!(matches!(
         port.query_publication_home_binding(&expected),
         Err(Refusal::Reservation(refused)) if refused.cause() == NoEffectCause::OwnerUnavailable
     ));
     assert_eq!(owner.root.state.publication_capacity.active(), before);
-    owner.root.state.close.lock().unwrap().finish().unwrap();
+    assert!(owner
+        .lifecycle_port()
+        .close(&request, &owner)
+        .unwrap()
+        .retained_records()
+        .is_empty());
     assert!(matches!(
         port.query_publication_home_binding(&expected),
         Err(Refusal::Reservation(refused)) if refused.cause() == NoEffectCause::OwnerUnavailable

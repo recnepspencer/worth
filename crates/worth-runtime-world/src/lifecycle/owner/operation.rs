@@ -24,7 +24,8 @@ mod publication_capacity;
 mod reservation_steps;
 
 pub(crate) use attempt::{
-    RuntimeWorldOperationLedger, RuntimeWorldOperationReservation, RuntimeWorldOperationState,
+    RuntimeWorldOperationLedger, RuntimeWorldOperationLedgerState,
+    RuntimeWorldOperationReservation, RuntimeWorldOperationState,
 };
 pub(crate) use publication_capacity::{
     ReservedPublicationAttemptCapacity, RuntimeWorldPublicationCapacityLedger,

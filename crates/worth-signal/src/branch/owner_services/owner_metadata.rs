@@ -1,3 +1,4 @@
+mod initial_empty_stop;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard};
 

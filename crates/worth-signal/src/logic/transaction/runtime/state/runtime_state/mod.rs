@@ -3,6 +3,7 @@ mod branch_state_capture;
 mod branch_transfer;
 mod construction;
 mod graph_mutation;
+mod initial_empty_stop;
 mod owner_services;
 mod resource;
 mod telemetry;

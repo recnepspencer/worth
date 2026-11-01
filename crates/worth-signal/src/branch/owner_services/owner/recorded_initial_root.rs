@@ -12,10 +12,10 @@ use super::super::{
 use super::SignalOwner;
 
 pub(super) struct InitialEmptyRootWitness {
-    branch: SignalBranchId,
-    incarnation: u64,
-    observation: SignalBranchObservation,
-    recorded: RecordedSignalInitialEmptyRoot,
+    pub(super) branch: SignalBranchId,
+    pub(super) incarnation: u64,
+    pub(super) observation: SignalBranchObservation,
+    pub(super) recorded: RecordedSignalInitialEmptyRoot,
 }
 
 impl<D, I, T> SignalOwner<D, I, T>

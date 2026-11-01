@@ -1,6 +1,6 @@
 //! Original-request close admission and retained one-head progression.
 use super::{RuntimeWorldCloseDenial as Denial, RuntimeWorldCloseReport, RuntimeWorldCloseState};
-use crate::lifecycle::owner::{RuntimeWorldBootstrapState, RuntimeWorldOwnerState};
+use crate::lifecycle::owner::RuntimeWorldOwnerState;
 use worth_execution::ExecutionRequest;
 
 #[derive(Debug, Default)]
@@ -125,66 +125,7 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    request.check_live().map_err(Denial::Stopped)?;
-    {
-        let operation = state.operation.state.try_lock().map_err(|_| Denial::Busy)?;
-        if operation.active != 0 || operation.recovery_active != 0 {
-            return Err(Denial::InFlightCriticalSection);
-        }
-    }
-    // Cheap actual-custody rejection precedes a history pass. Neither this
-    // observation nor a frontier replaces the final same-gate recheck below.
-    if state
-        .recovery
-        .try_has_close_custody()
-        .map_err(|_| Denial::Busy)?
-        || state
-            .custody
-            .try_has_close_custody()
-            .map_err(|_| Denial::Busy)?
-    {
-        return Err(Denial::UnresolvedBusinessCustody);
-    }
-    let frontier = state.history.close_frontier(request)?;
-    let task = std::sync::Arc::new(std::sync::Mutex::new(CloseProgress::default()));
-    let bootstrap = state.bootstrap.try_lock().map_err(|_| Denial::Busy)?;
-    match &*bootstrap {
-        RuntimeWorldBootstrapState::InProgress => return Err(Denial::AlreadyClosing),
-        RuntimeWorldBootstrapState::Pending(_) => return Err(Denial::UnresolvedBusinessCustody),
-        _ => {}
-    }
-    let operation = state.operation.state.try_lock().map_err(|_| Denial::Busy)?;
-    if operation.active != 0 || operation.recovery_active != 0 {
-        return Err(Denial::InFlightCriticalSection);
-    }
-    let mut close = state.close.try_lock().map_err(|_| Denial::Busy)?;
-    if close.state() != RuntimeWorldCloseState::Open {
-        return Err(Denial::AlreadyClosing);
-    }
-    if !state
-        .owner_present
-        .load(std::sync::atomic::Ordering::Acquire)
-    {
-        return Err(Denial::OwnerUnavailable);
-    }
-    state.history.try_validate_close_frontier(&frontier)?;
-    if state
-        .recovery
-        .try_has_close_custody()
-        .map_err(|_| Denial::Busy)?
-        || state
-            .custody
-            .try_has_close_custody()
-            .map_err(|_| Denial::Busy)?
-    {
-        return Err(Denial::UnresolvedBusinessCustody);
-    }
-    if let Some(binding) = &state.durable {
-        binding.try_admit_close()?;
-    }
-    request.check_live().map_err(Denial::Stopped)?;
-    close.begin()?;
-    close.progress = Some(task);
+    super::admission::prepare(state, request)?.begin();
     Ok(())
 }
 
@@ -285,5 +226,94 @@ mod tests {
             close.progress.as_ref().unwrap(),
             &task
         ));
+    }
+    #[test]
+    fn borrowed_preclose_guard_excludes_calls_and_drop_preserves_open() {
+        let (fixture, owner) = owner();
+        assert!(matches!(
+            owner.bootstrap_root(fixture.bootstrap_intent()),
+            crate::branch::RuntimeWorldBootstrapOutcome::Performed(_)
+        ));
+        let policy = crate::test_execution_policy::serial_request();
+        let request = ExecutionRequest::serial(&policy);
+        assert!(owner.try_admit_call().is_some());
+        let admission = owner.try_prepare_close_admission(&request).unwrap();
+        assert!(owner.try_admit_call().is_none());
+        assert!(matches!(
+            close_owner(&owner.state, &request),
+            Err(Denial::Busy)
+        ));
+        drop(admission);
+        assert_eq!(
+            owner.lifecycle_observation(),
+            crate::lifecycle::RuntimeWorldOwnerLifecycleObservation::Open
+        );
+        assert!(owner.try_admit_call().is_some());
+        assert!(owner.state.bootstrap.try_lock().is_ok());
+        assert!(owner.state.operation.state.try_lock().is_ok());
+        assert!(owner.state.close.try_lock().is_ok());
+        assert!(owner.close(&request).unwrap().retained_records().is_empty());
+    }
+    #[test]
+    fn preclose_begin_ignores_late_stop_and_retains_the_same_close_task() {
+        let (_fixture, owner) = owner();
+        let cancel = worth_execution::CancellationSource::new();
+        let policy =
+            crate::test_execution_policy::serial_request().with_cancellation(cancel.token());
+        let request = ExecutionRequest::serial(&policy);
+        let admission = owner.try_prepare_close_admission(&request).unwrap();
+        let task = admission.task.clone();
+        cancel.cancel();
+        admission.begin();
+        assert_eq!(
+            owner.lifecycle_observation(),
+            crate::lifecycle::RuntimeWorldOwnerLifecycleObservation::Closing
+        );
+        assert!(std::sync::Arc::ptr_eq(
+            owner.state.close.lock().unwrap().progress.as_ref().unwrap(),
+            &task
+        ));
+        assert!(matches!(owner.close(&request), Err(Denial::Stopped(_))));
+        let retry = crate::test_execution_policy::serial_request();
+        assert!(owner
+            .close(&ExecutionRequest::serial(&retry))
+            .unwrap()
+            .retained_records()
+            .is_empty());
+    }
+    #[test]
+    fn active_recovery_and_request_stop_refuse_without_sealing() {
+        let (fixture, owner) = owner();
+        assert!(matches!(
+            owner.bootstrap_root(fixture.bootstrap_intent()),
+            crate::branch::RuntimeWorldBootstrapOutcome::Performed(_)
+        ));
+        let policy = crate::test_execution_policy::serial_request();
+        let request = ExecutionRequest::serial(&policy);
+        let active = owner.try_admit_call().unwrap();
+        assert!(matches!(
+            owner.try_prepare_close_admission(&request),
+            Err(Denial::InFlightCriticalSection)
+        ));
+        drop(active);
+        let recovery = owner
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .unwrap();
+        assert!(matches!(
+            owner.try_prepare_close_admission(&request),
+            Err(Denial::InFlightCriticalSection)
+        ));
+        drop(recovery);
+        let cancel = worth_execution::CancellationSource::new();
+        cancel.cancel();
+        let stopped = policy.with_cancellation(cancel.token());
+        assert!(matches!(
+            owner.try_prepare_close_admission(&ExecutionRequest::serial(&stopped)),
+            Err(Denial::Stopped(_))
+        ));
+        assert_eq!(
+            owner.lifecycle_observation(),
+            crate::lifecycle::RuntimeWorldOwnerLifecycleObservation::Open
+        );
     }
 }

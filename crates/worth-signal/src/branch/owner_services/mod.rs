@@ -3,6 +3,12 @@
 //! This module exposes the frozen public vocabulary and assembles the private
 //! synchronization and capacity kernel consumed by later service phases.
 
+mod initial_empty_stop;
+pub use initial_empty_stop::{
+    PreparedInitialEmptySignalStop, SignalInitialEmptyStopDenial, SignalInitialEmptyStopRefused,
+    StoppedInitialEmptySignalAllocation,
+};
+
 mod admission_table;
 mod basis_port;
 mod branch_cell_state;

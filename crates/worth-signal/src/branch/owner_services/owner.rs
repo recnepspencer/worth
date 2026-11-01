@@ -1,3 +1,4 @@
+mod initial_empty_stop;
 use super::owner_metadata::SignalOwnerMetadata;
 use super::{
     SignalBranchCellState, SignalBranchExecutionCell, SignalBranchRegistry,

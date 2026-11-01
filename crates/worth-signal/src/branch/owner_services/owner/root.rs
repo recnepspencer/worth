@@ -10,11 +10,11 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    state: SignalOwnerRootState<D, I, T>,
+    pub(super) state: SignalOwnerRootState<D, I, T>,
     definition_publication_issued: bool,
 }
 
-enum SignalOwnerRootState<D, I, T>
+pub(super) enum SignalOwnerRootState<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
     I: Copy + Ord,

@@ -1,3 +1,4 @@
+mod initial_empty_stop;
 use std::sync::{Arc, Mutex};
 
 use crate::data::retained_storage::RetainedStorageCharge;

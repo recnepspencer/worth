@@ -92,11 +92,11 @@ pub use crate::lifecycle::{
     RuntimeWorldObservationPort, RuntimeWorldOwnedAsyncManagedRevalidationDenial,
     RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
     RuntimeWorldOwner, RuntimeWorldOwnerBuilder, RuntimeWorldOwnerLifecycleObservation,
-    RuntimeWorldOwnerUnavailable, RuntimeWorldPublicationPort, RuntimeWorldRecoveredCustodyReport,
-    RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
-    RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
-    RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
-    RuntimeWorldServiceDenial,
+    RuntimeWorldOwnerUnavailable, RuntimeWorldPreCloseAdmission, RuntimeWorldPublicationPort,
+    RuntimeWorldRecoveredCustodyReport, RuntimeWorldRecoveryPort,
+    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
+    RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
+    RuntimeWorldRetainedRecordReport, RuntimeWorldServiceDenial,
 };
 
 pub use crate::publication::{

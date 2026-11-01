@@ -1,6 +1,8 @@
 use crate::history::HistoryReclamationDenial;
+mod admission;
 #[path = "close/drain.rs"]
 mod drain;
+pub use admission::RuntimeWorldPreCloseAdmission;
 #[path = "close/report.rs"]
 mod report;
 mod result_snapshots;
@@ -194,15 +196,10 @@ impl RuntimeWorldCloseContract {
         self.state
     }
 
-    pub(crate) fn begin(&mut self) -> Result<(), RuntimeWorldCloseDenial> {
-        match self.state {
-            RuntimeWorldCloseState::Open => {
-                self.state = RuntimeWorldCloseState::Closing;
-                Ok(())
-            }
-            RuntimeWorldCloseState::Closing => Err(RuntimeWorldCloseDenial::AlreadyClosing),
-            RuntimeWorldCloseState::Closed => Err(RuntimeWorldCloseDenial::AlreadyClosed),
-        }
+    fn begin_admitted(&mut self, task: std::sync::Arc<std::sync::Mutex<drain::CloseProgress>>) {
+        // The private constructor retains the Open close guard until here.
+        self.state = RuntimeWorldCloseState::Closing;
+        self.progress = Some(task);
     }
 
     pub(crate) fn finish(&mut self) -> Result<(), RuntimeWorldCloseDenial> {
