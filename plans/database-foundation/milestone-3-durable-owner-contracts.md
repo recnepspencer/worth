@@ -694,6 +694,42 @@ feeds existing Native association reconciliation before service. Missing opens,
 orphan effects, conflicting lineage, duplicate association and missing Native
 evidence retain their refusals and genuine acquired custody.
 
+Initial Store member admission uses the SAME verified EOF read membership,
+including its private original reader/session and intrinsic physical grants.
+Validate Serving affinity and the home.checkpoint anchor before map growth.
+Build one ExecutionOrderedMap from actual table indices using the original
+request; duplicate content retains the last listed placement, matching ordinary
+selection. Fixed keys/placements have no separately quoted heap payload.
+Construction costs O(n log distinct members), with actual SDK nodes funded
+before growth. Install only into an initially empty, unselected source under
+the existing custody-before-placement try-lock order, polling before the swap.
+Busy/stop/allocation refusal leaves that source unchanged and destroys unused
+metadata outside both locks. An exact already-controlled version retry does
+not grow the map. An ordinary same-version map is not controlled admission.
+The ordinary selector cannot replace controlled read custody or its grants;
+a different version refuses. Member demand reads retain this actual selection
+across physical-root advancement rather than consulting a newer anchor.
+
+This private initial-map prerequisite does not qualify coupled readmission,
+later nonempty-map replacement, full Complete acknowledgement/backing transfer,
+Native payload-read funding or bounded final physical-reader retirement. The
+legacy byte-returning source port retains its unbudgeted allocation contract.
+Existing standalone selection uses the SAME map builder with its explicit
+ordinary SystemAllocation contract; no additional source wrapper or funding
+mode type is introduced. Controlled opening consumers must install the actual
+funded selection before Native readmission and must not overwrite it through
+the ordinary shared recovery core.
+
+The exact owner-private leaf
+workspaces/worth-store/crates/worth-store-relational/src/cold_source/initial_selection/tests.rs
+may construct original SDK ExecutionRequest/SerialRequest inputs for:
+selected_read_keeps_original_members_after_replacement_and_last_listed_placement;
+zero_budget_refuses_before_install_and_exact_controlled_retry_does_not_grow;
+foreign_busy_stopped_and_ordinary_selection_cannot_be_promoted_to_controlled.
+These use the existing real physical component fixture to inspect inaccessible
+placement/custody admission, not a claimed Native recovery or admitted Home.
+Register only that exact leaf and those two SDK roots, never a family exception.
+
 A Home checkpoint before an actual World is attached refuses with
 WorldSectionRequired before Native capture or effects. Home manifest version 2
 has one coupled publication path; no partial old-format selector or

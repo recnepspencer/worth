@@ -106,12 +106,22 @@ impl MemberCustodyRegistry {
         Ok(RetainedMemberPublication { selection })
     }
 
-    pub(super) fn select(&self, install: impl FnOnce()) {
+    pub(super) fn select<R>(&self, install: impl FnOnce() -> R) -> R {
         let _state = self
             .state
             .write()
             .unwrap_or_else(|error| error.into_inner());
-        install();
+        install()
+    }
+
+    /// The same custody-before-placement cut, without waiting for its owner.
+    pub(super) fn try_select<R>(&self, install: impl FnOnce() -> R) -> Result<R, ()> {
+        let _state = match self.state.try_write() {
+            Ok(state) => state,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        Ok(install())
     }
 }
 

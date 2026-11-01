@@ -11,12 +11,14 @@ use worth_relational::facade::durability::{
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
 use worth_store::physical_runtime::{
-    AnchoredRecordMemberDamage, AnchoredRecordMemberLocator, AnchoredRecordMemberReadFailure,
-    AnchoredRecordName, OrderedJournalReadFailure, RecordReadDenial, RecordReadError,
-    ServingPhysicalRuntime,
+    OrderedJournalReadFailure, RecordReadDenial, RecordReadError, ServingPhysicalRuntime,
 };
 
+mod initial_selection;
 mod member_custody;
+mod member_read;
+mod selection;
+pub use selection::RelationalStoreMemberSelectionDenial;
 #[cfg(test)]
 mod member_custody_tests;
 #[cfg(test)]
@@ -35,10 +37,7 @@ pub struct RelationalStoreColdReadCounters {
 pub(crate) struct StoreColdSource {
     weak_self: Weak<Self>,
     serving: Arc<ServingPhysicalRuntime>,
-    members: RwLock<(
-        u64,
-        std::collections::BTreeMap<RelationalDurableMemberLocator, AnchoredRecordMemberLocator>,
-    )>,
+    members: RwLock<selection::SelectedMembers>,
     custody: member_custody::MemberCustodyRegistry,
     member_reads: AtomicU64,
     commit_reads: AtomicU64,
@@ -58,37 +57,13 @@ impl StoreColdSource {
         Arc::new_cyclic(|weak_self| Self {
             weak_self: weak_self.clone(),
             serving,
-            members: RwLock::new((0, Default::default())),
+            members: RwLock::new(Default::default()),
             custody: Default::default(),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
             #[cfg(feature = "certification-test-authority")]
             commit_read_observer: None,
         })
-    }
-    /// A verified selected membership supplied by open or completed publication.
-    pub(crate) fn select_members(&self, generation: u64, members: &[AnchoredRecordMemberLocator]) {
-        let selected = members
-            .iter()
-            .map(|member| {
-                (
-                    RelationalDurableMemberLocator {
-                        sha256: member.sha256(),
-                        length: member.length(),
-                    },
-                    *member,
-                )
-            })
-            .collect();
-        self.custody.select(|| {
-            let mut current = self
-                .members
-                .write()
-                .unwrap_or_else(|error| error.into_inner());
-            if generation >= current.0 {
-                *current = (generation, selected);
-            }
-        });
     }
     pub(crate) fn counters(&self) -> RelationalStoreColdReadCounters {
         RelationalStoreColdReadCounters {
@@ -105,7 +80,7 @@ impl StoreColdSource {
         Arc::new_cyclic(|weak_self| Self {
             weak_self: weak_self.clone(),
             serving,
-            members: RwLock::new((0, Default::default())),
+            members: RwLock::new(Default::default()),
             custody: Default::default(),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
@@ -122,7 +97,7 @@ impl StoreColdSource {
         self.members
             .read()
             .unwrap_or_else(|error| error.into_inner())
-            .1
+            .entries
             .keys()
             .copied()
             .collect()
@@ -138,7 +113,10 @@ impl StoreColdSource {
                     .members
                     .read()
                     .unwrap_or_else(|error| error.into_inner());
-                if selected.iter().all(|member| current.1.contains_key(member)) {
+                if selected
+                    .iter()
+                    .all(|member| current.entries.contains_key(member))
+                {
                     Ok(())
                 } else {
                     Err(Cause::MissingMember)
@@ -179,43 +157,7 @@ impl RelationalDurableColdSource for StoreColdSource {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        self.member_reads.fetch_add(1, Ordering::Relaxed);
-        if locator.length > limit {
-            return Err(Cause::LimitExceeded {
-                length: locator.length,
-                limit,
-            });
-        }
-        let records = self
-            .serving
-            .anchored_records()
-            .map_err(|_| Cause::SourceUnavailable)?;
-        let anchor = AnchoredRecordName::new("home.checkpoint").expect("static anchor");
-        let placed = self
-            .members
-            .read()
-            .unwrap_or_else(|error| error.into_inner())
-            .1
-            .get(&locator)
-            .copied()
-            .ok_or(Cause::MissingMember)?;
-        records
-            .read_member(anchor, placed, limit)
-            .map_err(|failure| match failure {
-                AnchoredRecordMemberReadFailure::NotCurrentMember => Cause::MissingMember,
-                AnchoredRecordMemberReadFailure::LimitExceeded { length } => {
-                    Cause::LimitExceeded { length, limit }
-                }
-                AnchoredRecordMemberReadFailure::Damaged(
-                    AnchoredRecordMemberDamage::DigestMismatch,
-                ) => Cause::IntegrityMismatch,
-                AnchoredRecordMemberReadFailure::Damaged(_) => Cause::Damaged,
-                // Failure to verify the selecting anchor proves nothing about
-                // this member's bytes. It must not poison every region cell.
-                AnchoredRecordMemberReadFailure::Value(_) => Cause::SourceUnavailable,
-                AnchoredRecordMemberReadFailure::Open(error) => record_failure(error),
-                _ => Cause::SourceUnavailable,
-            })
+        self.read_selected_member(locator, limit)
     }
 
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {

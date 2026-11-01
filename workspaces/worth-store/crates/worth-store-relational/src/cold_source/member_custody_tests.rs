@@ -6,7 +6,7 @@ use sha2::{Digest, Sha256};
 use worth_relational::facade::durability::RelationalCheckpointArtifactPolicy;
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 use worth_store::physical_runtime::{
-    AnchoredRecordMember, AnchoredRecordPublication, PhysicalMutationDeadline,
+    AnchoredRecordMember, AnchoredRecordName, AnchoredRecordPublication, PhysicalMutationDeadline,
 };
 
 #[test]
@@ -63,7 +63,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
             )
             .unwrap();
         let generation = published.version().generation();
-        source.select_members(published.version().generation(), published.members());
+        source.select_members(published.membership()).unwrap();
         generation
     };
     let initial = replace();
@@ -97,7 +97,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
             ),
         )
         .unwrap();
-    source.select_members(published.version().generation(), published.members());
+    source.select_members(published.membership()).unwrap();
 
     let before = source.counters();
     let custody = source.retain_members(&[locator, locator]).unwrap();

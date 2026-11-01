@@ -1,7 +1,7 @@
 use super::*;
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::{
-    AnchoredRecordMember, AnchoredRecordPublication, OrderedJournalPublication,
+    AnchoredRecordMember, AnchoredRecordName, AnchoredRecordPublication, OrderedJournalPublication,
     PhysicalMutationDeadline,
 };
 
@@ -40,7 +40,7 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
         }],
     );
     let source = StoreColdSource::new(serving.clone());
-    source.select_members(first.version().generation(), first.members());
+    source.select_members(first.membership()).unwrap();
     assert_eq!(source.read_member(locator, 1 << 20).unwrap(), payload);
     assert!(matches!(
         source.read_member(locator, 1),
@@ -52,7 +52,7 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
             locator: first.members()[0],
         }],
     );
-    source.select_members(second.version().generation(), second.members());
+    source.select_members(second.membership()).unwrap();
     assert_eq!(second.members(), first.members());
     assert_eq!(source.read_member(locator, 1 << 20).unwrap(), payload);
 
@@ -85,7 +85,7 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
         Err(Cause::MissingMember),
         "a cached locator never grants membership in a replaced anchor"
     );
-    source.select_members(empty.version().generation(), empty.members());
+    source.select_members(empty.membership()).unwrap();
     assert_eq!(
         source.read_member(locator, 1 << 20),
         Err(Cause::MissingMember)

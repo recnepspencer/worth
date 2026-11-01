@@ -13,6 +13,7 @@ pub enum RelationalSectionCheckpointDenial {
     Capture(RelationalNativeCheckpointCaptureDenial),
     Execution(WorkCeilingDenial),
     MalformedSection,
+    MemberSelection(crate::RelationalStoreMemberSelectionDenial),
     StaleCapture,
     MissingCarriedMember,
     SizeLimit,
@@ -322,7 +323,8 @@ impl PreparedRelationalSection {
             RelationalSectionCheckpointDenial::Acknowledgement(Ack::Stopped(stop))
         })?;
         self.source
-            .select_members(membership.version().generation(), membership.members());
+            .select_members(&membership)
+            .map_err(RelationalSectionCheckpointDenial::MemberSelection)?;
         self.checkpoint
             .acknowledge_selected(context)
             .map_err(RelationalSectionCheckpointDenial::Acknowledgement)

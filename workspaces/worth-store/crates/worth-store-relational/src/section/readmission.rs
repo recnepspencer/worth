@@ -10,6 +10,7 @@ pub enum RelationalSectionReadmissionDenial {
     InitialSchemaRuntimeMismatch,
     RuntimeSharedBeforeReadmission,
     MalformedSection,
+    MemberSelection(crate::RelationalStoreMemberSelectionDenial),
     Execution(worth_execution::WorkCeilingDenial),
     Payload(worth_execution::ExecutionRequestArrayDenial),
     Journal(crate::RelationalStoreJournalRefusal),
@@ -87,7 +88,9 @@ fn recover_in_scope(
     let checkpoint = selected
         .map(|(bytes, membership)| {
             let checkpoint = super::codec::decode(bytes, execution)?;
-            cold_source.select_members(membership.version().generation(), membership.members());
+            cold_source
+                .select_members(membership)
+                .map_err(Denial::MemberSelection)?;
             Ok(checkpoint)
         })
         .transpose()?;

@@ -1,5 +1,22 @@
 # Relational home on Store
 
+## Initial selected-member read custody
+
+The private controlled initial selector retains the actual verified EOF
+membership and its original protected reader/session. It builds the existing
+member placement map with request-funded SDK storage, then tries the existing
+custody-before-placement gates. It installs only into a genuinely unselected
+source. Refusal leaves that source unchanged; an exact controlled retry needs
+no new map storage. Ordinary same-version placement is insufficient, and the
+ordinary selector refuses to replace controlled custody with a newer version.
+
+Member reads use the selected table index and original reader after later Home
+anchor replacement. Duplicate content keeps its last listed physical placement.
+Map construction is O(n log distinct members); payload reads preserve their
+existing byte-returning, unbudgeted allocation contract. This prerequisite is
+not coupled Home readmission, later selection replacement, Complete Native
+acknowledgement or bounded final physical-reader retirement.
+
 ## Cooperative release of one cold member registration
 
 Store's cold source issues the existing Native member-custody token with its

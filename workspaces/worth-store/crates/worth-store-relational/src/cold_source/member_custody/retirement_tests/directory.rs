@@ -131,7 +131,7 @@ pub(super) fn directory(execution: &ExecutionRequest<'_, '_>) -> Directory {
             .with_members(members),
         )
         .unwrap();
-    source.select_members(published.version().generation(), published.members());
+    source.select_members(published.membership()).unwrap();
     let read = records.read(anchor, 1 << 30).unwrap().unwrap();
     assert_eq!(read.bytes(), prepared.bytes());
     let generation = read.version().generation();

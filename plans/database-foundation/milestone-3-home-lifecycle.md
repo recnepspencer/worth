@@ -496,6 +496,34 @@ semantic basis/protection; never globally detach it. Keep the actual close
 stage across Busy/stop/refusal and drive the existing physical close operation.
 The same actual registry and Serving identity checks continue to apply.
 
+The selected physical read membership adds authentic obligations to that SAME
+source traversal. Its private shared backing holds an original reader and
+session, two references to one C.10 acquisition, lifecycle leases, an operation
+grant, and possibly the last inline/extent frame pin even after verified EOF.
+Ordinary final Drop/cancel is unbudgeted and may block or drain closed-pool
+frames; it cannot prove bounded source retirement. A consuming physical-owner
+task must validate original Serving affinity before discharging its local Arc
+share. A unique backing moves its original data/readers/grants into the task
+without another Box; fixed Arc control storage may be deallocated. Shared
+backings retain all remaining owners' protection.
+
+Retire the actual frame pin, operation grant, C.10 references and lifecycle
+leases through their original nonwaiting owner gates, recording each completed
+stage before release so Busy/stop cannot repeat an effect. Frame discharge must
+retain a matching resident owner, use original generation/bytes identity and
+avoid closed-pool whole drains. The existing allocation-event recorder has its
+own lock and potentially growing certification trace: acquire that SAME lock
+nonwaitingly and establish lawful trace capacity before pool effects. No new
+ledger or dropped trace substitutes for those obligations. Retired table/data
+allocations and execution grants remain inert until explicit reclaim.
+The committed destination is physical_runtime/anchored_records/read_membership/
+retirement.rs plus private release mechanics at existing session, C.10,
+lifecycle and pool owners. No empty placeholder is needed. Require shared and
+independent-session proofs, every Busy/stop boundary, once-only partial retry,
+inline/extent EOF pins and foreign affinity. Store shutdown may report retained
+readers/residency even with a ClosedRuntime value; require its authentic clean
+classification and discharged physical obligations while inert data stays alive.
+
 Keep Native/provider retired allocations in existing
 `ApplicationHomeRecoveryCustody` through physical close. Actual Closed moves
 them and remaining inert Home allocations into an opaque

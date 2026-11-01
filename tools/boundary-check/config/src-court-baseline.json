@@ -3014,5 +3014,6 @@
 {"source":"crates/worth-relational/src/history/retention/head_cell/memory_close_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/runtime/state/runtime_state/publication_lifecycle/memory_close_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/runtime/state/subsystems/visibility/cache/memory_close/tests.rs","module":"file","roots":["ExecutionRequest"]},
-{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution/tests.rs","module":"file","roots":["ExecutionRequest"]}
+{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution/tests.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"workspaces/worth-store/crates/worth-store-relational/src/cold_source/initial_selection/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
 ]
