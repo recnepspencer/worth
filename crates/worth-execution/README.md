@@ -25,6 +25,18 @@ Inspect that report for observed placement and worker activity. Handle admission
 interruption and allocation failures through their typed result at the call that
 owns them.
 
+For an effectful owner that must retain its returned business result through
+later maintenance, use `ExecutionRequest::run_native_completion`. It returns
+the exact callback value whenever the callback returns, even when a final or
+nested stop occurs, together with the original scope's physical report.
+Admission or interruption before callback entry still refuses. Keep business
+success, refusal and partial-effect custody in that value; its return does not
+prove that canonical work committed. Existing `run_native` retains its final
+control check, and `prepare_native` remains exclusively pre-effect preparation.
+Completion keeps the actual descendant and meter alive throughout the callback;
+accounted ancestors retain remaining work, one charge and latched stops. It
+adds no accounting contract or fresh allowance to worker-only requests.
+
 For a platform entry that prepares several dependent values before publishing
 effects, use `ExecutionRequest::prepare_native`. Standalone leased entry opens
 one original scope for the complete preparation; active carriage reuses the

@@ -62,6 +62,7 @@ pub(crate) use scope::{
 pub use scope::{ScopeOutcome, ScopeStop};
 
 pub(crate) use meter::active_deadline;
+pub(crate) use meter::active_nested_stop_owner;
 pub(crate) use meter::active_serial_memory;
 pub(crate) use meter::active_stop;
 pub(crate) use meter::available_serial_memory_bytes;

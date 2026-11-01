@@ -183,6 +183,15 @@ failures before publication. This port does not retain an already performed
 effect through interruption. See
 [Execution request entry](../crates/worth-execution/README.md).
 
+Platform effectful owners use `ExecutionRequest::run_native_completion` to keep
+their original business result and custody through subsequent maintenance on
+the same native scope. Returned callback values survive final or nested stops;
+pre-callback admission and interruption still refuse. This retains actual parent
+accounting and latched stops without granting new allowance or imposing
+accounting on worker-only requests. The physical report observes execution;
+returning custody does not prove commitment. See
+[Execution request entry](../crates/worth-execution/README.md).
+
 Platform-owned ordered retained metadata uses `ExecutionOrderedMap<K, V>`:
 shared-root cloning and canonical iteration preserve original custody.
 Retain the returned root while reading or applying later edits. `accounted_bytes()`

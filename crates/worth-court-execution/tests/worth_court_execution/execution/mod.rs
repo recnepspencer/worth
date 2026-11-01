@@ -28,5 +28,6 @@ pub(crate) mod serial_lineage;
 pub(crate) mod work_ceiling;
 
 mod request_bytes;
+mod request_completion;
 mod request_deadline;
 mod request_preparation;
