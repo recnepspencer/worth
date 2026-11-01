@@ -164,6 +164,15 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ("attach_home_registered_source", "query-home-preparation"),
         ("attach_home_world", "query-home-preparation"),
         (
+            "finish_existing_home_native_readmission",
+            "query-home-preparation",
+        ),
+        (
+            "attach_existing_home_registered_source",
+            "query-home-preparation",
+        ),
+        ("attach_existing_home_world", "query-home-preparation"),
+        (
             "native_for_schema_installation",
             "native-home-query-preparation",
         ),

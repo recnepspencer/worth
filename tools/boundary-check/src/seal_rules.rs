@@ -20,6 +20,9 @@ const FACTORIES: &[&str] = &[
     "prepare_home_program",
     "install_home_native_schema",
     "finish_fresh_home_native_readmission",
+    "finish_existing_home_native_readmission",
+    "attach_existing_home_registered_source",
+    "attach_existing_home_world",
     "attach_home_registered_source",
     "attach_home_world",
     "native_for_schema_installation",
@@ -280,6 +283,9 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                     "prepare_home_program"
                         | "install_home_native_schema"
                         | "finish_fresh_home_native_readmission"
+                        | "finish_existing_home_native_readmission"
+                        | "attach_existing_home_registered_source"
+                        | "attach_existing_home_world"
                         | "attach_home_registered_source"
                         | "attach_home_world"
                 ) {
