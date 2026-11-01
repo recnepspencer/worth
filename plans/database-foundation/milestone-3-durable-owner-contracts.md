@@ -820,6 +820,23 @@ Ordinary image/maintenance constructors and independently allocated Digest/
 default payloads remain explicit obligations wherever not actually admitted.
 Node/page qualification cannot claim whole-arena, full replay, capture or Complete.
 
+Bare Complete reconstruction also needs original admitted schema authority.
+Canonical records and branch transitions alone do not contain full executable
+contracts: schema snapshots retain references, diff atoms are descriptive, and
+record patches cannot encode unused declarations/constraints. Use the actual
+RelationalBranchRootSchemaAuthority/DurableBranchRootSchemaImage authority for
+every required historical revision and Empty root. A current catalog or retained
+contract union does not replace missing historical registrations/bindings/policies.
+Missing original authority is a typed refusal, never inferred/defaulted schema.
+
+Reuse pure canonical payload readmission/application and arena install mechanics
+under that seed. Ordinary runtime_rebuild is not this owner: it creates Runtime
+services, performs transaction validation, compare-and-publish/settlement and live
+branch operations. Complete must mint neither a validated proposal nor a performed
+proof, and must install no live service/cell or replay handlers. Decisive evidence
+reconstructs an unused historical constraint after live services/resident sources
+are gone; the records-only twin must refuse missing original schema authority.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
