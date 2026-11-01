@@ -132,6 +132,8 @@ mod serial {
                 "final_output/definition.rs".to_owned(),
                 "optional_aspects.rs".to_owned(),
                 "composed_action.rs".to_owned(),
+                "document_history_edit.rs".to_owned(),
+                "document_history_navigation.rs".to_owned(),
                 "warehouse_inventory.rs".to_owned(),
                 "owning_entry.rs".to_owned(),
                 "owning_fixed.rs".to_owned(),

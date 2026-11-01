@@ -4,6 +4,7 @@ derive_skills = true
 documents = [
   "workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md",
+  "workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md",
   "docs/build-an-application.md",
   "docs/how-it-works.md",
   "docs/api.md",
@@ -45,6 +46,12 @@ name = "document_history_edit.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-court-decl-host"
 target = "tests/worth_query_court_decl_host.rs"
 source = "tests/worth_query_court_decl_host/certification/document_history/recording/journeys.rs"
+
+[[compiled_sources]]
+name = "document_history_navigation.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/checkout.rs"
 
 [[compiled_sources]]
 name = "owning_discovered.rs"

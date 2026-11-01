@@ -2,6 +2,7 @@
 use super::*;
 use worth_query_topology_entry::PlanarHistoryNavigation;
 mod authority;
+mod checkout;
 mod cutover;
 mod interruption;
 mod panic_disposal;
@@ -33,19 +34,15 @@ where
     P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>,
     O: WorthQueryHistoryOutputsMode<ConsumerSchema, History>,
 {
-    let expected = with_request(app, |request| document.selection(request).unwrap());
-    let mut navigation = with_request(app, |request| {
-        document
-            .navigate::<PlanarHistoryNavigation<ConsumerSchema>>()
-            .checkout(node)
-            .expected_selection(expected)
-            .idempotency(key)
-            .prepare(request)
-            .unwrap()
+    let (_, mut advance) = with_request(app, |request| {
+        checkout::start(document, request, node, key)
+            .unwrap_or_else(|cause| panic!("new checkout click: {cause:?}"))
     });
     for _ in 0..96 {
-        match with_request(app, |request| navigation.advance(request)) {
-            WorthQueryHistoryNavigationAdvance::Pending(next) => navigation = next,
+        match advance {
+            WorthQueryHistoryNavigationAdvance::Pending(next) => {
+                advance = with_request(app, |request| next.advance(request));
+            }
             WorthQueryHistoryNavigationAdvance::Selected(done) => {
                 assert_eq!(done.selection().step().id(), node);
                 return done;

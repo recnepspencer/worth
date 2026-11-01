@@ -237,8 +237,8 @@ authority, unchanged model values and disposal of both owners.
 When the declared model READ requires capability governance, attach with
 `request.attach_history_with_payload::<History, _, _, _>(&phase, head, access,
 capability, operation, input)`. Supply the original query's payload purpose.
-The returned document carries `WorthQueryGovernedHistoryPayload` as its final
-type parameter; retain that mode when moving the document through edits,
+The returned document carries `WorthQueryGovernedHistoryPayload` as its payload
+type argument; retain that mode when moving the document through edits,
 builders, finish results and close refusals.
 
 The stored references and cloneable input describe a purpose. Every read admits
@@ -345,17 +345,27 @@ original current model READ, metadata disclosure and current NAV admission.
 The navigation request reuses that READ's resolved principal; historical grants
 never supply current permission.
 
-Obtain a sealed description of the actual current selection before preparing:
+Obtain a sealed description of the actual current selection for a new click.
+This compiled callback body uses the planar example's `ConsumerSchema` and
+`PlanarHistoryNavigation`; substitute your application's declarations. It returns
+the original expected selection together with the first advancement result:
+
+<!-- compiled: document_history_navigation.rs -->
+```rust
+    let expected = document.selection(request)?;
+    let navigation = document
+        .navigate::<PlanarHistoryNavigation<ConsumerSchema>>()
+        .checkout(node)
+        .expected_selection(expected.clone())
+        .idempotency(key)
+        .prepare(request)?;
+    Ok((expected, navigation.advance(request)))
+```
+
+Handle the returned advancement in the application:
 
 ```rust,ignore
-let expected = document.selection(&request)?;
-let navigation = document.navigate::<Navigation>()
-    .checkout(node_id)
-    .expected_selection(expected)
-    .idempotency(click_key)
-    .prepare(&request)?;
-
-match navigation.advance(&request) {
+match advance {
     WorthQueryHistoryNavigationAdvance::Selected(done) => {
         show_selected(done.selection().step());
     }
@@ -380,9 +390,10 @@ context; `done.selection().step().endpoint()` still describes the original
 authored source.
 
 This entry supports an entity-record domain with an unchanged Signal basis,
-compatible installed program, no storage medium, and no relevant required
-outputs, workflow execution or external effects. Unsupported domain, program,
-output, workflow, external-effect or Signal meaning returns a typed
+the same supported installed program and no storage medium. Required outputs
+use a compatible fixed tree configured on the document as described below.
+Unsupported domain, program, output, workflow, external-effect or Signal meaning
+returns a typed
 `RequiresSemanticCorrection` eligibility refusal. Native source, schema and
 storage-medium incompatibilities retain their owning-component refusal. Use the
 ordinary semantic correction entry when the requested behavior requires
@@ -395,13 +406,67 @@ document, whose explicit close drains them. Cancellation after adoption cannot
 roll back the selected head: the owner reports `Selected` posture and a fresh
 authorized retry resolves its original result. Retrying a successful key after
 later navigation returns that original completion without moving the current
-selection. Changed expected selection or node under the same key refuses.
+selection. Keep the original expected selection, target and key when preparing
+again after losing a handle. A new selection captured under that old key changes
+the intent and refuses.
 
 For governed metadata, use `selection_governed(..)`,
 `prepare_governed(..)` and `advance_governed(..)` with the current metadata
 capability. Governed payload documents also repeat their original payload
 purpose. See the [compiled checkout and fork journey](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/mod.rs)
 and [owned retry cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/retries.rs).
+
+### Configure required outputs
+
+Configure the original fixed required-output tree on the document before
+navigation. Use the same declared program, fixed root and source demand that
+describe the model's required values. Inside an advancement from the owning
+application host:
+
+```rust,ignore
+let configured = document.with_outputs::<Program, Root>(
+    &phase,
+    &request,
+    &application,
+    original_demand,
+    Default::default(),
+);
+```
+
+On success, keep the returned document. On `Err((document, cause))`, keep the
+original document and handle the configuration refusal. The successful document
+carries `WorthQueryHistoryWithOutputs<Schema, Program, Root>` in its fifth type
+argument. Application helpers must preserve that output mode, including when
+returning documents from edits or close failures. A generic helper can carry
+`O: WorthQueryHistoryOutputsMode<Schema, History>` through
+`WorthQueryApplicationHistoryDocument<'runtime, Schema, History, Payload, O>`.
+
+`AwaitingOutputs` means the private candidate's original tree still has work.
+Continue advancing the same navigation owner with fresh requests. The selected
+document remains at its previous head until the complete root, discovered
+children and dependencies settle and adoption succeeds. Every advancement
+admits current READ, metadata and NAV permission again; historical grants and a
+previously completed child supply no current authority.
+
+A stopped producer publication keeps its original recovery and candidate.
+Retry the retained navigation owner with a fresh request; recovering that effect
+does not execute the producer again. If delivery stops after adoption, the
+actual head can already be selected. Preserve that owner and use its
+`Selected` posture and authorized retry to resolve the original completion.
+
+Use `owner.discard(&request)` to abandon a retained attempt, keeping the returned
+owner if disposal refuses. After dropping a frontend handle, close the document
+explicitly so it can drain its retained output tree and recovery. If
+`document.close(&phase)` returns `ClosingOutputs(owner)`, inspect
+`owner.denial()`, retain that closing owner, and call `owner.retry(&phase)`
+under a fresh advancement from the same host. A closing owner cannot read or
+edit. Disposal releases the original custody without requiring navigation
+permission.
+
+The [compiled output checkout journey](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs.rs)
+configures the tree, checks out an old step, edits a new future and revisits both.
+The [publication recovery cases](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication.rs)
+show retry and disposal after an actual interrupted producer publication.
 
 ### Refresh context after control changes
 

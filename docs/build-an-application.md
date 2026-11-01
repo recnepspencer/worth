@@ -2007,15 +2007,44 @@ opened holder remains usable. Governed metadata uses `preview_governed(..)` and
 
 To edit from an old node, explicitly declare an entity-record history domain and
 an `ApplicationHistoryNavigationBinding` with its separate NAV capability.
-Read `document.selection(&request)?`, then use
-`document.navigate::<Navigation>().checkout(node).expected_selection(expected)`
-and `.idempotency(click_key).prepare(&request)?`. Advance the returned owner with
-fresh requests, preserving it on pending work or refusal. Checkout creates a
+Start a new click with an actual current selection. This compiled callback uses
+the planar example's `ConsumerSchema` and `PlanarHistoryNavigation` declaration;
+use your own schema and navigation binding in an application. It returns the
+original expected selection and first advancement result:
+
+<!-- compiled: document_history_navigation.rs -->
+```rust
+    let expected = document.selection(request)?;
+    let navigation = document
+        .navigate::<PlanarHistoryNavigation<ConsumerSchema>>()
+        .checkout(node)
+        .expected_selection(expected.clone())
+        .idempotency(key)
+        .prepare(request)?;
+    Ok((expected, navigation.advance(request)))
+```
+
+Keep the original expected selection, node and key with the click. Advance a
+`Pending(owner)` or `Refused { cause, owner }` using that retained owner and a
+fresh request. After losing a handle, prepare the same original description;
+capturing a later selection under the old key changes the intent and refuses.
+Checkout creates a
 writable context and selects the existing node without adding an authored edit;
 the next edit becomes its child, preserving the original future. Current grants
 and other records outside the model remain current. Read the
 [checkout contract and supported component meaning](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#select-a-historical-step-for-editing)
 before enabling navigation. A retained preview or page supplies no NAV authority.
+
+For a fixed required-output tree, configure the document with
+`document.with_outputs::<Program, Root>(&phase, &request, &application, demand, controls)`
+inside an advancement of its owning host. A refusal returns the original
+document with its cause. The successful document carries
+`WorthQueryHistoryWithOutputs<Schema, Program, Root>` as its fifth type argument;
+preserve that mode through application wrappers, edits and close results.
+Navigation then owns the original root, discovered children and pending recovery
+until all required outputs settle before adoption. See
+[configure required outputs](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-required-outputs)
+for retry and explicit close.
 
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
