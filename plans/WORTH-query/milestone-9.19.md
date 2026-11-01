@@ -1,6 +1,6 @@
 # Milestone 9.19: Managed Advanced Access And Verified Footprints
 
-> **Status:** In progress. Phases 1–3 complete; Phase 4 in progress; Phases 5–6 unfinished.
+> **Status:** In progress. Phases 1–4 complete; Phases 5–6 unfinished.
 > **Scope revised 2026-10-27:** the general managed derived-index extension owns
 > the spatial-index finding formerly assigned to 9.18.1 Phase 12 and the dependent
 > CAD locality qualification from Phase 15. Proprietary cutover is the final phase.
@@ -1866,6 +1866,12 @@ both providers, without claiming verified narrowed authority or private adoption
 authority. **Result:** actual provider execution can narrow the admitted influence
 set for dependency, reuse, conflict and commit decisions without omitting facts.
 
+The [Phase4 supported-contract closure](milestone-9.19-phase4-closure.md) is the
+current obligation/evidence matrix. Baseline implementation descriptions below
+and historical slice notes are superseded by its actual supported/conservative
+contract; they do not add a minimal per-field tracing or governed producer API
+requirement. All three independent closeout gates pass there; Phases5/6 remain separate.
+
 **Implementation anchors and proof progression.** Consume the actual
 [WorthQueryAdmittedApplicationQueryPlan](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/graph_read_plan_binding.rs),
 Phase 3's coverage, and tracked source/refinement execution in the planned
@@ -2359,3 +2365,21 @@ tracing or new governed producer APIs. Phases5/6 remain unfinished.
 The [box correction receipt](milestone-9.19-phase4-box-correction-evidence.md)
 records12 focused correction and192 broad current consumer passes with unchanged
 original prefix invoices, the same explicit exclusions and no platform rebuild.
+
+### Phase4 supported-contract completion review
+
+The [closure boundary review](milestone-9.19-phase4-closure-boundary-review.md),
+[closeout plan](milestone-9.19-phase4-closure-plan.md) and
+[obligation matrix](milestone-9.19-phase4-closure.md) reconcile actual installed
+proof/currentness/pin/reuse/cutoff/correction owners and acceptance evidence.
+Complete projected candidate support is conservative within actual qualified
+candidates; minimal per-scalar tracing is not independently required. Governed
+history remains conservative and governed producer modes retain typed refusal.
+Current192 consumer evidence, causally unchanged owner/proof/Native receipts and
+historical scale evidence are distinguished without double counting. Phase5/6
+integrated public/private adoption remains unfinished.
+
+Independent qa-loop, qa-tests and code-quality-qa approve the supported-contract
+closure. Phases1–4 are complete; Phases5/6 remain unfinished. See the matrix for
+actual currentness/reuse/cutoff/correction scope, explicit conservative/refused
+modes, unchanged causal evidence and baseline/large-geometry exclusions.

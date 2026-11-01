@@ -5964,10 +5964,10 @@ readmission and canonical input-cutoff integration remain unqualified here; the
 selected governed execution mode still refuses that pipeline. The producer reuse
 and cutoff results above apply to the supported Public pipeline.
 
-The governed profile retains full candidate inputs; narrower field-use tracing
-and governed correction-history qualification remain unfinished. The separate
-correction court qualifies Public prefix inputs and exact-rejected matching
-candidate protection.
+The governed profile retains full projected candidate inputs; this conservative
+support does not claim minimal per-field tracing. Governed history keeps all
+scope candidates. The same correction court qualifies Public prefix and indirect
+box/contact inputs, including exact-rejected matching candidate protection.
 Successful regeneration after changed inputs depends on the declared producer
 lifecycle; an Initial-only/Create operation cannot replace a prior live output.
 Keep the observation until the mutation consumes it, then reread and reassess
