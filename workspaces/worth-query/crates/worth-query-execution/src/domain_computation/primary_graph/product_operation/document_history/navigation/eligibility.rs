@@ -65,6 +65,12 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     {
         return Err(correction(Eligibility::LiveControlDomain));
     }
+    application
+        .product_runtime
+        .require_live_product_occurrence(
+            source.source.product_observation().lifecycle_incarnation(),
+        )
+        .map_err(Denial::ProductAdmission)?;
     let historical = application
         .select_application_read_observation(phase, &source.source)
         .map_err(Denial::ProductAdmission)?;

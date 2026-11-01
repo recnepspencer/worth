@@ -16,6 +16,7 @@ mod closing;
 mod eligibility;
 mod race;
 mod recovery;
+mod retirement;
 mod retries;
 
 type Owner<'d, 'r> =

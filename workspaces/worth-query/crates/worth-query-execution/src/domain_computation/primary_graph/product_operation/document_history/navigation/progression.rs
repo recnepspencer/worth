@@ -16,6 +16,25 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         request: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
+        if matches!(
+            self.phase,
+            NavigationPhase::Prepared
+                | NavigationPhase::Candidate(_)
+                | NavigationPhase::Publication { .. }
+        ) {
+            let source = self
+                .source
+                .as_ref()
+                .expect("new historical work retains its original source");
+            self.application
+                .product_runtime
+                .require_live_product_occurrence(
+                    source.source.product_observation().lifecycle_incarnation(),
+                )
+                .map_err(Denial::ProductAdmission)?;
+        }
+        // Performed D and its recovery no longer consume H. Its later
+        // retirement must not disable original effect repair or cleanup.
         let state = std::mem::replace(&mut self.phase, NavigationPhase::Discarded);
         match state {
             NavigationPhase::Prepared => self.fork(phase),
