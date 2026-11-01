@@ -953,7 +953,12 @@ remain unchanged. One-shot Parents can use `ApplicationQueryBasisSupport::curren
 explicit retained reads refuse before provider execution. See the
 [public maintenance plan](../plans/WORTH-query/milestone-9.19-phase5-query-maintenance-plan.md)
 and [authoring guide](build-an-application.md#construct-committed-provider-indexes).
-Bank and topology adoption remain unfinished.
+Bank's current-account Parent is qualified on its existing v1 Native Source.
+Actual topology face discovery remains unfinished. The topology entry's existing
+positive-turn invariant now uses the shared exact integer orientation predicate
+over its full u64 metre/model-local domain; opposite and zero turns retain typed
+invariant refusal. This numerical prerequisite does not supply spatial discovery.
+See the [orientation evidence](../plans/WORTH-query/milestone-9.19-phase5-topology-integer-orientation-evidence.md).
 
 ### Native managed Source impact history
 

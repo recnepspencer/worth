@@ -1,8 +1,10 @@
 #![forbid(unsafe_code)]
 
 mod box2;
+mod integer_orientation;
 mod segment_box;
 pub use box2::{BoundsDenial, Box2, Box2Coordinates};
+pub use integer_orientation::{integer_orientation, PlanarInteger};
 pub use segment_box::{endpoint_segment_intersects_box, segment_intersects_box, SegmentBoxDenial};
 mod box_tree;
 pub use box_tree::{

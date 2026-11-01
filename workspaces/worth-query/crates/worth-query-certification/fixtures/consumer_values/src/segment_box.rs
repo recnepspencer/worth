@@ -1,6 +1,6 @@
 //! Closed linear geometry in Box2's exact fixture integer length/XY frame.
 //! This fixture predicate supplies no graph, topology, or publication authority.
-use crate::Box2;
+use crate::{integer_orientation as orientation, Box2};
 use std::cmp::Ordering;
 #[cfg(test)]
 mod tests;
@@ -69,32 +69,4 @@ fn opposite(a: Ordering, b: Ordering) -> bool {
 }
 fn on_segment(a: Point, b: Point, point: Point) -> bool {
     (0..2).all(|axis| a[axis].min(b[axis]) <= point[axis] && point[axis] <= a[axis].max(b[axis]))
-}
-fn orientation(a: Point, b: Point, c: Point) -> Ordering {
-    let delta = |p: Point| {
-        [
-            i128::from(p[0]) - i128::from(a[0]),
-            i128::from(p[1]) - i128::from(a[1]),
-        ]
-    };
-    let b = delta(b);
-    let c = delta(c);
-    let first = signed_product(b[0], c[1]);
-    let second = signed_product(b[1], c[0]);
-    match (first.0, second.0) {
-        (false, true) => Ordering::Greater,
-        (true, false) => Ordering::Less,
-        (false, false) => first.1.cmp(&second.1),
-        (true, true) => second.1.cmp(&first.1),
-    }
-}
-fn signed_product(a: i128, b: i128) -> (bool, u128) {
-    // Each difference of two i64 coordinates has magnitude <= u64::MAX.
-    // Their product fits u128. Its signed sum/difference need not fit i128,
-    // so orientation compares these magnitudes and never constructs that sum.
-    let magnitude = a.unsigned_abs() * b.unsigned_abs();
-    (
-        magnitude != 0 && (a.is_negative() != b.is_negative()),
-        magnitude,
-    )
 }

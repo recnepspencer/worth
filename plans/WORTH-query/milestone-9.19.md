@@ -2459,3 +2459,16 @@ spatial discovery. The next boundary review must resolve genuine face/universe
 meaning and topology's full u64 metre/model-local numerical contract before
 adapting the generic provider. Phase6 still requires the single final private
 pin/adoption and integrated CAD acceptance.
+
+### Phase5 topology exact orientation prerequisite (2026-11-01)
+
+The Query-free numerical owner now supplies one sealed i64/u64 exact orientation
+predicate, shared by segment contact and the actual topology positive-turn rule.
+Full-u64 valid turns publish, including determinant +1 after large-product
+cancellation; reverse and zero turns retain the exact typed refusal and preserve
+the head. Native scope, units, frame, budgets, schema and v1 receivers are unchanged.
+207 distinct selected tests pass: six numerical owner tests and201 ordinary
+consumer tests. The two established cleanup failures and prior large geometry
+receipt remain explicit in the [slice evidence](milestone-9.19-phase5-topology-integer-orientation-evidence.md).
+Actual Scene/Face composition, unsigned box mechanics, bounded spatial preparation
+and integrated topology discovery remain unfinished; Phase6 is still pending.

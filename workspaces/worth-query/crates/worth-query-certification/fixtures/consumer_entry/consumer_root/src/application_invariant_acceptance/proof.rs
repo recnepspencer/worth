@@ -26,6 +26,8 @@ use crate::ConsumerSchema;
 mod application_program;
 mod current_output_selector;
 mod generated_materialization;
+#[cfg(test)]
+mod integer_orientation;
 mod output_correspondence;
 mod prior_output_family;
 mod publication;
