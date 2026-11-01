@@ -59,6 +59,7 @@ pub(super) fn apply(
     {
         let entity_id = workspace.with_context(|context| {
             let entity_id = allocate_entity_with_extra(
+                &context.execution,
                 context.state,
                 context.record_allocations,
                 version_id,
@@ -69,7 +70,7 @@ pub(super) fn apply(
             context
                 .state
                 .mark_entity_slot_touched(entity_id.partition_id, entity_id.slot_index());
-            Ok::<_, CommitConflict>(entity_id)
+            Ok::<_, crate::transactions::data::TransactionCommitError>(entity_id)
         })?;
         workspace.register_created_entity(
             CreatedEntityRef {

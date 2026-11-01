@@ -45,12 +45,14 @@ impl RecordArena<EntityRecordKind> {
             .map_err(ExtraLineageDenial::Request)?;
         replacement.lineage_id = Some(lineage);
         let replacement = StorageAllocation::new(replacement);
-        let metadata = self.metadata_history[physical]
-            .last_mut()
-            // Proof: the preflight retained its latest metadata; this shared borrow cannot remove it.
-            .expect("the preflight retained its latest metadata");
+        let index = self.metadata_history[physical].len() - 1;
+        let mut metadata = self.metadata_history[physical][index]
+            .clone()
+            .fund_for_request(request)
+            .map_err(ExtraLineageDenial::Request)?;
         metadata.lineage_id = Some(lineage);
         metadata.extra = replacement.clone();
+        self.metadata_history[physical].set(index, metadata);
         self.extra.set_shared(physical, replacement);
         Ok(())
     }

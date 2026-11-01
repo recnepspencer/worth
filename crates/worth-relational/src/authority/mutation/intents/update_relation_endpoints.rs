@@ -59,7 +59,8 @@ pub(super) fn apply(
                         intent_kind_id: intent.kind_id,
                         authoritative_kind_id: kind_id,
                     },
-                ));
+                )
+                .into());
             }
             let old_endpoints = slot_view.extra().endpoints.clone().ok_or_else(|| {
                 CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
@@ -91,7 +92,11 @@ pub(super) fn apply(
                 ],
                 version_id,
             );
-            Ok::<_, CommitConflict>((kind_id, old_endpoints, old_authoritative_aspect_state))
+            Ok::<_, crate::transactions::data::TransactionCommitError>((
+                kind_id,
+                old_endpoints,
+                old_authoritative_aspect_state,
+            ))
         })?;
     let patch_target = RecordAspectPatchTarget::Relation {
         relation_id: intent.relation_id,
@@ -127,9 +132,17 @@ pub(super) fn apply(
             .get_partition_mut(intent.relation_id.partition_id);
         partition
             .relation_arena
-            .apply_extra_update(slot, authoritative_aspect_state, version_id)
+            .apply_extra_update_for_request(
+                &context.execution,
+                slot,
+                authoritative_aspect_state,
+                version_id,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
-        Ok::<_, CommitConflict>(())
+        Ok::<_, crate::transactions::data::TransactionCommitError>(())
     })?;
 
     let authoritative_aspect_state = workspace.with_context(|context| {

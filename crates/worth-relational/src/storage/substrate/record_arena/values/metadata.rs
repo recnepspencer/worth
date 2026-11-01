@@ -4,7 +4,6 @@ use crate::identity::data::{KindId, LineageId, VersionId};
 use crate::storage::substrate::StorageAllocation;
 use serde::ser::SerializeStruct;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
-#[derive(Debug, Clone)]
 pub(crate) struct VersionedEntityMetadata {
     pub(crate) effective_at: VersionId,
     pub(crate) retired_at: Option<VersionId>,
@@ -12,8 +11,8 @@ pub(crate) struct VersionedEntityMetadata {
     pub(crate) kind_id: KindId,
     pub(crate) lineage_id: Option<LineageId>,
     pub(crate) extra: StorageAllocation<EntityExtra>,
+    _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
-#[derive(Debug, Clone)]
 pub(crate) struct VersionedRelationMetadata {
     pub(crate) effective_at: VersionId,
     pub(crate) retired_at: Option<VersionId>,
@@ -21,6 +20,7 @@ pub(crate) struct VersionedRelationMetadata {
     pub(crate) kind_id: KindId,
     pub(crate) endpoints: RelationEndpoints,
     pub(crate) extra: StorageAllocation<RelationExtra>,
+    _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl VersionedEntityMetadata {
     pub(crate) fn authoritative_aspect_state(&self) -> Option<&AuthoritativeRecordAspectState> {
@@ -62,3 +62,7 @@ impl serde::Serialize for VersionedRelationMetadata {
         value.end()
     }
 }
+
+mod ownership;
+#[cfg(test)]
+mod tests;

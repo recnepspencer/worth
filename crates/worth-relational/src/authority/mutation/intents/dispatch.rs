@@ -35,7 +35,7 @@ pub(crate) fn dispatch_intent(
             replace_entity::apply(spec, workspace)
         }
         MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
-            from_conflict(delete_entity::apply(spec, workspace))
+            delete_entity::apply(spec, workspace)
         }
         MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
             from_conflict(revalidate_entity::apply(spec, workspace))
@@ -59,7 +59,7 @@ pub(crate) fn dispatch_intent(
             from_conflict(revalidate_relation::apply(spec, workspace))
         }
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
-            from_conflict(delete_relation::apply(spec, workspace))
+            delete_relation::apply(spec, workspace)
         }
         MutationIntent::Materialization(intent) => materialization::apply(intent, workspace),
     }

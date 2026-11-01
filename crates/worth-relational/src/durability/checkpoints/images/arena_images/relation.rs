@@ -76,16 +76,16 @@ impl CheckpointArenaKind for RelationRecordKind {
         meta: VersionedRelationMetadataImage,
         contracts: &CheckpointAspectContractCatalog,
     ) -> Result<Self::Meta, DurabilityError> {
-        Ok(VersionedRelationMetadata {
-            effective_at: meta.effective_at,
-            retired_at: meta.retired_at,
-            generation: meta.generation,
-            kind_id: meta.kind_id,
-            endpoints: RelationEndpoints {
+        Ok(VersionedRelationMetadata::from_ordinary(
+            meta.effective_at,
+            meta.retired_at,
+            meta.generation,
+            meta.kind_id,
+            RelationEndpoints {
                 source: meta.endpoints.source,
                 target: meta.endpoints.target,
             },
-            extra: crate::storage::substrate::StorageAllocation::new(
+            crate::storage::substrate::StorageAllocation::new(
                 crate::storage::substrate::RelationExtra::from_unbudgeted_parts(
                     Some(RelationEndpoints {
                         source: meta.endpoints.source,
@@ -94,6 +94,6 @@ impl CheckpointArenaKind for RelationRecordKind {
                     readmit_state(meta.authoritative_aspect_state, contracts)?,
                 ),
             ),
-        })
+        ))
     }
 }

@@ -1,5 +1,9 @@
+mod birth;
+mod metadata;
+use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::VersionId;
 use crate::storage::data::RecordLifecycleState;
+pub(crate) use metadata::MetadataWriteDenial;
 
 use super::{RecordArena, RecordKind, SlotInit};
 
@@ -37,25 +41,30 @@ impl<K: RecordKind> RecordArena<K> {
         Ok(())
     }
 
-    pub(crate) fn rematerialize(
+    pub(super) fn rematerialize_using(
         &mut self,
         id: &crate::identity::data::RecordId<K::Domain>,
         kind_id: crate::identity::data::KindId,
         version_id: VersionId,
         extra: K::Extra,
-    ) -> Result<(), &'static str> {
+        prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
+    ) -> Result<(), MetadataWriteDenial> {
         let slot = crate::storage::substrate::slot_of::<K>(id);
         let physical = self
             .physical_index(slot)
             .ok_or("rematerialization requires an existing slot")?;
         if self.lifecycle[physical] != RecordLifecycleState::MaterializationUnavailable {
-            return Err("rematerialization requires an unavailable record");
+            return Err(MetadataWriteDenial::Invalid(
+                "rematerialization requires an unavailable record",
+            ));
         }
         if self.generations[physical] != crate::storage::substrate::generation_of::<K>(id)
             || self.partition_ids[physical] != crate::storage::substrate::partition_of::<K>(id)
             || self.kind_ids[physical] != Some(kind_id)
         {
-            return Err("rematerialization identity or kind does not match retained metadata");
+            return Err(MetadataWriteDenial::Invalid(
+                "rematerialization identity or kind does not match retained metadata",
+            ));
         }
         let extra = crate::storage::substrate::StorageAllocation::new(extra);
         let metadata = K::metadata_for_create(
@@ -64,7 +73,10 @@ impl<K: RecordKind> RecordArena<K> {
             version_id,
             extra.clone(),
         )
-        .ok_or("record extra cannot construct its native metadata")?;
+        .ok_or(MetadataWriteDenial::Invalid(
+            "record extra cannot construct its native metadata",
+        ))?;
+        let metadata = prepare(metadata)?;
         self.metadata_history[physical].push(metadata);
         self.extra.set_shared(physical, extra);
         self.field_revisions.set(physical, Some(Default::default()));
@@ -75,39 +87,52 @@ impl<K: RecordKind> RecordArena<K> {
         Ok(())
     }
 
-    pub(crate) fn apply_extra_update(
+    pub(super) fn apply_extra_update_using(
         &mut self,
         slot: usize,
         extra: K::Extra,
         version_id: VersionId,
-    ) -> Option<()> {
-        let physical = self.physical_index(slot)?;
-        let kind_id = self.kind_ids[physical]?;
+        prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
+    ) -> Result<Option<()>, Cause> {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(None);
+        };
+        let Some(kind_id) = self.kind_ids[physical] else {
+            return Ok(None);
+        };
         let extra = crate::storage::substrate::StorageAllocation::new(extra);
-        let metadata = K::metadata_for_create(
+        let Some(metadata) = K::metadata_for_create(
             kind_id,
             self.generations[physical],
             version_id,
             extra.clone(),
-        )?;
-        if let Some(current) = self.metadata_history[physical].last_mut() {
-            K::retire_metadata(current, version_id);
-        }
+        ) else {
+            return Ok(None);
+        };
+        let metadata = prepare(metadata)?;
+        let retired = self.prepare_retired_metadata(physical, version_id, prepare)?;
+        self.install_retired_metadata(physical, retired);
         self.metadata_history[physical].push(metadata);
         self.extra.set_shared(physical, extra);
-        Some(())
+        Ok(Some(()))
     }
 
-    pub(crate) fn retire(&mut self, slot: usize, version_id: VersionId) -> Option<()> {
-        let physical = self.physical_index(slot)?;
+    pub(super) fn retire_using(
+        &mut self,
+        slot: usize,
+        version_id: VersionId,
+        prepare: &mut impl FnMut(K::Meta) -> Result<K::Meta, Cause>,
+    ) -> Result<Option<()>, Cause> {
+        let Some(physical) = self.physical_index(slot) else {
+            return Ok(None);
+        };
+        let retired = self.prepare_retired_metadata(physical, version_id, prepare)?;
         self.retired_at[physical] = Some(version_id);
         self.lifecycle[physical] = RecordLifecycleState::DeletedRetained;
         self.live_bitset.set(slot, false);
         self.reclaimable_bitset.set(slot, true);
-        if let Some(current) = self.metadata_history[physical].last_mut() {
-            K::retire_metadata(current, version_id);
-        }
-        Some(())
+        self.install_retired_metadata(physical, retired);
+        Ok(Some(()))
     }
 
     #[cfg(test)]
@@ -141,97 +166,6 @@ impl<K: RecordKind> RecordArena<K> {
             .write_reserved_slot(init, slot, generation)
             .expect("arena-owned free-list slot must be structurally admissible");
         (slot, generation, reused)
-    }
-
-    pub(crate) fn write_reserved_slot(
-        &mut self,
-        init: SlotInit<K>,
-        slot: usize,
-        generation: u32,
-    ) -> Result<bool, &'static str> {
-        if let Some(physical) = self.physical_index(slot) {
-            self.install_reused_slot(init, physical, generation)?;
-            return Ok(true);
-        }
-        self.append_reserved_slot(init, slot, generation)?;
-        Ok(false)
-    }
-
-    fn install_reused_slot(
-        &mut self,
-        init: SlotInit<K>,
-        physical: usize,
-        generation: u32,
-    ) -> Result<(), &'static str> {
-        let SlotInit {
-            partition_id,
-            kind_id,
-            version_id,
-            extra,
-        } = init;
-        let extra = crate::storage::substrate::StorageAllocation::new(extra);
-        let metadata = K::metadata_for_create(kind_id, generation, version_id, extra.clone())
-            .ok_or("record extra cannot construct its native metadata")?;
-        if let Some(current) = self.metadata_history[physical].last_mut() {
-            K::retire_metadata(current, version_id);
-        }
-        self.partition_ids[physical] = partition_id;
-        self.generations[physical] = generation;
-        self.lifecycle[physical] = RecordLifecycleState::Live;
-        self.kind_ids[physical] = Some(kind_id);
-        self.metadata_history[physical].push(metadata);
-        self.created_at[physical] = version_id;
-        self.retired_at[physical] = None;
-        self.extra.set_shared(physical, extra);
-        self.aspect_versions.set(physical, Default::default());
-        self.field_revisions.set(physical, Some(Default::default()));
-        self.diagnostics_enrichment
-            .set(physical, Default::default());
-        self.branch_pins.set(physical, 0);
-        self.replay_pins.set(physical, 0);
-        self.snapshot_pins.set(physical, 0);
-        let logical = self.slots.slots()[physical] as usize;
-        self.live_bitset.set(logical, true);
-        self.reclaimable_bitset.set(logical, false);
-        Ok(())
-    }
-
-    fn append_reserved_slot(
-        &mut self,
-        init: SlotInit<K>,
-        logical_slot: usize,
-        generation: u32,
-    ) -> Result<(), &'static str> {
-        let SlotInit {
-            partition_id,
-            kind_id,
-            version_id,
-            extra,
-        } = init;
-        let extra = crate::storage::substrate::StorageAllocation::new(extra);
-        let metadata = K::metadata_for_create(kind_id, generation, version_id, extra.clone())
-            .ok_or("record extra cannot construct its native metadata")?;
-        self.slots.insert(logical_slot as u64)?;
-        self.partition_ids.push(partition_id);
-        self.generations.push(generation);
-        self.lifecycle.push(RecordLifecycleState::Live);
-        self.kind_ids.push(Some(kind_id));
-        self.metadata_history.push(vec![metadata].into());
-        self.history_prefixes.push(None);
-        self.created_at.push(version_id);
-        self.retired_at.push(None);
-        self.extra.push_shared(extra);
-        self.aspect_versions.push(std::collections::BTreeMap::new());
-        self.field_revisions
-            .push(Some(std::collections::BTreeMap::new()));
-        self.diagnostics_enrichment
-            .push(std::collections::BTreeMap::new());
-        self.branch_pins.push(0);
-        self.replay_pins.push(0);
-        self.snapshot_pins.push(0);
-        self.live_bitset.set(logical_slot, true);
-        self.reclaimable_bitset.set(logical_slot, false);
-        Ok(())
     }
 
     pub(crate) fn reset_slot(&mut self, slot: usize) -> Option<()> {

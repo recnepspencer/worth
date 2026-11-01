@@ -7,11 +7,12 @@ use crate::transactions::data::{CommitConflict, ConflictClass};
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 
 pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     version_id: crate::identity::data::VersionId,
     relation_id: RelationId,
     outcome: &mut MutationOutcome,
-) -> Result<(), CommitConflict> {
+) -> Result<(), crate::transactions::data::TransactionCommitError> {
     let slot = relation_id.slot_index();
     if !relation_is_visible_for_audit_retention(state, relation_id) {
         return Ok(());
@@ -21,7 +22,10 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
     let partition = state.get_partition_mut(relation_id.partition_id);
     partition
         .relation_arena
-        .retire(slot, version_id)
+        .retire_for_request(execution, slot, version_id)
+        .map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?
         .ok_or_else(|| {
             CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
                 relation_id,
@@ -48,11 +52,12 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
 }
 
 pub(in crate::authority::mutation) fn delete_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     version_id: crate::identity::data::VersionId,
     relation_id: RelationId,
     outcome: &mut MutationOutcome,
-) -> Result<(), CommitConflict> {
+) -> Result<(), crate::transactions::data::TransactionCommitError> {
     let slot = relation_id.slot_index();
     if !relation_is_live(state, relation_id) {
         return Ok(());
@@ -63,7 +68,10 @@ pub(in crate::authority::mutation) fn delete_relation(
     let partition = state.get_partition_mut(relation_id.partition_id);
     partition
         .relation_arena
-        .retire(slot, version_id)
+        .retire_for_request(execution, slot, version_id)
+        .map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?
         .ok_or_else(|| {
             CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
                 relation_id,

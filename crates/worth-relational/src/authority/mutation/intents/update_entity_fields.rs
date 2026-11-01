@@ -40,7 +40,10 @@ pub(super) fn apply(
                 missing: EntityFieldUpdateMissingState::KindId,
             })
         })?;
-        Ok::<_, CommitConflict>((kind_id, Some(slot_view.retained_extra())))
+        Ok::<_, crate::transactions::data::TransactionCommitError>((
+            kind_id,
+            Some(slot_view.retained_extra()),
+        ))
     })?;
     let target = RecordAspectPatchTarget::Entity {
         entity_id: intent.entity_id,
@@ -75,9 +78,17 @@ pub(super) fn apply(
         }
         partition
             .entity_arena
-            .apply_extra_update(slot, new_authoritative_aspect_state, version_id)
+            .apply_extra_update_for_request(
+                &context.execution,
+                slot,
+                new_authoritative_aspect_state,
+                version_id,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?
             .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
-        Ok::<_, CommitConflict>(())
+        Ok::<_, crate::transactions::data::TransactionCommitError>(())
     })?;
     let new_authoritative_aspect_state = workspace.with_context(|context| {
         context

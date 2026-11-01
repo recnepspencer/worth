@@ -158,7 +158,10 @@ actual entity/relation extra shared by current rows, historical metadata and
 private mutation views. Replacement admits its own output; snapshot holders keep
 their original owners. Successful field lowering and readmission also retain
 the original request's bill with the actual private patch until consumption;
-checked clone bounds exclude source spare capacity. Existing diagnostic/error
+checked clone bounds exclude source spare capacity. Request-driven historical
+metadata production also reserves each existing metadata allocation before
+history edits; snapshots and moved values retain that fixed bill. Ordinary image
+and maintenance copies, radix/page/scalar/slot-directory backing remain open. Existing diagnostic/error
 allocation and other replay/canonical-copy paths remain separate. This qualifies
 specific backing owners, with a localized inline footprint cost, rather than
 whole replay or Complete capture funding.

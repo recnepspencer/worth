@@ -11,6 +11,7 @@ mod pin_counts;
 mod pinning;
 mod slot_directory;
 mod slot_lifecycle;
+pub(crate) use slot_lifecycle::MetadataWriteDenial;
 mod slot_visitation;
 mod sparse_clone;
 

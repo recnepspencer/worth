@@ -34,7 +34,11 @@ pub(super) fn apply(
             .endpoints
             .clone()
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Endpoints))?;
-        Ok::<_, CommitConflict>((kind_id, endpoints, Some(slot_view.retained_extra())))
+        Ok::<_, crate::transactions::data::TransactionCommitError>((
+            kind_id,
+            endpoints,
+            Some(slot_view.retained_extra()),
+        ))
     })?;
     let target = RecordAspectPatchTarget::Relation {
         relation_id: intent.relation_id,
@@ -65,9 +69,12 @@ pub(super) fn apply(
             .get_partition_mut(intent.relation_id.partition_id);
         partition
             .relation_arena
-            .apply_extra_update(slot, new_state, version_id)
+            .apply_extra_update_for_request(&context.execution, slot, new_state, version_id)
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
-        Ok::<_, CommitConflict>(())
+        Ok::<_, crate::transactions::data::TransactionCommitError>(())
     })?;
     let new_state = workspace.with_context(|context| {
         context

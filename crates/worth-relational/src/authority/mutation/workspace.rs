@@ -93,6 +93,7 @@ impl<'a> MutationWorkspace<'a> {
             .as_deref_mut()
             .expect(/* Proof: Only the authoritative creation workspace calls this method; that constructor supplies its record-allocation reservation, unlike read-only workspaces. */ "authoritative record creation requires allocation authority");
         f(MutationContext {
+            execution: self.execution,
             state: self.state,
             schema: self.schema,
             record_allocations,

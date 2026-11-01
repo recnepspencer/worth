@@ -528,6 +528,23 @@ storage footer. Explicit ordinary-unfunded constructors remain available only
 for the existing independent portable/deletion data routes; they qualify no
 funding. No wire format or scalar/struct winner and validation order changes.
 
+Request-driven record birth, update, retirement, reuse, rematerialization and
+lineage replacement also admit each historical metadata allocation before editing
+its history. The same existing metadata Arc retains its own small fixed bill;
+its Extra payload keeps its independent reservation. Retiring and new metadata
+are prepared together before mutation, so quota refusal leaves prior history
+unchanged. A unique moved metadata value conservatively retains its fixed bill
+until Drop. On the qualified 64-bit target, entity/relation metadata is 104/120
+bytes inline and its actual Arc allocation is 120/136 bytes. This is a localized
+48-byte footer per metadata value, with no change to generic storage handles.
+Metadata's six wire fields and Debug meaning exclude funding.
+
+Ordinary image construction and maintenance cloning remain independently
+unfunded. Controlled metadata replacement creates a fresh existing-type owner
+even when the previous metadata was unique; no additional wrapper Arc is added.
+Radix nodes, page buffers, scalar/default owners and slot-directory backing are
+separate obligations. This does not qualify whole-arena or Complete funding.
+
 These are successful-path backing guarantees. Existing semantic-error locator,
 path, key and formatted-detail copies, and returned-error Clone/Serde, retain
 their ordinary allocation contract. Other portable-input copies, supplemental

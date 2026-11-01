@@ -64,19 +64,17 @@ impl CheckpointArenaKind for EntityRecordKind {
         meta: VersionedEntityMetadataImage,
         contracts: &CheckpointAspectContractCatalog,
     ) -> Result<Self::Meta, DurabilityError> {
-        Ok(VersionedEntityMetadata {
-            effective_at: meta.effective_at,
-            retired_at: meta.retired_at,
-            generation: meta.generation,
-            kind_id: meta.kind_id,
-            lineage_id: meta.lineage_id,
-            extra: crate::storage::substrate::StorageAllocation::new(
-                EntityExtra::from_unbudgeted_parts(
-                    None,
-                    meta.lineage_id,
-                    readmit_state(meta.authoritative_aspect_state, contracts)?,
-                ),
-            ),
-        })
+        Ok(VersionedEntityMetadata::from_ordinary(
+            meta.effective_at,
+            meta.retired_at,
+            meta.generation,
+            meta.kind_id,
+            meta.lineage_id,
+            crate::storage::substrate::StorageAllocation::new(EntityExtra::from_unbudgeted_parts(
+                None,
+                meta.lineage_id,
+                readmit_state(meta.authoritative_aspect_state, contracts)?,
+            )),
+        ))
     }
 }

@@ -34,10 +34,14 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
     fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64;
 }
 
-pub(crate) trait HistoricalMetadata {
+pub(crate) trait HistoricalMetadata: Sized {
     fn effective_at(&self) -> VersionId;
     fn retired_at(&self) -> Option<VersionId>;
     fn generation(&self) -> u32;
+    fn fund_for_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause>;
 }
 
 #[derive(Debug, Clone)]
@@ -76,14 +80,14 @@ impl RecordKind for EntityRecordKind {
         version_id: VersionId,
         extra: crate::storage::substrate::StorageAllocation<Self::Extra>,
     ) -> Option<Self::Meta> {
-        Some(VersionedEntityMetadata {
-            effective_at: version_id,
-            retired_at: None,
+        Some(VersionedEntityMetadata::from_ordinary(
+            version_id,
+            None,
             generation,
             kind_id,
-            lineage_id: extra.lineage_id,
+            extra.lineage_id,
             extra,
-        })
+        ))
     }
 
     fn metadata_extra(
@@ -100,6 +104,12 @@ impl RecordKind for EntityRecordKind {
 }
 
 impl HistoricalMetadata for VersionedEntityMetadata {
+    fn fund_for_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        VersionedEntityMetadata::fund_for_request(self, request)
+    }
     fn effective_at(&self) -> VersionId {
         self.effective_at
     }
@@ -149,14 +159,14 @@ impl RecordKind for RelationRecordKind {
         version_id: VersionId,
         extra: crate::storage::substrate::StorageAllocation<Self::Extra>,
     ) -> Option<Self::Meta> {
-        Some(VersionedRelationMetadata {
-            effective_at: version_id,
-            retired_at: None,
+        Some(VersionedRelationMetadata::from_ordinary(
+            version_id,
+            None,
             generation,
             kind_id,
-            endpoints: extra.endpoints.clone()?,
+            extra.endpoints.clone()?,
             extra,
-        })
+        ))
     }
 
     fn metadata_extra(
@@ -173,6 +183,12 @@ impl RecordKind for RelationRecordKind {
 }
 
 impl HistoricalMetadata for VersionedRelationMetadata {
+    fn fund_for_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        VersionedRelationMetadata::fund_for_request(self, request)
+    }
     fn effective_at(&self) -> VersionId {
         self.effective_at
     }

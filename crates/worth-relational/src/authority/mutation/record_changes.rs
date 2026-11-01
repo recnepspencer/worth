@@ -22,14 +22,16 @@ mod relation_lifecycle;
 pub(super) use relation_lifecycle::{delete_relation, retain_relation_dangling_for_audit};
 
 pub(super) fn allocate_entity_with_extra(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     allocations: &mut crate::runtime::PendingRecordAllocations,
     version_id: crate::identity::data::VersionId,
     partition_id: PartitionId,
     kind_id: KindId,
     extra: EntityExtra,
-) -> Result<EntityId, CommitConflict> {
+) -> Result<EntityId, crate::transactions::data::TransactionCommitError> {
     let (slot, generation) = allocate_record::<EntityRecordKind>(
+        execution,
         state,
         allocations,
         crate::history::data::RecordAllocationClass::Entity,
@@ -54,6 +56,7 @@ pub(super) fn allocate_entity_with_extra(
 }
 
 pub(super) fn allocate_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     allocations: &mut crate::runtime::PendingRecordAllocations,
     version_id: crate::identity::data::VersionId,
@@ -62,9 +65,10 @@ pub(super) fn allocate_relation(
     source: EntityId,
     target: EntityId,
     mut extra: RelationExtra,
-) -> Result<RelationId, CommitConflict> {
+) -> Result<RelationId, crate::transactions::data::TransactionCommitError> {
     extra.endpoints = Some(RelationEndpoints { source, target });
     let (slot, generation) = allocate_record::<RelationRecordKind>(
+        execution,
         state,
         allocations,
         crate::history::data::RecordAllocationClass::Relation,
@@ -79,13 +83,14 @@ pub(super) fn allocate_relation(
 }
 
 pub(super) fn delete_entity_with_cascade(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     version_id: crate::identity::data::VersionId,
     entity_id: EntityId,
     schema_registry: &RelationalSchemaRegistry,
     default_cascade_delete_policy: CascadeDeletePolicy,
     outcome: &mut MutationOutcome,
-) -> Result<(), CommitConflict> {
+) -> Result<(), crate::transactions::data::TransactionCommitError> {
     let slot = entity_id.slot_index();
     state.mark_entity_slot_touched(entity_id.partition_id, slot);
     let partition = state.get_partition_mut(entity_id.partition_id);
@@ -119,7 +124,10 @@ pub(super) fn delete_entity_with_cascade(
     })?;
     partition
         .entity_arena
-        .retire(slot, version_id)
+        .retire_for_request(execution, slot, version_id)
+        .map_err(|cause| {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
+        })?
         .ok_or_else(|| {
             mutation_state_inconsistency(
                 "entity retirement lost its materialized slot",
@@ -158,10 +166,16 @@ pub(super) fn delete_entity_with_cascade(
             .unwrap_or(default_cascade_delete_policy);
         match cascade_policy {
             CascadeDeletePolicy::CascadeDeleteRelations => {
-                delete_relation(state, version_id, relation_id, outcome)?;
+                delete_relation(execution, state, version_id, relation_id, outcome)?;
             }
             CascadeDeletePolicy::RetainDanglingForAudit => {
-                retain_relation_dangling_for_audit(state, version_id, relation_id, outcome)?;
+                retain_relation_dangling_for_audit(
+                    execution,
+                    state,
+                    version_id,
+                    relation_id,
+                    outcome,
+                )?;
             }
         }
     }
@@ -226,6 +240,7 @@ fn ensure_partition_state(
 }
 
 fn allocate_record<K: RecordKind>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     allocations: &mut crate::runtime::PendingRecordAllocations,
     class: crate::history::data::RecordAllocationClass,
@@ -233,14 +248,15 @@ fn allocate_record<K: RecordKind>(
     kind_id: KindId,
     version_id: crate::identity::data::VersionId,
     extra: K::Extra,
-) -> Result<(usize, u32), CommitConflict> {
+) -> Result<(usize, u32), crate::transactions::data::TransactionCommitError> {
     let partition = ensure_partition_state(state, partition_id);
     let arena = K::arena_mut(partition);
     let reserved = allocations
         .reserve(class, partition_id)
         .map_err(record_allocation_conflict)?;
     arena
-        .write_reserved_slot(
+        .write_reserved_slot_for_request(
+            execution,
             crate::storage::substrate::SlotInit {
                 partition_id,
                 kind_id,
@@ -250,7 +266,15 @@ fn allocate_record<K: RecordKind>(
             reserved.slot,
             reserved.generation,
         )
-        .map_err(|detail| {
+        .map_err(|denial| {
+            let detail = match denial {
+                crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
+                    return crate::transactions::data::TransactionCommitError::execution(
+                        cause.into(),
+                    )
+                }
+                crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => detail,
+            };
             record_allocation_conflict(
                 crate::transactions::data::RecordAllocationDenial::ArenaWriteDenied {
                     class,
@@ -259,6 +283,7 @@ fn allocate_record<K: RecordKind>(
                     detail: detail.to_owned(),
                 },
             )
+            .into()
         })?;
     Ok((reserved.slot, reserved.generation))
 }

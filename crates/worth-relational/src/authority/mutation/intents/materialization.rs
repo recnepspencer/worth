@@ -161,20 +161,35 @@ fn rematerialize_entity(
             .and_then(|slot| slot.extra().lineage_id);
         partition
             .entity_arena
-            .rematerialize(&intent.entity_id, intent.kind_id, version_id, {
-                state.lineage_id = lineage_id;
-                state
-            })
-            .map_err(|detail| {
+            .rematerialize_for_request(
+                &context.execution,
+                &intent.entity_id,
+                intent.kind_id,
+                version_id,
+                {
+                    state.lineage_id = lineage_id;
+                    state
+                },
+            )
+            .map_err(|denial| {
+                let detail = match denial {
+                    crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
+                        return crate::transactions::data::TransactionCommitError::execution(
+                            cause.into(),
+                        )
+                    }
+                    crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => detail,
+                };
                 materialization_conflict(
                     crate::transactions::data::RecordRef::Entity(intent.entity_id),
                     detail,
                 )
+                .into()
             })?;
         context
             .state
             .mark_entity_slot_touched(intent.entity_id.partition_id, intent.entity_id.slot_index());
-        Ok::<_, CommitConflict>(())
+        Ok::<_, crate::transactions::data::TransactionCommitError>(())
     })?;
     let state = workspace.with_context(|context| {
         context
@@ -236,24 +251,39 @@ fn rematerialize_relation(
             .get_partition_mut(intent.relation_id.partition_id);
         partition
             .relation_arena
-            .rematerialize(&intent.relation_id, intent.kind_id, version_id, {
-                state.endpoints = Some(RelationEndpoints {
-                    source: intent.source,
-                    target: intent.target,
-                });
-                state
-            })
-            .map_err(|detail| {
+            .rematerialize_for_request(
+                &context.execution,
+                &intent.relation_id,
+                intent.kind_id,
+                version_id,
+                {
+                    state.endpoints = Some(RelationEndpoints {
+                        source: intent.source,
+                        target: intent.target,
+                    });
+                    state
+                },
+            )
+            .map_err(|denial| {
+                let detail = match denial {
+                    crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
+                        return crate::transactions::data::TransactionCommitError::execution(
+                            cause.into(),
+                        )
+                    }
+                    crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => detail,
+                };
                 materialization_conflict(
                     crate::transactions::data::RecordRef::Relation(intent.relation_id),
                     detail,
                 )
+                .into()
             })?;
         context.state.mark_relation_slot_touched(
             intent.relation_id.partition_id,
             intent.relation_id.slot_index(),
         );
-        Ok::<_, CommitConflict>(())
+        Ok::<_, crate::transactions::data::TransactionCommitError>(())
     })?;
     let state = workspace.with_context(|context| {
         context

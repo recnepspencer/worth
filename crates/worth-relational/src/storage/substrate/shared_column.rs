@@ -47,10 +47,6 @@ impl<T: Clone> SharedColumn<T> {
         self.len == 0
     }
 
-    pub(crate) fn last_mut(&mut self) -> Option<&mut T> {
-        self.get_mut(self.len.checked_sub(1)?)
-    }
-
     pub(crate) fn partition_point(&self, mut predicate: impl FnMut(&T) -> bool) -> usize {
         let (mut low, mut high) = (0, self.len);
         while low < high {

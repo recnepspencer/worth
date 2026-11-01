@@ -4,7 +4,7 @@ use crate::authority::mutation::record_changes::{
 };
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{CommitConflict, RecordAspectPatchTarget, ReplaceEntityIntent};
+use crate::transactions::data::{RecordAspectPatchTarget, ReplaceEntityIntent};
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::field_authoring_candidate::FieldAuthoringDomain;
@@ -33,6 +33,7 @@ pub(super) fn apply(
     let replacement_id = workspace.with_context(|context| {
         ensure_entity_target_is_current(context.state, intent.entity_id)?;
         delete_entity_with_cascade(
+            &context.execution,
             context.state,
             version_id,
             intent.entity_id,
@@ -41,6 +42,7 @@ pub(super) fn apply(
             &mut outcome,
         )?;
         let replacement_id = allocate_entity_with_extra(
+            &context.execution,
             context.state,
             context.record_allocations,
             version_id,
@@ -51,7 +53,7 @@ pub(super) fn apply(
         context
             .state
             .mark_entity_slot_touched(replacement_id.partition_id, replacement_id.slot_index());
-        Ok::<_, CommitConflict>(replacement_id)
+        Ok::<_, crate::transactions::data::TransactionCommitError>(replacement_id)
     })?;
     outcome.extend(MutationOutcome::entity_replaced(
         intent.entity_id,

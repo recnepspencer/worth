@@ -45,6 +45,7 @@ pub(super) fn apply(
     let version_id = workspace.version_id();
     let relation_id = workspace.with_context(|context| {
         let relation_id = allocate_relation(
+            &context.execution,
             context.state,
             context.record_allocations,
             version_id,
@@ -57,7 +58,7 @@ pub(super) fn apply(
         context
             .state
             .mark_relation_slot_touched(relation_id.partition_id, relation_id.slot_index());
-        Ok::<_, CommitConflict>(relation_id)
+        Ok::<_, crate::transactions::data::TransactionCommitError>(relation_id)
     })?;
     workspace.register_created_relation(
         CreatedRelationRef {
