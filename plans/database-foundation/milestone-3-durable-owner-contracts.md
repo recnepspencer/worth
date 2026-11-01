@@ -1244,6 +1244,33 @@ System allocation fallback or blanket manifest grant is allowed. Older untouched
 manifest/schema/image heaps remain separately open. Keep one original framed
 artifact per member, with no extra member-frame wrapper or packing policy.
 
+Store's existing custody counts remain ONE private, never-cloned map, not a new
+ledger. Its scalable metadata uses the existing ExecutionOrderedMap with narrow
+Copy-only unique owner edits in worth-execution/storage/ordered/unique. An opaque
+ExecutionOrderedMapCell owns the actual existing singleton Node and its Entry;
+prepare_for_request admits their checked layouts before allocation. The explicit
+ordinary prepare_in(System) route remains outside funded claims and fabricates
+no request. No node layout, generic allocation framework or new map is introduced.
+
+Point edits preflight every actual touched Arc through get_mut, including rotation
+fringes and removal successor paths, before mutation. Root uniqueness alone is
+insufficient. Refusal preserves map and prepared cell. Use Copy moves, never a
+possibly allocating custom Clone. Vacant insertion consumes the prepared cell;
+removal returns the detached original cell and its grants for disposal outside
+registry gates. The existing persistent allocating edit path is unchanged.
+
+Store prepares one real cell per deduplicated member and all retired-cell slots
+with the actual owned roster before taking its registry gate. Validate placement,
+count overflow and request/work before effects. Only unique edits touch counts;
+no cloned root escapes that owner, including diagnostics. Unused/detached cells
+move into admitted slots, with destruction outside the guard. Both controlled
+retirement advance AND ordinary Owner Drop remain allocation-free; no immutable
+path-copy/System fallback, per-key atomic counters, tombstones or new queues.
+Concrete locator comparison is allocation-free; arbitrary external Ord is not
+promised that property. Existing weak-retained fixed control allocations are not
+made funded merely by an Arc payload footer; new roster/node allocations carry
+their actual independent grants, and old control obligations stay explicit.
+
 The destination adds durability/checkpoint_history/{capture,inventory,readmission}
 and history/commit/envelope_residency/selected_checkpoint.rs, integrates the
 existing capture/codec/cold catalog and all placement consumers, and adds Store
