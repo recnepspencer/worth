@@ -712,6 +712,30 @@ service or requiring an Open-only service gate.
 
 ### Finite cadence and unavoidable advancement handoff
 
+Pure private World image/graph evidence has this exact Iteration Law 2
+exception: `crates/worth-runtime-world/src/durability/checkpoint/tests.rs`
+may construct original SDK SerialRequest/ExecutionRequest inputs for these five
+owner-data tests, without constructing foreign runtimes or physical sources:
+selected_published_image_refuses_a_later_released_custody_tail;
+reserved_open_commit_cannot_reuse_the_branch_origin_identity;
+selected_image_requires_exact_dense_coordinates_and_end_digests;
+uncovered_tail_requires_the_next_position_and_its_actual_wire_digest;
+decoded_owner_description_clones_retain_actual_original_memory_grants.
+Their exact `tests/records.rs` child only borrows that ExecutionRequest and
+constructs untrusted wire descriptions. These are metadata admission proofs,
+not actual Directory selection, Native authority or service readmission.
+Register only those exact leaves and SDK names in src-court-baseline.json.
+
+The existing Query execution private leaf
+`application_installation/home_preparation/world/tests.rs` retains its existing
+WorthQueryProductRuntime baseline. Permit the ExecutionRequest name there ONLY
+as the borrowed signature of its mandatory panic-on-entry maintenance callback
+in refused_home_world_attachment_retains_nonempty_provider_instances. The
+conservative checker observes type references as well as construction; this
+adds no request constructor permission. The genuine Memory-root attachment must
+still refuse before that callback; it grants no positive Directory maintenance
+fixture, Noop or additional runtime construction.
+
 Host checkpoint policy defaults to 4,096 uncovered entries OR 64 MiB of owner
 payload in ANY participating journal: Native canonical/transitions and World
 branches/custody/occurrences. Expose this policy in Host Home request limits;
