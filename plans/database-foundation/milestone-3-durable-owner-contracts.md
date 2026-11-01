@@ -307,8 +307,14 @@ original streams once. This is not concatenated journal frames, replay
 instructions or a new live mirror/registry. Readmission validates normalized
 tables and their complete graph, then uses actual Native association admission
 and existing World materialization. No business handler or canonical mutation
-is replayed. Image processing is O(all retained authoritative state plus the
-uncovered tails); it is not an O(tail) or constant-heap claim. Authoritative
+is replayed. Processing visits all retained authoritative state and the
+uncovered tails. Actual ordered-index construction and graph joins cost
+O((state + tail) log(state + tail)); body and framing work is linear in the
+bytes processed. This cold-path cost uses the existing request-funded ordered
+storage rather than an unquoted hash/tree allocation or another live registry.
+It is not an O(tail), tightly linear metadata, or constant-heap claim. Preserve
+original-request memory limits and polling throughout; never copy whole state
+for each row or replay a growing history prefix per occurrence. Authoritative
 history remains retained until Milestone 4 permits reclamation.
 
 Replace the independently paired occurrence artifact and raw source map with
@@ -334,8 +340,14 @@ World checkpoint codec version 1, Home manifest version 2 and Native checkpoint
 CHK18 are the clean development-format cutover. Selected unsupported versions
 refuse explicitly; missing World coverage cannot mean empty state. Native
 canonical artifact v4 and the Relational WSRCKPT1 version-3 section remain
-unchanged. Store transports
-opaque owner sections; it does not parse World or Native semantic payloads.
+unchanged. World version 1 places its normalized metadata image inline in the
+opaque World section of Home manifest version 2. That selected Home anchor's
+actual record digest and protected read cut authenticate the section; World
+still validates its own framing, binding, coverage and complete graph. World
+contributes no separate member pages in this format. Native historical
+canonical payloads remain external CHK18 members; do not copy them into World.
+Store transports opaque owner sections; it does not parse World or Native
+semantic payloads. This introduces no paging or placement mode.
 Keep the existing 1 GiB combined Home-manifest ceiling and 64 KiB individual
 World journal-frame ceiling.
 Owner-private Native, Signal and Bridge recorded component schemas own their
