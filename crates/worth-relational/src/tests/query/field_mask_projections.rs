@@ -66,15 +66,15 @@ impl EntityRecordProjection for SummaryWholeAspectProjection {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct NameFieldMaskProjection;
+struct NameAliasFieldMaskProjection;
 
-impl EntityRecordProjection for NameFieldMaskProjection {
+impl EntityRecordProjection for NameAliasFieldMaskProjection {
     const KIND: KindId = KindId(1);
 
     fn projection_scope() -> ProjectionAspectScope {
         ProjectionAspectScope::fields(
             AspectKey::new("name").unwrap(),
-            [FieldKey::new("name").unwrap()],
+            [FieldKey::new("alias").unwrap()],
         )
     }
 
@@ -180,7 +180,7 @@ fn scalar_aspect_rejects_field_mask_projection_at_use_boundary() {
         .read_truth()
         .try_project_historical_version(runtime.current_version_id())
         .unwrap()
-        .entities::<NameFieldMaskProjection>(execution)
+        .entities::<NameAliasFieldMaskProjection>(execution)
         .expect_err("projection contract must refuse");
 
     use crate::facade::runtime::{

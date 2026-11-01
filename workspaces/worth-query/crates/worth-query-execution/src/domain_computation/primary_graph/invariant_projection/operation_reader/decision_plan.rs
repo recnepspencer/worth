@@ -200,30 +200,40 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        self.require_named_field(identity, field.entity(), field.aspect(), field.field())
+    }
+
+    fn require_named_field<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
         let target = ApplicationOperationDecisionReadTarget::Field {
-            entity: field.entity().to_string(),
-            aspect: field.aspect().to_string(),
-            field: field.field().to_string(),
+            entity: entity.to_string(),
+            aspect: aspect.to_string(),
+            field: field.to_string(),
         };
         self.admit_decision_target(&target)?;
-        if !self.reader.identity_is_local(identity, field.entity()) {
+        if !self.reader.identity_is_local(identity, entity) {
             return Err(WorthQueryInvariantDecisionPlanDenial::new(
                 WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
-                field.entity(),
+                entity,
             ));
         }
         let locator = self
             .reader
             .layout
-            .field_locator(field.entity(), field.aspect(), field.field())
+            .field_locator(entity, aspect, field)
             .cloned()
             .ok_or_else(|| {
                 WorthQueryInvariantDecisionPlanDenial::new(
                     WorthQueryInvariantDecisionPlanDenialKind::FieldNotInstalled,
-                    field.field(),
+                    field,
                 )
             })?;
-        self.record_field_dependency(identity, field.entity(), locator);
+        self.record_field_dependency(identity, entity, locator);
         Ok(())
     }
 

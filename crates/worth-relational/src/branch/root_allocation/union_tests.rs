@@ -32,9 +32,9 @@ impl RelationalRootAllocationVisitor for UnionWalk {
     fn region(
         &mut self,
         _: RelationalRootRegionObservation,
-        partition: Result<Option<&PartitionState>, RelationalStorageUnavailable>,
+        partition: Result<&PartitionState, RelationalStorageUnavailable>,
     ) -> Result<(), ()> {
-        partition.map_err(|_| ())?.ok_or(())?;
+        partition.map_err(|_| ())?;
         Ok(())
     }
 }

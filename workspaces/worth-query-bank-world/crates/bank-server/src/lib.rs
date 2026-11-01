@@ -6,6 +6,10 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(test, recursion_limit = "256")]
 
+#[cfg(test)]
+#[path = "../../../../../scripts/test_cost/setup_observation.rs"]
+mod setup_observation;
+
 mod application_definition;
 mod application_query;
 mod approval_authentication;

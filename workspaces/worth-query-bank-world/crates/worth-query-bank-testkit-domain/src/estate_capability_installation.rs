@@ -1,5 +1,8 @@
 pub use std::collections::BTreeSet;
 
+#[path = "estate_capability_installation/aspect_removal.rs"]
+pub mod aspect_removal;
+
 #[path = "estate_capability_installation/composition_contracts.rs"]
 pub mod composition_contracts;
 #[path = "estate_capability_installation/delegation_activation.rs"]

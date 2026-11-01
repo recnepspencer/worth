@@ -25,7 +25,7 @@ impl super::super::RelationalCanonicalPublicationRoutes {
             let mut count = 0u64;
             while let Some(commit) = next {
                 crate::history::visit_authored_write(context)?;
-                crate::history::visit_authored_write_lookup(context, visited.len(), 8)?;
+                crate::history::visit_authored_write_lookup(context, visited.len())?;
                 if visited.contains_key(&commit) {
                     return Err(Denial::NotSelectedPrefix);
                 }
@@ -38,16 +38,16 @@ impl super::super::RelationalCanonicalPublicationRoutes {
                     [parent] => Some(*parent),
                     _ => return Err(Denial::UnsupportedMergeInterval),
                 };
-                crate::history::visit_authored_write_lookup(context, chain.len(), 8)?;
+                crate::history::visit_authored_write_lookup(context, chain.len())?;
                 chain.insert_cloned_native_for_request(&count, &commit, execution)?;
-                crate::history::visit_authored_write_lookup(context, visited.len(), 8)?;
+                crate::history::visit_authored_write_lookup(context, visited.len())?;
                 visited.insert_cloned_native_for_request(&commit, &(), execution)?;
                 count = count.checked_add(1).ok_or(Denial::SizeOverflow)?;
             }
             let mut generation = AuthoredWriteGeneration::default();
             for rank in (0..chain.len()).rev() {
                 crate::history::visit_authored_write(context)?;
-                crate::history::visit_authored_write_lookup(context, chain.len(), 8)?;
+                crate::history::visit_authored_write_lookup(context, chain.len())?;
                 let (_, commit) = chain.entry_at(rank).expect("retained chain rank");
                 let envelope = self
                     .demand_envelope(&execution, *commit)

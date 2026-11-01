@@ -32,7 +32,7 @@ pub(crate) trait RelationalRootAllocationVisitor {
         &mut self,
         region: super::RelationalRootRegionObservation,
         partition: Result<
-            Option<&crate::storage::overlay::PartitionState>,
+            &crate::storage::overlay::PartitionState,
             crate::storage::data::RelationalStorageUnavailable,
         >,
     ) -> Result<(), Self::Error>;

@@ -139,21 +139,11 @@ impl IndexDefinitionCatalog {
         requested: &crate::history::RelationalAuthoredEntityIndexDefinition,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<Option<IndexCatalogCoverage>, crate::history::RelationalAuthoredWriteDenial> {
-        use crate::history::RelationalAuthoredWriteDenial as Denial;
         // Two borrowed BTree descents, followed by full definition comparison.
-        let roster = requested.locator.field_path().fields().len() as u64;
-        crate::history::visit_authored_write_lookup(context, 0, roster)?;
-        let width = requested
-            .owned_bytes()
-            .checked_add(1)
-            .ok_or(Denial::Interrupted(
-                worth_execution::MapKernelStop::WorkCounterOverflow,
-            ))?;
         super::admitted_definition::navigation(context, self.definitions.len(), 8)?;
         let Some(actual) = self.definitions.get(&requested.index_id) else {
             return Ok(None);
         };
-        crate::history::visit_authored_write_lookup(context, 0, width)?;
         let crate::indexes::data::DerivedIndexKind::EntityField { field_locator } = &actual.kind
         else {
             return Ok(None);

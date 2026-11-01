@@ -152,6 +152,9 @@ fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
         | Execution::SnapshotIdentityExhausted
         | Execution::SourceIdentityExhausted => exhausted(),
         Execution::Projection(kind) => projection(kind),
+        Execution::SourceObservationAllocation { kind, .. } => {
+            super::advancement_denial::physical_allocation(kind)
+        }
         Execution::BasisUnavailable
         | Execution::ExpiredBasis
         | Execution::BasisReleaseFailed
@@ -159,6 +162,8 @@ fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
         | Execution::TraversalUnavailable
         | Execution::ExpressionContextUnavailable
         | Execution::ExpressionContextIncomplete
+        | Execution::ProjectionInspectionUnavailable
+        | Execution::ProjectionInspectionIncomplete
         | Execution::ProjectionUnavailable => unavailable(),
         Execution::CardinalityMismatch => internal_denied(),
     }
@@ -325,6 +330,9 @@ const fn internal_denied() -> BankHttpDenial {
 
 #[cfg(test)]
 mod entity_stop_tests;
+#[cfg(test)]
+#[path = "query_denial/execution_tests.rs"]
+mod execution_tests;
 #[cfg(test)]
 #[path = "query_denial/producer_quote_tests.rs"]
 mod producer_quote_tests;

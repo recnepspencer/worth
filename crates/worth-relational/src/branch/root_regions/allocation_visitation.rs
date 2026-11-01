@@ -46,10 +46,7 @@ fn visit_node<V: RelationalRootAllocationVisitor>(
                 }
                 .into(),
             );
-            visitor.region(
-                value.0.observation(),
-                value.0.partition.try_admitted_partition(),
-            )?;
+            visitor.region(value.0.observation(), value.0.resident_partition())?;
         }
         Some(RelationalPersistentRegionLeaf::Removed(value)) => {
             visitor.allocation(

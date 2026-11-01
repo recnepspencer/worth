@@ -162,7 +162,7 @@ impl AuthoredWriteGeneration {
             )?
             .map(Arc::new);
         self.ordinal = self.ordinal.checked_add(1).ok_or(Denial::SizeOverflow)?;
-        crate::history::visit_authored_write_lookup(context, self.prefix.len(), 8)?;
+        crate::history::visit_authored_write_lookup(context, self.prefix.len())?;
         self.prefix.insert_cloned_native_for_request(
             &envelope.commit.commit_id,
             &self.ordinal,
@@ -179,19 +179,13 @@ impl AuthoredWriteGeneration {
         key: &Key,
         commit: CommitId,
     ) -> Result<(), Denial> {
-        let key_work = key
-            .additional_charged_bytes()
-            .checked_add(std::mem::size_of::<Key>() as u64)
-            .ok_or(Denial::Interrupted(
-                worth_execution::MapKernelStop::WorkCounterOverflow,
-            ))?;
-        crate::history::visit_authored_write_lookup(context, self.writes.len(), key_work)?;
+        crate::history::visit_authored_write_lookup(context, self.writes.len())?;
         let mut postings = self.writes.get(key).cloned().unwrap_or_default();
-        crate::history::visit_authored_write_lookup(context, postings.0.len(), 8)?;
+        crate::history::visit_authored_write_lookup(context, postings.0.len())?;
         postings
             .0
             .insert_cloned_native_for_request(&self.ordinal, &commit, execution)?;
-        crate::history::visit_authored_write_lookup(context, self.writes.len(), key_work)?;
+        crate::history::visit_authored_write_lookup(context, self.writes.len())?;
         self.writes
             .insert_cloned_for_request(key, &postings, execution)?;
         Ok(())
