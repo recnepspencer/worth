@@ -639,9 +639,17 @@ and compact metadata/extra bytes and relation-content hashes. Reuse the genuine
 publication court for application, lineage, retained old-root reads and refused
 publication. Exact pure owner allocation leaves and any owner-private assertions
 receive only named, observed SDK classes after Root's closed-placement ruling.
-Field-lowering scratch, replay input/plan copies, radix/path backing, per-commit
-whole-history rollback, capture, ACK and Complete remain explicit unqualified
+Field-lowering scratch, replay input/plan copies, radix/path backing,
+capture, ACK and Complete remain explicit unqualified
 successors; this state-and-extra slice cannot claim whole replay or Host closure.
+
+Private recovery rebuild owns a fresh runtime without a durable medium and
+abandons it on any replay error. Do not copy/restore the whole history before each
+commit in that closed path. Preserve source/conflict/parity admission and final
+canonical inventory before medium transfer and target replacement. Ordinary fork
+snapshots and their missing-artifact refusal remain required. Durability failures
+retain existing target diagnostics; request/allocation interruption preserves the
+target's original state.
 
 Field-authoring lowering is the next bounded ownership slice. Its original
 Workspace/read-view ExecutionRequest pays before selected field/value copies,

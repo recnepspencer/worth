@@ -14,15 +14,6 @@ pub(super) fn apply_authoritative_commit_artifacts(
     super::unshared_state(runtime)?;
     let envelope = positioned.envelope();
     let index_artifacts = admit_envelope_derived_index_artifacts(envelope)?;
-    let history_before = runtime
-        .history
-        .detached_owner_snapshot()
-        .map_err(|denial| {
-            DurabilityError::new(
-                RecoveryFailureClass::CorruptCheckpoint,
-                format!("history snapshot denied: {denial:?}"),
-            )
-        })?;
     if runtime
         .history
         .recorded_commit_envelope(envelope.commit.commit_id)
@@ -64,7 +55,9 @@ pub(super) fn apply_authoritative_commit_artifacts(
         },
     );
     let symbols = runtime.services.symbols.interner_snapshot();
-    let result = (|| {
+    // Recovery owns an isolated rebuild runtime. Any failure discards it before
+    // target publication; copying its entire history here cannot protect a caller.
+    (|| {
         let canonical = runtime
             .history
             .synchronize_recovered_source_commit(positioned, &symbols)?;
@@ -75,13 +68,7 @@ pub(super) fn apply_authoritative_commit_artifacts(
             &symbols,
         )
     })()
-    .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail));
-    if let Err(error) = result {
-        super::unshared_state(runtime)?
-            .history
-            .restore_detached_recovery_snapshot(history_before);
-        return Err(error);
-    }
+    .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail))?;
 
     index_artifacts.install(runtime);
     Ok(())

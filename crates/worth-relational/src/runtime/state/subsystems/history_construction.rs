@@ -64,10 +64,6 @@ impl HistorySubsystem {
             .map_err(|_| crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
         Ok(snapshot)
     }
-
-    pub(crate) fn restore_detached_recovery_snapshot(&mut self, snapshot: Self) {
-        *self = snapshot;
-    }
 }
 
 #[cfg(test)]

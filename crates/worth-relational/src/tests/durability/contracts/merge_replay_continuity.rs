@@ -204,7 +204,7 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
 }
 
 #[test]
-fn durability_contract_reports_parent_order_parity_drift_when_durable_artifact_is_tampered() {
+fn durability_contract_rejects_parent_order_tampering_at_source_admission() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -236,25 +236,19 @@ fn durability_contract_reports_parent_order_parity_drift_when_durable_artifact_i
         },
     );
 
-    let plan = crate::tests::support::recovery_plan_for(
+    let error = crate::tests::support::recovery_plan_for(
         execution,
         &runtime,
         RecoveryMode::NormalRecoveryVerification,
     )
-    .unwrap();
-    let mut recovered = durable_runtime_with_test_schema();
-    let error = recovered
-        .durability_recovery()
-        .recover(execution, plan)
-        .unwrap_err();
+    .unwrap_err();
     let error = crate::tests::support::expect_durability_failure(error);
 
-    assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
-    assert_eq!(
-        error.history_drift_class,
-        Some(crate::facade::history::HistoryDriftClass::DurabilityParityDrift)
-    );
-    assert!(error.detail.contains("parity drifted"));
+    assert_eq!(error.class, RecoveryFailureClass::CorruptCanonicalArtifact);
+    assert_eq!(error.history_drift_class, None);
+    assert!(error
+        .detail
+        .contains("PositionAdmission(SemanticResult(ReceiptMismatch))"));
 }
 
 #[test]
