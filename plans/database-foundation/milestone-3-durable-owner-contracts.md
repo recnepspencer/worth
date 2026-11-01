@@ -737,6 +737,43 @@ construction, ordinary mutation/rollback allocation and later canonical/
 publication copies remain unqualified. Add no public budgeting API, replacement
 request, retained execution authority, generic ledger or resource framework.
 
+Request-created historical metadata is the next concrete control-allocation
+predecessor. Add LAST move-only funding only to existing
+VersionedEntityMetadata/VersionedRelationMetadata, inside their existing
+StorageAllocation Arc. Keep the generic StorageAllocation<T> source/layout and
+one-word handle unchanged; add no wrapper or Arc. Admit the exact concrete
+metadata allocation layout before its creation, including its own footer and
+control layout, without rebilling the already-owned Extra allocation.
+
+Controlled birth, append, reuse, update, rematerialization, retirement and lineage
+reconstruct metadata from borrowed original fields under the same workspace
+request. Admit every required replacement before editing target history; use the
+existing shared-value replacement path instead of implicit metadata Arc::make_mut.
+Keep original semantic preflight order and typed request/allocation failures.
+No request or Native lifecycle/service keepalive belongs in the metadata.
+Ordinary metadata Clone is an independent fixed-field copy with no old funding;
+its Extra handle still shares the same actual Extra allocation. A unique move
+retains the entire metadata/footer and may conservatively retain its small fixed
+control bill until the moved value drops.
+
+Preserve the original six named/compact metadata fields, None behavior, Debug
+meaning, Extra identity and real allocation-observer identities. Exclude funding
+from wire/Debug/equality. Measure the actual localized target footprint, and prove
+independent metadata bills, pre-mutation refusal, old-root/current/history
+lifetimes, different-value snapshot isolation, unique moves and final refund.
+Use the existing genuine finite-request publication court and distinguish a
+metadata-allocation refusal reached inside its producer from earlier kernel denial.
+
+This qualifies only actual request-created metadata allocations. Ordinary image
+constructors and retention compaction's independent infallible metadata copies
+remain explicit unqualified successors; they cannot witness funded capture or
+whole-metadata closure. Column/AVL nodes, page buffers, scalar/default values and
+slot-directory backing are separate actual allocations and remain open. A node
+or page bill cannot cover independently shared/transferred value Arcs, nor may one
+large subtree bill pin unrelated surviving owners. Do not add a generic grant
+footer, registry, ledger, mode enum or blanket arena bill. Full radix, replay,
+capture and Complete qualification still require those actual successor paths.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
