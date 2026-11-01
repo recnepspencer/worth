@@ -1,6 +1,7 @@
 //! Rebuildable selection indexes over retained derived generations.
 mod admitted_publication;
 mod admitted_selection;
+mod checkpoint_inputs;
 mod discard;
 mod incremental_retirement;
 mod insertion_quote;

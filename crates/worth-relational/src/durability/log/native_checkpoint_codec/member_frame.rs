@@ -31,6 +31,49 @@ pub(crate) fn encode(
     Ok((locator(&bytes), bytes))
 }
 
+/// Admit and emit the same complete frame through the original request.
+pub(crate) fn encode_for_request(
+    kind: MemberKind,
+    value: &impl serde::Serialize,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<
+    (
+        RelationalDurableMemberLocator,
+        worth_execution::ExecutionImmutableBytes,
+    ),
+    crate::durability::data::RelationalRecoveryStop,
+> {
+    let mut prefix = [0_u8; MAGIC.len() + 3];
+    prefix[..MAGIC.len()].copy_from_slice(MAGIC);
+    prefix[MAGIC.len()..MAGIC.len() + 2].copy_from_slice(&1_u16.to_be_bytes());
+    prefix[MAGIC.len() + 2] = kind as u8;
+    let bytes = crate::durability::artifact_payload_emission::request::encode_named(
+        &prefix, value, request,
+    )?;
+    Ok((locator_for_request(bytes.bytes(), request)?, bytes))
+}
+
+fn locator_for_request(
+    bytes: &[u8],
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<RelationalDurableMemberLocator, crate::durability::data::RelationalRecoveryStop> {
+    use crate::durability::data::RelationalRecoveryStop as Stop;
+    let mut digest = Sha256::new();
+    for chunk in bytes.chunks(64 * 1024) {
+        request
+            .consult()
+            .map_err(|cause| Stop::Request(cause.into()))?;
+        digest.update(chunk);
+    }
+    let length = u64::try_from(bytes.len()).map_err(|_| {
+        Stop::Request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+    })?;
+    Ok(RelationalDurableMemberLocator {
+        sha256: digest.finalize().into(),
+        length,
+    })
+}
+
 pub(crate) fn locator(bytes: &[u8]) -> RelationalDurableMemberLocator {
     RelationalDurableMemberLocator {
         sha256: Sha256::digest(bytes).into(),

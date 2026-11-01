@@ -312,6 +312,14 @@ impl PerformedPublicationStream {
 }
 
 impl PerformedCheckpointSelection {
+    pub(crate) fn selected_receipt(
+        &self,
+    ) -> Option<&crate::history::data::RelationalCommitReceipt> {
+        self.head
+            .as_ref()
+            .filter(|head| head.route.is_performed())
+            .map(|head| &head.route.commit)
+    }
     pub(crate) fn latest_receipt(&self) -> Option<crate::history::data::RelationalCommitReceipt> {
         self.head
             .as_ref()

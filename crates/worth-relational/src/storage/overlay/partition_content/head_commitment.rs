@@ -56,3 +56,20 @@ impl PartitionContentCommitment {
             .map(|(commitment, _)| commitment)
     }
 }
+
+impl PartitionContentCommitment {
+    pub(crate) fn borrowed_history_frontiers<'a>(
+        &'a self,
+        partition: &'a PartitionState,
+    ) -> impl serde::Serialize + 'a {
+        #[derive(serde::Serialize)]
+        struct View<E: serde::Serialize, R: serde::Serialize> {
+            entities: E,
+            relations: R,
+        }
+        View {
+            entities: self.entities.frontier_view(&partition.entity_arena),
+            relations: self.relations.frontier_view(&partition.relation_arena),
+        }
+    }
+}

@@ -13,6 +13,21 @@ use crate::history::data::{BranchId, CommitId};
 use super::{history_recovery_validation, HistorySubsystem};
 
 impl HistorySubsystem {
+    /// Complete capture calls this inside the actual configuration/publication
+    /// freeze, before those guards end; the output owns DATA only.
+    pub(crate) fn capture_checkpoint_branch_metadata(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime_name: &str,
+    ) -> Result<
+        crate::branch::CheckpointBranchMetadata,
+        crate::branch::CheckpointBranchMetadataCaptureDenial,
+    > {
+        self.record_branch_population_scan();
+        self.branch_cells
+            .capture_checkpoint_metadata(request, runtime_name)
+    }
+
     /// Published branch truth closes initial installation even before settlement.
     pub(crate) fn has_published_branch_basis(&self) -> bool {
         self.branch_cells
@@ -86,6 +101,21 @@ impl HistorySubsystem {
                         return Err(denial);
                     }
                 };
+                // Main is the only legal live Empty branch. Initial schema
+                // installation seals once; retain its exact original before
+                // and after DATA before replacing any candidate cell.
+                if let Some((before, after)) = existing
+                    .get(&self.main_branch)
+                    .and_then(super::OriginalEmptySchemaObservation::from_empty_cell)
+                    .zip(
+                        cells
+                            .get(&self.main_branch)
+                            .and_then(super::OriginalEmptySchemaObservation::from_empty_cell),
+                    )
+                {
+                    self.canonical_publication_routes
+                        .retain_original_empty_installation(before, after);
+                }
                 self.branch_cells.restore_all(cells);
                 for (reservation, _previous_head_custody, next_root) in reservations {
                     reservation.transfer_head(&next_root).replace_head();

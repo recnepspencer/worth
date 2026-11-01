@@ -57,6 +57,34 @@ impl std::error::Error for RelationalRecoveryStop {}
 impl From<super::RelationalNativeCheckpointCaptureDenial> for RelationalRecoveryStop {
     fn from(denial: super::RelationalNativeCheckpointCaptureDenial) -> Self {
         match denial {
+            super::RelationalNativeCheckpointCaptureDenial::RetentionCapacityExhausted => {
+                super::DurabilityError::new(
+                    super::RecoveryFailureClass::ColdStorageUnavailable,
+                    "checkpoint retention capacity exhausted",
+                )
+                .into()
+            }
+            super::RelationalNativeCheckpointCaptureDenial::RetentionIdentityExhausted => {
+                super::DurabilityError::new(
+                    super::RecoveryFailureClass::ColdStorageUnavailable,
+                    "checkpoint retention identity exhausted",
+                )
+                .into()
+            }
+            super::RelationalNativeCheckpointCaptureDenial::OwnerUnavailable => {
+                super::DurabilityError::new(
+                    super::RecoveryFailureClass::ColdStorageUnavailable,
+                    "checkpoint owner unavailable",
+                )
+                .into()
+            }
+            super::RelationalNativeCheckpointCaptureDenial::OriginalAuthorityUnavailable => {
+                super::DurabilityError::new(
+                    super::RecoveryFailureClass::UnsupportedLegacySemantics,
+                    "original complete checkpoint authority unavailable",
+                )
+                .into()
+            }
             super::RelationalNativeCheckpointCaptureDenial::Request(cause) => Self::Request(cause),
             super::RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
             super::RelationalNativeCheckpointCaptureDenial::Allocation(error) => {

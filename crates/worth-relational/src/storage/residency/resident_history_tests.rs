@@ -33,6 +33,14 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
             crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage
         ))
     ));
+    let reads = fixture.source.reads.load(Ordering::SeqCst);
+    assert!(matches!(
+        PreparedResidentRegion::initial_for_request(execution, partial.clone(), &symbols),
+        Err(RegionContentFailure::Content(
+            crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage
+        ))
+    ));
+    assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
     let prior =
         RelationalRegionRetention::from_head_lease(head_demand(&fixture.cell, 1 << 24).unwrap());
     let mut journal = crate::storage::overlay::PartitionMutationJournal::default();

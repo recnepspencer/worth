@@ -1,3 +1,5 @@
+mod complete_checkpoint_preparation;
+pub use complete_checkpoint_preparation::CompleteRelationalCheckpointPreparation;
 mod branch_authority;
 mod close_authority;
 mod codec_recovery_destination;

@@ -3,7 +3,9 @@ use super::manifest_capture::corrupt;
 use crate::durability::data::*;
 use std::collections::BTreeSet;
 
-pub(super) fn validate(manifest: &RelationalCheckpointManifest) -> Result<(), DurabilityError> {
+pub(super) fn validate(
+    manifest: &RelationalCheckpointManifestDraft,
+) -> Result<(), DurabilityError> {
     let mut members = BTreeSet::new();
     let mut event_ids = BTreeSet::new();
     for page in &manifest.lineage_events {

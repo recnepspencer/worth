@@ -1,3 +1,9 @@
+pub use state::CompleteRelationalCheckpointPreparation;
+pub(crate) use state::{
+    MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
+    OriginalRecordAllocationCursor, OriginalSymbolMeanings, RetainedBranchTransition,
+};
 pub mod builder;
 mod construction;
 mod construction_denial;
@@ -83,7 +89,7 @@ pub(crate) use state::{
     CanonicalPositionAdmission, CanonicalPublicationRecordError, CapturedIndexDefinitionCatalog,
     ColdSymbolDirectoryDenial, CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem,
     IndexCatalogCoverage, IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState,
-    LineageSubsystem, MirrorResidencyDemandBinding, PartitionEdition,
+    LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
     PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
     PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
     PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,

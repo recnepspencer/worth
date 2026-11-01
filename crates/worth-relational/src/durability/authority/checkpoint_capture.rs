@@ -1,11 +1,7 @@
 use crate::branch::RelationalBranchRootCheckpoint;
 use crate::capabilities::RuntimeIdentitySource;
 use crate::durability::data::DurabilityError;
-use crate::history::data::{
-    PositionedCanonicalCommit, RecordAllocationClass, RecordAllocationOrigin,
-    RelationalCommitReceipt,
-};
-use crate::identity::data::PartitionId;
+use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
 use crate::runtime::RelationalRuntime;
 
 pub(super) struct CapturedCheckpointBasis {
@@ -62,18 +58,7 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) runtime_name: String,
 }
 
-pub(super) struct CapturedRecordIdentity {
-    pub(super) generation_high_water: Vec<(RecordAllocationClass, PartitionId, u64, u32)>,
-    pub(super) reusable_slots: Vec<(RecordAllocationClass, PartitionId, usize)>,
-    pub(super) append_frontiers: Vec<(RecordAllocationClass, PartitionId, usize)>,
-    pub(super) pending_reservations: Vec<(
-        RecordAllocationClass,
-        PartitionId,
-        u64,
-        u32,
-        RecordAllocationOrigin,
-    )>,
-}
+pub(super) type CapturedRecordIdentity = crate::durability::data::DurableRecordIdentityState;
 
 impl CapturedCheckpointBasis {
     /// Select one immutable recovery basis while publication handoff is
@@ -83,6 +68,20 @@ impl CapturedCheckpointBasis {
         runtime: &RelationalRuntime,
         routes: &crate::runtime::RelationalCanonicalPublicationRoutes,
         selection: crate::runtime::PerformedCheckpointSelection,
+    ) -> Result<Self, DurabilityError> {
+        Self::capture_with_record_identity(
+            runtime,
+            routes,
+            selection,
+            runtime.record_identity.checkpoint_identity(),
+        )
+    }
+
+    pub(super) fn capture_with_record_identity(
+        runtime: &RelationalRuntime,
+        routes: &crate::runtime::RelationalCanonicalPublicationRoutes,
+        selection: crate::runtime::PerformedCheckpointSelection,
+        record_identity: CapturedRecordIdentity,
     ) -> Result<Self, DurabilityError> {
         // Checkpointing is a cold lane: retire expired reader roots and their
         // derived generations before selecting bounded payloads.
@@ -229,12 +228,7 @@ impl CapturedCheckpointBasis {
             retired_branch_names: runtime.history.retired_branch_names(),
             covered_transitions,
             branch_roots,
-            record_identity: CapturedRecordIdentity {
-                generation_high_water: runtime.record_identity.generation_snapshot(),
-                reusable_slots: runtime.record_identity.reusable_snapshot(),
-                append_frontiers: runtime.record_identity.frontier_snapshot(),
-                pending_reservations: runtime.record_identity.pending_snapshot(),
-            },
+            record_identity,
             commit_descriptors: artifacts
                 .iter()
                 .map(|artifact| (artifact.identity().commit_id(), artifact.roots().clone()))

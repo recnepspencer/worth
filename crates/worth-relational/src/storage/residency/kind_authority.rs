@@ -5,11 +5,11 @@ use super::RelationalRegionResidency;
 use crate::identity::data::PartitionId;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use std::collections::BTreeMap;
-use std::sync::{Arc, OnceLock, Weak};
+use std::sync::{Arc, OnceLock};
 
 #[derive(Debug, Default)]
 pub(crate) struct RelationalRegionKindAuthority {
-    regions: OnceLock<BTreeMap<PartitionId, Weak<RelationalRegionResidency>>>,
+    regions: OnceLock<BTreeMap<PartitionId, super::cell::RegionCellWeak>>,
 }
 
 impl RelationalRegionKindAuthority {
@@ -30,7 +30,10 @@ impl RelationalRegionKindAuthority {
     ) -> Result<(), Cause> {
         let mut directory = BTreeMap::new();
         for (id, cell) in regions {
-            if directory.insert(id, Arc::downgrade(&cell)).is_some() {
+            if directory
+                .insert(id, RelationalRegionResidency::downgrade(&cell))
+                .is_some()
+            {
                 return Err(Cause::Damaged);
             }
         }

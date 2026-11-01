@@ -1,3 +1,4 @@
+mod component_capture;
 use indexmap::IndexMap;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, RwLock};
@@ -5,6 +6,10 @@ use std::sync::{Arc, RwLock};
 use crate::history::data::BranchId;
 
 use super::{RelationalBranchCellCheckpoint, RelationalBranchReferenceCell};
+mod checkpoint_capture;
+pub(crate) use checkpoint_capture::{
+    CheckpointBranchMetadata, CheckpointBranchMetadataCaptureDenial, CheckpointBranchMetadataFields,
+};
 
 #[derive(Debug, Default)]
 struct RelationalBranchRegistryState {

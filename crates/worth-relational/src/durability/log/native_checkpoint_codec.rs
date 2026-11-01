@@ -7,6 +7,8 @@ pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK18\n";
 
 mod checkpoint_decoding;
 mod checkpoint_encoding;
+mod complete_encoding;
+pub(crate) use complete_encoding::{canonical_inline_size, encode_complete};
 mod checkpoint_wire;
 mod cold_checkpoint;
 mod dictionary_capture;

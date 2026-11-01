@@ -58,6 +58,11 @@ pub enum RecordAllocationDenial {
         slot: usize,
         detail: String,
     },
+    ReplayRecordMismatch {
+        ordinal: u64,
+        expected: RecordRef,
+        observed: RecordRef,
+    },
 }
 
 impl RecordAllocationDenial {
@@ -90,6 +95,9 @@ impl RecordAllocationDenial {
                 partition_id,
             } => format!(
                 "canonical replay allocation {ordinal} targets {expected:?}, not {class:?} partition {partition_id:?}"
+            ),
+            Self::ReplayRecordMismatch { ordinal, expected, observed } => format!(
+                "canonical replay allocation {ordinal} recorded {observed:?}, expected {expected:?}"
             ),
             Self::ReplayAppendFrontierMismatch {
                 ordinal,

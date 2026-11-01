@@ -6,6 +6,11 @@ pub(crate) struct DenseSlotBitSet {
 }
 
 impl DenseSlotBitSet {
+    /// Full commitment capture borrows canonical words without delta scratch.
+    pub(crate) fn words(&self) -> impl Iterator<Item = (usize, u64)> + '_ {
+        self.words.iter().map(|(&index, &word)| (index, word))
+    }
+
     pub(crate) fn changed_words_since(&self, previous: Option<&Self>) -> Vec<(usize, Option<u64>)> {
         let empty = SharedMap::default();
         let previous = previous.map(|set| &set.words).unwrap_or(&empty);
@@ -57,15 +62,36 @@ impl DenseSlotBitSet {
         })
     }
 
-    pub(crate) fn set(&mut self, slot: usize, value: bool) -> u64 {
+    pub(crate) fn set_for_request(
+        &mut self,
+        slot: usize,
+        value: bool,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+        let (word, previous, next) = self.changed_word(slot, value);
+        if next == previous {
+            Ok(0)
+        } else if next == 0 {
+            self.words
+                .remove_for_request(&word, request)
+                .map(|(_, bytes)| bytes)
+        } else {
+            self.words.insert_for_request(word, next, request)
+        }
+    }
+    fn changed_word(&self, slot: usize, value: bool) -> (usize, u64, u64) {
         let word = slot / 64;
-        let bit = slot % 64;
         let previous = self.words.get(&word).copied().unwrap_or(0);
         let next = if value {
-            previous | (1 << bit)
+            previous | (1 << (slot % 64))
         } else {
-            previous & !(1 << bit)
+            previous & !(1 << (slot % 64))
         };
+        (word, previous, next)
+    }
+
+    pub(crate) fn set(&mut self, slot: usize, value: bool) -> u64 {
+        let (word, previous, next) = self.changed_word(slot, value);
         if next == previous {
             0
         } else if next == 0 {

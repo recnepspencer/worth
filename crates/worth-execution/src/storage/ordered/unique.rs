@@ -1,5 +1,6 @@
 //! Copy-only edits of the actual unique cells; persistent edits remain separate.
 mod edit;
+mod owned;
 mod preflight;
 #[cfg(test)]
 mod tests;

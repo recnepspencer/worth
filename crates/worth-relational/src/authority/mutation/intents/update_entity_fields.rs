@@ -68,10 +68,20 @@ pub(super) fn apply(
     workspace.with_context(|context| {
         context
             .state
-            .mark_entity_slot_touched(intent.entity_id.partition_id, slot);
+            .mark_entity_slot_touched_for_request(
+                intent.entity_id.partition_id,
+                slot,
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         let partition = context
             .state
-            .get_partition_mut(intent.entity_id.partition_id);
+            .get_partition_mut_for_request(intent.entity_id.partition_id, &context.execution)
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         if let Some(prior) = &authoritative_aspect_state {
             new_authoritative_aspect_state.lineage_id = prior.lineage_id;
             new_authoritative_aspect_state.structural_fingerprint = prior.structural_fingerprint;
@@ -93,17 +103,16 @@ pub(super) fn apply(
     let new_authoritative_aspect_state = workspace.with_context(|context| {
         context
             .state
-            .get_partition_mut(intent.entity_id.partition_id)
-            .entity_arena
-            .retained_extra(slot)
+            .retained_entity_extra(intent.entity_id.partition_id, slot)
     });
     Ok(MutationOutcome::entity_updated_with_authoritative_patch(
+        &workspace.execution(),
         intent.entity_id,
         kind_id,
         authoritative_aspect_state,
         new_authoritative_aspect_state,
         patch,
-    ))
+    )?)
 }
 
 fn missing(

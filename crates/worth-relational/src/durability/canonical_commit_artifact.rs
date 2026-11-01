@@ -32,6 +32,7 @@ mod payload_digest;
 mod payload_wire;
 mod readmission;
 mod readmission_refusal;
+mod request_agreement;
 mod retained_export;
 
 pub use encode_denial::RelationalCanonicalCommitArtifactEncodeDenial;

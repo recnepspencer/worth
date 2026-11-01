@@ -101,6 +101,24 @@ check that request; the sealed array retains one backing reservation without
 retaining the borrowed request. `ExecutionRequestArrayDenial` distinguishes
 original request refusal from physical allocation failure.
 
+For retained immutable bytes, finish a byte request builder with
+`seal_immutable_bytes()`. The original request admits the byte owner's actual
+shared control allocation before construction, in addition to its existing
+payload backing. Clones share both reservations through the final alias.
+`charged_payload_bytes()` continues to report only the payload charge. Converting
+an already sealed array with `into_immutable_bytes()` retains its ordinary
+control-allocation contract because the original request is no longer present.
+
+
+Native owners moving a non-`Clone` value into an ordered map use
+`ExecutionOrderedMapCell::prepare_owned_native_for_request`. It admits the
+actual entry and map-node controls before constructing either shared owner.
+Consume that detached cell with `insert_owned_vacant_prepared` on the unique map.
+`remove_owned_retaining_unique` returns its actual retired cell so the owner can
+dispose of the payload outside its gate. The caller still owns the admission
+contract of any heap inside the moved value; these APIs share no mutable payload
+or raw `Arc` and require no value clone.
+
 ## Checked component edits
 
 Runtime owners apply one `ComponentEdit` through

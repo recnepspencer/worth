@@ -1,5 +1,6 @@
 //! Current complete canonical publication per family/source route at one native root.
 //! This derived selection image grants no ownership without native/proof custody.
+mod reconstruction;
 use super::CommitId;
 use crate::identity::data::EntityId;
 use crate::mvcc::RequiredOutputPublicationMeaning as Meaning;

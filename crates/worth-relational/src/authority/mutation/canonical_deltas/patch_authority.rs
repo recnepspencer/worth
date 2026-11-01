@@ -3,11 +3,9 @@ use smallvec::SmallVec;
 use crate::publication::patch::data::{ordered_aspect_keys, RecordStructuralChange};
 use crate::schema::data::{AspectBinding, LoweredAspectContractPlan};
 use crate::transactions::data::RecordRef;
-use worth_foundational::facade::{AspectLocator, AspectValueLocator, LocatorAuthority};
 
 use super::data::{
-    AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta,
-    EvaluatedAspectBinding,
+    CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,
 };
 use super::lifecycle_transition_evidence::lifecycle_transition;
 
@@ -74,6 +72,15 @@ pub(super) fn authoritative_patch_binding_evidence(
     structural_change: RecordStructuralChange,
     patch: &worth_foundational::facade::AuthoritativeRecordAspectPatch,
 ) -> Option<CanonicalAspectDeltaEvidence> {
+    borrowed_authoritative_patch_binding_evidence(binding, structural_change, patch)
+        .map(|evidence| evidence.into_owned(binding.aspect_key()))
+}
+
+pub(super) fn borrowed_authoritative_patch_binding_evidence<'a>(
+    binding: &'a crate::schema::data::LoweredAspectContractBinding,
+    structural_change: RecordStructuralChange,
+    patch: &'a worth_foundational::facade::AuthoritativeRecordAspectPatch,
+) -> Option<super::BorrowedAspectDeltaEvidence<'a>> {
     match &binding.target {
         AspectBinding::StructuralRegion
         | AspectBinding::StructuralPartition
@@ -87,88 +94,91 @@ pub(super) fn authoritative_patch_binding_evidence(
     }
 }
 
-fn structural_evidence(
-    binding: &crate::schema::data::LoweredAspectContractBinding,
+fn structural_evidence<'a>(
+    binding: &'a crate::schema::data::LoweredAspectContractBinding,
     structural_change: RecordStructuralChange,
-) -> Option<CanonicalAspectDeltaEvidence> {
+) -> Option<super::BorrowedAspectDeltaEvidence<'a>> {
     matches!(
         &binding.target,
         AspectBinding::StructuralRegion
             | AspectBinding::StructuralPartition
             | AspectBinding::StructuralFacet
     )
-    .then(|| CanonicalAspectDeltaEvidence::Structural {
-        locator: authoritative_value_locator(binding),
+    .then(|| super::BorrowedAspectDeltaEvidence::Structural {
         change: structural_change,
     })
 }
 
-fn lifecycle_structural_evidence(
-    binding: &crate::schema::data::LoweredAspectContractBinding,
+fn lifecycle_structural_evidence<'a>(
+    binding: &'a crate::schema::data::LoweredAspectContractBinding,
     structural_change: RecordStructuralChange,
-) -> Option<CanonicalAspectDeltaEvidence> {
+) -> Option<super::BorrowedAspectDeltaEvidence<'a>> {
     if !matches!(&binding.target, AspectBinding::LifecycleTransition) {
         return None;
     }
     let transition = lifecycle_transition(structural_change);
-    (transition != super::data::LifecycleTransitionClass::NoTransition).then(|| {
-        CanonicalAspectDeltaEvidence::Lifecycle {
-            locator: authoritative_value_locator(binding),
-            transition,
-        }
-    })
+    (transition != super::data::LifecycleTransitionClass::NoTransition)
+        .then(|| super::BorrowedAspectDeltaEvidence::Lifecycle { transition })
 }
 
-fn whole_aspect_set_evidence(
-    binding: &crate::schema::data::LoweredAspectContractBinding,
-    patch: &worth_foundational::facade::AuthoritativeRecordAspectPatch,
-) -> Option<CanonicalAspectDeltaEvidence> {
+fn whole_aspect_set_evidence<'a>(
+    binding: &'a crate::schema::data::LoweredAspectContractBinding,
+    patch: &'a worth_foundational::facade::AuthoritativeRecordAspectPatch,
+) -> Option<super::BorrowedAspectDeltaEvidence<'a>> {
     let (_, value) = patch
         .whole_aspect_sets()
         .find(|(key, _)| *key == binding.contract.key())?;
-    Some(CanonicalAspectDeltaEvidence::AuthoritativePatch {
-        locator: authoritative_value_locator(binding),
-        operation: AuthoritativePatchDeltaOperation::WholeAspectSet {
-            value: value.clone(),
-        },
+    Some(super::BorrowedAspectDeltaEvidence::AuthoritativePatch {
+        operation: super::BorrowedPatchOperation::WholeAspectSet { value },
     })
 }
 
-fn whole_aspect_clear_evidence(
-    binding: &crate::schema::data::LoweredAspectContractBinding,
-    patch: &worth_foundational::facade::AuthoritativeRecordAspectPatch,
-) -> Option<CanonicalAspectDeltaEvidence> {
+fn whole_aspect_clear_evidence<'a>(
+    binding: &'a crate::schema::data::LoweredAspectContractBinding,
+    patch: &'a worth_foundational::facade::AuthoritativeRecordAspectPatch,
+) -> Option<super::BorrowedAspectDeltaEvidence<'a>> {
     patch
         .whole_aspect_clears()
         .any(|key| key == binding.contract.key())
-        .then(|| CanonicalAspectDeltaEvidence::AuthoritativePatch {
-            locator: authoritative_value_locator(binding),
-            operation: AuthoritativePatchDeltaOperation::WholeAspectClear {
-                contract: binding.contract.clone(),
+        .then(|| super::BorrowedAspectDeltaEvidence::AuthoritativePatch {
+            operation: super::BorrowedPatchOperation::WholeAspectClear {
+                contract: &binding.contract,
             },
         })
 }
 
-fn field_level_patch_evidence(
-    binding: &crate::schema::data::LoweredAspectContractBinding,
-    patch: &worth_foundational::facade::AuthoritativeRecordAspectPatch,
-) -> Option<CanonicalAspectDeltaEvidence> {
+fn field_level_patch_evidence<'a>(
+    binding: &'a crate::schema::data::LoweredAspectContractBinding,
+    patch: &'a worth_foundational::facade::AuthoritativeRecordAspectPatch,
+) -> Option<super::BorrowedAspectDeltaEvidence<'a>> {
     let (_, field_patch) = patch
         .field_patches()
         .find(|(key, _)| *key == binding.contract.key())?;
-    Some(CanonicalAspectDeltaEvidence::AuthoritativePatch {
-        locator: authoritative_value_locator(binding),
-        operation: AuthoritativePatchDeltaOperation::FieldLevelPatch {
-            patch: field_patch.clone(),
-        },
+    Some(super::BorrowedAspectDeltaEvidence::AuthoritativePatch {
+        operation: super::BorrowedPatchOperation::FieldLevelPatch { patch: field_patch },
     })
 }
 
-fn authoritative_value_locator(
-    binding: &crate::schema::data::LoweredAspectContractBinding,
-) -> AspectValueLocator {
-    AspectValueLocator::whole_aspect(AspectLocator::new(
-        LocatorAuthority::Authoritative,
-        binding.contract.key().clone(),
-    ))
+/// Original entity retirement borrows the exact cleared aspect roster from the
+/// retained prestate instead of constructing a second publication patch.
+pub(super) fn borrowed_deletion_binding_evidence<'a>(
+    binding: &'a crate::schema::data::LoweredAspectContractBinding,
+    structural_change: RecordStructuralChange,
+    state: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+) -> Option<super::BorrowedAspectDeltaEvidence<'a>> {
+    match &binding.target {
+        AspectBinding::StructuralRegion
+        | AspectBinding::StructuralPartition
+        | AspectBinding::StructuralFacet => structural_evidence(binding, structural_change),
+        AspectBinding::LifecycleTransition => {
+            lifecycle_structural_evidence(binding, structural_change)
+        }
+        _ => state
+            .and_then(|state| state.get(binding.contract.key()))
+            .map(|_| super::BorrowedAspectDeltaEvidence::AuthoritativePatch {
+                operation: super::BorrowedPatchOperation::WholeAspectClear {
+                    contract: &binding.contract,
+                },
+            }),
+    }
 }

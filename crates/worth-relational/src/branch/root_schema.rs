@@ -8,6 +8,11 @@ use crate::schema::data::{
     AspectContractPlanCatalog, LoweredAspectContractPlan, RelationalSchemaRegistry,
     SchemaAuthoritySnapshot,
 };
+#[path = "root_schema/registry_binding.rs"]
+mod registry_binding;
+#[path = "root_schema/snapshot_match.rs"]
+mod snapshot_match;
+use registry_binding::registry_for_snapshot;
 
 /// Immutable schema vocabulary and executable projection contracts selected
 /// by one branch root. Exact readers must not consult the live runtime schema.
@@ -19,6 +24,10 @@ pub(crate) struct RelationalBranchRootSchemaAuthority {
     aspect_plans: Arc<AspectContractPlanCatalog>,
     retained_aspect_contracts: Arc<Vec<AspectContract>>,
     descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
+    // Canonically ordered revisions already established by the original
+    // snapshot admission. Sharing this fixed DATA avoids recomputing integrity
+    // plans and allocating a second snapshot during exact root checks.
+    relation_integrity_revisions: Arc<[crate::schema::data::RelationIntegrityPlanRevision]>,
 }
 
 impl RelationalBranchRootSchemaAuthority {
@@ -42,6 +51,7 @@ impl RelationalBranchRootSchemaAuthority {
                 aspect_plans: Arc::new(aspect_plans),
                 retained_aspect_contracts: Arc::new(retained_aspect_contracts),
                 descriptor_semantics_version,
+                relation_integrity_revisions: snapshot_match::retain_revisions(expected),
             })
         })
     }
@@ -65,6 +75,7 @@ impl RelationalBranchRootSchemaAuthority {
                 aspect_plans: Arc::new(aspect_plans),
                 retained_aspect_contracts: Arc::new(retained_aspect_contracts),
                 descriptor_semantics_version,
+                relation_integrity_revisions: snapshot_match::retain_revisions(expected),
             })
         })
     }
@@ -80,11 +91,12 @@ impl RelationalBranchRootSchemaAuthority {
             descriptor_semantics_version: crate::schema::data::runtime_descriptor_semantics_policy(
             )
             .current_write_version(),
+            relation_integrity_revisions: Arc::from([]),
         })
     }
 
     pub(crate) fn matches(&self, expected: &SchemaAuthoritySnapshot) -> bool {
-        self.registry.authority_snapshot() == *expected
+        snapshot_match::matches(self, expected)
             && plans_match_snapshot(&self.aspect_plans, expected)
     }
 
@@ -133,6 +145,11 @@ impl RelationalBranchRootSchemaAuthority {
                 .saturating_add(registry_bytes)
                 .saturating_add(plan_bytes)
                 .saturating_add(retained_contract_bytes),
+        )
+        .saturating_add(
+            (self.relation_integrity_revisions.len() as u64).saturating_mul(std::mem::size_of::<
+                crate::schema::data::RelationIntegrityPlanRevision,
+            >() as u64),
         )
     }
 
@@ -317,67 +334,6 @@ fn plan_catalog_allocation_bytes(plans: &AspectContractPlanCatalog) -> usize {
 
 fn usize_to_u64(bytes: usize) -> u64 {
     u64::try_from(bytes).unwrap_or(u64::MAX)
-}
-
-/// Re-admit an older basis only when the available registry carries exactly
-/// the same executable kind meaning. A changed schema id/version may be
-/// rebound from the envelope; changed names, plans, integrity, or policies
-/// require their own historical registry and are denied here.
-fn registry_for_snapshot(
-    available: &RelationalSchemaRegistry,
-    expected: &SchemaAuthoritySnapshot,
-) -> Option<RelationalSchemaRegistry> {
-    // Descriptor rebinding of physical kinds cannot substitute a different
-    // executable recipe, even when all physical registrations still match.
-    if available.derived_parts() != expected.derived_relations
-        || available.projected_domain_parts() != expected.projected_member_domains
-    {
-        return None;
-    }
-    if available.authority_snapshot() == *expected {
-        return Some(available.clone());
-    }
-    let observed = available.authority_snapshot();
-    let entity_meaning_matches = observed.entity_kinds.len() == expected.entity_kinds.len()
-        && observed
-            .entity_kinds
-            .iter()
-            .zip(&expected.entity_kinds)
-            .all(|(observed, expected)| {
-                observed.kind_id == expected.kind_id
-                    && observed.kind_name == expected.kind_name
-                    && observed.aspect_plan_revision == expected.aspect_plan_revision
-            });
-    let relation_meaning_matches = observed.relation_kinds.len() == expected.relation_kinds.len()
-        && observed
-            .relation_kinds
-            .iter()
-            .zip(&expected.relation_kinds)
-            .all(|(observed, expected)| {
-                observed.kind_id == expected.kind_id
-                    && observed.kind_name == expected.kind_name
-                    && observed.aspect_plan_revision == expected.aspect_plan_revision
-                    && observed.relation_integrity_plan_revision
-                        == expected.relation_integrity_plan_revision
-                    && observed.cross_context_policy == expected.cross_context_policy
-                    && observed.cascade_delete_policy == expected.cascade_delete_policy
-            });
-    if !entity_meaning_matches || !relation_meaning_matches {
-        return None;
-    }
-
-    let mut rebound = available.clone();
-    for expected_kind in &expected.entity_kinds {
-        let registration = rebound.entity_kinds.get_mut(&expected_kind.kind_id)?;
-        registration.schema_id = expected_kind.schema_id.clone();
-        registration.schema_version_id = expected_kind.schema_version_id;
-    }
-    for expected_kind in &expected.relation_kinds {
-        let registration = rebound.relation_kinds.get_mut(&expected_kind.kind_id)?;
-        registration.schema_id = expected_kind.schema_id.clone();
-        registration.schema_version_id = expected_kind.schema_version_id;
-    }
-    (rebound.authority_snapshot() == *expected).then_some(rebound)
 }
 
 fn plans_match_snapshot(

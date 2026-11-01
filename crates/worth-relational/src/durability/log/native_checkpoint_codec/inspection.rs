@@ -22,18 +22,12 @@ pub(crate) fn inspect<'a>(
     let record_identity = decoded.record_identity;
     let partition_images = decoded.partition_images;
     let branch_roots = decoded.branch_roots;
-    let DurableRecordIdentityState {
-        schema_version,
-        generation_high_water,
-        append_frontiers,
-        reusable_slots: _,
-        pending_reservations: _,
-    } = record_identity;
-    if schema_version != DurableRecordIdentityState::CURRENT_SCHEMA_VERSION {
+    if record_identity.schema_version != DurableRecordIdentityState::CURRENT_SCHEMA_VERSION {
         return Err(invalid("unknown record identity schema").into());
     }
-    let frontiers = append_frontiers
-        .into_iter()
+    let frontiers = record_identity
+        .append_frontiers
+        .iter()
         .map(|row| {
             let DurableRecordSlotFrontier {
                 class,
@@ -41,14 +35,15 @@ pub(crate) fn inspect<'a>(
                 next_slot,
             } = row;
             CheckpointRecordFrontier {
-                class: record_class(class),
+                class: record_class(*class),
                 partition_id: partition_id.0,
-                next_slot,
+                next_slot: *next_slot,
             }
         })
         .collect();
-    let generations = generation_high_water
-        .into_iter()
+    let generations = record_identity
+        .generation_high_water
+        .iter()
         .map(|row| {
             let DurableRecordGenerationHighWater {
                 class,
@@ -57,10 +52,10 @@ pub(crate) fn inspect<'a>(
                 generation,
             } = row;
             CheckpointRecordIdentity {
-                class: record_class(class),
+                class: record_class(*class),
                 partition_id: partition_id.0,
-                slot,
-                generation,
+                slot: *slot,
+                generation: *generation,
             }
         })
         .collect();

@@ -31,6 +31,7 @@ pub use recorded_basis::{
     RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
     RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
 };
+pub(crate) use reference::CheckpointComponentCellSource;
 mod reference_publication_cell;
 mod reference_state;
 mod registry;
@@ -61,11 +62,11 @@ pub use authority::{
     RelationalBranchPublicationAuthority, RelationalBranchPublicationAuthorityMarker,
     RelationalForkSourceAuthority, RelationalForkSourceAuthorityMarker,
 };
-pub(crate) use basis::AdmittedRelationalBranchBasisInner;
 pub use basis::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
     ResolvedRelationalBasisDescriptor, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
+pub(crate) use basis::{AdmittedRelationalBranchBasisInner, CheckpointComponentDescriptorView};
 pub use basis_admission_identity::RelationalBranchBasisAdmissionIdentity;
 pub use basis_counters::RelationalBranchBasisCostCounters;
 pub use basis_denial::{RelationalBranchBasisDenial, RelationalBranchBasisMismatchAxis};
@@ -117,7 +118,9 @@ pub(crate) use reference_publication_cell::RelationalBranchPublicationCell;
 pub use reference_state::RelationalBranchReferenceState;
 pub use registry::RelationalForkTargetReservation;
 pub(crate) use registry::{
-    RelationalBranchReferenceRegistry, RelationalForkTargetReservationDenial,
+    CheckpointBranchMetadata, CheckpointBranchMetadataCaptureDenial,
+    CheckpointBranchMetadataFields, RelationalBranchReferenceRegistry,
+    RelationalForkTargetReservationDenial,
 };
 pub use root::RelationalRootCorrectnessIndex;
 pub(crate) use root::{

@@ -1,4 +1,5 @@
 //! Exact current cells and external obligations, retained by the actual capture.
+mod complete;
 use crate::branch::{
     RelationalBranchBasisDescriptor, RelationalBranchRoot, RelationalBranchRootCheckpoint,
 };
@@ -8,6 +9,9 @@ use crate::durability::data::{
 };
 use crate::history::data::CommitId;
 use crate::runtime::RelationalRuntime;
+pub(in crate::durability) use complete::{
+    capture_complete, CapturedCompleteComponents, CompleteComponentHolds,
+};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

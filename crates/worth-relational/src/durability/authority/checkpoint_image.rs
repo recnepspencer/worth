@@ -6,7 +6,7 @@ use crate::durability::data::{
 };
 use crate::lineage::data::LineageCheckpointArtifact;
 
-use super::checkpoint_capture::{CapturedCheckpointBasis, CapturedRecordIdentity};
+use super::checkpoint_capture::CapturedCheckpointBasis;
 
 impl CapturedCheckpointBasis {
     pub(super) fn build_checkpoint_image(self) -> Result<DurableCheckpoint, DurabilityError> {
@@ -61,7 +61,6 @@ impl CapturedCheckpointBasis {
                 CheckpointAspectContractCatalog::from_plans(&aspect_contracts)?,
             ),
         };
-        let record_identity = checkpoint_record_identity(record_identity)?;
         let CapturedBranchRootImages {
             roots: branch_roots,
             schemas: mut branch_root_schema_images,
@@ -212,98 +211,4 @@ fn branch_root_images(
         schemas: schema_images.into_values().collect(),
         kinds: root_kind_images,
     })
-}
-
-fn checkpoint_record_identity(
-    captured: CapturedRecordIdentity,
-) -> Result<crate::durability::data::DurableRecordIdentityState, DurabilityError> {
-    let generation_high_water = captured
-        .generation_high_water
-        .into_iter()
-        .map(|(class, partition_id, slot, generation)| {
-            crate::durability::data::DurableRecordGenerationHighWater {
-                class: durable_record_class(class),
-                partition_id,
-                slot,
-                generation,
-            }
-        })
-        .collect();
-    let reusable_slots = captured
-        .reusable_slots
-        .into_iter()
-        .map(|(class, partition_id, slot)| {
-            let slot = u64::try_from(slot).map_err(|_| {
-                DurabilityError::new(
-                    RecoveryFailureClass::CorruptCheckpoint,
-                    "record slot cannot be encoded in a durable checkpoint",
-                )
-            })?;
-            Ok(crate::durability::data::DurableReusableRecordSlot {
-                class: durable_record_class(class),
-                partition_id,
-                slot,
-            })
-        })
-        .collect::<Result<Vec<_>, DurabilityError>>()?;
-    let append_frontiers = captured
-        .append_frontiers
-        .into_iter()
-        .map(|(class, partition_id, next_slot)| {
-            let next_slot = u64::try_from(next_slot).map_err(|_| {
-                DurabilityError::new(
-                    RecoveryFailureClass::CorruptCheckpoint,
-                    "record slot frontier cannot be encoded in a durable checkpoint",
-                )
-            })?;
-            Ok(crate::durability::data::DurableRecordSlotFrontier {
-                class: durable_record_class(class),
-                partition_id,
-                next_slot,
-            })
-        })
-        .collect::<Result<Vec<_>, DurabilityError>>()?;
-    let pending_reservations = captured
-        .pending_reservations
-        .into_iter()
-        .map(|(class, partition_id, slot, generation, origin)| {
-            crate::durability::data::DurablePendingRecordReservation {
-                class: durable_record_class(class),
-                partition_id,
-                slot,
-                generation,
-                origin: match origin {
-                    crate::history::data::RecordAllocationOrigin::AppendFrontier => {
-                        crate::durability::data::DurableRecordReservationOrigin::AppendFrontier
-                    }
-                    crate::history::data::RecordAllocationOrigin::Reclaimed {
-                        prior_generation,
-                    } => crate::durability::data::DurableRecordReservationOrigin::Reclaimed {
-                        prior_generation,
-                    },
-                },
-            }
-        })
-        .collect();
-    Ok(
-        crate::durability::data::DurableRecordIdentityState::current(
-            generation_high_water,
-            reusable_slots,
-            append_frontiers,
-            pending_reservations,
-        ),
-    )
-}
-
-fn durable_record_class(
-    class: crate::history::data::RecordAllocationClass,
-) -> crate::durability::data::DurableRecordGenerationClass {
-    match class {
-        crate::history::data::RecordAllocationClass::Entity => {
-            crate::durability::data::DurableRecordGenerationClass::Entity
-        }
-        crate::history::data::RecordAllocationClass::Relation => {
-            crate::durability::data::DurableRecordGenerationClass::Relation
-        }
-    }
 }

@@ -3,8 +3,8 @@ mod catalog;
 mod identity;
 mod parentage;
 
-pub(crate) use artifact::RelationalCommitArtifact;
 pub(crate) use artifact::RelationalCommitAuthoritativeAllocationKind;
+pub(crate) use artifact::{OriginalCanonicalInputs, RelationalCommitArtifact};
 pub use artifact::{RelationalCommitArtifactDenial, RelationalCommitRootDescriptor};
 pub(crate) use catalog::{RelationalCommitCatalog, RelationalCommitCatalogEnvelopeAppendDenial};
 pub use catalog::{RelationalCommitCatalogAppendDenial, RelationalCommitCatalogEntry};

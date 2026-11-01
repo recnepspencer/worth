@@ -9,9 +9,9 @@ use crate::transactions::data::RecordAllocationDenial;
 
 use super::record_ref::{record_partition, record_slot};
 use super::reservation::{RecordSlotReservation, ReservationOrigin};
-use super::{
-    PendingRecordReservation, ReclaimedRecordSlot, RecordIdentitySubsystem, RecordSlotKey,
-};
+#[cfg(test)]
+use super::RecordSlotKey;
+use super::{PendingRecordReservation, ReclaimedRecordSlot, RecordIdentitySubsystem};
 
 impl RecordIdentitySubsystem {
     /// Release copied/restored pending entries without a live owning handle.
@@ -77,10 +77,12 @@ impl RecordIdentitySubsystem {
         self.lock().staged_replay_allocations.take().is_some()
     }
 
+    #[cfg(test)]
     pub(crate) fn reusable_snapshot(&self) -> Vec<RecordSlotKey> {
         self.lock().reusable.iter().map(|(key, ())| *key).collect()
     }
 
+    #[cfg(test)]
     pub(crate) fn frontier_snapshot(&self) -> Vec<(RecordAllocationClass, PartitionId, usize)> {
         self.lock()
             .next_slots
@@ -89,6 +91,7 @@ impl RecordIdentitySubsystem {
             .collect()
     }
 
+    #[cfg(test)]
     pub(crate) fn generation_snapshot(
         &self,
     ) -> Vec<(RecordAllocationClass, PartitionId, u64, u32)> {
@@ -101,6 +104,7 @@ impl RecordIdentitySubsystem {
             .collect()
     }
 
+    #[cfg(test)]
     pub(crate) fn pending_snapshot(
         &self,
     ) -> Vec<(

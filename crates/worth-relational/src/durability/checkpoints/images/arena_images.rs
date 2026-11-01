@@ -97,8 +97,19 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
         metadata_history,
         created_at: arena.created_at.into_vec(),
         retired_at: arena.retired_at.into_vec(),
-        aspect_versions: arena.aspect_versions.into_vec(),
-        field_revisions: arena.field_revisions.into_vec(),
+        // These are ordinary owned wire projections, outside Complete emission.
+        aspect_versions: arena
+            .aspect_versions
+            .into_vec()
+            .into_iter()
+            .map(|rows| rows.iter().map(|(key, value)| (*key, *value)).collect())
+            .collect(),
+        field_revisions: arena
+            .field_revisions
+            .into_vec()
+            .into_iter()
+            .map(|rows| rows.map(|rows| rows.iter().map(|(key, value)| (*key, *value)).collect()))
+            .collect(),
         extra,
         diagnostics_enrichment: arena.diagnostics_enrichment.into_vec(),
         branch_pins: arena.branch_pins.into_vec(),
@@ -181,8 +192,24 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
         created_at: image.created_at.into(),
         retired_at: image.retired_at.into(),
         extra: extra.into(),
-        aspect_versions: image.aspect_versions.into(),
-        field_revisions: image.field_revisions.into(),
+        aspect_versions: image
+            .aspect_versions
+            .into_iter()
+            .map(|rows| {
+                rows.into_iter()
+                    .collect::<crate::storage::substrate::AspectVersions>()
+            })
+            .collect(),
+        field_revisions: image
+            .field_revisions
+            .into_iter()
+            .map(|rows| {
+                rows.map(|rows| {
+                    rows.into_iter()
+                        .collect::<crate::storage::substrate::FieldRevisions>()
+                })
+            })
+            .collect(),
         diagnostics_enrichment: image.diagnostics_enrichment.into(),
         branch_pins: image.branch_pins.into(),
         replay_pins: image.replay_pins.into(),

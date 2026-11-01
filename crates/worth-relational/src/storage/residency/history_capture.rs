@@ -1,4 +1,5 @@
 //! Encode resident earlier suffixes and declare their cold member dependencies.
+pub(super) mod complete;
 use super::region_image::{RegionHistoryBase, RegionHistoryRow};
 use crate::durability::data::{
     RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,

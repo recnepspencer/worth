@@ -194,6 +194,19 @@ Their genuine receipts carry original checkpoint prefixes; a value that lacks
 the required cost qualification must execute again. See
 [retained native results](../crates/worth-execution/README.md#retained-native-results).
 
+Platform byte producers use `ExecutionRequestArrayBuilder<u8>::seal_immutable_bytes`
+to retain immutable output with both payload and actual shared control storage
+admitted through the original request. The byte owner keeps those admissions
+through its final clone; its payload charge remains separately observable. See
+[execution backing admission](../crates/worth-execution/README.md).
+
+Platform native ordered-map owners move non-`Clone` payloads through
+`ExecutionOrderedMapCell::prepare_owned_native_for_request`, then consume the
+actual detached cell with `insert_owned_vacant_prepared` on their unique map.
+`remove_owned_retaining_unique` preserves the actual retired allocation for
+payload disposal outside the owner gate. Payload heap admission remains with
+its concrete owner. See [execution backing admission](../crates/worth-execution/README.md).
+
 Platform pre-effect entries use `ExecutionRequest::prepare_native` to prepare
 dependent values under one supplied request: standalone entry establishes its
 existing SDK scope once, while active same-lineage carriage reuses the actual

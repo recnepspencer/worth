@@ -50,7 +50,6 @@ impl<K: Ord + Copy, V: StoredValue> SharedMap<K, V> {
             .as_ref()
             .map_or(1, |root| root.height.saturating_add(1))
     }
-    #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.root.is_none()
     }
@@ -90,6 +89,22 @@ impl<K: Ord + Copy, V: StoredValue> SharedMap<K, V> {
             return None;
         }
         MapNode::get_mut(&mut self.root, key)
+    }
+
+    /// Controlled mutable access is restricted to inline header carriers.
+    pub(crate) fn get_mut_for_request(
+        &mut self,
+        key: &K,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<&mut V>, Cause>
+    where
+        V: StoredValue<Value = V>,
+    {
+        request.consult()?;
+        if !self.contains_key(key) {
+            return Ok(None);
+        }
+        MapNode::get_mut_for_request(&mut self.root, key, request)
     }
 
     pub(crate) fn contains_key(&self, key: &K) -> bool {

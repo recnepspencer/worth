@@ -183,6 +183,7 @@ impl RelationalRuntime {
             &config.schema.registry,
             crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
         );
+        history.retain_original_empty_birth(initial_root.retained_schema_authority());
         // The new registry contains exactly one fresh cell, bound to this
         // runtime, with a nonzero retention budget and no escaped handles.
         history

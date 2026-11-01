@@ -44,6 +44,7 @@ pub(super) fn replay_envelope_effect(
         let prepared_recovery = restored
             .mvcc_publication_authority()
             .prepare_recovered_commit(
+                execution,
                 envelope.commit.commit_id,
                 envelope.commit.clone(),
                 &branch_basis,
@@ -51,6 +52,9 @@ pub(super) fn replay_envelope_effect(
                 Arc::clone(positioned.canonical_arc()),
             )
             .map_err(|denial| match denial {
+                crate::mvcc::PublicationPreparationDenial::Request(cause) => {
+                    RelationalRecoveryStop::Request(cause)
+                }
                 crate::mvcc::PublicationPreparationDenial::StorageUnavailable(failure) => {
                     RelationalRecoveryStop::from(failure)
                 }

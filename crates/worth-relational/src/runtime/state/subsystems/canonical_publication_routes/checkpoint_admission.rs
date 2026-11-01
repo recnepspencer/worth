@@ -45,11 +45,21 @@ impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn checkpoint_selection(
         &self,
     ) -> Result<PerformedCheckpointSelection, CanonicalCheckpointAdmissionError> {
+        self.with_checkpoint_selection(|selection| selection)
+    }
+
+    /// Snapshot all Complete producer inputs under the SAME existing epoch.
+    /// The callback must not reacquire this publication gate.
+    pub(crate) fn with_checkpoint_selection<R>(
+        &self,
+        capture: impl FnOnce(PerformedCheckpointSelection) -> R,
+    ) -> Result<R, CanonicalCheckpointAdmissionError> {
         let _admission = self.enter_checkpoint_selection()?;
         self.reject_unsettled()?;
-        Ok(self
-            .performed_stream
-            .checkpoint_selection(self.branch_transition_head()))
+        Ok(capture(
+            self.performed_stream
+                .checkpoint_selection(self.branch_transition_head()),
+        ))
     }
 
     pub(crate) fn validate_checkpoint_selection(

@@ -1,5 +1,6 @@
 mod adjacency;
 mod digest_index;
+mod full;
 mod head_commitment;
 #[cfg(test)]
 #[path = "partition_content/tests.rs"]
@@ -16,6 +17,7 @@ use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PartitionContentDigestError {
+    Request(crate::execution::RelationalExecutionDenialCause),
     UnresolvedContentSymbol(Symbol),
     InvalidHistoryCoverage,
     AllocationAccountingOverflow,
@@ -48,7 +50,27 @@ impl PartitionContentCommitment {
         {
             return Err(PartitionContentDigestError::InvalidHistoryCoverage);
         }
+        if previous.is_none() {
+            return full::capture(partition, symbols, None);
+        }
         Self::capture_seeded(partition, symbols, previous, Self::default())
+    }
+
+    pub(crate) fn capture_full_for_request(
+        partition: &PartitionState,
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(Self, u64), PartitionContentDigestError> {
+        if partition
+            .entity_arena
+            .history_prefixes
+            .iter()
+            .chain(partition.relation_arena.history_prefixes.iter())
+            .any(Option::is_some)
+        {
+            return Err(PartitionContentDigestError::InvalidHistoryCoverage);
+        }
+        full::capture(partition, symbols, Some(request))
     }
 
     /// Reuse only prefix openings already authenticated during Head admission.

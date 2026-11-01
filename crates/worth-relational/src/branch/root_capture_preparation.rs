@@ -84,6 +84,7 @@ pub(super) fn prepare(
             )
         },
         schema_authority: prepared_schema.authority,
+        _memory: None,
         committed: Some(RelationalCommittedBranchRoot {
             descriptor: super::RelationalBranchRootDescriptor::new(
                 axes.storage_root,

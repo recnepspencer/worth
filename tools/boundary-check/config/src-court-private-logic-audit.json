@@ -1056,6 +1056,99 @@
       ],
       "audit": "Coordinator exact original-checkpoint-owner child placement ruling for strict CHK18 against b95b013237 and6505a75d09. Only these two named owner controls and the exact ExecutionRequest/SerialRequest leaf are admitted. Existing genuine producer medium/runtime helpers are reused; no replacement operation, new Runtime factory, production test getter, Noop or performed-authority fabrication.",
       "private_subject": "Actual captured directory becomes available as data before displaced original read/member retirement completes; interrupted ACK retains the same original publication and component obligations until final completion. A real definition registered after the last covered canonical commit makes the captured frontier strictly newer; while ACK is stopped after data exposure, a genuine later canonical commit must still declare that pending definition. Only completed original ACK advances accepted catalog coverage."
-    }
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/journal_tests/complete.rs",
+      "test": "section::checkpoint::journal_tests::complete::genuine_complete_section_retains_capture_and_resumes_same_selection_ack",
+      "constructors": [
+        "section",
+        "runtime",
+        "test_store::initialize"
+      ],
+      "audit": "Root exact owner-child ruling for genuine Complete Section preparation. Only this leaf and these two tests may reuse journal_tests::runtime and the existing physical component initialization fixture. No new Runtime factory, source replacement, authority getter, Noop, validator bypass or broader family audience.",
+      "private_subject": "Real original Store journal producer and declared home.checkpoint anchor exercise distinct Complete preparation and the same selected ACK retries."
+    },
+    {
+      "source": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/journal_tests/complete.rs",
+      "test": "section::checkpoint::journal_tests::complete::weak_complete_preparation_preserves_close_stop_resume_and_owner_loss",
+      "constructors": [
+        "section",
+        "runtime",
+        "test_store::initialize"
+      ],
+      "audit": "Root exact owner-child ruling for genuine Complete Section preparation. Only this leaf and these two tests may reuse journal_tests::runtime and the existing physical component initialization fixture. No new Runtime factory, source replacement, authority getter, Noop, validator bypass or broader family audience.",
+      "private_subject": "Actual Native retained-custody close refusal, stopped original request, idle weak clones, resumed owner and lost owner distinguish the genuine weak service lifecycle."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs",
+      "test": "runtime::state::subsystems::history::canonical_publication_routes::branch_transition_stream::schema_inputs::tests::original_empty_schemas_survive_archived_installation_and_stream_replacement",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact existing transition-stream owner-child ruling. These four controls reuse the existing genuine Native runtime fixture only in this leaf. Original schema Arcs and actual construction/install/archive producers remain the subject. Public controller calibration and concrete owner layouts protect request denial and refund; no new Runtime factory, private Execution control audience, authority getter or Complete qualification.",
+      "private_subject": "Producer-original Empty/transition DATA lifetime through same-source replacement and coverage, fresh receiver seed discard, request-funded capture roster, and pre-effect transition backing admission."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs",
+      "test": "runtime::state::subsystems::history::canonical_publication_routes::branch_transition_stream::schema_inputs::tests::fresh_recovery_receiver_discards_only_its_unobserved_construction_seed",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact existing transition-stream owner-child ruling. These four controls reuse the existing genuine Native runtime fixture only in this leaf. Original schema Arcs and actual construction/install/archive producers remain the subject. Public controller calibration and concrete owner layouts protect request denial and refund; no new Runtime factory, private Execution control audience, authority getter or Complete qualification.",
+      "private_subject": "Producer-original Empty/transition DATA lifetime through same-source replacement and coverage, fresh receiver seed discard, request-funded capture roster, and pre-effect transition backing admission."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs",
+      "test": "runtime::state::subsystems::history::canonical_publication_routes::branch_transition_stream::schema_inputs::tests::original_schema_capture_retains_exact_roster_and_refuses_before_copy",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact existing transition-stream owner-child ruling. These four controls reuse the existing genuine Native runtime fixture only in this leaf. Original schema Arcs and actual construction/install/archive producers remain the subject. Public controller calibration and concrete owner layouts protect request denial and refund; no new Runtime factory, private Execution control audience, authority getter or Complete qualification.",
+      "private_subject": "Producer-original Empty/transition DATA lifetime through same-source replacement and coverage, fresh receiver seed discard, request-funded capture roster, and pre-effect transition backing admission."
+    },
+    {
+      "source": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs",
+      "test": "runtime::state::subsystems::history::canonical_publication_routes::branch_transition_stream::schema_inputs::tests::transition_backing_refusal_precedes_archive_and_retains_its_own_grant",
+      "constructors": [
+        "runtime_with_test_schema"
+      ],
+      "audit": "Root exact existing transition-stream owner-child ruling. These four controls reuse the existing genuine Native runtime fixture only in this leaf. Original schema Arcs and actual construction/install/archive producers remain the subject. Public controller calibration and concrete owner layouts protect request denial and refund; no new Runtime factory, private Execution control audience, authority getter or Complete qualification.",
+      "private_subject": "Producer-original Empty/transition DATA lifetime through same-source replacement and coverage, fresh receiver seed discard, request-funded capture roster, and pre-effect transition backing admission."
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/checkpoint_capture/complete/tests.rs",
+      "test": "storage::residency::checkpoint_capture::complete::tests::complete_full_reg6_matches_prior_nontrivial_head_and_history_bytes",
+      "constructors": [
+        "build_runtime"
+      ],
+      "audit": "Root exact owner-child ruling: these controls use only the existing AspectSchemaFixture::build_runtime support factory to produce genuine published Struct and endpoint history; no new Runtime factory or audience outside this leaf. Controlled Full emission is compared with prior whole encoded bytes, actual request ACK and independently retained public SDK byte custody.",
+      "private_subject": "Original Full REG6 head/history wire equivalence, same-operation request/Busy ACK, and final byte alias refund."
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/checkpoint_capture/complete/tests.rs",
+      "test": "storage::residency::checkpoint_capture::complete::tests::complete_region_ack_busy_and_stop_preserve_original_binding_then_refund",
+      "constructors": [
+        "build_runtime"
+      ],
+      "audit": "Root exact owner-child ruling: these controls use only the existing AspectSchemaFixture::build_runtime support factory to produce genuine published Struct and endpoint history; no new Runtime factory or audience outside this leaf. Controlled Full emission is compared with prior whole encoded bytes, actual request ACK and independently retained public SDK byte custody.",
+      "private_subject": "Original Full REG6 head/history wire equivalence, same-operation request/Busy ACK, and final byte alias refund."
+    },
+    {
+      "source": "crates/worth-relational/src/storage/residency/checkpoint_capture/complete/tests.rs",
+      "test": "storage::residency::checkpoint_capture::complete::tests::complete_region_emitted_byte_alias_retains_only_its_actual_grant",
+      "constructors": [
+        "build_runtime"
+      ],
+      "audit": "Root exact owner-child ruling: these controls use only the existing AspectSchemaFixture::build_runtime support factory to produce genuine published Struct and endpoint history; no new Runtime factory or audience outside this leaf. Controlled Full emission is compared with prior whole encoded bytes, actual request ACK and independently retained public SDK byte custody.",
+      "private_subject": "Original Full REG6 head/history wire equivalence, same-operation request/Busy ACK, and final byte alias refund."
+    },
+    {"source":"crates/worth-relational/src/durability/authority/checkpoint_components/complete/tests.rs","test":"durability::authority::checkpoint_components::complete::tests::complete_component_capture_keeps_exact_external_cut_without_new_basis","constructors":["runtime_with_test_schema"],"audit":"Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.","private_subject":"Actual configuration/publication freeze and external_cut winner; genuine original component obligations with no new basis issuance; original request before roster growth and final hold refund."},
+    {"source":"crates/worth-relational/src/durability/authority/checkpoint_components/complete/tests.rs","test":"durability::authority::checkpoint_components::complete::tests::complete_component_capture_refuses_original_roster_before_effects","constructors":["runtime_with_test_schema"],"audit":"Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.","private_subject":"Actual configuration/publication freeze and external_cut winner; genuine original component obligations with no new basis issuance; original request before roster growth and final hold refund."},
+    {"source":"crates/worth-relational/src/durability/authority/checkpoint_components/complete/tests.rs","test":"durability::authority::checkpoint_components::complete::tests::complete_component_holds_keep_actual_read_obligations_until_drop","constructors":["runtime_with_test_schema"],"audit":"Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.","private_subject":"Actual configuration/publication freeze and external_cut winner; genuine original component obligations with no new basis issuance; original request before roster growth and final hold refund."},
+    {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/empty_schema.rs","test":"durability::authority::checkpoint_complete::tests::empty_schema::complete_empty_archive_and_initial_installation_preserve_unused_original_schema","constructors":["runtime_with_test_schema"],"audit":"Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.","private_subject":"Genuine Empty birth/install/archive producer authority, unused full schema constraint and explicit recovered-original absence refusal."},
+    {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/empty_schema.rs","test":"durability::authority::checkpoint_complete::tests::empty_schema::complete_refuses_recovered_empty_without_original_birth_authority","constructors":["durable_runtime_with_test_schema"],"audit":"Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.","private_subject":"Genuine Empty birth/install/archive producer authority, unused full schema constraint and explicit recovered-original absence refusal."},
+    {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/request_control.rs","test":"durability::authority::checkpoint_complete::tests::request_control::complete_original_request_denial_and_cancel_preserve_original_empty_source","constructors":["runtime_with_test_schema"],"audit":"Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.","private_subject":"Public weak Complete request denial, cancellation, original Root preservation and retry."},
+    {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/pinned_delete.rs","test":"durability::authority::checkpoint_complete::tests::pinned_delete::complete_fold_matches_original_relation_delete_with_snapshot_and_replay_pins","constructors":["durable_runtime_with_test_schema"],"audit":"Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.","private_subject":"Genuine relation deletion with live original snapshot/replay holds; decoded reconstructed lifecycle and original axes compared against actual producer."},
+    {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/partial_aspect_update.rs","test":"durability::authority::checkpoint_complete::tests::partial_aspect_update::complete_preserves_partial_update_without_demanding_untouched_aspect_reference","constructors":["durable_runtime_with_test_schema"],"audit":"Root exact owner-child ruling: this named control reuses only the listed existing genuine Native fixture. No new Runtime factory, source replacement, authority getter, widened Execution control audience or Complete/Closed promotion. Component cut assertion borrows real owners and returns descriptive projection only.","private_subject":"Genuine partial field update omits untouched aspect reference; actual Complete fold preserves independent original lifecycle and full axes."}
   ]
 }

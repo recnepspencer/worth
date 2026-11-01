@@ -5,6 +5,7 @@ use crate::storage::data::RelationalStorageUnavailable;
 #[derive(Debug)]
 pub(crate) enum PublicationPreparationDenial {
     Invalid(String),
+    Request(crate::execution::RelationalExecutionDenialCause),
     StorageUnavailable(RelationalStorageUnavailable),
 }
 

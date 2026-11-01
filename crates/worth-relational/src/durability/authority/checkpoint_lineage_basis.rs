@@ -12,7 +12,7 @@ pub(super) fn capture(
 ) -> Result<LineageCheckpointDigestBasis, DurabilityError> {
     let mut basis = prior.map_or_else(
         || LineageCheckpointDigestBasis::new(0, Vec::new(), 0, 0),
-        |prior| prior.lineage_basis.clone(),
+        |prior| prior.lineage_basis.ordinary_owned_copy(),
     );
     let mut rows = Vec::new();
     for artifact in artifacts {

@@ -4,15 +4,15 @@ use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::allocate_relation;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::{
-    CommitConflict, ConflictClass, CreatedRelationRef, EntityReference, RecordAspectPatchTarget,
+    CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
     RelationAspectCreateIntent,
 };
 
 use super::{record_aspect_patch, relation_endpoint_candidate};
 
-pub(super) fn apply(
-    intent: &RelationAspectCreateIntent,
-    workspace: &mut MutationWorkspace<'_>,
+pub(super) fn apply<'a>(
+    intent: &'a RelationAspectCreateIntent,
+    workspace: &mut MutationWorkspace<'a>,
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let source = resolve_endpoint(workspace, &intent.source, "source")?;
     let target_entity = resolve_endpoint(workspace, &intent.target, "target")?;
@@ -57,26 +57,32 @@ pub(super) fn apply(
         )?;
         context
             .state
-            .mark_relation_slot_touched(relation_id.partition_id, relation_id.slot_index());
+            .mark_relation_slot_touched_for_request(
+                relation_id.partition_id,
+                relation_id.slot_index(),
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         Ok::<_, crate::transactions::data::TransactionCommitError>(relation_id)
     })?;
     workspace.register_created_relation(
-        CreatedRelationRef {
-            partition_id: intent.partition_id,
-            kind_id: intent.kind_id,
-            client_key: intent.client_key.clone(),
-            source: intent.source.clone(),
-            target: intent.target.clone(),
-        },
+        intent.partition_id,
+        intent.kind_id,
+        &intent.client_key,
+        &intent.source,
+        &intent.target,
         relation_id,
-    );
+    )?;
     Ok(MutationOutcome::relation_created(
+        &workspace.execution(),
         relation_id,
         source,
         target_entity,
         intent.kind_id,
         record_aspect_patch::published_patch(patch),
-    ))
+    )?)
 }
 
 fn resolve_endpoint(

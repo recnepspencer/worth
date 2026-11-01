@@ -17,6 +17,15 @@ use crate::branch::{
 
 use super::RelationalCanonicalPublicationRoutes;
 
+#[path = "branch_transition_stream/retained_log.rs"]
+mod retained_log;
+#[path = "branch_transition_stream/schema_inputs.rs"]
+mod schema_inputs;
+pub(crate) use schema_inputs::{
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
+};
+
 #[derive(Debug, Default)]
 pub(super) struct BranchTransitionStream {
     state: Mutex<BranchTransitionStreamState>,
@@ -28,7 +37,11 @@ struct BranchTransitionStreamState {
     head: RelationalBranchTransitionSequence,
     /// Last released prefix; zero while memory-only history remains retained.
     covered: RelationalBranchTransitionSequence,
-    log: Vec<Arc<PositionedBranchTransition>>,
+    // Coverage controls the ordinary suffix, not the lifetime of originals.
+    log: Vec<RetainedBranchTransition>,
+    birth: Option<OriginalEmptySchemaObservation>,
+    installation: Option<OriginalEmptySchemaInstallation>,
+    _log_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 /// Why a transition was not recorded. None of these left a live effect;
@@ -38,10 +51,14 @@ pub(crate) enum BranchTransitionRecordError<D, S> {
     /// The transition's preparation, re-checked inside the reservation,
     /// refused.
     Denied(D),
-    /// The request stopped while it waited for the reservation.
+    /// The original request stopped during reservation or storage preparation.
     ReservationWaitStopped(worth_execution::WorkCeilingDenial),
     /// No sequence remains after the last performed one.
     SequenceCapacityExhausted,
+    /// The actual retained transition backing cannot be represented.
+    StorageCapacityExhausted,
+    /// A restored sequence disagrees with this stream's original prefix.
+    OriginalPrefixMismatch,
     /// The durable step did not admit the cutover.
     Step(S),
 }
@@ -86,6 +103,7 @@ impl BranchTransitionPublication<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         step: &S,
+        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
         prepare: impl FnOnce() -> Result<RelationalBranchTransition, D>,
         cutover: impl FnOnce(&PositionedBranchTransition) -> R,
     ) -> Result<R, BranchTransitionRecordError<D, S::Stop>> {
@@ -102,14 +120,29 @@ impl BranchTransitionPublication<'_> {
             .next()
             .ok_or(BranchTransitionRecordError::SequenceCapacityExhausted)?;
         let positioned = PositionedBranchTransition::admit(sequence, follows, transition);
+        let retained = self
+            .routes
+            .branch_transitions
+            .prepare_append(execution, &positioned)
+            .map_err(|denial| match denial {
+                OriginalBranchSchemaInputsDenial::SizeOverflow => {
+                    BranchTransitionRecordError::StorageCapacityExhausted
+                }
+                OriginalBranchSchemaInputsDenial::Request(cause) => {
+                    BranchTransitionRecordError::ReservationWaitStopped(cause)
+                }
+                OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch => {
+                    BranchTransitionRecordError::OriginalPrefixMismatch
+                }
+            })?;
         let publication: RelationalTransitionPublication = step
             .take(positioned)
             .map_err(BranchTransitionRecordError::Step)?;
         Ok(publication.cutover(|positioned| {
-            let positioned = Arc::new(positioned);
-            self.routes
+            let positioned = self
+                .routes
                 .branch_transitions
-                .append(Arc::clone(&positioned));
+                .append(positioned, schema, retained);
             cutover(&positioned)
         }))
     }
@@ -159,7 +192,9 @@ impl RelationalCanonicalPublicationRoutes {
         let mut state = self.branch_transitions.state();
         state.head = covered;
         state.covered = covered;
-        state.log.clear();
+        // Original DATA belongs to this stream, independently of restored
+        // ordinary suffix coverage. Fresh recovery receivers explicitly discard
+        // their unrelated construction seed before installing foreign history.
     }
 
     pub(crate) fn compact_branch_transitions_through(
@@ -168,9 +203,6 @@ impl RelationalCanonicalPublicationRoutes {
     ) {
         let mut state = self.branch_transitions.state();
         state.covered = state.covered.max(covered);
-        state
-            .log
-            .retain(|transition| transition.sequence() > covered);
     }
 
     pub(crate) fn retained_branch_transitions(
@@ -180,7 +212,19 @@ impl RelationalCanonicalPublicationRoutes {
         Vec<Arc<PositionedBranchTransition>>,
     ) {
         let state = self.branch_transitions.state();
-        (state.covered, state.log.clone())
+        let start = state
+            .log
+            .partition_point(|entry| entry.positioned.sequence() <= state.covered);
+        let end = state
+            .log
+            .partition_point(|entry| entry.positioned.sequence() <= state.head);
+        (
+            state.covered,
+            state.log[start.min(end)..end]
+                .iter()
+                .map(|entry| Arc::clone(&entry.positioned))
+                .collect(),
+        )
     }
 }
 
@@ -198,6 +242,11 @@ impl BranchTransitionStream {
                 head: state.head,
                 covered: state.covered,
                 log: state.log.clone(),
+                birth: state.birth.clone(),
+                installation: state.installation.clone(),
+                // This existing ordinary detached-copy allocation is not a
+                // controlled positive. Capture separately admits its own roster.
+                _log_memory: None,
             }),
         })
     }
@@ -206,10 +255,30 @@ impl BranchTransitionStream {
         self.state().head
     }
 
-    fn append(&self, positioned: Arc<PositionedBranchTransition>) {
+    fn append(
+        &self,
+        positioned: PositionedBranchTransition,
+        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        retained: Option<usize>,
+    ) -> Arc<PositionedBranchTransition> {
         let mut state = self.state();
+        if let Some(index) = retained {
+            // The performed reservation and publication lifecycle guard have
+            // excluded any writer since exact original-prefix preparation.
+            state.head = positioned.sequence();
+            return Arc::clone(&state.log[index].positioned);
+        }
+        assert!(
+            state.log.len() < state.log.capacity(),
+            "transition storage was prepared before durability"
+        );
+        let positioned = Arc::new(positioned);
         state.head = positioned.sequence();
-        state.log.push(positioned);
+        state.log.push(RetainedBranchTransition {
+            positioned: Arc::clone(&positioned),
+            schema,
+        });
+        positioned
     }
 
     fn state(&self) -> MutexGuard<'_, BranchTransitionStreamState> {

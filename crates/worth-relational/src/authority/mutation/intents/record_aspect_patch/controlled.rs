@@ -61,3 +61,17 @@ pub(crate) fn readmit_candidate(
     candidate::resize(execution, &mut funding, retained)?;
     Ok(MutationAspectPatch::controlled(patch, funding))
 }
+
+/// Copy an actual portable input under the same original request before growth.
+pub(crate) fn readmit_original_portable(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    original: &PortableRecordAspectPatch,
+    purpose: PortablePatchReadmissionPurpose,
+    plan: Option<&LoweredAspectContractPlan>,
+    target: RecordAspectPatchTarget,
+) -> Result<MutationAspectPatch, MutationPatchDenial> {
+    let input = super::super::field_authoring_candidate::FieldCandidate::copy_portable(
+        execution, original,
+    )?;
+    readmit_candidate(execution, input, purpose, plan, target)
+}

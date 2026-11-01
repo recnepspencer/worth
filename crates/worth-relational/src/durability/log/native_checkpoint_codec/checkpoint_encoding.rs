@@ -85,12 +85,13 @@ pub(crate) fn encode_checkpoint_members(
             .seal()
             .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?,
     );
-    let (bytes, sections, members, _) = encode_captured(captured, execution, policy, placement)?;
+    let (bytes, sections, members, _) =
+        encode_captured(captured.seal_ordinary(), execution, policy, placement)?;
     Ok((bytes, sections, members))
 }
 
 pub(crate) fn encode_captured(
-    mut captured: CapturedManifest,
+    mut captured: CapturedManifest<crate::durability::data::RelationalCheckpointManifest>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     policy: ExecutionAllocationPolicy<'_, '_>,
     placement: &RelationalCheckpointArtifactPolicy<'_>,

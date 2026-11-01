@@ -45,7 +45,7 @@ impl HistoryLedger {
         &mut self,
         commit_id: CommitId,
         commit_reference: crate::history::data::RelationalCommitReceipt,
-        artifact: crate::history::RelationalCommitArtifact,
+        artifact: Arc<crate::history::RelationalCommitArtifact>,
         patch_position: PatchStreamPosition,
         recovery_readmission: bool,
         sequence: super::PreparedCommitSequence,

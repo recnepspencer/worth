@@ -36,17 +36,29 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
     // Keep every copy of this leaf consistent; only canonical root authority
     // can reject the forgery. No member is needed to perform that check.
-    for leaf in wire
-        .manifest
-        .roots
-        .iter_mut()
-        .flat_map(|root| &mut root.regions)
-        .chain(&mut wire.manifest.mirror)
-    {
+    let mut manifest = wire.manifest.ordinary_owned_draft();
+    let mut roots = Vec::with_capacity(manifest.roots.len());
+    for original in &manifest.roots {
+        let mut regions = original.regions.clone();
+        for leaf in &mut regions {
+            if leaf.partition_id == PartitionId(1) {
+                leaf.kind_authority.head[0] ^= 1;
+            }
+        }
+        roots.push(RelationalCheckpointRoot::from_ordinary_parts(
+            original.commit_id,
+            original.recorded_components.clone(),
+            original.schema_carrier_digest,
+            regions,
+        ));
+    }
+    for leaf in &mut manifest.mirror {
         if leaf.partition_id == PartitionId(1) {
             leaf.kind_authority.head[0] ^= 1;
         }
     }
+    manifest.roots = CheckpointRoots::from_ordinary(roots);
+    wire.manifest = manifest.seal_ordinary();
     let mut bytes = CHECKPOINT_MAGIC.to_vec();
     bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
     let source = Arc::new(member_source::InlineCheckpointSource {

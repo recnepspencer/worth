@@ -13,9 +13,9 @@ use crate::durability::medium::RelationalDurableMemberLocator;
 #[cfg(test)]
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 
-pub(crate) struct CapturedManifest {
+pub(crate) struct CapturedManifest<M = RelationalCheckpointManifestDraft> {
     pub(crate) component_holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
-    pub(crate) manifest: RelationalCheckpointManifest,
+    pub(crate) manifest: M,
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     pub(crate) canonical_publication:
         Option<crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>,
@@ -132,36 +132,45 @@ impl CapturedManifest {
         Ok(Self {
             component_holds: Vec::new(),
             envelope_cells: Default::default(),
-            manifest: RelationalCheckpointManifest {
+            manifest: RelationalCheckpointManifestDraft {
                 coverage: checkpoint.coverage.clone(),
                 covered_position: commits.last().map_or(
                     crate::publication::patch::data::PatchStreamPosition(0),
                     |entry| entry.position,
                 ),
-                runtime_name: checkpoint.runtime_name.clone(),
-                branch_cells: checkpoint.branch_cells.clone(),
-                branch_lifecycle: checkpoint.branch_lifecycle.clone(),
-                retired_branch_names: checkpoint.retired_branch_names.clone(),
-                schemas: checkpoint.branch_root_schema_images.clone(),
+                branch_data: crate::branch::CheckpointBranchMetadata::from_ordinary_parts(
+                    checkpoint.runtime_name.clone(),
+                    checkpoint.branch_cells.clone(),
+                    checkpoint.branch_lifecycle.clone(),
+                    checkpoint.retired_branch_names.clone(),
+                ),
+                schemas: CheckpointSchemaImages::from_ordinary(
+                    checkpoint.branch_root_schema_images.clone(),
+                ),
                 record_identity: checkpoint.record_identity.clone(),
                 aspect_contracts: checkpoint.aspect_contracts.clone(),
-                index_definitions: checkpoint.index_definitions.clone(),
+                index_definitions: CheckpointIndexDefinitions::from_ordinary(
+                    checkpoint.index_definitions.clone(),
+                ),
                 index_generation_frontier: checkpoint.index_generation_frontier,
                 index_definition_frontier: checkpoint.index_definition_frontier,
-                roots: Vec::new(),
+                roots: CheckpointRoots::default(),
                 retained_empty_components: checkpoint.retained_empty_components.clone(),
                 mirror_schema: checkpoint.mirror_schema_digest,
                 mirror: Vec::new(),
                 history_dependencies: Vec::new(),
-                commits,
+                commits: CheckpointCommitIndex::from_ordinary(commits),
                 canonical_members: Default::default(),
-                symbols: symbol_pages,
+                symbols: CheckpointPages::from_ordinary(symbol_pages),
                 symbol_identity_frontier: checkpoint.symbol_identity_frontier,
-                symbol_buckets,
-                lineage: lineage_pages,
-                lineage_events: Vec::new(),
-                lineage_basis: checkpoint.lineage.digest_basis().clone(),
+                symbol_buckets: CheckpointSymbolBuckets::from_ordinary(symbol_buckets),
+                lineage: CheckpointPages::from_ordinary(lineage_pages),
+                lineage_events: Default::default(),
+                lineage_basis: CheckpointLineageBasis::from_ordinary(
+                    checkpoint.lineage.digest_basis().clone(),
+                ),
                 derived_indexes,
+                allocations: Default::default(),
             },
             members,
             canonical_payloads: None,
@@ -240,16 +249,16 @@ impl CapturedManifest {
                 &symbols,
                 &mut members,
             )?;
-            roots.push(RelationalCheckpointRoot {
-                commit_id: root.commit_id,
-                recorded_components: checkpoint
+            roots.push(RelationalCheckpointRoot::from_ordinary_parts(
+                root.commit_id,
+                checkpoint
                     .recorded_components
                     .get(&root.commit_id)
                     .cloned()
                     .ok_or_else(|| corrupt("root lacks component observations"))?,
-                schema_carrier_digest: root.schema_carrier_digest,
+                root.schema_carrier_digest,
                 regions,
-            });
+            ));
         }
         let mirror = if checkpoint.partition_images.is_empty() {
             Vec::new()
@@ -272,7 +281,7 @@ impl CapturedManifest {
                 &mut members,
             )?
         };
-        captured.manifest.roots = roots;
+        captured.manifest.roots = CheckpointRoots::from_ordinary(roots);
         captured.manifest.mirror = mirror;
         captured.members = members;
         Ok(captured)
@@ -355,4 +364,21 @@ pub(super) fn add(
 
 pub(super) fn corrupt(detail: impl Into<String>) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+}
+
+impl CapturedManifest {
+    pub(crate) fn seal_ordinary(self) -> CapturedManifest<RelationalCheckpointManifest> {
+        CapturedManifest {
+            manifest: self.manifest.seal_ordinary(),
+            component_holds: self.component_holds,
+            members: self.members,
+            canonical_publication: self.canonical_publication,
+            canonical_payloads: self.canonical_payloads,
+            envelope_cells: self.envelope_cells,
+            publications: self.publications,
+            cold_source: self.cold_source,
+            guarded_members: self.guarded_members,
+            history_members: self.history_members,
+        }
+    }
 }

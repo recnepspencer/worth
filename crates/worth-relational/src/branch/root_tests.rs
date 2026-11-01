@@ -5,6 +5,9 @@ use crate::history::data::{BranchId, CommitId};
 use crate::schema::data::SchemaId;
 use crate::tests::support::{create_entity_outcome, durable_runtime_with_test_schema};
 
+#[path = "root_tests/request.rs"]
+mod request;
+
 fn committed_root_and_envelope(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> (

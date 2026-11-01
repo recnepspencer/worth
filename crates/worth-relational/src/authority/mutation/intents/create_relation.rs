@@ -2,17 +2,16 @@ use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::allocate_relation;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::{
-    CommitConflict, ConflictClass, CreatedRelationRef, EntityReference, RecordAspectPatchTarget,
-    RelationSpec,
+    CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget, RelationSpec,
 };
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::field_authoring_candidate::{self, FieldAuthoringDomain};
 use super::{record_aspect_patch, relation_endpoint_candidate};
 
-pub(super) fn apply(
-    spec: &RelationSpec,
-    workspace: &mut MutationWorkspace<'_>,
+pub(super) fn apply<'a>(
+    spec: &'a RelationSpec,
+    workspace: &mut MutationWorkspace<'a>,
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let source = resolve_entity_reference(workspace, &spec.source)?;
@@ -60,26 +59,32 @@ pub(super) fn apply(
         )?;
         context
             .state
-            .mark_relation_slot_touched(relation_id.partition_id, relation_id.slot_index());
+            .mark_relation_slot_touched_for_request(
+                relation_id.partition_id,
+                relation_id.slot_index(),
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         Ok::<_, crate::transactions::data::TransactionCommitError>(relation_id)
     })?;
     workspace.register_created_relation(
-        CreatedRelationRef {
-            partition_id: spec.partition_id,
-            kind_id: spec.kind_id,
-            client_key: spec.client_key.clone(),
-            source: spec.source.clone(),
-            target: spec.target.clone(),
-        },
+        spec.partition_id,
+        spec.kind_id,
+        &spec.client_key,
+        &spec.source,
+        &spec.target,
         relation_id,
-    );
+    )?;
     Ok(MutationOutcome::relation_created(
+        &workspace.execution(),
         relation_id,
         source,
         target,
         spec.kind_id,
         record_aspect_patch::published_patch(patch),
-    ))
+    )?)
 }
 
 fn resolve_entity_reference(

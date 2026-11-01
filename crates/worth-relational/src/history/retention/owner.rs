@@ -1,3 +1,6 @@
+mod component_capture;
+pub(super) use component_capture::has_live_obligation_room;
+pub(crate) use component_capture::CapturedExternalCheckpointComponents;
 use crossbeam_queue::SegQueue;
 use dashmap::DashMap;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};

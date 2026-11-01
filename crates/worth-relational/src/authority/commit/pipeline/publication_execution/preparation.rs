@@ -252,6 +252,7 @@ pub(super) fn prepare_publication_phase(
     let prepared_history = runtime
         .mvcc_publication_authority()
         .prepare_commit(
+            execution,
             commit_id,
             commit_reference.clone(),
             &branch_basis,

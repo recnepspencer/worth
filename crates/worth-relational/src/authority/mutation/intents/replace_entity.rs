@@ -1,6 +1,6 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::{
-    allocate_entity_with_extra, delete_entity_with_cascade,
+    allocate_entity_with_extra, delete_entity_with_cascade, delete_entity_with_cascade_original,
 };
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
@@ -13,6 +13,19 @@ use super::record_aspect_patch;
 pub(super) fn apply(
     intent: &ReplaceEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+    apply_using(intent, workspace, delete_entity_with_cascade)
+}
+pub(super) fn apply_original(
+    intent: &ReplaceEntityIntent,
+    workspace: &mut MutationWorkspace<'_>,
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+    apply_using(intent, workspace, delete_entity_with_cascade_original)
+}
+fn apply_using(
+    intent: &ReplaceEntityIntent,
+    workspace: &mut MutationWorkspace<'_>,
+    delete: super::delete_entity::DeleteEntity,
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let cascade_delete_policy = workspace.cascade_delete_policy();
@@ -29,10 +42,10 @@ pub(super) fn apply(
     )?;
     let replacement_state =
         record_aspect_patch::apply_entity(&workspace.execution(), None, &patch, target)?;
-    let mut outcome = MutationOutcome::entity_deleted(intent.entity_id);
+    let mut outcome = MutationOutcome::entity_deleted(&workspace.execution(), intent.entity_id)?;
     let replacement_id = workspace.with_context(|context| {
         ensure_entity_target_is_current(context.state, intent.entity_id)?;
-        delete_entity_with_cascade(
+        delete(
             &context.execution,
             context.state,
             version_id,
@@ -52,14 +65,25 @@ pub(super) fn apply(
         )?;
         context
             .state
-            .mark_entity_slot_touched(replacement_id.partition_id, replacement_id.slot_index());
+            .mark_entity_slot_touched_for_request(
+                replacement_id.partition_id,
+                replacement_id.slot_index(),
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         Ok::<_, crate::transactions::data::TransactionCommitError>(replacement_id)
     })?;
-    outcome.extend(MutationOutcome::entity_replaced(
-        intent.entity_id,
-        replacement_id,
-        intent.replacement.kind_id,
-        record_aspect_patch::published_patch(patch),
-    ));
+    outcome.extend(
+        &workspace.execution(),
+        MutationOutcome::entity_replaced(
+            &workspace.execution(),
+            intent.entity_id,
+            replacement_id,
+            intent.replacement.kind_id,
+            record_aspect_patch::published_patch(patch),
+        )?,
+    )?;
     Ok(outcome)
 }

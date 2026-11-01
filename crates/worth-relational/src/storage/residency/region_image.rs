@@ -139,3 +139,38 @@ impl<'bytes> RelationalRegionImage<'bytes> {
         Ok(Self { payload })
     }
 }
+
+impl RelationalRegionImage<'_> {
+    pub(super) fn encode_for_request(
+        partition_id: PartitionId,
+        schema_digest: [u8; 32],
+        kind: RelationalRegionImageKind,
+        payload: &impl Serialize,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            RelationalDurableMemberLocator,
+            worth_execution::ExecutionImmutableBytes,
+        ),
+        crate::durability::data::RelationalRecoveryStop,
+    > {
+        let mut header = [0u8; MAGIC.len() + 39];
+        header[..MAGIC.len()].copy_from_slice(MAGIC);
+        let frame = &mut header[MAGIC.len()..];
+        frame[..2].copy_from_slice(&VERSION.to_be_bytes());
+        frame[2..6].copy_from_slice(&partition_id.as_u32().to_be_bytes());
+        frame[6..38].copy_from_slice(&schema_digest);
+        frame[38] = match kind {
+            RelationalRegionImageKind::Head => 0,
+            RelationalRegionImageKind::History => 1,
+        };
+        let bytes = crate::durability::artifact_payload_emission::request::encode_compact(
+            &header, payload, request,
+        )?;
+        let locator = RelationalDurableMemberLocator {
+            sha256: Sha256::digest(bytes.as_ref()).into(),
+            length: bytes.len() as u64,
+        };
+        Ok((locator, bytes))
+    }
+}

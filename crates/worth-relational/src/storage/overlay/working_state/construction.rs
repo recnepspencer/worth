@@ -1,3 +1,4 @@
+use crate::storage::substrate::SharedMap;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::config::data::AdjacencyPolicy;
@@ -20,8 +21,8 @@ impl WorkingState {
             adjacency_policy,
             clone_mode: PartitionCloneMode::Full,
             entity_working_set_layout: EntityWorkingSetLayout::CanonicalSoA,
-            partitions,
-            mutation_journal: BTreeMap::new(),
+            partitions: partitions.into_iter().collect(),
+            mutation_journal: SharedMap::new(),
         }
     }
 
@@ -74,8 +75,8 @@ impl WorkingState {
         sparse_entity_slots: Option<&BTreeMap<PartitionId, BTreeSet<usize>>>,
         sparse_relation_overlay_partitions: Option<&BTreeSet<PartitionId>>,
     ) -> Self {
-        let mut partitions = BTreeMap::new();
-        let mut mutation_journal = BTreeMap::new();
+        let mut partitions = SharedMap::new();
+        let mut mutation_journal = SharedMap::new();
         for partition_id in touched_partitions {
             if mutation_journal.contains_key(&partition_id) {
                 continue;

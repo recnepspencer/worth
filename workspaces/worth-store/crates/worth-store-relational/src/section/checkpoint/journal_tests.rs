@@ -28,7 +28,7 @@ use worth_store_testkit_store::physical_record_journeys as physical;
 mod selection;
 use selection::Selected;
 
-// The ONE declared real runtime factory, called only by the journey below.
+// The declared real runtime factory serves this journey and its Complete owner child.
 fn runtime(
     serving: &Arc<ServingPhysicalRuntime>,
     source: &Arc<StoreColdSource>,
@@ -391,3 +391,5 @@ fn journal_checkpoint_selection_rehomes_covered_history_and_preserves_uncovered_
         .read(1, 1 << 30)
         .is_err());
 }
+
+mod complete;

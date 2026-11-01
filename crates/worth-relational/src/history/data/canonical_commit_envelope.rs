@@ -279,13 +279,14 @@ impl CanonicalCommitEnvelopeBody {
     /// Canonical bytes for owner truth only. Diagnostics and optional derived
     /// indexes have distinct lifecycle lanes and cannot perturb commit-byte
     /// accounting.
+    #[cfg(test)]
     pub(crate) fn encode_authoritative_payload(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
         let mut bytes = Vec::new();
         self.write_authoritative_payload(&mut bytes)?;
         Ok(bytes)
     }
 
-    fn write_authoritative_payload<W: std::io::Write>(
+    pub(crate) fn write_authoritative_payload<W: std::io::Write>(
         &self,
         writer: &mut W,
     ) -> Result<(), rmp_serde::encode::Error> {
@@ -392,7 +393,6 @@ pub struct RelationalReplayRecord {
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]
 mod tests;
-
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
 pub(crate) use text_wire::CanonicalEnvelopeWire;

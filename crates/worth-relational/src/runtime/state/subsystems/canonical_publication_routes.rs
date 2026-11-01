@@ -38,7 +38,8 @@ pub(crate) use position_retention::RetainedCanonicalPosition;
 mod indexed_catalog;
 use branch_transition_stream::BranchTransitionStream;
 pub(crate) use branch_transition_stream::{
-    BranchTransitionPublication, BranchTransitionRecordError,
+    BranchTransitionPublication, BranchTransitionRecordError, OriginalBranchSchemaInputs,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
 pub use patch_position_reservation::RelationalPatchPositionReservationCounters;

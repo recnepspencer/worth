@@ -65,9 +65,11 @@ mod history_root_capture;
 pub(crate) use canonical_publication_routes::{
     authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
-    CanonicalPositionAdmission, CanonicalPublicationRecordError, PatchPositionReservationAdmission,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    RelationalCanonicalPublicationRoutes, RetainedCanonicalPosition,
+    CanonicalPositionAdmission, CanonicalPublicationRecordError, OriginalBranchSchemaInputs,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
+    PatchPositionReservationAdmission, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
+    RetainedBranchTransition, RetainedCanonicalPosition,
 };
 pub use canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
@@ -240,33 +242,6 @@ impl HistorySubsystem {
             .store(commit_id.0, Ordering::Relaxed);
         self.version_identity_allocator
             .store(version_id.0, Ordering::Relaxed);
-        Ok(())
-    }
-
-    pub(crate) fn set_runtime_instance_id(
-        &mut self,
-        runtime_instance_id: u64,
-    ) -> Result<(), crate::branch::RelationalBranchObservationConstructionDenial> {
-        let metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
-        self.record_branch_population_scan();
-        // Complete every fallible identity rebind before replacing live cells.
-        let cells = self
-            .branch_cells
-            .values()
-            .into_iter()
-            .map(|cell| {
-                let mut rebound = cell.rebind_runtime(runtime_instance_id)?;
-                rebound.bind_basis_registry_metrics(Arc::clone(&metrics));
-                Ok((rebound.identity().branch_id().clone(), rebound))
-            })
-            .collect::<Result<_, crate::branch::RelationalBranchObservationConstructionDenial>>()?;
-        self.branch_cells.restore_all(cells);
-        self.runtime_instance_id = runtime_instance_id;
-        self.basis_registry_metrics = metrics;
-        self.try_reset_retention_owner(runtime_instance_id)
-            .map_err(|_| {
-                crate::branch::RelationalBranchObservationConstructionDenial::RetentionUnavailable
-            })?;
         Ok(())
     }
 

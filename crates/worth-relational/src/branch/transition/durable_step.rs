@@ -181,11 +181,15 @@ impl RelationalBranchTransitionDurableStep for ReplayedBranchTransitionStep<'_> 
     }
 }
 
-/// A lifecycle operation's denial type: it can name the two pre-effect
+/// A lifecycle operation's denial type: it can name the pre-effect
 /// refusals every durable transition shares.
 pub(crate) trait RelationalBranchTransitionDenial {
     /// The medium proved the transition had no durable effect.
     fn durable_publication_refused(refusal: RelationalDurablePublicationRefusal) -> Self;
     /// No transition sequence remains.
     fn transition_sequence_exhausted() -> Self;
+    /// The concrete retained transition backing exceeds the storage layout.
+    fn transition_storage_exhausted() -> Self;
+    /// A restored transition differs from this owner's original sequence.
+    fn transition_original_prefix_mismatch() -> Self;
 }

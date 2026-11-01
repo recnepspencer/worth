@@ -233,6 +233,7 @@ impl RelationalForkPort {
         let installed = publication.record_with_cutover(
             execution,
             step,
+            validated.source_root.retained_schema_authority(),
             || {
                 self.recheck_fork_source(&validated, &source_state)?;
                 // Coordination still excludes source writers. Readers must not

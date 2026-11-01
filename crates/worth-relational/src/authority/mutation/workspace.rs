@@ -1,4 +1,8 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
+mod created_bindings;
+mod original_revisions;
+use created_bindings::{CreatedEntityKey, CreatedRelationKey};
+use worth_execution::ExecutionOrderedMap;
 
 use crate::authority::commit::preparation::planning::strategy::{
     ParallelLegality, ParallelProfitability, PreparationStrategy, PreparationStrategySelection,
@@ -6,12 +10,11 @@ use crate::authority::commit::preparation::planning::strategy::{
 use crate::config::data::MutationConfig;
 use crate::identity::data::VersionId;
 use crate::identity::data::{EntityId, RelationId};
-use crate::runtime::PendingSymbolMeanings;
+use crate::runtime::MutationSymbolMeanings;
 use crate::schema::data::{
     AspectContractPlanCatalog, LoweredAspectContractPlan, RelationalSchemaRegistry,
 };
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::{CreatedEntityRef, CreatedRelationRef, EntityReference};
 
 use super::mutation_context::MutationContext;
 
@@ -37,29 +40,29 @@ pub(crate) struct MutationWorkspace<'a> {
     execution: worth_execution::ExecutionRequest<'a, 'a>,
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     state: &'a mut WorkingState,
-    symbols: &'a mut PendingSymbolMeanings,
+    symbols: &'a mut dyn MutationSymbolMeanings,
     config: &'a MutationConfig,
     schema: &'a RelationalSchemaRegistry,
     aspect_plans: &'a AspectContractPlanCatalog,
     version_id: VersionId,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
     preparation_telemetry: MutationPreparationTelemetry,
-    created_entities: BTreeMap<CreatedEntityRef, EntityId>,
-    created_relations: BTreeMap<CreatedRelationRef, RelationId>,
-    record_allocations: Option<&'a mut crate::runtime::PendingRecordAllocations>,
+    created_entities: ExecutionOrderedMap<CreatedEntityKey<'a>, EntityId>,
+    created_relations: ExecutionOrderedMap<CreatedRelationKey<'a>, RelationId>,
+    record_allocations: Option<&'a mut dyn crate::runtime::MutationRecordAllocations>,
 }
 
 impl<'a> MutationWorkspace<'a> {
     pub(crate) fn new(
         execution: worth_execution::ExecutionRequest<'a, 'a>,
         state: &'a mut WorkingState,
-        symbols: &'a mut PendingSymbolMeanings,
+        symbols: &'a mut dyn MutationSymbolMeanings,
         config: &'a MutationConfig,
         schema: &'a RelationalSchemaRegistry,
         aspect_plans: &'a AspectContractPlanCatalog,
         version_id: VersionId,
         branch_local_delete_allowance: BranchLocalDeleteAllowance,
-        record_allocations: Option<&'a mut crate::runtime::PendingRecordAllocations>,
+        record_allocations: Option<&'a mut dyn crate::runtime::MutationRecordAllocations>,
         commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     ) -> Self {
         Self {
@@ -73,8 +76,8 @@ impl<'a> MutationWorkspace<'a> {
             version_id,
             branch_local_delete_allowance,
             preparation_telemetry: MutationPreparationTelemetry::default(),
-            created_entities: BTreeMap::new(),
-            created_relations: BTreeMap::new(),
+            created_entities: ExecutionOrderedMap::default(),
+            created_relations: ExecutionOrderedMap::default(),
             record_allocations,
         }
     }
@@ -194,57 +197,6 @@ impl<'a> MutationWorkspace<'a> {
 
     pub(crate) fn preparation_telemetry(&self) -> MutationPreparationTelemetry {
         self.preparation_telemetry
-    }
-
-    pub(crate) fn into_created_bindings(
-        self,
-    ) -> (
-        crate::transactions::data::CommitCreatedEntityBindings,
-        crate::transactions::data::CommitCreatedRelationBindings,
-    ) {
-        let MutationWorkspace {
-            created_entities,
-            created_relations,
-            symbols,
-            ..
-        } = self;
-        let created_entities =
-            crate::transactions::data::CommitCreatedEntityBindings::from_owner_map(
-                created_entities,
-                symbols.interner(),
-            );
-        let created_relations =
-            crate::transactions::data::CommitCreatedRelationBindings::from_owner_map(
-                created_relations,
-                symbols.interner(),
-            );
-        (created_entities, created_relations)
-    }
-
-    pub(crate) fn register_created_entity(
-        &mut self,
-        created: CreatedEntityRef,
-        entity_id: EntityId,
-    ) {
-        self.created_entities.insert(created, entity_id);
-    }
-
-    pub(crate) fn register_created_relation(
-        &mut self,
-        created: CreatedRelationRef,
-        relation_id: RelationId,
-    ) {
-        self.created_relations.insert(created, relation_id);
-    }
-
-    pub(crate) fn resolve_entity_reference(
-        &self,
-        entity_reference: &EntityReference,
-    ) -> Option<EntityId> {
-        match entity_reference {
-            EntityReference::Existing(entity_id) => Some(*entity_id),
-            EntityReference::Created(created) => self.created_entities.get(created).copied(),
-        }
     }
 }
 

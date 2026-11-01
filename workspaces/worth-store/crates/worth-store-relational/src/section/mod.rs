@@ -13,8 +13,9 @@ pub use selection::RelationalCheckpointSelectionSource;
 
 pub use attachment::RelationalStoreSection;
 pub use checkpoint::{
-    PreparedRelationalSection, RelationalCheckpointSelectionProtection,
-    RelationalSectionCheckpointDenial,
+    PreparedCompleteRelationalSection, PreparedRelationalSection,
+    RelationalCheckpointSelectionProtection, RelationalSectionCheckpointDenial,
+    RelationalSectionCompleteCheckpointPreparation,
 };
 pub use close::{ClosingRelationalSection, RelationalSectionCloseDenial};
 pub use readmission::RelationalSectionReadmissionDenial;

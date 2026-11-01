@@ -34,12 +34,15 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         policy.check_live()?;
         crate::execution::check_request(execution)
             .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
-        let mut captured = self.capture_checkpoint_basis()?.build_native_capture(
-            execution,
-            policy,
-            self.runtime.durability.cold_source(),
-            &artifact_policy,
-        )?;
+        let mut captured = self
+            .capture_checkpoint_basis()?
+            .build_native_capture(
+                execution,
+                policy,
+                self.runtime.durability.cold_source(),
+                &artifact_policy,
+            )?
+            .seal_ordinary();
         let manifest_publication = if !artifact_policy.is_embedded() {
             artifact_policy.publication_source().map(|source| {
                 self.runtime.durability.checkpoint_selection().prepare(

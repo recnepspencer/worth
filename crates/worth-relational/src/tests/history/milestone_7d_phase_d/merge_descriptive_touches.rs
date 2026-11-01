@@ -114,4 +114,105 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     } if *id == index.index_id && *before == old && *after == new)),
         "merge carries the actual old and new index membership: {touches:?}"
     );
+
+    let main = BranchId("main".into());
+    let feature = BranchId("feature".into());
+    let mut generations = Vec::new();
+    let mut original_roots = Vec::new();
+    for branch in [&main, &feature] {
+        assert_eq!(
+            read_entity_aspect_field_display(
+                execution,
+                &runtime,
+                branch,
+                entity,
+                AspectKey::new("status").unwrap(),
+                field_key("status"),
+            ),
+            "active",
+            "the selected target must include the non-first-parent contribution"
+        );
+        let head = runtime.history().branch_head(branch).unwrap();
+        let original = runtime.history.branch_cell(branch).unwrap().root().unwrap();
+        assert_eq!(original.commit_id(), Some(head.commit_id));
+        original_roots.push((head.commit_id, original.axes(), original));
+        let built = runtime.index_authority().build_for_commit(
+            execution,
+            crate::indexes::data::DerivedIndexBuildRequest {
+                source_commit_id: head.commit_id,
+                branch_id: branch.clone(),
+                index_ids: vec![index.index_id],
+            },
+        );
+        assert!(built.failed_indexes.is_empty(), "{built:?}");
+        assert_eq!(built.generations.len(), 1);
+        let generation = built.generations.into_iter().next().unwrap();
+        let crate::indexes::data::DerivedIndexEntries::EntityField(entries) = &generation.entries
+        else {
+            panic!("actual status field generation required")
+        };
+        assert_eq!(
+            entries
+                .get(&new)
+                .unwrap()
+                .iter()
+                .copied()
+                .collect::<Vec<_>>(),
+            vec![entity]
+        );
+        assert!(entries.get(&old).is_none());
+        generations.push(generation);
+    }
+
+    // This independent resident producer exports the actual original Root columns,
+    // including history, revision stamps and peer metadata, before the bare fold.
+    let original = runtime
+        .durability_authority()
+        .native_checkpoint(execution, execution.allocation_policy())
+        .unwrap();
+    let original = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        original.bytes(),
+    )
+    .unwrap()
+    .checkpoint;
+    let complete = runtime
+        .complete_checkpoint_service()
+        .prepare(
+            execution,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+        )
+        .expect("genuine complete multi-parent reconstruction");
+    let complete = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        complete.checkpoint().bytes(),
+    )
+    .unwrap()
+    .checkpoint;
+    for (commit, axes, root) in original_roots {
+        let expected = original
+            .branch_roots
+            .iter()
+            .find(|image| image.commit_id == commit)
+            .expect("original selected Root image");
+        let actual = complete
+            .branch_roots
+            .iter()
+            .find(|image| image.commit_id == commit)
+            .expect("Complete must preserve both current and feature Roots");
+        assert_eq!(actual, expected, "all original Root columns must agree");
+        assert_eq!(root.commit_id(), Some(commit));
+        assert_eq!(root.axes(), axes);
+    }
+    for generation in generations {
+        assert_eq!(
+            complete
+                .derived_index_artifacts
+                .generations()
+                .iter()
+                .find(|actual| actual.generation_id == generation.generation_id),
+            Some(&generation),
+            "the complete cache must preserve actual semantic membership and source axes"
+        );
+    }
 }

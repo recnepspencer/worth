@@ -1,5 +1,8 @@
 mod leased;
+mod original;
 use leased::stage_leased_entity_rows;
+pub(super) use original::apply_original;
+use original::apply_prepared_row;
 
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::PartitionIdentity;
@@ -25,7 +28,7 @@ use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 use crate::authority::mutation::record_changes::allocate_entity_with_extra;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::{
-    BulkEntityCreateIntent, BulkImportRowDomain, BulkImportStage, CommitConflict, CreatedEntityRef,
+    BulkEntityCreateIntent, BulkImportRowDomain, BulkImportStage, CommitConflict,
     RecordAspectPatchTarget, TransactionCommitError,
 };
 use crate::validation::data::InvariantGroupSet;
@@ -34,57 +37,38 @@ use worth_foundational::facade::PortablePatchReadmissionPurpose;
 use super::field_authoring_candidate::FieldAuthoringDomain;
 use super::record_aspect_patch;
 
-pub(super) fn apply(
-    intent: &BulkEntityCreateIntent,
-    workspace: &mut MutationWorkspace<'_>,
+pub(super) fn apply<'a>(
+    intent: &'a BulkEntityCreateIntent,
+    workspace: &mut MutationWorkspace<'a>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<MutationOutcome, TransactionCommitError> {
     let version_id = workspace.version_id();
-    let mut outcome = MutationOutcome::with_capacity(intent.field_patches.len(), 1);
+    let mut outcome =
+        MutationOutcome::with_capacity(&workspace.execution(), intent.field_patches.len(), 1)?;
     outcome.record_event(
+        &workspace.execution(),
         crate::authority::mutation::outcomes::MutationEvent::BulkEntitiesCreated {
             partition_id: intent.partition_id,
             kind_id: intent.kind_id,
             count: 0,
         },
-    );
+    )?;
     let staged_rows = stage_bulk_entity_rows(intent, workspace, lease)?;
     let entity_aspect_plans = stage_bulk_entity_aspect_plans(intent, workspace, &staged_rows)?;
     for ((client_key, _fields), aspect_plan) in intent
         .client_keys
         .iter()
-        .cloned()
         .zip(staged_rows)
         .zip(entity_aspect_plans)
     {
-        let entity_id = workspace.with_context(|context| {
-            let entity_id = allocate_entity_with_extra(
-                &context.execution,
-                context.state,
-                context.record_allocations,
-                version_id,
-                intent.partition_id,
-                intent.kind_id,
-                aspect_plan.1,
-            )?;
-            context
-                .state
-                .mark_entity_slot_touched(entity_id.partition_id, entity_id.slot_index());
-            Ok::<_, crate::transactions::data::TransactionCommitError>(entity_id)
-        })?;
-        workspace.register_created_entity(
-            CreatedEntityRef {
-                partition_id: intent.partition_id,
-                kind_id: intent.kind_id,
-                client_key,
-            },
-            entity_id,
-        );
-        outcome.record_change(RecordMutation::EntityCreated {
-            entity_id,
-            kind_id: intent.kind_id,
-            authoritative_patch: record_aspect_patch::published_patch(aspect_plan.0),
-        });
+        apply_prepared_row(
+            intent,
+            workspace,
+            &mut outcome,
+            version_id,
+            client_key,
+            aspect_plan,
+        )?;
     }
     outcome.set_last_event_count(intent.field_patches.len());
     Ok(outcome)

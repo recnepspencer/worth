@@ -26,7 +26,7 @@ fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
     let symbols = fixture.cold.symbols.interner_snapshot();
     let selected = BTreeSet::from([slot]);
     let journal = PartitionMutationJournal {
-        entity_slots: selected.clone(),
+        entity_slots: selected.iter().copied().collect(),
         ..Default::default()
     };
     let mut head = first.partition.clone();
@@ -88,7 +88,7 @@ fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
     );
     let slot = fixture.entity.slot_index();
     let journal = PartitionMutationJournal {
-        entity_slots: BTreeSet::from([slot]),
+        entity_slots: [slot].into_iter().collect(),
         ..Default::default()
     };
     let mut written = head.partition.clone();
@@ -192,7 +192,7 @@ fn relation_adoption_and_append_preserve_the_independent_entity_prefixes() {
     let symbols = fixture.cold.symbols.interner_snapshot();
     let selected = BTreeSet::from([slot]);
     let journal = PartitionMutationJournal {
-        relation_slots: selected.clone(),
+        relation_slots: selected.iter().copied().collect(),
         ..Default::default()
     };
     let mut head = first.partition.clone();

@@ -13,6 +13,7 @@ pub use crate::durability::canonical_commit_artifact::{
     RelationalCanonicalCommitArtifactEncodeDenial, RelationalCanonicalCommitArtifactFrameRefusal,
     RelationalCanonicalCommitArtifactRefusal, RelationalCanonicalCommitArtifacts,
 };
+pub use crate::durability::data::CompleteRelationalNativeCheckpoint;
 pub use crate::durability::data::{
     CheckpointCoverage, CheckpointRestoreWork, DurabilityError, DurableCheckpoint,
     NativeCheckpointSectionBytes, PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
@@ -40,6 +41,7 @@ pub use crate::durability::{
     RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
 };
 pub use crate::history::data::RelationalAssociationDiscovery;
+pub use crate::runtime::CompleteRelationalCheckpointPreparation;
 pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
 pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 

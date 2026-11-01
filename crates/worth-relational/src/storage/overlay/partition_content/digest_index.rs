@@ -9,6 +9,8 @@ mod carrier;
 #[cfg(test)]
 mod carrier_tests;
 #[cfg(test)]
+mod funding_tests;
+#[cfg(test)]
 mod tests;
 
 #[derive(Debug, Clone, Default)]
@@ -23,13 +25,29 @@ struct HistoryLastValue {
     value: [u8; 32],
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Node {
     key: u128,
     bit: u32,
     digest: [u8; 32],
     children: Option<[Arc<Node>; 2]>,
     nodes: usize,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+impl Clone for Node {
+    fn clone(&self) -> Self {
+        // Existing ordinary path copying remains explicitly unqualified. The
+        // controlled cold builder admits every actual new node independently.
+        Self {
+            key: self.key,
+            bit: self.bit,
+            digest: self.digest,
+            children: self.children.clone(),
+            nodes: self.nodes,
+            _memory: None,
+        }
+    }
 }
 
 impl DigestIndex {
@@ -41,9 +59,32 @@ impl DigestIndex {
             entries.windows(2).all(|pair| pair[0].0 < pair[1].0)
         );
         Self {
-            root: (!entries.is_empty()).then(|| build_sorted(entries)),
+            root: (!entries.is_empty()).then(|| {
+                build_sorted(entries, None)
+                    .expect("ordinary sorted construction has no request refusal")
+            }),
             history_last_value: None,
         }
+    }
+
+    pub(super) fn from_sorted_entries_for_request(
+        entries: &[(u128, [u8; 32])],
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<Self, PartitionContentDigestError> {
+        for pair in entries.windows(2) {
+            super::full::poll(request)?;
+            if pair[0].0 >= pair[1].0 {
+                return Err(PartitionContentDigestError::InvalidHistoryCoverage);
+            }
+        }
+        Ok(Self {
+            root: if entries.is_empty() {
+                None
+            } else {
+                Some(build_sorted(entries, request)?)
+            },
+            history_last_value: None,
+        })
     }
 
     pub(super) fn digest(&self) -> [u8; 32] {
@@ -107,25 +148,31 @@ impl DigestIndex {
     }
 }
 
-fn build_sorted(entries: &[(u128, [u8; 32])]) -> Arc<Node> {
+fn build_sorted(
+    entries: &[(u128, [u8; 32])],
+    request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+) -> Result<Arc<Node>, PartitionContentDigestError> {
     if let [(key, digest)] = entries {
-        return Arc::new(Node {
+        return Node {
             key: *key,
             bit: 128,
             digest: hash(1, &[&key.to_be_bytes(), digest]),
             children: None,
             nodes: 1,
-        });
+            _memory: None,
+        }
+        .allocate(request);
     }
     let bit = (entries[0].0 ^ entries[entries.len() - 1].0).leading_zeros();
     let split = entries.partition_point(|(key, _)| direction(*key, bit) == 0);
-    Arc::new(Node::branch(
+    Node::branch(
         bit,
         [
-            build_sorted(&entries[..split]),
-            build_sorted(&entries[split..]),
+            build_sorted(&entries[..split], request)?,
+            build_sorted(&entries[split..], request)?,
         ],
-    ))
+    )
+    .allocate(request)
 }
 
 // An Err retains the original root. Opaque checkpoint siblings may be carried,
@@ -138,6 +185,7 @@ fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Result<Arc<No
             digest: hash(1, &[&key.to_be_bytes(), &digest]),
             children: None,
             nodes: 1,
+            _memory: None,
         })
     };
     let Some(mut root) = root else {
@@ -209,6 +257,17 @@ fn remove(root: Option<Arc<Node>>, key: u128) -> Result<Option<Arc<Node>>, Arc<N
 }
 
 impl Node {
+    fn allocate(
+        mut self,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<Arc<Self>, PartitionContentDigestError> {
+        if let Some(request) = request {
+            self._memory = request
+                .reserve_retained_memory(Arc::<Self>::layout_bytes())
+                .map_err(|cause| PartitionContentDigestError::Request(cause.into()))?;
+        }
+        Ok(Arc::new(self))
+    }
     fn branch(bit: u32, children: [Arc<Node>; 2]) -> Self {
         Self {
             key: children[0].key,
@@ -216,6 +275,7 @@ impl Node {
             digest: branch_digest(bit, &children),
             nodes: 1 + children[0].nodes + children[1].nodes,
             children: Some(children),
+            _memory: None,
         }
     }
 }

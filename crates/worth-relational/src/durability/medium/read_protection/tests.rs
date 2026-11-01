@@ -142,7 +142,10 @@ fn memory_cut_keeps_original_buffers_and_refunds_after_last_owned_clone() {
     let clone = owned.clone();
     drop(owned);
     drop(snapshot);
-    assert_eq!(host.memory().unwrap().charged_memory_bytes(), 57);
+    assert_eq!(
+        host.memory().unwrap().charged_memory_bytes(),
+        retained_byte_owner_bill(&[57u8; 57])
+    );
     drop(clone);
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
     let zero = serial(0);
@@ -157,4 +160,23 @@ fn memory_cut_keeps_original_buffers_and_refunds_after_last_owned_clone() {
         Err(OwnedSnapshotDenial::Request(_))
     ));
     assert_eq!(zero.memory().unwrap().charged_memory_bytes(), 0);
+}
+
+// Measure the public byte owner after its original controller scope is gone.
+fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
+    let budget =
+        SerialMemoryBudget::new(Some((bytes.len() as u64).checked_add(64 * 1024).unwrap()));
+    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+    let request = ExecutionRequest::serial(&host);
+    let mut building =
+        worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(request, bytes.len())
+            .unwrap();
+    building.extend_from_slice(bytes).unwrap();
+    let owned = building.seal_immutable_bytes().unwrap();
+    assert_eq!(owned.charged_payload_bytes(), Some(bytes.len() as u64));
+    let total = budget.charged_memory_bytes();
+    assert!(total > bytes.len() as u64);
+    drop(owned);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    total
 }

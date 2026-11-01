@@ -1393,3 +1393,41 @@ B3's measured catalogs, compiler goldens and test-cost plan, B4's tooling,
 worth-ui, broad A2 migrations and full phase/landing certification remain
 outside this slice. Any shared manifest, testkit or gate overlap is coordinated
 before editing; the coordinator owns integration and final landing.
+
+
+## Live-original Native Complete preparation into Section
+
+The Native producer now captures original configuration, schema, record identity,
+branch transitions and component obligations under the same configuration and
+settled publication epochs. Physical source protection follows their release.
+It verifies the original full canonical prefix, folds the sealed resolved inputs
+for every covered commit, and emits complete schema and required component
+images directly into the existing CHK18 grammar. The strong Complete result and
+its weak preparation service feed the actual Store Section preparation, selection
+and acknowledgement engine. Ordinary checkpoint values have no promotion door.
+
+Positioned agreement compares the format's complete authoritative projection,
+including the original semantic result. Live diagnostic entries and derived
+caches follow their existing separate contracts. Both resident agreement passes
+and cold-entry digesting use the invoking request, with 64 KiB work/stop checks;
+no comparison regenerates the original frame. Intrinsic output backing and its
+actual shared controls retain their admissions through their final aliases.
+
+The verified scope comprises 90 Native controls, 16 Store controls and four
+external checkpoint regressions, all passing with zero ignored cases. These
+include genuine partial updates, resolved merge/cache twins, snapshot/replay
+pinning with an actual historical external component lease, unused full schema
+constraints, source-forgery refusal, request limits and same-selection ACK retry.
+Boundary/context, full five-workspace metadata, formatting, line caps and scoped
+function dispositions accompany this source batch.
+
+Serving recovery and Directory close remain required successors. Recovered
+histories without original producer schema/configuration/birth DATA still refuse
+this live-original preparation path; deferred cache capture also refuses until
+its real owner can supply the original generations. Region ACK applies to the
+same rebuilt cells held by the output, while canonical ACK retains the original
+canonical cells. The original serving region/source/business graph is still
+owned. This preparation qualification does not establish physical `Closed` or
+D11. Complete Home source admission and mandatory Query/Host maintenance wiring
+must consume genuine owner evidence before the production reopen/close courts
+can close Phase 3.

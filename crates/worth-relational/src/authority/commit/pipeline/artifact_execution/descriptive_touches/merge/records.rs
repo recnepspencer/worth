@@ -1,5 +1,5 @@
 use crate::storage::residency::RelationalRecordHeadArenaView;
-use std::collections::BTreeMap;
+use crate::storage::substrate::SharedMap;
 use worth_execution::MapKernelFailure;
 
 use crate::history::data::{
@@ -193,8 +193,8 @@ fn record<K: RecordKind>(
             push(touches, touch, budget)?;
         }
     }
-    let empty_versions = BTreeMap::new();
-    let empty_fields = BTreeMap::new();
+    let empty_versions = SharedMap::new();
+    let empty_fields = SharedMap::new();
     let old_versions = old_live
         .and_then(|_| old.and_then(|arena| arena.aspect_versions_at(slot)))
         .unwrap_or(&empty_versions);

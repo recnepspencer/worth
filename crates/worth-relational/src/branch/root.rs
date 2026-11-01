@@ -47,6 +47,7 @@ mod visibility;
 
 pub(super) use super::root_region::RelationalRootRegion;
 pub(crate) use super::root_region::RelationalRootRegionObservation;
+pub(super) use allocation::{reserve_arc_memory, reserve_box_memory};
 pub(crate) use allocation::{
     RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationKind,
     RelationalRootAuthoritativeAllocationObservation,
@@ -65,6 +66,8 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     AllocationAccountingOverflow(PartitionId),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     SlotCountOverflow,
+    AllocationLayoutOverflow,
+    Request(crate::execution::RelationalExecutionDenialCause),
     CanonicalEnvelopeMismatch,
     StorageContentMismatch {
         descriptor_root: [u8; 32],
@@ -128,7 +131,7 @@ struct RelationalCommittedBranchRoot {
 /// publication delta. Untouched region `Arc`s are retained exactly; no hash,
 /// debug representation, or collision-prone equality proxy can authorize
 /// reuse.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct RelationalBranchRoot {
     id: u64,
     regions: Arc<RelationalPersistentRegionSet>,
@@ -139,6 +142,7 @@ pub(crate) struct RelationalBranchRoot {
         crate::history::data::RequiredOutputPublicationPositions,
     schema_authority: Arc<RelationalBranchRootSchemaAuthority>,
     committed: Option<RelationalCommittedBranchRoot>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 #[derive(Debug, Clone)]
@@ -184,6 +188,7 @@ impl RelationalBranchRoot {
             output_publication_positions: Default::default(),
             schema_authority: RelationalBranchRootSchemaAuthority::empty(),
             committed: None,
+            _memory: None,
         })
     }
 
@@ -213,6 +218,7 @@ impl RelationalBranchRoot {
             )
             .expect(/* Proof: Both runtime schema plans and this initial root are built from the same validated registry and current descriptor semantics policy. */ "runtime schema plans match the runtime registry"),
             committed: None,
+            _memory: None,
         })
     }
     pub(crate) fn prepare_capture(

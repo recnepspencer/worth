@@ -1,4 +1,6 @@
+mod original_inputs;
 mod readmission;
+pub(crate) use original_inputs::OriginalCanonicalInputs;
 
 use std::sync::Arc;
 
@@ -21,6 +23,8 @@ pub(crate) struct RelationalCommitArtifact {
     roots: RelationalCommitRootDescriptor,
     schema_version: crate::schema::data::SchemaVersionId,
     envelope: Arc<super::RelationalCommitEnvelopeResidency>,
+    original_inputs: Option<OriginalCanonicalInputs>,
+    allocation_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 // The Phase-4 fork path may share an immutable catalog handle, but it may
@@ -96,6 +100,8 @@ impl RelationalCommitArtifact {
                 ),
             ),
             schema_version: envelope.schema_version,
+            original_inputs: None,
+            allocation_memory: None,
             envelope: Arc::new(super::RelationalCommitEnvelopeResidency::resident(
                 envelope,
                 canonical_payload,
@@ -172,6 +178,8 @@ impl RelationalCommitArtifact {
             parentage: self.parentage.clone(),
             roots,
             schema_version: self.schema_version,
+            original_inputs: self.original_inputs.clone(),
+            allocation_memory: None,
             envelope: Arc::clone(&self.envelope),
         })
     }
@@ -205,6 +213,8 @@ impl RelationalCommitArtifact {
             parentage,
             roots: entry.root.clone(),
             schema_version: entry.schema_version,
+            original_inputs: None,
+            allocation_memory: None,
             envelope: Arc::new(super::RelationalCommitEnvelopeResidency::cold(
                 entry,
                 source,

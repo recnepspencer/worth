@@ -120,9 +120,12 @@ fn a_late_bucket_fault_cannot_issue_a_new_spelling_and_stays_damaged() {
 #[test]
 fn authenticated_page_with_the_wrong_id_range_is_refused_before_import() {
     let (_, mut directory, source, _) = dictionary();
-    let page = &mut directory.manifest.symbols[0];
-    page.first += 1;
-    let symbol = Symbol(page.last as u32);
+    let mut manifest = directory.manifest.ordinary_owned_draft();
+    let mut pages = manifest.symbols.ordinary_owned_copy();
+    pages[0].first += 1;
+    let symbol = Symbol(pages[0].last as u32);
+    manifest.symbols = crate::durability::data::CheckpointPages::from_ordinary(pages);
+    directory.manifest = manifest.seal_ordinary();
     let table = RuntimeSymbolTable::default();
     table.install_cold_pages(&directory).unwrap();
     let backing = crate::test_execution_policy::serial_request();
@@ -148,8 +151,8 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
     let backing = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&backing);
     let cold = RuntimeSymbolResidency::new(
-        directory.manifest.symbols.clone(),
-        directory.manifest.symbol_buckets.clone(),
+        directory.manifest.symbols.ordinary_owned_copy(),
+        directory.manifest.symbol_buckets.ordinary_owned_copy(),
         source.clone(),
     )
     .unwrap();
@@ -212,14 +215,19 @@ fn an_id_admitted_page_cannot_authorize_a_misrouted_negative_intern_probe() {
     )
     .unwrap();
     let first = page.entries.first().unwrap().0;
-    directory.manifest.symbols = vec![descriptor];
+    let mut manifest = directory.manifest.ordinary_owned_draft();
+    manifest.symbols = crate::durability::data::CheckpointPages::from_ordinary(vec![descriptor]);
     // Keep the producer's authentic bytes and deliberately misroute their
     // bucket descriptor. The real id page is heterogeneous; range admission
     // alone must prove no negative lookup.
-    directory.manifest.symbol_buckets = vec![RelationalCheckpointSymbolBucket {
-        bucket: 1,
-        pages: vec![locator],
-    }];
+    manifest.symbol_buckets =
+        crate::durability::data::CheckpointSymbolBuckets::from_ordinary(vec![
+            RelationalCheckpointSymbolBucket {
+                bucket: 1,
+                pages: vec![locator],
+            },
+        ]);
+    directory.manifest = manifest.seal_ordinary();
     let table = RuntimeSymbolTable::default();
     table.install_cold_pages(&directory).unwrap();
     table.demand_symbol_ids(&execution, [first]).unwrap();
@@ -275,8 +283,8 @@ fn cached_symbol_page_rejects_changed_interior_membership_without_another_load()
     .unwrap();
     assert!(page.entries.len() > 2);
     let cold = RuntimeSymbolResidency::new(
-        directory.manifest.symbols.clone(),
-        directory.manifest.symbol_buckets.clone(),
+        directory.manifest.symbols.ordinary_owned_copy(),
+        directory.manifest.symbol_buckets.ordinary_owned_copy(),
         source.clone(),
     )
     .unwrap();

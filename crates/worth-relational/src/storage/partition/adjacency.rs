@@ -7,6 +7,7 @@ mod carrier;
 #[cfg(test)]
 mod carrier_tests;
 mod ids;
+mod request;
 pub(crate) use ids::AdjacencyIds;
 type RelationSet = SharedMap<RelationId, ()>;
 
@@ -26,6 +27,47 @@ pub(crate) struct AdjacencyEntries {
 }
 
 impl AdjacencySet {
+    /// Borrow canonical kind incidences without constructing checkpoint Vecs.
+    pub(crate) fn kind_memberships(
+        &self,
+        basis: super::AdjacencyKindBasis,
+    ) -> impl Iterator<Item = (KindId, RelationId)> + '_ {
+        let entries = self.entries();
+        let selected = match basis {
+            super::AdjacencyKindBasis::Current => &entries.current_by_kind,
+            super::AdjacencyKindBasis::Historical => &entries.historical_by_kind,
+        };
+        selected
+            .iter()
+            .flat_map(|map| map.iter())
+            .flat_map(|(&kind, ids)| ids.keys().map(move |&id| (kind, id)))
+    }
+
+    pub(crate) fn index_historical_kind_for_request(
+        &mut self,
+        kind: KindId,
+        relation: RelationId,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        let kinds = self
+            .entries_mut()
+            .historical_by_kind
+            .get_or_insert_with(SharedMap::new);
+        if !kinds.contains_key(&kind) {
+            let mut ids = RelationSet::new();
+            ids.insert_for_request(relation, (), request)?;
+            kinds.insert_for_request(kind, ids, request)?;
+        } else {
+            let ids = kinds
+                .get_mut_for_request(&kind, request)?
+                .expect("the same private map still contains its selected kind");
+            if !ids.contains_key(&relation) {
+                ids.insert_for_request(relation, (), request)?;
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn selected_kind_navigation_work_bound(
         &self,
         basis: super::AdjacencyKindBasis,
@@ -158,6 +200,23 @@ impl AdjacencySet {
     ) {
         self.remove(kind_id, relation_id);
         self.index_structural_revision(kind_id, version_id);
+    }
+
+    pub(crate) fn structural_revision_count(&self) -> usize {
+        self.entries()
+            .structural_revision_by_kind
+            .as_ref()
+            .map_or(0, |map| map.len())
+    }
+
+    pub(crate) fn structural_revision_entries(
+        &self,
+    ) -> impl Iterator<Item = (KindId, VersionId)> + '_ {
+        self.entries()
+            .structural_revision_by_kind
+            .iter()
+            .flat_map(|map| map.iter())
+            .map(|(&kind, &version)| (kind, version))
     }
 
     pub(crate) fn structural_revision(&self, kind_id: KindId) -> Option<VersionId> {

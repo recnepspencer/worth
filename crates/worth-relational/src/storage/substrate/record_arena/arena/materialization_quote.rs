@@ -74,10 +74,8 @@ impl<K: RecordKind> RecordArena<K> {
         [
             SharedColumn::<SharedColumn<crate::storage::substrate::StorageAllocation<K::Meta>>>::sparse_default_allocation_bytes(),
             SharedColumn::<crate::storage::substrate::StorageAllocation<K::Extra>>::sparse_default_allocation_bytes(),
-            SharedColumn::<crate::storage::substrate::StorageAllocation<BTreeMap<Symbol, u64>>>::sparse_default_allocation_bytes(),
-            SharedColumn::<
-                crate::storage::substrate::StorageAllocation<Option<BTreeMap<(Symbol, Symbol), crate::storage::data::RelationalFieldRevision>>>,
-            >::sparse_default_allocation_bytes(),
+            SharedColumn::<super::AspectVersions>::sparse_default_allocation_bytes(),
+            SharedColumn::<Option<super::FieldRevisions>>::sparse_default_allocation_bytes(),
             SharedColumn::<crate::storage::substrate::StorageAllocation<BTreeMap<Symbol, String>>>::sparse_default_allocation_bytes(),
         ]
         .into_iter()

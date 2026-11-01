@@ -58,11 +58,33 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     assert_eq!(before.lineage, after.lineage);
     // Only D7's burned symbol and record identities may differ. Full equality
     // also protects root images, coverage, schemas, and derived artifacts.
+    for checkpoint in [&before, &after] {
+        let directory = checkpoint.canonical_directory.as_ref().unwrap();
+        assert_eq!(
+            directory.manifest.record_identity,
+            checkpoint.record_identity
+        );
+        assert_eq!(
+            directory.manifest.symbol_identity_frontier,
+            checkpoint.symbol_identity_frontier
+        );
+    }
     after.symbol_identity_frontier = before.symbol_identity_frontier;
-    after.record_identity.generation_high_water =
-        before.record_identity.generation_high_water.clone();
-    after.record_identity.reusable_slots = before.record_identity.reusable_slots.clone();
-    after.record_identity.append_frontiers = before.record_identity.append_frontiers.clone();
+    assert_eq!(
+        before.record_identity.schema_version,
+        after.record_identity.schema_version
+    );
+    after.record_identity = crate::durability::data::DurableRecordIdentityState::current(
+        before.record_identity.generation_high_water.clone(),
+        before.record_identity.reusable_slots.clone(),
+        before.record_identity.append_frontiers.clone(),
+        after.record_identity.pending_reservations.clone(),
+    );
+    let changed_directory = std::sync::Arc::make_mut(after.canonical_directory.as_mut().unwrap());
+    let mut changed_manifest = changed_directory.manifest.ordinary_owned_draft();
+    changed_manifest.record_identity = after.record_identity.clone();
+    changed_manifest.symbol_identity_frontier = after.symbol_identity_frontier;
+    changed_directory.manifest = changed_manifest.seal_ordinary();
     assert_eq!(before, after);
 
     let committed = create_entity_outcome(execution, &runtime, "published-after-abandonment");

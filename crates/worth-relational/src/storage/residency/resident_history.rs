@@ -117,6 +117,7 @@ impl ResidentHistoryReadmission {
         Ok(Arc::new(ResidentRegion {
             partition,
             commitment: Some(commitment),
+            _memory: None,
         }))
     }
 }

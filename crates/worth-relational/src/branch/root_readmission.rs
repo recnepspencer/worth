@@ -12,6 +12,8 @@ use super::{
     RelationalCommittedBranchRoot, RelationalRootCorrectnessIndex,
 };
 
+#[path = "root_readmission/request.rs"]
+mod request;
 #[path = "root_readmission/required_text.rs"]
 mod required_text;
 
@@ -125,7 +127,7 @@ impl RelationalBranchRoot {
         {
             return Err(RelationalBranchRootCaptureDenial::SchemaRootMismatch {
                 descriptor_root: schema_root,
-                canonical_root: schema_authority.registry().authority_digest_bytes(),
+                canonical_root: schema_authority.authority_digest(),
             });
         }
         publication_cost.new_schema_authorities = 1;
@@ -162,6 +164,7 @@ impl RelationalBranchRoot {
                 axes,
                 publication_cost,
             }),
+            _memory: None,
         }))
     }
 
@@ -280,6 +283,7 @@ impl RelationalBranchRoot {
                 ),
             schema_authority: Arc::clone(&self.schema_authority),
             committed: Some(committed),
+            _memory: None,
         })
     }
 }
@@ -294,7 +298,7 @@ fn require_schema_authority(
     {
         return Err(RelationalBranchRootCaptureDenial::SchemaRootMismatch {
             descriptor_root: *descriptor.schema_root(),
-            canonical_root: authority.registry().authority_digest_bytes(),
+            canonical_root: authority.authority_digest(),
         });
     }
     Ok(())

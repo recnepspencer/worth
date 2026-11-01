@@ -18,8 +18,12 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
         return Ok(());
     }
 
-    state.mark_relation_slot_touched(relation_id.partition_id, slot);
-    let partition = state.get_partition_mut(relation_id.partition_id);
+    state
+        .mark_relation_slot_touched_for_request(relation_id.partition_id, slot, execution)
+        .map_err(super::execution_denial)?;
+    let partition = state
+        .get_partition_mut_for_request(relation_id.partition_id, execution)
+        .map_err(super::execution_denial)?;
     partition
         .relation_arena
         .retire_for_request(execution, slot, version_id)
@@ -42,19 +46,30 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
         .map_err(|cause| {
             crate::transactions::data::TransactionCommitError::execution(cause.into())
         })?;
-    partition.relation_arena.live_bitset.set(slot, true);
-    partition.relation_arena.reclaimable_bitset.set(slot, false);
+    partition
+        .relation_arena
+        .live_bitset
+        .set_for_request(slot, true, execution)
+        .map_err(super::execution_denial)?;
+    partition
+        .relation_arena
+        .reclaimable_bitset
+        .set_for_request(slot, false, execution)
+        .map_err(super::execution_denial)?;
 
     let Some(snapshot) = relation_mutation_snapshot(state, relation_id) else {
         return Ok(());
     };
-    outcome.record_change(RecordMutation::RelationRetainedForAudit {
-        relation_id,
-        kind_id: snapshot.kind_id,
-        source: snapshot.source,
-        target: snapshot.target,
-        authoritative_aspect_state: snapshot.authoritative_aspect_state,
-    });
+    outcome.record_change(
+        execution,
+        RecordMutation::RelationRetainedForAudit {
+            relation_id,
+            kind_id: snapshot.kind_id,
+            source: snapshot.source,
+            target: snapshot.target,
+            authoritative_aspect_state: snapshot.authoritative_aspect_state,
+        },
+    )?;
     Ok(())
 }
 
@@ -70,9 +85,13 @@ pub(in crate::authority::mutation) fn delete_relation(
         return Ok(());
     }
 
-    state.mark_relation_slot_touched(relation_id.partition_id, slot);
+    state
+        .mark_relation_slot_touched_for_request(relation_id.partition_id, slot, execution)
+        .map_err(super::execution_denial)?;
     let snapshot = relation_mutation_snapshot(state, relation_id);
-    let partition = state.get_partition_mut(relation_id.partition_id);
+    let partition = state
+        .get_partition_mut_for_request(relation_id.partition_id, execution)
+        .map_err(super::execution_denial)?;
     partition
         .relation_arena
         .retire_for_request(execution, slot, version_id)
@@ -96,13 +115,16 @@ pub(in crate::authority::mutation) fn delete_relation(
     let Some(snapshot) = snapshot else {
         return Ok(());
     };
-    outcome.record_change(RecordMutation::RelationDeleted {
-        relation_id,
-        kind_id: snapshot.kind_id,
-        source: snapshot.source,
-        target: snapshot.target,
-        authoritative_aspect_state: snapshot.authoritative_aspect_state,
-    });
+    outcome.record_change(
+        execution,
+        RecordMutation::RelationDeleted {
+            relation_id,
+            kind_id: snapshot.kind_id,
+            source: snapshot.source,
+            target: snapshot.target,
+            authoritative_aspect_state: snapshot.authoritative_aspect_state,
+        },
+    )?;
     Ok(())
 }
 

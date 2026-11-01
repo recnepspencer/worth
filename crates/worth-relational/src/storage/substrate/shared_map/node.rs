@@ -122,6 +122,25 @@ impl<K: Ord + Copy, V: StoredValue> MapNode<K, V> {
             Ordering::Greater => Self::get_mut(&mut node.right, key),
         }
     }
+    pub(super) fn get_mut_for_request<'a>(
+        root: &'a mut Option<Arc<Self>>,
+        key: &K,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<&'a mut V>, Cause>
+    where
+        V: StoredValue<Value = V>,
+    {
+        let Some(root) = root.as_mut() else {
+            return Ok(None);
+        };
+        let node = Self::detach(root, &mut 0, Some(request))?;
+        match key.cmp(&node.key) {
+            Ordering::Less => Self::get_mut_for_request(&mut node.left, key, request),
+            Ordering::Equal => Ok(Some(&mut node.value)),
+            Ordering::Greater => Self::get_mut_for_request(&mut node.right, key, request),
+        }
+    }
+
     pub(super) fn insert(
         root: &mut Option<Arc<Self>>,
         key: K,

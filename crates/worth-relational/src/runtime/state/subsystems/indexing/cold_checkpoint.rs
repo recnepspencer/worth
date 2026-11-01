@@ -66,7 +66,11 @@ impl DeferredIndexImage {
             state.restore_generation_frontier(self.directory.manifest.index_generation_frontier);
             state
                 .readmit_checkpoint_catalog(
-                    &self.directory.manifest.index_definitions,
+                    &self
+                        .directory
+                        .manifest
+                        .index_definitions
+                        .ordinary_owned_copy(),
                     self.directory.manifest.index_definition_frontier,
                 )
                 .map_err(|_| refusal(Cause::Damaged))?;
@@ -121,7 +125,7 @@ impl IndexingSubsystem {
         state.restore_generation_frontier(directory.manifest.index_generation_frontier);
         state
             .readmit_checkpoint_catalog(
-                &directory.manifest.index_definitions,
+                &directory.manifest.index_definitions.ordinary_owned_copy(),
                 directory.manifest.index_definition_frontier,
             )
             .map_err(|_| RelationalStorageUnavailable {

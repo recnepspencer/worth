@@ -80,8 +80,8 @@ impl RuntimeSymbolTable {
             ))?;
         let frontier = frontier.max(directory.manifest.symbol_identity_frontier);
         let pages = RuntimeSymbolResidency::new(
-            directory.manifest.symbols.clone(),
-            directory.manifest.symbol_buckets.clone(),
+            directory.manifest.symbols.ordinary_owned_copy(),
+            directory.manifest.symbol_buckets.ordinary_owned_copy(),
             directory.source.clone(),
         )
         .map_err(ColdSymbolDirectoryDenial::StorageUnavailable)?;

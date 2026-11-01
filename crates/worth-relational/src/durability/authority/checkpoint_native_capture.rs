@@ -164,15 +164,18 @@ impl CapturedCheckpointBasis {
                     insert_member(&mut captured, member);
                 }
             }
-            captured.manifest.roots.push(RelationalCheckpointRoot {
-                commit_id: root.commit_id(),
-                recorded_components: recorded_components
-                    .get(&root.commit_id())
-                    .cloned()
-                    .ok_or_else(|| corrupt("root lacks exact component observations"))?,
-                schema_carrier_digest: schema_digest,
-                regions: leaves,
-            });
+            captured
+                .manifest
+                .roots
+                .push_ordinary(RelationalCheckpointRoot::from_ordinary_parts(
+                    root.commit_id(),
+                    recorded_components
+                        .get(&root.commit_id())
+                        .cloned()
+                        .ok_or_else(|| corrupt("root lacks exact component observations"))?,
+                    schema_digest,
+                    leaves,
+                ));
         }
         if let Some(schema) = mirror_schema {
             let image = DurableBranchRootSchemaImage::capture(&schema)
@@ -212,26 +215,28 @@ impl CapturedCheckpointBasis {
         if let Some(prior) = &prior
             && carry_metadata
         {
-            let mut symbols = prior.manifest.symbols.clone();
-            symbols.append(&mut captured.manifest.symbols);
+            let mut symbols = prior.manifest.symbols.ordinary_owned_copy();
+            symbols.extend(captured.manifest.symbols.ordinary_owned_copy());
             symbols.sort_by_key(|page| (page.range(), page.first));
-            captured.manifest.symbols = symbols;
+            captured.manifest.symbols = CheckpointPages::from_ordinary(symbols);
             let mut buckets = prior
                 .manifest
                 .symbol_buckets
                 .iter()
                 .map(|bucket| (bucket.bucket, bucket.pages.clone()))
                 .collect::<BTreeMap<_, _>>();
-            for bucket in std::mem::take(&mut captured.manifest.symbol_buckets) {
+            for bucket in captured.manifest.symbol_buckets.ordinary_owned_copy() {
                 buckets
                     .entry(bucket.bucket)
                     .or_default()
                     .extend(bucket.pages);
             }
-            captured.manifest.symbol_buckets = buckets
-                .into_iter()
-                .map(|(bucket, pages)| RelationalCheckpointSymbolBucket { bucket, pages })
-                .collect();
+            captured.manifest.symbol_buckets = CheckpointSymbolBuckets::from_ordinary(
+                buckets
+                    .into_iter()
+                    .map(|(bucket, pages)| RelationalCheckpointSymbolBucket { bucket, pages })
+                    .collect(),
+            );
             for bucket in &prior.manifest.symbol_buckets {
                 for locator in &bucket.pages {
                     insert_member(
@@ -240,9 +245,10 @@ impl CapturedCheckpointBasis {
                     );
                 }
             }
-            let mut event_pages = prior.manifest.lineage_events.clone();
-            event_pages.append(&mut captured.manifest.lineage_events);
-            captured.manifest.lineage_events = event_pages;
+            let mut event_pages = prior.manifest.lineage_events.ordinary_owned_copy();
+            event_pages.extend(captured.manifest.lineage_events.ordinary_owned_copy());
+            captured.manifest.lineage_events =
+                CheckpointLineageEventPages::from_ordinary(event_pages);
             for page in &prior.manifest.lineage_events {
                 insert_member(
                     &mut captured,
@@ -251,10 +257,10 @@ impl CapturedCheckpointBasis {
                     },
                 );
             }
-            let mut lineage = prior.manifest.lineage.clone();
-            lineage.append(&mut captured.manifest.lineage);
+            let mut lineage = prior.manifest.lineage.ordinary_owned_copy();
+            lineage.extend(captured.manifest.lineage.ordinary_owned_copy());
             lineage.sort_by_key(|page| (page.range(), page.first));
-            captured.manifest.lineage = lineage;
+            captured.manifest.lineage = CheckpointPages::from_ordinary(lineage);
             for page in prior.manifest.symbols.iter().chain(&prior.manifest.lineage) {
                 insert_member(
                     &mut captured,
@@ -286,7 +292,8 @@ impl CapturedCheckpointBasis {
             .commits
             .last()
             .map(|entry| entry.commit.version_id);
-        captured.manifest.schemas = schemas.into_values().collect();
+        captured.manifest.schemas =
+            CheckpointSchemaImages::from_ordinary(schemas.into_values().collect());
         captured.manifest.history_dependencies = history_dependencies
             .into_iter()
             .map(|(member, bases)| RelationalCheckpointHistoryDependency { member, bases })

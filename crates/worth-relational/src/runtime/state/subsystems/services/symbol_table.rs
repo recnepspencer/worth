@@ -1,3 +1,5 @@
+mod mutation_input;
+pub(crate) use mutation_input::{MutationSymbolMeanings, OriginalSymbolMeanings};
 mod cold_pages;
 mod state;
 pub(crate) use cold_pages::ColdSymbolDirectoryDenial;

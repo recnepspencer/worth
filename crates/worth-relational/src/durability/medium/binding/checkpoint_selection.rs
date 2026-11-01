@@ -204,7 +204,18 @@ impl AcknowledgingCheckpoint {
                 context.poll().map_err(Denial::Stopped)?;
             }
             let slot = self.regions.slot(self.next_region);
-            *slot = publication.try_acknowledge().map_err(|()| Denial::Busy)?;
+            if self
+                .capture
+                .retains_reconstructed_regions()
+                .map_err(|()| Denial::Busy)?
+            {
+                slot.controlled = publication.try_acknowledge_for_request(execution).map_err(|cause| match cause {
+                    crate::storage::residency::RegionCheckpointAcknowledgementDenial::Busy=>Denial::Busy,
+                    crate::storage::residency::RegionCheckpointAcknowledgementDenial::Stopped(cause)=>Denial::Recovery(cause),
+                })?;
+            } else {
+                slot.ordinary = publication.try_acknowledge().map_err(|()| Denial::Busy)?;
+            }
             self.next_region += 1;
         }
         if !self.directory_applied {

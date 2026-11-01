@@ -10,6 +10,66 @@ pub(super) struct AdjacencyContentIndex {
 }
 
 impl AdjacencyContentIndex {
+    pub(super) fn capture_full(
+        table: &SparseAdjacencyTable,
+        request: super::full::Request<'_, '_, '_>,
+    ) -> Result<(Self, u64), PartitionContentDigestError> {
+        let mut count = 0usize;
+        for _ in table.iter() {
+            super::full::poll(request)?;
+            count = count
+                .checked_add(1)
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        }
+        let _memory = super::full::rows_memory(count, request)?;
+        let mut slots = Vec::with_capacity(count);
+        let mut result = Self::default();
+        let mut hashed = 0u64;
+        for (&slot, adjacency) in table.iter() {
+            super::full::poll(request)?;
+            let ids = adjacency.current_ids();
+            let mut count = 0usize;
+            for _ in ids.iter() {
+                super::full::poll(request)?;
+                count = count
+                    .checked_add(1)
+                    .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+            }
+            let _memory = super::full::rows_memory(count, request)?;
+            let mut rows = Vec::with_capacity(count);
+            for id in ids.iter() {
+                super::full::poll(request)?;
+                let key = ((id.partition_id.as_u32() as u128) << 96)
+                    | ((id.slot_index() as u128) << 32)
+                    | id.generation_value() as u128;
+                rows.push((key, hash_value(b"relation-membership", id)?));
+            }
+            rows.sort_unstable_by_key(|(key, _)| *key);
+            let membership = DigestIndex::from_sorted_entries_for_request(&rows, request)?;
+            slots.push((slot as u128, membership.digest()));
+            result.membership_bytes = result
+                .membership_bytes
+                .checked_add(membership.allocation_bytes())
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+            match request {
+                Some(request) => {
+                    result
+                        .memberships
+                        .insert_for_request(slot, membership, request)
+                        .map_err(PartitionContentDigestError::Request)?;
+                }
+                None => {
+                    result.memberships.insert(slot, membership);
+                }
+            }
+            hashed = hashed
+                .checked_add(rows.len() as u64)
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        }
+        result.slots = DigestIndex::from_sorted_entries_for_request(&slots, request)?;
+        Ok((result, hashed))
+    }
+
     pub(super) fn update(
         &mut self,
         current: &SparseAdjacencyTable,

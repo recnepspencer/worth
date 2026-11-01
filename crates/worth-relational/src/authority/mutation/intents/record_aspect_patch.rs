@@ -11,7 +11,7 @@ use crate::transactions::data::{
 
 use super::super::outcomes::MutationAspectPatch;
 mod controlled;
-pub(crate) use controlled::{readmit_candidate, MutationPatchDenial};
+pub(crate) use controlled::{readmit_candidate, readmit_original_portable, MutationPatchDenial};
 
 /// Existing ordinary portable input: its independent copy remains unqualified.
 pub(crate) fn readmit(

@@ -34,15 +34,17 @@ pub(crate) fn decode_checkpoint_from_source(
     let memory =
         crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
     let _member_memory = super::member_sequence::reserve(payload, execution)?;
-    let mut wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
-        .map_err(|error| corrupt(format!("native manifest: {error}")))?;
+    let mut wire: CheckpointWire<'_, crate::durability::data::RelationalCheckpointManifestDraft> =
+        rmp_serde::from_slice(payload)
+            .map_err(|error| corrupt(format!("native manifest: {error}")))?;
     if let Err(memory) = wire.manifest.canonical_members.attach(memory) {
         drop(wire);
         drop(memory);
         return Err(corrupt("canonical inventory shared before original admission").into());
     }
     crate::durability::checkpoint_history::inventory::validate(&wire.manifest, execution)?;
-    let facts = super::manifest_validation::validate(&wire.manifest)?;
+    let manifest = wire.manifest.seal_ordinary();
+    let facts = super::manifest_validation::validate(&manifest)?;
     let inline = !wire.members.is_empty();
     let source: Arc<dyn RelationalDurableColdSource> = if !inline {
         external.ok_or_else(|| corrupt("external checkpoint requires its cold source"))?
@@ -104,9 +106,9 @@ pub(crate) fn decode_checkpoint_from_source(
     };
     drop(_member_memory); // The borrowed wire member table has now been consumed.
     let checkpoint = if inline {
-        super::expanded_checkpoint::expand(execution, wire.manifest, source, facts.history_members)?
+        super::expanded_checkpoint::expand(execution, manifest, source, facts.history_members)?
     } else {
-        super::cold_checkpoint::readmit(execution, wire.manifest, source, facts)?
+        super::cold_checkpoint::readmit(execution, manifest, source, facts)?
     };
     Ok(DecodedNativeCheckpoint { checkpoint })
 }

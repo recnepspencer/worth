@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 mod semantic;
 
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
+#[cfg(test)]
 use crate::symbols::data::StringInterner;
+use crate::symbols::data::SymbolTextLookup;
 use crate::transactions::data::{CreatedRelationRef, EntityReference};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -70,7 +72,7 @@ impl CommitCreatedRelationBindings {
 
     pub(crate) fn from_owner_map(
         by_create_reference: BTreeMap<CreatedRelationRef, RelationId>,
-        symbols: &StringInterner,
+        symbols: &dyn SymbolTextLookup,
     ) -> Self {
         let by_stable_reference = by_create_reference
             .iter()
@@ -96,15 +98,12 @@ impl CommitCreatedRelationBindings {
 
 fn stable_reference(
     created: &CreatedRelationRef,
-    symbols: &StringInterner,
+    symbols: &dyn SymbolTextLookup,
 ) -> Option<StableCreatedRelationRef> {
     Some(StableCreatedRelationRef {
         partition_id: created.partition_id,
         kind_id: created.kind_id,
-        client_key: created
-            .client_key
-            .resolve_with_interner(symbols)?
-            .to_owned(),
+        client_key: resolve_client_key(&created.client_key, symbols)?.to_owned(),
         source: stable_entity_reference(&created.source, symbols)?,
         target: stable_entity_reference(&created.target, symbols)?,
     })
@@ -124,17 +123,14 @@ fn stable_reference_without_interner(
 
 fn stable_entity_reference(
     reference: &EntityReference,
-    symbols: &StringInterner,
+    symbols: &dyn SymbolTextLookup,
 ) -> Option<StableEntityReference> {
     match reference {
         EntityReference::Existing(entity_id) => Some(StableEntityReference::Existing(*entity_id)),
         EntityReference::Created(created) => Some(StableEntityReference::Created {
             partition_id: created.partition_id,
             kind_id: created.kind_id,
-            client_key: created
-                .client_key
-                .resolve_with_interner(symbols)?
-                .to_owned(),
+            client_key: resolve_client_key(&created.client_key, symbols)?.to_owned(),
         }),
     }
 }
@@ -184,4 +180,15 @@ mod tests {
             None
         );
     }
+}
+
+fn resolve_client_key<'a>(
+    client: &'a crate::symbols::data::ClientKey,
+    symbols: &'a dyn SymbolTextLookup,
+) -> Option<&'a str> {
+    client.as_raw_str().or_else(|| {
+        client
+            .as_symbol()
+            .and_then(|symbol| symbols.resolve(symbol))
+    })
 }

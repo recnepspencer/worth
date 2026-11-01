@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use super::{RecordArena, RecordKind};
 
 impl<K: RecordKind> RecordArena<K> {
@@ -8,20 +6,20 @@ impl<K: RecordKind> RecordArena<K> {
     }
 
     /// Adopt the journal-selected payload owners, recording actual path copies.
-    pub(crate) fn merge_slots_from_owned(
+    pub(crate) fn merge_slots_from_owned<'slots>(
         &mut self,
         overlay: &mut Self,
-        touched_slots: &BTreeSet<usize>,
+        touched_slots: impl IntoIterator<Item = &'slots usize>,
     ) -> u64 {
-        touched_slots.iter().fold(0_u64, |bytes, &slot| {
+        touched_slots.into_iter().fold(0_u64, |bytes, &slot| {
             bytes.saturating_add(self.move_slot_from_overlay(overlay, slot))
         })
     }
 
-    pub(crate) fn merge_slot_chunks_from_owned(
+    pub(crate) fn merge_slot_chunks_from_owned<'slots>(
         &mut self,
         overlay: &mut Self,
-        touched_slots: &BTreeSet<usize>,
+        touched_slots: impl IntoIterator<Item = &'slots usize>,
         chunk_width: usize,
     ) -> usize {
         let chunk_width = chunk_width.max(1);

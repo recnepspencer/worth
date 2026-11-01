@@ -20,13 +20,14 @@ impl RelationalRetentionGuard {
         if let Some(record) = state.obligations.get(&self.obligation_id) {
             assert_eq!(
                 /* Proof: Only RelationalObservationRetentionObligation::try_retire calls this private door; its acquire fixes Observation and one root, and the non-Clone guard retains that exact registration. */
-                record.kind,
+                record.kind(),
                 RelationalRetentionObligationKind::Observation
             );
         }
-        state.release_obligation(self.obligation_id, &self.roots, &owner);
+        let retired = state.release_obligation(self.obligation_id, &self.roots, &owner);
         self.terminal = true;
         drop(state);
+        drop(retired);
         self.roots.clear();
         true
     }

@@ -9,7 +9,8 @@ pub(crate) use tests::assert_external_cut_and_lane_busy;
 #[derive(Debug, Default)]
 pub(crate) struct RelationalRetentionRetirementCustody {
     owner: Option<Arc<RelationalBranchRetentionOwnerInner>>,
-    removed: Option<RelationalRetentionObligationRecord>,
+    removed: Option<ExecutionOrderedMapCell<u64, RelationalRetentionObligationRecord>>,
+    removed_counts: [Option<ExecutionOrderedMapCell<u64, usize>>; 2],
 }
 
 #[derive(Debug)]
@@ -59,6 +60,7 @@ impl RelationalRetentionGuard {
         self.remove_retaining(
             owner,
             &mut custody.removed,
+            &mut custody.removed_counts,
             RelationalRetentionObligationKind::ExternalComponentBasis,
             request,
         )
@@ -73,13 +75,14 @@ impl RelationalRetentionGuard {
             return Ok(());
         }
         custody.retain_owner(self)?;
-        self.remove_retaining(custody.owner.as_ref().expect(/* Proof: retain_owner installs the actual upgraded owner or returns before this point. */ "retirement retains its owner"), &mut custody.removed, RelationalRetentionObligationKind::Observation, request)
+        self.remove_retaining(custody.owner.as_ref().expect(/* Proof: retain_owner installs the actual upgraded owner or returns before this point. */ "retirement retains its owner"), &mut custody.removed, &mut custody.removed_counts, RelationalRetentionObligationKind::Observation, request)
     }
 
     fn remove_retaining(
         &mut self,
         owner: &Arc<RelationalBranchRetentionOwnerInner>,
-        removed: &mut Option<RelationalRetentionObligationRecord>,
+        removed: &mut Option<ExecutionOrderedMapCell<u64, RelationalRetentionObligationRecord>>,
+        removed_counts: &mut [Option<ExecutionOrderedMapCell<u64, usize>>; 2],
         expected_kind: RelationalRetentionObligationKind,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalRetentionRetirementError> {
@@ -94,22 +97,18 @@ impl RelationalRetentionGuard {
             .obligations
             .get(&self.obligation_id)
             .ok_or(RelationalRetentionRetirementError::RegistrationMismatch)?;
-        if record.kind != expected_kind
+        let ids = record.root_ids();
+        if record.kind() != expected_kind
             || record.active_operation
             || self.roots.len() != 1
-            || record.root_ids.len() != 1
-            || record.root_ids[0] != self.roots[0].id()
+            || ids.len() != 1
+            || ids[0] != self.roots[0].id()
             || !Weak::ptr_eq(&self.owner, &Arc::downgrade(owner))
             || removed.is_some()
         {
             return Err(RelationalRetentionRetirementError::RegistrationMismatch);
         }
-        if state
-            .root_obligations
-            .get(&record.root_ids[0])
-            .copied()
-            .unwrap_or(0)
-            == 0
+        if state.root_obligations.get(&ids[0]).copied().unwrap_or(0) == 0
             || !super::super::owner::has_live_obligation_capacity(owner)
         {
             return Err(RelationalRetentionRetirementError::AccountingMismatch);
@@ -118,10 +117,11 @@ impl RelationalRetentionGuard {
             .consult()
             .map_err(RelationalRetentionRetirementError::Stopped)?;
         // The non-Clone guard owns this exact row. No fallible work follows removal.
-        let record = state.obligations.remove(&self.obligation_id).expect(/* Proof: The exact registered row was validated under this same lane guard and no intervening mutation occurs. */ "validated obligation remains registered");
-        state.release_roots(&record.root_ids);
-        record_release(&mut state.counters, record.kind);
-        owner.ordinary_counters.record_release(record.kind);
+        let record = state.obligations.remove_owned_retaining_unique(&self.obligation_id).expect("private obligation storage is never cloned").expect(/* Proof: The exact registered row was validated under this same lane guard and no intervening mutation occurs. */ "validated obligation remains registered");
+        let value = record.value();
+        *removed_counts = state.release_roots(value.root_ids());
+        record_release(&mut state.counters, value.kind());
+        owner.ordinary_counters.record_release(value.kind());
         release_live_obligation_capacity(owner);
         *removed = Some(record);
         self.terminal = true;

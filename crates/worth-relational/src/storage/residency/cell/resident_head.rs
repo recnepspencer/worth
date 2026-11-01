@@ -35,6 +35,7 @@ impl RelationalRegionResidency {
         let region = Arc::new(ResidentRegion {
             partition,
             commitment,
+            _memory: None,
         });
         let cell = Arc::new(Self {
             partition_id: region.partition.partition_id,
@@ -49,6 +50,7 @@ impl RelationalRegionResidency {
             }),
             damage: OnceLock::new(),
             leases: AtomicUsize::new(1),
+            _control_memory: None,
         });
         RelationalResidencyLease::accepted(cell, region)
     }

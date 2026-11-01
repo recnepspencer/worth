@@ -2,9 +2,12 @@ use std::sync::Arc;
 use worth_execution::ExecutionImmutableBytes;
 
 mod component_custody;
+mod region_publications;
+use region_publications::CapturedRegionPublications;
 #[cfg(test)]
 mod tests;
 use component_custody::ComponentCaptureCustody;
+pub(in crate::durability) use component_custody::OriginalCheckpointRead;
 
 /// Opaque native bytes for one complete Relational recovery checkpoint.
 ///
@@ -21,7 +24,7 @@ pub struct RelationalNativeCheckpoint {
     captured_sections: Option<NativeCheckpointSectionBytes>,
     captured_coverage: Option<NativeCheckpointCoverage>,
     members: super::CapturedCheckpointMembers,
-    publications: Arc<[crate::storage::residency::RelationalCheckpointRegionPublication]>,
+    publications: CapturedRegionPublications,
     manifest_publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
     canonical_publication:
         Option<crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>,
@@ -94,7 +97,7 @@ impl RelationalNativeCheckpoint {
             captured_sections: None,
             captured_coverage: None,
             members: Default::default(),
-            publications: Arc::from([]),
+            publications: Default::default(),
             manifest_publication: None,
             canonical_publication: None,
             publication: None,
@@ -118,7 +121,7 @@ impl RelationalNativeCheckpoint {
             captured_sections: None,
             captured_coverage: None,
             members: Default::default(),
-            publications: Arc::from([]),
+            publications: Default::default(),
             manifest_publication: None,
             canonical_publication: None,
             publication: None,
@@ -141,6 +144,25 @@ impl RelationalNativeCheckpoint {
     ) -> Self {
         self.component_custody = ComponentCaptureCustody::new(holds);
         self
+    }
+
+    pub(in crate::durability) fn with_complete_component_holds(
+        mut self,
+        holds: crate::durability::authority::checkpoint_components::CompleteComponentHolds,
+        region_cells: worth_execution::ExecutionArray<
+            Arc<crate::storage::residency::RelationalRegionResidency>,
+        >,
+        original: Option<OriginalCheckpointRead>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::RelationalNativeCheckpointCaptureDenial> {
+        self.component_custody =
+            ComponentCaptureCustody::prepare_for_request(holds, region_cells, original, execution)
+                .map_err(super::RelationalNativeCheckpointCaptureDenial::Request)?;
+        Ok(self)
+    }
+
+    pub(crate) fn retains_reconstructed_regions(&self) -> Result<bool, ()> {
+        self.component_custody.retains_reconstructed_regions()
     }
 
     pub(crate) fn release_component_holds(&self) {
@@ -250,15 +272,28 @@ impl RelationalNativeCheckpoint {
     pub(crate) fn region_publications(
         &self,
     ) -> &[crate::storage::residency::RelationalCheckpointRegionPublication] {
-        &self.publications
+        self.publications.entries()
     }
 
     pub(crate) fn with_region_publications(
         mut self,
         publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     ) -> Self {
-        self.publications = publications.into();
+        self.publications = CapturedRegionPublications::from_ordinary(publications);
         self
+    }
+
+    pub(in crate::durability) fn with_complete_region_publications(
+        mut self,
+        count: usize,
+        publications: impl IntoIterator<
+            Item = crate::storage::residency::RelationalCheckpointRegionPublication,
+        >,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::RelationalNativeCheckpointCaptureDenial> {
+        self.publications =
+            CapturedRegionPublications::capture_for_request(count, publications, execution)?;
+        Ok(self)
     }
 
     pub(crate) fn with_manifest_publication(
@@ -287,7 +322,7 @@ impl RelationalNativeCheckpoint {
             bytes,
             region,
             members: Default::default(),
-            publications: Arc::from([]),
+            publications: Default::default(),
             manifest_publication: None,
             canonical_publication: None,
             publication: None,

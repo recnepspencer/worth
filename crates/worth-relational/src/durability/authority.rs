@@ -6,7 +6,9 @@ pub use associated_effects::{
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
 };
 mod checkpoint_capture;
-mod checkpoint_components;
+pub(in crate::durability) mod checkpoint_complete;
+pub use checkpoint_complete::CompleteRelationalNativeCheckpoint;
+pub(in crate::durability) mod checkpoint_components;
 mod checkpoint_image;
 mod checkpoint_lineage_basis;
 mod checkpoint_member_carry;

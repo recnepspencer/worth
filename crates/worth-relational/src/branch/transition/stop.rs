@@ -59,6 +59,10 @@ impl<D: super::RelationalBranchTransitionDenial>
             Record::Denied(denial) => Self::Denied(denial),
             Record::ReservationWaitStopped(stop) => Self::RequestStopped(stop),
             Record::SequenceCapacityExhausted => Self::Denied(D::transition_sequence_exhausted()),
+            Record::StorageCapacityExhausted => Self::Denied(D::transition_storage_exhausted()),
+            Record::OriginalPrefixMismatch => {
+                Self::Denied(D::transition_original_prefix_mismatch())
+            }
             Record::Step(Step::Refused(refusal)) => {
                 Self::Denied(D::durable_publication_refused(refusal))
             }

@@ -1,7 +1,7 @@
 //! A logical immutable cell version and its requested dictionary closure.
 use super::RelationalRegionResidency;
 use std::hash::{Hash, Hasher};
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum SymbolClosureLevel {
@@ -11,20 +11,20 @@ enum SymbolClosureLevel {
 
 #[derive(Debug)]
 pub(crate) struct RelationalRegionSymbolAdmissionIdentity {
-    region: Weak<RelationalRegionResidency>,
+    region: super::cell::RegionCellWeak,
     level: SymbolClosureLevel,
 }
 
 impl RelationalRegionSymbolAdmissionIdentity {
     pub(super) fn head(region: &Arc<RelationalRegionResidency>) -> Self {
         Self {
-            region: Arc::downgrade(region),
+            region: RelationalRegionResidency::downgrade(region),
             level: SymbolClosureLevel::Head,
         }
     }
     pub(super) fn full(region: &Arc<RelationalRegionResidency>) -> Self {
         Self {
-            region: Arc::downgrade(region),
+            region: RelationalRegionResidency::downgrade(region),
             level: SymbolClosureLevel::Full,
         }
     }
@@ -37,7 +37,7 @@ impl RelationalRegionSymbolAdmissionIdentity {
 }
 impl PartialEq for RelationalRegionSymbolAdmissionIdentity {
     fn eq(&self, other: &Self) -> bool {
-        self.level == other.level && Weak::ptr_eq(&self.region, &other.region)
+        self.level == other.level && self.region.ptr_eq(&other.region)
     }
 }
 impl Eq for RelationalRegionSymbolAdmissionIdentity {}

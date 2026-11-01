@@ -15,10 +15,149 @@ struct ExternalWire {
 #[derive(Debug)]
 struct ForgedSource {
     members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
-    commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
+    original: Arc<dyn RelationalDurableColdSource>,
+}
+
+struct ForgedRead {
+    original: RelationalDurableReadProtection,
+    members: worth_execution::ExecutionArray<(
+        RelationalDurableMemberLocator,
+        worth_execution::ExecutionImmutableBytes,
+    )>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl ForgedSource {
+    fn capture_read(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Box<ForgedRead>, RelationalDurableOwnedReadRefusal> {
+        let memory = request.reserve_retained_memory(std::mem::size_of::<ForgedRead>() as u64)?;
+        let original = RelationalDurableReadProtection::capture(&self.original, request)?;
+        let mut members =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, self.members.len())
+                .map_err(RelationalDurableOwnedReadRefusal::Buffer)?;
+        for (locator, bytes) in &self.members {
+            members
+                .push((*locator, bytes.clone()))
+                .map_err(RelationalDurableOwnedReadRefusal::Buffer)?;
+        }
+        let members = members
+            .seal()
+            .map_err(RelationalDurableOwnedReadRefusal::Buffer)?;
+        Ok(Box::new(ForgedRead {
+            original,
+            members,
+            _memory: memory,
+        }))
+    }
 }
 
 impl RelationalDurableColdSource for ForgedSource {
+    fn checkpoint_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (RelationalDurableReadBounds, RelationalDurableReadPayload),
+        RelationalDurableOwnedReadRefusal,
+    > {
+        let read = self.capture_read(request)?;
+        Ok((read.original.bounds(), read))
+    }
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalDurableReadPayload, RelationalDurableOwnedReadRefusal> {
+        self.capture_read(request)
+            .map(|read| read as RelationalDurableReadPayload)
+    }
+    fn read_commit_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        position: PatchStreamPosition,
+        limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
+        let read = original
+            .downcast_ref::<ForgedRead>()
+            .ok_or(RelationalDurableOwnedReadRefusal::ForeignProtection)?;
+        read.original
+            .read_commit_owned_at(&self.original, request, position, limit)
+    }
+    fn read_transition_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        sequence: crate::branch::RelationalBranchTransitionSequence,
+        limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
+        let read = original
+            .downcast_ref::<ForgedRead>()
+            .ok_or(RelationalDurableOwnedReadRefusal::ForeignProtection)?;
+        read.original
+            .read_transition_owned_at(&self.original, request, sequence, limit)
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
+        let read = original
+            .downcast_ref::<ForgedRead>()
+            .ok_or(RelationalDurableOwnedReadRefusal::ForeignProtection)?;
+        request
+            .check_live()
+            .map_err(|cause| RelationalDurableOwnedReadRefusal::Request(cause.into()))?;
+        if member.length > limit {
+            return Err(RelationalDurableOwnedReadRefusal::Storage(
+                Cause::LimitExceeded {
+                    length: member.length,
+                    limit,
+                },
+            ));
+        }
+        read.members
+            .iter()
+            .find(|(locator, _)| *locator == member)
+            .map(|(_, bytes)| bytes.clone())
+            .ok_or(RelationalDurableOwnedReadRefusal::Storage(
+                Cause::MissingMember,
+            ))
+    }
+
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<RelationalDurableMemberCustody, RelationalDurableOwnedReadRefusal> {
+        for member in members {
+            request
+                .check_live()
+                .map_err(|cause| RelationalDurableOwnedReadRefusal::Request(cause.into()))?;
+            if !self.members.contains_key(member) {
+                return Err(RelationalDurableOwnedReadRefusal::Storage(
+                    Cause::MissingMember,
+                ));
+            }
+        }
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
+            let mut held =
+                worth_execution::ExecutionRequestArrayBuilder::allocate(*request, members.len())
+                    .map_err(RelationalDurableOwnedReadRefusal::Buffer)?;
+            for member in members {
+                let bytes = self
+                    .members
+                    .get(member)
+                    .expect("the immutable source roster was checked before custody admission");
+                held.push(bytes.clone())
+                    .map_err(RelationalDurableOwnedReadRefusal::Buffer)?;
+            }
+            held.seal()
+                .map_err(RelationalDurableOwnedReadRefusal::Buffer)
+        })
+    }
     fn retain_members(
         &self,
         _members: &[RelationalDurableMemberLocator],
@@ -36,11 +175,8 @@ impl RelationalDurableColdSource for ForgedSource {
             .map(|bytes| bytes.to_vec())
             .ok_or(Cause::MissingMember)
     }
-    fn read_commit(&self, position: PatchStreamPosition, _: u64) -> Result<Vec<u8>, Cause> {
-        self.commits
-            .get(&position)
-            .cloned()
-            .ok_or(Cause::MissingMember)
+    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        self.original.read_commit(position, limit)
     }
 }
 
@@ -115,27 +251,39 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
         )),
     );
     let commitment = super::super::kind_commitment::digest(&head.kind_projection).unwrap();
-    for forged in wire
-        .manifest
-        .roots
-        .iter_mut()
-        .flat_map(|root| &mut root.regions)
-        .chain(&mut wire.manifest.mirror)
-    {
+    let mut draft = wire.manifest.ordinary_owned_draft();
+    let forge = |forged: &mut RelationalCheckpointRegion| {
         if forged.head == leaf.head {
             forged.head = locator;
             forged.kind_authority.head = commitment;
         }
-    }
+    };
+    let roots = draft
+        .roots
+        .iter()
+        .map(|root| {
+            let mut regions = root.regions.clone();
+            regions.iter_mut().for_each(forge);
+            RelationalCheckpointRoot::from_ordinary_parts(
+                root.commit_id,
+                root.recorded_components.clone(),
+                root.schema_carrier_digest,
+                regions,
+            )
+        })
+        .collect();
+    draft.roots = CheckpointRoots::from_ordinary(roots);
+    draft.mirror.iter_mut().for_each(forge);
+    wire.manifest = draft.seal_ordinary();
     let mut bytes = magic.to_vec();
     bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
     let source = Arc::new(ForgedSource {
         members,
-        commits: attached_test_medium(&runtime)
-            .offered()
-            .iter()
-            .map(|commit| (commit.position(), commit.as_bytes().to_vec()))
-            .collect(),
+        original: attached_test_medium(&runtime)
+            .recovery_source()
+            .unwrap()
+            .into_parts()
+            .cold_source,
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(

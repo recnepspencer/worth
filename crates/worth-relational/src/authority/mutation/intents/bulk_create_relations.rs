@@ -23,7 +23,7 @@ use crate::authority::mutation::record_changes::allocate_relation;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::{
     AspectFieldPatch, BulkImportRowDomain, BulkImportStage, BulkRelationCreateIntent,
-    CommitConflict, ConflictClass, CreatedRelationRef, EntityReference, RecordAspectPatchTarget,
+    CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
     TransactionCommitError,
 };
 use crate::validation::data::InvariantGroupSet;
@@ -33,45 +33,53 @@ use super::field_authoring_candidate::{self, FieldAuthoringDomain};
 use super::{record_aspect_patch, relation_endpoint_candidate};
 
 mod leased;
+mod original;
 use leased::stage_leased_relation_rows;
+pub(super) use original::apply_original;
+use original::apply_relation_row;
 
-pub(super) fn apply(
-    intent: &BulkRelationCreateIntent,
-    workspace: &mut MutationWorkspace<'_>,
+pub(super) fn apply<'a>(
+    intent: &'a BulkRelationCreateIntent,
+    workspace: &mut MutationWorkspace<'a>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<MutationOutcome, TransactionCommitError> {
     let version_id = workspace.version_id();
-    let mut outcome = MutationOutcome::with_capacity(intent.endpoints.len(), 1);
+    let mut outcome =
+        MutationOutcome::with_capacity(&workspace.execution(), intent.endpoints.len(), 1)?;
     outcome.record_event(
+        &workspace.execution(),
         crate::authority::mutation::outcomes::MutationEvent::BulkRelationsCreated {
             partition_id: intent.partition_id,
             kind_id: intent.kind_id,
             count: 0,
         },
-    );
+    )?;
     for_each_staged_bulk_relation_row(intent, workspace, &mut outcome, version_id, lease)?;
     outcome.set_last_event_count(intent.endpoints.len());
     Ok(outcome)
 }
 
-fn for_each_staged_bulk_relation_row(
-    intent: &BulkRelationCreateIntent,
-    workspace: &mut MutationWorkspace<'_>,
+fn for_each_staged_bulk_relation_row<'a>(
+    intent: &'a BulkRelationCreateIntent,
+    workspace: &mut MutationWorkspace<'a>,
     outcome: &mut MutationOutcome,
     version_id: crate::identity::data::VersionId,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), TransactionCommitError> {
     if let Some(lease) = lease {
-        for row in stage_leased_relation_rows(intent, workspace, lease)? {
+        for (row_index, row) in stage_leased_relation_rows(intent, workspace, lease)?
+            .into_iter()
+            .enumerate()
+        {
             if let ImportStagedRow::Relation {
-                client_key,
+                client_key: _,
                 source,
                 target,
                 fields,
             } = row
             {
-                apply_staged_relation_row(
-                    intent, workspace, outcome, version_id, client_key, source, target, fields,
+                apply_relation_row(
+                    intent, workspace, outcome, version_id, row_index, &source, &target, &fields,
                 )?;
             }
         }
@@ -128,15 +136,18 @@ fn for_each_staged_bulk_relation_row(
         });
     }
 
-    for row in stage_import_packets(workspace, packets, lease)? {
+    for (row_index, row) in stage_import_packets(workspace, packets, lease)?
+        .into_iter()
+        .enumerate()
+    {
         match row {
             ImportStagedRow::Relation {
-                client_key,
+                client_key: _,
                 source,
                 target,
                 fields,
-            } => apply_staged_relation_row(
-                intent, workspace, outcome, version_id, client_key, source, target, fields,
+            } => apply_relation_row(
+                intent, workspace, outcome, version_id, row_index, &source, &target, &fields,
             )?,
             ImportStagedRow::Entity { .. } => {
                 return Err(CommitConflict::new(
@@ -150,90 +161,6 @@ fn for_each_staged_bulk_relation_row(
             }
         }
     }
-    Ok(())
-}
-
-fn apply_staged_relation_row(
-    intent: &BulkRelationCreateIntent,
-    workspace: &mut MutationWorkspace<'_>,
-    outcome: &mut MutationOutcome,
-    version_id: crate::identity::data::VersionId,
-    client_key: Option<crate::symbols::data::ClientKey>,
-    source: EntityReference,
-    target: EntityReference,
-    fields: AspectFieldPatch,
-) -> Result<(), TransactionCommitError> {
-    let source_id = resolve_entity_reference(workspace, &source)?;
-    let target_id = resolve_entity_reference(workspace, &target)?;
-    let patch_target = RecordAspectPatchTarget::RelationCreation {
-        kind_id: intent.kind_id,
-    };
-    let plan = workspace.relation_aspect_plan(intent.kind_id);
-    let candidate = field_authoring_candidate::lower(
-        &workspace.execution(),
-        &fields,
-        PortablePatchReadmissionPurpose::RecordCreation,
-        plan,
-        intent.kind_id,
-        FieldAuthoringDomain::Relation,
-    )
-    .map_err(|denial| record_aspect_patch::MutationPatchDenial::candidate(patch_target, denial))?;
-    let candidate = relation_endpoint_candidate::append_authoritative_endpoints(
-        &workspace.execution(),
-        candidate,
-        plan,
-        source_id,
-        target_id,
-    )?;
-    let authoritative_patch = record_aspect_patch::readmit_candidate(
-        &workspace.execution(),
-        candidate,
-        PortablePatchReadmissionPurpose::RecordCreation,
-        plan,
-        patch_target,
-    )?;
-    let authoritative_aspect_state = record_aspect_patch::apply_relation(
-        &workspace.execution(),
-        None,
-        &authoritative_patch,
-        patch_target,
-    )?;
-    let relation_id = workspace.with_context(|context| {
-        let relation_id = allocate_relation(
-            &context.execution,
-            context.state,
-            context.record_allocations,
-            version_id,
-            intent.partition_id,
-            intent.kind_id,
-            source_id,
-            target_id,
-            authoritative_aspect_state,
-        )?;
-        context
-            .state
-            .mark_relation_slot_touched(relation_id.partition_id, relation_id.slot_index());
-        Ok::<_, crate::transactions::data::TransactionCommitError>(relation_id)
-    })?;
-    if let Some(client_key) = client_key {
-        workspace.register_created_relation(
-            CreatedRelationRef {
-                partition_id: intent.partition_id,
-                kind_id: intent.kind_id,
-                client_key,
-                source: source.clone(),
-                target: target.clone(),
-            },
-            relation_id,
-        );
-    }
-    outcome.record_change(RecordMutation::RelationCreated {
-        relation_id,
-        kind_id: intent.kind_id,
-        source: source_id,
-        target: target_id,
-        authoritative_patch: record_aspect_patch::published_patch(authoritative_patch),
-    });
     Ok(())
 }
 

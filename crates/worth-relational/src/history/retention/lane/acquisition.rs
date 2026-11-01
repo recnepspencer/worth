@@ -41,8 +41,36 @@ impl RelationalBranchRetentionBinding {
 
     #[expect(
         clippy::disallowed_methods,
-        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+        reason = "Addresses identify original live lane allocations for local snapshot dedup only"
     )]
+    pub(in crate::history::retention) fn checkpoint_lane_identity(&self) -> usize {
+        Arc::as_ptr(&self.lane) as usize
+    }
+    pub(in crate::history::retention) fn capture_checkpoint_components_into(
+        &self,
+        lane: usize,
+        held: &mut ExecutionOrderedMap<(usize, u64), crate::branch::AdmittedRelationalBranchBasis>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalRetentionRequestAcquisitionDenial> {
+        use RelationalRetentionRequestAcquisitionDenial as Denial;
+        let state = lock_lane(&self.lane);
+        for (&id, record) in state.obligations.iter() {
+            request
+                .consult()
+                .map_err(|cause| Denial::Request(cause.into()))?;
+            if let Some(inner) = record.component.as_ref().and_then(Weak::upgrade) {
+                let basis = crate::branch::AdmittedRelationalBranchBasis { inner };
+                if !Weak::ptr_eq(&basis.inner.retention_binding.owner, &self.owner) {
+                    return Err(Denial::Retention(
+                        RelationalRetentionAcquisitionDenial::BindingMismatch,
+                    ));
+                }
+                held.insert_cloned_native_for_request(&(lane, id), &basis, *request)
+                    .map_err(Denial::Storage)?;
+            }
+        }
+        Ok(())
+    }
     fn acquire_subject(
         &self,
         kind: RelationalRetentionObligationKind,
@@ -50,60 +78,14 @@ impl RelationalBranchRetentionBinding {
         roots: Vec<Arc<RelationalBranchRoot>>,
         operation_branch: Option<RelationalBranchIdentity>,
     ) -> Result<RelationalRetentionGuard, RelationalRetentionAcquisitionDenial> {
-        if roots.is_empty() || roots.len() > 2 {
-            return Err(RelationalRetentionAcquisitionDenial::RootSetTooLarge);
-        }
-        let owner = self
-            .owner
-            .upgrade()
-            .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
-        if let Some(operation_branch) = operation_branch.as_ref()
-            && self.lane.identity.as_ref() != Some(operation_branch)
-        {
-            return Err(RelationalRetentionAcquisitionDenial::OwnerUnavailable);
-        }
-        reserve_live_obligation_capacity(&owner)?;
-        let mut state = lock_lane(&self.lane);
-        let obligation_id = match state.next_obligation_id.checked_add(1) {
-            Some(id) => id,
-            None => {
-                drop(state);
-                release_live_obligation_capacity(&owner);
-                return Err(RelationalRetentionAcquisitionDenial::IdentityExhausted);
-            }
-        };
-        state.next_obligation_id = obligation_id;
-        let active_operation = operation_branch.is_some();
-        if active_operation {
-            state.active_operations = match state.active_operations.checked_add(1) {
-                Some(count) => count,
-                None => {
-                    drop(state);
-                    release_live_obligation_capacity(&owner);
-                    return Err(RelationalRetentionAcquisitionDenial::IdentityExhausted);
-                }
-            };
-        }
-        let root_ids: Vec<_> = roots.iter().map(|root| root.id()).collect();
-        state.retain_roots(&root_ids);
-        state.obligations.insert(
-            obligation_id,
-            RelationalRetentionObligationRecord {
-                kind,
-                component,
-                root_ids,
-                active_operation,
-            },
-        );
-        record_acquire(&mut state.counters, kind);
-        owner.ordinary_counters.record_acquire(kind);
-        Ok(RelationalRetentionGuard {
-            owner: Arc::downgrade(&owner),
-            lane: Arc::clone(&self.lane),
-            owner_identity: Arc::as_ptr(&owner) as usize,
-            obligation_id,
-            roots,
-            terminal: false,
-        })
+        let roots = RetainedRoots::from_vec(roots)
+            .ok_or(RelationalRetentionAcquisitionDenial::RootSetTooLarge)?;
+        self.acquire_prepared_subject(kind, component, roots, operation_branch, None)
+            .map_err(|cause| match cause {
+                RelationalRetentionRequestAcquisitionDenial::Retention(cause) => cause,
+                _ => unreachable!("ordinary fixed cells have no execution request refusal"),
+            })
     }
 }
+mod request;
+pub(crate) use request::RelationalRetentionRequestAcquisitionDenial;

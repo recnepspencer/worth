@@ -1,5 +1,6 @@
 //! A right spine plus opaque left siblings is sufficient to extend a
 //! monotonically indexed history, without retaining its earlier values.
+mod view;
 use super::*;
 use crate::storage::substrate::{HistoryAppendFrontier, HistoryFrontierSibling};
 impl DigestIndex {
@@ -57,6 +58,7 @@ impl DigestIndex {
             digest: hash(1, &[&key.to_be_bytes(), &value]),
             children: None,
             nodes: 1,
+            _memory: None,
         });
         for sibling in frontier.siblings.iter().rev() {
             if sibling.parent_bit >= node.bit
@@ -74,6 +76,7 @@ impl DigestIndex {
                 digest: sibling.digest,
                 children: None,
                 nodes: 1,
+                _memory: None,
             });
             node = Arc::new(Node::branch(sibling.parent_bit, [left, node]));
         }

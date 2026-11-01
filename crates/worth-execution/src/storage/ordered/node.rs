@@ -44,6 +44,15 @@ pub(super) fn prepared_copy<K: Copy, V: Copy>(
     value: V,
     policy: Funding<'_, '_>,
 ) -> Result<Arc<Node<K, V>>, Denial> {
+    prepared_owned(key, value, policy)
+}
+
+/// Move native payload custody without invoking its Clone implementation.
+pub(super) fn prepared_owned<K, V>(
+    key: K,
+    value: V,
+    policy: Funding<'_, '_>,
+) -> Result<Arc<Node<K, V>>, Denial> {
     let (entry_bytes, node_bytes) = if policy.uses_accounting() {
         (
             Some(arc_bytes::<Entry<K, V>>()?),

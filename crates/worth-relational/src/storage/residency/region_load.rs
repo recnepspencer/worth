@@ -109,6 +109,7 @@ pub(super) fn load_head(
     Ok(Arc::new(ResidentRegion {
         partition,
         commitment: Some(commitment),
+        _memory: None,
     }))
 }
 
@@ -196,6 +197,7 @@ pub(super) fn load_full(
     Ok(Arc::new(ResidentRegion {
         partition,
         commitment: Some(commitment),
+        _memory: None,
     }))
 }
 

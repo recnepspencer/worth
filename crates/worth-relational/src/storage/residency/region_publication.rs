@@ -14,8 +14,9 @@ use crate::storage::overlay::{
 };
 use crate::storage::substrate::{RecordArena, RecordKind};
 use crate::symbols::data::StringInterner;
-use std::collections::BTreeSet;
 use std::sync::Arc;
+
+mod full;
 
 pub(crate) struct RegionCaptureBasis<'region> {
     pub(crate) retention: &'region RelationalRegionRetention,
@@ -175,7 +176,7 @@ fn normalize(partition: &mut PartitionState) -> Result<(), RegionContentFailure>
 fn unavailable_delta<K: RecordKind>(
     current: &RecordArena<K>,
     previous: &RecordArena<K>,
-    slots: &BTreeSet<usize>,
+    slots: &crate::storage::overlay::TouchedSlots,
 ) -> isize {
     let unavailable = |arena: &RecordArena<K>, slot| {
         arena.physical_index(slot).is_some_and(|physical| {

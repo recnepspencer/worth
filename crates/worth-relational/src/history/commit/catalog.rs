@@ -62,7 +62,7 @@ impl RelationalCommitCatalogEntry {
 }
 
 impl RelationalCommitCatalog {
-    pub(crate) fn install_prepared(&mut self, artifact: RelationalCommitArtifact) {
+    pub(crate) fn install_prepared(&mut self, artifact: Arc<RelationalCommitArtifact>) {
         let commit_id = artifact.commit_id();
         assert!(
             /* Proof: Live PreparedVersionedArtifactPublication is issued only after validate_new_envelope rejects an existing id, using the unique non-wrapping commit issuer. Recovery preparation instead calls validate_envelope on that exact immutable body before issuing PreparedRecoveredVersionedArtifactPublication; recovery holds exclusive runtime custody. */
@@ -70,10 +70,10 @@ impl RelationalCommitCatalog {
             "prepared catalog artifact was validated as unique"
         );
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries.insert(commit_id, Arc::new(artifact));
+        self.entries.insert(commit_id, artifact);
     }
 
-    pub(crate) fn install_prepared_recovery(&mut self, artifact: RelationalCommitArtifact) {
+    pub(crate) fn install_prepared_recovery(&mut self, artifact: Arc<RelationalCommitArtifact>) {
         let commit_id = artifact.commit_id();
         debug_assert!(
             /* Proof: Live PreparedVersionedArtifactPublication is issued only after validate_new_envelope rejects an existing id, using the unique non-wrapping commit issuer. Recovery preparation instead calls validate_envelope on that exact immutable body before issuing PreparedRecoveredVersionedArtifactPublication; recovery holds exclusive runtime custody. */
@@ -82,7 +82,7 @@ impl RelationalCommitCatalog {
                 .is_none_or(|envelope| artifact.resident_envelope() == Some(envelope)))
         );
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries.insert(commit_id, Arc::new(artifact));
+        self.entries.insert(commit_id, artifact);
     }
 
     pub(crate) fn synchronize_recovered_envelope(
@@ -106,7 +106,7 @@ impl RelationalCommitCatalog {
                 return Ok(());
             }
         }
-        let artifact = match self.entries.get(&commit_id) {
+        let mut artifact = match self.entries.get(&commit_id) {
             Some(existing) => match existing.envelope_residency().source_placement() {
                 Some((entry, source)) => {
                     let directory = existing.envelope_residency().selected_directory();
@@ -134,6 +134,9 @@ impl RelationalCommitCatalog {
             },
             None => RelationalCommitArtifact::from_envelope(envelope)?,
         };
+        if let Some(previous) = self.entries.get(&commit_id) {
+            artifact.preserve_original_inputs(previous)?;
+        }
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.entries.insert(commit_id, Arc::new(artifact));
         Ok(())
@@ -323,6 +326,21 @@ impl RelationalCommitCatalog {
         self.entries
             .values()
             .find(|artifact| artifact.version_id() == version_id)
+    }
+
+    pub(crate) fn snapshot_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_execution::ExecutionArray<Arc<RelationalCommitArtifact>>,
+        worth_execution::ExecutionRequestArrayDenial,
+    > {
+        let mut rows =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, self.entries.len())?;
+        for artifact in self.entries.values() {
+            rows.push(artifact.clone())?;
+        }
+        rows.seal()
     }
 
     pub(crate) fn snapshot(&self) -> Vec<Arc<RelationalCommitArtifact>> {

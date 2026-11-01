@@ -1,9 +1,12 @@
+mod original;
+pub(super) use original::write_original_field_versions_for_binding;
 use worth_foundational::facade::{
     AspectBinding, AspectShape, ContractValidatedAspectValueView, FieldKey,
 };
 
 use crate::authority::mutation::canonical_deltas::{
-    AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence, EvaluatedAspectBinding,
+    BorrowedAspectDeltaEvidence, BorrowedPatchOperation, CanonicalAspectDeltaEvidence,
+    EvaluatedAspectBinding,
 };
 use crate::identity::data::VersionId;
 use crate::storage::data::{RelationalFieldPresence, RelationalFieldRevision};
@@ -29,7 +32,10 @@ pub(super) fn write_field_versions_for_delta(
         let aspect = admitted.aspect(&binding.aspect_key);
         match delta.target {
             RecordRef::Entity(entity) => {
-                let partition = staged.get_partition_mut(partition_of::<EntityRecordKind>(&entity));
+                let partition = staged.get_partition_mut_for_request(
+                    partition_of::<EntityRecordKind>(&entity),
+                    request,
+                )?;
                 let Some(revisions) = partition.entity_arena.field_revisions_at_mut_using(
                     slot_of::<EntityRecordKind>(&entity),
                     Some(request),
@@ -38,15 +44,18 @@ pub(super) fn write_field_versions_for_delta(
                     continue;
                 };
                 for (field, presence) in fields {
-                    revisions.insert(
+                    revisions.insert_for_request(
                         (aspect, admitted.field(&field)),
                         RelationalFieldRevision::new(version, presence),
-                    );
+                        request,
+                    )?;
                 }
             }
             RecordRef::Relation(relation) => {
-                let partition =
-                    staged.get_partition_mut(partition_of::<RelationRecordKind>(&relation));
+                let partition = staged.get_partition_mut_for_request(
+                    partition_of::<RelationRecordKind>(&relation),
+                    request,
+                )?;
                 let Some(revisions) = partition.relation_arena.field_revisions_at_mut_using(
                     slot_of::<RelationRecordKind>(&relation),
                     Some(request),
@@ -55,10 +64,11 @@ pub(super) fn write_field_versions_for_delta(
                     continue;
                 };
                 for (field, presence) in fields {
-                    revisions.insert(
+                    revisions.insert_for_request(
                         (aspect, admitted.field(&field)),
                         RelationalFieldRevision::new(version, presence),
-                    );
+                        request,
+                    )?;
                 }
             }
         }
@@ -131,13 +141,23 @@ fn visit_field_changes_for_evidence<E>(
     shape: &AspectShape,
     evidence: &CanonicalAspectDeltaEvidence,
     structural: crate::publication::patch::data::RecordStructuralChange,
+    visit: impl FnMut(&FieldKey, RelationalFieldPresence) -> Result<(), E>,
+) -> Result<(), E> {
+    visit_borrowed_field_changes(binding, shape, &evidence.borrowed(), structural, visit)
+}
+
+pub(crate) fn visit_borrowed_field_changes<E>(
+    binding: &AspectBinding,
+    shape: &AspectShape,
+    evidence: &BorrowedAspectDeltaEvidence<'_>,
+    structural: crate::publication::patch::data::RecordStructuralChange,
     mut visit: impl FnMut(&FieldKey, RelationalFieldPresence) -> Result<(), E>,
 ) -> Result<(), E> {
     use RelationalFieldPresence::{Absent, Present};
     match (shape, evidence) {
         (
             AspectShape::Struct(shape),
-            CanonicalAspectDeltaEvidence::StructAspectValueTransition {
+            BorrowedAspectDeltaEvidence::StructAspectValueTransition {
                 old_value,
                 new_value,
                 ..
@@ -153,7 +173,7 @@ fn visit_field_changes_for_evidence<E>(
         }
         (
             AspectShape::Scalar(_),
-            CanonicalAspectDeltaEvidence::ScalarAspectValueTransition {
+            BorrowedAspectDeltaEvidence::ScalarAspectValueTransition {
                 old_value,
                 new_value,
                 ..
@@ -167,9 +187,9 @@ fn visit_field_changes_for_evidence<E>(
         }
         (
             AspectShape::Struct(shape),
-            CanonicalAspectDeltaEvidence::AuthoritativePatch { operation, .. },
+            BorrowedAspectDeltaEvidence::AuthoritativePatch { operation, .. },
         ) => match operation {
-            AuthoritativePatchDeltaOperation::FieldLevelPatch { patch } => {
+            BorrowedPatchOperation::FieldLevelPatch { patch } => {
                 for (field, _) in patch.field_sets() {
                     visit(field, Present)?;
                 }
@@ -177,12 +197,12 @@ fn visit_field_changes_for_evidence<E>(
                     visit(field, Absent)?;
                 }
             }
-            AuthoritativePatchDeltaOperation::WholeAspectClear { .. } => {
+            BorrowedPatchOperation::WholeAspectClear { .. } => {
                 for field in shape.fields() {
                     visit(field.key(), Absent)?;
                 }
             }
-            AuthoritativePatchDeltaOperation::WholeAspectSet { value } => {
+            BorrowedPatchOperation::WholeAspectSet { value } => {
                 if let ContractValidatedAspectValueView::Struct(value) = value.view() {
                     for field in shape.fields() {
                         visit(
@@ -199,15 +219,15 @@ fn visit_field_changes_for_evidence<E>(
         },
         (
             AspectShape::Scalar(_),
-            CanonicalAspectDeltaEvidence::AuthoritativePatch { operation, .. },
+            BorrowedAspectDeltaEvidence::AuthoritativePatch { operation, .. },
         ) => {
             if let Some(field) = bound_field(binding) {
                 visit(
                     field,
                     match operation {
-                        AuthoritativePatchDeltaOperation::WholeAspectClear { .. } => Absent,
-                        AuthoritativePatchDeltaOperation::WholeAspectSet { .. }
-                        | AuthoritativePatchDeltaOperation::FieldLevelPatch { .. } => Present,
+                        BorrowedPatchOperation::WholeAspectClear { .. } => Absent,
+                        BorrowedPatchOperation::WholeAspectSet { .. }
+                        | BorrowedPatchOperation::FieldLevelPatch { .. } => Present,
                     },
                 )?;
             }

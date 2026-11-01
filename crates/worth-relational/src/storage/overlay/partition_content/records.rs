@@ -1,9 +1,9 @@
+mod frontier_view;
 use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
 use crate::storage::substrate::{
     HistoryAppendFrontier, RecordArena, RecordKind, SharedMap, StorageAllocationVisitor,
 };
-use crate::symbols::data::{StringInterner, Symbol};
-use std::collections::BTreeMap;
+use crate::symbols::data::SymbolTextLookup;
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct RecordContentIndex {
@@ -15,6 +15,102 @@ pub(super) struct RecordContentIndex {
 }
 
 impl RecordContentIndex {
+    pub(super) fn capture_full<K: RecordKind>(
+        arena: &RecordArena<K>,
+        symbols: &dyn SymbolTextLookup,
+        request: super::full::Request<'_, '_, '_>,
+        extra: impl Fn(
+            &K::Extra,
+            &dyn SymbolTextLookup,
+        ) -> Result<[u8; 32], PartitionContentDigestError>,
+    ) -> Result<(Self, u64), PartitionContentDigestError>
+    where
+        K::Meta: serde::Serialize,
+    {
+        let mut count = 0usize;
+        for _ in arena.occupied_slots_iter() {
+            super::full::poll(request)?;
+            count = count
+                .checked_add(1)
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        }
+        let _memory = super::full::rows_memory(count, request)?;
+        let mut rows = Vec::with_capacity(count);
+        let mut result = Self::default();
+        let mut hashed = 0u64;
+        for slot in arena.occupied_slots_iter() {
+            super::full::poll(request)?;
+            let physical = arena
+                .physical_index(slot)
+                .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+            let (history, values) = super::record_history::capture_full(arena, slot, request)?;
+            rows.push((
+                slot as u128,
+                record_digest(
+                    arena,
+                    slot,
+                    physical,
+                    history.digest(),
+                    symbols,
+                    &extra,
+                    request,
+                )?,
+            ));
+            result.history_bytes = result
+                .history_bytes
+                .checked_add(history.allocation_bytes())
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+            match request {
+                Some(request) => {
+                    result
+                        .histories
+                        .insert_for_request(slot as u64, history, request)
+                        .map_err(PartitionContentDigestError::Request)?;
+                }
+                None => {
+                    result.histories.insert(slot as u64, history);
+                }
+            }
+            hashed = hashed
+                .checked_add(values)
+                .and_then(|sum| sum.checked_add(1))
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        }
+        rows.sort_unstable_by_key(|(key, _)| *key);
+        result.records = DigestIndex::from_sorted_entries_for_request(&rows, request)?;
+        for (words, target, domain) in [
+            (
+                &arena.live_bitset,
+                &mut result.live_words,
+                b"live-word".as_slice(),
+            ),
+            (
+                &arena.reclaimable_bitset,
+                &mut result.reclaimable_words,
+                b"reclaimable-word".as_slice(),
+            ),
+        ] {
+            let mut count = 0usize;
+            for _ in words.words() {
+                super::full::poll(request)?;
+                count = count
+                    .checked_add(1)
+                    .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+            }
+            let _memory = super::full::rows_memory(count, request)?;
+            let mut rows = Vec::with_capacity(count);
+            for (index, value) in words.words() {
+                super::full::poll(request)?;
+                rows.push((index as u128, hash_value(domain, &value)?));
+            }
+            *target = DigestIndex::from_sorted_entries_for_request(&rows, request)?;
+            hashed = hashed
+                .checked_add(rows.len() as u64)
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        }
+        Ok((result, hashed))
+    }
+
     pub(super) fn history_frontiers<K: RecordKind>(
         &self,
         arena: &RecordArena<K>,
@@ -79,8 +175,11 @@ impl RecordContentIndex {
         arena: &RecordArena<K>,
         previous: Option<&RecordArena<K>>,
         slots: impl IntoIterator<Item = usize>,
-        symbols: &StringInterner,
-        extra: impl Fn(&K::Extra, &StringInterner) -> Result<[u8; 32], PartitionContentDigestError>,
+        symbols: &dyn SymbolTextLookup,
+        extra: impl Fn(
+            &K::Extra,
+            &dyn SymbolTextLookup,
+        ) -> Result<[u8; 32], PartitionContentDigestError>,
     ) -> Result<u64, PartitionContentDigestError>
     where
         K::Meta: serde::Serialize,
@@ -105,24 +204,14 @@ impl RecordContentIndex {
                 super::record_history::update(arena, previous, slot, &cached)?
             };
             hashed_values += hashed;
-            let versions = resolve_aspect_versions(&arena.aspect_versions[physical], symbols)?;
-            let digest = hash_value(
-                b"record",
-                &(
-                    slot as u64,
-                    // Physical row order remains part of the canonical storage
-                    // grammar: compaction changes this root, allocation IDs do not.
-                    physical as u64,
-                    arena.partition_ids[physical],
-                    arena.generations[physical],
-                    arena.lifecycle[physical],
-                    arena.kind_ids[physical],
-                    history.digest(),
-                    arena.created_at[physical],
-                    arena.retired_at[physical],
-                    extra(&arena.extra[physical], symbols)?,
-                    versions,
-                ),
+            let digest = record_digest(
+                arena,
+                slot,
+                physical,
+                history.digest(),
+                symbols,
+                &extra,
+                None,
             )?;
             hashed_values += 1;
             self.history_bytes = self
@@ -205,18 +294,51 @@ impl RecordContentIndex {
     }
 }
 
-fn resolve_aspect_versions<'a>(
-    versions: &BTreeMap<Symbol, u64>,
-    symbols: &'a StringInterner,
-) -> Result<Vec<(&'a str, u64)>, PartitionContentDigestError> {
-    let mut resolved = versions
-        .iter()
-        .map(|(symbol, version)| {
-            symbols.resolve(*symbol).map(|name| (name, *version)).ok_or(
-                PartitionContentDigestError::UnresolvedContentSymbol(*symbol),
-            )
+fn record_digest<K: RecordKind>(
+    arena: &RecordArena<K>,
+    slot: usize,
+    physical: usize,
+    history: [u8; 32],
+    symbols: &dyn SymbolTextLookup,
+    extra: &impl Fn(&K::Extra, &dyn SymbolTextLookup) -> Result<[u8; 32], PartitionContentDigestError>,
+    request: super::full::Request<'_, '_, '_>,
+) -> Result<[u8; 32], PartitionContentDigestError> {
+    let versions = &arena.aspect_versions[physical];
+    let bytes = std::alloc::Layout::array::<(&str, u64)>(versions.len())
+        .ok()
+        .and_then(|layout| u64::try_from(layout.size()).ok())
+        .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+    let _memory = request
+        .map(|request| {
+            request
+                .reserve_retained_memory(bytes)
+                .map_err(|cause| PartitionContentDigestError::Request(cause.into()))
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .transpose()?
+        .flatten();
+    let mut resolved = Vec::with_capacity(versions.len());
+    for (symbol, version) in versions.iter() {
+        super::full::poll(request)?;
+        let name = symbols.resolve(*symbol).ok_or(
+            PartitionContentDigestError::UnresolvedContentSymbol(*symbol),
+        )?;
+        resolved.push((name, *version));
+    }
     resolved.sort_unstable_by(|left, right| left.0.cmp(right.0));
-    Ok(resolved)
+    hash_value(
+        b"record",
+        &(
+            slot as u64,
+            physical as u64,
+            arena.partition_ids[physical],
+            arena.generations[physical],
+            arena.lifecycle[physical],
+            arena.kind_ids[physical],
+            history,
+            arena.created_at[physical],
+            arena.retired_at[physical],
+            extra(&arena.extra[physical], symbols)?,
+            resolved,
+        ),
+    )
 }

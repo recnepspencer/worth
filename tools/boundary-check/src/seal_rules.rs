@@ -18,6 +18,7 @@ const FACTORIES: &[&str] = &[
     "world_recovery_authority",
     "discover_recovered_associated_effects",
     "capture_complete_checkpoint",
+    "complete_checkpoint_service",
     "from_native_checkpoint_source",
     "from_home_checkpoint_selection",
     "from_protected_home_source",
@@ -299,7 +300,9 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                         "native-checkpoint-read-protection",
                         "crates/worth-relational/",
                     )
-                } else if *name == "capture_complete_checkpoint" {
+                } else if ["capture_complete_checkpoint", "complete_checkpoint_service"]
+                    .contains(name)
+                {
                     (
                         "native-home-complete-checkpoint",
                         "crates/worth-relational/",

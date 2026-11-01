@@ -1,3 +1,5 @@
+mod component_capture;
+pub(crate) use component_capture::CheckpointComponentDescriptorView;
 use std::sync::{Arc, OnceLock};
 
 use serde::{Deserialize, Serialize};

@@ -19,6 +19,7 @@ pub(crate) enum RecordMutation {
     EntityDeleted {
         entity_id: EntityId,
         kind_id: KindId,
+        old_authoritative_aspect_state: Option<StorageAllocation<EntityExtra>>,
         authoritative_patch: Option<MutationAspectPatch>,
     },
     EntityMaterializationSuspended {

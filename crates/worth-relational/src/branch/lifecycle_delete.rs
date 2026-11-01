@@ -113,6 +113,10 @@ impl crate::runtime::RelationalRuntime {
             publication.record_with_cutover(
                 execution,
                 step,
+                state
+                    .selected_root()
+                    .ok_or(denied(RelationalBranchDeleteDenial::OwnerFailure))?
+                    .retained_schema_authority(),
                 || self.admit_name_retirement(&branch, transition),
                 |_| {
                     self.history.retire_admitted_branch_name(branch.clone());
@@ -169,6 +173,7 @@ impl crate::runtime::RelationalRuntime {
         let retired_root_identity = publication.record_with_cutover(
             execution,
             step,
+            selected_root.retained_schema_authority(),
             || self.admit_name_retirement(&branch, transition),
             |_| {
                 self.history.retire_admitted_branch_name(branch.clone());

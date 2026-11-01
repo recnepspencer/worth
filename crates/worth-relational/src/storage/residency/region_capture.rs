@@ -1,3 +1,4 @@
+pub(super) mod complete;
 use super::region_image::*;
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;

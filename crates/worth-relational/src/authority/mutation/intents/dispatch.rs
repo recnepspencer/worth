@@ -1,5 +1,5 @@
 use crate::transactions::data::{
-    CommitConflict, CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
+    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
     TransactionCommitError,
 };
 
@@ -12,9 +12,9 @@ use super::{
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::MutationWorkspace;
 
-pub(crate) fn dispatch_intent(
-    intent: &MutationIntent,
-    workspace: &mut MutationWorkspace<'_>,
+pub(crate) fn dispatch_intent<'a>(
+    intent: &'a MutationIntent,
+    workspace: &mut MutationWorkspace<'a>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<MutationOutcome, TransactionCommitError> {
     match intent {
@@ -38,7 +38,7 @@ pub(crate) fn dispatch_intent(
             delete_entity::apply(spec, workspace)
         }
         MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
-            from_conflict(revalidate_entity::apply(spec, workspace))
+            revalidate_entity::apply(spec, workspace)
         }
         MutationIntent::Create(CreateIntent::Relation(spec)) => {
             create_relation::apply(spec, workspace)
@@ -56,7 +56,7 @@ pub(crate) fn dispatch_intent(
             apply_relation_aspect_patch::apply(spec, workspace)
         }
         MutationIntent::Relation(RelationMutationIntent::Revalidate(spec)) => {
-            from_conflict(revalidate_relation::apply(spec, workspace))
+            revalidate_relation::apply(spec, workspace)
         }
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
             delete_relation::apply(spec, workspace)
@@ -65,8 +65,24 @@ pub(crate) fn dispatch_intent(
     }
 }
 
-fn from_conflict(
-    result: Result<MutationOutcome, CommitConflict>,
+/// Sealed original rows use the same row algorithm without staging copies.
+pub(crate) fn dispatch_original_intent<'a>(
+    intent: &'a MutationIntent,
+    workspace: &mut MutationWorkspace<'a>,
 ) -> Result<MutationOutcome, TransactionCommitError> {
-    result.map_err(TransactionCommitError::conflict)
+    match intent {
+        MutationIntent::Create(CreateIntent::BulkEntities(intent)) => {
+            bulk_create_entities::apply_original(intent, workspace)
+        }
+        MutationIntent::Create(CreateIntent::BulkRelations(intent)) => {
+            bulk_create_relations::apply_original(intent, workspace)
+        }
+        MutationIntent::Entity(EntityMutationIntent::Delete(intent)) => {
+            delete_entity::apply_original(intent, workspace)
+        }
+        MutationIntent::Entity(EntityMutationIntent::Replace(intent)) => {
+            replace_entity::apply_original(intent, workspace)
+        }
+        intent => dispatch_intent(intent, workspace, None),
+    }
 }

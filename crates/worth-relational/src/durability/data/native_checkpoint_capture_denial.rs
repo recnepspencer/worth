@@ -6,8 +6,12 @@ use super::DurabilityError;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RelationalNativeCheckpointCaptureDenial {
     Durability(DurabilityError),
+    OwnerUnavailable,
+    OriginalAuthorityUnavailable,
     Allocation(ExecutionAllocationDenial),
     Request(crate::execution::RelationalExecutionDenialCause),
+    RetentionCapacityExhausted,
+    RetentionIdentityExhausted,
 }
 
 impl From<DurabilityError> for RelationalNativeCheckpointCaptureDenial {
@@ -25,6 +29,16 @@ impl From<ExecutionAllocationDenial> for RelationalNativeCheckpointCaptureDenial
 impl std::fmt::Display for RelationalNativeCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::RetentionCapacityExhausted => {
+                formatter.write_str("native checkpoint retention capacity exhausted")
+            }
+            Self::RetentionIdentityExhausted => {
+                formatter.write_str("native checkpoint retention identity exhausted")
+            }
+            Self::OwnerUnavailable => formatter.write_str("native checkpoint owner unavailable"),
+            Self::OriginalAuthorityUnavailable => {
+                formatter.write_str("original complete checkpoint authority unavailable")
+            }
             Self::Durability(error) => write!(formatter, "native checkpoint durability: {error:?}"),
             Self::Request(cause) => write!(formatter, "native checkpoint request: {cause:?}"),
             Self::Allocation(error) => write!(formatter, "native checkpoint allocation: {error}"),
@@ -36,7 +50,12 @@ impl std::error::Error for RelationalNativeCheckpointCaptureDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Allocation(error) => Some(error),
-            Self::Durability(_) | Self::Request(_) => None,
+            Self::Durability(_)
+            | Self::Request(_)
+            | Self::OwnerUnavailable
+            | Self::OriginalAuthorityUnavailable
+            | Self::RetentionCapacityExhausted
+            | Self::RetentionIdentityExhausted => None,
         }
     }
 }

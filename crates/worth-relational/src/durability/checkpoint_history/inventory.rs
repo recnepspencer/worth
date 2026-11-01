@@ -139,7 +139,7 @@ impl<'de> Deserialize<'de> for CanonicalCheckpointMembers {
 }
 
 pub(crate) fn validate(
-    manifest: &crate::durability::data::RelationalCheckpointManifest,
+    manifest: &crate::durability::data::RelationalCheckpointManifestDraft,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
     use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};

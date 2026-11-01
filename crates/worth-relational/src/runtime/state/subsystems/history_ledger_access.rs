@@ -43,6 +43,19 @@ impl HistorySubsystem {
             .cloned()
     }
 
+    pub(crate) fn commit_artifacts_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_execution::ExecutionArray<Arc<RelationalCommitArtifact>>,
+        worth_execution::ExecutionRequestArrayDenial,
+    > {
+        self.ledger
+            .read()
+            .commit_catalog
+            .snapshot_for_request(request)
+    }
+
     pub(crate) fn commit_artifacts(&self) -> Vec<Arc<RelationalCommitArtifact>> {
         self.ledger.read().commit_catalog.snapshot()
     }

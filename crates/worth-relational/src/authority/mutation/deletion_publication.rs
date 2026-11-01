@@ -19,6 +19,7 @@ pub(crate) fn entity_deletion_publication_patch(
     let mutation = RecordMutation::EntityDeleted {
         entity_id: id,
         kind_id,
+        old_authoritative_aspect_state: None,
         authoritative_patch: authoritative_patch
             .map(super::outcomes::MutationAspectPatch::from_ordinary),
     };

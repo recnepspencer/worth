@@ -909,6 +909,48 @@ proof, and must install no live service/cell or replay handlers. Decisive eviden
 reconstructs an unused historical constraint after live services/resident sources
 are gone; the records-only twin must refuse missing original schema authority.
 
+The direct Complete producer retains the actual result schema and immutable
+MutationConfig as DATA in the existing canonical catalog artifact, prepared
+under the original request before durable acceptance. Preserve the selected
+Empty prestate separately when applicable. Same-source catalog replacement
+must transfer those exact owners before dropping their predecessor; a matching
+commit number alone cannot establish source affinity. RetainedCanonicalIndex
+remains descriptive and carries no schema, Root or service pin.
+
+For actual multi-parent merges, apply the recorded resolved merged_intents at
+the original version to the reconstructed target prestate. Source-only adoption
+is already a Create, shared records remain unchanged, and reconciliation is
+already a resolved update. Reconstruct and authenticate every ordered parent
+and source/target/base observation independently. Do not union parent arenas or
+infer a complete root from final field patches. Reuse the pure mutation,
+adjacency-delta and overlay/journal adoption owners, preserving their metadata
+history, revision prefixes, lifecycle and both endpoint membership histories.
+Original record allocations, symbols, lineage and required-output selectors
+remain inputs; original final patches and root meaning remain independent
+output checks. Newly invoked map/set, root, region, schema-image and temporary
+storage requires concrete before-growth admission at its actual owner.
+
+The supported Empty producer history is C0 main birth, its single initial-schema
+installation, archive, and the selected prestate of its first canonical commit.
+Initial-schema installation can replace an archived Empty root without a
+canonical or branch-transition record. Preserve its actual before/after schema
+Arcs and observation axes in fixed private fields of the existing transition
+stream owner. Empty forks and main deletion remain rejected. Ordinary covered
+prefix compaction and same-source stream continuation must not erase these
+originals. A fresh recovery receiver must discard its locally constructed C0
+seed before installing another source; its current configuration cannot stand
+in for missing original history. Fixed inline birth data adds no separate heap
+owner and grants no controlled-funding claim to ordinary runtime construction.
+
+Complete output captures every full schema image from that original authority,
+including unused physical constraints and executable registrations. Snapshot
+plan references and a retained-contract union are insufficient. Captured image
+clones share immutable DATA and its actual admission through the last owner;
+stream the unchanged carrier digest without an unquoted encoding buffer.
+The actual Section strong and weak preparation operations consume the distinct
+Complete result and share ordinary framing/selection/ACK mechanics. Full
+Directory/provider retirement still requires its own real Closed proof.
+
 Original Memory artifact retention is a producer prerequisite to CHK18. The
 existing unpositioned authoritative payload is not an original canonical frame.
 At performed_stream::record_with_cutover, the real publication position is known

@@ -1,4 +1,7 @@
 use std::collections::BTreeSet;
+mod storage_headers;
+mod touched_slots;
+pub(crate) use touched_slots::TouchedSlots;
 
 use crate::config::data::AdjacencyPolicy;
 use crate::identity::data::PartitionId;
@@ -238,10 +241,10 @@ impl PartitionState {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct PartitionMutationJournal {
-    pub(crate) entity_slots: BTreeSet<usize>,
-    pub(crate) relation_slots: BTreeSet<usize>,
-    pub(crate) adjacency_slots: BTreeSet<usize>,
-    pub(crate) reverse_adjacency_slots: BTreeSet<usize>,
+    pub(crate) entity_slots: TouchedSlots,
+    pub(crate) relation_slots: TouchedSlots,
+    pub(crate) adjacency_slots: TouchedSlots,
+    pub(crate) reverse_adjacency_slots: TouchedSlots,
 }
 
 #[derive(Debug, Clone)]

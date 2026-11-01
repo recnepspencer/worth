@@ -65,8 +65,7 @@ impl<K: RecordKind> RecordArena<K> {
             .set_value_using(physical, None, request)?;
         self.diagnostics_enrichment
             .set_value_using(physical, Default::default(), request)?;
-        self.live_bitset.set(slot, false);
-        self.reclaimable_bitset.set(slot, false);
+        self.set_presence_bits_using(slot, false, false, request)?;
         Ok(())
     }
 
@@ -117,8 +116,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.lifecycle
             .set_value_using(physical, RecordLifecycleState::Live, request)?;
         self.retired_at.set_value_using(physical, None, request)?;
-        self.live_bitset.set(slot, true);
-        self.reclaimable_bitset.set(slot, false);
+        self.set_presence_bits_using(slot, true, false, request)?;
         Ok(())
     }
 
@@ -171,10 +169,27 @@ impl<K: RecordKind> RecordArena<K> {
             .set_value_using(physical, Some(version_id), request)?;
         self.lifecycle
             .set_value_using(physical, RecordLifecycleState::DeletedRetained, request)?;
-        self.live_bitset.set(slot, false);
-        self.reclaimable_bitset.set(slot, true);
+        self.set_presence_bits_using(slot, false, true, request)?;
         self.install_retired_metadata(physical, retired, request)?;
         Ok(Some(()))
+    }
+
+    fn set_presence_bits_using(
+        &mut self,
+        slot: usize,
+        live: bool,
+        reclaimable: bool,
+        request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<(), Cause> {
+        if let Some(request) = request {
+            self.live_bitset.set_for_request(slot, live, request)?;
+            self.reclaimable_bitset
+                .set_for_request(slot, reclaimable, request)?;
+        } else {
+            self.live_bitset.set(slot, live);
+            self.reclaimable_bitset.set(slot, reclaimable);
+        }
+        Ok(())
     }
 
     #[cfg(test)]

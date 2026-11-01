@@ -1,7 +1,9 @@
+mod original;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::WorkingState;
 use crate::storage::substrate::{partition_of, slot_of, EntityRecordKind, RelationRecordKind};
 use crate::transactions::data::RecordRef;
+pub(super) use original::write_original_aspect_version;
 
 pub(super) fn write_aspect_versions_for_delta_for_request(
     request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -30,25 +32,58 @@ fn write_using(
     match delta.target {
         RecordRef::Entity(entity_id) => {
             let slot = slot_of::<EntityRecordKind>(&entity_id);
-            let partition = staged.get_partition_mut(partition_of::<EntityRecordKind>(&entity_id));
+            let partition = match request {
+                Some(request) => staged.get_partition_mut_for_request(
+                    partition_of::<EntityRecordKind>(&entity_id),
+                    request,
+                )?,
+                None => staged.get_partition_mut(partition_of::<EntityRecordKind>(&entity_id)),
+            };
             let versions = partition
                 .entity_arena
                 .aspect_versions_at_mut_using(slot,request)?
                 .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "entity aspect version update requires a materialized slot");
             for aspect in delta.changed_aspects.iter() {
-                versions.insert(admitted.aspect(aspect), version_id.0);
+                match request {
+                    Some(request) => {
+                        versions.insert_for_request(
+                            admitted.aspect(aspect),
+                            version_id.0,
+                            request,
+                        )?;
+                    }
+                    None => {
+                        versions.insert(admitted.aspect(aspect), version_id.0);
+                    }
+                }
             }
         }
         RecordRef::Relation(relation_id) => {
             let slot = slot_of::<RelationRecordKind>(&relation_id);
-            let partition =
-                staged.get_partition_mut(partition_of::<RelationRecordKind>(&relation_id));
+            let partition = match request {
+                Some(request) => staged.get_partition_mut_for_request(
+                    partition_of::<RelationRecordKind>(&relation_id),
+                    request,
+                )?,
+                None => staged.get_partition_mut(partition_of::<RelationRecordKind>(&relation_id)),
+            };
             let versions = partition
                 .relation_arena
                 .aspect_versions_at_mut_using(slot,request)?
                 .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "relation aspect version update requires a materialized slot");
             for aspect in delta.changed_aspects.iter() {
-                versions.insert(admitted.aspect(aspect), version_id.0);
+                match request {
+                    Some(request) => {
+                        versions.insert_for_request(
+                            admitted.aspect(aspect),
+                            version_id.0,
+                            request,
+                        )?;
+                    }
+                    None => {
+                        versions.insert(admitted.aspect(aspect), version_id.0);
+                    }
+                }
             }
         }
     }

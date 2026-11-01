@@ -50,6 +50,16 @@ impl RelationalObservationRetentionObligation {
             .map(|guard| Self { _guard: guard })
     }
 
+    pub(crate) fn acquire_for_request(
+        binding: &super::RelationalBranchRetentionBinding,
+        root: Arc<RelationalBranchRoot>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::RelationalRetentionRequestAcquisitionDenial> {
+        binding
+            .acquire_observation_for_request(root, request)
+            .map(|guard| Self { _guard: guard })
+    }
+
     pub(crate) const fn reason(&self) -> RelationalBasisRetentionReason {
         RelationalBasisRetentionReason::Observation
     }

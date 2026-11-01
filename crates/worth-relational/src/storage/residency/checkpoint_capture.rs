@@ -1,4 +1,6 @@
-use std::sync::{Arc, Weak};
+mod complete;
+pub(crate) use complete::{RegionCheckpointAcknowledgementDenial, RetiredRegionCheckpointBindings};
+use std::sync::Arc;
 
 use super::RelationalRegionResidency;
 use crate::branch::RelationalBranchRootSchemaAuthority;
@@ -21,7 +23,7 @@ pub(crate) struct RecordedRegionCheckpoint {
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalCheckpointRegionPublication {
-    cell: Weak<RelationalRegionResidency>,
+    cell: super::cell::RegionCellWeak,
     schema_digest: [u8; 32],
     recorded: RecordedRegionCheckpoint,
 }
@@ -36,8 +38,18 @@ impl RelationalCheckpointRegionPublication {
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Err(()),
         };
-        let displaced = bindings.insert(self.schema_digest, self.recorded.clone());
+        let displaced = bindings.get(&self.schema_digest).cloned();
+        let mut candidate = bindings.clone();
+        candidate
+            .insert_cloned_native_in(
+                &self.schema_digest,
+                &self.recorded,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(|_| ())?;
+        let old = std::mem::replace(&mut *bindings, candidate);
         drop(bindings);
+        drop(old);
         Ok(displaced)
     }
 }
@@ -117,6 +129,9 @@ impl RelationalRegionResidency {
                 let (commitment, _) =
                     PartitionContentCommitment::capture_layered(partition, &content_symbols)
                         .map_err(|error| match error {
+                            PartitionContentDigestError::Request(cause) => {
+                                super::RelationalResidencyDemandFailure::Request(cause)
+                            }
                             PartitionContentDigestError::UnresolvedContentSymbol(symbol) => {
                                 RelationalStorageUnavailable {
                                     subject: RelationalStorageSubject::Symbols {
@@ -125,11 +140,12 @@ impl RelationalRegionResidency {
                                     },
                                     cause: Cause::SourceUnavailable,
                                 }
+                                .into()
                             }
                             PartitionContentDigestError::InvalidHistoryCoverage
                             | PartitionContentDigestError::Encoding
                             | PartitionContentDigestError::AllocationAccountingOverflow => {
-                                self.capture_failure(Cause::IntegrityMismatch)
+                                self.capture_failure(Cause::IntegrityMismatch).into()
                             }
                         })?;
                 let captured =
@@ -193,7 +209,7 @@ impl RelationalRegionResidency {
         let history_dependencies = recorded.history_members.declarations_for(&required);
         Ok(RelationalCapturedRegionCheckpoint {
             publication: RelationalCheckpointRegionPublication {
-                cell: Arc::downgrade(self),
+                cell: Self::downgrade(self),
                 schema_digest,
                 recorded: recorded.clone(),
             },

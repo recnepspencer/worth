@@ -1,3 +1,9 @@
+pub use runtime_state::CompleteRelationalCheckpointPreparation;
+pub(crate) use subsystems::{
+    MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
+    OriginalRecordAllocationCursor, OriginalSymbolMeanings, RetainedBranchTransition,
+};
 mod runtime_state;
 mod subsystems;
 
@@ -28,22 +34,22 @@ pub(crate) use subsystems::{
     CapturedIndexDefinitionCatalog, ColdSymbolDirectoryDenial, CommitStrategiesSubsystem,
     DurabilitySubsystem, HistorySubsystem, IndexCatalogCoverage, IndexDefinitionReadBinding,
     IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
-    MirrorResidencyDemandBinding, PartitionEdition, PatchPositionReservationAdmission,
-    PendingRecordAllocations, PendingSymbolMeanings, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedCommitSequence, PreparedGenerationBatch,
-    PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
-    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
-    PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
-    PublishedSnapshotReleaseObservation, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
-    RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestPublication,
-    RelationalCheckpointManifestSelection, RelationalDiagnosticArtifactStore,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    ResidentLineageEventPage, ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition,
-    ResidentPartitionEntry, RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices,
-    RuntimeSubsystem, RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding,
-    StorageSubsystem, SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency,
-    VisibilitySubsystem,
+    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
+    PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
+    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
+    PreparedSymbolPublication, PreparedVersionedArtifactAccelerators,
+    PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
+    PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,
+    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
+    RecordIdentitySubsystem, RelationalCanonicalPublicationRoutes,
+    RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
+    RelationalDiagnosticArtifactStore, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding, RelationalPreparationHistory, ResidentLineageEventPage,
+    ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
+    RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
+    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
+    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,

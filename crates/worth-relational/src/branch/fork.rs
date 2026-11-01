@@ -49,6 +49,10 @@ pub enum RelationalForkDenial {
     DurablePublicationRefused(crate::durability::medium::RelationalDurablePublicationRefusal),
     /// No branch transition sequence remains.
     TransitionSequenceExhausted,
+    /// The retained transition's concrete storage cannot be represented.
+    TransitionStorageExhausted,
+    /// Restored transition data differs from this source's original prefix.
+    TransitionOriginalPrefixMismatch,
 }
 
 impl super::RelationalBranchTransitionDenial for RelationalForkDenial {
@@ -60,6 +64,14 @@ impl super::RelationalBranchTransitionDenial for RelationalForkDenial {
 
     fn transition_sequence_exhausted() -> Self {
         Self::TransitionSequenceExhausted
+    }
+
+    fn transition_storage_exhausted() -> Self {
+        Self::TransitionStorageExhausted
+    }
+
+    fn transition_original_prefix_mismatch() -> Self {
+        Self::TransitionOriginalPrefixMismatch
     }
 }
 

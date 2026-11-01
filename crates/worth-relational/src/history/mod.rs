@@ -24,8 +24,8 @@ pub use access::{
 };
 pub use authority::HistoryAuthority;
 pub(crate) use commit::{
-    RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind, RelationalCommitCatalog,
-    RelationalCommitCatalogEnvelopeAppendDenial,
+    OriginalCanonicalInputs, RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind,
+    RelationalCommitCatalog, RelationalCommitCatalogEnvelopeAppendDenial,
 };
 pub use commit::{
     RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,

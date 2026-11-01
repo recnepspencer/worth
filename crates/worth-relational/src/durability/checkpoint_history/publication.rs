@@ -1,6 +1,6 @@
 //! The original capture owns each covered cell and its bounded transfer cursor data.
 use crate::durability::data::{
-    RelationalCheckpointDirectory, RelationalCheckpointManifest,
+    RelationalCheckpointDirectory, RelationalCheckpointManifestDraft,
     RelationalNativeCheckpointCaptureDenial as Capture,
 };
 use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
@@ -26,7 +26,7 @@ struct Backing {
 pub(crate) struct CanonicalCheckpointPublication(Arc<Backing>);
 impl CanonicalCheckpointPublication {
     pub(crate) fn capture(
-        manifest: &RelationalCheckpointManifest,
+        manifest: &RelationalCheckpointManifestDraft,
         cells: &worth_execution::ExecutionOrderedMap<
             crate::publication::patch::data::PatchStreamPosition,
             Arc<RelationalCommitEnvelopeResidency>,

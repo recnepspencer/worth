@@ -44,8 +44,9 @@ pub(super) fn apply(
         relation_id: intent.relation_id,
         kind_id,
     };
-    let patch = record_aspect_patch::readmit(
-        intent.aspect_patch.clone(),
+    let patch = record_aspect_patch::readmit_original_portable(
+        &workspace.execution(),
+        &intent.aspect_patch,
         PortablePatchReadmissionPurpose::RecordMutation,
         workspace.relation_aspect_plan(kind_id),
         target,
@@ -63,10 +64,20 @@ pub(super) fn apply(
     workspace.with_context(|context| {
         context
             .state
-            .mark_relation_slot_touched(intent.relation_id.partition_id, slot);
+            .mark_relation_slot_touched_for_request(
+                intent.relation_id.partition_id,
+                slot,
+                &context.execution,
+            )
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         let partition = context
             .state
-            .get_partition_mut(intent.relation_id.partition_id);
+            .get_partition_mut_for_request(intent.relation_id.partition_id, &context.execution)
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         partition
             .relation_arena
             .apply_extra_update_for_request(&context.execution, slot, new_state, version_id)
@@ -79,11 +90,10 @@ pub(super) fn apply(
     let new_state = workspace.with_context(|context| {
         context
             .state
-            .get_partition_mut(intent.relation_id.partition_id)
-            .relation_arena
-            .retained_extra(slot)
+            .retained_relation_extra(intent.relation_id.partition_id, slot)
     });
     Ok(MutationOutcome::relation_updated(
+        &workspace.execution(),
         intent.relation_id,
         kind_id,
         endpoints.source,
@@ -93,7 +103,7 @@ pub(super) fn apply(
         old_state,
         new_state,
         Some(patch),
-    ))
+    )?)
 }
 
 fn missing(

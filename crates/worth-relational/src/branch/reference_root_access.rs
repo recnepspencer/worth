@@ -47,3 +47,57 @@ impl RelationalBranchReferenceCell {
         self.state().root = None;
     }
 }
+
+/// Shallow original cell DATA custody. Capturing this handle takes no state or
+/// head lock and copies no name, descriptor, publication handle or service.
+pub(crate) struct CheckpointComponentCellSource {
+    runtime_instance_id: u64,
+    state: Arc<std::sync::Mutex<super::RelationalBranchReferenceMutableState>>,
+    head: Arc<crate::history::retention::RelationalBranchHeadRetentionCell>,
+}
+impl RelationalBranchReferenceCell {
+    pub(in crate::branch) fn checkpoint_component_source(&self) -> CheckpointComponentCellSource {
+        CheckpointComponentCellSource {
+            runtime_instance_id: self.identity.runtime_instance_id(),
+            state: Arc::clone(&self.state),
+            head: Arc::clone(&self.head_retention),
+        }
+    }
+}
+impl CheckpointComponentCellSource {
+    pub(crate) fn snapshot(
+        &self,
+        expected: &crate::branch::RelationalBranchCellCheckpoint,
+        posture: crate::branch::RelationalBranchLifecyclePosture,
+    ) -> Result<
+        Option<(
+            Arc<crate::branch::RelationalBranchRoot>,
+            crate::history::retention::RelationalBranchRetentionBinding,
+        )>,
+        crate::branch::CheckpointBranchMetadataCaptureDenial,
+    > {
+        use crate::branch::CheckpointBranchMetadataCaptureDenial as Denial;
+        let root = {
+            let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+            if self.runtime_instance_id != expected.runtime_instance_id
+                || state.observation != expected.observation
+                || state.truth_version != expected.truth_version
+                || state.lifecycle != posture
+            {
+                return Err(Denial::SourceChanged);
+            }
+            let Some(root) = state.root.as_ref() else {
+                return Ok(None);
+            };
+            super::super::basis_axis_validation::require_root_matches_reference(
+                &state.observation,
+                root,
+            )
+            .map_err(|_| Denial::SourceChanged)?;
+            Arc::clone(root)
+        };
+        // Never enter the head/lane while holding the actual state guard.
+        let binding = self.head.binding().map_err(|_| Denial::SourceChanged)?;
+        Ok(Some((root, binding)))
+    }
+}

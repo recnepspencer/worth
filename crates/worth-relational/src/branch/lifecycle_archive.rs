@@ -75,9 +75,14 @@ impl crate::runtime::RelationalRuntime {
             prior_generation: state.observation().generation(),
             prior_truth_version: state.truth_version(),
         };
+        let schema = state
+            .selected_root()
+            .ok_or(denied(RelationalBranchArchiveDenial::OwnerUnavailable))?
+            .retained_schema_authority();
         publication.record_with_cutover(
             execution,
             step,
+            schema,
             || Ok(transition),
             |_| state.install_archive(archived.clone()),
         )?;

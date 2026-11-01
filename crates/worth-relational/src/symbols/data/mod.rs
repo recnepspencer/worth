@@ -1,3 +1,5 @@
+mod symbol_text_lookup;
+pub(crate) use symbol_text_lookup::SymbolTextLookup;
 mod exhausted;
 pub use exhausted::RelationalSymbolExhausted;
 mod client_key;

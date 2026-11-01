@@ -10,6 +10,26 @@ use crate::history::retention::{
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn checkpoint_component_source(
+        &self,
+        branch: &BranchId,
+    ) -> Option<crate::branch::CheckpointComponentCellSource> {
+        self.branch_cells.checkpoint_component_source(branch)
+    }
+    pub(crate) fn capture_external_checkpoint_components_for_request<'a>(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        current: impl IntoIterator<
+            Item = &'a crate::history::retention::RelationalBranchRetentionBinding,
+        >,
+    ) -> Result<
+        crate::history::retention::CapturedExternalCheckpointComponents,
+        crate::history::retention::RelationalRetentionRequestAcquisitionDenial,
+    > {
+        self.retention_owner
+            .capture_checkpoint_components_for_request(request, current)
+    }
+
     pub(crate) fn external_checkpoint_components(
         &self,
     ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {

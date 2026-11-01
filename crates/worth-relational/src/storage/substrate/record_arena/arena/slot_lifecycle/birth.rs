@@ -65,8 +65,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.replay_pins.set_using(physical, 0, request)?;
         self.snapshot_pins.set_using(physical, 0, request)?;
         let logical = self.slots.slots()[physical] as usize;
-        self.live_bitset.set(logical, true);
-        self.reclaimable_bitset.set(logical, false);
+        self.set_presence_bits_using(logical, true, false, request)?;
         Ok(())
     }
 
@@ -122,16 +121,15 @@ impl<K: RecordKind> RecordArena<K> {
             self.extra.push_shared(extra);
         }
         self.aspect_versions
-            .push_value_using(std::collections::BTreeMap::new(), request)?;
+            .push_value_using(Default::default(), request)?;
         self.field_revisions
-            .push_value_using(Some(std::collections::BTreeMap::new()), request)?;
+            .push_value_using(Some(Default::default()), request)?;
         self.diagnostics_enrichment
             .push_value_using(std::collections::BTreeMap::new(), request)?;
         self.branch_pins.push(0);
         self.replay_pins.push(0);
         self.snapshot_pins.push(0);
-        self.live_bitset.set(logical_slot, true);
-        self.reclaimable_bitset.set(logical_slot, false);
+        self.set_presence_bits_using(logical_slot, true, false, request)?;
         Ok(())
     }
 }

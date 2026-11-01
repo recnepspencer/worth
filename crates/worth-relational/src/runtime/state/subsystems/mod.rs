@@ -1,3 +1,8 @@
+pub(crate) use history::{
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
+    RetainedBranchTransition,
+};
+pub(crate) use record_identity::{MutationRecordAllocations, OriginalRecordAllocationCursor};
 mod commit_strategies;
 mod durability;
 mod history;
@@ -43,7 +48,7 @@ pub use history::{
 };
 pub(crate) use indexing::{
     CapturedIndexDefinitionCatalog, IndexCatalogCoverage, IndexDefinitionReadBinding,
-    IndexingState, IndexingSubsystem, PreparedGenerationBatch,
+    IndexingState, IndexingSubsystem, OriginalCheckpointIndexes, PreparedGenerationBatch,
 };
 pub(crate) use lineage::{
     LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,
@@ -58,8 +63,9 @@ pub(crate) use record_identity::{
 };
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
 pub(crate) use services::{
-    ColdSymbolDirectoryDenial, PendingSymbolMeanings, PreparedSymbolPublication,
-    RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable, SymbolReservationDenial,
+    ColdSymbolDirectoryDenial, MutationSymbolMeanings, OriginalSymbolMeanings,
+    PendingSymbolMeanings, PreparedSymbolPublication, RuntimeInstrumentation, RuntimeServices,
+    RuntimeSymbolTable, SymbolReservationDenial,
 };
 pub(crate) use storage::{
     MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,

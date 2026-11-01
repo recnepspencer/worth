@@ -9,6 +9,8 @@ mod merge;
 mod payload_allocation;
 mod pin_counts;
 mod pinning;
+mod revision_maps;
+pub(crate) use revision_maps::{AspectVersions, FieldRevisions};
 mod slot_directory;
 mod slot_lifecycle;
 pub(crate) use slot_lifecycle::MetadataWriteDenial;
@@ -24,7 +26,6 @@ use std::collections::BTreeMap;
 
 use crate::identity::data::{KindId, PartitionId, RecordId, VersionId};
 use crate::storage::data::RecordLifecycleState;
-use crate::storage::data::RelationalFieldRevision;
 use crate::storage::partition::DenseSlotBitSet;
 use crate::symbols::data::Symbol;
 
@@ -53,10 +54,8 @@ pub(crate) struct RecordArena<K: RecordKind> {
     pub(crate) created_at: SharedColumn<VersionId>,
     pub(crate) retired_at: SharedColumn<Option<VersionId>>,
     pub(crate) extra: SharedColumn<StorageAllocation<K::Extra>>,
-    pub(crate) aspect_versions: SharedColumn<StorageAllocation<BTreeMap<Symbol, u64>>>,
-    pub(crate) field_revisions: SharedColumn<
-        StorageAllocation<Option<BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>>,
-    >,
+    pub(crate) aspect_versions: SharedColumn<AspectVersions>,
+    pub(crate) field_revisions: SharedColumn<Option<FieldRevisions>>,
     pub(crate) diagnostics_enrichment: SharedColumn<StorageAllocation<BTreeMap<Symbol, String>>>,
     pub(crate) branch_pins: RecordPinCounts,
     pub(crate) replay_pins: RecordPinCounts,
@@ -157,60 +156,47 @@ impl<K: RecordKind> RecordArena<K> {
         self.metadata_history.get_mut(physical)
     }
 
-    pub(crate) fn aspect_versions_at(&self, slot: usize) -> Option<&BTreeMap<Symbol, u64>> {
+    pub(crate) fn aspect_versions_at(&self, slot: usize) -> Option<&AspectVersions> {
         self.physical_index(slot)
             .and_then(|physical| self.aspect_versions.get(physical))
     }
 
     #[cfg(test)]
-    pub(crate) fn aspect_versions_at_mut(
-        &mut self,
-        slot: usize,
-    ) -> Option<&mut BTreeMap<Symbol, u64>> {
+    pub(crate) fn aspect_versions_at_mut(&mut self, slot: usize) -> Option<&mut AspectVersions> {
         let physical = self.physical_index(slot)?;
         self.aspect_versions.get_mut(physical)
     }
 
-    pub(crate) fn field_revisions_at(
-        &self,
-        slot: usize,
-    ) -> Option<&BTreeMap<(Symbol, Symbol), RelationalFieldRevision>> {
+    pub(crate) fn field_revisions_at(&self, slot: usize) -> Option<&FieldRevisions> {
         self.physical_index(slot)
             .and_then(|physical| self.field_revisions.get(physical))
             .and_then(Option::as_ref)
     }
 
-    /// Node-path admission only; the independent version-map payload remains
-    /// its existing ordinary allocation obligation.
+    /// Admit the column path before borrowing its shallow map header; each
+    /// subsequent map edit admits its actual persistent nodes independently.
     pub(crate) fn aspect_versions_at_mut_using(
         &mut self,
         slot: usize,
         request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
-    ) -> Result<Option<&mut BTreeMap<Symbol, u64>>, crate::execution::RelationalExecutionDenialCause>
-    {
+    ) -> Result<Option<&mut AspectVersions>, crate::execution::RelationalExecutionDenialCause> {
         let Some(physical) = self.physical_index(slot) else {
             return Ok(None);
         };
-        Ok(self
-            .aspect_versions
-            .carrier_mut_using(physical, request)?
-            .map(StorageAllocation::make_mut))
+        Ok(self.aspect_versions.carrier_mut_using(physical, request)?)
     }
     pub(crate) fn field_revisions_at_mut_using(
         &mut self,
         slot: usize,
         request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
-    ) -> Result<
-        Option<&mut BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>,
-        crate::execution::RelationalExecutionDenialCause,
-    > {
+    ) -> Result<Option<&mut FieldRevisions>, crate::execution::RelationalExecutionDenialCause> {
         let Some(physical) = self.physical_index(slot) else {
             return Ok(None);
         };
         Ok(self
             .field_revisions
             .carrier_mut_using(physical, request)?
-            .and_then(|carrier| StorageAllocation::make_mut(carrier).as_mut()))
+            .and_then(Option::as_mut))
     }
     pub(crate) fn retained_extra(
         &self,

@@ -213,7 +213,14 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
                 let head = wire.manifest.roots[0].regions[0].head;
                 wire.members.retain(|(key, _)| *key != head);
             }
-            3 => wire.manifest.commits[0].payload_digest[0] ^= 1,
+            3 => {
+                let mut manifest = wire.manifest.ordinary_owned_draft();
+                let mut commits = manifest.commits.iter().cloned().collect::<Vec<_>>();
+                commits[0].payload_digest[0] ^= 1;
+                manifest.commits =
+                    crate::durability::data::CheckpointCommitIndex::from_ordinary(commits);
+                wire.manifest = manifest.seal_ordinary();
+            }
             _ => unreachable!(),
         }
         let mut bytes = CHECKPOINT_MAGIC.to_vec();

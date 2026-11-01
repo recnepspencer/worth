@@ -41,6 +41,7 @@ pub(super) fn capture(
     Ok(projection.into_values().collect())
 }
 
+pub(super) mod full;
 mod reconstruction;
 pub(super) use reconstruction::rebuild;
 pub(super) use reconstruction::rebuild_head_history;

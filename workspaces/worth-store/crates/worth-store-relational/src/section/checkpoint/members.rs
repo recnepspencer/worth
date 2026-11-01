@@ -1,5 +1,5 @@
 //! Request-funded opaque physical transport, preserving canonical locator order.
-use super::{PreparedRelationalSection, RelationalSectionCheckpointDenial as Denial};
+use super::RelationalSectionCheckpointDenial as Denial;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
 use worth_relational::facade::durability::{
     RelationalCheckpointMember, RelationalDurableMemberLocator as Key,
@@ -17,7 +17,8 @@ fn allocation(cause: worth_execution::ExecutionOrderedMapDenial) -> Denial {
     ))
 }
 pub(super) fn prepare(
-    section: &PreparedRelationalSection,
+    checkpoint: &worth_relational::facade::durability::RelationalNativeCheckpoint,
+    retained: &crate::cold_source::RetainedMemberPublication,
     previous: &[AnchoredRecordMemberLocator],
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<
@@ -40,7 +41,7 @@ pub(super) fn prepare(
         .map_err(allocation)?;
     }
     let mut plan = ExecutionOrderedMap::default();
-    for (index, member) in section.checkpoint.members().iter().enumerate() {
+    for (index, member) in checkpoint.members().iter().enumerate() {
         let key = member.locator();
         let placed = if let Some(original) = old.get(&key) {
             TransportMember::Carried(*original)
@@ -55,7 +56,7 @@ pub(super) fn prepare(
         plan.insert_cloned_native_for_request(&key, &placed, *execution)
             .map_err(allocation)?;
     }
-    for key in section.retained.member_locators() {
+    for key in retained.member_locators() {
         execution.consult().map_err(Denial::Execution)?;
         if !plan.contains_key(&key) {
             let placed =
@@ -71,7 +72,7 @@ pub(super) fn prepare(
         .values()
         .try_fold(0u64, |total, member| match member {
             TransportMember::Carried(_) => Some(total),
-            TransportMember::New(index) => match &section.checkpoint.members()[*index] {
+            TransportMember::New(index) => match &checkpoint.members()[*index] {
                 RelationalCheckpointMember::New { bytes, .. } => {
                     total.checked_add(bytes.len() as u64)
                 }
@@ -94,7 +95,7 @@ pub(super) fn prepare(
             }
             TransportMember::New(index) => {
                 let RelationalCheckpointMember::New { locator, bytes } =
-                    &section.checkpoint.members()[*index]
+                    &checkpoint.members()[*index]
                 else {
                     return Err(Denial::MissingCarriedMember);
                 };

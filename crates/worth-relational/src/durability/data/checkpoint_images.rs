@@ -207,38 +207,7 @@ pub(crate) struct DurablePendingRecordReservation {
     pub(crate) origin: DurableRecordReservationOrigin,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct DurableRecordIdentityState {
-    pub(crate) schema_version: u16,
-    #[serde(default)]
-    pub(crate) generation_high_water: Vec<DurableRecordGenerationHighWater>,
-    #[serde(default)]
-    pub(crate) reusable_slots: Vec<DurableReusableRecordSlot>,
-    #[serde(default)]
-    pub(crate) append_frontiers: Vec<DurableRecordSlotFrontier>,
-    #[serde(default)]
-    pub(crate) pending_reservations: Vec<DurablePendingRecordReservation>,
-}
-
-impl DurableRecordIdentityState {
-    pub(crate) const CURRENT_SCHEMA_VERSION: u16 = 2;
-
-    pub(crate) fn current(
-        generation_high_water: Vec<DurableRecordGenerationHighWater>,
-        reusable_slots: Vec<DurableReusableRecordSlot>,
-        append_frontiers: Vec<DurableRecordSlotFrontier>,
-        pending_reservations: Vec<DurablePendingRecordReservation>,
-    ) -> Self {
-        Self {
-            schema_version: Self::CURRENT_SCHEMA_VERSION,
-            generation_high_water,
-            reusable_slots,
-            append_frontiers,
-            pending_reservations,
-        }
-    }
-}
+pub(crate) use super::record_identity_image::DurableRecordIdentityState;
 
 pub(crate) fn branch_root_partition_image_digest(
     partition_images: &[PartitionCheckpointImage],

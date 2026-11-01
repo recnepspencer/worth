@@ -1,9 +1,10 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
+use crate::authority::mutation::record_changes::apply_adjacency_deltas_for_request;
 use crate::authority::mutation::stale_targets::{
     ensure_entity_target_is_current, ensure_relation_target_is_current,
 };
 use crate::authority::mutation::MutationWorkspace;
-use crate::authority::mutation::{apply_adjacency_deltas, AdjacencyDelta, AdjacencyDeltaKind};
+use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::RelationEndpoints;
 use crate::transactions::data::{
@@ -72,8 +73,16 @@ pub(super) fn apply(
 
             context
                 .state
-                .mark_relation_slot_touched(intent.relation_id.partition_id, slot);
-            apply_adjacency_deltas(
+                .mark_relation_slot_touched_for_request(
+                    intent.relation_id.partition_id,
+                    slot,
+                    &context.execution,
+                )
+                .map_err(|cause| {
+                    crate::transactions::data::TransactionCommitError::execution(cause.into())
+                })?;
+            apply_adjacency_deltas_for_request(
+                &context.execution,
                 context.state,
                 &[
                     AdjacencyDelta {
@@ -91,7 +100,7 @@ pub(super) fn apply(
                     },
                 ],
                 version_id,
-            );
+            )?;
             Ok::<_, crate::transactions::data::TransactionCommitError>((
                 kind_id,
                 old_endpoints,
@@ -129,7 +138,10 @@ pub(super) fn apply(
     workspace.with_context(|context| {
         let partition = context
             .state
-            .get_partition_mut(intent.relation_id.partition_id);
+            .get_partition_mut_for_request(intent.relation_id.partition_id, &context.execution)
+            .map_err(|cause| {
+                crate::transactions::data::TransactionCommitError::execution(cause.into())
+            })?;
         partition
             .relation_arena
             .apply_extra_update_for_request(
@@ -148,11 +160,10 @@ pub(super) fn apply(
     let authoritative_aspect_state = workspace.with_context(|context| {
         context
             .state
-            .get_partition_mut(intent.relation_id.partition_id)
-            .relation_arena
-            .retained_extra(slot)
+            .retained_relation_extra(intent.relation_id.partition_id, slot)
     });
     Ok(MutationOutcome::relation_updated(
+        &workspace.execution(),
         intent.relation_id,
         kind_id,
         old_endpoints.source,
@@ -162,7 +173,7 @@ pub(super) fn apply(
         old_authoritative_aspect_state,
         authoritative_aspect_state,
         record_aspect_patch::published_patch(authoritative_patch),
-    ))
+    )?)
 }
 
 fn resolve_relation_endpoint(

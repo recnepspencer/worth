@@ -14,9 +14,9 @@ use super::data::{
 use super::lifecycle_transition_evidence::lifecycle_transition;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) enum MaterializedAspectState {
-    ScalarValue(Option<worth_foundational::facade::AspectValue>),
-    StructValue(Option<StructAspectValue>),
+pub(super) enum MaterializedAspectState<'a> {
+    ScalarValue(Option<&'a worth_foundational::facade::AspectValue>),
+    StructValue(Option<&'a StructAspectValue>),
     EndpointIdentity(Option<EntityId>),
     LifecycleTransition(LifecycleTransitionClass),
     StructuralChange(RecordStructuralChange),
@@ -26,22 +26,30 @@ pub(super) fn evaluate_authoritative_binding_delta(
     binding: &LoweredAspectContractBinding,
     context: BindingEvaluationContext<'_>,
 ) -> Result<(CanonicalAspectDeltaEvidence, bool), CanonicalDeltaError> {
+    borrowed_authoritative_binding_delta(binding, context)
+        .map(|(evidence, changed)| (evidence.into_owned(binding.aspect_key()), changed))
+}
+
+pub(super) fn borrowed_authoritative_binding_delta<'a>(
+    binding: &LoweredAspectContractBinding,
+    context: BindingEvaluationContext<'a>,
+) -> Result<(super::BorrowedAspectDeltaEvidence<'a>, bool), CanonicalDeltaError> {
     let old_state = materialize_old_binding_state(binding, context)?;
     let new_state = materialize_new_binding_state(binding, context)?;
     binding_evidence_from_states(binding.aspect_key(), old_state, new_state)
 }
 
-fn materialize_old_binding_state(
+fn materialize_old_binding_state<'a>(
     binding: &LoweredAspectContractBinding,
-    context: BindingEvaluationContext<'_>,
-) -> Result<MaterializedAspectState, CanonicalDeltaError> {
+    context: BindingEvaluationContext<'a>,
+) -> Result<MaterializedAspectState<'a>, CanonicalDeltaError> {
     materialize_binding_state(binding, context, MaterializationSide::Old)
 }
 
-fn materialize_new_binding_state(
+fn materialize_new_binding_state<'a>(
     binding: &LoweredAspectContractBinding,
-    context: BindingEvaluationContext<'_>,
-) -> Result<MaterializedAspectState, CanonicalDeltaError> {
+    context: BindingEvaluationContext<'a>,
+) -> Result<MaterializedAspectState<'a>, CanonicalDeltaError> {
     materialize_binding_state(binding, context, MaterializationSide::New)
 }
 
@@ -51,11 +59,11 @@ enum MaterializationSide {
     New,
 }
 
-fn materialize_binding_state(
+fn materialize_binding_state<'a>(
     binding: &LoweredAspectContractBinding,
-    context: BindingEvaluationContext<'_>,
+    context: BindingEvaluationContext<'a>,
     side: MaterializationSide,
-) -> Result<MaterializedAspectState, CanonicalDeltaError> {
+) -> Result<MaterializedAspectState<'a>, CanonicalDeltaError> {
     match &binding.target {
         AspectBinding::EntityField { field } => {
             materialize_entity_field_binding_state(binding, context, side, field)
@@ -84,12 +92,12 @@ fn materialize_binding_state(
     }
 }
 
-fn materialize_entity_field_binding_state(
+fn materialize_entity_field_binding_state<'a>(
     binding: &LoweredAspectContractBinding,
-    context: BindingEvaluationContext<'_>,
+    context: BindingEvaluationContext<'a>,
     side: MaterializationSide,
     field: &worth_foundational::facade::FieldKey,
-) -> Result<MaterializedAspectState, CanonicalDeltaError> {
+) -> Result<MaterializedAspectState<'a>, CanonicalDeltaError> {
     if !matches!(context, BindingEvaluationContext::Entity { .. }) {
         return Err(invalid_binding_context(
             binding.aspect_key(),
@@ -116,11 +124,11 @@ fn materialize_entity_field_binding_state(
     }
 }
 
-fn materialize_relation_field_binding_state(
+fn materialize_relation_field_binding_state<'a>(
     binding: &LoweredAspectContractBinding,
-    context: BindingEvaluationContext<'_>,
+    context: BindingEvaluationContext<'a>,
     side: MaterializationSide,
-) -> Result<MaterializedAspectState, CanonicalDeltaError> {
+) -> Result<MaterializedAspectState<'a>, CanonicalDeltaError> {
     if !matches!(context, BindingEvaluationContext::Relation { .. }) {
         return Err(invalid_binding_context(
             binding.aspect_key(),
@@ -147,11 +155,11 @@ fn materialize_relation_field_binding_state(
     }
 }
 
-fn materialize_relation_source_endpoint_binding_state(
+fn materialize_relation_source_endpoint_binding_state<'a>(
     binding: &LoweredAspectContractBinding,
-    context: BindingEvaluationContext<'_>,
+    context: BindingEvaluationContext<'a>,
     side: MaterializationSide,
-) -> Result<MaterializedAspectState, CanonicalDeltaError> {
+) -> Result<MaterializedAspectState<'a>, CanonicalDeltaError> {
     let Some((old_source, new_source, _, _)) = context.relation_endpoints() else {
         return Err(invalid_binding_context(
             binding.aspect_key(),
@@ -164,11 +172,11 @@ fn materialize_relation_source_endpoint_binding_state(
     }))
 }
 
-fn materialize_relation_target_endpoint_binding_state(
+fn materialize_relation_target_endpoint_binding_state<'a>(
     binding: &LoweredAspectContractBinding,
-    context: BindingEvaluationContext<'_>,
+    context: BindingEvaluationContext<'a>,
     side: MaterializationSide,
-) -> Result<MaterializedAspectState, CanonicalDeltaError> {
+) -> Result<MaterializedAspectState<'a>, CanonicalDeltaError> {
     let Some((_, _, old_target, new_target)) = context.relation_endpoints() else {
         return Err(invalid_binding_context(
             binding.aspect_key(),
@@ -181,15 +189,15 @@ fn materialize_relation_target_endpoint_binding_state(
     }))
 }
 
-fn materialize_authoritative_scalar_state(
+fn materialize_authoritative_scalar_state<'a>(
     aspect_key: &AspectKey,
-    authoritative_state: Option<&AuthoritativeRecordAspectState>,
-) -> Result<Option<worth_foundational::facade::AspectValue>, CanonicalDeltaError> {
+    authoritative_state: Option<&'a AuthoritativeRecordAspectState>,
+) -> Result<Option<&'a worth_foundational::facade::AspectValue>, CanonicalDeltaError> {
     let Some(entry) = authoritative_state.and_then(|state| state.get(aspect_key)) else {
         return Ok(None);
     };
     match entry.view() {
-        ContractValidatedAspectValueView::Scalar(value) => Ok(Some(value.clone())),
+        ContractValidatedAspectValueView::Scalar(value) => Ok(Some(value)),
         ContractValidatedAspectValueView::Struct(_) => {
             Err(CanonicalDeltaError::AspectValueMaterialization {
                 aspect_key: aspect_key.clone(),
@@ -202,15 +210,15 @@ fn materialize_authoritative_scalar_state(
     }
 }
 
-fn materialize_authoritative_struct_state(
+fn materialize_authoritative_struct_state<'a>(
     aspect_key: &AspectKey,
-    authoritative_state: Option<&AuthoritativeRecordAspectState>,
-) -> Result<Option<StructAspectValue>, CanonicalDeltaError> {
+    authoritative_state: Option<&'a AuthoritativeRecordAspectState>,
+) -> Result<Option<&'a StructAspectValue>, CanonicalDeltaError> {
     let Some(entry) = authoritative_state.and_then(|state| state.get(aspect_key)) else {
         return Ok(None);
     };
     match entry.view() {
-        ContractValidatedAspectValueView::Struct(value) => Ok(Some(value.clone())),
+        ContractValidatedAspectValueView::Struct(value) => Ok(Some(value)),
         ContractValidatedAspectValueView::Scalar(_) => {
             Err(CanonicalDeltaError::AspectValueMaterialization {
                 aspect_key: aspect_key.clone(),
@@ -223,12 +231,11 @@ fn materialize_authoritative_struct_state(
     }
 }
 
-fn binding_evidence_from_states(
+fn binding_evidence_from_states<'a>(
     aspect_key: &AspectKey,
-    old_state: MaterializedAspectState,
-    new_state: MaterializedAspectState,
-) -> Result<(CanonicalAspectDeltaEvidence, bool), CanonicalDeltaError> {
-    let locator = authoritative_value_locator(aspect_key);
+    old_state: MaterializedAspectState<'a>,
+    new_state: MaterializedAspectState<'a>,
+) -> Result<(super::BorrowedAspectDeltaEvidence<'a>, bool), CanonicalDeltaError> {
     match (old_state, new_state) {
         (
             MaterializedAspectState::ScalarValue(old_value),
@@ -236,8 +243,7 @@ fn binding_evidence_from_states(
         ) => {
             let changed = (old_value.is_some() || new_value.is_some()) && old_value != new_value;
             Ok((
-                CanonicalAspectDeltaEvidence::ScalarAspectValueTransition {
-                    locator,
+                super::BorrowedAspectDeltaEvidence::ScalarAspectValueTransition {
                     old_present: old_value.is_some(),
                     new_present: new_value.is_some(),
                     old_value: if changed { old_value } else { None },
@@ -252,8 +258,7 @@ fn binding_evidence_from_states(
         ) => {
             let changed = (old_value.is_some() || new_value.is_some()) && old_value != new_value;
             Ok((
-                CanonicalAspectDeltaEvidence::StructAspectValueTransition {
-                    locator,
+                super::BorrowedAspectDeltaEvidence::StructAspectValueTransition {
                     old_present: old_value.is_some(),
                     new_present: new_value.is_some(),
                     old_value: if changed { old_value } else { None },
@@ -268,8 +273,7 @@ fn binding_evidence_from_states(
         ) => {
             let changed = old_endpoint != new_endpoint;
             Ok((
-                CanonicalAspectDeltaEvidence::EndpointIdentity {
-                    locator,
+                super::BorrowedAspectDeltaEvidence::EndpointIdentity {
                     old: old_endpoint,
                     new: new_endpoint,
                 },
@@ -280,8 +284,7 @@ fn binding_evidence_from_states(
             MaterializedAspectState::LifecycleTransition(transition),
             MaterializedAspectState::LifecycleTransition(_),
         ) => Ok((
-            CanonicalAspectDeltaEvidence::Lifecycle {
-                locator,
+            super::BorrowedAspectDeltaEvidence::Lifecycle {
                 transition,
             },
             transition != LifecycleTransitionClass::NoTransition,
@@ -290,7 +293,7 @@ fn binding_evidence_from_states(
             MaterializedAspectState::StructuralChange(change),
             MaterializedAspectState::StructuralChange(_),
         ) => Ok((
-            CanonicalAspectDeltaEvidence::Structural { locator, change },
+            super::BorrowedAspectDeltaEvidence::Structural { change },
             true,
         )),
         (old_state, new_state) => Err(CanonicalDeltaError::InvalidLoweredBindingForRecordClass {
@@ -300,17 +303,6 @@ fn binding_evidence_from_states(
             ),
         }),
     }
-}
-
-fn authoritative_value_locator(
-    aspect_key: &AspectKey,
-) -> worth_foundational::facade::AspectValueLocator {
-    worth_foundational::facade::AspectValueLocator::whole_aspect(
-        worth_foundational::facade::AspectLocator::new(
-            worth_foundational::facade::LocatorAuthority::Authoritative,
-            aspect_key.clone(),
-        ),
-    )
 }
 
 fn authoritative_state_for_side<'a>(

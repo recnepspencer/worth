@@ -165,6 +165,9 @@ pub(super) fn expand(
         .map_err(|cause| corrupt(format!("index member frame: {cause:?}")))?;
     let (derived_index_artifacts, derived_index_checkpoint, derived_index_checkpoint_format) =
         rmp_serde::from_slice(payload).map_err(|error| corrupt(error.to_string()))?;
+    let manifest = manifest.ordinary_owned_draft();
+    let (runtime_name, branch_cells, branch_lifecycle, retired_branch_names) =
+        manifest.branch_data.ordinary_owned_parts();
     Ok(DurableCheckpoint {
         recorded_components: manifest
             .roots
@@ -183,11 +186,11 @@ pub(super) fn expand(
             .map(|entry| (entry.commit.commit_id, entry.root.clone()))
             .collect(),
         mirror_schema_digest: manifest.mirror_schema,
-        branch_cells: manifest.branch_cells,
-        branch_lifecycle: manifest.branch_lifecycle,
-        retired_branch_names: manifest.retired_branch_names,
+        branch_cells: branch_cells,
+        branch_lifecycle: branch_lifecycle,
+        retired_branch_names: retired_branch_names,
         branch_roots,
-        branch_root_schema_images: manifest.schemas,
+        branch_root_schema_images: manifest.schemas.ordinary_owned_copy(),
         record_identity: manifest.record_identity,
         record_generation_high_water: Vec::new(),
         reusable_record_slots: Vec::new(),
@@ -196,18 +199,18 @@ pub(super) fn expand(
         partition_images,
         aspect_contracts: manifest.aspect_contracts,
         lineage: crate::lineage::data::LineageCheckpointArtifact::new(
-            manifest.lineage_basis,
+            manifest.lineage_basis.ordinary_owned_copy(),
             lineage_nodes,
         ),
         index_generation_frontier: manifest.index_generation_frontier,
         index_definition_frontier: manifest.index_definition_frontier,
-        index_definitions: manifest.index_definitions,
+        index_definitions: manifest.index_definitions.ordinary_owned_copy(),
         derived_index_artifacts,
         derived_index_checkpoint,
         derived_index_checkpoint_format,
         symbol_table,
         symbol_identity_frontier: manifest.symbol_identity_frontier,
-        runtime_name: manifest.runtime_name,
+        runtime_name: runtime_name,
     })
 }
 

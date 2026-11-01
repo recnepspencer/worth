@@ -2,10 +2,13 @@
 mod member_export;
 #[path = "cell/observation.rs"]
 mod observation;
+mod resident_full;
 #[path = "cell/resident_head.rs"]
 mod resident_head;
 #[path = "cell/resident_leases.rs"]
 mod resident_leases;
+mod weak;
+pub(super) use weak::RegionCellWeak;
 
 use super::cell_load_cache::{self, RegionLoadCache};
 use super::{
@@ -43,6 +46,7 @@ pub(crate) struct RelationalColdRegion {
 pub(crate) struct ResidentRegion {
     pub(super) partition: PartitionState,
     pub(super) commitment: Option<PartitionContentCommitment>,
+    pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -63,7 +67,7 @@ enum ResidencyState {
 pub(crate) struct RelationalRegionResidency {
     pub(super) partition_id: PartitionId,
     pub(super) checkpoint_bindings:
-        Mutex<std::collections::BTreeMap<[u8; 32], super::RecordedRegionCheckpoint>>,
+        Mutex<worth_execution::ExecutionOrderedMap<[u8; 32], super::RecordedRegionCheckpoint>>,
     state: Mutex<ResidencyState>,
     damage: OnceLock<RelationalStorageUnavailable>,
     backing: Option<RelationalColdRegion>,
@@ -72,6 +76,7 @@ pub(crate) struct RelationalRegionResidency {
     raw_head: RegionLoadCache,
     raw_full: RegionLoadCache,
     pub(super) leases: AtomicUsize,
+    _control_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl RelationalRegionResidency {
@@ -89,22 +94,29 @@ impl RelationalRegionResidency {
             })?;
         Ok(Arc::new(Self {
             partition_id: cold.partition_id,
-            checkpoint_bindings: Mutex::new(std::collections::BTreeMap::from([(
-                cold.schema_carrier_digest,
-                super::RecordedRegionCheckpoint {
-                    history_members: cold.history_members.clone(),
-                    leaf: crate::durability::data::RelationalCheckpointRegion {
-                        kind_authority: cold.kind_authority,
-                        partition_id: cold.partition_id,
-                        content_digest: cold.content_digest,
-                        entity_slots: cold.entity_slots,
-                        relation_slots: cold.relation_slots,
-                        unavailable_records: cold.unavailable_records,
-                        head: cold.head,
-                        history: cold.history,
-                    },
-                },
-            )])),
+            checkpoint_bindings: Mutex::new({
+                let mut bindings = worth_execution::ExecutionOrderedMap::default();
+                bindings
+                    .insert_cloned_native_in(
+                        &cold.schema_carrier_digest,
+                        &super::RecordedRegionCheckpoint {
+                            history_members: cold.history_members.clone(),
+                            leaf: crate::durability::data::RelationalCheckpointRegion {
+                                kind_authority: cold.kind_authority,
+                                partition_id: cold.partition_id,
+                                content_digest: cold.content_digest,
+                                entity_slots: cold.entity_slots,
+                                relation_slots: cold.relation_slots,
+                                unavailable_records: cold.unavailable_records,
+                                head: cold.head,
+                                history: cold.history,
+                            },
+                        },
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .expect("ordinary region binding uses unbounded system allocation");
+                bindings
+            }),
             backing: Some(cold),
             head_readmission: None,
             _backing_custody: Some(custody),
@@ -113,6 +125,7 @@ impl RelationalRegionResidency {
             state: Mutex::new(ResidencyState::Cold),
             damage: OnceLock::new(),
             leases: AtomicUsize::new(0),
+            _control_memory: None,
         }))
     }
 
@@ -136,6 +149,7 @@ impl RelationalRegionResidency {
         let region = Arc::new(ResidentRegion {
             partition,
             commitment,
+            _memory: None,
         });
         let cell = Arc::new(Self {
             partition_id: region.partition.partition_id,
@@ -148,6 +162,7 @@ impl RelationalRegionResidency {
             state: Mutex::new(ResidencyState::Full(region.clone())),
             damage: OnceLock::new(),
             leases: AtomicUsize::new(1),
+            _control_memory: None,
         });
         RelationalResidencyLease::accepted(cell, region)
     }

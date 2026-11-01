@@ -2,6 +2,33 @@
 use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
 use crate::storage::substrate::{RecordArena, RecordHistoryPrefix, RecordKind, SharedColumn};
 
+pub(super) fn capture_full<K: RecordKind>(
+    arena: &RecordArena<K>,
+    slot: usize,
+    request: super::full::Request<'_, '_, '_>,
+) -> Result<(DigestIndex, u64), PartitionContentDigestError>
+where
+    K::Meta: serde::Serialize,
+{
+    let physical = arena
+        .physical_index(slot)
+        .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+    if arena.history_prefixes[physical].is_some() {
+        return Err(PartitionContentDigestError::InvalidHistoryCoverage);
+    }
+    let history = &arena.metadata_history[physical];
+    let _memory = super::full::rows_memory(history.len(), request)?;
+    let mut entries = Vec::with_capacity(history.len());
+    for (index, value) in history.iter().enumerate() {
+        super::full::poll(request)?;
+        entries.push((index as u128, hash_value(b"metadata", value)?));
+    }
+    Ok((
+        DigestIndex::from_sorted_entries_for_request(&entries, request)?,
+        history.len() as u64,
+    ))
+}
+
 pub(super) fn update<K: RecordKind>(
     arena: &RecordArena<K>,
     previous: Option<&RecordArena<K>>,

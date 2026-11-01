@@ -71,6 +71,7 @@ fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_forei
     for change in 0..6 {
         let mut wire: CheckpointWire<'_> = rmp_serde::from_slice(payload).unwrap();
         let mut bytes = encode(&wire);
+        let mut components = wire.manifest.roots[0].recorded_components.clone();
         match change {
             0 => omit(
                 &mut bytes,
@@ -85,14 +86,12 @@ fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_forei
                 &wire.manifest.roots[0].recorded_components,
             ),
             2 => {
-                let duplicate = wire.manifest.roots[0].recorded_components[0].clone();
-                wire.manifest.roots[0].recorded_components.push(duplicate);
-                bytes = encode(&wire);
+                let duplicate = components[0].clone();
+                components.push(duplicate);
             }
             3..=5 => {
                 // The descriptor alone has no opaque u128 record inventories.
-                let mut descriptor =
-                    serde_json::to_value(&wire.manifest.roots[0].recorded_components[0]).unwrap();
+                let mut descriptor = serde_json::to_value(&components[0]).unwrap();
                 match change {
                     3 => descriptor["runtime_instance_id"] = serde_json::json!(42),
                     4 => {
@@ -106,11 +105,23 @@ fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_forei
                     }
                     _ => unreachable!(),
                 }
-                wire.manifest.roots[0].recorded_components[0] =
-                    serde_json::from_value(descriptor).unwrap();
-                bytes = encode(&wire);
+                components[0] = serde_json::from_value(descriptor).unwrap();
             }
             _ => unreachable!(),
+        }
+        if change >= 2 {
+            let mut manifest = wire.manifest.ordinary_owned_draft();
+            let mut roots = manifest.roots.iter().cloned().collect::<Vec<_>>();
+            let original = &roots[0];
+            roots[0] = crate::durability::data::RelationalCheckpointRoot::from_ordinary_parts(
+                original.commit_id,
+                components,
+                original.schema_carrier_digest,
+                original.regions.clone(),
+            );
+            manifest.roots = crate::durability::data::CheckpointRoots::from_ordinary(roots);
+            wire.manifest = manifest.seal_ordinary();
+            bytes = encode(&wire);
         }
         let error = expect_durability_failure(decode_checkpoint(execution, &bytes).unwrap_err());
         assert_eq!(
