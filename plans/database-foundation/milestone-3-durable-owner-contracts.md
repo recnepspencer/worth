@@ -157,7 +157,11 @@ must remain nonserialized and be freshly constructed after recovery.
 
 Read accepted coverage BEFORE freezing the live catalog. Capture the actual
 immutable catalog Arc and next issued ID under the SAME indexing-state read;
-use that SAME snapshot for both delta and authored-index-write preparation.
+use that SAME snapshot for delta, descriptive index-touch projection and
+authored-index-write preparation. Touch counting, building, extent and revision
+merging must not independently reread a newer live catalog. Capture before
+these projections so replay of an older prefix preserves every authoritative
+payload field, including touched later-definition cases.
 The first actual canonical commit carries the full uncovered prefix. Later
 commits traverse only its uncovered issued-ID range. Registration remains
 process-local until covered by a real committed canonical publication or an
