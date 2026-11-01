@@ -2693,3 +2693,21 @@ No new Cargo root, schema filter, checker exception, public CAD model or SDK pin
 Ordered event membership, private codec/profile/sharing integration and actual
 CAD SDK adoption/contact/topology/face-scale/Acceptance8/full gate remain open.
 This is a prerequisite, not Phase6 or milestone9.19 completion.
+
+
+### Phase6 Native ordered-event Source prerequisite (2026-11-01)
+
+Native now registers a finite physical event-chain membership recipe, proves its
+actual predecessor chain, folds retirements before introductions newest first,
+and validates all unpruned inverse candidates before membership propagation.
+Both-image nonmonotone routing supplies actual removed/continuing Source rows.
+Original controls and full physical support remain authoritative; per-call prefix
+memoization is not persistent COW or local warm history maintenance.
+
+The [ordered-event evidence](milestone-9.19-phase6-ordered-event-evidence.md)
+records35 selected Native plus1 existing derived-change passes (36 distinct),
+including9 new genuine event, malformed-history, lifecycle and work-stop cases.
+This Native-only prerequisite leaves Query typed authoring/archive/lowering and
+private codec/profile/sharing integration open. SDK adoption, actual CAD contact/
+topology/face-scale/Acceptance8 and the complete clean private gate remain open.
+It closes neither Phase6 nor milestone9.19 and changes no SDK pin.

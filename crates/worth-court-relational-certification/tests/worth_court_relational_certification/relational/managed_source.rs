@@ -23,6 +23,7 @@ use worth_relational::facade::{
 mod authored_fields;
 mod context;
 mod derived_admission;
+mod events;
 mod historical_material;
 mod history;
 mod journal;
@@ -286,4 +287,86 @@ fn native_managed_source_stages_all_scopes_before_validation_and_reborrows_each_
     assert_eq!(*court.staged.lock().unwrap(), BTreeSet::from([a, b]));
     assert_eq!(*court.observed.lock().unwrap(), BTreeSet::from([a, b]));
     assert!(court.foreign_observation.load(Ordering::SeqCst) > refused_before_merge);
+}
+
+// Keep actual runtime/request construction in this existing registered court root.
+fn with_event_source(
+    test: impl FnOnce(
+        &RelationalRuntime,
+        &events::Control,
+        &Arc<owner::Court>,
+        &SerialRequest,
+        &CancellationSource,
+    ),
+) {
+    let (registry, program, path) = events::registry::profile();
+    let court = Arc::new(owner::Court::default());
+    *court.event_cohorts.lock().unwrap() = Some(BTreeMap::new());
+    let control = events::Control::default();
+    let rule = CustomInvariantRegistration::new(events::Reader {
+        base: owner::Reader {
+            maximum_work: None,
+            program: program.clone(),
+            court: court.clone(),
+        },
+        path,
+        control: control.clone(),
+    })
+    .unwrap()
+    .with_managed_index_sources(vec![program])
+    .unwrap();
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(registry)
+        .custom_invariant(rule)
+        .build()
+        .unwrap();
+    let _registration = runtime
+        .publication_companion_port()
+        .begin_required_registration()
+        .unwrap()
+        .activate(Arc::new(owner::SourceOwner(court.clone())))
+        .unwrap();
+    let cancellation = CancellationSource::new();
+    let host =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
+    test(&runtime, &control, &court, &host, &cancellation);
+}
+
+fn with_event_probe(
+    test: impl FnOnce(&RelationalRuntime, &events::probe::Control, &SerialRequest, &CancellationSource),
+) {
+    with_event_probe_limit(None, test);
+}
+fn with_event_probe_limit(
+    maximum_work: Option<std::num::NonZeroU64>,
+    test: impl FnOnce(&RelationalRuntime, &events::probe::Control, &SerialRequest, &CancellationSource),
+) {
+    let (registry, _, path) = events::registry::profile();
+    let control = events::probe::Control::default();
+    let rule = CustomInvariantRegistration::new(events::probe::Reader {
+        path,
+        maximum_work,
+        control: control.clone(),
+    })
+    .unwrap();
+    // No Source participant is installed: this court qualifies the Native
+    // descriptive reader against permissive stored graphs, including bad chains.
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(registry)
+        .custom_invariant(rule)
+        .build()
+        .unwrap();
+    let cancellation = CancellationSource::new();
+    let host =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
+    test(&runtime, &control, &host, &cancellation);
+}
+
+fn with_fresh_event_request(test: impl FnOnce(&SerialRequest)) {
+    let host = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    test(&host);
 }

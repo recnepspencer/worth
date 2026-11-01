@@ -8,9 +8,11 @@ pub use laws::{
 pub(crate) mod canonical;
 pub(crate) mod catalog;
 pub(crate) mod evaluation;
+mod ordered_events;
 mod pinned;
 mod proof;
 mod source;
+mod source_buffer;
 pub(crate) mod support;
 pub use pinned::PinnedDerivedRelationRead;
 mod structural;

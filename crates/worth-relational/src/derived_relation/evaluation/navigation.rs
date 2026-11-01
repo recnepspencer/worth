@@ -127,6 +127,18 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
         self.read.checkpoint(1)?;
         match &definition.parts.nodes[key.node] {
             Node::Stored { relation, from, to } => self.stored(key, *relation, *from, *to),
+            Node::OrderedEvents {
+                predecessor,
+                introduced,
+                retired,
+            } => self.ordered_events(
+                key,
+                crate::derived_relation::ordered_events::Recipe {
+                    predecessor: *predecessor,
+                    introduced: *introduced,
+                    retired: *retired,
+                },
+            ),
             Node::Derived(identity) => {
                 let names = identity
                     .name

@@ -11,6 +11,7 @@ pub(crate) struct Court {
     pub(crate) source_cells:
         Mutex<BTreeMap<BranchId, CompanionBranchCellSlot<ManagedIndexBranchImage>>>,
     pub staged: Mutex<BTreeSet<EntityId>>,
+    pub(super) event_cohorts: Mutex<Option<BTreeMap<EntityId, BTreeSet<EntityId>>>>,
     pub observed: Mutex<BTreeSet<EntityId>>,
     pub expected: Mutex<BTreeMap<EntityId, (Vec<EntityId>, Vec<EntityId>)>>,
     previous: Mutex<Option<Arc<PreparedManagedIndexSourceRead>>>,
@@ -130,6 +131,9 @@ impl RelationalPublicationCompanion for SourceOwner {
         }
         let mut roots = Vec::new();
         for scope in source.scopes() {
+            if let Some(cohorts) = self.0.event_cohorts.lock().unwrap().as_mut() {
+                cohorts.insert(scope.scope(), scope.changed_entities().collect());
+            }
             let committed = if scope.committed_scope_exists()? {
                 Some(Arc::new(rows(scope.committed()?)?) as Arc<dyn std::any::Any + Send + Sync>)
             } else {

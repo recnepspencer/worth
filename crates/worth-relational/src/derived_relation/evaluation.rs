@@ -1,6 +1,7 @@
 //! One iterative endpoint evaluator for physical and projected member domains.
 mod memo;
 mod navigation;
+mod ordered_events;
 mod physical;
 
 use super::read::{DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data};
