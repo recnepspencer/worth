@@ -330,10 +330,11 @@ read the original payload or that the selection receipt created the occurrence.
 `WorldReadmittedPublication` keeps its existing historical accessors and cannot
 become `PublicationEvidence::Live` or a performed delivery.
 
-World checkpoint codec version 1 and Home manifest version 2 are the clean
-development-format cutover. Selected unsupported versions refuse explicitly;
-missing World coverage cannot mean empty state. Native artifact v4/CHK17 and
-the Relational WSRCKPT1 version-3 section remain unchanged. Store transports
+World checkpoint codec version 1, Home manifest version 2 and Native checkpoint
+CHK18 are the clean development-format cutover. Selected unsupported versions
+refuse explicitly; missing World coverage cannot mean empty state. Native
+canonical artifact v4 and the Relational WSRCKPT1 version-3 section remain
+unchanged. Store transports
 opaque owner sections; it does not parse World or Native semantic payloads.
 Keep the existing 1 GiB combined Home-manifest ceiling and 64 KiB individual
 World journal-frame ceiling. Check lengths/counts/arithmetic against remaining
@@ -388,12 +389,25 @@ Actual reconstructed roots and region/member protection, rather than copied
 descriptors, survive transfer into the prepared Native section and shared Home
 attempt until selection/acknowledgement completes.
 
-This is reconstructive work with worst-case O(the full admitted Native prefix
-plus its retained roots and encoded images) cost per coupled capture. It grants
-no ordinary-serving replay permission or constant-work/whole-heap claim. The
-original journals remain available until M4 retention authorizes reclamation.
-The image-size limit may refuse capture; no incomplete-history checkpoint may
-be selected to hide that refusal.
+The invoked reconstruction must NOT take a detached whole-history rollback
+snapshot for each commit. Current `apply_authoritative_commit_artifacts` does
+that, rebuilding accumulated routes and cloning catalog/graph/envelope/index
+maps; merely funding those clones leaves quadratic work for constant-size
+metadata commits. Validate/prepare each replacement before its bounded owner
+installation. A later failure discards the private reconstruction workspace;
+it never rolls back or alters the serving runtime. Reuse owner validation and
+installation mechanics without importing their unnecessary whole-prefix
+rollback into this isolated path. Preserve any distinct ordinary recovery
+contract that genuinely requires it.
+
+Reconstruction cost is O(n log n plus admitted source decoding/replay work and
+retained root/image construction), where n is the prefix's metadata entries.
+Growth in actual row history or encoded images remains explicit, not hidden in
+that metadata bound. Repeated whole-history copies for constant-size entries
+must be absent. This grants no ordinary-serving replay permission or constant-
+work/whole-heap claim. The original journals remain available until M4 retention
+authorizes reclamation. Image-size refusal preserves history; no incomplete-
+history checkpoint may be selected to hide it.
 
 Fund the checkpoint reconstruction workspace from the SAME original request.
 Existing reconstruction deep-clones pending tails, creates unfunded ID sets,
@@ -410,6 +424,56 @@ the invoked decode admission must have a checked funded path too. The 1 GiB
 wire/read limit is not a reconstruction heap budget. Refusal or stop before Home
 publication preserves prior selection and the actual live runtime.
 
+### Selected canonical backing without covered-journal replay
+
+Actual root images alone are insufficient. Directory CHK17 omits complete
+canonical envelopes; its index has receipt/position/root/digest/schema and
+association-discovery metadata, but not full semantic results. Current cold head,
+historical component and associated-effect admission reread covered canonical
+journals. Do not describe that as bounded-tail recovery. Nor may the index be
+expanded into fabricated original canonical meaning.
+
+CHK18 adds content-addressed canonical-history members and their Native-owned
+position/page directory to the existing external-member checkpoint format.
+Preserve the exact authenticated canonical artifact bytes admitted from the
+captured source, including all full authoritative fields and their original
+positions/digests. These members join the same semantic-member union, actual
+read protection, placement, selection and acknowledgement as region/history/
+symbol/lineage/index members. Store remains an opaque member transporter.
+Do not put historical payloads into the eager manifest, select fully Embedded
+placement for Directory Homes, or trigger the old decoder's inline-expansion
+branch by adding inline envelopes alongside external members.
+
+The Native directory validates the new position/page inventory, complete
+coverage, uniqueness and agreement with its actual commit index. Construct
+selected-checkpoint canonical backing only from that validated directory and
+its genuine source/member custody. Existing standalone capture may retain its
+declared partial history contract; the coupled operation must issue and retain
+complete canonical backing for every covered commit, and coupled Home opening
+must require it. A missing covered member or incomplete inventory refuses; it
+never falls back to a canonical journal read or to index-only meaning.
+
+Extend the actual envelope-residency source placement with selected-checkpoint
+backing. Preserve its original source affinity and genuine member obligations;
+do not wrap a physical source in another issuer identity or treat the bytes as
+authority-free Memory backing. One existing full artifact admission validates
+both journal-backed tail bytes and selected-member bytes against the original
+receipt, position, digest, schema, roots, association and complete authoritative
+projection. Covered head admission, historical image materialization, component
+admission and associated-effect admission all consume the actual selected
+backing retained by their catalog residency. Only uncovered tails use journal
+backing. Strengthen component admission's legacy tuple equality to the same full
+Artifact predicate. No live performed capability is reconstructed.
+
+New Directory canonical members remain demand-read native data. World may
+require all historical semantic results during reconciliation, so that work is
+proportional to the selected owner members/image plus uncovered tails, not
+constant-size metadata alone. Reuse actual selected backing across repeated
+admission rather than rereading journals or duplicating payloads. Explicitly
+fund page/index decode, temporary/retained bytes and escaped backing grants with
+the original request. Fully Embedded checkpoint support remains distinct and
+keeps its own cost contract; no new ownership-policy mode enum is introduced.
+
 The decisive Native prerequisite court legally releases observations and
 reclaims old live roots/history metadata BEFORE coupled capture. A fresh
 process must then recover historical values and World publication meaning from
@@ -420,6 +484,13 @@ the World and Native cuts. Exact root/image/member observations must convict
 descriptor-only or earlier-World-reference-only implementations. Independent
 Native boundary review must close reconstruction/source/funding/transfer
 contracts before this prerequisite receives Source GO.
+Use an actual owner read observer/refusal to forbid covered canonical journal
+reads throughout checkpoint-based World reconciliation, rather than merely
+asserting that a checkpoint exists. Cover missing/corrupt canonical members,
+incomplete/duplicate page coverage and CHK17 refusal. A metadata-only prefix
+growth case must expose whole-history-per-commit copies even when rows and
+retained image sizes remain small. Preserve differing historical schemas,
+transition order, Empty origins and exact funding/acknowledgement custody.
 
 ### Source cut, one selection and acknowledgement
 
@@ -579,6 +650,11 @@ worth-relational/src/durability/authority/checkpoint_history/
   [create complete-source-history operation at existing Native capture owner]
 worth-relational/src/durability/authority/checkpoint_capture.rs
   [revise original frozen capture handoff; standalone contract preserved]
+worth-relational/src/durability/log/native_checkpoint_codec/canonical_history/
+  capture.rs, validation.rs, readmission.rs
+  [create selected canonical members; encoding/decoding remain at codec owner]
+worth-relational/src/history/commit/envelope_residency/
+  [extend actual source placement and reuse full artifact admission]
 ```
 
 World alone owns image meaning/admission. Store alone owns journal metadata,
