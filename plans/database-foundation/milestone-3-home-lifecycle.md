@@ -359,12 +359,15 @@ effect counts and actual immutable creation receipts. Extend the existing
 add another grammar. The existing intent
 owner's shape validator must require its actual lowercase root digest and
 ordered source, operation, scope, precondition, input, proposal and
-conditional-definition slots. Digest values are '-' or 64 lowercase hex;
+conditional-definition slots. The root is always 64 lowercase hex; mandatory
+nullable digest values are '-' or 64 lowercase hex;
 scope is '-', 192 hex for the current encoding, or the existing legacy
 240-hex form. Optional suffixes remain in encoder order: workflow-definition,
 workflow-instance, workflow-proposal-context, workflow-captured-inputs,
 workflow-transition, workflow-support, workflow-client-key, workflow-approval,
-mutation-binding, correction. Reject duplicates, unknown keys, reordered or
+mutation-binding, correction. Present optional suffixes contain exactly 64 lowercase hex,
+never '-'; absent optional meanings omit the slot as the actual encoder does.
+Reject duplicates, unknown keys, reordered or
 trailing data. Reuse the same borrowed validation in comparison and recovery,
 without reserialization. Legacy shape admission does not grant verifiable
 operation equality; preserve its existing RecordedIntentUnverifiable behavior.
