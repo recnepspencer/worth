@@ -164,7 +164,21 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeQueryRuntime<Sch
         &mut self,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        self.publication = Some(self.bootstrap.publish_home_bootstrap_rows(phase)?);
+        if self.publication.is_some() {
+            return Ok(());
+        }
+        self.publication = Some(super::super::super::bootstrap::home_publication::publish(
+            &mut self.bootstrap,
+            phase,
+            || {
+                self.state
+                    .admitted_home_binding()
+                    .map(|admitted| admitted.consume(|owner| owner.into_description()))
+                    .map_err(|cause| {
+                        home_source_denial(format!("Home completion binding denied: {cause:?}"))
+                    })
+            },
+        )?);
         Ok(())
     }
 }

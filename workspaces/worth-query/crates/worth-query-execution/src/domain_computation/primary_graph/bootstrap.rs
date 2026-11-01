@@ -32,6 +32,7 @@ mod binding_denial;
 mod checkpoint;
 pub(in crate::domain_computation::primary_graph) mod checkpoint_transition;
 mod home_activation;
+pub(super) mod home_publication;
 pub(super) mod native_meaning;
 mod preparation;
 pub(super) mod prepared_native;

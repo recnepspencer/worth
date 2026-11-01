@@ -5835,6 +5835,11 @@ retrying the same close custody completes the close. This does not establish
 existing-Home Query serving, original business-result readmission, or full
 request-bounded close.
 
+Fresh Directory startup records completed bootstrap meaning after every seed
+batch and index build succeeds, before creating World genesis. A refused
+completion keeps the accepted seeds and original Home in opening custody; it
+does not rerun initialization. Memory startup adds no completion commit.
+
 Treat `ProductPreparationPending` as original custody. Keep the returned
 terminal and business key; duplicate requests must observe that custody rather
 than invoke the handler again. `try_into_recovery()` is an explicit unbudgeted

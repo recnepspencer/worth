@@ -1050,6 +1050,13 @@ completed initialization or a selected root. This is a producer integration
 seam; public Directory Query service still requires the actual Host recipe and
 its integration evidence.
 
+Fresh Directory Query publication adds one Native completion record after all
+seed batches and index construction. World genesis selects the commit containing
+that record. The portable schema/program binding and aggregate counts describe
+the actual completed bootstrap; they grant no readmission authority. Failed
+completion retains the original preparation and Home without retrying accepted
+seeds. Ordinary Memory bootstrap adds no completion commit.
+
 Store Application's `readmit_world` consumes the concrete Native-readmitted
 Home and an `ApplicationWorldDefinition`. The private attachment injects the
 same actual Native runtime into World and Bridge. The resulting

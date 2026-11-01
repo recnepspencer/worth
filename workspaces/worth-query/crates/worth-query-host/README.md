@@ -30,6 +30,12 @@ same advanced owner on refusal. A retained runtime clone can prevent composition
 release after World seal. Drop that clone and retry the same close custody;
 sealed ordinary ports cannot resume service.
 
+Fresh Directory bootstrap publishes its portable completion record after all
+seed batches and indexes succeed, before World genesis. Completion refusal
+retains accepted seeds and the same Home through the existing owning opening
+refusal; initialization is not replayed. Memory bootstrap adds no extra commit.
+This producer does not enable existing-Home Query service.
+
 An ordinary Directory mutation can return `ProductPreparationPending` before
 or after Native effects. Keep that original terminal. Same-key requests observe
 the existing custody and must not replay the handler. Its explicit

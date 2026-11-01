@@ -15,6 +15,7 @@ mod aspect_contract;
 pub(in crate::domain_computation::primary_graph) use aggregate_identity::ComponentSetLayout;
 mod application_layout_lowering;
 mod authorization_selectors;
+mod bootstrap_publication;
 mod capability_grant_join;
 mod continuation_ordering;
 mod derived_relation;
@@ -106,6 +107,8 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     program_activation: WorthQueryProgramActivationLayout,
     workflow: WorthQueryWorkflowLayout,
     workflow_reads: Option<super::application_discovery::WorkflowReadIndexes>,
+    pub(in crate::domain_computation::primary_graph) bootstrap_publication:
+        bootstrap_publication::BootstrapPublicationLayout,
 }
 
 #[derive(Clone, Debug)]
@@ -225,6 +228,12 @@ impl WorthQueryPrimaryGraphLayout {
             &relation_kinds,
         )?;
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
+        let (registry, bootstrap_publication) = bootstrap_publication::lower(
+            registry,
+            native_contracts,
+            &schema_id,
+            schema_version_id,
+        )?;
         let application_entity_kinds = entity_kinds.values().copied().collect();
         let signing = signed_entities::lower(schema, &entity_kinds)?;
         let signing_lifecycle = signing_lifecycle::SigningLifecycleLayout::lower(
@@ -276,6 +285,7 @@ impl WorthQueryPrimaryGraphLayout {
                 program_activation: platform_entities.program_activation,
                 workflow: platform_entities.workflow,
                 workflow_reads: None,
+                bootstrap_publication,
             },
             registry,
         ))
@@ -308,14 +318,6 @@ impl WorthQueryPrimaryGraphLayout {
     ) -> Option<&WorthQueryPrimaryFieldLayout> {
         self.fields
             .get(&(entity.to_owned(), aspect.to_owned(), field.to_owned()))
-    }
-
-    pub(in crate::domain_computation) fn is_application_entity_kind(&self, kind: KindId) -> bool {
-        self.application_entity_kinds.contains(&kind)
-    }
-
-    pub(in crate::domain_computation) fn is_application_relation_kind(&self, kind: KindId) -> bool {
-        self.application_relation_kinds.contains(&kind)
     }
 
     #[cfg(test)]

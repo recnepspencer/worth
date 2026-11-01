@@ -13,10 +13,20 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         AdmittedApplicationHomeBinding<WorthQueryHomeBindingAdmission>,
         WorthQueryHomeBindingDenial,
     > {
-        let installed = &self.state.installed;
+        self.state.admitted_home_binding()
+    }
+}
+
+impl<Schema: ApplicationSchemaComposition, Program> HomeApplicationState<Schema, Program> {
+    pub(super) fn admitted_home_binding(
+        &self,
+    ) -> Result<
+        AdmittedApplicationHomeBinding<WorthQueryHomeBindingAdmission>,
+        WorthQueryHomeBindingDenial,
+    > {
+        let installed = &self.installed;
         let binding = installed.binding_identity();
         let programs = self
-            .state
             .support
             .roster
             .entries()
@@ -32,7 +42,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
             .iter()
             .find(|entry| {
                 entry.revision()
-                    == CanonicalDigestId::new(*self.state.support.initial_revision.as_bytes())
+                    == CanonicalDigestId::new(*self.support.initial_revision.as_bytes())
             })
             .cloned()
             .ok_or(WorthQueryHomeBindingDenial::SelectedProgramNotRostered)?;
@@ -44,8 +54,8 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         )
         .map_err(|_| WorthQueryHomeBindingDenial::DescriptionMismatch)?;
         installed.admit_home_binding(
-            &self.state.support.roster,
-            &self.state.support.initial_revision,
+            &self.support.roster,
+            &self.support.initial_revision,
             description,
         )
     }
