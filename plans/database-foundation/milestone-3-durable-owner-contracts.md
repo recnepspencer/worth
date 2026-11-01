@@ -782,8 +782,10 @@ identity through COW, adoption, rotations and delta walking. Do not add a second
 scalar tree, ownership-mode enum, backing Arc or generic allocation framework.
 StorageAllocation<T> source/layout stays unchanged, including its wire surface.
 
-A closed private shallow-copy constraint admits only supported scalar copies and
-existing allocation-handle copies in controlled node operations; arbitrary deep
+A closed private shallow-copy constraint admits only supported scalar copies,
+existing allocation-handle copies and existing column headers whose Clone copies
+only root/default handles and scalar length. Keep such nested headers inline;
+they need no standalone header Arc or invented allocation identity. Arbitrary deep
 T::clone cannot enter a node-only quote. Key copying must likewise introduce no
 unquoted owned heap. Existing tree codecs serialize/deserialize the original plain
 values through their owner views, preserving named/compact checkpoint meaning.
