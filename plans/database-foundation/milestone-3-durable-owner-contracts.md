@@ -636,6 +636,37 @@ owned_decode_index_predecode_denial_and_alias_keep_original_grant. These are
 actual private backing/alias/refusal proofs, not Native runtime, coverage or
 complete-artifact authority. Register only that exact leaf and two SDK names.
 
+Full/embedded admission retains the actual typed diagnostic language. Replace
+RelationalDiagnosticValue::Object's hidden standard-tree nodes with its owner's immutable
+DiagnosticObjectFields: private boxed ordered key/value pairs, borrowed map
+operations and independently owned Clone. Native Serde remains a MAP, not a
+terminal JSON projection or pair sequence. Preserve sorted keys, the first
+equal key's owned String and last duplicate value. Controlled ordinal staging,
+unstable ordering and final boxing have checked owner-provided storage bounds;
+nested key/value heaps are quoted separately before decode. Ordinary map/iterator
+construction moves input values and retains its unbudgeted authoring contract.
+Keep the implementation under diagnostics/data/fields/object_fields.rs, with
+only its actual constructors, projections and data facade cut over.
+
+Necessary private negative drafts must preserve every original lane. Use the
+existing EmbeddedCheckpointEnvelopeRef projection, which retains diagnostics
+and omits only derived generations, with the original-request-funded explicit
+wire/owner decoder. Pure fixture input encoding is ordinary input preparation
+outside that bounded-copy claim; real embedded consumers supply owned/funded
+bytes. Admit all invoked checkpoint lanes and intrinsic owner grants before
+exposure. The typed-original copy then shares unchanged original derived im
+backings and their actual ownership, admitting only genuinely copied generation
+Vec/branch-string allocations before cloning. Verify the pinned cloning path
+does not allocate hidden nodes or independently clone payloads. Compare FULL
+all-lane meaning against that SAME original sealed owner before exposing a
+private mutable draft; no receipt, live authority or current-head substitution.
+This route does not implement untrusted nonempty-Full-derived decoding, and may
+not claim it. It neither discards derived lanes nor guesses their node bills.
+Where exact original-byte tampering or consuming an authentically unique
+original owner preserves the old negative oracle, use that narrower data move
+instead of an unnecessary copy. Never restore infallible Envelope/Semantic
+Clone or introduce a test-only authority/validator bypass.
+
 ### Selected canonical backing without covered-journal replay
 
 Actual root images alone are insufficient. Directory CHK17 omits complete
