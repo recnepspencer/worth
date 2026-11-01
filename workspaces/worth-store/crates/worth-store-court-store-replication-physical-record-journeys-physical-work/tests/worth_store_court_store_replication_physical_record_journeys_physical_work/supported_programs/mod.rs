@@ -4,6 +4,7 @@ mod blob_relocation_supported;
 mod declarations;
 mod independent_scan_and_mutation_capabilities_compile;
 mod ordinary_mutation_outcomes_are_supported;
+mod physical_close_task;
 mod physical_data_progression_examples;
 mod physical_durability_guide_examples;
 mod physical_wal_append_examples;
@@ -13,3 +14,7 @@ mod record_chunk_views_supported;
 mod responsibility_named_store_facade_supported;
 mod supported_admission;
 mod supported_physical_work;
+
+mod anchored_publication;
+
+mod owned_ordered_journal;

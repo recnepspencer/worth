@@ -8,13 +8,12 @@
 //! The doors differ only in their frames, their admission checks and how they
 //! name the answer.
 
-use worth_store_physical_format::{PersistedRecordIdentity, RecordAnchorName};
+use worth_store_physical_format::RecordAnchorName;
 
 use super::batch::RecordBatchAnchorAdvance;
 use super::durable_append::{DurableRecordAppend, DurableRecordAppendFailure};
 use crate::physical_runtime::{
-    AdmittedRecordPlacementPolicy, PhysicalMutationDeadline, PhysicalRecordSubmission,
-    RecordAppendBatch,
+    AdmittedRecordPlacementPolicy, PhysicalMutationDeadline, RecordAppendBatch,
 };
 
 /// A framed record and the anchor movement it requests.
@@ -30,12 +29,9 @@ pub(in crate::physical_runtime) struct AnchoredRecordAppend {
 }
 
 impl AnchoredRecordAppend {
-    /// Builds the one-record batch with its anchor advance, submits it and
-    /// returns the persisted record.
-    pub(in crate::physical_runtime) fn submit(
+    pub(in crate::physical_runtime) fn into_durable_append(
         self,
-        submission: &PhysicalRecordSubmission,
-    ) -> Result<PersistedRecordIdentity, DurableRecordAppendFailure> {
+    ) -> Result<DurableRecordAppend, DurableRecordAppendFailure> {
         let batch = RecordAppendBatch::builder()
             .push_owned(self.record)
             .build()
@@ -47,16 +43,11 @@ impl AnchoredRecordAppend {
                 })
             })
             .map_err(DurableRecordAppendFailure::Batch)?;
-        let records = DurableRecordAppend {
+        Ok(DurableRecordAppend {
             batch,
             idempotency: self.idempotency,
             placement: self.placement,
             deadline: self.deadline,
-        }
-        .submit(submission)?;
-        match records.as_slice() {
-            [record] => Ok(*record),
-            _ => Err(DurableRecordAppendFailure::CompletedWithoutRecords),
-        }
+        })
     }
 }

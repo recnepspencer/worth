@@ -25,6 +25,20 @@ Inspect that report for observed placement and worker activity. Handle admission
 interruption and allocation failures through their typed result at the call that
 owns them.
 
+For a platform entry that prepares several dependent values before publishing
+effects, use `ExecutionRequest::prepare_native`. Standalone leased entry opens
+one original scope for the complete preparation; active carriage reuses the
+actual descendant's meter, remaining work, memory and controls. A supplied
+child still enters under its narrower policy. Foreign or sibling leases refuse
+before the callback. Handle both the outer execution refusal and the inner
+typed domain failure. A successful callback must pass final kernel controls;
+stopped values are disposed while their original reservations remain owned.
+This port cannot carry an already changed runtime or publication across a
+failed handoff. `in_scope` retains its scope-free leased carriage semantics.
+The public-entry cases in
+[request preparation](../worth-court-execution/tests/worth_court_execution/execution/request_preparation/mod.rs)
+exercise original one-unit-short refusal, active remainder and child controls.
+
 For algorithms that need work measurement or an explicit work/memory bound,
 construct the policy with `ExecutionRequestPolicy::new(...,
 ExecutionBudget::new(...))` and use `ExecutionRequest::run(ceiling, ...)`.
@@ -34,6 +48,25 @@ descendants. `ExecutionReport::accounted_cost()` returns the measured work/span
 when the run has this contract. Use the physical report to inspect placement.
 
 ## Original-request retained storage
+
+Within an already admitted `MapKernelContext`, use
+`context.retain_interruption_view(original_lease)` to retain the actual
+cancellation lineage and absolute deadline for an accepted worker. Pass the
+original borrowed lease as `Some(lease)` for leased execution and `None` for
+serial execution. An active descendant keeps its narrower controls and backing;
+foreign/sibling leases, unentered children and a different current receiver
+refuse before observing controls or allocating storage. No extra scope is needed.
+
+`ExecutionInterruptionView::check_live()` observes cancellation and deadline
+after the scope and borrowed request have gone. The move-only view is
+`Send + Sync + 'static`; an owning operation may share the same view with its
+accepted steps through `Arc<ExecutionInterruptionView>`. Its one admitted token
+backing remains charged to the original memory owner until the final shared
+owner drops. Work exhaustion, nested computation stops and fresh admission
+remain with their existing owners; the view grants none of those capabilities.
+See the real public-entry
+[interruption view court](../worth-court-execution/tests/worth_court_execution/execution/interruption_view/mod.rs)
+for lease discovery from an original request without another execution scope.
 
 `ExecutionRequest::reserve_retained_memory(bytes)` admits retained backing
 against the effective accounted context, including serial and inherited

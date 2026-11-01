@@ -9,7 +9,7 @@ from unittest.mock import patch
 from doc_lane import execute
 from run_lane import LaneExecutionFailure
 from lane_environment import LaneEnvironmentRefusal
-from compiler_units import declarations
+from compiler_units import CompilerUnitRefusal, declarations
 from test_compiler_units import event as compiler_event, graph, unit
 
 
@@ -98,6 +98,45 @@ class DocLaneTests(unittest.TestCase):
                 violations = json.loads((root/'output/build-ratchet.json').read_text())
                 self.assertEqual(violations[0]['kind'], 'duplicate-graph' if copies else 'unmeasured-build')
                 self.assertTrue((root/'target/test-cost/root/census.json').is_file())
+
+    def test_declaration_failure_is_primary_with_unmeasured_budget_retained(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            self.workspace(root)
+            original = CompilerUnitRefusal('original declaration refused before execution')
+            def refused(manifest, output, runner, profile):
+                raise original
+            with self.assertRaises(LaneExecutionFailure) as raised:
+                execute(root, 'root', root/'output', SimpleNamespace(logs=[]), engine=refused)
+            self.assertEqual(str(raised.exception), str(original))
+            self.assertIs(raised.exception.__cause__, original)
+            result = raised.exception.result
+            self.assertEqual(result['failure'], str(original))
+            self.assertIsNone(result['documentation'])
+            self.assertEqual(result['documentation_coverage']['status'], 'unmeasured')
+            self.assertEqual(result['build_ratchet']['violations'][0]['kind'], 'unmeasured-build')
+            self.assertEqual(json.loads((root/'output/census.json').read_text()), result)
+
+    def test_post_artifact_failure_is_primary_with_secondary_duplicate_budget_retained(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            self.workspace(root)
+            observed = self.engine(root, copies=2)
+            original = CompilerUnitRefusal('original artifact attribution refused')
+            def refused(manifest, output, runner, profile):
+                observed(manifest, output, runner, profile)
+                raise original
+            with self.assertRaises(LaneExecutionFailure) as raised:
+                execute(root, 'root', root/'output', SimpleNamespace(logs=[]), engine=refused)
+            self.assertEqual(str(raised.exception), str(original))
+            self.assertIs(raised.exception.__cause__, original)
+            result = raised.exception.result
+            self.assertEqual(result['failure'], str(original))
+            self.assertIsNone(result['documentation'])
+            self.assertEqual(result['build_ratchet']['violations'][0]['kind'], 'duplicate-graph')
+            self.assertEqual(result['build_ratchet']['violations'][0]['compiles'], 2)
+            self.assertEqual(json.loads((root/'output/build-ratchet.json').read_text()),
+                             result['build_ratchet']['violations'])
 
     def test_doc_lane_budget_includes_repeated_failed_compilations_without_artifacts(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -1,15 +1,5 @@
-use worth_store::physical_runtime::{
-    CompletedPhysicalCheckpoint, PhysicalCheckpointCaptureBasis,
-    PhysicalDurabilityPolicyIdentity,
-};
-use worth_store_physical_format::{CheckpointStreamFooter, PhysicalCheckpointSource};
-
-fn forge_basis(
-    source: PhysicalCheckpointSource,
-    policy: PhysicalDurabilityPolicyIdentity,
-) -> PhysicalCheckpointCaptureBasis {
-    PhysicalCheckpointCaptureBasis { source, policy }
-}
+use worth_store::physical_runtime::{CompletedPhysicalCheckpoint, PhysicalCheckpointCaptureBasis};
+use worth_store_physical_format::CheckpointStreamFooter;
 
 fn forge_completion(
     basis: PhysicalCheckpointCaptureBasis,

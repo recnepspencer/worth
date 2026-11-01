@@ -40,11 +40,7 @@ pub(super) fn append(
         else {
             continue;
         };
-        crate::history::visit_authored_write_lookup(
-            context,
-            affected.len(),
-            std::mem::size_of::<RelationId>() as u64,
-        )?;
+        crate::history::visit_authored_write_lookup(context, affected.len())?;
         if affected.get(relation).is_none() {
             continue;
         }
@@ -182,11 +178,7 @@ fn mark(
     relation: RelationId,
     covered: bool,
 ) -> Result<(), Denial> {
-    crate::history::visit_authored_write_lookup(
-        context,
-        affected.len(),
-        std::mem::size_of::<RelationId>() as u64,
-    )?;
+    crate::history::visit_authored_write_lookup(context, affected.len())?;
     affected.insert_cloned_native_for_request(&relation, &covered, execution)?;
     Ok(())
 }
@@ -197,7 +189,7 @@ fn incomplete(
     context: &mut MapKernelContext<'_, '_>,
     gap: super::AdjacencyHistoryGap,
 ) -> Result<(), Denial> {
-    crate::history::visit_authored_write_lookup(context, generation.incomplete_adjacency.len(), 8)?;
+    crate::history::visit_authored_write_lookup(context, generation.incomplete_adjacency.len())?;
     generation
         .incomplete_adjacency
         .insert_cloned_native_for_request(&generation.ordinal, &gap, execution)?;

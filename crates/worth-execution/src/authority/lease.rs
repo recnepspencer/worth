@@ -21,6 +21,7 @@ mod diagnostic;
 mod fixed_backing;
 #[cfg(test)]
 mod idle_backing_tests;
+mod interruption_view;
 mod limits;
 mod memory;
 mod process_authority;
@@ -41,6 +42,11 @@ pub use fixed_backing::{
     ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationPolicy,
     ExecutionPhysicalAllocationDenialKind,
 };
+pub(crate) use interruption_view::{
+    interruption_backing_lease, unrelated as unrelated_interruption_context,
+    InterruptionViewBuilder,
+};
+pub use interruption_view::{ExecutionInterruptionView, ExecutionInterruptionViewDenial};
 pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;
 use reservation::{ClaimSlot, RunInline};

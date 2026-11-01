@@ -122,7 +122,7 @@ impl RecordPublicationDirector {
                     ),
                     start: crate::physical_runtime::PhysicalMutationRuntimeOwner::start_port(
                         &self.mutations,
-                    ),
+                    ).with_interruption(admitted.interruption),
                     selected_segment_rewrite: false,
                     rewrite_pages: 0,
                     source_root_generation: 0,

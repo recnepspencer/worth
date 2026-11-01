@@ -182,6 +182,14 @@ new allocation or custody. Both consult the original request. Seal consumes the
 builder into the same immutable `ExecutionArray`; a stopped request cannot seal.
 See [fixed payload custody](../crates/worth-execution/README.md).
 
+Platform pre-effect entries use `ExecutionRequest::prepare_native` to prepare
+dependent values under one supplied request: standalone entry establishes its
+existing SDK scope once, while active same-lineage carriage reuses the actual
+meter and its remaining allowance. Propagate both typed execution and domain
+failures before publication. This port does not retain an already performed
+effect through interruption. See
+[Execution request entry](../crates/worth-execution/README.md).
+
 Platform-owned ordered retained metadata uses `ExecutionOrderedMap<K, V>`:
 shared-root cloning and canonical iteration preserve original custody.
 Retain the returned root while reading or applying later edits. `accounted_bytes()`
@@ -418,7 +426,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Validate an explicitly driven discovered aggregate at one retained observation | `request.at(&observation).require_current_discovered_program_outputs(&settlement, maximum_work)` checks the original complete root and dependent discovery facts plus every retained output settlement with one native comparison meter. Empty original discovery still carries negative evidence; native retired roots keep original membership but require no invented output settlement. Refusal borrows and preserves the aggregate. This deliberate native guard alone does not run a delivery query; the owning discovered entry composes both | `consumer_root/.../application_program/discovered/currentness.rs`, host `discovered_currentness_contract` |
 | Own a declaration-authorized no-output action | Declare `.action::<Binding, Delivery>() ... .finish_action()` with `ApplicationSourceCompletion`; `…idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)` returns `WorthQuerySourceOnlyOperation`. The owner retains the exact installed runtime beyond the construction borrow; `into_runtime_for_cleanup()` explicitly abandons ordinary retry meaning and returns the exact runtime plus its actual cleanup collection. Retain both: failed managed-run cleanup has no publication recovery record. `release_cleanup(&fresh_request)` discharges the collection without settling uncertain business evidence. Each `advance(&fresh_request)` returns original custody, completion, or terminal evidence; completion and terminal custody expose refusal-preserving `close(&fresh_request)`. Unexecuted `Initial` custody also permits fresh close after a denied first advance; arbitrary unresolved advancement does not. Recovered completion carries native receipt/publication evidence, without an invented handler result. Retained mode uses `advance(&fresh_request, maximum_history_work: Option<NonZeroUsize>)`; `None` adds no history work ceiling, while a finite bound remains a caller choice. It delivers the exact native original World observation after replay/recovery; bounded history refusal retains evidence for retry | [Retained delivery guide](../workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md), executable [SourceOnly retention courts](../workspaces/worth-query/crates/worth-query-testkit-certification-operation/src/certification/application_graph/source_only.rs), [owning API](../workspaces/worth-query/crates/worth-query-publication/src/application_entry/operation/source_only.rs) |
 | Retry a mutation safely | Retain the move-only operation returned by `Progress` or `Refused` and supply a fresh authorized request to its next `advance`. Retry delivery through the returned settled owner; terminal custody supports evidence inspection and close. After process loss, replay requires the original stable intent, key and supported source posture under fresh authority. Row/result-set source expectations belong to their original runtime. Reconcile an ambiguous external effect through its native, domain or Store recovery owner before choosing a new operation. | [Owning entry](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions), [Aftermath and recovery](../workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md) |
-| Correct a recorded source operation | Declare `ApplicationCorrectionBinding` with its recorded-inverse or compensation mechanism in the contribution's `corrections`; call `request.corrections().select(receipt, limits)`, then `reverse(&source).idempotency(key).limits(limits).prepare()` and publish the candidate. Handle equivalent replay, stale targets and native custody through the returned outcome. | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), [Compiled example](../workspaces/worth-query/crates/worth-query-certification/examples/application_correction.rs) |
+| Correct a recorded source operation | Declare `ApplicationCorrectionBinding` with its recorded-inverse or compensation mechanism in the contribution's `corrections`. A recorded field inverse retains one unique mutated record common to every demanded locus, with exactly one admitted observation per locus on that record; collateral records missing another demanded locus do not make it ambiguous. Call `request.corrections().select(receipt, limits)`, then `reverse(&source).idempotency(key).limits(limits).prepare()` and publish the candidate. Handle equivalent replay, stale targets and native custody through the returned outcome. | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), [Compiled example](../workspaces/worth-query/crates/worth-query-certification/examples/application_correction.rs) |
 | Reverse consecutive original source operations | Select each original receipt under a fresh request and reverse it after the exact later occurrences have their own performed reversals on the selected ancestry. Canonical authored writes, complete field/aspect/presence/live-adjacency support and compatible installed full-generation meaning must agree. Equal values or lists alone do not qualify. Keep original endpoint custody; current disclosure, inverse authority and stale-target checks remain mandatory. Audit-visible support, missing canonical material and unsupported shapes retain typed refusals. | [Consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources), [Compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs) |
 | Reapply retained source input from an explicit history choice | Enable `visit_reapplication` and `reapplication_key` on the correction binding. Read `corrections().alternatives(&source, limits, maximum_entries)` through its continuation, select the chosen reversal, then call `reapply(&alternative).idempotency(key).limits(limits)` with the source action's ordinary preparation and delivery. | [Explicit historical alternatives](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reapply-an-explicit-historical-alternative), [Tree journey](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/tree_reapplication.rs) |
 | Keep a correction chooser across authenticated requests | Retain the native page returned by `into_page()` in the server's session lifecycle. Complete traversal, then use a fresh request's `corrections().select_alternative_coordinates(&page, &chosen_source, limits)` before preparing reapplication. Selection validates the exact target and current disclosure; refresh a stale chooser and retain the same command key for an equivalent retry. | [Chooser request lifecycle](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#carry-a-chooser-across-requests) |
@@ -970,3 +978,72 @@ payload acquisition/use/release occurs outside all runtime/attempt gates; expiry
 is conservative. This admits no historical READ. Query's qualified Public
 correction consumer interprets this metadata at its outside-guard boundary. See the [Native API](../crates/worth-relational/API_OVERVIEW.md#historical-source-material-metadata)
 and [foundation plan](../plans/WORTH-query/milestone-9.19-phase4-historical-candidate-plan.md).
+
+### Retain an accepted physical Store close
+
+Platform workers already inside an admitted kernel can retain its immutable
+original cancellation lineage and absolute deadline through
+`MapKernelContext::retain_interruption_view(original_lease)`. Use the original
+borrowed lease for leased execution or `None` for serial execution. The move-only
+`ExecutionInterruptionView` supports `Send + Sync + 'static` ownership, including
+sharing the same view through `Arc`; `check_live()` grants no fresh execution,
+memory or work allowance. Its admitted backing stays charged until its final
+owner drops. See [Execution retained controls](../crates/worth-execution/README.md#original-request-retained-storage).
+
+The Store physical owner can start `PhysicalStoreCloseTask::start(serving)`.
+The one owned termination worker consumes the actual serving runtime and runs
+the existing close plan. Spawn refusal returns that runtime unstarted.
+`poll(self)` returns the same pending task, an actual close outcome, or owning
+inspect/reopen-only failure evidence. Borrowed readiness/progress is descriptive.
+Consult the original execution request before start and only after a pending
+poll; an observed terminal result wins over a late stop. Keep a pending task in
+recovery custody rather than claiming the Home remains serving.
+
+Dropping observation does not cancel accepted close. The worker retains its
+owners through normal close, including blocking drains and media release.
+Spawn, allocation and a finished-worker join have no hard deadline bound. Panic
+or lost outcome never proves drainage, lease fate or successful close; retain
+any actual outcome and progress for inspection and normal recovery.
+
+### Own an anchored publication one physical step at a time
+
+`AnchoredRecords::start_publication(publication, interruption_view)` admits an
+owned publication without starting a worker. Retain its recovery custody
+outside a disposable execution result before calling consuming `step`.
+`Pending` returns the same operation; `Ready` permits caller preparation of the
+next existing batch. Only the final actual receipt describes the selected
+anchored value. Admission hashes input and may read the current value; locks,
+allocation, I/O and physical scheduling remain cooperative safe points.
+
+Each accepted step registers its actual identity before worker start and holds
+its owner's selection/input-memory protection through terminal delivery. The
+caller transfers the real existing input reservations into that guard; it does
+not issue another budget. Ordinary synchronous `publish` drives these same
+phases using its existing Signal deadline. A genuine Execution interruption
+view additionally observes the original cancellation lineage and absolute
+clock at pre-effect and group seal, without converting to Signal time.
+
+Consuming `stop` permanently removes further advancement. Stopped custody may
+inspect, explicitly cancel or settle the accepted step, preserving its actual
+prefix/fate. Recovery cannot revive stopped or completed publication authority.
+Observer loss does not cancel accepted mutation authority or certify a result.
+Terminal descriptions retain facts, not live views, selection guards or Serving.
+
+
+### Retain an ordered journal publication across an interrupted caller
+
+`physical_runtime::OrderedJournal::start_publication(publication, original_view)`
+returns a move-only operation and strong recovery. Move the encoder's existing
+`ExecutionMemoryReservation` with `OrderedJournalPublication::with_input_memory`
+when present. Store the recovery outside disposable execution results before
+calling consuming `step`. `resume` returns the same recovery alongside its unique
+Ready or Stopped endpoint; reinstall that recovery before lending the endpoint.
+`Recovery::stop` permanently fences advancement. Consuming recovery `resume`
+readmits a clean, fully visible actual terminal as `Committed`; descriptive
+stopped settlement alone cannot mint that carrier. Poll actual settlement before
+consulting a late caller stop. Only Store-issued `OrderedJournalCommitted` carries
+an actual selected entry; source/terminal observations are descriptive.
+The journal keeps its existing frame, spine, ordering and Signal policy. Reads,
+encoding, allocation and short substrate locks remain cooperative rather than
+hard real-time. Accepted current-step custody survives observer loss through the
+existing physical mutation worker; no World acknowledgment runs in that worker.

@@ -1,4 +1,6 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/execution/interruption_view/stop_settlement.rs
+workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/process/store/physical_record_journeys/physical_work/close_plan/task.rs
 # Relocated correction fixtures observe only the original scoped runtime controls.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/history.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/causal_inspection/output_equivalence/retry.rs
@@ -503,3 +505,5 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # Query9.19 qualified reuse: passive genuine producer-entry count at Initial-only successor refusal.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/indexed/court/initial_successor.rs
+
+workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/process/recovery_runtime/production_entry/anchored_records/owned_publication/fixture.rs

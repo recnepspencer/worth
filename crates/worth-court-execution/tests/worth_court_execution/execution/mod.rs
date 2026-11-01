@@ -26,3 +26,10 @@ pub(crate) mod sealed_request;
 pub(crate) mod serial_lineage;
 #[path = "work_ceiling/mod.rs"]
 pub(crate) mod work_ceiling;
+
+mod interruption_view;
+mod request_bytes;
+mod request_deadline;
+mod request_preparation;
+mod scope_entry_charge;
+mod scope_payload_panics;

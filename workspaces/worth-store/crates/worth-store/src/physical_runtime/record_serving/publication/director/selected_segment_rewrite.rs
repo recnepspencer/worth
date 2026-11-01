@@ -115,7 +115,7 @@ impl RecordPublicationDirector {
                     resources: PhysicalMutationResourceShape::prepared(1, page_bytes * u64::from(pages)),
                     start: crate::physical_runtime::PhysicalMutationRuntimeOwner::start_port(
                         &self.mutations,
-                    ),
+                    ).with_interruption(admitted.interruption),
                     selected_segment_rewrite: false,
                     rewrite_pages: 0,
                     source_root_generation: 0,

@@ -10,9 +10,7 @@ use crate::change_source::RelationalSelectedCommit;
 use crate::history::data::CommitId;
 use crate::runtime::{AuthoredWriteGeneration, RelationalRuntime};
 use std::sync::Arc;
-use worth_execution::{
-    ChargedBytes, ExecutionRequest, ExecutionRequestArrayBuilder, MapKernelContext,
-};
+use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder, MapKernelContext};
 
 /// A finite continuation over one owner-selected canonical single-parent prefix.
 #[derive(Debug)]
@@ -132,7 +130,7 @@ impl RelationalAuthoredWriteCursor {
                     context,
                 )?;
             }
-            super::ordered_visit(context, self.source.generation.prefix.len(), 8)?;
+            super::ordered_visit(context, self.source.generation.prefix.len())?;
             if self
                 .source
                 .generation
@@ -171,14 +169,9 @@ impl RetainedAuthoredWriteSelection {
     ) -> Result<Option<(u64, CommitId)>, Denial> {
         let mut first = None;
         for key in self.keys.iter() {
-            let width = selector_bytes(context, key)?
-                .checked_add(std::mem::size_of::<Key>() as u64)
-                .ok_or(Denial::Interrupted(
-                    worth_execution::MapKernelStop::WorkCounterOverflow,
-                ))?;
-            super::ordered_visit(context, self.generation.writes.len(), width)?;
+            super::ordered_visit(context, self.generation.writes.len())?;
             if let Some(postings) = self.generation.writes.get(key) {
-                super::ordered_visit(context, postings.0.len(), 8)?;
+                super::ordered_visit(context, postings.0.len())?;
                 if let Some((&ordinal, &commit)) = postings.0.first_at_or_after(&next)
                     && first.is_none_or(|(previous, _)| ordinal < previous)
                 {
@@ -188,20 +181,4 @@ impl RetainedAuthoredWriteSelection {
         }
         Ok(first)
     }
-}
-
-fn selector_bytes(context: &mut MapKernelContext<'_, '_>, key: &Key) -> Result<u64, Denial> {
-    let fields = match key {
-        Key::Ordinary(super::RelationalAuthoredWriteSelector::Record {
-            scope: super::RelationalAuthoredWriteScope::Field(_, path),
-            ..
-        }) => path.fields().len(),
-        Key::Ordinary(super::RelationalAuthoredWriteSelector::EntityFieldIndex {
-            definition,
-            ..
-        }) => definition.locator.field_path().fields().len(),
-        _ => 0,
-    };
-    super::ordered_visit(context, 0, fields as u64)?;
-    Ok(key.additional_charged_bytes())
 }

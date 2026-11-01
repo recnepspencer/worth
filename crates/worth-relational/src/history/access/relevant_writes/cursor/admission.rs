@@ -7,7 +7,7 @@ use crate::history::{
 use crate::validation::candidate_source::authored_history::{
     catalog::SourceHistoryCatalog, ManagedSourceImpactKey,
 };
-use worth_execution::MapKernelContext;
+use worth_execution::{ChargedBytes, MapKernelContext};
 
 enum Selection<'a> {
     Ordinary(&'a [Selector]),
@@ -99,7 +99,7 @@ fn ordinary_bytes(context: &mut MapKernelContext<'_, '_>, key: &Selector) -> Res
         }
         _ => 0,
     };
-    super::super::ordered_visit(context, 0, fields as u64)?;
+    super::super::admit_work(context, fields as u64)?;
     Ok(key.additional_charged_bytes())
 }
 impl RelationalRuntime {
@@ -163,7 +163,7 @@ impl RelationalRuntime {
             if generation.unsupported_merge {
                 return Err(Denial::UnsupportedMergeInterval);
             }
-            super::super::ordered_visit(context, generation.prefix.len(), 8)?;
+            super::super::ordered_visit(context, generation.prefix.len())?;
             let original_ordinal = *generation
                 .prefix
                 .get(&original_commit)
@@ -183,7 +183,7 @@ impl RelationalRuntime {
                 .iter()
                 .any(|key| matches!(key, Selector::Adjacency { .. }))
             {
-                super::super::ordered_visit(context, generation.incomplete_adjacency.len(), 8)?;
+                super::super::ordered_visit(context, generation.incomplete_adjacency.len())?;
                 if let Some((&ordinal, gap)) =
                     generation.incomplete_adjacency.first_at_or_after(&next)
                 {
@@ -196,12 +196,12 @@ impl RelationalRuntime {
                     });
                 }
             }
-            super::super::ordered_visit(context, 0, selectors.len() as u64)?;
+            super::super::admit_work(context, selectors.len() as u64)?;
             if selectors
                 .iter()
                 .any(|key| matches!(key, Selector::EntityFieldIndex { .. }))
             {
-                super::super::ordered_visit(context, generation.incomplete_indexes.len(), 8)?;
+                super::super::ordered_visit(context, generation.incomplete_indexes.len())?;
                 if generation
                     .incomplete_indexes
                     .first_at_or_after(&next)
@@ -229,7 +229,7 @@ impl RelationalRuntime {
                 if next < generation.index_run_start {
                     return Err(Denial::IncompleteIndexHistory);
                 }
-                super::super::ordered_visit(context, generation.index_coverage.len(), 8)?;
+                super::super::ordered_visit(context, generation.index_coverage.len())?;
                 let Some((_, coverage)) = generation.index_coverage.first_at_or_after(&next) else {
                     return Err(Denial::IncompleteIndexHistory);
                 };
@@ -255,7 +255,7 @@ impl RelationalRuntime {
             let mut keys = ExecutionRequestArrayBuilder::allocate(execution, input.len())?;
             for key in selectors {
                 let bytes = ordinary_bytes(context, key)?;
-                super::super::ordered_visit(context, 0, bytes)?;
+                super::super::admit_work(context, bytes)?;
                 keys.push(PostingKey::Ordinary(key.clone()))?;
             }
             if let Selection::Managed(selectors) = input {

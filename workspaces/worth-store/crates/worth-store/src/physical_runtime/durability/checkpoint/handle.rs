@@ -23,6 +23,7 @@ struct PhysicalCheckpointAttemptState {
     publication_started: bool,
     runtime_closing: bool,
     terminal: Option<PhysicalCheckpointOutcome>,
+    interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
 }
 
 pub(super) struct PhysicalCheckpointCaptureAllocation<'attempt> {
@@ -74,6 +75,7 @@ impl PhysicalCheckpointAttempt {
         idempotency: PhysicalCheckpointIdempotencyKey,
         deadline: PhysicalCheckpointDeadline,
         source: PhysicalCheckpointSource,
+        interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
     ) -> Arc<Self> {
         Arc::new(Self {
             idempotency,
@@ -83,6 +85,7 @@ impl PhysicalCheckpointAttempt {
                 publication_started: false,
                 runtime_closing: false,
                 terminal: None,
+                interruption,
             }),
             changed: Condvar::new(),
         })
@@ -136,12 +139,47 @@ impl PhysicalCheckpointAttempt {
     }
 
     pub(super) fn cancellation_requested(&self) -> bool {
-        self.state().progress.cancellation_requested()
+        self.pre_publication_stop_cause(false).is_some()
+    }
+
+    pub(super) fn pre_publication_stop_cause(
+        &self,
+        candidate_created: bool,
+    ) -> Option<super::PhysicalCheckpointProvenNoEffectCause> {
+        let state = self.state();
+        if state.publication_started {
+            return None;
+        }
+        let stop = state
+            .interruption
+            .as_ref()
+            .and_then(|view| view.check_live().err());
+        if matches!(stop, Some(worth_execution::MapKernelStop::DeadlineElapsed)) {
+            return Some(if candidate_created {
+                super::PhysicalCheckpointProvenNoEffectCause::OriginalRequestDeadlineElapsedAndCandidateRemoved
+            } else {
+                super::PhysicalCheckpointProvenNoEffectCause::OriginalRequestDeadlineElapsedBeforeCandidate
+            });
+        }
+        if state.progress.cancellation_requested() || stop.is_some() {
+            Some(if candidate_created {
+                super::PhysicalCheckpointProvenNoEffectCause::CancelledAndCandidateRemoved
+            } else {
+                super::PhysicalCheckpointProvenNoEffectCause::CancelledBeforeCandidate
+            })
+        } else {
+            None
+        }
     }
 
     pub(super) fn begin_publication(&self) -> bool {
         let mut state = self.state();
-        if state.progress.cancellation_requested() {
+        if state.progress.cancellation_requested()
+            || state
+                .interruption
+                .as_ref()
+                .is_some_and(|view| view.check_live().is_err())
+        {
             return false;
         }
         state.publication_started = true;
@@ -157,6 +195,7 @@ impl PhysicalCheckpointAttempt {
             .progress
             .enter(PhysicalCheckpointProgressPhase::Terminal);
         state.terminal = Some(terminal);
+        state.interruption = None;
         self.changed.notify_all();
     }
 

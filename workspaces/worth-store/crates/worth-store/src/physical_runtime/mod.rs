@@ -165,8 +165,10 @@ pub use instance::{
     PhysicalSignalClockObservationFailure, PhysicalSignalConstructionFailure,
     PhysicalSignalDeltaApplicationFailure, PhysicalSignalObservation,
     PhysicalSignalRuntimeIdentity, PhysicalSignalShutdownOutcome, PhysicalStoreAbortOutcome,
-    PhysicalStoreCloseObservation, PhysicalStoreCloseOutcome, PhysicalStoreClosePhase,
-    PhysicalStoreClosePlan, PhysicalWorkExecution, RecordSchedulerReservationDenial,
+    PhysicalStoreCloseFailure, PhysicalStoreCloseFailureCause, PhysicalStoreCloseObservation,
+    PhysicalStoreCloseOutcome, PhysicalStoreClosePhase, PhysicalStoreClosePlan,
+    PhysicalStoreCloseStartRefused, PhysicalStoreCloseTask, PhysicalStoreCloseTaskPoll,
+    PhysicalStoreCloseTaskReadiness, PhysicalWorkExecution, RecordSchedulerReservationDenial,
 };
 pub use integrity::{
     DamagedPhysicalAuthorityObservation, DamagedPhysicalDerivedDisposition,
@@ -221,13 +223,7 @@ pub use observation::{
     LifecycleObservation, ObservationError, ObservationHandle, RootAdmissionObservation,
     RuntimeObservation,
 };
-pub use ordered_journal::{
-    OrderedJournal, OrderedJournalDenial, OrderedJournalEntry, OrderedJournalName,
-    OrderedJournalNameDenial, OrderedJournalPayload, OrderedJournalPublication,
-    OrderedJournalPublicationFailure, OrderedJournalPublished, OrderedJournalReadFailure,
-    OrderedJournalRegistry, OrderedJournalRegistryDenial, OrderedJournalResolution,
-    RELATIONAL_BRANCH_TRANSITIONS, RELATIONAL_CANONICAL_COMMITS,
-};
+pub use ordered_journal::*;
 pub use record_serving::PhysicalIntegrityScrubReadDeferral;
 pub use record_serving::*;
 #[cfg(feature = "recovery-runtime-owner")]

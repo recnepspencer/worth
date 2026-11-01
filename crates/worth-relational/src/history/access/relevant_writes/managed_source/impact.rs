@@ -114,11 +114,11 @@ pub(crate) fn source_impact(
             program: selector.program,
             scope: selector.scope,
         };
-        ordered_visit(context, packet.impacts.len(), size_of_val(&key) as u64)?;
+        ordered_visit(context, packet.impacts.len())?;
         let Some(rows) = packet.impacts.get(&key) else {
             return Ok(RelationalAuthoredManagedSourceImpact::Unaffected);
         };
-        ordered_visit(context, material.scopes.len(), size_of_val(&key) as u64)?;
+        ordered_visit(context, material.scopes.len())?;
         let pair = material
             .scopes
             .get(&key)

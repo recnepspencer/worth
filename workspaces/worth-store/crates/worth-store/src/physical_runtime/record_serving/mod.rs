@@ -122,7 +122,7 @@ pub use publication::append::{RecordAppendDenial, RecordAppendError, RecordPlace
 pub use publication::append_observation::{RecordAppendObservation, RecordRootPlanningObservation};
 pub use publication::batch::{RecordAppendBatch, RecordAppendBatchBuilder};
 pub(in crate::physical_runtime) use publication::durable_append::{
-    DurableRecordAppend, DurableRecordAppendFailure,
+    DurableRecordAppend, DurableRecordAppendFailure, PreparedDurableRecordAppend,
 };
 pub use publication::publication_residue::RecordPublicationResidueObservation;
 pub use publication::streaming::{

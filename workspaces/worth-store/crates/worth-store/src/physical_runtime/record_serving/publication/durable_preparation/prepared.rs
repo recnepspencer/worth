@@ -1,3 +1,4 @@
+mod execution;
 use worth_store_physical_format::{
     BlobRecordKind, DurableExtentRecordPlacement, DurableInlineRecordPlacement,
     SelectedRecordContentClass,
@@ -275,15 +276,6 @@ impl PreparedPhysicalMutation {
         } else {
             PhysicalMutationAdmissionDisposition::DuplicateUnresolved
         }
-    }
-
-    pub fn start(self) -> crate::physical_runtime::PhysicalMutationHandle {
-        let start = self.start.clone();
-        start.start(self)
-    }
-
-    pub fn execute(self) -> crate::physical_runtime::PhysicalMutationOutcome {
-        self.start().wait()
     }
 
     pub(in crate::physical_runtime) const fn data_is_planned(&self) -> bool {

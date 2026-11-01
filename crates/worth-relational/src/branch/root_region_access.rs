@@ -208,12 +208,7 @@ impl RelationalBranchRoot {
         let Some(region) = self.regions.get(partition_id) else {
             return Ok(None);
         };
-        region.partition.try_admitted_partition()?.map(Some).ok_or(
-            crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Region(partition_id),
-                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-            },
-        )
+        region.resident_partition().map(Some)
     }
 
     pub(crate) fn visit_content_cache_allocations(

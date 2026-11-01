@@ -21,7 +21,7 @@ impl RelationalRuntime {
                 .schema_contract_runtime
                 .custom_invariant_registries
                 .source_history;
-            super::ordered_visit(context, 0, catalog.len() as u64)?;
+            super::admit_work(context, catalog.len() as u64)?;
             catalog.selector(program, scope)
         })
     }
@@ -69,11 +69,7 @@ pub(super) fn require_packet(
     for key in keys {
         super::visit(context)?;
         if let crate::history::AuthoredWritePostingKey::ManagedSource(coordinate) = key {
-            super::ordered_visit(
-                context,
-                packet.impacts.len(),
-                size_of_val(coordinate) as u64,
-            )?;
+            super::ordered_visit(context, packet.impacts.len())?;
             if packet.impacts.contains_key(coordinate) {
                 return Ok(());
             }

@@ -3,10 +3,12 @@ use crate::{
     report::ChargedBytes,
 };
 
+mod admission;
+mod body;
 mod execution;
 mod native_payload;
 mod settlement;
-use execution::run_scope_inner;
+use body::run_scope_inner;
 pub(crate) use native_payload::run_scope_native_within;
 
 use super::meter::{KernelContext, KernelFailure};

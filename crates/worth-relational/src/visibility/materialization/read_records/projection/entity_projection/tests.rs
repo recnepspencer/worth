@@ -203,7 +203,7 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
         .entity_record_with_projection_scope(
             execution,
             changed_entities(&created)[0],
-            ProjectionAspectScope::fields(aspect_key("name"), [field_key("name")]),
+            ProjectionAspectScope::fields(aspect_key("name"), [field_key("alias")]),
             |_| Some(()),
         )
         .expect_err("projection contract must refuse");

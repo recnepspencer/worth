@@ -106,22 +106,24 @@ def output(event):
     raise CompilerUnitRefusal('compiler artifact has no attributable required output')
 
 
-def matches_profile(declared, observed, mode):
+def matches_profile(declared, observed, mode, target_kind):
     fields = ('opt_level', 'debuginfo', 'debug_assertions', 'overflow_checks')
+    test = mode == 'test' or (mode == 'check' and target_kind == ['test'])
     return (all(declared[field] == observed[field] for field in fields)
-            and observed['test'] == (mode == 'test'))
+            and observed['test'] == test)
 
 
 def attribute(event, declaration):
     target = event['target']
     candidates = [row for row in declaration['units']
-                  if row['package'] == event['package_id']
+                  if row['mode'] != 'doctest'  # The rustdoc driver consumes, rather than emits, the library artifact.
+                  and row['package'] == event['package_id']
                   and row['target']['name'] == target['name']
                   and row['target']['kind'] == sorted(target['kind'])
                   and row['target']['source'] == normalized_path(target['src_path'])
                   and row['features'] == sorted(event['features'])
                   and row['output'] == output(event)
-                  and matches_profile(row['profile'], event['profile'], row['mode'])]
+                  and matches_profile(row['profile'], event['profile'], row['mode'], row['target']['kind'])]
     unique = {row['identity']: row for row in candidates}
     if len(unique) != 1:
         raise CompilerUnitRefusal('artifact does not identify exactly one predeclared compiler unit: '

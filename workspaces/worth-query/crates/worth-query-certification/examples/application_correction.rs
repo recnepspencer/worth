@@ -92,6 +92,7 @@ fn selected_source_after_disjoint_edit() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 19
         }]
@@ -160,6 +161,7 @@ fn independent_semantic_dependency() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 7
         }]
@@ -206,6 +208,7 @@ fn reverse_after_disjoint_and_replay() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 11,
             secondary: 19
         }],
@@ -218,6 +221,7 @@ fn reverse_after_disjoint_and_replay() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 19
         }]
@@ -277,6 +281,7 @@ fn reverse_after_disjoint_and_replay() {
     assert_eq!(
         host::read(&host),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 19
         }]
@@ -298,6 +303,7 @@ fn foreign_runtime_receipt_refuses() {
     assert_eq!(
         host::read(&foreign),
         [Row {
+            operand: None,
             primary: 5,
             secondary: 7
         }]

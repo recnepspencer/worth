@@ -29,6 +29,7 @@ pub(super) struct TransferSmall;
 pub(super) struct TransferLarge;
 pub(super) struct FreezeAccount;
 pub(super) struct FreezeAccountFields;
+pub(super) struct FreezeAccountFieldsReversed;
 pub(super) struct NotifyDeath;
 pub(super) struct LegalHold;
 pub(super) struct AuditRetention;
@@ -57,6 +58,7 @@ operation_identity!(TransferSmall => "transfer-small");
 operation_identity!(TransferLarge => "transfer-large");
 operation_identity!(FreezeAccount => "freeze-account");
 operation_identity!(FreezeAccountFields => "freeze-account-fields");
+operation_identity!(FreezeAccountFieldsReversed => "freeze-account-fields-reversed");
 operation_identity!(NotifyDeath => "notify-death");
 operation_identity!(LegalHold => "legal-hold");
 operation_identity!(AuditRetention => "audit-retention");
@@ -146,6 +148,8 @@ reads_principal!(
 impl OperationReads<FreezeAccount> for FrozenField {}
 impl OperationReads<FreezeAccountFields> for FrozenField {}
 impl OperationReads<FreezeAccountFields> for NoteField {}
+impl OperationReads<FreezeAccountFieldsReversed> for FrozenField {}
+impl OperationReads<FreezeAccountFieldsReversed> for NoteField {}
 impl OperationReads<FreezeNote> for NoteField {}
 impl OperationReads<FreezeBalance> for BalanceField {}
 
@@ -189,6 +193,7 @@ requires_ability!(
     TransferLarge,
     FreezeAccount,
     FreezeAccountFields,
+    FreezeAccountFieldsReversed,
     NotifyDeath,
     LegalHold,
     AuditRetention,

@@ -25,7 +25,7 @@ impl ManagedIndexSourceObservation {
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or(Denial::SizeOverflow)?;
         crate::history::run_authored_write_stage(execution, |context| {
-            crate::history::visit_authored_write_lookup(context, 0, width)?;
+            crate::history::admit_authored_write_work(context, width)?;
             if occurrence.receipt().branch_id != *self.selected.branch_id() {
                 return Err(Denial::ForeignOwner);
             }

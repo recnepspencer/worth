@@ -3,6 +3,8 @@
 #[cfg(test)]
 mod tests;
 
+use std::collections::BTreeSet;
+
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_installation::facade::{
     InstalledPreImageDemand, InstalledPreImageLocus, WorthQueryOperationGraphReadScope,
@@ -156,24 +158,10 @@ fn retain_matching(
     if mutation_is_empty {
         return Err(WorthQueryPreImageRetentionDenial::NoMutatedRecord);
     }
+    let selected = select_common_record_fields(demand.loci(), candidates, mutates)?;
     let mut fields = Vec::with_capacity(demand.loci().len());
     let mut total = 0usize;
-    let mut retained_record = None;
-    for locus in demand.loci() {
-        let mut matching = candidates
-            .iter()
-            .filter(|candidate| candidate_matches_locus(candidate, locus) && mutates(candidate));
-        let Some(candidate) = matching.next() else {
-            return Err(WorthQueryPreImageRetentionDenial::MissingDemandedField);
-        };
-        if matching.next().is_some()
-            || retained_record
-                .as_ref()
-                .is_some_and(|record| record != candidate.target_record())
-        {
-            return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
-        }
-        retained_record.get_or_insert_with(|| candidate.target_record().clone());
+    for (locus, candidate) in demand.loci().iter().zip(selected) {
         let encoded_bytes = candidate.value().semantic_byte_width();
         total = total
             .checked_add(encoded_bytes)
@@ -196,6 +184,60 @@ fn retain_matching(
             total_encoded_bytes: total,
         },
     ))
+}
+
+/// Correlation costs O(L * C * (M + log C)) time and O(C + L) scratch for
+/// L distinct demanded loci, C candidates and mutation-membership cost M.
+/// Record sets establish common identity only; observations remain distinct.
+fn select_common_record_fields<'candidate>(
+    loci: &[InstalledPreImageLocus],
+    candidates: &'candidate [WorthQueryObservedPreImageCandidate],
+    mutates: impl Fn(&WorthQueryObservedPreImageCandidate) -> bool,
+) -> Result<Vec<&'candidate WorthQueryObservedPreImageCandidate>, WorthQueryPreImageRetentionDenial>
+{
+    let mut admitted_by_locus = Vec::with_capacity(loci.len());
+    let mut common_records: Option<BTreeSet<&RecordRef>> = None;
+    for locus in loci {
+        let admitted: Vec<_> = candidates
+            .iter()
+            .filter(|candidate| candidate_matches_locus(candidate, locus) && mutates(candidate))
+            .collect();
+        if admitted.is_empty() {
+            return Err(WorthQueryPreImageRetentionDenial::MissingDemandedField);
+        }
+        let records: BTreeSet<_> = admitted
+            .iter()
+            .map(|candidate| candidate.target_record())
+            .collect();
+        if let Some(common) = &mut common_records {
+            common.retain(|record| records.contains(record));
+        } else {
+            common_records = Some(records);
+        }
+        admitted_by_locus.push(admitted);
+    }
+    let mut common = common_records.into_iter().flatten();
+    let Some(record) = common.next() else {
+        return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
+    };
+    if common.next().is_some() {
+        return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
+    }
+    admitted_by_locus
+        .into_iter()
+        .map(|admitted| {
+            let mut matching = admitted
+                .into_iter()
+                .filter(|candidate| candidate.target_record() == record);
+            let candidate = matching
+                .next()
+                .ok_or(WorthQueryPreImageRetentionDenial::MissingDemandedField)?;
+            if matching.next().is_some() {
+                return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
+            }
+            Ok(candidate)
+        })
+        .collect()
 }
 
 fn candidate_matches_locus(

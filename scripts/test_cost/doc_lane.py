@@ -68,13 +68,10 @@ def execute(repository, workspace, output, runner, profile='dev', engine=None):
     result['failure'] = str(failure) if failure is not None else None
     (output / 'build-ratchet.json').write_text(json.dumps(violations, indent=2) + '\n', encoding='utf-8')
     retain(result, repository, workspace, output)
-    if violations:
-        message = 'build budget exceeded: ' + json.dumps(violations)
-        if documentation is not None:
-            raise LaneExecutionFailure(message, result)
-        raise ValueError(message)
     if failure is not None:
-        if documentation is not None:
-            raise LaneExecutionFailure(str(failure), result) from failure
-        raise failure
+        # The retained result carries secondary budgets even when declaration
+        # or attribution failed before a documentation observation existed.
+        raise LaneExecutionFailure(str(failure), result) from failure
+    if violations:
+        raise LaneExecutionFailure('build budget exceeded: ' + json.dumps(violations), result)
     return result
