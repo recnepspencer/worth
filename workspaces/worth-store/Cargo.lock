@@ -1729,6 +1729,7 @@ dependencies = [
  "worth-query-host",
  "worth-query-testkit-host",
  "worth-relational",
+ "worth-runtime-bridge",
  "worth-runtime-world",
  "worth-store",
  "worth-store-application",
