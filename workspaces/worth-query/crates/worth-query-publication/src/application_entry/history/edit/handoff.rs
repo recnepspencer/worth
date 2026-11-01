@@ -29,7 +29,8 @@ impl<
         P: ApplicationProgramDefinition<S>,
         A: ApplicationAction<S, I::Binding>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryHistoryEdit<'_, S, H, I, P, A, Payload>
+        Outputs,
+    > WorthQueryHistoryEdit<'_, S, H, I, P, A, Payload, Outputs>
 where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
 {

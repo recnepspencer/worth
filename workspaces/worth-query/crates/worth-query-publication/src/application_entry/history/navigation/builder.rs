@@ -8,8 +8,9 @@ pub struct WorthQueryHistoryNavigationBuilder<
     H: ApplicationHistoryBinding<S>,
     N: ApplicationHistoryNavigationBinding<S, H>,
     P: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
-    document: &'d WorthQueryApplicationHistoryDocument<'r, S, H, P>,
+    document: &'d WorthQueryApplicationHistoryDocument<'r, S, H, P, Outputs>,
     marker: std::marker::PhantomData<fn() -> N>,
 }
 pub struct WorthQueryHistoryCheckoutTarget<
@@ -19,8 +20,9 @@ pub struct WorthQueryHistoryCheckoutTarget<
     H: ApplicationHistoryBinding<S>,
     N: ApplicationHistoryNavigationBinding<S, H>,
     P: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
-    builder: WorthQueryHistoryNavigationBuilder<'d, 'r, S, H, N, P>,
+    builder: WorthQueryHistoryNavigationBuilder<'d, 'r, S, H, N, P, Outputs>,
     node: WorthQueryHistoryNodeId,
 }
 pub struct WorthQueryHistoryExpectedCheckout<
@@ -30,8 +32,9 @@ pub struct WorthQueryHistoryExpectedCheckout<
     H: ApplicationHistoryBinding<S>,
     N: ApplicationHistoryNavigationBinding<S, H>,
     P: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
-    target: WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P>,
+    target: WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P, Outputs>,
     expected: WorthQueryHistorySelection,
 }
 pub struct WorthQueryHistoryCheckoutDescription<
@@ -41,8 +44,9 @@ pub struct WorthQueryHistoryCheckoutDescription<
     H: ApplicationHistoryBinding<S>,
     N: ApplicationHistoryNavigationBinding<S, H>,
     P: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
-    checkout: WorthQueryHistoryExpectedCheckout<'d, 'r, S, H, N, P>,
+    checkout: WorthQueryHistoryExpectedCheckout<'d, 'r, S, H, N, P, Outputs>,
     key: u128,
 }
 
@@ -51,11 +55,12 @@ impl<
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,
         P: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryApplicationHistoryDocument<'r, S, H, P>
+        Outputs,
+    > WorthQueryApplicationHistoryDocument<'r, S, H, P, Outputs>
 {
     pub fn navigate<N: ApplicationHistoryNavigationBinding<S, H>>(
         &self,
-    ) -> WorthQueryHistoryNavigationBuilder<'_, 'r, S, H, N, P> {
+    ) -> WorthQueryHistoryNavigationBuilder<'_, 'r, S, H, N, P, Outputs> {
         WorthQueryHistoryNavigationBuilder {
             document: self,
             marker: std::marker::PhantomData,
@@ -69,12 +74,13 @@ impl<
         H: ApplicationHistoryBinding<S>,
         N: ApplicationHistoryNavigationBinding<S, H>,
         P: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryHistoryNavigationBuilder<'d, 'r, S, H, N, P>
+        Outputs,
+    > WorthQueryHistoryNavigationBuilder<'d, 'r, S, H, N, P, Outputs>
 {
     pub fn checkout(
         self,
         node: WorthQueryHistoryNodeId,
-    ) -> WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P> {
+    ) -> WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P, Outputs> {
         WorthQueryHistoryCheckoutTarget {
             builder: self,
             node,
@@ -88,12 +94,13 @@ impl<
         H: ApplicationHistoryBinding<S>,
         N: ApplicationHistoryNavigationBinding<S, H>,
         P: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P>
+        Outputs,
+    > WorthQueryHistoryCheckoutTarget<'d, 'r, S, H, N, P, Outputs>
 {
     pub fn expected_selection(
         self,
         expected: WorthQueryHistorySelection,
-    ) -> WorthQueryHistoryExpectedCheckout<'d, 'r, S, H, N, P> {
+    ) -> WorthQueryHistoryExpectedCheckout<'d, 'r, S, H, N, P, Outputs> {
         WorthQueryHistoryExpectedCheckout {
             target: self,
             expected,
@@ -107,12 +114,13 @@ impl<
         H: ApplicationHistoryBinding<S>,
         N: ApplicationHistoryNavigationBinding<S, H>,
         P: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryHistoryExpectedCheckout<'d, 'r, S, H, N, P>
+        Outputs,
+    > WorthQueryHistoryExpectedCheckout<'d, 'r, S, H, N, P, Outputs>
 {
     pub fn idempotency(
         self,
         key: u128,
-    ) -> WorthQueryHistoryCheckoutDescription<'d, 'r, S, H, N, P> {
+    ) -> WorthQueryHistoryCheckoutDescription<'d, 'r, S, H, N, P, Outputs> {
         WorthQueryHistoryCheckoutDescription {
             checkout: self,
             key,
@@ -120,7 +128,7 @@ impl<
     }
 }
 
-impl<'d, 'r, S, H, N, P> WorthQueryHistoryCheckoutDescription<'d, 'r, S, H, N, P>
+impl<'d, 'r, S, H, N, P, Outputs> WorthQueryHistoryCheckoutDescription<'d, 'r, S, H, N, P, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
@@ -128,12 +136,13 @@ where
     P: WorthQueryHistoryPayloadMode<S, H>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
 {
     pub fn prepare(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
-        WorthQueryHistoryNavigation<'d, 'r, S, H, N, P>,
+        WorthQueryHistoryNavigation<'d, 'r, S, H, N, P, Outputs>,
         WorthQueryHistoryNavigationAdvanceDenial,
     > {
         self.prepare_with(request, |_, _, read| Ok(read))
@@ -145,7 +154,7 @@ where
         operation: ApplicationOperationRef<S, O, I>,
         input: I,
     ) -> Result<
-        WorthQueryHistoryNavigation<'d, 'r, S, H, N, P>,
+        WorthQueryHistoryNavigation<'d, 'r, S, H, N, P, Outputs>,
         WorthQueryHistoryNavigationAdvanceDenial,
     >
     where
@@ -169,14 +178,14 @@ where
             WorthQueryDocumentHistoryDenial,
         >,
     ) -> Result<
-        WorthQueryHistoryNavigation<'d, 'r, S, H, N, P>,
+        WorthQueryHistoryNavigation<'d, 'r, S, H, N, P, Outputs>,
         WorthQueryHistoryNavigationAdvanceDenial,
     > {
         let document = self.checkout.target.builder.document;
-        let navigation = read::with_read(document, request, prepare, |phase, runtime, read| {
-            runtime.prepare_document_history_navigation::<H, N>(
+        let navigation = read::with_read(document, request, prepare, |phase, _, read| {
+            document.outputs.prepare::<N>(
                 phase,
-                &program_publication_access(),
+                request,
                 &document.owner,
                 &document.access,
                 read,

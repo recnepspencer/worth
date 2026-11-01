@@ -5,6 +5,14 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    /// The original unpublished record refused its native recovery visit.
+    WorldRecovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
+    /// The original settled effect could not publish its World successor.
+    RecoveryPublication(worth_runtime_world::facade::NoEffectCause),
+    /// A fresh admitted read could not deliver the original published receipt.
+    PublicationReceipt(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
+    /// The current control owner is in use. No source result was handed off.
+    CurrentControlBusy,
     /// The producer returned actual managed cleanup custody; ordinary rerun is not authorized.
     ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
     /// The product root retained the precise delivery admission cause.

@@ -49,6 +49,17 @@ pub(super) fn finish(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CheckpointProgress, CompletionRefusal> {
     let receipt = match result.map(|prepared| prepared.into_parts()) {
+        Ok((execution::ProducerExecutionOutcome::Unpublished(mut owner), ready_backing)) => {
+            owner.retain_original_publication(original_publication);
+            let checkpoint = WorthQueryOutputCheckpoint::PublicationPending {
+                owner,
+                ready_backing,
+            };
+            if let Err((denial, checkpoint)) = selected_execution_finish.publish(checkpoint) {
+                return Err(CompletionRefusal::unpublished(denial, checkpoint));
+            }
+            return Ok(CheckpointProgress::Advanced);
+        }
         Ok((execution::ProducerExecutionOutcome::Committed(receipt), ready_backing)) => {
             (receipt, ready_backing)
         }

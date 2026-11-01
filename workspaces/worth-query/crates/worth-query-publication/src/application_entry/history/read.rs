@@ -5,7 +5,8 @@ impl<
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
+        Outputs,
+    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload, Outputs>
 where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,

@@ -25,6 +25,27 @@ pub(in crate::application_invariant_acceptance) fn install_selected_program_with
 where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
     Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
 Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
+    install_selected_program_with_limits(
+        foreign,
+        roster,
+        deployment_grants,
+        isolated_cycle,
+        resources::application_limits(),
+        program,
+    )
+}
+
+pub(in crate::application_invariant_acceptance) fn install_selected_program_with_limits<Program>(
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
+    roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
+    deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
+    isolated_cycle: bool,
+    limits: installation::WorthQueryInMemoryApplicationLimits,
+    program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
+) -> Result<ConsumerWorld<Program>, installation::WorthQueryInMemoryApplicationDenial>
+where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
+    Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
+Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
@@ -44,7 +65,6 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         Arc::clone(&parameter_calls),
         (),
     );
-    let limits = resources::application_limits();
     let deployment_scopes: std::collections::BTreeSet<_> = std::iter::once(*program.revision())
         .chain(deployment_grants.iter().map(|grant| grant.source()))
         .collect();
@@ -73,7 +93,12 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
             for grant in deployment_grants {
                 grant.bind(graph)?;
             }
-            seed::seed_cycles(bootstrap_phase, graph);
+            seed::seed_cycles_with(bootstrap_phase, graph, |graph| {
+                worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "anchor-a")
+                    .unwrap();
+                worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "remote-a")
+                    .unwrap();
+            });
             if isolated_cycle {
                 seed::seed_isolated_cycle(bootstrap_phase, graph);
             }

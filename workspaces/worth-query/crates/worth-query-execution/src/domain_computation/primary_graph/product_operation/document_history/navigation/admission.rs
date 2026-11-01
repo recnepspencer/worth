@@ -17,7 +17,7 @@ use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDoc
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
 {
-    fn validate_navigation<N: ApplicationHistoryNavigationBinding<S, H>>(
+    pub(super) fn validate_navigation<N: ApplicationHistoryNavigationBinding<S, H>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         read: &CompletedMetadataRead<'_, '_>,
@@ -99,9 +99,18 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         expected: WorthQueryHistorySelection,
         requested: super::super::WorthQueryHistoryNodeId,
         key: u128,
+        output_profile: Option<WorthQueryHistoryOutputProfile>,
     ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, WorthQueryHistoryNavigationDenial>
     {
         self.validate_navigation::<N>(phase, &read, installed, &admission)?;
+        if output_profile
+            .as_ref()
+            .is_some_and(|profile| profile.model != self.model)
+        {
+            return Err(WorthQueryHistoryNavigationDenial::Document(
+                super::super::WorthQueryDocumentHistoryDenial::ForeignModel,
+            ));
+        }
         let meaning =
             WorthQueryApplicationIdempotencyBinding::for_host_commit::<S, N::Operation, _, _>(
                 &key,
@@ -109,7 +118,15 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             )
             .map_err(WorthQueryHistoryNavigationDenial::Value)?
             .bind_admission(&admission);
-        registration::prepare(phase, self, installed, expected, requested, meaning)
+        registration::prepare(
+            phase,
+            self,
+            installed,
+            expected,
+            requested,
+            meaning,
+            output_profile,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn advance_navigation<
@@ -117,9 +134,9 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     >(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        read: CompletedMetadataRead<'_, '_>,
+        read: &CompletedMetadataRead<'_, '_>,
         installed: &WorthQueryInstalledDocumentHistory<S, H>,
-        admission: WorthQueryAdmittedApplicationOperation<
+        admission: &WorthQueryAdmittedApplicationOperation<
             S,
             N::Operation,
             N::Input,
@@ -127,9 +144,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         >,
         navigation: &WorthQueryDocumentHistoryNavigation<'runtime, S>,
         key: u128,
+        output_profile: Option<&WorthQueryHistoryOutputProfile>,
+        outputs: Option<WorthQueryCompletedHistoryOutputs>,
     ) -> Result<Option<WorthQueryHistoryNavigationCompletion>, WorthQueryHistoryNavigationDenial>
     {
-        self.validate_navigation::<N>(phase, &read, installed, &admission)?;
+        self.validate_navigation::<N>(phase, read, installed, admission)?;
         let meaning =
             WorthQueryApplicationIdempotencyBinding::for_host_commit::<S, N::Operation, _, _>(
                 &key,
@@ -137,6 +156,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             )
             .map_err(WorthQueryHistoryNavigationDenial::Value)?
             .bind_admission(&admission);
-        navigation.advance(phase, self, &admission, meaning)
+        navigation.advance(phase, self, &admission, meaning, output_profile, outputs)
     }
 }

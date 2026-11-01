@@ -109,6 +109,62 @@ pub struct WorthQueryRecoveredProgramOutputSource {
 }
 
 impl WorthQueryRecoveredProgramOutputSource {
+    pub(in crate::domain_computation::primary_graph) fn publication(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        &self.publication
+    }
+    pub(in crate::domain_computation::primary_graph) fn product_branch(
+        &self,
+    ) -> crate::basis::WorthQueryProductBranch {
+        crate::basis::WorthQueryProductBranch::from_occurrence(
+            self.publication.product_incarnation(),
+        )
+    }
+
+    /// Join the original one-use delivery to the genuine admitted keyed receipt.
+    /// A mismatch or shared delivery returns the complete original carrier.
+    pub(in crate::domain_computation::primary_graph) fn into_producer_delivery(
+        mut self,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> Result<
+        (
+            WorthQueryPerformedRelationalProductChange,
+            worth_runtime_world::facade::ProductBranchObservation,
+            Self,
+        ),
+        Self,
+    > {
+        if self.publication.composite_commit()
+            != receipt.committed_product_publication().composite_commit()
+            || self.publication.product_incarnation()
+                != receipt
+                    .committed_product_publication()
+                    .product_incarnation()
+            || !self.has_original_delivery()
+            || self
+                .observation
+                .as_ref()
+                .is_none_or(|observation| !self.publication.is_selected_at(observation))
+        {
+            return Err(self);
+        }
+        let change = self.change.take().expect("original delivery checked");
+        match Arc::try_unwrap(change) {
+            Ok(change) => Ok((
+                change,
+                self.observation
+                    .take()
+                    .expect("original observation checked"),
+                self,
+            )),
+            Err(change) => {
+                self.change = Some(change);
+                Err(self)
+            }
+        }
+    }
+
     /// A source can be promoted only while both original one-shot parts remain.
     pub fn has_original_delivery(&self) -> bool {
         self.change.is_some() && self.observation.is_some()

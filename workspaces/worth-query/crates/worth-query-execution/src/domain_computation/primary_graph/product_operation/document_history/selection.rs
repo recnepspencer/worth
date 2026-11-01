@@ -12,6 +12,7 @@ pub(in crate::domain_computation::primary_graph) struct HistorySelection<'runtim
     pub head: WorthQueryOwnedProductHead<'runtime, S>,
     pub expected: WorthQueryProductBranchReadIdentity,
     pub physical_source: WorthQueryProductObservationLease,
+    output_authority: Option<super::authority_lifetime::OwnedHistoryAuthorityLifetime>,
     pub journal: HistoryJournal<'runtime, S>,
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) navigation:
         super::navigation::NavigationJournal<'runtime, S>,
@@ -50,6 +51,7 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
                 head,
                 expected,
                 physical_source: source,
+                output_authority: None,
                 journal,
                 navigation: super::navigation::NavigationJournal::new(),
             })),
@@ -84,10 +86,35 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
     pub(in crate::domain_computation::primary_graph) fn take(
         &self,
     ) -> HistorySelection<'runtime, S> {
-        self.lock()
+        let mut selected = self.lock();
+        selected.invalidate_output_authority();
+        selected
             .0
             .take()
             .expect("the document closes its live selection once")
+    }
+}
+
+impl<S> HistorySelection<'_, S> {
+    pub(in crate::domain_computation::primary_graph) fn retain_output_authority_lifetime(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<super::authority_lifetime::HistoryAuthorityLifetime, Denial> {
+        if self.output_authority.is_none() {
+            self.output_authority = Some(
+                super::authority_lifetime::OwnedHistoryAuthorityLifetime::reserve(execution)
+                    .map_err(Denial::Recording)?,
+            );
+        }
+        Ok(self
+            .output_authority
+            .as_ref()
+            .expect("the selected slot owns its lifetime")
+            .retain())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn invalidate_output_authority(&mut self) {
+        drop(self.output_authority.take());
     }
 }
 

@@ -37,10 +37,22 @@ pub mod document_history {
     pub use crate::domain_computation::primary_graph::application_query::{
         WorthQueryDocumentHistoryRead, WorthQueryHistoryPreviewReadAdmission,
     };
+    pub use crate::domain_computation::primary_graph::WorthQueryCompletedHistoryOutputs;
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryCapturePauseForTest;
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::WorthQueryHistoryNavigationPauseForTest;
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryOutputAuthority;
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryOutputIntent;
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryOutputNavigationAdvance;
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryOutputNavigationDenial;
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryAdmittedHistoryProgramOutput, WorthQueryHistoryDependentOutputRead,
+        WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputControlDenial,
+        WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial,
+        WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
+        WorthQueryHistoryRootOutputRead, WorthQuerySettledHistoryProgramOutput,
+    };
     pub use crate::domain_computation::primary_graph::{
         WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
         WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
@@ -52,7 +64,8 @@ pub mod document_history {
         WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
         WorthQueryHistoryContextRefreshPauseForTest, WorthQueryHistoryNavigationCompletion,
         WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
-        WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+        WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId,
+        WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
         WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
         WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
         WorthQueryHistoryPreview, WorthQueryHistorySelection, WorthQueryHistoryStep,

@@ -12,6 +12,10 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod batch;
+mod history_outputs;
+pub use history_outputs::WorthQueryHistoryOutputControlDenial;
+pub use history_outputs::WorthQueryHistoryOutputReadDenial;
+pub use history_outputs::WorthQueryHistoryRootOutputRead;
 mod preview;
 mod retained;
 pub use batch::WorthQueryRetainedBatchQueryAdmissionDenial;

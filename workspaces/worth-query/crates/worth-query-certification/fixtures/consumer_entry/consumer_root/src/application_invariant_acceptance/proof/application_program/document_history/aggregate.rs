@@ -7,6 +7,8 @@ use worth_query_topology_entry::{
     PlanarOutputReadResult,
 };
 
+mod branching;
+mod navigation;
 mod race;
 type App = installation::ConsumerRuntime<FixedProgram>;
 type FullEdit<'a> =
@@ -75,10 +77,14 @@ fn finish_full<'a>(mut edit: FullEdit<'a>, app: &App) -> FullFinish<'a> {
     panic!("qualified common source did not select")
 }
 fn ordinary(app: &App, branch: WorthQueryProductBranch, y: u64, key: u64) {
+    ordinary_for(app, branch, "anchor-a", y, key)
+}
+
+fn ordinary_for(app: &App, branch: WorthQueryProductBranch, model: &str, y: u64, key: u64) {
     let mut operation = with_branch_request(app, branch, |request| {
         request
             .mutate(Original(PlanarInitialAdjustment {
-                scope_key: "anchor-a".into(),
+                scope_key: model.into(),
                 replacement_y: length(y),
             }))
             .without_source()

@@ -73,6 +73,9 @@ impl ApplicationOutputActionDeliveryDeclaration {
     pub fn root_connection(&self) -> &super::super::ApplicationConnectionDeclaration {
         &self.root_connection
     }
+    pub fn root_connections(&self) -> &[super::super::ApplicationConnectionDeclaration] {
+        &self.root_connections
+    }
     pub fn canonical_meaning(&self) -> String {
         let mut graph = self
             .root_connections

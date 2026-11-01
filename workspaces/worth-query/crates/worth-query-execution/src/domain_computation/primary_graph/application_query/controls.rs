@@ -80,6 +80,13 @@ pub(super) enum WorthQueryApplicationQueryBasis {
 }
 
 impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
+    pub(in crate::domain_computation::primary_graph::application_query) fn has_security_product(
+        &self,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> bool {
+        self.security_product.observation() == product
+    }
+
     pub(in crate::domain_computation::primary_graph) fn with_original_settled_producer(
         mut self,
         producer: Option<Arc<OriginalSettledProducerObservation>>,

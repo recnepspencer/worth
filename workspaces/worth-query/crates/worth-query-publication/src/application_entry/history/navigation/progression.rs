@@ -1,12 +1,13 @@
 //! Every progression uses fresh current admission; the owned handle survives refusal.
 use super::*;
 
-impl<S, H, N, P> WorthQueryHistoryNavigation<'_, '_, S, H, N, P>
+impl<S, H, N, P, Outputs> WorthQueryHistoryNavigation<'_, '_, S, H, N, P, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
     N: ApplicationHistoryNavigationBinding<S, H>,
     P: WorthQueryHistoryPayloadMode<S, H>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
@@ -50,10 +51,10 @@ where
             WorthQueryDocumentHistoryDenial,
         >,
     ) -> WorthQueryHistoryNavigationAdvance<Self> {
-        match read::with_read(self.document, request, prepare, |phase, runtime, read| {
-            runtime.advance_document_history_navigation::<H, N>(
+        match read::with_read(self.document, request, prepare, |phase, _, read| {
+            self.document.outputs.advance::<N>(
                 phase,
-                &program_publication_access(),
+                request,
                 &self.document.owner,
                 &self.document.access,
                 read,
@@ -82,12 +83,11 @@ where
             ));
         }
         let result = runtime.with_application_advancement(request.scope, |phase| {
-            self.navigation
-                .discard(&phase, &program_publication_access())
+            self.document.outputs.discard(&phase, &self.navigation)
         });
         match result {
             Ok(Ok(())) => Ok(()),
-            Ok(Err(cause)) => Err((self, Denial::Navigation(cause))),
+            Ok(Err(cause)) => Err((self, cause)),
             Err(cause) => Err((
                 self,
                 Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause)),

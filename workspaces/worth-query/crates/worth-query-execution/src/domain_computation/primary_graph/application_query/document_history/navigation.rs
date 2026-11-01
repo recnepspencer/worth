@@ -1,5 +1,6 @@
 //! Complete current READ/metadata before admitting the independent NAV operation.
 use super::*;
+mod outputs;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryDocumentHistoryNavigation,
     WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial as NavigationDenial,
@@ -100,8 +101,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let installed = read.history;
         let (read, admission) =
             read.admit_navigation::<N>(self, phase, access, document, N::input(history_access))?;
-        document
-            .prepare_navigation::<N>(phase, read, installed, admission, expected, requested, key)
+        document.prepare_navigation::<N>(
+            phase, read, installed, admission, expected, requested, key, None,
+        )
     }
 
     pub fn advance_document_history_navigation<'runtime, H, N>(
@@ -122,6 +124,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let installed = read.history;
         let (read, admission) =
             read.admit_navigation::<N>(self, phase, access, document, N::input(history_access))?;
-        document.advance_navigation::<N>(phase, read, installed, admission, navigation, key)
+        document.advance_navigation::<N>(
+            phase, &read, installed, &admission, navigation, key, None, None,
+        )
     }
 }

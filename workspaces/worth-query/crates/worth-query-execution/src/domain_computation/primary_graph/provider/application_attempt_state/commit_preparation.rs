@@ -51,6 +51,7 @@ impl WorthQueryPreparedApplicationCommit {
 pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_application(
     provider: &WorthQueryPrimaryGraphProvider,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
@@ -75,6 +76,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
         session.execution_request(),
         provider,
         prepared,
+        history,
         allocation_policy,
     )
 }

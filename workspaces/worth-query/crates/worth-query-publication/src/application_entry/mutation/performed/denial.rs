@@ -62,31 +62,44 @@ impl WorthQueryRequiredOutputPreparationDenial {
 }
 
 impl WorthQueryRequiredOutputPreparationDenial {
+    fn native_demand_mut(
+        &mut self,
+    ) -> Option<&mut worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial>
+    {
+        use crate::application_entry::{
+            WorthQueryApplicationOutputDemandDenial as Demand,
+            WorthQueryApplicationRequestQueryDenial as Query,
+        };
+        use worth_query_execution::publication_boundary::document_history::{
+            WorthQueryHistoryOutputAdvanceDenial as Advance,
+            WorthQueryHistoryOutputReadDenial as Read,
+        };
+        match self {
+            Self::DemandExecution(cause)
+            | Self::Demand(Demand::Demand(cause))
+            | Self::Demand(Demand::History(Advance::Demand(cause)))
+            | Self::Demand(Demand::HistoryRead(Read::Demand(cause)))
+            | Self::SourceQuery(Query::HistoryOutput(Read::Demand(cause)))
+            | Self::Demand(Demand::Source(Query::HistoryOutput(Read::Demand(cause)))) => {
+                Some(cause)
+            }
+            _ => None,
+        }
+    }
+
     pub(in crate::application_entry) fn take_managed_cleanup(
         &mut self,
     ) -> Option<
         Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationCleanupRequired>,
     > {
-        match self {
-            Self::DemandExecution(denial) => denial.take_managed_cleanup(),
-            Self::Demand(
-                crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
-            ) => denial.take_managed_cleanup(),
-            _ => None,
-        }
+        self.native_demand_mut()
+            .and_then(|cause| cause.take_managed_cleanup())
     }
-}
 
-impl WorthQueryRequiredOutputPreparationDenial {
     pub(in crate::application_entry) fn take_read_cleanup(
         &mut self,
     ) -> Option<worth_query_execution::facade::primary_graph::WorthQueryOutputReadCleanup> {
-        match self {
-            Self::DemandExecution(denial)
-            | Self::Demand(
-                crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
-            ) => denial.take_read_cleanup(),
-            _ => None,
-        }
+        self.native_demand_mut()
+            .and_then(|cause| cause.take_read_cleanup())
     }
 }

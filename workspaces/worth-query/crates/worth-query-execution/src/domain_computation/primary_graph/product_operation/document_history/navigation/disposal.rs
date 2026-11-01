@@ -86,6 +86,17 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 candidate,
                 exact,
                 _publication,
+                _outputs,
+            } => {
+                drop(_outputs);
+                drop(exact);
+                drop(_publication);
+                cleanup.head = Some(candidate.into_owned_head());
+            }
+            NavigationPhase::AwaitingOutputs {
+                candidate,
+                exact,
+                _publication,
             } => {
                 drop(exact);
                 drop(_publication);
@@ -94,6 +105,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             NavigationPhase::Discarding(pending) => cleanup = pending,
         }
         drop(self.source.take());
+        drop(self.output_source.take());
+        drop(self.output_source_memory.take());
         self.phase = NavigationPhase::Discarding(cleanup);
     }
 
@@ -224,6 +237,31 @@ impl<S: ApplicationSchema> NavigationDisposal<'_, S> {
 }
 
 impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
+    /// Only disposal may use this correspondence without current READ/NAV.
+    /// SDK cleanup runs outside the attempt guard and precedes Native retirement.
+    pub fn discard_after_output_cleanup<E>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        cleanup: impl FnOnce([u8; 32]) -> Result<(), E>,
+    ) -> Result<Result<(), E>, WorthQueryHistoryNavigationDenial> {
+        use WorthQueryHistoryNavigationDenial as Denial;
+        let key = {
+            let progress = self.attempt.progress.try_lock().map_err(|_| Denial::Busy)?;
+            phase
+                .checked_execution_request_for(&progress.application.product_runtime)
+                .map_err(Denial::Stopped)?;
+            if matches!(progress.phase, NavigationPhase::Selected(_)) {
+                return Err(Denial::AlreadySelected);
+            }
+            progress.meaning.canonical_key()
+        };
+        if let Err(cause) = cleanup(key) {
+            return Ok(Err(cause));
+        }
+        self.discard(phase, access).map(Ok)
+    }
+
     pub fn discard(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

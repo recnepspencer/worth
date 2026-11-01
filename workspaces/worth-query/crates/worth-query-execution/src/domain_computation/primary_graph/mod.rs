@@ -78,7 +78,11 @@ pub(in crate::domain_computation) use principal_currentness_capture::capture_pri
 pub(in crate::domain_computation) use principal_currentness_capture::PrincipalCurrentnessCaptureStop;
 pub(crate) mod product_activation;
 mod product_operation;
+pub use application_query::{
+    WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial,
+};
 pub use product_operation::document_history::{
+    WorthQueryAdmittedHistoryProgramOutput, WorthQueryCompletedHistoryOutputs,
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
     WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
     WorthQueryDocumentHistoryCapturePauseForTest, WorthQueryDocumentHistoryCloseFailure,
@@ -88,15 +92,24 @@ pub use product_operation::document_history::{
     WorthQueryDocumentHistoryOperationConstraint, WorthQueryDocumentHistoryRecordPreparation,
     WorthQueryDocumentHistoryReservation, WorthQueryHistoryContextRefreshDenial,
     WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryContextRefreshPauseForTest,
-    WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
-    WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationPauseForTest,
-    WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+    WorthQueryHistoryDependentOutputRead, WorthQueryHistoryEnrollmentObservationForTest,
+    WorthQueryHistoryEnrollmentReportForTest, WorthQueryHistoryNavigationCompletion,
+    WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
+    WorthQueryHistoryNavigationPauseForTest, WorthQueryHistoryNavigationPosture,
+    WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
+    WorthQueryHistoryOutputAuthority, WorthQueryHistoryOutputDiscovery,
+    WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
+    WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
     WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
     WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
-    WorthQueryHistoryPreview, WorthQueryHistorySelection, WorthQueryHistoryStep,
+    WorthQueryHistoryPreview, WorthQueryHistoryProgramOutputAdvance,
+    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
+    WorthQuerySettledHistoryProgramOutput,
 };
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
+pub use product_operation::WorthQueryHistoryOutputControlDenial;
+pub use product_operation::WorthQueryHistoryOutputReadDenial;
+pub use product_operation::WorthQueryHistoryRootOutputRead;
 mod program_occurrence;
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 mod provider;

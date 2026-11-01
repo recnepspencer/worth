@@ -35,6 +35,16 @@ pub struct WorthQueryCompletedOriginalReadOutputs {
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryCompletedOriginalReadOutputs {
+    pub(in crate::domain_computation::primary_graph) fn original_source(
+        &self,
+    ) -> &Arc<WorthQueryApplicationReadObservation> {
+        &self.source
+    }
+    pub(in crate::domain_computation::primary_graph) fn original_endpoint(
+        &self,
+    ) -> &Arc<WorthQueryApplicationReadObservation> {
+        &self.output
+    }
     pub fn source_commit(&self) -> &CompositeCommitIdentity {
         self.source.selected_commit()
     }
@@ -73,6 +83,32 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         dependents: impl Iterator<Item = &'s WorthQueryOutputDemandSettlement> + Clone,
         dependencies: Option<&WorthQueryRetainedQueryDependencies>,
     ) -> Result<WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial> {
+        self.qualify_original_read_outputs_with_header::<R>(
+            phase,
+            access,
+            scope,
+            source,
+            root,
+            dependents,
+            dependencies,
+            std::mem::size_of::<WorthQueryCompletedOriginalReadOutputs>() as u64,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn qualify_original_read_outputs_with_header<
+        's,
+        R: ApplicationOutputGraphShape<S>,
+    >(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &WorthQueryProgramPublicationAccess,
+        scope: &WorthQueryRequestScope,
+        source: &Arc<WorthQueryApplicationReadObservation>,
+        root: &'s WorthQueryOutputDemandSettlement,
+        dependents: impl Iterator<Item = &'s WorthQueryOutputDemandSettlement> + Clone,
+        dependencies: Option<&WorthQueryRetainedQueryDependencies>,
+        header_bytes: u64,
+    ) -> Result<WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial> {
         use WorthQueryOriginalReadOutputDenial as Denial;
         let runtime = self.runtime();
         let execution = phase
@@ -106,7 +142,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 root,
                 dependents,
                 dependencies,
-                std::mem::size_of::<WorthQueryCompletedOriginalReadOutputs>() as u64,
+                header_bytes,
             )
             .map_err(Denial::Currentness)?;
         Ok(WorthQueryCompletedOriginalReadOutputs {

@@ -25,7 +25,12 @@ mod controls;
 mod denial;
 mod document_history;
 pub(in crate::domain_computation::primary_graph) use document_history::CompletedMetadataRead;
+pub(in crate::domain_computation::primary_graph) use document_history::HistoryOutputControlPlan;
+pub(in crate::domain_computation::primary_graph) use document_history::HistoryRetainedPermissionStop;
 pub use document_history::{WorthQueryDocumentHistoryRead, WorthQueryHistoryPreviewReadAdmission};
+pub use document_history::{
+    WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial,
+};
 pub(in crate::domain_computation::primary_graph) mod derived_view;
 mod disclosure;
 mod execution_shape;

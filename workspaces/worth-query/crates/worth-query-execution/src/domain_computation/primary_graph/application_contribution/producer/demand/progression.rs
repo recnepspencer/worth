@@ -3,6 +3,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryAuthentica
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 
+use super::super::ProducerInvocationAuthority;
 use super::super::WorthQueryProducerCommitAuthority;
 use super::disclosure::validate_disclosure;
 #[cfg(test)]
@@ -31,7 +32,7 @@ mod required_wave;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::DecisionInput;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::PerformedMembers;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::SelectedDecisionInput;
-mod retained_read;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod retained_read;
 pub(in crate::domain_computation::primary_graph) use required_wave::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use required_wave::ReboundConsumedOutput;
 pub(in crate::domain_computation::primary_graph) use required_wave::ResolvedRequiredPredecessors;
@@ -81,7 +82,7 @@ where
                 request_scope,
                 delivery_branch,
                 disclosure,
-                WorthQueryProducerCommitAuthority::Ordinary,
+                WorthQueryProducerCommitAuthority::Ordinary.into(),
                 performed,
             )
         })
@@ -123,7 +124,7 @@ where
                 principal,
                 request_scope,
                 delivery_branch,
-                WorthQueryProducerCommitAuthority::Ordinary,
+                WorthQueryProducerCommitAuthority::Ordinary.into(),
                 performed,
             )
         })
@@ -140,7 +141,7 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
@@ -153,6 +154,7 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let history = commit_authority.history_control();
         self.advance_output_demand_with_prepared_source(
             execution,
             phase,
@@ -168,6 +170,7 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
+                    history,
                 )
                 .map(Some)
             },
@@ -212,7 +215,7 @@ where
                 request_scope,
                 delivery_branch,
                 disclosure,
-                WorthQueryProducerCommitAuthority::ProgramOutput,
+                WorthQueryProducerCommitAuthority::ProgramOutput.into(),
                 performed,
             )
         })
@@ -221,6 +224,42 @@ where
     /// One advance a caller starts, on a fresh request meter. A custody
     /// refusal reaches the caller as that caller meets it; advances nested
     /// in this one keep the rows' own stops.
+    pub(in crate::domain_computation::primary_graph) fn advance_history_output_demand<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>:
+            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                    Schema,
+                    FamilySourceQuery<Schema, Family>,
+                > + 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        self.advance_as_caller(demand, |demand, performed| {
+            self.advance_retained_with_commit_authority(
+                execution,
+                phase,
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                ProducerInvocationAuthority::history(
+                    WorthQueryProducerCommitAuthority::ProgramOutput,
+                    history,
+                ),
+                performed,
+            )
+        })
+    }
+
     pub(super) fn advance_as_caller<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -273,7 +312,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>

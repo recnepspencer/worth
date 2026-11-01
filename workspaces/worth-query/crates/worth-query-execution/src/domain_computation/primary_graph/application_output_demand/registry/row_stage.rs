@@ -18,6 +18,8 @@ pub(in crate::domain_computation::primary_graph) enum OutputRowStage {
     Ready(ReadyCompletion),
     /// A real committed output still owes delivery or readiness; no call holds it.
     Published,
+    /// Original publication or its keyed receipt delivery still needs advancement.
+    PublicationPending,
     /// Admitted or scheduled, with no committed output: no call holds it.
     BeforeReady,
 }
@@ -67,6 +69,9 @@ fn stage_of(record: &DemandRecord) -> OutputRowStage {
                 OutputRowStage::Stopped(denial.clone())
             }
             WorthQueryOutputAdvancement::Idle => match &output.checkpoint {
+                Some(WorthQueryOutputCheckpoint::PublicationPending { .. }) => {
+                    OutputRowStage::PublicationPending
+                }
                 Some(WorthQueryOutputCheckpoint::Ready(completion)) => {
                     OutputRowStage::Ready(completion.clone())
                 }

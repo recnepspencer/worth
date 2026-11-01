@@ -60,6 +60,7 @@ where
             plan.scope,
             &plan.security_product,
             security,
+            plan.basis.selected_product(),
             plan.basis.snapshot_handle(),
             plan.controls.request_scope(),
         )

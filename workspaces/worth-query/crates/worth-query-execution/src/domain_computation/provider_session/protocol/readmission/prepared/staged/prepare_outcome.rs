@@ -75,13 +75,28 @@ impl WorthQuerySessionPrepareOutcome<'_> {
     }
 
     pub(crate) fn commit(
-        mut self,
+        self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQuerySessionCommitOutcome {
+        self.commit_using(|provider, session| provider.commit_session(&session, allocation_policy))
+    }
+
+    /// Only the physical invocation varies; this owner still closes the exact
+    /// session and interprets its actual terminal or recovery disposition.
+    pub(crate) fn commit_using(
+        mut self,
+        physical: impl FnOnce(
+            &super::super::super::super::WorthQueryGraphProviderAnchor,
+            super::super::super::super::WorthQueryProviderSessionView<'_>,
+        ) -> Result<
+            super::super::super::super::WorthQueryProviderTerminalDescription,
+            super::super::super::super::WorthQueryProviderSessionCommitStop,
+        >,
     ) -> WorthQuerySessionCommitOutcome {
         let terminal_binding = self.affinity.terminal_binding();
         self.counters.called_provider();
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.affinity.session_mut().commit(allocation_policy)
+            self.affinity.session_mut().commit_using(physical)
         }));
         match invocation {
             Ok(Err(

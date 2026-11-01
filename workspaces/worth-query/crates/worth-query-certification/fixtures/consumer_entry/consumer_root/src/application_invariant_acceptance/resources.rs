@@ -25,10 +25,14 @@ pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     );
 
 pub(super) fn world_resources() -> WorthQueryProductWorldResources {
+    world_resources_with_branches(8)
+}
+
+fn world_resources_with_branches(branch_capacity: u64) -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 8,
+                live_product_branches: branch_capacity,
             },
             history: RuntimeWorldHistoryBudgetInstallation {
                 retained_composite_commits: 64,
@@ -61,8 +65,14 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
 
 pub(super) fn application_limits(
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    application_limits_with_branches(8)
+}
+
+pub(super) fn application_limits_with_branches(
+    branch_capacity: u64,
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
-        world_resources(),
+        world_resources_with_branches(branch_capacity),
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
         ),

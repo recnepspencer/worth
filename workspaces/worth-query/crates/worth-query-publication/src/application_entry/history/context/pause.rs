@@ -4,7 +4,8 @@ impl<
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
+        Outputs,
+    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload, Outputs>
 {
     #[doc(hidden)]
     pub fn pause_before_history_context_refresh_for_test(&mut self) -> worth_query_execution::publication_boundary::document_history::WorthQueryHistoryContextRefreshPauseForTest{

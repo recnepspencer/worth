@@ -19,9 +19,15 @@ pub struct WorthQueryApplicationReadObservation {
     product: WorthQueryProductObservationLease,
     producer:
         Option<Arc<super::super::application_output_demand::OriginalSettledProducerObservation>>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl WorthQueryApplicationReadObservation {
+    pub(in crate::domain_computation::primary_graph) fn retained_product_lease(
+        &self,
+    ) -> WorthQueryProductObservationLease {
+        self.product.retained_clone()
+    }
     pub(in crate::domain_computation::primary_graph) fn product_observation(
         &self,
     ) -> &worth_runtime_world::facade::ProductBranchObservation {
@@ -45,11 +51,22 @@ impl WorthQueryApplicationReadObservation {
     where
         Schema: ApplicationSchema,
     {
+        Self::from_product_with_memory(runtime, product, None)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn from_product_with_memory<
+        Schema: ApplicationSchema,
+    >(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: WorthQueryProductObservationLease,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Arc<Self> {
         Arc::new(Self {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             product,
             producer: None,
+            _memory: memory,
         })
     }
 
@@ -71,6 +88,7 @@ impl WorthQueryApplicationReadObservation {
                 .matches(runtime, product.observation())
                 .then_some(producer),
             product,
+            _memory: None,
         })
     }
 

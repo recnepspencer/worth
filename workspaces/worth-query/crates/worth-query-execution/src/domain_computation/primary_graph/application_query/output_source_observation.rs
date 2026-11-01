@@ -15,6 +15,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
+mod current_control;
 mod read_closure;
 pub(in crate::domain_computation::primary_graph) use read_closure::SourceQueryReadClosure;
 
@@ -31,10 +32,13 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
     pub(in crate::domain_computation::primary_graph) principal:
         &'a WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(in crate::domain_computation::primary_graph) request: &'a WorthQueryRequestScope,
+    history: Option<current_control::HistorySourceQueryControl<'a, Schema>>,
+    refused: std::cell::RefCell<Option<SourceQueryObservationStop>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum SourceQueryObservationStop {
+    CurrentControl(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
     Installation(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
     Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
@@ -84,10 +88,47 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         Binding::ScopeBinding: ApplicationQueryScopeResolution<Schema, Binding::PrincipalIdentity>,
         SourceValue<Schema, Binding>: WorthQueryApplicationProjection<Schema, Binding::Query>,
     {
+        if let Some(stop) = self.refused.borrow().as_ref() {
+            return Err(stop.clone());
+        }
+        let result = self.read_in_control::<Binding>(execution, intent, context_use, native);
+        if self.history.is_some() {
+            if let Err(stop) = &result
+                && stop.is_control_refusal()
+            {
+                *self.refused.borrow_mut() = Some(stop.clone());
+            }
+        }
+        result
+    }
+
+    fn read_in_control<Binding>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        intent: Binding::Input,
+        context_use: &std::cell::Cell<
+            crate::domain_computation::primary_graph::handler::DecisionContextUse,
+        >,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        ObservedQuerySource<Binding::Query, SourceValue<Schema, Binding>>,
+        SourceQueryObservationStop,
+    >
+    where
+        Binding: ApplicationQueryBinding<Schema>,
+        Binding::Input: ApplicationQueryIntent<Schema, Binding = Binding>,
+        Binding::ScopeBinding: ApplicationQueryScopeResolution<Schema, Binding::PrincipalIdentity>,
+        SourceValue<Schema, Binding>: WorthQueryApplicationProjection<Schema, Binding::Query>,
+    {
         use SourceQueryObservationStop as Stop;
         context_use.set(context_use.get().source_query_permission());
         let application = self.application;
-        let selected = self.shared.selected();
+        self.confirm_control(execution, native, ())?;
+        let selected = self
+            .history
+            .as_ref()
+            .map_or(self.shared, |history| history.current)
+            .selected();
         if !std::ptr::eq(application, selected.application()) {
             return Err(Stop::ForeignClosure);
         }
@@ -127,14 +168,27 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         let (product, basis) = application
             .retain_selected_query_basis_admitted(self.shared)
             .map_err(Stop::Basis)?;
-        let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
-            product,
-            basis,
-            limits.maximum_results().min(query_maximum),
-            self.request,
-        )
-        .map_err(|stop| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(stop)))?
-        .with_original_settled_producer(selected.original_settled_producer().cloned());
+        let controls = match self.history.as_ref() {
+            Some(history) => {
+                WorthQueryApplicationQueryControls::selected_read_one_shot_with_control(
+                    history.invocation.current().retained_clone(),
+                    product,
+                    basis,
+                    limits.maximum_results().min(query_maximum),
+                    self.request,
+                )
+            }
+            None => WorthQueryApplicationQueryControls::selected_read_one_shot(
+                product,
+                basis,
+                limits.maximum_results().min(query_maximum),
+                self.request,
+            )
+            .map_err(|stop| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(stop)))?,
+        }
+        .with_original_settled_producer(
+            self.shared.selected().original_settled_producer().cloned(),
+        );
         // Use the existing typed parameter admission/canonical engine and its
         // installed canonical ceiling; no caller digest grants query meaning.
         let (parameters, controls) = application
@@ -152,6 +206,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 parameters,
                 controls,
                 selected,
+                self.history.as_ref().map(|_| self.shared.selected()),
                 self.request,
                 &principal,
                 &scope,
@@ -161,6 +216,14 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 phase: SourceQueryPreparationPhase::Permission,
                 cause,
             })?;
+        if let Some(history) = &self.history {
+            permission
+                .require_history_principal(history.invocation)
+                .map_err(|cause| Stop::Preparation {
+                    phase: SourceQueryPreparationPhase::Permission,
+                    cause,
+                })?;
+        }
         let plan = application
             .finish_prepared_application_query_permission_with_native_access(
                 execution, permission, native,
@@ -172,6 +235,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         let completed = application
             .execute_application_query_one_shot_admitted_with_native_access(execution, plan, native)
             .map_err(Stop::Read)?;
+        let completed = self.confirm_control(execution, native, completed)?;
         let (rows, disclosure) = completed.read.into_admitted_disclosed().into_parts();
         if rows.is_empty() {
             return Err(Stop::Missing);
@@ -216,17 +280,23 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             |runtime| {
                 runtime
                     .read_truth()
-                    .positioned_snapshot(selected.application_basis().snapshot_handle())
+                    .positioned_snapshot(
+                        self.shared.selected().application_basis().snapshot_handle(),
+                    )
                     .map_err(|_| Stop::ForeignClosure)
             },
         )?;
         let closure =
             SourceQueryReadClosure::retain(application, receipt, completed.authorization, facts)
                 .map_err(|stop| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(stop)))?;
-        Ok(ObservedQuerySource {
-            value: rows.into_iter().next().expect("exactly one disclosed row"),
-            source,
-            closure,
-        })
+        self.confirm_control(
+            execution,
+            native,
+            ObservedQuerySource {
+                value: rows.into_iter().next().expect("exactly one disclosed row"),
+                source,
+                closure,
+            },
+        )
     }
 }

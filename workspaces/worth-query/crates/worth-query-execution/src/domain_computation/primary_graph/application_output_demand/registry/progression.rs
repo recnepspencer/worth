@@ -5,7 +5,8 @@ mod selected_checkpoint_finish;
 mod selected_finish;
 mod supersession;
 pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::PreparedSelectedCheckpointFinish;
-pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::SelectedCheckpointFinishStop;
+mod checkpoint_finish;
+pub(in crate::domain_computation::primary_graph) use checkpoint_finish::CheckpointFinishStop;
 
 use super::post_commit::release_completed_member;
 use super::post_commit::release_completed_prerequisites;
@@ -63,7 +64,7 @@ impl WorthQueryOutputDemandRegistry {
     }
 }
 
-fn begin_record(
+pub(super) fn begin_record(
     record: &mut DemandRecord,
     overflow_subject: &'static str,
 ) -> WorthQueryOutputDemandAdvanceAdmission {
@@ -223,6 +224,7 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
     }
 
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn finish_checkpoint(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -230,70 +232,11 @@ impl WorthQueryOutputDemandRegistry {
         checkpoint: WorthQueryOutputCheckpoint,
         denial: Option<&WorthQueryOutputDemandDenial>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut record = state.records.get_mut(&interest.key).ok_or_else(|| {
-            WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
-                "output checkpoint was released during advancement",
-            )
-        })?;
-        let DemandState::Output(output) = &mut record.state else {
-            return Err(match &record.state {
-                DemandState::Failed(denial) => denial.clone(),
-                _ => WorthQueryOutputDemandDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                    "output advancement no longer owns its registry record",
-                ),
-            });
-        };
-        match output.advancement() {
-            WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {}
-            WorthQueryOutputAdvancement::Stopped {
-                denial: stopped,
-                interrupted_claim: Some(active),
-            } if *active == claim => {
-                let stopped = stopped.clone();
-                if output.checkpoint.is_none() { output.install_checkpoint(checkpoint); }
-                output.finish_stopped(stopped.clone());
-        record.release_obligations();
-                record.finish();
-                let released_prerequisites =
-                    release_completed_prerequisites(&mut state, &interest.key);
-                release_completed_member(&mut state, &interest.key);
-                drop(state);
-                drop(released_prerequisites);
-                return Err(stopped);
-            }
-            _ => return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                "output advancement claim no longer matches its registry record",
-            )),
-        }
-        output.install_checkpoint(checkpoint);
-        match denial {
-            Some(denial) if super::required_stop::fails_row(denial) => {
-                output.finish_stopped(denial.clone())
-            }
-            _ => output.reopen(),
-        };
-        let terminal = matches!(
-            output.advancement(),
-            WorthQueryOutputAdvancement::Stopped { .. }
-        );
-        if terminal {
-            record.release_obligations();
-        }
-        record.wake.notify();
-        record.finish();
-        let released_prerequisites =
-            terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
-        release_completed_member(&mut state, &interest.key);
-        drop(state);
-        drop(released_prerequisites);
-        Ok(())
+        self.finish_checkpoint_owned(interest, claim, checkpoint, denial)
+            .map_err(|stop| match stop {
+                CheckpointFinishStop::Restored(denial)
+                | CheckpointFinishStop::Returned(denial, _) => denial,
+            })
     }
 }
 

@@ -3,7 +3,6 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkPhases,
     WorthQueryCompiledApplicationOperationContracts,
@@ -19,7 +18,6 @@ use crate::domain_computation::authorization::{
 use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 
 use super::WorthQueryOperationAdmissionIdentity;
-use std::time::Instant;
 
 #[path = "access/workflow_approval_snapshot.rs"]
 mod workflow_approval_snapshot;
@@ -314,16 +312,20 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation) fn current_authority_lapse(
         &self,
     ) -> Option<WorthQueryAdmissionLapse> {
-        if let Some(interruption) = self.request_scope.interruption() {
-            return Some(match interruption {
-                WorthQueryRequestInterruption::Cancelled => WorthQueryAdmissionLapse::Cancelled,
-                WorthQueryRequestInterruption::DeadlineExceeded => {
-                    WorthQueryAdmissionLapse::DeadlineExceeded
-                }
-            });
+        crate::domain_computation::authorization::admitted_request::request_lapse(
+            &self.request_scope,
+            self.authentication_valid_until,
+        )
+    }
+
+    pub(in crate::domain_computation) fn retain_admitted_request(
+        &self,
+    ) -> crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness
+    {
+        crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness {
+            request: self.request_scope.clone(),
+            authentication_valid_until: self.authentication_valid_until,
         }
-        (Instant::now() >= self.authentication_valid_until)
-            .then_some(WorthQueryAdmissionLapse::AuthenticationExpired)
     }
 
     pub(in crate::domain_computation) fn publication_request(

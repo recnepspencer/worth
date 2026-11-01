@@ -44,7 +44,7 @@ impl ApplicationDiscoveredActionDelivery<ConsumerSchema, Binding> for Discovered
 pub(crate) struct FixedProgram;
 pub(crate) struct DiscoveredProgram;
 macro_rules! historical_program {
-    ($program:ty,$delivery:ty,$root:ty,$identity:literal) => {
+    ($program:ty,$delivery:ty,$root:ty,$identity:literal,$additional:expr) => {
         impl ApplicationProgramDefinition<ConsumerSchema> for $program {
             type Contributions = <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Contributions;
             type Rules = <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Rules;
@@ -60,6 +60,7 @@ macro_rules! historical_program {
                     && spec.feature().identity()==<PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY));
                 specs.push(ApplicationFeatureSpec::at::<ConsumerSchema,InitialDiscoveredPlanarRoot,PlanarSourceFeature>()
                     .provides::<PlanarBodyOutput>().action::<Binding, $delivery>().finish_action().finish());
+                specs.extend($additional);
                 specs
             }
         }
@@ -69,14 +70,18 @@ historical_program!(
     FixedProgram,
     FixedDelivery,
     ConsumerInitialFixedProgramRoot,
-    "consumer.historical-fixed-program.v1"
+    "consumer.historical-fixed-program.v1",
+    Vec::<ApplicationFeatureSpec>::new()
 );
 historical_program!(
     DiscoveredProgram,
     DiscoveredDelivery,
     ConsumerInitialDiscoveredProgramRoot,
-    "consumer.historical-discovered-program.v1"
+    "consumer.historical-discovered-program.v1",
+    Vec::<ApplicationFeatureSpec>::new()
 );
+
+pub(crate) mod branching;
 
 // Initiation/replay can move this intent; no runtime source observation enters its durable identity.
 pub(crate) struct Original(pub PlanarInitialAdjustment);

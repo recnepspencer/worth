@@ -90,6 +90,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         // Only owner-field moves remain. The original user step and its exact
         // journal source are immutable; no step or cursor generation changes.
+        selected.invalidate_output_authority();
         selected.expected = expected;
         let previous = std::mem::replace(&mut selected.physical_source, prepared);
         drop(selected);

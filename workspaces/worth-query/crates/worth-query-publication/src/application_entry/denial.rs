@@ -18,6 +18,7 @@ use worth_query_installation::facade::{
 /// The kind of a `WorthQueryApplicationRequestQueryDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestQueryDenialKind {
+    HistoryOutput,
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -39,6 +40,7 @@ pub enum WorthQueryApplicationRequestQueryDenialKind {
 /// Why an application query request was refused before or during execution.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRequestQueryDenial {
+    HistoryOutput(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial),
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -62,6 +64,7 @@ pub enum WorthQueryApplicationRequestQueryDenial {
 impl WorthQueryApplicationRequestQueryDenial {
     pub const fn kind(&self) -> WorthQueryApplicationRequestQueryDenialKind {
         match self {
+            Self::HistoryOutput(_) => WorthQueryApplicationRequestQueryDenialKind::HistoryOutput,
             Self::ExecutionRequest(cause) => {
                 WorthQueryApplicationRequestQueryDenialKind::ExecutionRequest(*cause)
             }

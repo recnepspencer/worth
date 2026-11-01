@@ -1,5 +1,7 @@
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+mod parent;
+mod source_basis;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
@@ -34,96 +36,19 @@ where
         };
         let execution = &phase_request;
 
-        if !self.contains_connection_type::<Connection>() {
-            return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
-                "dependent output connection is not installed for this program",
-            ));
-        }
-        if parent.target_feature != TypeId::of::<Connection::SourceFeature>() {
-            return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                "dependent output edge does not leave this settled program feature",
-            ));
-        }
-        if !parent.retained.belongs_to(&self.backing.runtime) {
-            return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                "dependent output parent belongs to another installed application",
-            ));
-        }
-        let artifact = self
-            .validate_derived_artifact_demand::<Connection, ConnectionDemand<Schema, Connection>>(
-            )?;
+        let artifact = self.validate_dependent_output_parent::<ParentDemand, Connection>(parent)?;
         let limits = self
             .backing
             .runtime
             .output_demand_resource_profile()
             .constrain(limits);
-        if let (Some(child), Some(parent_artifact)) = (artifact, parent.artifact) {
-            let consumes_parent = child.dependencies().iter().any(|dependency| {
-                dependency.identity() == parent_artifact.identity()
-                    || dependency.identity() == parent_artifact.feature()
-            });
-            if !consumes_parent {
-                return Err(WorthQueryOutputDemandDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                    "the dependent artifact does not consume its settled parent artifact",
-                ));
-            }
-        }
         let selected_source = source
             .observed_sources()
             .first()
             .filter(|_| source.rows().len() == 1 && source.observed_sources().len() == 1);
-        let parent_observation = parent.retained.retained_read();
-        let parent_commit = parent_observation.selected_commit();
-        let parent_occurrence = parent_observation.branch_incarnation();
-        let parent_branch = parent_observation.branch_identity();
-        let retained_basis = self
-            .backing
-            .runtime
-            .select_application_read_observation_with_request(execution, basis);
-        if let Err(cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_)) =
-            retained_basis
-        {
-            return Err(WorthQueryOutputDemandDenial::product_selection(
-                cause,
-                "dependent basis",
-            ));
-        }
-        let minimum_basis = if retained_basis.is_ok() {
-            Some(
-                self.backing
-                    .runtime
-                    .select_application_read_observation_with_request(
-                        execution,
-                        minimum_observation,
-                    ),
-            )
-        } else {
-            None
-        };
-        if let Some(Err(cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_))) =
-            &minimum_basis
-        {
-            return Err(WorthQueryOutputDemandDenial::product_selection(
-                *cause,
-                "dependent minimum observation",
-            ));
-        }
-        if retained_basis.is_err()
-            || minimum_basis.as_ref().is_some_and(|basis| basis.is_err())
-            || basis.branch_identity() != parent_branch
-            || minimum_observation.branch_identity() != parent_branch
-            || basis.selected_commit().ordinal() < parent_commit.ordinal()
-            || basis.selected_commit().ordinal() < minimum_observation.selected_commit().ordinal()
-        {
-            return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                "dependent observation must be owned by this program and follow its settled parent and source publication on the same product branch",
-            ));
-        }
+        let parent_occurrence = parent.retained.retained_read().branch_incarnation();
+        let retained_basis =
+            self.select_dependent_output_basis(execution, parent, basis, minimum_observation)?;
         if selected_source.is_none_or(|observed| {
             observed.selected_product_commit() != Some(basis.selected_commit())
                 || observed.selected_product_occurrence() != Some(parent_occurrence)
@@ -139,12 +64,11 @@ where
                 execution,
                 source,
                 limits,
-                retained_basis
-                    .expect("validated dependent basis")
-                    .retain_application_read(),
+                retained_basis.retain_application_read(),
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<Connection::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,

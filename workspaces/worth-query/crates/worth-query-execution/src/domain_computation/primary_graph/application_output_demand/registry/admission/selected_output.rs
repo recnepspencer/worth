@@ -39,6 +39,7 @@ impl<'a> SelectedOutputAdmission<'a> {
         }
         let actual = match &record.state {
             DemandState::Output(output) => match &output.checkpoint {
+                Some(WorthQueryOutputCheckpoint::PublicationPending { .. }) => return false,
                 Some(
                     WorthQueryOutputCheckpoint::Published { receipt, .. }
                     | WorthQueryOutputCheckpoint::Delivered { receipt, .. },

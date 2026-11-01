@@ -15,6 +15,24 @@ where
         application: &WorthQueryProgramApplicationRuntime<S, P>,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     ) -> Result<(), Denial> {
+        self.drain_read_request(phase, application, branch)?;
+        self.continuation = None;
+        self.root = None;
+        self.root_settlement = None;
+        self.pending_root_authority = None;
+        self.pending_history_delivery = None;
+        self.complete = true;
+        Ok(())
+    }
+
+    /// Drain actual read owners while retaining original permission subjects.
+    /// Selection retries must freshly authorize every completed tree member.
+    pub(in crate::application_entry) fn drain_read_request(
+        &mut self,
+        phase: &AdvancementPhase<'_>,
+        application: &WorthQueryProgramApplicationRuntime<S, P>,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+    ) -> Result<(), Denial> {
         if self.source_receipt.is_some()
             || self.source_preparation.is_some()
             || self.source_binding.is_some()
@@ -27,11 +45,6 @@ where
         if let Some(root) = self.root.as_mut() {
             root.close_read_request(phase, application, branch)?;
         }
-        self.continuation = None;
-        self.root = None;
-        self.root_settlement = None;
-        self.pending_root_authority = None;
-        self.complete = true;
         Ok(())
     }
 }

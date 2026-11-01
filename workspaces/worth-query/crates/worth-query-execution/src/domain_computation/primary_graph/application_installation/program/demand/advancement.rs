@@ -54,6 +54,9 @@ where
                     WorthQueryProgramOutputAdvance::Progressed
                 }
                 WorthQueryOutputDemandAdvance::Settled(retained) => {
+                    if let Some(completion) = &demand.original_root_completion {
+                        completion.completed(&retained);
+                    }
                     WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
                         retained,
                         target_feature: demand.target_feature,

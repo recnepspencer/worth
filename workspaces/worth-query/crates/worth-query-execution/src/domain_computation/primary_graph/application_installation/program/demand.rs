@@ -17,7 +17,10 @@ mod dependent;
 mod discovered_roots;
 mod fulfillment;
 mod handle;
+mod history;
 mod read_close;
+mod root_completion;
+pub(in crate::domain_computation::primary_graph) use root_completion::OriginalProgramRootCompletion;
 mod required_affinity;
 mod unavailable;
 use crate::domain_computation::primary_graph::{
@@ -59,6 +62,8 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
+    pub(in crate::domain_computation::primary_graph) original_root_completion:
+        Option<std::sync::Arc<OriginalProgramRootCompletion>>,
     target_feature: TypeId,
     artifact: Option<Artifact>,
     marker: std::marker::PhantomData<fn() -> Program>,
@@ -138,6 +143,7 @@ where
             >(execution, source, limits)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<
                     <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature,
                 >(),
@@ -319,6 +325,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
@@ -368,6 +375,7 @@ where
             >(execution, source, limits, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,

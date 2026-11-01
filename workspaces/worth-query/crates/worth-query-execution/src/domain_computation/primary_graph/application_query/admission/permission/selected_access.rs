@@ -32,6 +32,13 @@ pub(in crate::domain_computation::primary_graph) struct SelectedIssuedAccessRoot
     pub(super) product: &'a worth_runtime_world::facade::ProductBranchObservation,
     pub(super) request:
         &'a worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    truth: Option<SelectedIssuedTruthRoot<'a>>,
+}
+
+struct SelectedIssuedTruthRoot<'a> {
+    product: &'a worth_runtime_world::facade::ProductBranchObservation,
+    root: &'a worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
 }
 
 impl<'a, Schema, Principal, PrincipalIdentity, Scope>
@@ -83,7 +90,20 @@ impl<'a, Schema, Principal, PrincipalIdentity, Scope>
             snapshot: principal.issued_snapshot(),
             product: selected.product().observation(),
             request: principal.request(),
+            truth: None,
         })
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn with_truth_from_selected(
+        mut self,
+        selected: &'a WorthQuerySelectedProductOperation<'_, Schema>,
+    ) -> Self {
+        self.truth = Some(SelectedIssuedTruthRoot {
+            product: selected.product().observation(),
+            root: selected.product().relational_basis(),
+            snapshot: selected.application_basis().snapshot_handle(),
+        });
+        self
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn matches(
@@ -99,6 +119,7 @@ impl<'a, Schema, Principal, PrincipalIdentity, Scope>
         >,
         product: &crate::basis::WorthQueryProductObservationLease,
         security: &worth_relational::facade::snapshots::SnapshotHandle,
+        truth_product: &crate::basis::WorthQueryProductObservationLease,
         basis: &worth_relational::facade::snapshots::SnapshotHandle,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<bool, CompanionPreflightStop> {
@@ -108,6 +129,14 @@ impl<'a, Schema, Principal, PrincipalIdentity, Scope>
             && self.product == product.observation()
             && self.root.admission_identity() == product.relational_basis().admission_identity()
             && self.snapshot == security
-            && self.snapshot == basis)
+            && match &self.truth {
+                None => self.snapshot == basis,
+                Some(truth) => {
+                    truth.product == truth_product.observation()
+                        && truth.root.admission_identity()
+                            == truth_product.relational_basis().admission_identity()
+                        && truth.snapshot == basis
+                }
+            })
     }
 }

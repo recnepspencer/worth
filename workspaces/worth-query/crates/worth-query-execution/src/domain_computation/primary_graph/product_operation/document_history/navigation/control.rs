@@ -18,6 +18,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
             NavigationPhase::Candidate(candidate)
             | NavigationPhase::Publication { candidate, .. }
             | NavigationPhase::Unpublished { candidate, .. }
+            | NavigationPhase::AwaitingOutputs { candidate, .. }
             | NavigationPhase::Selecting { candidate, .. } => Some(candidate.branch()),
             _ => None,
         }

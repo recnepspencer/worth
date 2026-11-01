@@ -13,6 +13,14 @@ pub(super) fn seed_cycles<Schema: TopologySchemaBinding>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
 ) {
+    seed_cycles_with(phase, graph, |_| {});
+}
+
+pub(super) fn seed_cycles_with<Schema: TopologySchemaBinding>(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    additional: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<Schema>),
+) {
     for (prefix, offset) in [("anchor", 0), ("sibling", 20), ("remote", 40)] {
         seed_cycle(graph, prefix, offset);
     }
@@ -34,6 +42,7 @@ pub(super) fn seed_cycles<Schema: TopologySchemaBinding>(
             entity_key("remote-b"),
         ))
         .expect("the authored anchor discovers an independent output source");
+    additional(graph);
     graph
         .commit_seed_batch(phase)
         .expect("the complete bounded seed batch commits before installation finishes");

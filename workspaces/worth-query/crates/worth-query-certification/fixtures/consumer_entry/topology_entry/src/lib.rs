@@ -19,7 +19,10 @@ mod document_history;
 mod final_output;
 mod handler;
 mod initial_adjustment;
-pub use document_history::{PlanarDocumentHistory, PlanarSourceDocumentHistory};
+pub use document_history::{
+    bind_navigation_grant, PlanarDocumentHistory, PlanarHistoryNavigation,
+    PlanarSourceDocumentHistory, SetPlanarNavigationStatus, SetPlanarNavigationStatusBinding,
+};
 pub mod optional_aspects;
 pub use alternate_output::*;
 pub use application_program::*;

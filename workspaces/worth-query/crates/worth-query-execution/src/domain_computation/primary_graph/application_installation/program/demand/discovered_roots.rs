@@ -230,6 +230,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
@@ -292,6 +293,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,

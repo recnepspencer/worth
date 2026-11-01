@@ -37,13 +37,23 @@ where
         if !authorization.belongs_to_session(session) {
             return Err(inconsistent_authorization());
         }
-        let product = admission
-            .graph_work()
-            .mutation_product()
-            .ok_or_else(inconsistent_authorization)?;
         match authorization.capability_authorization() {
-            Some(capability) => self.validate_retained_capability(execution, capability, product),
-            None => self.validate_retained_conventional(execution, authorization, product),
+            Some(capability) => self.validate_retained_capability(
+                execution,
+                capability,
+                admission
+                    .graph_work()
+                    .mutation_product()
+                    .ok_or_else(inconsistent_authorization)?,
+            ),
+            None => self.validate_retained_conventional(
+                execution,
+                authorization,
+                admission
+                    .graph_work()
+                    .authorization_product()
+                    .ok_or_else(inconsistent_authorization)?,
+            ),
         }
     }
 
@@ -51,7 +61,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &WorthQueryRetainedAuthorizationDecisionFacts,
-        product: &crate::basis::WorthQueryProductBranchLease,
+        product: &crate::basis::WorthQueryProductObservationLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let security = self
             .admit_product_security_basis(execution, product)

@@ -1,8 +1,8 @@
 //! Reenter the real Published/Delivered checkpoint under the required meter.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
 use crate::domain_computation::primary_graph::application_output_demand::PreparedSelectedCheckpointFinish;
-use crate::domain_computation::primary_graph::application_output_demand::SelectedCheckpointFinishStop;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -25,8 +25,23 @@ where
         request_scope: &WorthQueryRequestScope,
         returned: &mut Option<Checkpoint>,
         finish: PreparedSelectedCheckpointFinish<'_>,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        invocation: &super::super::super::ProducerInvocationAuthority<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {
+            Checkpoint::PublicationPending {
+                owner,
+                ready_backing,
+            } => self.advance_unpublished_checkpoint(
+                phase,
+                producer_identity,
+                principal,
+                request_scope,
+                invocation,
+                owner,
+                ready_backing,
+                |checkpoint| finish_selected(finish, claim, checkpoint, None, returned).map(|_| ()),
+            ),
             Checkpoint::Published {
                 receipt,
                 delivery,
@@ -162,8 +177,8 @@ fn finish_selected(
             Some(denial) => Err(denial),
             None => Ok(WorthQueryOutputDemandAdvance::Pending),
         },
-        Err(SelectedCheckpointFinishStop::Restored(denial)) => Err(denial),
-        Err(SelectedCheckpointFinishStop::Returned(denial, checkpoint)) => {
+        Err(CheckpointFinishStop::Restored(denial)) => Err(denial),
+        Err(CheckpointFinishStop::Returned(denial, checkpoint)) => {
             assert!(returned.is_none(), "one selected checkpoint owner");
             *returned = Some(checkpoint);
             Err(denial)

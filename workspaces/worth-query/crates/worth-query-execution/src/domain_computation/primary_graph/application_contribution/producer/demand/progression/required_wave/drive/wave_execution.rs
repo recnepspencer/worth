@@ -24,7 +24,7 @@ pub(super) fn run<'owner, Schema, Family>(
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
-    authority: &WorthQueryProducerCommitAuthority,
+    authority: &ProducerInvocationAuthority<'owner>,
     wave: &'owner RequiredWaveSelection<'owner, Schema>,
     frontier: &mut RequiredFrontier,
     resolved: &mut ResolvedOnWave,
@@ -80,6 +80,7 @@ where
                         principal,
                         request,
                         wave.branch,
+                        authority,
                         contacts,
                         performed,
                     ) {
@@ -113,6 +114,7 @@ where
                         principal,
                         request,
                         wave.branch,
+                        authority,
                         &mut demand.required_continuations,
                         performed,
                     )?;
@@ -209,7 +211,7 @@ where
                         }
                         Ok(WaveCheckpointTurn::Awaiting(stage)) => stage,
                     };
-                    match stage.advance(phase, runtime, request) {
+                    match stage.advance(phase, runtime, request, principal, authority) {
                         Ok(true) => continue,
                         Ok(false) => {
                             member.state = MemberState::Pending;

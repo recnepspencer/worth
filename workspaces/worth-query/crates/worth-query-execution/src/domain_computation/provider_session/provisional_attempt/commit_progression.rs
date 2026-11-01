@@ -108,7 +108,7 @@ impl<'run> WorthQueryProposedStateInspection<'run> {
     }
 }
 
-impl WorthQueryInvariantApprovedProposedState<'_> {
+impl<'run> WorthQueryInvariantApprovedProposedState<'run> {
     pub(in crate::domain_computation) fn provider_session_terminal_binding(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding {
@@ -127,14 +127,17 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryProviderCompareAndCommitOutcome {
-        self.compare_and_commit_with(allocation_policy, |authority, fresh| {
-            authority.recompare_fresh_decision_read_set(execution, fresh)
-        })
+        self.compare_and_commit_with(
+            |prepared| prepared.commit(allocation_policy),
+            |authority, fresh| authority.recompare_fresh_decision_read_set(execution, fresh),
+        )
     }
 
     pub(crate) fn compare_and_commit_with(
         mut self,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        commit: impl FnOnce(
+            crate::domain_computation::provider_session::WorthQuerySessionPrepareOutcome<'run>,
+        ) -> WorthQuerySessionCommitOutcome,
         compare: impl FnOnce(
             &crate::domain_computation::provider_session::WorthQuerySessionReadAuthority<'_>,
             crate::domain_computation::WorthQueryFreshDecisionReadSet,
@@ -160,7 +163,7 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
             }
             Ok(WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh)) => {
                 self.proposed.attempt.read_set = fresh;
-                self.commit_fresh(allocation_policy)
+                self.commit_fresh(commit)
             }
         }
     }
@@ -172,7 +175,9 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
 
     fn commit_fresh(
         mut self,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        commit: impl FnOnce(
+            crate::domain_computation::provider_session::WorthQuerySessionPrepareOutcome<'run>,
+        ) -> WorthQuerySessionCommitOutcome,
     ) -> WorthQueryProviderCompareAndCommitOutcome {
         let prepared = match self.proposed.attempt.staged.prepare_for_commit() {
             Ok(prepared) => prepared,
@@ -183,7 +188,7 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
                 );
             }
         };
-        match prepared.commit(allocation_policy) {
+        match commit(prepared) {
             WorthQuerySessionCommitOutcome::ProductStale(stale) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::ProductStale(stale)

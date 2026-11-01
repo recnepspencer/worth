@@ -28,6 +28,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     installed: &WorthQueryInstalledDocumentHistory<S, H>,
     model: &HistoryModelIdentity,
     source: &WorthQueryHistoryPreview,
+    outputs: Option<&super::WorthQueryHistoryOutputProfile>,
 ) -> Result<(), Denial> {
     let definition = installed.definition().parts();
     let navigation = definition
@@ -42,7 +43,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
             super::super::WorthQueryDocumentHistoryDenial::ForeignModel,
         ));
     }
-    if source.root_posture.is_some() {
+    if source.root_posture.is_some() && outputs.is_none() {
         return Err(correction(Eligibility::RequiredOutputs));
     }
     if installed.has_external_operation() {
@@ -96,6 +97,27 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .and_then(|support| support.native_program(current_program.revision()))
         .ok_or_else(|| correction(Eligibility::ProgramUnavailable))?;
     let access = ApplicationHistoryAccessBinding::<S, H>::descriptor();
+    let expected_output = if let Some(profile) = outputs {
+        if profile.model != *model || profile.program != *current_program.revision() {
+            return Err(correction(Eligibility::ProgramChanged));
+        }
+        Some(
+            supported
+                .installed
+                .action_inventory()
+                .declarations()
+                .get(profile.delivery_index)
+                .and_then(|action| action.delivery())
+                .and_then(|delivery| delivery.output())
+                .filter(|output| {
+                    output.root_type() == profile.root
+                        && output.read().is_none_or(|read| read == &access)
+                })
+                .ok_or_else(|| correction(Eligibility::RequiredOutputs))?,
+        )
+    } else {
+        None
+    };
     for action in supported.installed.action_inventory().declarations() {
         let output = action.delivery().and_then(|delivery| delivery.output());
         let relevant = action.operation_identifier() == navigation.parts().operation
@@ -104,11 +126,11 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                     .operation_descriptors()
                     .iter()
                     .any(|operation| operation.binding_type() == binding)
-            })
-            || output
-                .and_then(|output| output.read())
-                .is_some_and(|read| *read == access);
-        if relevant && (action.required_output_source() || output.is_some()) {
+            });
+        if relevant
+            && (action.required_output_source() || output.is_some())
+            && (expected_output.is_none() || output != expected_output)
+        {
             return Err(correction(Eligibility::RequiredOutputs));
         }
         if relevant && action.workflow_execution_requirements().is_applicable() {

@@ -33,6 +33,9 @@ fn absent_admitted_demand_refuses_with_required_successor_state_unavailable() {
                     &principal,
                     &scope,
                     runtime.current_world(),
+                    &crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority::from(
+                        crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority::Ordinary,
+                    ),
                     &RefCell::new(PerformedMembers::start()),
                 )
                 .err()

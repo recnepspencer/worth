@@ -4,6 +4,15 @@ mod control;
 mod custody;
 mod disposal;
 mod eligibility;
+mod output_authority;
+mod output_completion;
+mod output_correspondence;
+mod output_lookup;
+mod output_profile;
+pub(in crate::domain_computation::primary_graph) use output_lookup::{
+    HistoryOutputLookup, HistoryOutputLookupPhase,
+};
+mod output_source;
 mod progression;
 mod publication;
 mod registration;
@@ -15,6 +24,22 @@ pub use control::WorthQueryHistoryNavigationPauseForTest;
 pub use custody::WorthQueryHistoryNavigationPosture;
 use custody::{NavigationAttempt, NavigationPhase, NavigationProgress};
 pub(super) use disposal::NavigationDisposal;
+pub use output_authority::WorthQueryHistoryOutputAuthority;
+pub(in crate::domain_computation::primary_graph) use output_authority::{
+    HistoryBorrowedReadStop, HistoryProducerCutover, HistoryProducerInvocation,
+};
+pub use output_completion::WorthQueryCompletedHistoryOutputs;
+pub use output_profile::{
+    WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
+};
+pub(in crate::domain_computation::primary_graph) use output_source::HistoryDependentSource;
+pub use output_source::WorthQueryHistoryRootOutputAdmissionDenial;
+pub use output_source::{WorthQueryAdmittedHistoryProgramOutput, WorthQueryHistoryOutputSource};
+pub use output_source::{WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery};
+pub use output_source::{
+    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryProgramOutputAdvance,
+    WorthQuerySettledHistoryProgramOutput,
+};
 pub(super) use registration::NavigationJournal;
 pub use selection::{WorthQueryHistoryNavigationCompletion, WorthQueryHistorySelection};
 

@@ -43,6 +43,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::document_his
     expected: WorthQueryHistorySelection,
     requested: WorthQueryHistoryNodeId,
     meaning: WorthQueryApplicationIdempotencyBinding,
+    output_profile: Option<WorthQueryHistoryOutputProfile>,
 ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, WorthQueryHistoryNavigationDenial>
 where
     S: ApplicationSchema,
@@ -58,7 +59,15 @@ where
         .get(&key)
         .map(|entry| Arc::clone(&entry.attempt));
     if let Some(attempt) = existing {
-        return bind(document, attempt, &expected, requested, meaning);
+        return bind(
+            phase,
+            document,
+            attempt,
+            &expected,
+            requested,
+            meaning,
+            output_profile.as_ref(),
+        );
     }
     let (source, view_after) = {
         let selected = document.selection.lock();
@@ -88,7 +97,14 @@ where
     {
         return Err(Denial::HeadChanged);
     }
-    eligibility::require(phase, &current, installed, &document.model, &source)?;
+    eligibility::require(
+        phase,
+        &current,
+        installed,
+        &document.model,
+        &source,
+        output_profile.as_ref(),
+    )?;
     drop(current);
     let execution = phase
         .checked_execution_request_for(&application.product_runtime)
@@ -99,10 +115,19 @@ where
                 cause,
             ))
         })?;
+    let output_source_memory = if output_profile.is_some() {
+        reserve_arc::<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>(&execution)
+            .map_err(|cause| Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(cause)))?
+    } else {
+        None
+    };
     let attempt = Arc::new(NavigationAttempt {
         progress: Mutex::new(NavigationProgress {
             application,
             meaning,
+            output_profile: output_profile.clone(),
+            output_source: None,
+            output_source_memory,
             expected: expected.clone(),
             model: document.model.clone(),
             source: Some(source),
@@ -124,7 +149,15 @@ where
         .map(|entry| Arc::clone(&entry.attempt))
     {
         drop(selected);
-        return bind(document, existing, &expected, requested, meaning);
+        return bind(
+            phase,
+            document,
+            existing,
+            &expected,
+            requested,
+            meaning,
+            output_profile.as_ref(),
+        );
     }
     if selected.expected != expected.physical || selected.journal.current_step() != &expected.step {
         return Err(Denial::HeadChanged);
@@ -153,12 +186,15 @@ where
 }
 
 fn bind<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
+    phase: &WorthQueryAdvancementPhase<'_>,
     document: &WorthQueryDocumentHistory<'runtime, S, H>,
     attempt: Arc<NavigationAttempt<'runtime, S>>,
     expected: &WorthQueryHistorySelection,
     requested: WorthQueryHistoryNodeId,
     meaning: WorthQueryApplicationIdempotencyBinding,
+    output_profile: Option<&WorthQueryHistoryOutputProfile>,
 ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, WorthQueryHistoryNavigationDenial> {
+    let compared = attempt.readmit_output_profile(phase, output_profile)?;
     let progress = match attempt.progress.try_lock() {
         Ok(progress) => progress,
         Err(std::sync::TryLockError::WouldBlock) => {
@@ -169,6 +205,7 @@ fn bind<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     if progress.expected != *expected
         || progress.requested != requested
         || !progress.meaning.has_same_intent(meaning)
+        || !compared.matches_current(progress.output_profile.as_ref())
     {
         return Err(WorthQueryHistoryNavigationDenial::IntentDrift);
     }

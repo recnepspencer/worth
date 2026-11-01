@@ -9,18 +9,20 @@ use worth_query_declaration::facade::application_history::ApplicationHistoryBind
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtime, S> {
-    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn advance<
-        H,
-        O,
-        I,
-        M,
-    >(
-        &self,
+    pub(super) fn registered_progress<'call, H, O, I, M>(
+        &'call self,
         phase: &WorthQueryAdvancementPhase<'_>,
         document: &WorthQueryDocumentHistory<'runtime, S, H>,
         admission: &WorthQueryAdmittedApplicationOperation<S, O, I, M>,
         meaning: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<Option<WorthQueryHistoryNavigationCompletion>, WorthQueryHistoryNavigationDenial>
+        output_profile: Option<&WorthQueryHistoryOutputProfile>,
+    ) -> Result<
+        (
+            Arc<super::super::selection::HistorySelectionCell<'runtime, S>>,
+            std::sync::MutexGuard<'call, NavigationProgress<'runtime, S>>,
+        ),
+        WorthQueryHistoryNavigationDenial,
+    >
     where
         H: ApplicationHistoryBinding<S>,
     {
@@ -29,13 +31,15 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
         if !Arc::ptr_eq(&cell, &document.selection) {
             return Err(Denial::ForeignDocument);
         }
-        let mut progress = match self.attempt.progress.try_lock() {
+        let compared = self.attempt.readmit_output_profile(phase, output_profile)?;
+        let progress = match self.attempt.progress.try_lock() {
             Ok(progress) => progress,
             Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
             Err(std::sync::TryLockError::Poisoned(poison)) => poison.into_inner(),
         };
         if progress.meaning.canonical_key() != meaning.canonical_key()
             || !progress.meaning.has_same_intent(meaning)
+            || !compared.matches_current(progress.output_profile.as_ref())
         {
             return Err(Denial::IntentDrift);
         }
@@ -48,6 +52,31 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
             .validate_current_authority()
             .map_err(Denial::Authorization)?;
         progress.require_resolvable()?;
+        Ok((cell, progress))
+    }
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn advance<
+        H,
+        O,
+        I,
+        M,
+    >(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        document: &WorthQueryDocumentHistory<'runtime, S, H>,
+        admission: &WorthQueryAdmittedApplicationOperation<S, O, I, M>,
+        meaning: WorthQueryApplicationIdempotencyBinding,
+        output_profile: Option<&WorthQueryHistoryOutputProfile>,
+        outputs: Option<WorthQueryCompletedHistoryOutputs>,
+    ) -> Result<Option<WorthQueryHistoryNavigationCompletion>, WorthQueryHistoryNavigationDenial>
+    where
+        H: ApplicationHistoryBinding<S>,
+    {
+        use WorthQueryHistoryNavigationDenial as Denial;
+        let (cell, mut progress) =
+            self.registered_progress(phase, document, admission, meaning, output_profile)?;
+        if let Some(outputs) = outputs {
+            progress.accept_outputs(phase, outputs)?;
+        }
         let completed = if let NavigationPhase::Selected(completed) = &progress.phase {
             completed.clone()
         } else {
@@ -119,6 +148,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             candidate,
             exact,
             _publication,
+            _outputs,
         } = std::mem::replace(&mut self.phase, NavigationPhase::Discarded)
         else {
             unreachable!()
@@ -134,6 +164,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         };
         let returned = completion.clone();
         let physical = completion.selection.physical.clone();
+        selected.invalidate_output_authority();
         let (previous, release) = match selected.head.adopt_at_deferred(candidate, phase, &exact) {
             Ok(adopted) => adopted,
             Err(failure) => {
@@ -143,6 +174,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                     candidate,
                     exact,
                     _publication,
+                    _outputs,
                 };
                 return Err(Denial::Adoption(cause));
             }
@@ -159,6 +191,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         drop(previous_source);
         drop(source);
         drop(_publication);
+        drop(_outputs);
         drop(release);
         Ok(returned)
     }

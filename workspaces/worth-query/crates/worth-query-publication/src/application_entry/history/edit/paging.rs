@@ -5,8 +5,8 @@ use worth_query_declaration::facade::{
     application_history::ApplicationHistoryModel,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
-impl<S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>>
-    WorthQueryHistoryEdit<'_, S, H, I, P, A, Payload>
+impl<S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
+    WorthQueryHistoryEdit<'_, S, H, I, P, A, Payload, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,

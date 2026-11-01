@@ -5,7 +5,8 @@ impl<
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
+        Outputs,
+    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload, Outputs>
 {
     #[doc(hidden)]
     pub fn observe_history_enrollment_for_test(

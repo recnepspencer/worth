@@ -3,6 +3,13 @@ use crate::application_program::historical::{DiscoveredAction, DiscoveredProgram
 use worth_query_decl::facade::application_program::ApplicationActionDelivery;
 
 #[test]
+fn ordinary_document_keeps_send_sync_without_output_registry_storage() {
+    fn send_sync<T: Send + Sync>() {}
+    send_sync::<Document<'static>>();
+    assert_eq!(std::mem::size_of::<WorthQueryHistoryNoOutputs>(), 0);
+}
+
+#[test]
 fn history_accepts_fixed_graphs_and_refuses_discovered_delivery_at_compile_time() {
     fn supported<
         T: WorthQueryHistoryOperationMode<

@@ -11,8 +11,8 @@ use worth_query_execution::{
     },
 };
 
-impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>>
-    WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload>
+impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
+    WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload, Outputs>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,

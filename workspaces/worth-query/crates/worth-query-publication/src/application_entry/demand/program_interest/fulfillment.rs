@@ -19,6 +19,7 @@ where
             worth_query_execution::facade::primary_graph::WorthQueryApplicationRequiredOutputConnection<S, Demand = D>,
 {
         self.admitted
+            .ordinary()?
             .retain_fulfilled_required_root::<R>(
                 phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),

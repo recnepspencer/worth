@@ -1,6 +1,7 @@
 //! Native certification issues the sole consuming key for a Current result.
 use super::super::*;
 use super::PerformedMembers;
+use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
 mod current_basis;
 pub(in crate::domain_computation::primary_graph) use current_basis::CurrentBasis;
 
@@ -57,6 +58,7 @@ pub(in super::super) fn certify_required_ready<'owner, Schema>(
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
     refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+    invocation: ProducerInvocationAuthority<'owner>,
     performed: &'owner std::cell::RefCell<performed::PerformedMembers>,
 ) -> Result<RequiredWaveStep<'owner, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -102,6 +104,7 @@ where
             wave.branch,
             producer_contacts_in_this_demand,
             refresh_permission,
+            invocation,
             performed,
         )
         .map_err(|stop| match stop {
@@ -149,6 +152,7 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
     request: &WorthQueryRequestScope,
     wave: &RequiredWaveSelection<'_, Schema>,
     caller: FrozenCaller<'_, Schema>,
+    invocation: &ProducerInvocationAuthority<'call>,
     performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<FrozenCallerInspection<Schema>, WorthQueryOutputDemandDenial> {
     let FrozenCaller {
@@ -174,7 +178,7 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
     let candidate = candidate.ok().flatten();
     let result = installed.executor.inspect_frozen_ready(crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenInspection {
             execution, runtime, principal, request, shared: &wave.shared, positioned: &wave.positioned,
-            selected, candidate: candidate.as_ref(), contacts,
+            selected, candidate: candidate.as_ref(), contacts, invocation: invocation.clone(),
         })
         .map_err(|stop| match stop {
             ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),

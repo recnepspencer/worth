@@ -193,6 +193,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 denial,
             });
         }
+        selected.invalidate_output_authority();
         let (previous, release) =
             match selected
                 .head

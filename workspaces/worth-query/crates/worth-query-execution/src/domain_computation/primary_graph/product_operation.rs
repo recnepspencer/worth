@@ -93,6 +93,9 @@ pub use program_adoption::{
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
     WorthQueryStoppedBranchSetAdoption, WorthQueryUnpublishedBranchAdoption,
 };
+pub use query::WorthQueryHistoryOutputControlDenial;
+pub use query::WorthQueryHistoryOutputReadDenial;
+pub use query::WorthQueryHistoryRootOutputRead;
 pub use query::WorthQueryProductQueryControls;
 pub use query::WorthQueryRetainedBatchQueryAdmissionDenial;
 pub use transaction::{

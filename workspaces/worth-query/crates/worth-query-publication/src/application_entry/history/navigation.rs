@@ -70,6 +70,7 @@ pub use worth_query_execution::publication_boundary::document_history::{
 
 #[derive(Debug)]
 pub enum WorthQueryHistoryNavigationAdvanceDenial {
+    Outputs(WorthQueryHistoryOutputDenial),
     History(WorthQueryApplicationHistoryDenial),
     Navigation(WorthQueryHistoryNavigationDenial),
 }
@@ -94,14 +95,16 @@ pub struct WorthQueryHistoryNavigation<
     H: ApplicationHistoryBinding<S>,
     N: ApplicationHistoryNavigationBinding<S, H>,
     Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
-    document: &'document WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
+    document: &'document WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     navigation: WorthQueryDocumentHistoryNavigation<'runtime, S>,
     key: u128,
     marker: std::marker::PhantomData<fn() -> N>,
 }
 
-impl<S, H, N, P> std::fmt::Debug for WorthQueryHistoryNavigation<'_, '_, S, H, N, P>
+impl<S, H, N, P, Outputs> std::fmt::Debug
+    for WorthQueryHistoryNavigation<'_, '_, S, H, N, P, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,

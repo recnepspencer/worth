@@ -55,6 +55,7 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop as Basis;
 
     let kind = match stop {
+        QueryStop::CurrentControl(stop) => return stop.clone(),
         QueryStop::Installation(stop) => Kind::SourceQueryInstallation(stop.kind()),
         QueryStop::Principal(stop) => Kind::of_principal_resolution(stop.kind()),
         QueryStop::Scope(stop) => Kind::of_scope_resolution(stop.kind()),

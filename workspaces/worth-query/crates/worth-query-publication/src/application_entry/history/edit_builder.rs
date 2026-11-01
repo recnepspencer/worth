@@ -29,8 +29,9 @@ pub struct WorthQueryHistoryEditBuilder<
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
-    document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
+    document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     intent: I,
     conditions: Conditions<S, I>,
 }
@@ -42,8 +43,9 @@ pub struct WorthQueryHistoryEditDescription<
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
-    document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
+    document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     description: WorthQueryOperationDescription<S, I>,
 }
 
@@ -59,8 +61,9 @@ pub struct WorthQueryHistoryEditCaptureFailure<
     H: ApplicationHistoryBinding<S>,
     I: ApplicationMutationIntent<S>,
     Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
-    builder: WorthQueryHistoryEditBuilder<'runtime, S, H, I, Payload>,
+    builder: WorthQueryHistoryEditBuilder<'runtime, S, H, I, Payload, Outputs>,
     key: Key<S, I>,
     denial: WorthQueryHistoryEditCaptureDenial,
 }
@@ -71,12 +74,13 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryHistoryEditCaptureFailure<'runtime, S, H, I, Payload>
+        Outputs,
+    > WorthQueryHistoryEditCaptureFailure<'runtime, S, H, I, Payload, Outputs>
 {
     pub fn into_parts(
         self,
     ) -> (
-        WorthQueryHistoryEditBuilder<'runtime, S, H, I, Payload>,
+        WorthQueryHistoryEditBuilder<'runtime, S, H, I, Payload, Outputs>,
         Key<S, I>,
         WorthQueryHistoryEditCaptureDenial,
     ) {
@@ -92,7 +96,8 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > std::fmt::Debug for WorthQueryHistoryEditCaptureFailure<'_, S, H, I, Payload>
+        Outputs,
+    > std::fmt::Debug for WorthQueryHistoryEditCaptureFailure<'_, S, H, I, Payload, Outputs>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryHistoryEditCaptureFailure")
@@ -106,9 +111,13 @@ impl<
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>
+        Outputs,
+    > WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>
 {
-    pub fn edit<I>(self, intent: I) -> WorthQueryHistoryEditBuilder<'runtime, S, H, I, Payload>
+    pub fn edit<I>(
+        self,
+        intent: I,
+    ) -> WorthQueryHistoryEditBuilder<'runtime, S, H, I, Payload, Outputs>
     where
         I: ApplicationMutationIntent<S>,
         I::Binding: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
@@ -129,7 +138,8 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryHistoryEditBuilder<'runtime, S, H, I, Payload>
+        Outputs,
+    > WorthQueryHistoryEditBuilder<'runtime, S, H, I, Payload, Outputs>
 where
     I::Binding: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
 {
@@ -138,7 +148,7 @@ where
         self
     }
 
-    pub fn cancel(self) -> WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload> {
+    pub fn cancel(self) -> WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs> {
         self.document
     }
 
@@ -147,8 +157,8 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         key: Key<S, I>,
     ) -> Result<
-        WorthQueryHistoryEditDescription<'runtime, S, H, I, Payload>,
-        WorthQueryHistoryEditCaptureFailure<'runtime, S, H, I, Payload>,
+        WorthQueryHistoryEditDescription<'runtime, S, H, I, Payload, Outputs>,
+        WorthQueryHistoryEditCaptureFailure<'runtime, S, H, I, Payload, Outputs>,
     >
     where
         <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
@@ -200,9 +210,10 @@ impl<
         H: ApplicationHistoryBinding<S>,
         I: ApplicationMutationIntent<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > WorthQueryHistoryEditDescription<'runtime, S, H, I, Payload>
+        Outputs,
+    > WorthQueryHistoryEditDescription<'runtime, S, H, I, Payload, Outputs>
 {
-    pub fn cancel(self) -> WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload> {
+    pub fn cancel(self) -> WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs> {
         self.document
     }
 
@@ -210,7 +221,7 @@ impl<
         self,
         program: &WorthQueryProgramApplicationRuntime<S, P>,
     ) -> Result<
-        super::edit::WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload>,
+        super::edit::WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload, Outputs>,
         (Self, WorthQueryOperationConstructionDenial),
     >
     where

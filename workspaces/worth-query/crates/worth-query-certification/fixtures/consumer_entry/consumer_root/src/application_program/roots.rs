@@ -16,6 +16,8 @@ use super::{
 
 mod initial;
 #[cfg(test)]
+pub(crate) use initial::ConsumerInitialBranchedProgramRoot;
+#[cfg(test)]
 pub use initial::ConsumerInitialFixedProgramRoot;
 #[cfg(test)]
 pub(crate) use initial::ConsumerInitialLeafProgramRoot;

@@ -12,7 +12,7 @@ use worth_query_host::facade::primary_graph::{
 
 use super::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct PlanarOutputRead {
     pub body_key: String,
 }

@@ -8,6 +8,7 @@ use worth_query_topology_entry::{
 };
 mod aggregate;
 mod journeys;
+mod navigation_outputs;
 mod profile;
 mod race;
 mod unavailable;

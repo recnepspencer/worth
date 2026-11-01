@@ -19,7 +19,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             FamilySourceValue<Schema, Family>,
         >,
         entry: &InstalledProducerProvider<Schema>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'owner>,
         schedule_progression: ScheduleProgression<'owner, '_, '_, Schema>,
 
         performed: &'owner std::cell::RefCell<PerformedMembers>,
@@ -49,7 +49,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         if let SourceGuard::Replaced = self.prepare_progression_entry(
             demand,
             disclosed_source,
-            &commit_authority,
+            commit_authority.mode(),
             entry,
             &schedule_progression,
         )? {
@@ -167,6 +167,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                             &demand.selected.identity,
                             claim,
                             checkpoint,
+                            principal,
+                            request_scope,
+                            &commit_authority,
+                            &mut demand.unpublished_selected_checkpoint,
                         )? {
                             OwnStages::Checkpoint(CheckpointProgress::Advanced)
                         } else {
@@ -245,7 +249,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         if demand.selected.reuses_live_output_only {
             required_output.reuse_live_output_only();
         }
-        let required_execution = required_output.prepare_execution(published_mode);
+        let required_execution = required_output.prepare_execution(published_mode.mode().clone());
         let runtime_identity = self.runtime.authority_identity().as_u64();
         let root = demand.observed_source.source_root();
         let original_publication = demand.original_producing_publication.clone();

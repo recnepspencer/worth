@@ -1,5 +1,6 @@
 pub(super) mod cleanup_custody;
 mod diagnostic_copy;
+mod history_source;
 mod invariant_refusal;
 mod kind;
 mod output_comparison;

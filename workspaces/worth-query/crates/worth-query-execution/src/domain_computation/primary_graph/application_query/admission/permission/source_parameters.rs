@@ -32,6 +32,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         parameters: worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters,
         controls: super::super::WorthQueryApplicationQueryControls<'a, Schema>,
         selected: &'a WorthQuerySelectedProductOperation<'_, Schema>,
+        truth: Option<&'a WorthQuerySelectedProductOperation<'_, Schema>>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         issued_principal: &'a WorthQueryIssuedSelectedPrincipal<
             '_,
@@ -56,9 +57,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let selected_observation = selected.product().observation();
+        let truth_selected = truth.unwrap_or(selected);
+        let selected_observation = truth_selected.product().observation();
 
-        let selected_snapshot = selected.application_basis().snapshot_handle();
+        let selected_snapshot = truth_selected.application_basis().snapshot_handle();
 
         // A disclosure-owner denial and its Query translation can own the
         // query name simultaneously. Reserve both before that owner runs.
@@ -68,7 +70,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .is_some_and(|(product, snapshot)| {
                 product.observation() == selected_observation && snapshot == selected_snapshot
             });
-        if source_query_identity != query.identity() || !same_basis {
+        if source_query_identity != query.identity()
+            || !same_basis
+            || !controls.has_security_product(selected.product().observation())
+        {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
                 query.name(),
@@ -83,6 +88,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             request,
             query.name(),
         )?;
+        let selected_access = match truth {
+            Some(truth) => selected_access.with_truth_from_selected(truth),
+            None => selected_access,
+        };
+        // Reuse the actual funded C share. D remains the independent truth basis;
+        // retaining C here creates no new Native snapshot or authorization.
+        let security_basis = truth.map(|_| WorthQueryApplicationQueryBasisCustody::from_issued_selected(self, selected))
+            .transpose().map_err(|cause| {
+                use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop as Stop;
+                match cause {
+                    Stop::Basis => denial(WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis, query.name()),
+                    Stop::Admission(stop) => denial(match stop {
+                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => WorthQueryApplicationQueryAdmissionDenialKind::CanonicalWorkDenied,
+                        _ => WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
+                    }, query.name()),
+                }
+            })?;
         crate::domain_computation::primary_graph::application_query::admission_preparation::validate_admission_request(request, query.name())?;
         let (basis_selection, security_product, controls) = controls.into_admission_parts();
         let shape = crate::domain_computation::primary_graph::application_query::execution_shape::prepare_one_shot_shape_admitted(query, &controls)?;
@@ -93,7 +115,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 basis_selection,
                 native,
             )?;
-        if !selected.application_basis().selected_program_inspected() {
+        if !selected.application_basis().selected_program_inspected()
+            || !truth_selected
+                .application_basis()
+                .selected_program_inspected()
+        {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
                 query.name(),
@@ -139,6 +165,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             parameters,
             controls,
             basis,
+            security_basis,
             security_product,
             session,
             disclosure,

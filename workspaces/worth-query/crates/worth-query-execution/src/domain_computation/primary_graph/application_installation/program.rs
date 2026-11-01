@@ -10,6 +10,7 @@ mod assembly;
 mod conditional;
 mod construction;
 mod demand;
+pub(in crate::domain_computation::primary_graph) use demand::OriginalProgramRootCompletion;
 mod derived_artifact;
 mod output_roots;
 mod output_source;

@@ -27,6 +27,7 @@ pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
 pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
 pub(super) use registry::AcceptedCheckpointFactSource;
 pub(super) use registry::BoundOutputSource;
+pub(super) use registry::CheckpointFinishStop;
 pub(super) use registry::CheckpointOutputSlot;
 pub(super) use registry::DemandAdmissionKind;
 pub(in crate::domain_computation::primary_graph) use registry::HeldRequiredSuccessor;
@@ -46,7 +47,6 @@ pub(in crate::domain_computation::primary_graph) use registry::RequiredRefreshRe
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
-pub(super) use registry::SelectedCheckpointFinishStop;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedReadyReadmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredRefreshClaim;

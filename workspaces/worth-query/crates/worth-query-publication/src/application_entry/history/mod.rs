@@ -89,6 +89,15 @@ pub use navigation::{
     WorthQueryHistoryNavigationPosture, WorthQueryHistorySelection,
 };
 mod observation;
+mod outputs;
+pub use outputs::{
+    WorthQueryHistoryNoOutputs, WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputsMode,
+    WorthQueryHistoryWithOutputs,
+};
+pub use outputs::{
+    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputReadDenial,
+    WorthQueryHistoryRootOutputAdmissionDenial,
+};
 mod page_pause;
 mod paging;
 mod payload;
@@ -110,7 +119,7 @@ pub use edit_builder::{
     WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDescription,
 };
 
-pub use close::WorthQueryApplicationHistoryCloseFailure;
+pub use close::{WorthQueryApplicationHistoryCloseFailure, WorthQueryHistoryClosingOutputs};
 pub use denial::{
     WorthQueryApplicationHistoryAttachmentFailure, WorthQueryApplicationHistoryDenial,
 };
@@ -171,17 +180,20 @@ pub struct WorthQueryApplicationHistoryDocument<
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
     Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
+    Outputs = WorthQueryHistoryNoOutputs,
 > {
     owner: WorthQueryDocumentHistory<'runtime, S, H>,
     access: H::Access,
     payload: Payload,
+    outputs: Outputs,
 }
 
 impl<
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
-    > std::fmt::Debug for WorthQueryApplicationHistoryDocument<'_, S, H, Payload>
+        Outputs,
+    > std::fmt::Debug for WorthQueryApplicationHistoryDocument<'_, S, H, Payload, Outputs>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryApplicationHistoryDocument")

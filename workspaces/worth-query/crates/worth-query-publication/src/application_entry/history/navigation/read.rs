@@ -1,8 +1,8 @@
 //! Every entry repeats the original current payload and metadata policies.
 use super::*;
 
-pub(super) fn with_read<S, H, P, T>(
-    document: &WorthQueryApplicationHistoryDocument<'_, S, H, P>,
+pub(super) fn with_read<S, H, P, Outputs, T>(
+    document: &WorthQueryApplicationHistoryDocument<'_, S, H, P, Outputs>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     prepare: impl for<'read> FnOnce(
         &WorthQueryAdvancementPhase<'_>,
@@ -16,7 +16,7 @@ pub(super) fn with_read<S, H, P, T>(
         &WorthQueryAdvancementPhase<'_>,
         &WorthQueryPrimaryGraphApplicationRuntime<S>,
         WorthQueryDocumentHistoryRead<'read, S, H>,
-    ) -> Result<T, WorthQueryHistoryNavigationDenial>,
+    ) -> Result<T, WorthQueryHistoryNavigationAdvanceDenial>,
 ) -> Result<T, WorthQueryHistoryNavigationAdvanceDenial>
 where
     S: ApplicationSchema,
@@ -54,10 +54,9 @@ where
             Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause))
         })?
         .map_err(Denial::History)?
-        .map_err(Denial::Navigation)
 }
 
-impl<S, H, P> WorthQueryApplicationHistoryDocument<'_, S, H, P>
+impl<S, H, P, Outputs> WorthQueryApplicationHistoryDocument<'_, S, H, P, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
@@ -112,6 +111,7 @@ where
                     read,
                 )
                 .map_err(WorthQueryHistoryNavigationDenial::Document)
+                .map_err(WorthQueryHistoryNavigationAdvanceDenial::Navigation)
         })
     }
 }

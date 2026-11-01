@@ -1,5 +1,6 @@
 //! The attached document owns its actual head and exact model association.
 mod allocation;
+pub(in crate::domain_computation::primary_graph) mod authority_lifetime;
 mod candidate;
 mod capture_pause;
 mod close;
@@ -17,10 +18,23 @@ mod model;
 mod navigation;
 #[doc(hidden)]
 pub use navigation::WorthQueryHistoryNavigationPauseForTest;
+pub(in crate::domain_computation::primary_graph) use navigation::{
+    HistoryBorrowedReadStop, HistoryDependentSource, HistoryProducerCutover,
+    HistoryProducerInvocation,
+};
+pub(in crate::domain_computation::primary_graph) use navigation::{
+    HistoryOutputLookup, HistoryOutputLookupPhase,
+};
 pub use navigation::{
-    WorthQueryDocumentHistoryNavigation, WorthQueryHistoryNavigationCompletion,
-    WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
-    WorthQueryHistoryNavigationPosture, WorthQueryHistorySelection,
+    WorthQueryAdmittedHistoryProgramOutput, WorthQueryCompletedHistoryOutputs,
+    WorthQueryDocumentHistoryNavigation, WorthQueryHistoryDependentOutputRead,
+    WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
+    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationPosture,
+    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputAuthority,
+    WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputNavigationAdvance,
+    WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource,
+    WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
+    WorthQueryHistorySelection, WorthQuerySettledHistoryProgramOutput,
 };
 mod observation;
 mod operation_context;

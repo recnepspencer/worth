@@ -8,8 +8,9 @@ pub(super) fn close_candidate<
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
     Payload: WorthQueryHistoryPayloadMode<S, H>,
+    Outputs,
 >(
-    document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
+    document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     candidate: DiscardedCandidate<'runtime, S>,
 ) -> Result<
@@ -62,8 +63,8 @@ pub(super) fn close_candidate<
     }
 }
 
-impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>>
-    WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload>
+impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
+    WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload, Outputs>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
@@ -79,7 +80,7 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
-        WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
+        WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         (Self, WorthQueryHistoryEditDenial),
     > {
         if !std::ptr::eq(self.document.owner.application(), request.application) {
@@ -195,7 +196,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         mut state: Forking<'runtime, S, I, P, A>,
     ) -> Result<
-        WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload>,
+        WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         (Self, WorthQueryHistoryEditDenial),
     > {
         if let Some(recovery) = state.recovery.take() {

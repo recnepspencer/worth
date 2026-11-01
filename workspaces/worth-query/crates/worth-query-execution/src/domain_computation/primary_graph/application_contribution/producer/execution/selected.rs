@@ -42,6 +42,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+        invocation: ProducerInvocationAuthority<'owner>,
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
@@ -73,7 +74,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'owner>,
         edition: super::super::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>;
@@ -125,6 +126,7 @@ where
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+        invocation: ProducerInvocationAuthority<'owner>,
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
@@ -175,6 +177,7 @@ where
             &self.principal_validation,
             principal,
             request_scope,
+            &invocation,
             shared,
             positioned,
             retained,
@@ -212,6 +215,7 @@ where
                     shared,
                     installed.edition,
                 )?;
+                let fresh = invocation.confirm_source(&execution, runtime, fresh)?;
                 let Some(readiness) = performed.borrow_mut().fresh(
                     &execution,
                     selected.key(),
@@ -242,6 +246,7 @@ where
                         request_scope,
                         delivery_branch,
                         matched_predecessors,
+                        invocation.clone(),
                         performed,
                     )
                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
@@ -264,6 +269,7 @@ where
             selected,
             candidate,
             contacts: producer_contacts,
+            invocation,
         } = inspection;
 
         let same_ready = candidate
@@ -300,6 +306,7 @@ where
             &self.principal_validation,
             principal,
             request_scope,
+            &invocation,
             shared,
             positioned,
             retained,
@@ -324,7 +331,7 @@ where
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'owner>,
         edition: super::super::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop> {

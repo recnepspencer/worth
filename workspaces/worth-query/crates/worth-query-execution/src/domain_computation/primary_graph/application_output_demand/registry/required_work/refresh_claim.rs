@@ -43,6 +43,7 @@ pub(in crate::domain_computation::primary_graph) enum RequiredRefreshAdvancement
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum RequiredRefreshCheckpoint {
     Absent,
+    PublicationPending,
     Published,
     Delivered,
     ReadyCommitted,
@@ -160,6 +161,9 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(advancement) = advancement {
             use super::super::WorthQueryAcceptedOutputAuthority as Authority;
             let checkpoint = match &output.checkpoint {
+                Some(WorthQueryOutputCheckpoint::PublicationPending { .. }) => {
+                    RequiredRefreshCheckpoint::PublicationPending
+                }
                 None => RequiredRefreshCheckpoint::Absent,
                 Some(WorthQueryOutputCheckpoint::Published { .. }) => {
                     RequiredRefreshCheckpoint::Published

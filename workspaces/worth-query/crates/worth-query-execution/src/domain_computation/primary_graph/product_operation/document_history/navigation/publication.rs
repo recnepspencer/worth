@@ -81,10 +81,25 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             observation.selected_commit(),
             publication.commit().identity()
         );
-        self.phase = NavigationPhase::Selecting {
-            candidate,
-            exact: crate::basis::WorthQueryProductObservationLease::new(observation),
-            _publication: publication,
+        let exact = crate::basis::WorthQueryProductObservationLease::new(observation);
+        if self.output_profile.is_some() {
+            self.output_source = Some(crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
+                self.application, exact.retained_clone(), self.output_source_memory.take(),
+            ));
+        }
+        self.phase = if self.output_profile.is_some() {
+            NavigationPhase::AwaitingOutputs {
+                candidate,
+                exact,
+                _publication: publication,
+            }
+        } else {
+            NavigationPhase::Selecting {
+                candidate,
+                exact,
+                _publication: publication,
+                _outputs: None,
+            }
         };
     }
 

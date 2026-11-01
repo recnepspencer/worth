@@ -169,6 +169,7 @@ where
             continuation_state: None,
             basis,
             index_posture,
+            security_basis: None,
             security_product,
             graph_work,
             authorization: authorities.authorization,

@@ -30,6 +30,7 @@ pub(super) fn publish(
     required_prerequisites: &mut Option<
         crate::domain_computation::primary_graph::PreparedPrerequisiteClaims,
     >,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
 ) -> Result<
     WorthQueryApplicationProductPublicationOutcome,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -47,7 +48,12 @@ pub(super) fn publish(
         retain_live_observation || retain_output_demand_observation || retain_client_observation;
     let Some(change) = attempt.take_conditional_definition() else {
         let prepared = product
-            .prepare_relational_candidate(candidate, &request, successor_observation_requested)
+            .prepare_relational_candidate_with_current_read(
+                candidate,
+                &request,
+                successor_observation_requested,
+                history.as_ref().map(|history| history.current()),
+            )
             .map_err(|denial| match denial {
                 PublicationDenial::Stopped(stop) => publication_request_stop(stop),
                 PublicationDenial::Refused(no_effect) => world_no_effect(no_effect),
@@ -74,7 +80,17 @@ pub(super) fn publish(
                 recovery.clone(),
             )
             .map_err(|()| capacity_exhausted())?;
-        return match prepared.execute(execution) {
+        let outcome = match history {
+            Some(history) => {
+                prepared
+                    .execute_with_memory_cutover(execution, |cutover| {
+                        history.perform(cutover, product.observation())
+                    })
+                    .1
+            }
+            None => prepared.execute(execution),
+        };
+        return match outcome {
             Ok(PublicationOutcome::Performed(publication)) => {
                 reservation.release();
                 Ok(WorthQueryApplicationProductPublicationOutcome::Performed(
@@ -124,7 +140,7 @@ pub(super) fn publish(
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let prepared = product
-            .prepare_combined_candidate(candidate, &request, successor_observation_requested)
+            .prepare_combined_candidate(candidate, &request, successor_observation_requested, history.as_ref().map(|history| history.current()))
             .map_err(|denial| match denial {PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDenial::Refused(no_effect)=>world_no_effect(no_effect)})?;
         let predecessor = bridge
             .admit_exact_conditional_signal_basis(
@@ -152,7 +168,12 @@ pub(super) fn publish(
                 recovery.clone(),
             )
             .map_err(|()| capacity_exhausted())?;
-        match prepared.execute(execution, bridge_prepared, &bridge) {
+        let outcome = match history {
+            Some(history) => prepared.execute_with_memory_cutover(execution, bridge_prepared, &bridge, |cutover|
+                history.perform(cutover, product.observation())).1,
+            None => prepared.execute(execution, bridge_prepared, &bridge),
+        };
+        match outcome {
             Ok(PublicationOutcome::Performed((publication, lowering))) => {
                 reservation.release();
                 Ok(WorthQueryApplicationProductPublicationOutcome::Performed(WorthQueryPerformedApplicationProductPublication {

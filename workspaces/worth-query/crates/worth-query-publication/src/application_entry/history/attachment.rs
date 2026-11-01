@@ -116,6 +116,7 @@ impl<S: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, S> {
                 owner,
                 access,
                 payload,
+                outputs: WorthQueryHistoryNoOutputs,
             }),
             Err(denial) => Err(WorthQueryApplicationHistoryAttachmentFailure {
                 head: head.expect("refused attachment retains its original head"),

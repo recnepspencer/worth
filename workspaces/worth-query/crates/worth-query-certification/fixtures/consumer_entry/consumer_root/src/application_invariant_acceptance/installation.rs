@@ -6,6 +6,8 @@ mod program;
 pub(super) use program::install_selected_program;
 #[cfg(test)]
 pub(super) use program::install_selected_program_with_isolated_cycle;
+#[cfg(test)]
+pub(super) use program::install_selected_program_with_limits;
 mod external_input;
 use super::{authentication, resources, seed};
 use crate::{ConsumerProgram, ConsumerSchema};

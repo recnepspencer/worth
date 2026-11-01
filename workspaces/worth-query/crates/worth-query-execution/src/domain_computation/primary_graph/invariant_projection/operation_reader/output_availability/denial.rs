@@ -38,6 +38,11 @@ impl std::fmt::Display for WorthQueryOutputAvailabilityDenial {
 impl std::error::Error for WorthQueryOutputAvailabilityDenial {}
 
 impl WorthQueryOutputAvailabilityDenial {
+    pub(in crate::domain_computation::primary_graph) fn source_query_stop(
+        stop: SourceQueryObservationStop,
+    ) -> Self {
+        Cause::SourceQuery(stop).into()
+    }
     /// The original source Query admission refusal, if that phase stopped.
     pub fn query_admission_denial(
         &self,
@@ -78,6 +83,7 @@ impl worth_execution::ChargedBytes for WorthQueryOutputAvailabilityDenial {
  Cause::SourceQuery(Query::Scope(stop))=>stop.additional_charged_bytes(),
  Cause::SourceQuery(Query::Admission(stop)) | Cause::SourceQuery(Query::Preparation { cause: stop, .. })=>stop.additional_charged_bytes(),
  Cause::SourceQuery(Query::SourceFacts(stop))=>stop.additional_charged_bytes(),
+ Cause::SourceQuery(Query::CurrentControl(stop))=>stop.additional_charged_bytes(),
  Cause::SourceQuery(Query::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Execution(stop)))=>stop.additional_charged_bytes(),
  // Installation diagnostics remain owned by Installation, which does not yet
  // expose a resident-error quote. They refuse retained error storage.

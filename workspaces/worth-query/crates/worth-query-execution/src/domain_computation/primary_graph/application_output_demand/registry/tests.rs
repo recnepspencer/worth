@@ -18,6 +18,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 mod awaited_claim;
 mod awaited_publication;
+mod checkpoint_custody;
 pub(super) mod closed_retirement;
 mod completed_custody_stages;
 

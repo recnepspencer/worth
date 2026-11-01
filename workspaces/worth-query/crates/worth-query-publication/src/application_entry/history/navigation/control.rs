@@ -2,7 +2,7 @@
 use super::*;
 pub use worth_query_execution::publication_boundary::document_history::WorthQueryHistoryNavigationPauseForTest;
 
-impl<S, H, N, P> WorthQueryHistoryNavigation<'_, '_, S, H, N, P>
+impl<S, H, N, P, Outputs> WorthQueryHistoryNavigation<'_, '_, S, H, N, P, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,

@@ -7,13 +7,6 @@ use super::*;
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-/// A stopped claim may already have restored its checkpoint. A moved claim
-/// returns the original value to the successor demand for exact retry.
-pub(in crate::domain_computation::primary_graph) enum SelectedCheckpointFinishStop {
-    Restored(WorthQueryOutputDemandDenial),
-    Returned(WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint),
-}
-
 pub(in crate::domain_computation::primary_graph) struct PreparedSelectedCheckpointFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
     interest: &'a WorthQueryOutputDemandInterest,
@@ -85,7 +78,8 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 DemandState::Output(output)
                     if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
                         && matches!(&output.checkpoint,
-                            Some(WorthQueryOutputCheckpoint::Published { .. }
+                            Some(WorthQueryOutputCheckpoint::PublicationPending { .. }
+                                | WorthQueryOutputCheckpoint::Published { .. }
                                 | WorthQueryOutputCheckpoint::Delivered { .. })))
         {
             return Ok(None);
@@ -107,14 +101,14 @@ impl PreparedSelectedCheckpointFinish<'_> {
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: WorthQueryOutputCheckpoint,
         denial: Option<&WorthQueryOutputDemandDenial>,
-    ) -> Result<(), SelectedCheckpointFinishStop> {
+    ) -> Result<(), CheckpointFinishStop> {
         let mut state = self
             .registry
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let Some(mut record) = state.records.get_mut(&self.interest.key) else {
-            return Err(SelectedCheckpointFinishStop::Returned(
+            return Err(CheckpointFinishStop::Returned(
                 empty_denial(WorthQueryOutputDemandDenialKind::Closed),
                 checkpoint,
             ));
@@ -124,17 +118,23 @@ impl PreparedSelectedCheckpointFinish<'_> {
             .as_ref()
             .is_some_and(|member| Arc::ptr_eq(member, &self.member))
         {
-            return Err(SelectedCheckpointFinishStop::Returned(
+            return Err(CheckpointFinishStop::Returned(
                 empty_denial(WorthQueryOutputDemandDenialKind::SchedulingRejected),
                 checkpoint,
             ));
         }
         let DemandState::Output(output) = &mut record.state else {
-            return Err(SelectedCheckpointFinishStop::Returned(
+            return Err(CheckpointFinishStop::Returned(
                 empty_denial(WorthQueryOutputDemandDenialKind::SchedulingRejected),
                 checkpoint,
             ));
         };
+        if !output.owns_checkpoint(&checkpoint) || output.checkpoint.is_some() {
+            return Err(CheckpointFinishStop::Returned(
+                empty_denial(WorthQueryOutputDemandDenialKind::SchedulingRejected),
+                checkpoint,
+            ));
+        }
         match output.advancement() {
             WorthQueryOutputAdvancement::Stopped {
                 denial: stopped,
@@ -142,7 +142,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
             } if *active == claim => {
                 let stopped = stopped.clone();
                 if output.checkpoint.is_some() {
-                    return Err(SelectedCheckpointFinishStop::Returned(stopped, checkpoint));
+                    return Err(CheckpointFinishStop::Returned(stopped, checkpoint));
                 }
                 output.install_checkpoint(checkpoint);
                 output.finish_stopped(stopped.clone());
@@ -150,7 +150,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 record.finish();
                 state.defer_terminal_cleanup(self.member.key_arc());
                 drop(state);
-                Err(SelectedCheckpointFinishStop::Restored(stopped))
+                Err(CheckpointFinishStop::Restored(stopped))
             }
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {
                 output.install_checkpoint(checkpoint);
@@ -173,7 +173,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 drop(state);
                 Ok(())
             }
-            _ => Err(SelectedCheckpointFinishStop::Returned(
+            _ => Err(CheckpointFinishStop::Returned(
                 empty_denial(WorthQueryOutputDemandDenialKind::SchedulingRejected),
                 checkpoint,
             )),
