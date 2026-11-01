@@ -16,7 +16,10 @@ mod pattern;
 mod reduction;
 mod report;
 mod storage;
-pub use storage::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
+pub use storage::{
+    ExecutionOrderedMap, ExecutionOrderedMapCell, ExecutionOrderedMapDenial,
+    ExecutionOrderedMapUniqueDenial,
+};
 
 pub use authority::{
     CancellationSource, CancellationToken, ConstructionDenial, EquivalencePredicate,

@@ -455,6 +455,22 @@ Use `retained_bytes()` when the map has an accounted storage contract.
 `entry_at(rank)` navigate cached subtree counts. The application retains source,
 session and installation checks around access to these values.
 
+For a private, uniquely owned map with `Copy` keys and values,
+`ExecutionOrderedMapCell::prepare_for_request` admits the actual singleton node
+and entry before allocating either owner. `insert_vacant_prepared`,
+`set_existing_unique` and `remove_retaining_unique` preflight every affected
+owner, including rotation and successor paths, through actual Arc uniqueness.
+Alias refusal preserves the map and prepared cell. These edits allocate no map
+backing and invoke no key/value `Clone`; comparator behavior remains the key's
+`Ord` contract. Removal returns the detached original cell and its reservations
+for disposal outside the caller's registry guard. No shared map root may escape
+an owner that relies on a sequence of these unique edits.
+
+`prepare_in` retains an explicit ordinary allocation policy without fabricating
+a request. Layout bookkeeping alone does not establish an execution reservation;
+outside a run, System allocation can report a measured layout without funding it.
+The existing persistent edit path and node layout are unchanged.
+
 `KeyedPartitioner::upsert_in`, `remove_in` and explicit full `kept_in` use this
 same storage with the current allocation policy. Edits update membership and
 structural counts. Accounted changed groups reserve their copies before

@@ -3050,5 +3050,6 @@
 {"source":"workspaces/worth-store/crates/worth-store-relational/src/cold_source/read_protection/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/durability/log/native_checkpoint_codec/member_source/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/tests/support/durable_medium/cold_source.rs","module":"file","roots":["ExecutionRequest"]},
-{"source":"crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+{"source":"crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-execution/src/storage/ordered/unique/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
 ]

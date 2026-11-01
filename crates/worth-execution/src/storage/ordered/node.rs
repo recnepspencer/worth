@@ -29,6 +29,86 @@ pub(crate) fn cell_bytes<K, V>() -> Result<u64, Denial> {
         .checked_add(arc_bytes::<Node<K, V>>()?)
         .ok_or(Denial::CapacityOverflow)
 }
+pub(super) fn detached_bytes<K, V>(entry: &Entry<K, V>) -> Result<Option<u64>, Denial> {
+    entry
+        .bytes
+        .map(|n| {
+            n.checked_add(arc_bytes::<Node<K, V>>()?)
+                .ok_or(Denial::CapacityOverflow)
+        })
+        .transpose()
+}
+/// Both original owners are admitted before either allocation is made.
+pub(super) fn prepared_copy<K: Copy, V: Copy>(
+    key: K,
+    value: V,
+    policy: Funding<'_, '_>,
+) -> Result<Arc<Node<K, V>>, Denial> {
+    let (entry_bytes, node_bytes) = if policy.uses_accounting() {
+        (
+            Some(arc_bytes::<Entry<K, V>>()?),
+            Some(arc_bytes::<Node<K, V>>()?),
+        )
+    } else {
+        (None, None)
+    };
+    let bytes = match (entry_bytes, node_bytes) {
+        (Some(entry), Some(node)) => Some(entry.checked_add(node).ok_or(Denial::CapacityOverflow)?),
+        _ => None,
+    };
+    let entry_memory = entry_bytes
+        .map(|n| policy.reserve_memory(n))
+        .transpose()?
+        .flatten();
+    let node_memory = node_bytes
+        .map(|n| policy.reserve_memory(n))
+        .transpose()?
+        .flatten();
+    let entry = Arc::new(Entry {
+        key,
+        value,
+        bytes: entry_bytes,
+        _memory: entry_memory,
+    });
+    Ok(Arc::new(Node {
+        entry,
+        left: None,
+        right: None,
+        height: 1,
+        count: 1,
+        bytes,
+        _memory: node_memory,
+    }))
+}
+
+/// Refresh a moved, uniquely owned cell without creating accounting knowledge
+/// for a node that previously had none. Its allocation and grant never move apart.
+pub(super) fn refresh<K, V>(node: &mut Node<K, V>) {
+    node.height = height(&node.left).max(height(&node.right)) + 1;
+    node.count = node
+        .left
+        .as_ref()
+        .map_or(0, |n| n.count)
+        .checked_add(node.right.as_ref().map_or(0, |n| n.count))
+        .and_then(|n| n.checked_add(1))
+        .expect("unique edit preflights total addressable cardinality");
+    node.bytes = match (
+        node.bytes,
+        node.entry.bytes,
+        node.left.as_ref().map_or(Some(0), |n| n.bytes),
+        node.right.as_ref().map_or(Some(0), |n| n.bytes),
+    ) {
+        (Some(_), Some(entry), Some(left), Some(right)) => Some(
+            arc_bytes::<Node<K, V>>()
+                .expect("existing node layout remains valid")
+                .checked_add(entry)
+                .and_then(|n| n.checked_add(left))
+                .and_then(|n| n.checked_add(right))
+                .expect("unique edit preflights total retained bytes"),
+        ),
+        _ => None,
+    };
+}
 impl<K: Clone + ChargedBytes, V: Clone + ChargedBytes> Entry<K, V> {
     pub(super) fn cloned(key: &K, value: &V, policy: Funding<'_, '_>) -> Result<Arc<Self>, Denial> {
         if !policy.uses_accounting() {

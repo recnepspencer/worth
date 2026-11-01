@@ -221,6 +221,12 @@ shared-root cloning and canonical iteration preserve original custody.
 Retain the returned root while reading or applying later edits. `accounted_bytes()`
 returns the available byte measurement; handle `None` as unmeasured.
 `rank_of`/`entry_at` use actual structural counts rather than prefix scans.
+Private maps with `Copy` keys and values can prepare an
+`ExecutionOrderedMapCell` with the original request, then use unique insertion,
+replacement and retaining removal without allocating map backing. Actual touched
+owners must be unique; alias refusal preserves the input. Removed cells retain
+their original owners and grants for disposal outside caller locks. Ordinary
+`prepare_in` remains explicit and creates no request.
 Deliberately accounted reduction shape-cost inspection accepts removals/insertions through
 `checked_full_build_cost_after_edits`, reusing native edit traversal without
 combining values.

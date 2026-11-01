@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{ChargedBytes, ExecutionRequest, MapKernelStop, WorkCeilingDenial};
 
-fn funded<'request, 'authority, R>(
+pub(super) fn funded<'request, 'authority, R>(
     request: ExecutionRequest<'request, 'authority>,
     operation: impl FnOnce(Funding<'request, 'authority>) -> Result<R, Denial>,
 ) -> Result<R, Denial> {
