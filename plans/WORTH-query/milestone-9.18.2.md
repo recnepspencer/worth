@@ -1,6 +1,6 @@
 # Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
 
-**Status:** in progress; Phases 1–4 implemented and verified; Phases 5–7 remain open.
+**Status:** in progress; Phases 1–5 implemented and verified; Phases 6–7 remain open.
 **Public boundary:** process-local Decl/Host consumers.
 **Prerequisites:** qualified branch/correction owners from
 [9.18](./milestone-9.18.md) and retained-read, guarded adoption and history
@@ -377,6 +377,7 @@ and scoped review of actual command routing and history preservation.
 
 ## Phase 5: Group A Gesture Into One History Step
 
+**Status:** implemented and verified.
 **Depends on:** completed Phases 1, 3 and 4.
 **Outcome:** several ordinary edits form one visible history edge without
 exposing a partly applied group as the active document.

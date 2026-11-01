@@ -15,6 +15,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     retention_entry::{SetRetentionBinding, SetRetentionInput, SetRetentionIntent},
 };
 
+mod cancellation;
 mod guide;
 mod handoff;
 mod identity;

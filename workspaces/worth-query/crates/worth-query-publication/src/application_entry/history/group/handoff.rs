@@ -10,6 +10,26 @@ pub enum WorthQueryHistoryGroupHandoffPointForTest {
     Adoption,
 }
 
+impl<S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
+    WorthQueryGroupedHistoryDocument<'_, S, H, I, P, A, Payload, Outputs>
+where
+    S: ApplicationSchema,
+    H: ApplicationHistoryBinding<S>,
+    I: ApplicationMutationIntent<S>,
+    P: ApplicationProgramDefinition<S>,
+    A: ApplicationAction<S, I::Binding>,
+    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+{
+    /// Rendezvous at the original Native receiver after endpoint capture,
+    /// before its guarded adoption. This changes no operation outcome.
+    #[doc(hidden)]
+    pub fn pause_after_history_capture_for_test(
+        &mut self,
+    ) -> worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryCapturePauseForTest{
+        self.document.owner.pause_after_history_capture_for_test()
+    }
+}
+
 impl<
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,

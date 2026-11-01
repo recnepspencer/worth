@@ -1334,6 +1334,8 @@ owning root. In the advancement example, `Posture` aliases
 
 Call the advancement again while work remains. A refusal leaves `group`
 owned by the caller; preserve it and the original member list and keys.
+Cancellation before selection keeps completed members on the private candidate.
+Use a fresh request to advance or complete that same group, or explicitly abort it.
 `ReadyToComplete` permits `execution.complete(document, request)`; successful
 selection creates one history edge at the final endpoint. Before selection,
 `document.read(request)` still reads the original head, while
