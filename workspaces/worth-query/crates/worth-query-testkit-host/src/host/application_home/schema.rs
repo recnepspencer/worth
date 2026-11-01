@@ -92,3 +92,28 @@ pub(super) fn seed(
         .unwrap();
     Ok(())
 }
+
+/// Two accepted seed batches, with either a flushed or pending final batch.
+pub fn seed_batches(
+    phase: &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<
+        '_,
+    >,
+    graph: &mut WorthQueryPrimaryGraphBootstrap<HomeIdentitySchema>,
+    schema: &WorthQueryInstalledApplicationSchema<HomeIdentitySchema>,
+    flush_final: bool,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    seed(graph, schema)?;
+    graph.commit_seed_batch(phase)?;
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(
+            Account::reference(),
+            WorthQueryApplicationEntityKey::new("second-account-row").unwrap(),
+        )
+        .field(AccountNumber::reference(), "account-002".to_owned())
+        .field(super::native_mutation::Balance::reference(), 11),
+    )?;
+    if flush_final {
+        graph.commit_seed_batch(phase)?;
+    }
+    Ok(())
+}

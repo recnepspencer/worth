@@ -26,7 +26,7 @@ mod elevation_lifecycle_facts;
 mod elevation_request_outcome;
 mod elevation_request_program;
 mod fact;
-mod idempotency;
+pub(super) mod idempotency;
 mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;

@@ -30,52 +30,8 @@ enum OpeningCloseCustody<Schema: ApplicationSchemaComposition, Program> {
     },
     ReleasedQuery(WorthQueryApplicationHomeCloseRefused<Schema, Program>),
 }
-enum WorldQueryPreparation<Schema: ApplicationSchemaComposition, Program> {
-    Composition {
-        _query: ReadmittedHomeNativeMeaning<Schema, Program>,
-        _cause: ApplicationHomeQueryCompositionDenial,
-    },
-    Source(QueryHomeSourceAttachmentRefused<Schema, Program>),
-    Bootstrap {
-        _query: PreparedHomeQueryRuntime<Schema, Program>,
-        _cause: BootstrapFailure,
-    },
-    Attachment(QueryHomeWorldAttachmentRefused<Schema, Program>),
-    Custody {
-        _query: ReadmittedHomeQueryService<Schema, Program>,
-        _cause: HomeCustodyReadmissionDenial,
-    },
-    OwnerAdmission {
-        _query: ReadmittedHomeQueryService<Schema, Program>,
-        _cause: ApplicationHomeOwnerAdmissionDenial,
-    },
-}
-enum BootstrapFailure {
-    InitialState(QueryHomeInitialStateDenial),
-    Seed(WorthQueryPrimaryGraphInstallationDenial),
-    Root(ApplicationHomeQueryRootDenial),
-}
-impl BootstrapFailure {
-    fn detail(&self) -> String {
-        match self {
-            Self::InitialState(cause) => format!("{cause:?}"),
-            Self::Seed(cause) => cause.to_string(),
-            Self::Root(cause) => format!("{cause:?}"),
-        }
-    }
-}
-impl<Schema: ApplicationSchemaComposition, Program> WorldQueryPreparation<Schema, Program> {
-    fn detail(&self) -> String {
-        match self {
-            Self::Composition { _cause, .. } => format!("{_cause:?}"),
-            Self::Source(query) => query.reason().to_string(),
-            Self::Bootstrap { _cause, .. } => _cause.detail(),
-            Self::Attachment(query) => query.detail(),
-            Self::Custody { _cause, .. } => format!("{_cause:?}"),
-            Self::OwnerAdmission { _cause, .. } => format!("{_cause:?}"),
-        }
-    }
-}
+mod preparation;
+use preparation::*;
 impl<Schema: ApplicationSchemaComposition, Program>
     WorthQueryApplicationHomeOpenRefused<Schema, Program>
 {
@@ -117,6 +73,46 @@ impl<Schema: ApplicationSchemaComposition, Program>
                 drop(query);
                 close_unshared(home.into_home(), request)
             }
+            ExistingNativeFinalization { query, home } => {
+                drop(query);
+                close_unshared(home, request)
+            }
+            ExistingBridgeDefinition {
+                query,
+                home,
+                cause: _,
+            } => {
+                drop(query);
+                close_unshared(home, request)
+            }
+            ExistingWorldReadmission { query, home } => {
+                drop(query);
+                classify_released(home.into_home().close(request))
+            }
+            ExistingComposition { query, home, cause } => close_world_preparation(
+                WorldQueryPreparation::ExistingComposition {
+                    _query: query,
+                    _cause: cause,
+                },
+                home,
+                request,
+            ),
+            ExistingSourceAttachment { query, home } => {
+                close_world_preparation(WorldQueryPreparation::ExistingSource(query), home, request)
+            }
+            ExistingWorldRoot { query, home, cause } => close_world_preparation(
+                WorldQueryPreparation::ExistingRoot {
+                    _query: query,
+                    _cause: cause,
+                },
+                home,
+                request,
+            ),
+            ExistingQueryAttachment { query, home } => close_world_preparation(
+                WorldQueryPreparation::ExistingAttachment(query),
+                home,
+                request,
+            ),
             NativeFinalization { query, home } => {
                 drop(query);
                 close_unshared(home, request)

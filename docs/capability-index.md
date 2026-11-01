@@ -1082,6 +1082,22 @@ the actual completed bootstrap; they grant no readmission authority. Failed
 completion retains the original preparation and Home without retrying accepted
 seeds. Ordinary Memory bootstrap adds no completion commit.
 
+Existing Directory requests consume their actual existing-origin Home into
+Query readmission, without initialization or seed replay. Completion meaning,
+immutable Native receipts and activation must agree at the selected World basis.
+Recovered indexes are admitted and populated at that same basis before service.
+Reads preserve the published World state when independent Native history is
+newer. Actual latest-Native binding rows restore the outcome frontier; an old
+exact mutation key may return `PreviouslyCommitted` with a historical commit ID
+without its original live receipt, Rust result or handler replay.
+
+This service requires zero retained World recovery custody and the existing
+Store no-pending-owner admission. Effect-bearing unpublished custody, malformed
+bindings, missing completion and persisted workflow/outbox/inbound/aftermath
+families return owning refusal. Compiled workflow declarations alone remain
+allowed. Consume the refusal's actual close route and retain further close
+custody when refused; original-result retry and full D8/D9/D11 closure remain open.
+
 Store Application's `readmit_world` consumes the concrete Native-readmitted
 Home and an `ApplicationWorldDefinition`. The private attachment injects the
 same actual Native runtime into World and Bridge. The resulting

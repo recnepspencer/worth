@@ -34,7 +34,18 @@ Fresh Directory bootstrap publishes its portable completion record after all
 seed batches and indexes succeed, before World genesis. Completion refusal
 retains accepted seeds and the same Home through the existing owning opening
 refusal; initialization is not replayed. Memory bootstrap adds no extra commit.
-This producer does not enable existing-Home Query service.
+Reopen the same Directory with the same admitted schema/program meaning and
+ordinary Home request. Existing artifacts readmit their completion and program
+activation at the recovered World root; the initializer and seed suppliers
+never run again. Reads use that published World basis even when an independent
+Native commit is newer. Recovered index definitions and their selected-basis
+generations must be admitted before service escapes.
+
+An exact old mutation key can return `PreviouslyCommitted`, carrying the actual
+historical commit ID. Its original live receipt and Rust result are unavailable;
+read current state through a fresh query. The business handler does not replay.
+Durable binding rows restore the outcome identity frontier before a new key can
+commit. Malformed or duplicate bindings return owning opening refusal.
 
 An ordinary Directory mutation can return `ProductPreparationPending` before
 or after Native effects. Keep that original terminal. Same-key requests observe
@@ -53,8 +64,11 @@ successful close. The old Home's lease blocks concurrent opening, and old
 recovery handles cannot cross incarnations: obtain claims from the newly
 readmitted Home. Neither zero observed effects nor this diagnostic proves
 release, restores a proposal, or permits resubmission.
-Existing-Home Query serving and original business-result readmission remain
-closed until their genuine publication and terminal producers are available.
+Existing service requires zero actual retained World recovery custody. A Native
+effect beyond the published World head remains an owning refusal until recovered
+Query custody can be admitted. Original business-result readmission remains open
+work. Persisted workflow, outbox, inbound-completion and aftermath rows also
+refuse cold service; compiled workflow declarations alone remain allowed.
 
 Before Directory service escapes, Store also inspects its actual reserved
 transition, Signal and Query obligation journals. An entry, unresolved journal

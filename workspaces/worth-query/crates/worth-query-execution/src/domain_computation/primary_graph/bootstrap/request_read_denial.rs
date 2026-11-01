@@ -3,7 +3,7 @@ use super::super::{
     WorthQueryPrimaryGraphInstallationDenial as Denial,
     WorthQueryPrimaryGraphInstallationDenialKind as Kind,
 };
-pub(super) fn read(
+pub(in crate::domain_computation::primary_graph) fn read(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> Denial {
     let kind = match super::super::provider::relational_execution_denial::relational_execution_kind(

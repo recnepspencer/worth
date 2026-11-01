@@ -4,6 +4,7 @@ use super::super::super::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 use super::*;
+pub(super) mod assembly;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 use std::sync::{Arc, RwLock};
 use worth_runtime_bridge::facade::{
@@ -11,10 +12,8 @@ use worth_runtime_bridge::facade::{
 };
 
 pub struct PreparedHomeQueryRuntime<Schema: ApplicationSchemaComposition, Program> {
-    pub(super) state: HomeApplicationState<Schema, Program>,
+    pub(super) prepared: assembly::HomeQueryPreparation<Schema, Program>,
     pub(super) publication: Option<super::super::super::WorthQueryPrimaryGraphPublication>,
-    pub(super) bootstrap: WorthQueryPrimaryGraphBootstrap<Schema>,
-    pub(super) bridge: super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
 }
 
 pub struct QueryHomeSourceAttachmentRefused<Schema: ApplicationSchemaComposition, Program> {
@@ -43,27 +42,8 @@ impl<Schema: ApplicationSchemaComposition, Program> ReadmittedHomeNativeMeaning<
         PreparedHomeQueryRuntime<Schema, Program>,
         QueryHomeSourceAttachmentRefused<Schema, Program>,
     > {
-        let result = (|| {
-            let profile = source.authoritative_source_profile();
-            if bridge.authoritative_source_profile() != Some(&profile)
-                || !conditional
-                    .read()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .readmits_authoritative_source_profile(&profile)
-            {
-                return Err(home_source_denial(
-                    "Home Bridge does not admit its registered Native source",
-                ));
-            }
-            WorthQueryRelationalSourceOwner::attach_home_source(
-                source.clone(),
-                &self.schema.receipt,
-                self.state.limits.world.invalidation_resources(),
-            )
-            .map_err(|cause| {
-                home_source_denial(format!("Home Native source attachment denied: {cause:?}"))
-            })
-        })();
+        let result =
+            admit_registered_source(&self.state, &self.schema, &source, &bridge, &conditional);
         let owner = match result {
             Ok(owner) => owner,
             Err(cause) => {
@@ -77,55 +57,18 @@ impl<Schema: ApplicationSchemaComposition, Program> ReadmittedHomeNativeMeaning<
             }
         };
         let Self {
-            mut state,
+            state,
             schema,
             restore_work,
+            activation_seed,
         } = self;
-        let mut graph = super::super::super::WorthQueryPrimaryGraph::from_installed_source(
-            state.runtime.authority_identity(),
-            state.installed.binding_identity(),
-            Arc::new(schema.layout),
-            owner,
-        );
-        graph.application_publication = Some(Arc::new(
-            super::super::super::root::application_publication::ApplicationPublication::installed(
-                &schema.receipt,
-            ),
-        ));
-        let meaning =
-            super::super::super::bootstrap::prepared_native::PreparedPrimaryGraphMeaning {
-                resource_support:
-                    super::super::super::provider::WorthQueryPrimaryGraphResourceSupport::install(
-                        state
-                            .runtime
-                            .application_query_resource_profile()
-                            .maximum_concurrent_graph_work(),
-                    ),
-                recovered_publication: None,
-                recovered_relational_authority: None,
-                recovered_checkpoint_restore_work: restore_work,
-                invariant_installation_receipt: schema.receipt,
-                expected_invariant_inventory_digest: schema.expected_invariant_inventory_digest,
-                typed_rows: Default::default(),
-            };
-        let mut bootstrap = meaning.into_bootstrap(
-            &state.runtime,
-            &state.installed,
-            graph,
-            state.limits.world.clone(),
-        );
-        bootstrap.mutation_handlers = std::mem::take(&mut state.pending.handlers);
-        bootstrap.resources = std::mem::take(&mut state.pending.resources);
-        bootstrap.managed_indexes = std::mem::take(&mut state.pending.managed_indexes);
-        bootstrap.program_activation = Some(state.activation.clone());
-        bootstrap.program_activation_seed = Some(
-            super::super::super::bootstrap::WorthQueryProgramActivationSeed::for_initial_program(
-                &state.support.initial_revision,
-                state.activation.clone(),
-            ),
-        );
-        Ok(PreparedHomeQueryRuntime { state, bootstrap, publication: None,
-            bridge: super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge::attach_home_bridge(bridge, conditional) })
+        let mut prepared =
+            assembly::assemble(state, schema, restore_work, owner, bridge, conditional);
+        prepared.bootstrap.program_activation_seed = Some(activation_seed);
+        Ok(PreparedHomeQueryRuntime {
+            prepared,
+            publication: None,
+        })
     }
 }
 
@@ -154,7 +97,11 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeQueryRuntime<Sch
         ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     ) -> Result<(), QueryHomeInitialStateDenial> {
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            initial_state(phase, &mut self.bootstrap, &self.state.installed)
+            initial_state(
+                phase,
+                &mut self.prepared.bootstrap,
+                &self.prepared.state.installed,
+            )
         }))
         .map_err(|_| QueryHomeInitialStateDenial::Panicked)?
         .map_err(QueryHomeInitialStateDenial::Callback)
@@ -168,10 +115,11 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeQueryRuntime<Sch
             return Ok(());
         }
         self.publication = Some(super::super::super::bootstrap::home_publication::publish(
-            &mut self.bootstrap,
+            &mut self.prepared.bootstrap,
             phase,
             || {
-                self.state
+                self.prepared
+                    .state
                     .admitted_home_binding()
                     .map(|admitted| admitted.consume(|owner| owner.into_description()))
                     .map_err(|cause| {
@@ -181,4 +129,33 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeQueryRuntime<Sch
         )?);
         Ok(())
     }
+}
+
+pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn admit_registered_source<
+    Schema: ApplicationSchemaComposition,
+    Program,
+>(
+    state: &HomeApplicationState<Schema, Program>,
+    schema: &InstalledNativeSchemaMeaning,
+    source: &RuntimeBridgeRelationalSource,
+    bridge: &RuntimeBridge,
+    conditional: &Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+) -> Result<WorthQueryRelationalSourceOwner, WorthQueryPrimaryGraphInstallationDenial> {
+    let profile = source.authoritative_source_profile();
+    if bridge.authoritative_source_profile() != Some(&profile)
+        || !conditional
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .readmits_authoritative_source_profile(&profile)
+    {
+        return Err(home_source_denial(
+            "Home Bridge does not admit its registered Native source",
+        ));
+    }
+    WorthQueryRelationalSourceOwner::attach_home_source(
+        source.clone(),
+        &schema.receipt,
+        state.limits.world.invalidation_resources(),
+    )
+    .map_err(|cause| home_source_denial(format!("Home Native source attachment denied: {cause:?}")))
 }

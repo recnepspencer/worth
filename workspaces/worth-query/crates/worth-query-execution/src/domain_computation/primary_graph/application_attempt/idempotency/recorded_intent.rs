@@ -13,6 +13,8 @@
 //! binding cannot confirm that operation, so it is unverifiable, never drift.
 
 use super::WorthQueryApplicationIdempotencyBinding;
+mod shape;
+pub(in crate::domain_computation::primary_graph) use shape::validate;
 
 const DURABLE_ENCODING: &str = "v2:";
 const OPERATION_SLOT: &str = ":operation=";
@@ -45,6 +47,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         self,
         recorded: &str,
     ) -> Result<WorthQueryRecordedIntentMatch, &'static str> {
+        validate(recorded)?;
         let slots = self.intent_slots();
         if let Some(recorded) = recorded.strip_prefix(DURABLE_ENCODING) {
             return Ok(if recorded == slots {

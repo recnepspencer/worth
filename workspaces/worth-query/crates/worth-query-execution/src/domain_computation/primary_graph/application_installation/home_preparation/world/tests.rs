@@ -93,12 +93,15 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
             .observe_root_product_branch()
             .unwrap();
         let prepared = PreparedHomeQueryRuntime {
-            state,
-            bootstrap,
+            prepared: HomeQueryPreparation {
+                state,
+                bootstrap,
+                bridge,
+            },
             publication: Some(publication),
-            bridge,
         };
         let instances = prepared
+            .prepared
             .bootstrap
             .managed_indexes
             .configured_instances_for_test();

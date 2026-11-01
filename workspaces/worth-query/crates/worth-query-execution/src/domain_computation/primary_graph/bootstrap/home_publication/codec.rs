@@ -4,6 +4,8 @@ use super::{denial, request};
 use std::fmt::Write;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{ApplicationHomeBinding, CanonicalDigestId};
+mod decoding;
+pub(in crate::domain_computation::primary_graph) use decoding::decode;
 
 pub(super) fn encode(
     binding: &ApplicationHomeBinding,

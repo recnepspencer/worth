@@ -19,10 +19,10 @@ use worth_query_testkit_host::facade::host::{
 };
 use worth_store_application::*;
 mod inspection;
-type DirectoryHome = WorldReadmittedApplicationHome<(), (), (), (), ()>;
-type Query = PreparedHomeQueryRuntime<HomeIdentitySchema, HomeProgram>;
+pub(super) type DirectoryHome = WorldReadmittedApplicationHome<(), (), (), (), ()>;
+pub(super) type Query = PreparedHomeQueryRuntime<HomeIdentitySchema, HomeProgram>;
 
-fn build() -> ApplicationBuildIdentity {
+pub(super) fn build() -> ApplicationBuildIdentity {
     ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap()
 }
 fn limits() -> WorthQueryInMemoryApplicationLimits {
@@ -71,7 +71,7 @@ fn seed_batches(
     Ok(())
 }
 
-fn prepared(
+pub(super) fn prepared(
     path: &std::path::Path,
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     flush: bool,
@@ -236,7 +236,7 @@ fn failed_completion_retains_seed_history_and_same_home_without_retry_or_genesis
     }).unwrap();
 }
 
-fn meaning() -> PreparedHomeApplication<HomeIdentitySchema, HomeProgram> {
+pub(super) fn meaning() -> PreparedHomeApplication<HomeIdentitySchema, HomeProgram> {
     let declaration = HomeIdentitySchema::declaration().unwrap();
     prepare_home_program(
         ApplicationProgramAuthoring::<HomeIdentitySchema, HomeProgram>::begin()

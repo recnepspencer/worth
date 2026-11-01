@@ -58,6 +58,31 @@ pub fn request(
     initialized: Arc<AtomicUsize>,
     contacts: Arc<AtomicUsize>,
 ) -> WorthQueryApplicationHomeRequest<'static, HomeIdentitySchema, HomeProgram> {
+    request_with_initializer(location, build, contacts, move |_, graph, schema| {
+        initialized.fetch_add(1, Ordering::SeqCst);
+        schema::seed(graph, schema)
+    })
+}
+
+pub fn request_with_initializer(
+    location: std::path::PathBuf,
+    build: ApplicationBuildIdentity,
+    contacts: Arc<AtomicUsize>,
+    initial_state: impl FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<
+                '_,
+            >,
+            &mut worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<
+                HomeIdentitySchema,
+            >,
+            &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+                HomeIdentitySchema,
+            >,
+        ) -> Result<
+            (),
+            worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+        > + 'static,
+) -> WorthQueryApplicationHomeRequest<'static, HomeIdentitySchema, HomeProgram> {
     let declaration = HomeIdentitySchema::declaration().unwrap();
     WorthQueryApplicationHomeRequest::new(
         WorthQueryApplicationHomeLocation::Directory(location),
@@ -74,9 +99,6 @@ pub fn request(
             WorthQueryApplicationQueryResourceProfile::default(),
             SignalConditionalEvaluationBudget::development(),
         ),
-        move |_, graph, schema| {
-            initialized.fetch_add(1, Ordering::SeqCst);
-            schema::seed(graph, schema)
-        },
+        initial_state,
     )
 }

@@ -5831,14 +5831,25 @@ The fresh Native-only Directory Host journey now opens the actual Home,
 initializes once, reads seeded data, publishes an ordinary mutation through the
 same World, and closes through the owning Home. A genuine retained runtime
 clone produces a composition refusal after World seal; dropping that clone and
-retrying the same close custody completes the close. This does not establish
-existing-Home Query serving, original business-result readmission, or full
-request-bounded close.
+retrying the same close custody completes the close. Existing Directory startup
+uses the same ordinary Home request and physical location. It admits the recorded
+portable schema/program meaning, completion and activation through the recovered
+World root without calling the initializer or replaying seed suppliers.
 
 Fresh Directory startup records completed bootstrap meaning after every seed
 batch and index build succeeds, before creating World genesis. A refused
 completion keeps the accepted seeds and original Home in opening custody; it
 does not rerun initialization. Memory startup adds no completion commit.
+
+Ordinary reads after reopen use the selected published World basis, including
+when independent Native history is newer. Actual recovered index definitions
+and the generations needed at that basis are admitted before serving a request.
+An exact old mutation key can return `PreviouslyCommitted` with its historical
+commit ID, without rerunning the business handler. Read current state through a
+fresh query; the original live receipt and Rust result are unavailable. New keys
+receive identities beyond the actual durable outcome frontier. Malformed,
+duplicate or invalid binding state returns owning opening refusal. An exhausted
+outcome frontier refuses the new commit.
 
 Treat `ProductPreparationPending` as original custody. Keep the returned
 terminal and business key; duplicate requests must observe that custody rather
@@ -5857,9 +5868,13 @@ concurrent open. Old recovery handles are incarnation-fenced, so obtain claims
 from the newly readmitted Home. Do not loop live release, reconstruct the old
 proposal, or resubmit the handler.
 Zero observed effects are descriptive and do not issue a no-effect authority.
-Existing-Home Query attachment still refuses until the authentic bootstrap
-publication and original terminal can be readmitted; lower World recovery alone
-cannot reconstruct an application's Rust return value.
+Existing Query service requires zero actual retained World recovery custody.
+A performed Native effect beyond the published World head remains owned and
+refused before service until recovered Query custody is supported. Lower World
+recovery does not reconstruct an application's Rust return value. Persisted
+workflow, outbox, inbound-completion and aftermath rows refuse cold service;
+compiled workflow declarations alone remain allowed. Missing or incompatible
+completion artifacts keep their existing origin and never regain initialization.
 
 Directory startup also refuses before service if Store finds a retained entry
 or unresolved publication in an unsupported transition, Signal or Query

@@ -19,7 +19,13 @@ use worth_relational::facade::runtime::{
 mod binding;
 mod world;
 pub use world::{QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService};
+mod existing;
 mod native;
+pub use existing::{
+    PreparedExistingHomeQueryRuntime, QueryExistingHomeNativeReadmissionRefused,
+    QueryExistingHomeSourceAttachmentRefused, QueryExistingHomeWorldAttachmentRefused,
+    ReadmittedExistingHomeNativeMeaning,
+};
 mod source;
 pub use native::{QueryHomeNativeInstallationRefused, QueryHomeNativeReadmissionRefused};
 pub use source::{
@@ -40,6 +46,7 @@ pub struct ReadmittedHomeNativeMeaning<Schema: ApplicationSchemaComposition, Pro
     state: HomeApplicationState<Schema, Program>,
     schema: InstalledNativeSchemaMeaning,
     restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
+    activation_seed: super::super::bootstrap::WorthQueryProgramActivationSeed,
 }
 
 struct HomeApplicationState<Schema: ApplicationSchemaComposition, Program> {

@@ -101,6 +101,8 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
         })();
         match result {
             Ok(()) => Ok(ReadmittedHomeNativeMeaning {
+                activation_seed: super::super::super::bootstrap::WorthQueryProgramActivationSeed::for_initial_program(
+                    &self.state.support.initial_revision, self.state.activation.clone()),
                 state: self.state,
                 schema: self.schema,
                 restore_work: outcome.checkpoint_restore_work,

@@ -1,6 +1,7 @@
 //! Consuming attachment adopts the actual Home World without rebuilding it.
 use super::super::super::application_runtime::installation::home_attachment;
 use super::super::super::WorthQueryBootstrapAdvancementPhase;
+use super::source::assembly::HomeQueryPreparation;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_runtime_world::facade::*;
@@ -22,11 +23,11 @@ impl<Schema, Program> ReadmittedHomeQueryService<Schema, Program> {
 }
 
 pub struct QueryHomeWorldAttachmentRefused<Schema: ApplicationSchemaComposition, Program> {
-    custody: HomeWorldAttachmentCustody<Schema, Program>,
+    pub(super) custody: HomeWorldAttachmentCustody<Schema, Program>,
 }
-enum HomeWorldAttachmentCustody<Schema: ApplicationSchemaComposition, Program> {
+pub(super) enum HomeWorldAttachmentCustody<Schema: ApplicationSchemaComposition, Program> {
     Prepared {
-        _prepared: PreparedHomeQueryRuntime<Schema, Program>,
+        _prepared: HomeQueryPreparation<Schema, Program>,
         _root: ProductBranchObservation,
         cause: WorthQueryPrimaryGraphInstallationDenial,
     },
@@ -51,7 +52,7 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     pub fn attach_home_world(
-        mut self,
+        self,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
         publication_port: RuntimeWorldPublicationPort<(), (), (), (), ()>,
         branch: RuntimeWorldBranchPort,
@@ -64,10 +65,51 @@ where
         worth_proof::QueryReadmitted<ReadmittedHomeQueryService<Schema, Program>>,
         QueryHomeWorldAttachmentRefused<Schema, Program>,
     > {
+        let Some(publication) = self.publication else {
+            return Err(QueryHomeWorldAttachmentRefused {
+                custody: HomeWorldAttachmentCustody::Prepared {
+                    _prepared: self.prepared,
+                    _root: root,
+                    cause: home_world_denial("actual Home Query seed publication is required"),
+                },
+            });
+        };
+        self.prepared.attach_world(
+            phase,
+            publication,
+            publication_port,
+            branch,
+            observation,
+            inspection,
+            recovery,
+            root,
+            directory_support,
+        )
+    }
+}
+impl<Schema, Program> HomeQueryPreparation<Schema, Program>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema> + 'static,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn attach_world(
+        mut self,
+        phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+        publication: super::super::super::WorthQueryPrimaryGraphPublication,
+        publication_port: RuntimeWorldPublicationPort<(), (), (), (), ()>,
+        branch: RuntimeWorldBranchPort,
+        observation: RuntimeWorldObservationPort,
+        inspection: RuntimeWorldInspectionPort,
+        recovery: RuntimeWorldRecoveryPort,
+        root: ProductBranchObservation,
+        directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
+    ) -> Result<
+        worth_proof::QueryReadmitted<ReadmittedHomeQueryService<Schema, Program>>,
+        QueryHomeWorldAttachmentRefused<Schema, Program>,
+    > {
         let prepared = (|| {
-            let publication = self.publication.clone().ok_or_else(|| {
-                home_world_denial("actual Home Query seed publication is required")
-            })?;
             let (provider, participation, authorization, handlers) =
                 home_attachment::preflight_home_application(
                     phase,
@@ -75,6 +117,7 @@ where
                     &self.state.runtime,
                     &self.state.authority,
                     &self.state.installed,
+                    root.basis().relational_basis(),
                 )?;
             self.bootstrap
                 .managed_indexes
@@ -88,15 +131,9 @@ where
                 .bootstrap
                 .graph
                 .integration_handle()
-                .prepare_product_source(
+                .prepare_product_source_at_basis(
                     &phase.execution_request(),
-                    &self
-                        .bootstrap
-                        .graph
-                        .integration_handle()
-                        .with_runtime(&phase.execution_request(), |native| {
-                            native.main_branch_identity()
-                        }),
+                    root.basis().relational_basis(),
                 )
                 .map_err(|cause| {
                     home_world_denial(format!("Home product source denied: {cause:?}"))
@@ -139,11 +176,10 @@ where
         // The actual configured providers remain in the refused preparation
         // through every fallible attachment check. Success transfers them once.
         let managed_indexes = std::mem::take(&mut self.bootstrap.managed_indexes);
-        let PreparedHomeQueryRuntime {
+        let HomeQueryPreparation {
             state,
             bootstrap,
             bridge,
-            publication: _,
         } = self;
         let mut application = home_attachment::finish_home_application(
             phase,
@@ -185,7 +221,9 @@ where
         })
     }
 }
-fn home_world_denial(detail: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {
+pub(super) fn home_world_denial(
+    detail: impl Into<String>,
+) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(
         super::super::super::WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
         detail,

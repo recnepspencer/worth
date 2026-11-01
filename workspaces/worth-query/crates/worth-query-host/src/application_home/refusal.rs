@@ -33,6 +33,37 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         query: PreparedHomeNativeMeaning<Schema, Program>,
         home: ApplicationHomeInitializationRefused,
     },
+    ExistingNativeFinalization {
+        query: QueryExistingHomeNativeReadmissionRefused<Schema, Program>,
+        home: UnsharedReadmittedApplicationHome,
+    },
+    ExistingBridgeDefinition {
+        query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+        home: UnsharedReadmittedApplicationHome,
+        cause: WorthQueryPrimaryGraphInstallationDenial,
+    },
+    ExistingWorldReadmission {
+        query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+        home: WorldHomeReadmissionRefused,
+    },
+    ExistingComposition {
+        query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+        home: DirectoryHome,
+        cause: ApplicationHomeQueryCompositionDenial,
+    },
+    ExistingSourceAttachment {
+        query: QueryExistingHomeSourceAttachmentRefused<Schema, Program>,
+        home: DirectoryHome,
+    },
+    ExistingWorldRoot {
+        query: PreparedExistingHomeQueryRuntime<Schema, Program>,
+        home: DirectoryHome,
+        cause: ApplicationHomeQueryRootDenial,
+    },
+    ExistingQueryAttachment {
+        query: QueryExistingHomeWorldAttachmentRefused<Schema, Program>,
+        home: DirectoryHome,
+    },
     NativeFinalization {
         query: QueryHomeNativeReadmissionRefused<Schema, Program>,
         home: UnsharedReadmittedApplicationHome,
@@ -120,6 +151,13 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::QueryPublicationReadmissionRequired { home, .. } => {
                 format!("{:?}", home.reason())
             }
+            Self::ExistingNativeFinalization { query, .. } => query.reason().to_string(),
+            Self::ExistingBridgeDefinition { cause, .. } => cause.to_string(),
+            Self::ExistingWorldReadmission { home, .. } => format!("{:?}", home.reason()),
+            Self::ExistingComposition { cause, .. } => format!("{cause:?}"),
+            Self::ExistingSourceAttachment { query, .. } => query.reason().to_string(),
+            Self::ExistingWorldRoot { cause, .. } => format!("{cause:?}"),
+            Self::ExistingQueryAttachment { query, .. } => query.detail(),
             Self::NativeFinalization { query, .. } => query.reason().to_string(),
             Self::BridgeDefinition { cause, .. } => cause.to_string(),
             Self::WorldReadmission { home, .. } => format!("{:?}", home.reason()),

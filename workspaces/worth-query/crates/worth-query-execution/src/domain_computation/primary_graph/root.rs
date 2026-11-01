@@ -316,6 +316,15 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         self.source_owner.prepare_product_source(execution, branch)
     }
 
+    pub(crate) fn prepare_product_source_at_basis(
+        &self, execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductRelationalInstallation,
+    worth_relational::facade::branch::RelationalBranchBasisDenial>{
+        self.source_owner
+            .prepare_product_source_at_basis(execution, basis)
+    }
+
     pub(crate) const fn truth_partition_role(
         &self,
     ) -> Option<&worth_foundational::facade::TruthPartitionRole> {

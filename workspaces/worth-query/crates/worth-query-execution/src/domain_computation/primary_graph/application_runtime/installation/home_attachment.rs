@@ -12,6 +12,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
     runtime: &WorthQueryExecutionRuntime,
     authority: &WorthQueryExecutionInstallationAuthority,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
+    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
 ) -> Result<
     (
         std::sync::Arc<WorthQueryPrimaryGraphProvider>,
@@ -28,17 +29,23 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         .seal(installed, bootstrap.graph.binding_identity())?;
     let authorization = compile_authorization(bootstrap, installed)?;
     let graph = bootstrap.graph.integration_handle();
-    graph
-        .bind_current_truth_head(
-            &phase.execution_request(),
-            &super::super::super::application_branch::primary_relational_branch_id(),
-        )
+    graph.with_runtime(&phase.execution_request(), |native| {
+        graph.ensure_primary_indexes_for_basis(&phase.execution_request(), native, basis)
+            .map_err(|cause| match cause {
+                super::super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(cause) =>
+                    super::super::super::bootstrap::request_read_denial::read(cause),
+                cause => WorthQueryPrimaryGraphInstallationDenial::new(
+                    WorthQueryPrimaryGraphInstallationDenialKind::IndexBuildRejected,
+                    format!("Home selected-basis index reconstruction denied: {cause:?}")),
+            })?;
+        graph.bind_truth_head_basis_in_runtime(native, basis)
         .map_err(|cause| {
             WorthQueryPrimaryGraphInstallationDenial::new(
                 WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
                 format!("Home truth head admission denied: {cause:?}"),
             )
-        })?;
+        })
+    })?;
     let truth_partition_role = graph.truth_partition_role().cloned();
     let (anchor, provider) = WorthQueryPrimaryGraphProvider::install(
         graph,
