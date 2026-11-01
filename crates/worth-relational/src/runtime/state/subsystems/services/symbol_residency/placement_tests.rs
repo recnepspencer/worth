@@ -5,7 +5,8 @@ use std::collections::BTreeSet;
 
 #[derive(Debug)]
 struct PruningSource {
-    bytes: Mutex<BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>>,
+    bytes:
+        Mutex<BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>>,
     retained: Arc<Mutex<BTreeMap<RelationalDurableMemberLocator, usize>>>,
     refusal: Mutex<Option<Cause>>,
     reads: AtomicUsize,

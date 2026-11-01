@@ -9,7 +9,8 @@ use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 /// member verification and loading path independent of artifact placement.
 #[derive(Debug)]
 pub(super) struct InlineCheckpointSource {
-    pub(super) members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
+    pub(super) members:
+        BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     pub(super) envelopes: BTreeMap<PatchStreamPosition, Arc<[u8]>>,
 }
 
@@ -26,15 +27,15 @@ impl RelationalDurableColdSource for InlineCheckpointSource {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        bounded(self.members.get(&locator), limit)
+        bounded(self.members.get(&locator).map(AsRef::as_ref), limit)
     }
 
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        bounded(self.envelopes.get(&position), limit)
+        bounded(self.envelopes.get(&position).map(AsRef::as_ref), limit)
     }
 }
 
-fn bounded(bytes: Option<&Arc<[u8]>>, limit: u64) -> Result<Vec<u8>, Cause> {
+fn bounded(bytes: Option<&[u8]>, limit: u64) -> Result<Vec<u8>, Cause> {
     let bytes = bytes.ok_or(Cause::SourceUnavailable)?;
     if bytes.len() as u64 > limit {
         return Err(Cause::LimitExceeded {

@@ -291,7 +291,7 @@ struct RuntimeState {
     symbols: crate::symbols::data::StringInterner,
     configured_symbols: crate::symbols::data::SymbolTableSnapshot,
     branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
-    catalog: Vec<crate::history::data::CanonicalCommitEnvelope>,
+    catalog: Vec<std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>>,
     reference_cost: crate::runtime::RelationalPhase4ReferenceCostCounters,
     complexity: crate::performance::data::RuntimeComplexityCounters,
 }

@@ -78,3 +78,7 @@ pub use primitives::{
     PlannedLineageTransition, ProvenanceCompleteBulkMutationBatch, RecordRef, RelationIdentity,
     RelationScope, RelationSpec, SavepointId, TransactionId, WorkerIntentBatch,
 };
+
+pub(crate) use outcomes::{
+    ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
+};

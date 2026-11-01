@@ -19,6 +19,9 @@
 //! authoritative envelope projection. The position is inside the digested
 //! payload so a rewritten header position cannot pass readmission.
 
+mod borrowed_payload;
+mod checkpoint_body;
+mod decoded_quote;
 mod encode_denial;
 mod encoding;
 mod frame;
@@ -66,7 +69,16 @@ impl RelationalCanonicalCommitArtifact {
     pub fn from_untrusted_bytes(
         bytes: impl Into<Box<[u8]>>,
     ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal> {
-        let bytes = ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.into()));
+        Self::from_owned_bytes(ExecutionImmutableBytes::from_external_bytes(Arc::new(
+            bytes.into(),
+        )))
+    }
+
+    /// Keep the original provider allocation and its intrinsic charge while
+    /// checking this same frame. No encoding or byte-copy path participates.
+    pub(crate) fn from_owned_bytes(
+        bytes: ExecutionImmutableBytes,
+    ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal> {
         let (header, _) = CanonicalCommitArtifactHeader::verify(bytes.bytes())?;
         Ok(Self { bytes, header })
     }

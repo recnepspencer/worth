@@ -222,6 +222,5 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
         .replay()
         .canonical_commit_envelope(execution, transitioned.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .is_some());
 }

@@ -34,7 +34,6 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
             .replay()
             .canonical_commit_envelope(execution, committed.commit.commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone())
             .expect("performed commit has sealed envelope");
         let touches = envelope
             .descriptive_touches()
@@ -86,7 +85,6 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
         .replay()
         .canonical_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("performed indexed commit has envelope");
     let touches = envelope
         .descriptive_touches()
@@ -145,7 +143,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
             .expect("resident fixture has a canonical digest")
     );
 
-    let equal_but_unsealed = Arc::new((*envelope).clone());
+    let equal_but_unsealed = Arc::new(envelope.copy_original_for_test(execution));
     assert!(matches!(
         preencoded.relink_preencoded_recovery(&equal_but_unsealed, Some(&root), None),
         Err(RelationalCommitArtifactDenial::RootLinkage)
@@ -171,11 +169,12 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
         .replay()
         .canonical_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("the performed commit owns one canonical envelope")
-        .clone();
-    let baseline_artifact = RelationalCommitArtifact::from_envelope(Arc::new(envelope.clone()))
-        .expect("baseline canonical authority payload encodes");
+        .copy_original_for_test(execution);
+    let baseline_artifact = RelationalCommitArtifact::from_envelope(Arc::new(
+        envelope.copy_original_for_test(execution),
+    ))
+    .expect("baseline canonical authority payload encodes");
     let baseline_payload_bytes = baseline_artifact.canonical_payload_bytes();
     let baseline_authoritative_nested = baseline_artifact
         .authoritative_allocation_observations()
@@ -189,7 +188,7 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     let baseline_diagnostic_bytes = baseline_artifact
         .excluded_allocation_inventory()
         .diagnostic_bytes;
-    let mut omitted_checkpoint = envelope.clone();
+    let mut omitted_checkpoint = envelope.copy_original_for_test(execution);
     omitted_checkpoint
         .body_mut_for_test()
         .branch_cell_checkpoint = None;
@@ -275,12 +274,13 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
         .replay()
         .canonical_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("the performed commit owns one canonical envelope")
-        .clone();
+        .copy_original_for_test(execution);
     envelope.body_mut_for_test().derived_index_artifacts = DerivedIndexArtifacts::default();
-    let baseline = RelationalCommitArtifact::from_envelope(Arc::new(envelope.clone()))
-        .expect("baseline canonical authority payload encodes");
+    let baseline = RelationalCommitArtifact::from_envelope(Arc::new(
+        envelope.copy_original_for_test(execution),
+    ))
+    .expect("baseline canonical authority payload encodes");
     let baseline_allocations = baseline.authoritative_allocation_observations();
     let baseline_payload_bytes = baseline.canonical_payload_bytes();
     let baseline_optional_cache_bytes = baseline
@@ -318,3 +318,9 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
         "the populated artifact remains observable in the optional-cache lane",
     );
 }
+
+#[path = "artifact_tests/shared_readmission.rs"]
+mod shared_readmission;
+
+#[path = "artifact_tests/strategy_readmission.rs"]
+mod strategy_readmission;

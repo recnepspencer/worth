@@ -63,6 +63,7 @@ fn replay_contract_reports_schema_continuation_descriptor_drift_when_envelope_is
     let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         outcome.commit.commit_id,
         |envelope| {
             if let Some(descriptor) = envelope.schema_continuation_descriptor.as_mut() {
@@ -159,6 +160,7 @@ fn replay_contract_audit_mode_confirms_schema_continuation_descriptor_drift_at_d
     let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         outcome.commit.commit_id,
         |envelope| {
             if let Some(descriptor) = envelope.schema_continuation_descriptor.as_mut() {
@@ -255,6 +257,7 @@ fn replay_certification_audit_drift_is_explained_and_counted() {
     let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         outcome.commit.commit_id,
         |envelope| {
             if let Some(descriptor) = envelope.schema_continuation_descriptor.as_mut() {

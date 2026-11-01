@@ -77,6 +77,28 @@ fn aspect_field_patch_canonical_bytes_use_shared_aspect_value_bodies() {
         AspectFieldPatch::from_canonical_bytes(&expected_bytes).unwrap(),
         patch
     );
+    // The original map decoder selected the last occurrence of an equal
+    // locator. The concrete roster decoder must preserve that wire behavior.
+    let locator = crate::transactions::data::planned_single_field_locator(
+        AspectKey::new("strategy.spec").unwrap(),
+        FieldKey::new("same").unwrap(),
+    );
+    let first = AspectFieldPatch::from_locator(locator.clone(), AspectValue::Int64(1))
+        .to_canonical_bytes()
+        .unwrap();
+    let last = AspectFieldPatch::from_locator(locator.clone(), AspectValue::Int64(2))
+        .to_canonical_bytes()
+        .unwrap();
+    let mut repeated = Vec::new();
+    encode_u32(&mut repeated, 2);
+    repeated.extend_from_slice(&first[4..]);
+    repeated.extend_from_slice(&last[4..]);
+    let decoded = AspectFieldPatch::from_canonical_bytes(&repeated).unwrap();
+    assert_eq!(decoded.len(), 1);
+    assert_eq!(decoded.get(&locator), Some(&AspectValue::Int64(2)));
+    let impossible_count = 12u32.to_le_bytes();
+    let denied = AspectFieldPatch::from_canonical_bytes(&impossible_count).unwrap_err();
+    assert_eq!(denied.detail(), "field count exceeds the binary frame");
 }
 
 #[test]

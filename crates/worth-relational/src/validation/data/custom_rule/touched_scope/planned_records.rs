@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
+use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::symbols::data::ClientKey;
 use crate::transactions::data::EntityReference;
 
@@ -124,9 +122,9 @@ impl PlannedRelationEndpointUpdate {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CustomInvariantTouchedSummary {
-    pub visible_entity_ids: Arc<[EntityId]>,
-    pub visible_relation_ids: Arc<[RelationId]>,
-    pub touched_partition_ids: Arc<[PartitionId]>,
+    pub visible_entity_ids: super::InvariantEntityIds,
+    pub visible_relation_ids: super::InvariantRelationIds,
+    pub touched_partition_ids: super::InvariantPartitionIds,
     pub planned_entity_delete_count: usize,
     pub planned_entity_create_count: usize,
     pub planned_relation_create_count: usize,

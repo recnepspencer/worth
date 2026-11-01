@@ -159,7 +159,6 @@ pub(super) fn certify_final_recovery(
         .replay()
         .canonical_commit_envelope(execution, revalidation_commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered revalidation envelope");
     assert_eq!(
         KubernetesNoopEvidence {

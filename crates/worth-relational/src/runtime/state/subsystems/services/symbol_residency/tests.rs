@@ -36,7 +36,7 @@ mod region_admission_tests;
 
 #[derive(Debug)]
 struct PageSource {
-    members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
+    members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     reads: AtomicUsize,
     corrupt: AtomicBool,
     failed_member: Mutex<Option<RelationalDurableMemberLocator>>,

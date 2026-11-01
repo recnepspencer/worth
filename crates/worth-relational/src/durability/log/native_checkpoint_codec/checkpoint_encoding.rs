@@ -116,7 +116,9 @@ pub(crate) fn encode_captured(
                 }
                 *member = RelationalCheckpointMember::New {
                     locator,
-                    bytes: bytes.into(),
+                    bytes: ExecutionImmutableBytes::from_external_bytes(std::sync::Arc::new(
+                        bytes.into_boxed_slice(),
+                    )),
                 };
             }
         }

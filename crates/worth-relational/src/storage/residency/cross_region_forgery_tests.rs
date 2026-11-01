@@ -14,7 +14,7 @@ struct ExternalWire {
 
 #[derive(Debug)]
 struct ForgedSource {
-    members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
+    members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
 }
 
@@ -108,7 +108,12 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
         &head,
     )
     .unwrap();
-    members.insert(locator, bytes.into());
+    members.insert(
+        locator,
+        worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
+            bytes.into_boxed_slice(),
+        )),
+    );
     let commitment = super::super::kind_commitment::digest(&head.kind_projection).unwrap();
     for forged in wire
         .manifest

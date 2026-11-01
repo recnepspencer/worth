@@ -51,44 +51,140 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
     schema_continuation_descriptor: Option<SchemaContinuationDescriptor>,
     schema_reconciliation_descriptor: Option<SchemaReconciliationDescriptor>,
     descriptor_semantics_version: DescriptorSemanticsVersion,
+    // LAST: on every decode/readmission refusal, actual fields drop before
+    // their original admissions. This is not a serialized semantic field.
+    #[serde(skip)]
+    readmission_memory: super::CanonicalEnvelopeReadmissionMemory,
 }
 impl CanonicalEnvelopeWire<'_> {
+    pub(crate) fn retain_readmission_memory(
+        &mut self,
+        memory: super::CanonicalEnvelopeReadmissionMemory,
+    ) {
+        self.readmission_memory = memory;
+    }
+
+    pub(crate) fn attach_shared_readmission_memory(&mut self) -> Result<(), &'static str> {
+        let memory = self.readmission_memory.index_delta.take();
+        if let Err(memory) = self.index_definition_delta.retain_decoded_memory(memory) {
+            self.readmission_memory.index_delta = memory;
+            return Err("decoded index delta backing aliased or already funded before handoff");
+        }
+        let memory = self.readmission_memory.index_writes.take();
+        if let Err(memory) = self.authored_index_writes.retain_decoded_memory(memory) {
+            self.readmission_memory.index_writes = memory;
+            return Err("decoded authored-index backing aliased or already funded before handoff");
+        }
+        if let Some(memory) = self.readmission_memory.codec_declarations.as_mut() {
+            memory.attach(&self.required_output_codec_retirements)?;
+        }
+        if let Some(memory) = self.readmission_memory.validation.as_mut() {
+            memory.attach(self.semantic_result.validation())?;
+        }
+        if let Some(memory) = self.readmission_memory.schema.as_mut() {
+            memory.attach(self.schema_transition.as_ref())?;
+        }
+        match (
+            self.readmission_memory.strategy.as_mut(),
+            self.strategy_artifacts.as_mut(),
+        ) {
+            (None, None) => {}
+            (Some(memory), Some(strategy)) => memory.attach(strategy)?,
+            _ => return Err("canonical strategy admission does not match its decoded subject"),
+        }
+        match (
+            self.readmission_memory.merge.as_mut(),
+            self.merge_execution_authority.as_ref(),
+        ) {
+            (None, None) => Ok(()),
+            (Some(memory), Some(actual)) => memory.attach(actual),
+            _ => Err("canonical merge admission does not match its decoded subject"),
+        }
+    }
+
     /// Commit identity as decoded, before any admission. An enclosing frame
     /// compares it so disagreement refuses before text readmission runs.
     pub(crate) fn commit_id(&self) -> CommitId {
         self.commit.commit_id
     }
 
-    pub(crate) fn readmit(
-        self,
+    fn validate_symbol_coverage(
+        &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
-        super::CanonicalCommitEnvelope,
+        Option<worth_execution::ExecutionMemoryReservation>,
         crate::symbols::data::RelationalFieldTextAdmissionDenial,
     > {
-        let mut required =
-            crate::symbols::data::required_commit_symbols(&self.merged_plan, &self.patch);
+        use crate::symbols::data::{
+            visit_required_commit_symbols, RelationalFieldTextAdmissionDenial as Denial, Symbol,
+        };
         if self
             .revision_symbol_references
             .windows(2)
             .any(|pair| pair[0] >= pair[1])
         {
-            return Err(
-                crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary,
-            );
+            return Err(Denial::InvalidSymbolDictionary);
         }
+        let mut count = Some(self.revision_symbol_references.len());
+        visit_required_commit_symbols(&self.merged_plan, &self.patch, &mut |_| {
+            count = count.and_then(|count| count.checked_add(1));
+        });
+        let count = count.ok_or(Denial::Request(
+            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        ))?;
+        let bytes = count
+            .checked_add(self.symbol_texts.entries.len())
+            .and_then(|count| count.checked_mul(size_of::<Symbol>()))
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or(Denial::Request(
+                crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+            ))?;
+        let funding = execution
+            .reserve_retained_memory(bytes)
+            .map_err(|cause| Denial::Request(cause.into()))?;
+        // Ticket precedes both exact-capacity rosters and remains live through
+        // managed-text admission. No private std tree-node estimate is used.
+        let mut required = Vec::with_capacity(count);
+        visit_required_commit_symbols(&self.merged_plan, &self.patch, &mut |symbol| {
+            required.push(symbol)
+        });
         required.extend(self.revision_symbol_references.iter().copied());
-        let supplied = self
-            .symbol_texts
-            .entries
-            .iter()
-            .map(|(symbol, _)| *symbol)
-            .collect::<std::collections::BTreeSet<_>>();
-        if required != supplied || self.symbol_texts.entries.len() != required.len() {
-            return Err(
-                crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary,
-            );
+        required.sort_unstable();
+        required.dedup();
+        let mut supplied = Vec::with_capacity(self.symbol_texts.entries.len());
+        supplied.extend(self.symbol_texts.entries.iter().map(|(symbol, _)| *symbol));
+        supplied.sort_unstable();
+        if required != supplied {
+            return Err(Denial::InvalidSymbolDictionary);
         }
+        Ok(funding)
+    }
+
+    pub(crate) fn readmit(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::CanonicalCommitEnvelope,
+        crate::symbols::data::RelationalFieldTextAdmissionDenial,
+    > {
+        // Every Arc here was created by this single private decode and has
+        // not escaped or acquired Weak observers. Attach its already-admitted
+        // allocation BEFORE any text/readmission operation can refuse.
+        std::sync::Arc::get_mut(&mut self.semantic_result)
+            .ok_or(
+                crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary,
+            )?
+            .decoded_memory = self.readmission_memory.semantic.take();
+        if let Some(association) = self.caller_association.take() {
+            self.caller_association =
+                Some(association.with_decoded_memory(self.readmission_memory.association.take()));
+        }
+        if let Some(origin) = self.required_output_origin.as_mut() {
+            std::sync::Arc::get_mut(origin)
+                .ok_or(crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary)?
+                .retain_decoded_memory(self.readmission_memory.origin.take());
+        }
+        let _symbol_scratch = self.validate_symbol_coverage(execution)?;
         let symbol_texts = self.symbol_texts.readmit(execution)?;
         let body = super::CanonicalCommitEnvelopeBody {
             index_definition_delta: self.index_definition_delta,
@@ -122,6 +218,9 @@ impl CanonicalEnvelopeWire<'_> {
             descriptor_semantics_version: self.descriptor_semantics_version,
         };
         let envelope = super::CanonicalCommitEnvelope {
+            decoded_bytes: self.readmission_memory.input.take(),
+            decoded_memory: self.readmission_memory.envelope.take(),
+            control_allocation: self.readmission_memory.control.take(),
             body,
             semantic_result: self.semantic_result,
         };

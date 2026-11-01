@@ -32,7 +32,7 @@ pub use continuity::{
     DescriptorSemanticsSupportPolicy, DescriptorSemanticsVersion, FreeFormSchemaDiffIntent,
     HistoricalInterpretationSensitivity, LoweredSchemaTransitionPlan, ProposedSchemaTransition,
     SchemaBoundaryFingerprint, SchemaBridgeDescriptor, SchemaBridgeabilityClassification,
-    SchemaContinuationAdmissionObservation, SchemaContinuationClassification,
+    SchemaChangeText, SchemaContinuationAdmissionObservation, SchemaContinuationClassification,
     SchemaContinuationDescriptor, SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind,
     SchemaElementRef, SchemaLineageArtifact, SchemaLineageOrderingSemantics,
     SchemaPublicationImpact, SchemaReconciliationClassification, SchemaReconciliationDescriptor,
@@ -374,3 +374,5 @@ impl RelationalSchemaRegistry {
         schema_authority_snapshot_digest_bytes(&self.authority_snapshot())
     }
 }
+
+pub(crate) use continuity::{SchemaTextReadmissionMemory, SchemaTransitionReadmissionMemory};

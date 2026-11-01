@@ -26,4 +26,7 @@ pub(crate) use field_text::field_text_recovery_stop;
 
 mod commit_texts;
 
+pub(crate) use commit_texts::visit_required_commit_symbols;
+
+#[cfg(test)]
 pub(crate) use commit_texts::required_commit_symbols;

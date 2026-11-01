@@ -92,3 +92,14 @@ impl PartialEq for CanonicalRequiredOutputOrigin {
     }
 }
 impl Eq for CanonicalRequiredOutputOrigin {}
+
+impl CanonicalRequiredOutputOrigin {
+    /// Only the unique, unpublished decoded owner receives this admission;
+    /// no authored meaning or installation authority is changed.
+    pub(crate) fn retain_decoded_memory(
+        &mut self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) {
+        self._funding = memory;
+    }
+}

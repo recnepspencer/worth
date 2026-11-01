@@ -62,7 +62,7 @@ fn fork_tail_plan(
     let envelope = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .find(|envelope| envelope.branch_context == BranchId("storm".to_owned()))
         .expect("fork tail envelope is selected");
     mutate(

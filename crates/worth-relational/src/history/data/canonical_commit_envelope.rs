@@ -25,10 +25,14 @@ mod index_catalog;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod authoritative_artifact_encoding;
+mod control_allocation;
 mod embedded_checkpoint;
 mod payload_digest;
+mod shared;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
+pub(crate) use control_allocation::CanonicalEnvelopeControlAllocation;
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
+pub use shared::SharedCanonicalCommitEnvelope;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
 mod required_output_codec_retirement;
@@ -50,8 +54,14 @@ pub(crate) use required_output_origin::{
 };
 
 mod draft;
+mod readmission_memory;
+pub(crate) use readmission_memory::{
+    CanonicalEnvelopeReadmissionMemory, CodecDeclarationsReadmissionMemory,
+    StrategyReadmissionMemory,
+};
 mod wire_projection;
 pub(crate) use draft::CanonicalCommitEnvelopeDraft;
+pub(crate) use wire_projection::EnvelopeProjection;
 
 /// A complete immutable envelope. Its semantic image exists before it can be
 /// serialized, shared or registered for publication.
@@ -70,12 +80,27 @@ pub(crate) use draft::CanonicalCommitEnvelopeDraft;
 ///     let _ = rmp_serde::to_vec_named(&**envelope);
 /// }
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct CanonicalCommitEnvelope {
     #[serde(flatten)]
     body: CanonicalCommitEnvelopeBody,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
+    // Intrinsic input and body admission outlive every decoded body field.
+    #[serde(skip)]
+    pub(crate) decoded_bytes: Option<worth_execution::ExecutionImmutableBytes>,
+    #[serde(skip)]
+    pub(crate) decoded_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    // LAST: real weak-position observers share only this fixed allocation bill.
+    #[serde(skip)]
+    pub(crate) control_allocation: Option<std::sync::Arc<CanonicalEnvelopeControlAllocation>>,
 }
+
+impl PartialEq for CanonicalCommitEnvelope {
+    fn eq(&self, other: &Self) -> bool {
+        self.body == other.body && self.semantic_result == other.semantic_result
+    }
+}
+impl Eq for CanonicalCommitEnvelope {}
 
 impl std::ops::Deref for CanonicalCommitEnvelope {
     type Target = CanonicalCommitEnvelopeBody;
@@ -107,7 +132,7 @@ impl CanonicalCommitEnvelope {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct CanonicalCommitEnvelopeBody {
     pub(crate) index_definition_delta: CanonicalIndexDefinitionDelta,
     pub(crate) caller_association: Option<super::RelationalCallerAssociation>,

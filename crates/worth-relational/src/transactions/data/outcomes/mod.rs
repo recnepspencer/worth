@@ -56,3 +56,7 @@ pub use rollback::{RollbackEffect, RollbackOutcome, RollbackSummary};
 pub use transaction_commit_error::{
     CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
 };
+
+pub(crate) use commit_semantic_result::{
+    ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
+};

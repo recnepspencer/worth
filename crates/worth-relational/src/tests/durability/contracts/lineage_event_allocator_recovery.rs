@@ -21,7 +21,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
     let invalid_envelope = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == replay_invalid.commit.commit_id)
         .expect("earlier tail envelope");
     let checkpoint = invalid_envelope
@@ -34,7 +34,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
     let event = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == allocator_exhausted.commit.commit_id)
         .expect("later tail envelope")
         .published_lineage_mut_for_test()
@@ -45,7 +45,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
     let exhausted_envelope = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == allocator_exhausted.commit.commit_id)
         .expect("later tail envelope");
     exhausted_envelope.rebuild_lineage_basis_for_test();

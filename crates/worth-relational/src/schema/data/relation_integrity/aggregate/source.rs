@@ -1,7 +1,7 @@
 //! Strict physical legacy objects and explicit registered-derived source objects.
 use crate::derived_relation::DerivedRelationIdentity;
 use crate::identity::data::KindId;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AggregateIdentitySource {
@@ -39,45 +39,7 @@ impl Serialize for AggregateIdentitySource {
     }
 }
 
-impl<'de> Deserialize<'de> for AggregateIdentitySource {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct Components {
-            relations: Vec<KindId>,
-        }
-        #[derive(Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct Orbit {
-            derived_orbit: DerivedRelationIdentity,
-        }
-        #[derive(Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct DerivedComponents {
-            derived_components: DerivedRelationIdentity,
-        }
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Wire {
-            Physical(KindId),
-            Components(Components),
-            Orbit(Orbit),
-            DerivedComponents(DerivedComponents),
-        }
-        Ok(match Wire::deserialize(deserializer)? {
-            Wire::Physical(kind) => Self::Orbit(kind),
-            Wire::Components(value) => Self::Components {
-                relations: value.relations,
-            },
-            Wire::Orbit(value) => Self::DerivedOrbit {
-                derived_orbit: value.derived_orbit,
-            },
-            Wire::DerivedComponents(value) => Self::DerivedComponents {
-                derived_components: value.derived_components,
-            },
-        })
-    }
-}
+mod decoding;
 
 impl AggregateIdentitySource {
     pub fn orbit_relation(&self) -> Option<KindId> {

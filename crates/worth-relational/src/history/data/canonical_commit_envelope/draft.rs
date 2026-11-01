@@ -86,6 +86,13 @@ impl CanonicalCommitEnvelopeDraft {
         }
     }
 
+    /// Move the unsealed data into an existing owner-local inspection slot.
+    /// This allocates nothing and supplies no semantic/publication admission.
+    #[cfg(test)]
+    pub(crate) fn into_body(self) -> CanonicalCommitEnvelopeBody {
+        self.body
+    }
+
     pub(crate) fn seal(
         self,
         semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
@@ -94,6 +101,9 @@ impl CanonicalCommitEnvelopeDraft {
         crate::transactions::data::RelationalCommitSemanticResultRefusal,
     > {
         let envelope = CanonicalCommitEnvelope {
+            decoded_bytes: None,
+            decoded_memory: None,
+            control_allocation: None,
             body: self.body,
             semantic_result,
         };

@@ -359,7 +359,9 @@ pub(super) fn add(
         .entry(locator)
         .or_insert_with(|| RelationalCheckpointMember::New {
             locator,
-            bytes: bytes.into(),
+            bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
+                bytes.into_boxed_slice(),
+            )),
         });
     locator
 }

@@ -16,7 +16,8 @@ pub use errors::{
     CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,
 };
 pub use touched_scope::{
-    CustomInvariantTouchedSummary, PlannedRelationEndpointUpdate, StructuralCountView,
+    CustomInvariantTouchedSummary, InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds,
+    PlannedRelationEndpointUpdate, StructuralCountView,
 };
 pub(crate) use touched_scope::{PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet};
 

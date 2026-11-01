@@ -20,7 +20,9 @@ use crate::transactions::data::{MergedCommitPlan, TransactionId};
 
 #[test]
 fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
-    let envelope = Arc::new(envelope_input());
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let envelope = Arc::new(envelope_input(execution));
     let descriptor = RelationalBranchRootDescriptor::new([7; 32], [8; 32]);
     let axes = RelationalBranchRootAxes {
         storage_version: 1,
@@ -52,7 +54,7 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
         .committed
         .as_mut()
         .unwrap()
-        .canonical_envelope = Arc::new((*envelope).clone());
+        .canonical_envelope = Arc::new(envelope.copy_original_for_test(execution));
     let distinct_custody = Arc::new(distinct_custody);
     assert!(artifact.links_root(&root));
     assert!(!artifact.links_root(&distinct_custody));
@@ -62,7 +64,9 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
     assert_eq!(root.descriptor(), distinct_custody.descriptor());
 }
 
-fn envelope_input() -> CanonicalCommitEnvelope {
+fn envelope_input(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> CanonicalCommitEnvelope {
     let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
         crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, Vec::new(), None),
         RelationalCommitReceipt {
@@ -109,16 +113,18 @@ fn envelope_input() -> CanonicalCommitEnvelope {
     );
     // Pure predicate/inspection input: keep an actual original semantic image,
     // then edit only this test body. No publication or readmission is claimed.
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = crate::tests::support::runtime_with_test_schema();
     let produced = crate::tests::support::create_entity_outcome(
         execution,
         &runtime,
         "predicate-semantic-source",
     );
-    let mut envelope = produced.envelope().clone();
-    *envelope.body_mut_for_test() = (*draft).clone();
+    let envelope = produced.publication().envelope.clone().into_arc();
     crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
+    drop(produced);
+    drop(runtime);
+    let mut envelope = std::sync::Arc::try_unwrap(envelope)
+        .expect("source owner and result released their actual envelope shares");
+    *envelope.body_mut_for_test() = draft.into_body();
     envelope
 }

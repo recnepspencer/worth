@@ -11,8 +11,8 @@ fn replay_rebuild_denies_summary_and_packet_drift() {
         .replay()
         .canonical_commit_envelope(execution, outcome.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
-        .expect("canonical envelope");
+        .expect("canonical envelope")
+        .copy_original_for_test(execution);
     envelope
         .body_mut_for_test()
         .merge_execution_authority

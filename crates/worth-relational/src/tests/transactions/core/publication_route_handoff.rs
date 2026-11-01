@@ -177,8 +177,8 @@ fn observe_canonical_consumers(
             .replay()
             .canonical_commit_envelope(execution, commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone()),
-        Some(envelope.clone())
+            .as_deref(),
+        Some(envelope)
     );
     let stream = runtime
         .publication()

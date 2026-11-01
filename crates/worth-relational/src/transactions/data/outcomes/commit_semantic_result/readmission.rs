@@ -6,7 +6,6 @@ use super::{
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::transactions::data::RecordRef;
-use std::collections::{BTreeMap, BTreeSet};
 
 mod creations;
 
@@ -19,35 +18,26 @@ impl RelationalCommitSemanticResult {
         {
             return Err(Refusal::ReceiptMismatch);
         }
-        let schema = crate::transactions::data::CommitSchemaSummary {
-            transition: envelope
-                .schema_transition
-                .as_ref()
-                .map(crate::schema::data::SchemaTransitionSummary::from_artifact),
-            descriptor_semantics_version: envelope.descriptor_semantics_version,
+        let same_transition = match (&self.schema.transition, &envelope.schema_transition) {
+            (None, None) => true,
+            (Some(summary), Some(artifact)) => summary.matches_artifact(artifact),
+            _ => false,
         };
-        if self.schema != schema
+        if !same_transition
+            || self.schema.descriptor_semantics_version != envelope.descriptor_semantics_version
             || self.structural.descriptor_semantics_version != envelope.descriptor_semantics_version
         {
             return Err(Refusal::SchemaMismatch);
         }
-        let actual_records = envelope
-            .patch
-            .authoritative_record_patches
-            .iter()
-            .map(|patch| patch.target.clone())
-            .collect::<BTreeSet<_>>();
         if self
             .changed_records
             .windows(2)
             .any(|pair| pair[0] >= pair[1])
-            || !actual_records.is_subset(
-                &self
-                    .changed_records
-                    .iter()
-                    .cloned()
-                    .collect::<BTreeSet<_>>(),
-            )
+            || envelope
+                .patch
+                .authoritative_record_patches
+                .iter()
+                .any(|patch| self.changed_records.binary_search(&patch.target).is_err())
             || self.change.changed_record_count != self.changed_records.len()
         {
             return Err(Refusal::ChangedRecordsMismatch);
@@ -95,28 +85,45 @@ impl RelationalCommitSemanticResult {
         {
             return Err(Refusal::NonCanonicalCorrespondence);
         }
-        let mut entities = BTreeMap::new();
-        let mut records = BTreeSet::new();
-        let mut created_patches = BTreeMap::new();
-        for patch in &envelope.patch.authoritative_record_patches {
-            if patch.structural_change == RecordStructuralChange::Created {
-                // Preserve the previous first-created-patch lookup semantics;
-                // canonical patch admission separately validates patch order.
-                created_patches.entry(patch.target.clone()).or_insert(patch);
-            }
-        }
+        let patches = &envelope.patch.authoritative_record_patches;
+        // A typed ordinal roster preserves FIRST matching Created patch even
+        // for invalid duplicate targets; no private std node layout is assumed.
+        let mut created_patches = Vec::with_capacity(patches.len());
+        created_patches.extend(patches.iter().enumerate().filter_map(|(index, patch)| {
+            (patch.structural_change == RecordStructuralChange::Created).then_some(index)
+        }));
+        created_patches.sort_unstable_by(|left, right| {
+            patches[*left]
+                .target
+                .cmp(&patches[*right].target)
+                .then(left.cmp(right))
+        });
+        let created_patch = |target: &RecordRef| {
+            let slot = created_patches.partition_point(|index| &patches[*index].target < target);
+            created_patches
+                .get(slot)
+                .map(|index| &patches[*index])
+                .filter(|patch| &patch.target == target)
+        };
+        let count = self
+            .created_entities
+            .len()
+            .checked_add(self.created_relations.len())
+            .ok_or(Refusal::ConflictingCreateCorrespondence)?;
+        let mut records = Vec::with_capacity(count);
         for created in &self.created_entities {
             if created.key.partition != created.assigned.partition_id {
                 return Err(Refusal::CreatePartitionMismatch);
             }
-            if !records.insert(RecordRef::Entity(created.assigned)) {
-                return Err(Refusal::ConflictingCreateCorrespondence);
-            }
-            entities.insert(&created.key, created.assigned);
+            records.push(RecordRef::Entity(created.assigned));
         }
         let resolve = |reference: &RelationalCreatedEndpoint| match reference {
             RelationalCreatedEndpoint::Existing(id) => Some(*id),
-            RelationalCreatedEndpoint::Created(key) => entities.get(key).copied(),
+            RelationalCreatedEndpoint::Created(key) => self
+                .created_entities
+                .binary_search_by(|created| created.key.cmp(key))
+                .ok()
+                .map(|index| self.created_entities[index].assigned),
         };
         for created in &self.created_relations {
             if created.key.partition != created.assigned.partition_id {
@@ -124,11 +131,8 @@ impl RelationalCommitSemanticResult {
             }
             let source = resolve(&created.key.source).ok_or(Refusal::CreatedEndpointMissing)?;
             let target = resolve(&created.key.target).ok_or(Refusal::CreatedEndpointMissing)?;
-            if !records.insert(RecordRef::Relation(created.assigned)) {
-                return Err(Refusal::ConflictingCreateCorrespondence);
-            }
-            let birth = created_patches
-                .get(&RecordRef::Relation(created.assigned))
+            records.push(RecordRef::Relation(created.assigned));
+            let birth = created_patch(&RecordRef::Relation(created.assigned))
                 .and_then(|patch| patch.relation_birth);
             if birth.is_none_or(|birth| {
                 birth.kind != created.key.kind || birth.source != source || birth.target != target
@@ -136,9 +140,9 @@ impl RelationalCommitSemanticResult {
                 return Err(Refusal::ConflictingCreateCorrespondence);
             }
         }
-        if records
-            .iter()
-            .any(|record| !created_patches.contains_key(record))
+        records.sort_unstable();
+        if records.windows(2).any(|pair| pair[0] == pair[1])
+            || records.iter().any(|record| created_patch(record).is_none())
         {
             return Err(Refusal::ConflictingCreateCorrespondence);
         }

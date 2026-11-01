@@ -115,7 +115,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     let id = birth.created_relation(&incidental).unwrap();
     let owned_id = birth.created_relation(&owned).unwrap();
     let output_id = birth.created_entity(&output).unwrap();
-    let birth_envelope = Arc::clone(&birth.publication().envelope);
+    let birth_envelope = birth.publication().envelope.clone().into_arc();
     let origin = birth_envelope.required_output_origin.as_ref().unwrap();
     assert_eq!(origin.relations.len(), 1);
     assert_eq!(origin.relations[0].id, owned_id);
@@ -139,7 +139,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .unwrap();
     let rewritten = transaction.commit(execution, &runtime).unwrap();
     let write_version = rewritten.commit.version_id;
-    let write_envelope = Arc::clone(&rewritten.publication().envelope);
+    let write_envelope = rewritten.publication().envelope.clone().into_arc();
     assert!(write_envelope.required_output_origin.is_none());
     // Release snapshots before exercising the actual storage retention owner.
     release_test_commit_snapshot(&runtime, &rewritten);
@@ -193,8 +193,9 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     claim.target = right;
     forged_origin.relations.push(claim);
     forged_origin.relations.sort_unstable_by_key(|row| row.id);
-    let mut forged = birth_envelope.as_ref().clone();
+    let mut forged = birth_envelope.copy_original_for_test(execution);
     forged.body_mut_for_test().required_output_origin = Some(Arc::new(forged_origin));
+    let forged = Arc::new(forged);
     let denied = run(
         execution,
         &edition,
@@ -210,7 +211,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         "{denied:?}"
     );
 
-    let mut contradictory_endpoints = birth_envelope.as_ref().clone();
+    let mut contradictory_endpoints = birth_envelope.copy_original_for_test(execution);
     contradictory_endpoints
         .body_mut_for_test()
         .patch
@@ -222,6 +223,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .as_mut()
         .unwrap()
         .source = output_id;
+    let contradictory_endpoints = Arc::new(contradictory_endpoints);
     assert!(
         run(
             execution,
@@ -235,8 +237,9 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .is_err(),
         "structural birth and exposed endpoint operations must agree"
     );
-    let mut missing = birth_envelope.as_ref().clone();
-    let patch = missing
+    let mut missing = Arc::new(birth_envelope.copy_original_for_test(execution));
+    let patch = Arc::get_mut(&mut missing)
+        .expect("the fixture owns its mutable twin")
         .body_mut_for_test()
         .patch
         .authoritative_record_patches
@@ -277,7 +280,22 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .is_ok(),
         "retired metadata plus absent endpoint aspects still has the actual structural birth"
     );
-    let mut contradictory = missing.clone();
+    let mut contradictory = birth_envelope.copy_original_for_test(execution);
+    let changed_patch = &missing
+        .patch
+        .authoritative_record_patches
+        .iter()
+        .find(|patch| patch.target == RecordRef::Relation(id))
+        .unwrap()
+        .authoritative_patch;
+    contradictory
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches
+        .iter_mut()
+        .find(|patch| patch.target == RecordRef::Relation(id))
+        .unwrap()
+        .authoritative_patch = changed_patch.clone();
     contradictory
         .body_mut_for_test()
         .patch
@@ -289,6 +307,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .as_mut()
         .unwrap()
         .kind = KindId(999);
+    let contradictory = Arc::new(contradictory);
     assert!(
         run(
             execution,
@@ -302,7 +321,8 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .is_err(),
         "a contradictory native structural kind cannot support custody"
     );
-    missing
+    Arc::get_mut(&mut missing)
+        .expect("the owner court retains no mutation input")
         .body_mut_for_test()
         .patch
         .authoritative_record_patches
@@ -331,7 +351,7 @@ fn run(
     state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
-    birth: &CanonicalCommitEnvelope,
+    birth: &Arc<CanonicalCommitEnvelope>,
     write: &Arc<CanonicalCommitEnvelope>,
     owned: bool,
 ) -> Result<(), Stop> {
@@ -343,7 +363,7 @@ fn run(
                 |context| {
                     let mut lookup = |version| {
                         if version == birth.commit.version_id {
-                            Some(Arc::new(birth.clone()))
+                            Some(Arc::clone(birth))
                         } else if version == write.commit.version_id {
                             Some(Arc::clone(write))
                         } else {

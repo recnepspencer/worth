@@ -120,10 +120,10 @@ fn semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_
 
     // Preserve the complete original image but contradict its actual decision.
     // Repair only outer framing so admission must reject semantic disagreement.
-    let encoded = rmp_serde::to_vec_named(semantic).unwrap();
-    let mut malformed = semantic.clone();
-    malformed.validation[execution_index].decisions[check_index].decision =
-        InvariantDecisionKind::Violated;
+    let original_decision = &semantic.validation()[execution_index].decisions[check_index];
+    let encoded = rmp_serde::to_vec_named(original_decision).unwrap();
+    let mut malformed = original_decision.clone();
+    malformed.decision = InvariantDecisionKind::Violated;
     let replacement = rmp_serde::to_vec_named(&malformed).unwrap();
     let mut bytes = artifact.as_bytes().to_vec();
     let offsets = bytes

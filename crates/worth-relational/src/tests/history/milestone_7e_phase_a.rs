@@ -152,7 +152,6 @@ fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery()
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("live merge envelope");
     let live_authority = live_envelope
         .merge_execution_authority
@@ -165,7 +164,6 @@ fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery()
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
     let recovered_authority = recovered_envelope
         .merge_execution_authority
@@ -249,8 +247,7 @@ fn graft_disconnected_branch_head(
         .history
         .recorded_commit_envelope(source_head.commit_id)
         .expect("source envelope")
-        .as_ref()
-        .clone();
+        .copy_original_for_test(execution);
     envelope.body_mut_for_test().commit = orphan_head.clone();
     envelope.body_mut_for_test().branch_context = branch_id.clone();
 
@@ -259,7 +256,7 @@ fn graft_disconnected_branch_head(
         .with_ledger_mut(|ledger| {
             ledger
                 .commit_catalog
-                .append_envelope(Arc::new(envelope.clone()))
+                .append_envelope(Arc::new(envelope.copy_original_for_test(execution)))
         })
         .expect("disconnected artifact id is unique");
     let branch_cell =

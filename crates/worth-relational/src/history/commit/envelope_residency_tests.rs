@@ -244,7 +244,7 @@ fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
     let envelope = artifact.demand_envelope(&execution, 1 << 30).unwrap();
     assert!(artifact.canonical_payload_digest().is_ok());
     assert_eq!(artifact.matches_envelope(&envelope), Ok(true));
-    let mut conflicting = envelope.as_ref().clone();
+    let mut conflicting = envelope.copy_original_for_test(&execution);
     conflicting.body_mut_for_test().commit.version_id = crate::identity::data::VersionId(u64::MAX);
     assert_eq!(artifact.matches_envelope(&conflicting), Ok(false));
     let payload = Arc::from(envelope.encode_authoritative_payload().unwrap());

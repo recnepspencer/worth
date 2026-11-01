@@ -286,9 +286,9 @@ fn runtime_with_declared_key_identity_registry() -> RelationalRuntime {
             .with_identity_declarations(vec![
                 crate::facade::merge::IdentityBasisDeclaration {
                     scope: crate::facade::merge::IdentityBasisScope::AspectKey(name_key.clone()),
-                    basis: crate::facade::merge::IdentityBasisKind::DeclaredKeySet(Arc::from([
-                        name_key,
-                    ])),
+                    basis: crate::facade::merge::IdentityBasisKind::DeclaredKeySet(
+                        Arc::<[worth_foundational::facade::AspectKey]>::from([name_key]).into(),
+                    ),
                 },
             ]),
         })
@@ -341,7 +341,6 @@ fn published_merge_authority(
         .replay()
         .canonical_commit_envelope(execution, commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
 }

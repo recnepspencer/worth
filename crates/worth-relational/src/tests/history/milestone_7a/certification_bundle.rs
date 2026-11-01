@@ -195,7 +195,6 @@ fn authoritative_parent_ids(
             .replay()
             .canonical_commit_envelope(execution, commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .commit
             .ordered_parents()

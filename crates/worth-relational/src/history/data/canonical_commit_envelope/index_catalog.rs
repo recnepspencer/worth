@@ -31,6 +31,29 @@ struct Wire {
 }
 
 impl CanonicalIndexDefinitionDelta {
+    /// Attach only before the freshly deserialized private backing can alias.
+    /// Alias/slot refusal returns the exact original unconsumed reservation.
+    pub(crate) fn retain_decoded_memory(
+        &mut self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        let Some(backing) = self.backing.as_mut() else {
+            return if memory.is_none() {
+                Ok(())
+            } else {
+                Err(memory)
+            };
+        };
+        let Some(backing) = Arc::get_mut(backing) else {
+            return Err(memory);
+        };
+        if backing._memory.is_some() {
+            return Err(memory);
+        }
+        backing._memory = memory;
+        Ok(())
+    }
+
     pub(crate) fn root_bytes() -> Option<u64> {
         Some(
             std::alloc::Layout::new::<(usize, usize)>()

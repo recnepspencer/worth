@@ -189,7 +189,9 @@ impl CommitResultMaterial {
             schema_summary,
             publication: CommitPublication {
                 diagnostics,
-                envelope: self.canonical_commit_envelope,
+                envelope: crate::history::data::SharedCanonicalCommitEnvelope::from_arc(
+                    self.canonical_commit_envelope,
+                ),
                 patch_position: self.patch_position,
                 aspect_evaluation_traces: self.aspect_evaluation_traces,
                 aspect_emission_traces: self.aspect_emission_traces,

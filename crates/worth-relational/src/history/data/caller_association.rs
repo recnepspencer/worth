@@ -9,8 +9,26 @@ use std::sync::Arc;
 /// use worth_relational::facade::mvcc::RelationalCallerAssociation;
 /// let fabricated = RelationalCallerAssociation(std::sync::Arc::from(&b"caller"[..]));
 /// ```
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RelationalCallerAssociation(Arc<[u8]>);
+#[derive(Clone)]
+pub struct RelationalCallerAssociation {
+    bytes: Arc<[u8]>,
+    // Last: discovery/index/subject clones keep the same original byte payer.
+    decoded_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
+}
+impl std::fmt::Debug for RelationalCallerAssociation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RelationalCallerAssociation")
+            .field("bytes", &self.bytes)
+            .field("decoded_funding", &self.decoded_memory.is_some())
+            .finish()
+    }
+}
+impl PartialEq for RelationalCallerAssociation {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes == other.bytes
+    }
+}
+impl Eq for RelationalCallerAssociation {}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalCallerAssociationRefusal {
@@ -30,11 +48,22 @@ impl RelationalCallerAssociation {
                 actual: bytes.len(),
             });
         }
-        Ok(Self(Arc::from(bytes)))
+        Ok(Self {
+            bytes: Arc::from(bytes),
+            decoded_memory: None,
+        })
+    }
+
+    pub(crate) fn with_decoded_memory(
+        mut self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        self.decoded_memory = memory.map(Arc::new);
+        self
     }
 
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0
+        &self.bytes
     }
 }
 

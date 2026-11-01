@@ -1,14 +1,11 @@
 use crate::merge::data::MergePolicyDecisionBoundary;
 use crate::schema::data::{
-    DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion, FreeFormSchemaDiffIntent,
-    HistoricalInterpretationSensitivity, ProposedSchemaTransition, SchemaDiffAtom,
-    SchemaDiffDetail, SchemaElementKind, SchemaElementRef, SchemaId, SchemaPublicationImpact,
-    SchemaReconciliationClassification, SchemaReconciliationPolicy, SchemaStratum,
-    SchemaSubscriberImpact, SchemaVersionId,
+    FreeFormSchemaDiffIntent, HistoricalInterpretationSensitivity, ProposedSchemaTransition,
+    SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind, SchemaElementRef, SchemaId,
+    SchemaPublicationImpact, SchemaReconciliationClassification, SchemaReconciliationPolicy,
+    SchemaStratum, SchemaSubscriberImpact, SchemaVersionId,
 };
-use crate::schema::{
-    classify_schema_transition, lower_schema_transition, validate_schema_transition,
-};
+use crate::schema::{classify_schema_transition, validate_schema_transition};
 use worth_foundational::FieldKey;
 
 use super::super::MergeManualResolutionClass;
@@ -34,28 +31,23 @@ pub(super) fn derive_schema_reconciliation_truth(
         RelationalSchemaReconciliationWitnessPosture::Reconciled
     };
     let proposed_transition = proposed_schema_transition(input);
-    let classification = classify_schema_transition(
-        proposed_transition.clone(),
-        retained_schema_reconciliation_admission_policy(input),
-    )
-    .reconciliation;
-    let policy = if posture == RelationalSchemaReconciliationWitnessPosture::Denied {
-        None
+    let admitted_policy = retained_schema_reconciliation_admission_policy(input);
+    let (classification, policy) = if posture
+        == RelationalSchemaReconciliationWitnessPosture::Denied
+    {
+        (
+            classify_schema_transition(proposed_transition, admitted_policy).reconciliation,
+            None,
+        )
     } else {
-        let admitted_policy = retained_schema_reconciliation_admission_policy(input)
+        let admitted_policy = admitted_policy
             .expect(/* Proof: These private reconciliation rows are constructed only after schema-policy admission and continuity validation; the retained input and proposed transition are unchanged. */ "admitted schema reconciliation rows must declare a schema policy");
         let validated = validate_schema_transition(proposed_transition, Some(admitted_policy))
             .expect(/* Proof: These private reconciliation rows are constructed only after schema-policy admission and continuity validation; the retained input and proposed transition are unchanged. */ "admitted schema reconciliation rows must validate through schema continuity");
-        Some(
-            lower_schema_transition(
-                validated,
-                Some(admitted_policy),
-                DescriptorSemanticsVersion::default(),
-                DescriptorCanonicalBasisVersion::default(),
-            )
-            .reconciliation_descriptor
-            .policy,
-        )
+        // Lowering only returned the supplied Some(policy); its fingerprint,
+        // bridge and lineage were discarded. Keep actual schema validation and
+        // its classification without allocating those unused derived artifacts.
+        (validated.reconciliation, Some(admitted_policy))
     };
     DerivedSchemaReconciliationTruth {
         classification,
@@ -143,10 +135,7 @@ fn schema_transition_source_basis(
             .clone()
             .or_else(|| input.basis.target_schema_id.clone())
             .unwrap_or_else(|| {
-                SchemaId(format!(
-                    "merge-schema-source-{}",
-                    input.basis.registry_digest
-                ))
+                fallback_schema_id("merge-schema-source-", &input.basis.registry_digest)
             }),
         input
             .basis
@@ -166,10 +155,7 @@ fn schema_transition_target_basis(
             .clone()
             .or_else(|| input.basis.source_schema_id.clone())
             .unwrap_or_else(|| {
-                SchemaId(format!(
-                    "merge-schema-target-{}",
-                    input.basis.registry_digest
-                ))
+                fallback_schema_id("merge-schema-target-", &input.basis.registry_digest)
             }),
         input
             .basis
@@ -283,4 +269,91 @@ fn schema_transition_historical_interpretation(
 
 fn synthetic_field_key() -> FieldKey {
     FieldKey::new("merge_schema").expect(/* Proof: This constructor receives a fixed nonempty literal in the required grammar and version/domain; it has no runtime-dependent input. */ "valid synthetic schema field")
+}
+
+fn fallback_schema_id(prefix: &str, registry_digest: &str) -> SchemaId {
+    let mut name = String::with_capacity(prefix.len() + registry_digest.len());
+    name.push_str(prefix);
+    name.push_str(registry_digest);
+    SchemaId(name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::identity::data::{EntityId, PartitionId};
+    use crate::merge::data::{MergePolicyRejectClass, RelationalSchemaReconciliationBasisRow};
+    use crate::schema::data::{DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion};
+    use crate::transactions::data::RecordRef;
+
+    #[test]
+    fn schema_witness_validation_preserves_prior_classification_policy_and_denials() {
+        for (target_only, divergent, endpoints, boundary) in [
+            (0, 0, false, MergePolicyDecisionBoundary::AutoResolved),
+            (2, 0, false, MergePolicyDecisionBoundary::AutoResolved),
+            (0, 1, false, MergePolicyDecisionBoundary::AutoResolved),
+            (0, 0, true, MergePolicyDecisionBoundary::AutoResolved),
+            (
+                0,
+                0,
+                false,
+                MergePolicyDecisionBoundary::RequiresManualResolution {
+                    class: MergeManualResolutionClass::UnvalidatedSchemaCorrespondence,
+                },
+            ),
+            (
+                0,
+                0,
+                false,
+                MergePolicyDecisionBoundary::Reject {
+                    class: MergePolicyRejectClass::BuiltInFailOnConflict,
+                },
+            ),
+        ] {
+            let input = RelationalSchemaReconciliationWitnessRowInput {
+                record: RecordRef::Entity(EntityId::new(PartitionId(1), 2, 1)),
+                target_record: None,
+                basis: RelationalSchemaReconciliationBasisRow {
+                    source_kind_id: None,
+                    target_kind_id: None,
+                    source_schema_id: None,
+                    source_schema_version_id: None,
+                    target_schema_id: None,
+                    target_schema_version_id: None,
+                    registry_digest: "a".repeat(64),
+                },
+                source_only_aspect_count: 1,
+                target_only_aspect_count: target_only,
+                divergent_aspect_count: divergent,
+                unavailable_aspect_count: 0,
+                decision_boundary: boundary,
+                relation_endpoint_divergence: endpoints,
+                correspondence_linkage: None,
+            };
+            let proposed = proposed_schema_transition(&input);
+            let admission = retained_schema_reconciliation_admission_policy(&input);
+            let prior_classification =
+                classify_schema_transition(proposed.clone(), admission).reconciliation;
+            let prior_denial = retained_schema_reconciliation_denial(&input);
+            let prior_policy = if prior_denial.is_some() {
+                None
+            } else {
+                let validated = validate_schema_transition(proposed, admission).unwrap();
+                Some(
+                    crate::schema::lower_schema_transition(
+                        validated,
+                        admission,
+                        DescriptorSemanticsVersion::default(),
+                        DescriptorCanonicalBasisVersion::default(),
+                    )
+                    .reconciliation_descriptor
+                    .policy,
+                )
+            };
+            let actual = derive_schema_reconciliation_truth(&input);
+            assert_eq!(actual.classification, prior_classification);
+            assert_eq!(actual.policy, prior_policy);
+            assert_eq!(actual.denial, prior_denial);
+        }
+    }
 }

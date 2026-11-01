@@ -178,7 +178,12 @@ fn runtime_with_topology_identity_registry(
                 ])
                 .with_identity_declarations(vec![IdentityBasisDeclaration {
                     scope: IdentityBasisScope::AspectKey(label_key.clone()),
-                    basis: IdentityBasisKind::DeclaredKeySet(std::sync::Arc::from([label_key])),
+                    basis: IdentityBasisKind::DeclaredKeySet(
+                        std::sync::Arc::<[worth_foundational::facade::AspectKey]>::from([
+                            label_key,
+                        ])
+                        .into(),
+                    ),
                 }]),
                 relation_integrity: crate::schema::data::RelationIntegrityDeclarations::default(),
             })

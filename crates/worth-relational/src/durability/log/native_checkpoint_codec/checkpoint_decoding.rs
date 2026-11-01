@@ -45,7 +45,12 @@ pub(crate) fn decode_checkpoint_from_source(
         for (locator, bytes) in wire.members {
             if super::member_frame::locator(bytes.0) != locator
                 || members
-                    .insert(locator, Arc::<[u8]>::from(bytes.0))
+                    .insert(
+                        locator,
+                        worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
+                            bytes.0.to_vec().into_boxed_slice(),
+                        )),
+                    )
                     .is_some()
             {
                 return Err(
@@ -56,10 +61,8 @@ pub(crate) fn decode_checkpoint_from_source(
         let mut envelopes = BTreeMap::new();
         let mut admitted = BTreeMap::new();
         for bytes in wire.envelopes {
-            let wire: super::embedded_commit::EmbeddedCommitWire<'_> =
-                rmp_serde::from_slice(bytes.0)
-                    .map_err(|error| corrupt(format!("inline checkpoint envelope: {error}")))?;
-            let commit = wire.readmit(execution)?;
+            let commit = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit_embedded_checkpoint(bytes.0, None, execution)
+                .map_err(super::cold_checkpoint::artifact_stop)?;
             let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_positioned(
                 &commit, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
                 .map_err(|error| corrupt(format!("inline checkpoint journal projection: {error:?}")))?;

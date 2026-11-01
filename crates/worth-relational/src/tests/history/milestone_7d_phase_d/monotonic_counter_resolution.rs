@@ -124,7 +124,6 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("live merge envelope");
 
     let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
@@ -138,7 +137,6 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
         .replay()
         .canonical_commit_envelope(execution, live_commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
     assert_eq!(
         read_entity_aspect_field_display(

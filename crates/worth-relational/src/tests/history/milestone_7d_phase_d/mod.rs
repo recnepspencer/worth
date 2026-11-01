@@ -108,7 +108,10 @@ fn topology_identity_registry() -> crate::facade::schema::RelationalSchemaRegist
                                 label_key.clone(),
                             ),
                             basis: crate::facade::merge::IdentityBasisKind::DeclaredKeySet(
-                                std::sync::Arc::from([label_key]),
+                                std::sync::Arc::<[worth_foundational::facade::AspectKey]>::from([
+                                    label_key,
+                                ])
+                                .into(),
                             ),
                         },
                     ]),

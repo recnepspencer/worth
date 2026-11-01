@@ -21,7 +21,10 @@ fn recovered_publication_transfers_real_empty_predecessor_and_original_successor
     let proof = authority
         .admit_recorded_publication(execution, &runtime, effect, &predecessor, &successor)
         .unwrap();
-    assert_eq!(proof.custody().effect().semantic_result(), &semantic);
+    assert_eq!(
+        proof.custody().effect().semantic_result(),
+        semantic.semantic_result()
+    );
     assert_recorded_basis(&runtime, proof.custody().predecessor(), &predecessor);
     assert_recorded_basis(&runtime, proof.custody().successor(), &successor);
     assert!(
@@ -41,7 +44,7 @@ fn recovered_publication_transfers_real_empty_predecessor_and_original_successor
     proof.consume(|custody| {
         let (effect, before, before_lease, after, after_lease) = custody.into_retained_parts();
         assert_eq!(effect.subject().association(), Some(&association));
-        assert_eq!(effect.semantic_result(), &semantic);
+        assert_eq!(effect.semantic_result(), semantic.semantic_result());
         for (basis, lease) in [(before, before_lease), (after, after_lease)] {
             assert_eq!(
                 runtime
@@ -101,7 +104,10 @@ fn recovered_publication_refusal_preserves_source_and_partial_pin_for_fresh_requ
         refusal.retains_acquired_custody(),
         "the genuine predecessor pin survives successor refusal"
     );
-    assert_eq!(refusal.effect().semantic_result(), &semantic);
+    assert_eq!(
+        refusal.effect().semantic_result(),
+        semantic.semantic_result()
+    );
     let original_receipt = refusal.effect().subject().receipt().clone();
     let effect = refusal.into_effect();
     let fresh_host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();

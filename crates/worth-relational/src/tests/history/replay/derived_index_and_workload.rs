@@ -29,6 +29,7 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
     );
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         commit.commit.commit_id,
         |envelope| {
             if let Some(generation) = envelope
@@ -282,7 +283,6 @@ fn hostile_commit_replay_equivalence_test() {
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let replay = runtime
         .replay_authority()
@@ -345,7 +345,6 @@ fn hostile_commit_replay_equivalence_test() {
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let recovered_replay = recovered
         .replay_authority()

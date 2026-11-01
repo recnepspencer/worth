@@ -1,3 +1,4 @@
+use super::correspondence_witness::{lowercase_sha256, CorrespondenceHashWriter};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
@@ -293,18 +294,20 @@ fn topology_row_digest(
     readiness: MergeExecutionReadiness,
     blocked_reason: Option<LoweredMergeBlockedReason>,
 ) -> String {
-    let digest = Sha256::digest(
-        rmp_serde::to_vec_named(&(
+    let mut digest = Sha256::new();
+    rmp_serde::encode::write_named(
+        &mut CorrespondenceHashWriter(&mut digest),
+        &(
             "worth.relational.merge.strategy_witness.topology_row.v1",
             record,
             target_record,
             topology_class,
             readiness,
             blocked_reason,
-        ))
-        .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "strategy witness topology row must encode"),
-    );
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+        ),
+    )
+    .expect("closed native strategy topology row must encode");
+    lowercase_sha256(digest.finalize().into())
 }
 
 fn deletion_row_digest(
@@ -314,16 +317,18 @@ fn deletion_row_digest(
     readiness: MergeExecutionReadiness,
     blocked_reason: Option<LoweredMergeBlockedReason>,
 ) -> String {
-    let digest = Sha256::digest(
-        rmp_serde::to_vec_named(&(
+    let mut digest = Sha256::new();
+    rmp_serde::encode::write_named(
+        &mut CorrespondenceHashWriter(&mut digest),
+        &(
             "worth.relational.merge.strategy_witness.deletion_row.v1",
             record,
             target_record,
             deletion_class,
             readiness,
             blocked_reason,
-        ))
-        .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "strategy witness deletion row must encode"),
-    );
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+        ),
+    )
+    .expect("closed native strategy deletion row must encode");
+    lowercase_sha256(digest.finalize().into())
 }

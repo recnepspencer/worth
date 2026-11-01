@@ -2,7 +2,8 @@
 use crate::identity::data::EntityId;
 use crate::projected_member_domain::ProjectedMemberDomainIdentity;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+mod projected_storage;
+pub use projected_storage::ProjectedMemberStorage;
 
 /// Shared immutable descriptive coordinates keep evaluator navigation from
 /// copying semantic names. Allocation itself is admitted by the source owner.
@@ -18,7 +19,7 @@ pub struct ProjectedMemberCoordinate {
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum NativeMemberKey {
     Entity(EntityId),
-    Projected(Arc<ProjectedMemberCoordinate>),
+    Projected(ProjectedMemberStorage),
 }
 
 impl From<EntityId> for NativeMemberKey {

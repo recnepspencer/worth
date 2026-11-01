@@ -1,6 +1,6 @@
 mod seal;
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::{CanonicalCommitEnvelope, SharedCanonicalCommitEnvelope};
 use crate::performance::data::RuntimeComplexityCounters;
 use crate::publication::bundle::PublicationStatus;
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
@@ -65,7 +65,7 @@ pub struct CommitPhaseTiming {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitPublication {
     pub diagnostics: Vec<RelationalDiagnosticArtifact>,
-    pub envelope: Arc<CanonicalCommitEnvelope>,
+    pub envelope: SharedCanonicalCommitEnvelope,
     pub patch_position: crate::publication::patch::data::PatchStreamPosition,
     pub aspect_evaluation_traces: Vec<AspectEvaluationTrace>,
     pub aspect_emission_traces: Vec<AspectEmissionTrace>,

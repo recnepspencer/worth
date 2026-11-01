@@ -37,7 +37,9 @@ pub(super) fn prefer_richer_registry() -> RelationalSchemaRegistry {
             ])
             .with_identity_declarations(vec![IdentityBasisDeclaration {
                 scope: IdentityBasisScope::AspectKey(name_key.clone()),
-                basis: IdentityBasisKind::DeclaredKeySet(Arc::from([name_key.clone()])),
+                basis: IdentityBasisKind::DeclaredKeySet(
+                    Arc::<[worth_foundational::facade::AspectKey]>::from([name_key.clone()]).into(),
+                ),
             }])
             .with_merge_policy_declarations(vec![AspectMergePolicyDeclaration {
                 aspect_key: status_key,

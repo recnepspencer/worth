@@ -29,6 +29,30 @@ pub struct StrategyCommitArtifactBundle {
 }
 
 impl StrategyCommitArtifactBundle {
+    /// Consume only the pre-reserved original leaf grants before any public
+    /// clone or exposure. A failed attachment restores its SAME unused grant.
+    pub(crate) fn attach_readmission_memory(
+        &mut self,
+        input: &mut Option<worth_execution::ExecutionMemoryReservation>,
+        targets: &mut Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), &'static str> {
+        if let Err(unused) = self
+            .canonical_input
+            .retain_canonical_bytes_memory(input.take())
+        {
+            *input = unused;
+            return Err("strategy input backing is not exclusively owned for readmission");
+        }
+        if let Err(unused) = self
+            .merge_descriptor
+            .retain_intent_scope_targets_memory(targets.take())
+        {
+            *targets = unused;
+            return Err("strategy locator backing is not exclusively owned for readmission");
+        }
+        Ok(())
+    }
+
     pub fn from_lowered(
         lowered: &LoweredStrategyCommitPlan,
         descriptor: &CommitStrategyDescriptor,

@@ -34,7 +34,6 @@ fn execute_prepared_merge_publishes_ordered_multi_parent_commit_through_canonica
     let envelope = replay
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("canonical merge envelope");
     assert_eq!(envelope.commit.parents, merge.commit.commit.parents);
     assert_eq!(
@@ -93,7 +92,6 @@ fn execute_prepared_merge_preserves_reserved_summary_when_optional_diagnostics_b
     let envelope = replay
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("canonical merge envelope");
 
     assert_eq!(envelope.diagnostics_summary.entries.len(), 1);

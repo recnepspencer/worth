@@ -116,7 +116,7 @@ fn tail_rejects_same_commit_root_descriptor_substitution() {
     let checkpoint = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == tail_commit.commit.commit_id)
         .and_then(|envelope| envelope.branch_cell_checkpoint.as_mut())
         .expect("production tail carries its exact pre-commit branch cell");

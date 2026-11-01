@@ -43,7 +43,6 @@ fn durability_contract_recovery_preserves_merge_parent_order() {
     let recovered_merge = replay
         .canonical_commit_envelope(execution, merge.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
 
     assert_eq!(
@@ -162,14 +161,12 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
             let populated_nested_bytes = merge_entry
                 .allocation_inventory()
                 .authoritative_nested_bytes;
-            let mut omitted_merge_authority = merge_entry.clone();
-            omitted_merge_authority.merge_execution_authority = None;
-            assert!(
-                populated_nested_bytes
-                    > omitted_merge_authority
-                        .allocation_inventory()
-                        .authoritative_nested_bytes
-            );
+            let authority = merge_entry.merge_execution_authority.take().unwrap();
+            let omitted_nested_bytes = merge_entry
+                .allocation_inventory()
+                .authoritative_nested_bytes;
+            merge_entry.merge_execution_authority = Some(authority);
+            assert!(populated_nested_bytes > omitted_nested_bytes);
             assert!(
                 merge_entry.diagnostics_summary.entries.is_empty(),
                 "diagnostics never reach the durable artifact"
@@ -192,7 +189,6 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
     let recovered_merge = replay
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
 
     assert!(recovered_merge.diagnostics_summary.entries.is_empty());

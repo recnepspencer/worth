@@ -168,9 +168,9 @@ fn prepare_merge_execution_compiles_reconcile_record_plan() {
             ])
             .with_identity_declarations(vec![crate::facade::merge::IdentityBasisDeclaration {
                 scope: crate::facade::merge::IdentityBasisScope::AspectKey(name_key.clone()),
-                basis: crate::facade::merge::IdentityBasisKind::DeclaredKeySet(Arc::from([
-                    name_key.clone(),
-                ])),
+                basis: crate::facade::merge::IdentityBasisKind::DeclaredKeySet(
+                    Arc::<[worth_foundational::facade::AspectKey]>::from([name_key.clone()]).into(),
+                ),
             }])
             .with_merge_policy_declarations(vec![AspectMergePolicyDeclaration {
                 aspect_key: name_key.clone(),

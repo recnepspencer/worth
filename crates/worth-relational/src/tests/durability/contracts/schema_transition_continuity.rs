@@ -80,7 +80,6 @@ fn durable_recovery_and_schema_mismatch_test() {
         .replay()
         .canonical_commit_envelope(execution, transitioned.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered transitioned envelope");
     let recovered_diagnostics = recovered.publication().diagnostics();
     let recovery_authority_continuity_diagnostic = recovered_diagnostics

@@ -277,7 +277,11 @@ fn cancelled_checkpoint_restore_consults_before_decoding_corrupt_bytes() {
 fn corrupt_replay_keeps_its_durability_failure() {
     let (source, bytes) = fixture();
     let plan = plan_from_bytes(&source, &bytes);
-    let mut envelope = plan.tail_log[0].envelope().clone();
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let mut envelope = plan.tail_log[0]
+        .envelope()
+        .copy_original_for_test(execution);
     // A merge without its required execution authority is corrupt evidence.
     let branch_context = envelope.branch_context.clone();
     envelope
@@ -285,7 +289,6 @@ fn corrupt_replay_keeps_its_durability_failure() {
         .merge_parent_branches
         .push(branch_context);
     let mut target = runtime_with_test_schema();
-    let host = crate::test_execution_policy::serial_request();
     let catalog = super::super::index_catalog::readmit(
         &ExecutionRequest::serial(&host),
         &target,

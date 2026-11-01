@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::schema::data::{
     DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion, SchemaBoundaryFingerprint,
 };
@@ -7,8 +5,12 @@ use crate::schema::data::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SchemaTransitionValidationError {
     EmptyDiff,
-    UnstratifiedChange { element_name: Arc<str> },
-    NarrowingWithoutPolicy { element_name: Arc<str> },
+    UnstratifiedChange {
+        element_name: crate::schema::data::SchemaChangeText,
+    },
+    NarrowingWithoutPolicy {
+        element_name: crate::schema::data::SchemaChangeText,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

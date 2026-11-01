@@ -17,6 +17,7 @@ fn replay_reports_owner_create_event_drift_at_digest_layer() {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "event-drift");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         created.commit.commit_id,
         |envelope| {
             envelope
@@ -48,6 +49,7 @@ fn replay_reports_owner_create_decision_drift_at_digest_layer() {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "decision-drift");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
+        execution,
         created.commit.commit_id,
         |envelope| {
             envelope

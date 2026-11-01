@@ -12,6 +12,8 @@ use crate::schema::data::{
 };
 
 const ROOT_SCHEMA_IMAGE_VERSION: u16 = 1;
+mod allocation;
+pub(crate) use allocation::DurableSchemaDeclarationMemory;
 mod encoding;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

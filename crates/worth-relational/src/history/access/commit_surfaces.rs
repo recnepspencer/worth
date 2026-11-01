@@ -165,7 +165,7 @@ impl<'runtime> HistoryAccess<'runtime> {
     }
 
     #[cfg(test)]
-    pub(crate) fn commit_envelopes_snapshot(&self) -> Vec<CanonicalCommitEnvelope> {
+    pub(crate) fn commit_envelopes_snapshot(&self) -> Vec<std::sync::Arc<CanonicalCommitEnvelope>> {
         let mut envelopes = self
             .runtime
             .history
@@ -176,14 +176,12 @@ impl<'runtime> HistoryAccess<'runtime> {
                     artifact.commit_id(),
                     artifact
                         .resident_envelope()
-                        .expect("memory fixture retains its envelopes")
-                        .as_ref()
-                        .clone(),
+                        .expect("memory fixture retains its envelopes"),
                 )
             })
             .collect::<std::collections::BTreeMap<_, _>>();
         for envelope in self.runtime.history.performed_canonical_envelopes() {
-            envelopes.insert(envelope.commit.commit_id, envelope.as_ref().clone());
+            envelopes.insert(envelope.commit.commit_id, envelope);
         }
         envelopes.into_values().collect()
     }

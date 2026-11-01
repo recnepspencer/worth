@@ -1,11 +1,11 @@
 //! Endpoint-domain meaning with the physical scalar grammar preserved.
 use crate::identity::data::KindId;
 use crate::projected_member_domain::ProjectedMemberDomainIdentity;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+mod decoding;
 
 /// The domain of a graph endpoint, never a registered source handle.
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize)]
-#[serde(untagged)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum NativeMemberDomain {
     Entity(KindId),
     Projected {

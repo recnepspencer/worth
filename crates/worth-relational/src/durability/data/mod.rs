@@ -67,3 +67,5 @@ pub use checkpoint_inspection::{
     CheckpointRecordFrontier, CheckpointRecordIdentity, NativeCheckpointModelBytes,
     RelationalCheckpointInspection,
 };
+
+pub(crate) use branch_root_schema_images::DurableSchemaDeclarationMemory;

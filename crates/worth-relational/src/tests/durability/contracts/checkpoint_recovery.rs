@@ -39,7 +39,6 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
             .replay()
             .canonical_commit_envelope(execution, main.commit.commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .commit
             .commit_id,
@@ -200,7 +199,7 @@ fn durability_contract_recovery_rejects_tail_checkpoint_drift_before_mutation() 
     let tail = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == second.commit.commit_id)
         .expect("tail contains the post-checkpoint commit");
     let checkpoint = tail

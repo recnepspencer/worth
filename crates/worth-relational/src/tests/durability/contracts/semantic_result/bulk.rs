@@ -112,12 +112,12 @@ fn semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal() {
     let execution = &ExecutionRequest::serial(&host);
     let (runtime, committed) = publication(execution, 8);
     let artifact = attached_test_medium(&runtime).offered().pop().unwrap();
-    let original = rmp_serde::to_vec_named(committed.semantic_result()).unwrap();
-    let mut malformed = committed.semantic_result().clone();
-    malformed.created_relations[0]
-        .key
-        .client_key
-        .push_str("-foreign");
+    // Change only this original correspondence key in the authentic framed
+    // bytes; preserve every other semantic field without copying its owner.
+    let original_key = &committed.semantic_result().created_relations()[0].key;
+    let original = rmp_serde::to_vec_named(original_key).unwrap();
+    let mut malformed = original_key.clone();
+    malformed.client_key.push_str("-foreign");
     let replacement = rmp_serde::to_vec_named(&malformed).unwrap();
     let mut bytes = artifact.as_bytes().to_vec();
     let offsets = bytes

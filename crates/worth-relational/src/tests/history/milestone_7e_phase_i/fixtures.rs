@@ -92,7 +92,6 @@ pub(super) fn published_merge_authority(
         .replay()
         .canonical_commit_envelope(execution, commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
 }

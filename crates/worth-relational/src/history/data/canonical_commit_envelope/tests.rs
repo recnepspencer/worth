@@ -92,9 +92,13 @@ fn envelope_with_patch_and_update(
         &runtime,
         "predicate-semantic-source",
     );
-    let mut envelope = produced.envelope().clone();
-    *envelope.body_mut_for_test() = (*draft).clone();
+    let envelope = produced.publication().envelope.clone().into_arc();
     crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
+    drop(produced);
+    drop(runtime);
+    let mut envelope = std::sync::Arc::try_unwrap(envelope)
+        .expect("source owner and result released their actual envelope shares");
+    *envelope.body_mut_for_test() = draft.into_body();
     envelope
 }
 

@@ -136,7 +136,11 @@ fn original_custody(empty: bool) {
         .durability_authority()
         .readmit_associated_effect(execution, &subject)
         .unwrap();
-    let semantic = effect.semantic_result().clone();
+    let semantic = selected
+        .demand(execution, 1 << 30)
+        .unwrap()
+        .semantic_result_arc();
+    assert_eq!(effect.semantic_result(), semantic.as_ref());
     let proof = authority
         .admit_recorded_publication(
             execution,
@@ -146,7 +150,10 @@ fn original_custody(empty: bool) {
             &original.after,
         )
         .unwrap();
-    assert_eq!(proof.custody().effect().semantic_result(), &semantic);
+    assert_eq!(
+        proof.custody().effect().semantic_result(),
+        semantic.as_ref()
+    );
     // The same shared Native owner performs maintenance while real custody
     // pins preserve both original roots.
     let shared: &RelationalRuntime = &runtime;

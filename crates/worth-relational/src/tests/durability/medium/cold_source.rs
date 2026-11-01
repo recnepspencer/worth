@@ -3,14 +3,12 @@ use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMe
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use std::collections::BTreeMap;
-use std::sync::{
-    atomic::{AtomicBool, AtomicUsize, Ordering},
-    Arc,
-};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 #[derive(Debug)]
 pub(super) struct MemberSource {
-    pub(super) members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
+    pub(super) members:
+        BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     pub(super) commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
     pub(super) damaged: AtomicBool,
     pub(super) reads: AtomicUsize,

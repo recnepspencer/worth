@@ -57,13 +57,14 @@ impl<'runtime> HistoryAuthority<'runtime> {
 
     pub(crate) fn tamper_commit_patch_for_test(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
         mutate: impl FnOnce(&mut crate::publication::patch::data::CanonicalAuthoritativePatch),
     ) -> bool {
         let Some(envelope) = self.runtime.history.recorded_commit_envelope(commit_id) else {
             return false;
         };
-        let mut replacement = envelope.as_ref().clone();
+        let mut replacement = envelope.copy_original_for_test(execution);
         mutate(&mut replacement.body_mut_for_test().patch);
         let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
         self.runtime.history.with_ledger_mut(|ledger| {
@@ -81,13 +82,14 @@ impl<'runtime> HistoryAuthority<'runtime> {
 
     pub(crate) fn tamper_commit_envelope_for_test(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
         mutate: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
     ) -> bool {
         let Some(envelope) = self.runtime.history.recorded_commit_envelope(commit_id) else {
             return false;
         };
-        let mut replacement = envelope.as_ref().clone();
+        let mut replacement = envelope.copy_original_for_test(execution);
         if replacement.derived_index_artifacts().is_empty() {
             let generations = self
                 .runtime

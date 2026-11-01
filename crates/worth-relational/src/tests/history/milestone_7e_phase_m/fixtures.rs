@@ -40,7 +40,10 @@ pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
             ])
             .with_identity_declarations(vec![IdentityBasisDeclaration {
                 scope: IdentityBasisScope::AspectKey(name_key.clone()),
-                basis: IdentityBasisKind::DeclaredKeySet(std::sync::Arc::from([name_key])),
+                basis: IdentityBasisKind::DeclaredKeySet(
+                    std::sync::Arc::<[worth_foundational::facade::AspectKey]>::from([name_key])
+                        .into(),
+                ),
             }])
             .with_merge_policy_declarations(vec![AspectMergePolicyDeclaration {
                 aspect_key: status_key,
@@ -112,7 +115,6 @@ pub(super) fn published_merge_authority(
         .replay()
         .canonical_commit_envelope(execution, commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
 }

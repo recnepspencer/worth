@@ -24,9 +24,40 @@ impl RelationalCanonicalCommitArtifact {
         bytes: &[u8],
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ReadmittedCanonicalCommit, Refusal> {
+        Self::readmit_with_input(bytes, execution, None)
+    }
+
+    /// Keep the exact original provider byte allocation in the admitted Arc.
+    pub(crate) fn readmit_owned(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<ReadmittedCanonicalCommit, Refusal> {
+        Self::readmit_with_input(self.as_bytes(), execution, Some(self.bytes.clone()))
+    }
+
+    pub(super) fn readmit_with_input(
+        bytes: &[u8],
+        execution: &ExecutionRequest<'_, '_>,
+        input: Option<worth_execution::ExecutionImmutableBytes>,
+    ) -> Result<ReadmittedCanonicalCommit, Refusal> {
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
         let (header, payload) = CanonicalCommitArtifactHeader::verify(bytes)?;
-        let wire = decode_payload(payload)?;
+        let quote = super::decoded_quote::quote(payload, execution)?;
+        let canonical = super::decoded_quote::field(
+            super::borrowed_payload::BorrowedPayload(payload),
+            "canonical",
+            execution,
+        )?;
+        // The original admissions precede every deserialized allocation.
+        let (memory, _transient) =
+            super::decoded_quote::admit_canonical(quote, canonical, execution, input, 0)?;
+        let mut wire = decode_payload(payload)?;
+        wire.canonical.retain_readmission_memory(memory);
+        wire.canonical
+            .attach_shared_readmission_memory()
+            .map_err(|detail| Refusal::PayloadDecode {
+                detail: detail.into(),
+            })?;
         check_header_agreement(&header, &wire)?;
         let envelope = wire
             .canonical

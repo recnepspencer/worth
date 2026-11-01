@@ -164,7 +164,9 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
             ])
             .with_identity_declarations(vec![IdentityBasisDeclaration {
                 scope: IdentityBasisScope::AspectKey(name_key.clone()),
-                basis: IdentityBasisKind::DeclaredKeySet(Arc::from([name_key.clone()])),
+                basis: IdentityBasisKind::DeclaredKeySet(
+                    Arc::<[worth_foundational::facade::AspectKey]>::from([name_key.clone()]).into(),
+                ),
             }])
             .with_merge_policy_declarations(vec![AspectMergePolicyDeclaration {
                 aspect_key: status_key.clone(),

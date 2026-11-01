@@ -19,7 +19,8 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
         &mut runtime,
         entity,
     );
-    let (root, mut envelope) = committed_root_and_envelope(&runtime, outcome.commit.commit_id);
+    let (root, mut envelope) =
+        committed_root_and_envelope(execution, &runtime, outcome.commit.commit_id);
     assert!(envelope
         .body_mut_for_test()
         .strategy_artifacts
@@ -64,7 +65,7 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
         .execute_prepared_merge(execution, prepared)
         .expect("governed merge executes");
     let (root, mut envelope) =
-        committed_root_and_envelope(&runtime, outcome.commit.commit.commit_id);
+        committed_root_and_envelope(execution, &runtime, outcome.commit.commit.commit_id);
     assert!(envelope
         .body_mut_for_test()
         .merge_execution_authority
@@ -106,16 +107,17 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let outcome = transaction
         .commit(execution, &runtime)
         .expect("schema transition commits");
-    let (root, envelope) = committed_root_and_envelope(&runtime, outcome.commit.commit_id);
+    let (root, envelope) =
+        committed_root_and_envelope(execution, &runtime, outcome.commit.commit_id);
 
-    let mut transition = envelope.clone();
+    let mut transition = envelope.copy_original_for_test(execution);
     assert!(transition
         .body_mut_for_test()
         .schema_transition
         .take()
         .is_some());
     assert_axis_mutation_rejected(&runtime, &root, transition, "schema transition");
-    let mut continuation = envelope.clone();
+    let mut continuation = envelope.copy_original_for_test(execution);
     assert!(continuation
         .body_mut_for_test()
         .schema_continuation_descriptor
@@ -132,6 +134,7 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
 }
 
 fn committed_root_and_envelope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     commit_id: crate::history::data::CommitId,
 ) -> (
@@ -147,7 +150,10 @@ fn committed_root_and_envelope(
         .canonical_envelope()
         .expect("root carries canonical envelope");
     assert_eq!(envelope.commit.commit_id, commit_id);
-    (Arc::clone(&root), envelope.as_ref().clone())
+    (
+        Arc::clone(&root),
+        envelope.copy_original_for_test(execution),
+    )
 }
 
 fn assert_axis_mutation_rejected(

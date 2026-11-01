@@ -51,43 +51,43 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
     assert!(payload.is_none());
     assert!(validate(execution, envelope, id, plan, payload).is_ok());
 
-    let mut missing_allocation = envelope.as_ref().clone();
+    let mut missing_allocation = envelope.copy_original_for_test(execution);
     missing_allocation
         .body_mut_for_test()
         .record_allocations
         .clear();
-    let mut duplicate_allocation = envelope.as_ref().clone();
+    let mut duplicate_allocation = envelope.copy_original_for_test(execution);
     duplicate_allocation
         .body_mut_for_test()
         .record_allocations
         .push(envelope.record_allocations[0].clone());
-    let mut missing_create = envelope.as_ref().clone();
+    let mut missing_create = envelope.copy_original_for_test(execution);
     missing_create
         .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .clear();
-    let mut duplicate_create = envelope.as_ref().clone();
+    let mut duplicate_create = envelope.copy_original_for_test(execution);
     duplicate_create
         .body_mut_for_test()
         .patch
         .authoritative_record_patches
         .push(envelope.patch.authoritative_record_patches[0].clone());
-    let mut updated = envelope.as_ref().clone();
+    let mut updated = envelope.copy_original_for_test(execution);
     updated
         .body_mut_for_test()
         .patch
         .authoritative_record_patches[0]
         .structural_change = RecordStructuralChange::Updated;
-    let mut missing_schema = envelope.as_ref().clone();
+    let mut missing_schema = envelope.copy_original_for_test(execution);
     missing_schema
         .body_mut_for_test()
         .schema_authority
         .entity_kinds
         .clear();
-    let mut wrong_kind = envelope.as_ref().clone();
+    let mut wrong_kind = envelope.copy_original_for_test(execution);
     wrong_kind.body_mut_for_test().schema_authority.entity_kinds[0].kind_id = KindId(99);
-    let mut wrong_revision = envelope.as_ref().clone();
+    let mut wrong_revision = envelope.copy_original_for_test(execution);
     wrong_revision
         .body_mut_for_test()
         .schema_authority
@@ -109,7 +109,7 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
             Err(OutputPayloadCoverageFailure::Corrupt(_))
         ));
     }
-    let mut opaque = envelope.as_ref().clone();
+    let mut opaque = envelope.copy_original_for_test(execution);
     opaque
         .body_mut_for_test()
         .patch
@@ -167,7 +167,7 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
         .contains("reason=empty-payload-with-operations"));
     assert!(error.detail().contains("operation_ordinal=0"));
     assert_eq!(error.context().affected_records, [RecordRef::Entity(id)]);
-    let mut omitted_operation = envelope.as_ref().clone();
+    let mut omitted_operation = envelope.copy_original_for_test(execution);
     omitted_operation
         .body_mut_for_test()
         .patch
@@ -185,7 +185,7 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
             UnsupportedPayload::EmptyWithBindings { .. }
         ))
     ));
-    let mut opaque = envelope.as_ref().clone();
+    let mut opaque = envelope.copy_original_for_test(execution);
     opaque
         .body_mut_for_test()
         .patch

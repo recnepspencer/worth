@@ -17,12 +17,12 @@ fn tail_created_lineage_regression_below_checkpoint_high_water_denies() {
     )
     .unwrap();
     plan.tail_log[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .published_lineage_mut_for_test()
         .lineage_events_mut()[0]
         .targets[0] = crate::identity::data::LineageId(0);
     plan.tail_log[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .rebuild_lineage_basis_for_test();
 
     let error = recover_error(execution, plan);
@@ -48,12 +48,12 @@ fn tail_lineage_event_regression_below_checkpoint_high_water_denies() {
     )
     .unwrap();
     plan.tail_log[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .published_lineage_mut_for_test()
         .lineage_events_mut()[0]
         .event_id = 0;
     plan.tail_log[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .rebuild_lineage_basis_for_test();
 
     let error = recover_error(execution, plan);

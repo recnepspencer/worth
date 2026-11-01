@@ -51,8 +51,18 @@ impl PositionedCanonicalCommit {
     }
 
     #[cfg(test)]
-    pub(crate) fn envelope_mut_for_test(&mut self) -> &mut super::CanonicalCommitEnvelopeBody {
-        Arc::make_mut(&mut self.canonical).body_mut_for_test()
+    pub(crate) fn envelope_mut_for_test(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> &mut super::CanonicalCommitEnvelopeBody {
+        // Preserve unique actual ownership when available. Aliased originals
+        // need an explicitly admitted complete data copy, never deep Clone.
+        if Arc::get_mut(&mut self.canonical).is_none() {
+            self.canonical = Arc::new(self.canonical.copy_original_for_test(request));
+        }
+        Arc::get_mut(&mut self.canonical)
+            .expect("the mutable test copy is unique")
+            .body_mut_for_test()
     }
 }
 

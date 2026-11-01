@@ -136,11 +136,10 @@ pub(super) fn recover_stage_from_final_history(
             replay_access
                 .canonical_commit_envelope(execution, commit_id)
                 .unwrap()
-                .map(|envelope| envelope.as_ref().clone())
                 .map(|envelope| {
                     crate::history::data::PositionedCanonicalCommit::for_test(
                         position,
-                        std::sync::Arc::new(envelope),
+                        envelope.into_arc(),
                     )
                 })
         })

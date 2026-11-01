@@ -1,5 +1,5 @@
-use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::CommitId;
+use crate::history::data::SharedCanonicalCommitEnvelope;
 use crate::replay::data::RelationalReplayOutcome;
 use crate::runtime::RelationalRuntime;
 
@@ -17,12 +17,13 @@ impl<'runtime> ReplayAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: CommitId,
     ) -> Result<
-        Option<std::sync::Arc<CanonicalCommitEnvelope>>,
+        Option<SharedCanonicalCommitEnvelope>,
         crate::execution::RelationalExecutionDenialCause,
     > {
         self.runtime
             .history()
             .demand_commit_envelope(execution, commit_id)
+            .map(|envelope| envelope.map(SharedCanonicalCommitEnvelope::from_arc))
     }
 
     pub fn compare_outcome(&self, outcome: &RelationalReplayOutcome) -> bool {

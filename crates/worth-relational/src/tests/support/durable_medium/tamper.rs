@@ -107,7 +107,7 @@ impl TestDurableMedium {
             execution,
         )
         .expect("the medium's own artifact readmits before it is rewritten");
-        let mut envelope = readmitted.envelope().clone();
+        let mut envelope = readmitted.envelope().copy_original_for_test(execution);
         edit(envelope.body_mut_for_test());
         let rewritten = RelationalCanonicalCommitArtifact::from_positioned(
             &PositionedCanonicalCommit::for_test(position, Arc::new(envelope)),

@@ -84,7 +84,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         assert_eq!(entry.required_output_codec_retirements.len(), 2);
         if matches!(defect, Some(ClaimDefect::SiblingKind)) {
             let sibling = entry
-                .envelope_mut_for_test()
+                .envelope_mut_for_test(execution)
                 .required_output_codec_retirements
                 .iter_mut()
                 .find(|event| event.meaning.family == "native.closed.producer")
@@ -95,7 +95,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         if matches!(defect, Some(ClaimDefect::RevalidationWrite)) {
             // An actual read demand cannot authorize an equal-payload patch.
             entry
-                .envelope_mut_for_test()
+                .envelope_mut_for_test(execution)
                 .patch
                 .authoritative_record_patches
                 .push(hidden_write.clone());
@@ -104,7 +104,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             required.extend(entry.revision_symbol_references.iter().copied());
             // Keep the hostile claim structurally current: its actual source
             // values retain their original native symbol meanings.
-            entry.envelope_mut_for_test().symbol_texts.entries = required
+            entry.envelope_mut_for_test(execution).symbol_texts.entries = required
                 .iter()
                 .map(|symbol| {
                     decoded
@@ -226,7 +226,7 @@ pub(super) fn cold_retired_route(
             .unwrap();
         let event = std::sync::Arc::make_mut(
             &mut entry
-                .envelope_mut_for_test()
+                .envelope_mut_for_test(execution)
                 .required_output_codec_retirements[0],
         );
         if incomplete {
@@ -284,6 +284,7 @@ fn cold_boundary_rosters_refuse_missing_owned_edge_and_foreign_sibling_claim() {
 }
 
 fn edit_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     checkpoint: &mut crate::durability::data::DurableCheckpoint,
     commit: crate::history::data::CommitId,
     edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
@@ -293,5 +294,5 @@ fn edit_publication(
         .iter_mut()
         .find(|entry| entry.commit.commit_id == commit)
         .unwrap();
-    edit(entry.envelope_mut_for_test());
+    edit(entry.envelope_mut_for_test(execution));
 }

@@ -8,7 +8,7 @@ pub fn source_journey(
     Recorded,
     Recorded,
     Association,
-    worth_relational::facade::transactions::RelationalCommitSemanticResult,
+    Arc<worth_relational::facade::transactions::CommitResult>,
 ) {
     let medium = TestDurableMedium::new();
     let runtime = durable_runtime(&medium);
@@ -22,8 +22,8 @@ pub fn source_journey(
     );
     let original_basis = performed.next_basis().clone();
     let result = runtime.settle_performed_publication(performed).unwrap();
-    let semantic = result.semantic_result().clone();
-    release_test_commit_snapshot(&runtime, &result);
+    let semantic = Arc::new(result);
+    release_test_commit_snapshot(&runtime, &semantic);
     create_entity(execution, &runtime, "later-native-head");
     let successor = runtime
         .owner_component_services()

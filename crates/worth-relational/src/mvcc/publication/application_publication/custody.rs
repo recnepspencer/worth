@@ -30,7 +30,7 @@ impl crate::transactions::data::CommitResult {
                 .is_some_and(|issuer| issuer.same_publication_owner(&installed.authority)))
         .then(|| RelationalRequiredOutputPublication {
             runtime_instance_id: installed.runtime_instance_id,
-            envelope: Arc::clone(envelope),
+            envelope: envelope.clone().into_arc(),
             readmitted_at: None,
             authority: installed
                 .authority

@@ -143,7 +143,7 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
             .iter()
             .all(|member| member.posture == RequiredOutputRolePosture::Retire));
         assert!(origin.relations.is_empty());
-        let canonical = std::sync::Arc::clone(&retired.publication().envelope);
+        let canonical = retired.publication().envelope.clone().into_arc();
         release_test_commit_snapshot(&runtime, &retired);
         let saved = runtime
             .durability_authority()

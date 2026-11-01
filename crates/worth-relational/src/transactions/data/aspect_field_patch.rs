@@ -45,6 +45,15 @@ impl AspectFieldPatch {
         }
     }
 
+    pub(crate) fn from_sorted_owned_entries(
+        locators: Vec<(AspectFieldLocator, AspectValue)>,
+    ) -> Self {
+        debug_assert!(locators.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        Self {
+            locators: locators.into_boxed_slice(),
+        }
+    }
+
     pub fn from_locator(locator: AspectFieldLocator, value: AspectValue) -> Self {
         Self {
             locators: Box::new([(locator, value)]),

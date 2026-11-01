@@ -4,7 +4,8 @@ use crate::diagnostics::data::RelationalDiagnosticArtifact;
 use crate::indexes::data::DerivedIndexArtifacts;
 use serde::ser::SerializeStruct;
 
-pub(super) enum EnvelopeProjection {
+#[derive(Clone, Copy)]
+pub(crate) enum EnvelopeProjection {
     Full,
     Authoritative,
     Checkpoint,

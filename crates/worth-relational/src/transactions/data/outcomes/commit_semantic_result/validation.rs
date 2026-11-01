@@ -14,6 +14,10 @@ use serde::{Deserialize, Serialize};
 
 mod production;
 mod readmission;
+mod readmission_memory;
+pub(crate) use readmission_memory::{
+    ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
+};
 mod summary;
 pub(super) use summary::summarize;
 

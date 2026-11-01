@@ -113,7 +113,6 @@ fn checkpoint_restore_protects_published_lineage_identities_in_each_lane() {
             .replay()
             .canonical_commit_envelope(execution, created.commit.commit_id)
             .unwrap()
-            .map(|envelope| envelope.as_ref().clone())
             .unwrap();
         assert!(!envelope.lineage_events().is_empty());
         for event in envelope.lineage_events() {
@@ -174,7 +173,6 @@ fn inflight_tail_replay_resumes_after_the_largest_durable_lineage_values() {
         .replay()
         .canonical_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let node_floor = envelope
         .lineage_events()
@@ -217,7 +215,6 @@ fn inflight_tail_replay_resumes_after_the_largest_durable_lineage_values() {
         .replay()
         .canonical_commit_envelope(execution, created.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     assert!(envelope
         .lineage_events()

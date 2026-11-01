@@ -69,7 +69,7 @@ pub(super) fn apply_authoritative_commit_artifacts(
             .history
             .synchronize_recovered_source_commit(positioned, &symbols)?;
         runtime.history.record_recovered_commit(
-            canonical.as_ref(),
+            &canonical,
             allow_reconstructed_replacement,
             advance_branch_currentness,
             &symbols,

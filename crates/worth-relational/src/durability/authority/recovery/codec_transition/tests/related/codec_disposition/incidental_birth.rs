@@ -174,7 +174,7 @@ pub(super) fn refuse_late_claim() {
             (birth_commit.commit_id, born),
             (preserve_commit.commit_id, continued),
         ] {
-            edit_publication(&mut forged, commit, |envelope| {
+            edit_publication(execution, &mut forged, commit, |envelope| {
                 let mut origin: CanonicalRequiredOutputOrigin = rmp_serde::from_slice(
                     &rmp_serde::to_vec(envelope.required_output_origin.as_ref().unwrap().as_ref())
                         .unwrap(),

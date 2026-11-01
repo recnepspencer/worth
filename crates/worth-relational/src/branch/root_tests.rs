@@ -23,9 +23,8 @@ fn committed_root_and_envelope(
         .replay()
         .canonical_commit_envelope(execution, performed.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("performed commit owns one canonical envelope")
-        .clone();
+        .copy_original_for_test(execution);
     (runtime, root, envelope)
 }
 
@@ -162,73 +161,74 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
     );
 
     let mut mutants = Vec::new();
-    let mut commit = envelope.clone();
+    let mut commit = envelope.copy_original_for_test(execution);
     commit.body_mut_for_test().commit.commit_id =
         CommitId(commit.body_mut_for_test().commit.commit_id.0 + 1);
     mutants.push(("commit", commit));
-    let mut version = envelope.clone();
+    let mut version = envelope.copy_original_for_test(execution);
     version.body_mut_for_test().commit.version_id.0 += 1;
     mutants.push(("version", version));
-    let mut parents = envelope.clone();
+    let mut parents = envelope.copy_original_for_test(execution);
     parents.body_mut_for_test().commit.parents = vec![CommitId(41), CommitId(43)];
-    mutants.push(("ordered parents", parents.clone()));
-    parents.body_mut_for_test().commit.parents.reverse();
+    mutants.push(("ordered parents", parents));
+    let mut parents = envelope.copy_original_for_test(execution);
+    parents.body_mut_for_test().commit.parents = vec![CommitId(43), CommitId(41)];
     mutants.push(("parent order", parents));
-    let mut branch = envelope.clone();
+    let mut branch = envelope.copy_original_for_test(execution);
     branch.body_mut_for_test().branch_context = BranchId("visibility-mutant".to_owned());
     mutants.push(("branch", branch));
-    let mut receipt_branch = envelope.clone();
+    let mut receipt_branch = envelope.copy_original_for_test(execution);
     receipt_branch.body_mut_for_test().commit.branch_id =
         BranchId("receipt-branch-mutant".to_owned());
     mutants.push(("receipt branch", receipt_branch));
-    let mut checkpoint = envelope.clone();
+    let mut checkpoint = envelope.copy_original_for_test(execution);
     checkpoint.body_mut_for_test().branch_cell_checkpoint = None;
     mutants.push(("branch checkpoint", checkpoint));
-    let mut authority_kind = envelope.clone();
+    let mut authority_kind = envelope.copy_original_for_test(execution);
     authority_kind.body_mut_for_test().authority_kind =
         crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
     mutants.push(("authority kind", authority_kind));
-    let mut merge_parents = envelope.clone();
+    let mut merge_parents = envelope.copy_original_for_test(execution);
     merge_parents
         .body_mut_for_test()
         .merge_parent_branches
         .push(BranchId("merge-mutant".to_owned()));
     mutants.push(("merge branches", merge_parents));
-    let mut merge_bases = envelope.clone();
+    let mut merge_bases = envelope.copy_original_for_test(execution);
     merge_bases
         .body_mut_for_test()
         .merge_base_commits
         .push(CommitId(47));
     mutants.push(("merge bases", merge_bases));
-    let mut schema_version = envelope.clone();
+    let mut schema_version = envelope.copy_original_for_test(execution);
     schema_version.body_mut_for_test().schema_version.0 += 1;
     mutants.push(("schema version", schema_version));
-    let mut schema_authority = envelope.clone();
+    let mut schema_authority = envelope.copy_original_for_test(execution);
     schema_authority
         .body_mut_for_test()
         .schema_authority
         .primary_schema_id = Some(SchemaId("visibility-mutant".to_owned()));
     mutants.push(("schema authority", schema_authority));
-    let mut plan = envelope.clone();
+    let mut plan = envelope.copy_original_for_test(execution);
     plan.body_mut_for_test().merged_plan.transaction_id.0 += 1;
     mutants.push(("merged plan", plan));
-    let mut allocations = envelope.clone();
+    let mut allocations = envelope.copy_original_for_test(execution);
     assert!(!allocations.record_allocations().is_empty());
     allocations
         .body_mut_for_test()
         .install_record_allocations(Vec::new());
     mutants.push(("record allocations", allocations));
-    let mut patch = envelope.clone();
+    let mut patch = envelope.copy_original_for_test(execution);
     patch.body_mut_for_test().patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
     mutants.push(("patch", patch));
-    let mut lineage = envelope.clone();
+    let mut lineage = envelope.copy_original_for_test(execution);
     lineage
         .body_mut_for_test()
         .published_lineage_mut_for_test()
         .lineage_events_mut()[0]
         .event_id += 1;
     mutants.push(("lineage", lineage));
-    let mut descriptor_semantics = envelope.clone();
+    let mut descriptor_semantics = envelope.copy_original_for_test(execution);
     descriptor_semantics
         .body_mut_for_test()
         .descriptor_semantics_version

@@ -22,7 +22,7 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
         .expect("checkpoint")
         .envelopes
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .flat_map(|envelope| {
             envelope
                 .published_lineage_mut_for_test()
@@ -34,7 +34,7 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
     drop(events);
     for envelope in &mut plan.checkpoint.as_mut().expect("checkpoint").envelopes {
         envelope
-            .envelope_mut_for_test()
+            .envelope_mut_for_test(execution)
             .rebuild_lineage_basis_for_test();
     }
 
@@ -62,7 +62,7 @@ fn tail_duplicate_lineage_event_ids_deny() {
     let mut events = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .flat_map(|envelope| {
             envelope
                 .published_lineage_mut_for_test()
@@ -74,7 +74,7 @@ fn tail_duplicate_lineage_event_ids_deny() {
     drop(events);
     for envelope in &mut plan.tail_log {
         envelope
-            .envelope_mut_for_test()
+            .envelope_mut_for_test(execution)
             .rebuild_lineage_basis_for_test();
     }
 
@@ -109,12 +109,12 @@ fn checkpoint_and_tail_lineage_event_id_collision_denies() {
         .expect("checkpoint event")
         .event_id();
     plan.tail_log[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .published_lineage_mut_for_test()
         .lineage_events_mut()[0]
         .event_id = checkpoint_id;
     plan.tail_log[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .rebuild_lineage_basis_for_test();
 
     let error = recover_error(execution, plan);
@@ -138,7 +138,7 @@ fn tail_lineage_commit_and_branch_cross_splices_deny() {
     )
     .unwrap();
     let event = plan.tail_log[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .published_lineage_mut_for_test()
         .lineage_events_mut()
         .first_mut()
@@ -146,7 +146,7 @@ fn tail_lineage_commit_and_branch_cross_splices_deny() {
     event.commit.branch_id = BranchId("spliced-sibling".to_owned());
     event.branch_id = BranchId("spliced-sibling".to_owned());
     plan.tail_log[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .rebuild_lineage_basis_for_test();
 
     let error = recover_error(execution, plan);
@@ -169,14 +169,14 @@ fn checkpoint_lineage_commit_cross_splice_denies() {
     )
     .unwrap();
     let event = plan.checkpoint.as_mut().expect("checkpoint").envelopes[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .published_lineage_mut_for_test()
         .lineage_events_mut()
         .first_mut()
         .expect("checkpoint event");
     event.commit.commit_id = crate::history::data::CommitId(event.commit.commit_id.0 + 10);
     plan.checkpoint.as_mut().expect("checkpoint").envelopes[0]
-        .envelope_mut_for_test()
+        .envelope_mut_for_test(execution)
         .rebuild_lineage_basis_for_test();
 
     let error = recover_error(execution, plan);
@@ -209,7 +209,7 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
     let second_event = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == second.commit.commit_id)
         .expect("second tail envelope")
         .published_lineage_mut_for_test()
@@ -220,7 +220,7 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
     let second_envelope = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
+        .map(|commit| commit.envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == second.commit.commit_id)
         .expect("second tail envelope");
     second_envelope.rebuild_lineage_basis_for_test();

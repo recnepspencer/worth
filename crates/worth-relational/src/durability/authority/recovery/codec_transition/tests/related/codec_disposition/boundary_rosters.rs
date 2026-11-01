@@ -36,6 +36,7 @@ pub(super) fn refuse_missing_and_foreign() {
     for missing in [true, false] {
         let mut changed = decoded.clone();
         edit_publication(
+            execution,
             &mut changed,
             publication.envelope.commit.commit_id,
             |envelope| {

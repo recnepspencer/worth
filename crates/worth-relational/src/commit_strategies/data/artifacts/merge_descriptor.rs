@@ -3,6 +3,8 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::AspectFieldLocator;
 
+mod intent_scope_targets;
+
 use crate::commit_strategies::data::canonical_digest::serial_intent_scope_digest;
 use crate::commit_strategies::data::native_strategy_intent_scope::{
     native_strategy_intent_scope_digest, native_strategy_intent_scope_targets,
@@ -67,7 +69,7 @@ impl StrategyMergeSemantics {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct StrategyMergeDescriptor {
     pub(super) strategy_id: CommitStrategyId,
     pub(super) descriptor_digest: CommitStrategyDescriptorDigest,
@@ -80,6 +82,10 @@ pub struct StrategyMergeDescriptor {
     pub(super) intent_scope_targets: Arc<[AspectFieldLocator]>,
     pub(super) merge_semantics: StrategyMergeSemantics,
     pub(super) lowering_summary_digest: [u8; 32],
+    // Last: original locators and their nested data precede their cold grant.
+    #[serde(skip)]
+    pub(super) intent_scope_targets_memory:
+        Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl StrategyMergeDescriptor {
@@ -101,6 +107,7 @@ impl StrategyMergeDescriptor {
                 crate::commit_strategies::data::canonical_digest::lowering_summary_digest(
                     lowered.lowering_summary(),
                 ),
+            intent_scope_targets_memory: None,
         }
     }
 

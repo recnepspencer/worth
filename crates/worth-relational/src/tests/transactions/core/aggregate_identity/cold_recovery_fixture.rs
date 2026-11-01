@@ -14,7 +14,7 @@ use std::{
 
 #[derive(Debug)]
 pub(super) struct ColdSource {
-    members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
+    members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
     pub(super) fail_regions: AtomicBool,
     pub(super) reads: Mutex<Vec<RelationalDurableMemberLocator>>,

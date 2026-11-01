@@ -90,7 +90,6 @@ fn perf_artifact_recoverability_matrix() {
                 .replay()
                 .canonical_commit_envelope(execution, hot_commit.commit.commit_id)
                 .unwrap()
-                .map(|envelope| envelope.as_ref().clone())
                 .expect("recovered canonical geometry envelope");
 
             PerfMeasurement {

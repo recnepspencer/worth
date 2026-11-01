@@ -1,6 +1,6 @@
 //! Concrete byte storage shared by both Native test compilation identities.
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use worth_execution::ExecutionImmutableBytes;
 
 #[derive(Debug, Default)]
 pub struct ByteJournal {
@@ -23,10 +23,10 @@ impl ByteJournal {
 
 #[derive(Debug, Default)]
 pub struct MemberBytes {
-    entries: BTreeMap<([u8; 32], u64), Arc<[u8]>>,
+    entries: BTreeMap<([u8; 32], u64), ExecutionImmutableBytes>,
 }
 impl MemberBytes {
-    pub fn insert(&mut self, digest: [u8; 32], length: u64, bytes: Arc<[u8]>) {
+    pub fn insert(&mut self, digest: [u8; 32], length: u64, bytes: ExecutionImmutableBytes) {
         self.entries.insert((digest, length), bytes);
     }
     pub fn get(&self, digest: [u8; 32], length: u64) -> Option<&[u8]> {

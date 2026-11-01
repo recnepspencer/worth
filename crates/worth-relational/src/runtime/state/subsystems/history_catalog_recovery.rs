@@ -282,7 +282,7 @@ impl HistorySubsystem {
 
     pub(crate) fn record_recovered_commit(
         &self,
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &Arc<CanonicalCommitEnvelope>,
         allow_reconstructed_replacement: bool,
         advance_branch_currentness: bool,
         symbols: &crate::symbols::data::StringInterner,
@@ -304,9 +304,7 @@ impl HistorySubsystem {
             self.rebuild_catalog_with_live_roots(symbols)?;
         } else if catalog_artifact.is_none() {
             self.with_ledger_mut(|ledger| {
-                ledger
-                    .commit_catalog
-                    .append_envelope(Arc::new(envelope.clone()))
+                ledger.commit_catalog.append_envelope(Arc::clone(envelope))
             })
             .map_err(|denial| {
                 format!(

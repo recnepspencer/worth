@@ -44,7 +44,6 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("live merge envelope");
     let live_truth = capture_aspect_truth_bundle(execution, &runtime, &[entity], &[], &[]);
 
@@ -72,7 +71,6 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
     let recovered_truth = capture_aspect_truth_bundle(execution, &recovered, &[entity], &[], &[]);
 

@@ -146,7 +146,7 @@ fn build_transition(
             SchemaSubscriberImpact::ContractUpgradeRequired,
             HistoricalInterpretationSensitivity::SensitiveToDerivedMeaning,
             SchemaDiffDetail::ProjectionContractChanged {
-                projection_name: projection,
+                projection_name: projection.into(),
             },
         ));
     }

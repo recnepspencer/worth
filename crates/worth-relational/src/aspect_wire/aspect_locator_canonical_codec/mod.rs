@@ -1,3 +1,4 @@
+mod borrowed_allocation;
 mod error;
 mod reading;
 mod serde_modules;
@@ -14,3 +15,5 @@ pub(crate) use serde_modules::{
 pub(crate) use writing::encode_aspect_field_locator;
 #[cfg(test)]
 pub(crate) use writing::{encode_aspect_value_locator, encode_boundary_source_locator};
+
+pub(crate) use borrowed_allocation::decoded_bytes as locator_decoded_bytes;

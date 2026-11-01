@@ -63,7 +63,7 @@ fn ownership_class_distinguishes_runtime_and_custom_policies() {
     );
     assert_eq!(
         AspectMergePolicyKind::Custom(CustomMergePolicyIdentity {
-            name: Arc::from("domain"),
+            name: Arc::<str>::from("domain").into(),
             semantic_version: 1,
         })
         .ownership_class(),
@@ -80,7 +80,7 @@ fn ownership_surface_reports_custom_policy_participation() {
     let custom = [ResolvedAspectMergePolicy {
         aspect_key: AspectKey::new("name").unwrap(),
         policy: AspectMergePolicyKind::Custom(CustomMergePolicyIdentity {
-            name: Arc::from("domain"),
+            name: Arc::<str>::from("domain").into(),
             semantic_version: 1,
         }),
     }];

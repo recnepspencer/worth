@@ -65,7 +65,7 @@ impl<'input> PinnedAggregateReadScope<'input, NativeMemberKey> {
     ) -> Self {
         Self::for_member_definition(
             definition,
-            NativeMemberKey::Projected(std::sync::Arc::new(member)),
+            NativeMemberKey::Projected(std::sync::Arc::new(member).into()),
         )
     }
     /// Descriptive tagged member selection. The actual pinned read validates

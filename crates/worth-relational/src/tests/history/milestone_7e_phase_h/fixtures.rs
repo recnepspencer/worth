@@ -162,7 +162,9 @@ pub(super) fn runtime_with_relation_identity_registry(
                 ])
                 .with_identity_declarations(vec![IdentityBasisDeclaration {
                     scope: IdentityBasisScope::AspectKey(label_key.clone()),
-                    basis: IdentityBasisKind::DeclaredKeySet(Arc::from([label_key])),
+                    basis: IdentityBasisKind::DeclaredKeySet(
+                        Arc::<[worth_foundational::facade::AspectKey]>::from([label_key]).into(),
+                    ),
                 }]),
                 relation_integrity: RelationIntegrityDeclarations::default(),
             })
@@ -227,7 +229,6 @@ pub(super) fn published_merge_authority(
         .replay()
         .canonical_commit_envelope(execution, commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
 }
@@ -292,7 +293,9 @@ fn runtime_with_schema_declared_entity_policy_builder(
             ])
             .with_identity_declarations(vec![IdentityBasisDeclaration {
                 scope: IdentityBasisScope::AspectKey(name_key.clone()),
-                basis: IdentityBasisKind::DeclaredKeySet(Arc::from([name_key])),
+                basis: IdentityBasisKind::DeclaredKeySet(
+                    Arc::<[worth_foundational::facade::AspectKey]>::from([name_key]).into(),
+                ),
             }])
             .with_merge_policy_declarations(vec![AspectMergePolicyDeclaration {
                 aspect_key: status_key,

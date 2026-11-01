@@ -48,24 +48,25 @@ pub(crate) use canonical_commit_envelope::{
     CanonicalIndexDefinitionDelta, CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
 };
 pub(crate) use canonical_commit_envelope::{
-    CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
+    CanonicalCodecRetirementKind, CanonicalOutputMember, CanonicalRequiredOutputCodecRetirement,
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
-    CanonicalRequiredOutputOrigin,
+    CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
 };
 pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,
     RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision, RelationalReplayRecord,
-    RelationalTouchAdjacencyDirection, ReplaySchemaVersion,
+    RelationalTouchAdjacencyDirection, ReplaySchemaVersion, SharedCanonicalCommitEnvelope,
 };
 pub(crate) use canonical_commit_envelope::{
-    CanonicalCommitEnvelopeBody, CanonicalCommitEnvelopeDraft, CanonicalOutputPublication,
+    CanonicalCommitEnvelopeBody, CanonicalCommitEnvelopeDraft, CanonicalEnvelopeReadmissionMemory,
+    CanonicalOutputPublication,
 };
 pub use canonical_record_allocation::RecordAllocationClass;
 pub(crate) use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};
 pub use committed_version::CommittedVersionSummary;
 pub use merge_branch_basis::{
-    MergeBaseSelectionRule, RelationalMergeBranchBasis, RelationalMergeBranchBasisDenial,
-    ResolvedMergeBase,
+    MergeBaseSelectionRule, MergeBasisAncestors, RelationalMergeBranchBasis,
+    RelationalMergeBranchBasisDenial, ResolvedMergeBase,
 };
 #[cfg(test)]
 pub use merge_branch_basis_foundational::{
@@ -214,3 +215,11 @@ pub struct MergeInspection {
 }
 
 pub(crate) use canonical_commit_envelope::CanonicalEnvelopeWire;
+
+pub(crate) use canonical_commit_envelope::{
+    CodecDeclarationsReadmissionMemory, StrategyReadmissionMemory,
+};
+
+pub(crate) use canonical_commit_envelope::EnvelopeProjection;
+
+pub(crate) use canonical_commit_envelope::CanonicalEnvelopeControlAllocation;

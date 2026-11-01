@@ -37,8 +37,8 @@ pub struct MergeRequestDigestBasis {
 pub struct MergeBaseDigestBasis {
     pub rule: MergeBaseSelectionRule,
     pub commit_id: CommitId,
-    pub supporting_left_ancestors: Arc<[CommitId]>,
-    pub supporting_right_ancestors: Arc<[CommitId]>,
+    pub supporting_left_ancestors: crate::history::data::MergeBasisAncestors,
+    pub supporting_right_ancestors: crate::history::data::MergeBasisAncestors,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

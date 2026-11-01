@@ -83,7 +83,7 @@ fn associated_effects_discover_cold_subject_without_reading_unrelated_history() 
         .settle_performed_publication(perform(execution, &runtime, "selected", &association))
         .unwrap();
     let selected_id = committed.commit.commit_id;
-    let semantic = committed.semantic_result().clone();
+    let semantic = committed.semantic_result();
     release_test_commit_snapshot(&runtime, &committed);
     create_entity(execution, &runtime, "unrelated-cold");
     let unrelated = attached_test_medium(&runtime).offered().pop().unwrap();
@@ -127,7 +127,7 @@ fn associated_effects_discover_cold_subject_without_reading_unrelated_history() 
         .readmit_associated_effect(execution, &subjects[0])
         .unwrap();
     assert_eq!(effect.settlement(), Settlement::CheckpointReadmitted);
-    assert_eq!(effect.semantic_result(), &semantic);
+    assert_eq!(effect.semantic_result(), semantic);
     assert!(unrelated_cell.positioned_if_resident().is_none());
     let selected_frame = Artifact::readmit(
         &attached_test_medium(&recovered)
@@ -136,5 +136,5 @@ fn associated_effects_discover_cold_subject_without_reading_unrelated_history() 
         execution,
     )
     .unwrap();
-    assert_eq!(selected_frame.envelope().semantic_result(), &semantic);
+    assert_eq!(selected_frame.envelope().semantic_result(), semantic);
 }

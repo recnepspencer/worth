@@ -37,7 +37,7 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
         .find(|op| op.aspect_key() == &aspect_key("name"))
         .unwrap()
         .clone();
-    let mut duplicate = original.as_ref().clone();
+    let mut duplicate = original.copy_original_for_test(execution);
     let mut operations = duplicate.patch.authoritative_record_patches[0]
         .authoritative_patch
         .full_grammar_operations()
@@ -64,7 +64,7 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
     assert!(!detail.contains("payload-and-client-key-sentinel"));
     assert!(!detail.contains("aspect_key="));
 
-    let mut wrong_binding = original.as_ref().clone();
+    let mut wrong_binding = original.copy_original_for_test(execution);
     let mut op = operation.clone();
     let Operation::WholeAspectSet { binding, .. } = &mut op else {
         panic!("actual scalar set")
@@ -101,7 +101,7 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
     else {
         panic!("actual scalar set")
     };
-    let mut cleared = original.as_ref().clone();
+    let mut cleared = original.copy_original_for_test(execution);
     cleared
         .body_mut_for_test()
         .patch
@@ -187,7 +187,10 @@ fn birth_field_clear_refuses_with_the_selected_struct_operation_summary() {
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
     let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
-    let mut envelope = result.publication().envelope.as_ref().clone();
+    let mut envelope = result
+        .publication()
+        .envelope
+        .copy_original_for_test(execution);
     assert!(validate(execution, &envelope, id, plan, Some(payload)).is_ok());
     let Operation::WholeAspectSet {
         aspect_key,

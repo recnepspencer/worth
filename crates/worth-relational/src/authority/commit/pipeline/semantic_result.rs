@@ -49,6 +49,7 @@ pub(super) fn prepare_semantic_result(
                 .collect::<Result<Vec<_>, _>>()?))
     }).map_err(denied)?;
     Ok(Arc::new(RelationalCommitSemanticResult {
+        decoded_memory: None,
         receipt: input.envelope.commit.clone(),
         created_entities,
         created_relations,

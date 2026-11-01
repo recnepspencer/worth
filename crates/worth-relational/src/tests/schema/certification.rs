@@ -140,7 +140,6 @@ fn schema_evolution_cdc_contract_test() {
         .replay()
         .canonical_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered canonical envelope");
     let recovered_batch = recovered
         .publication()

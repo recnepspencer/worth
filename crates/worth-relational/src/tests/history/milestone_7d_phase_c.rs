@@ -164,7 +164,6 @@ fn promoted_deleted_on_both_sides_executes_through_authoritative_merge_publicati
     let envelope = replay
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("canonical envelope");
 
     assert_eq!(merge.structural_summary.executed_record_count, 1);

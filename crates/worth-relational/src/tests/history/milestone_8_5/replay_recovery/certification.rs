@@ -282,13 +282,11 @@ pub(crate) fn certify_replay_recovery(
         .replay()
         .canonical_commit_envelope(execution, main_commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered main envelope");
     let recovered_feature_envelope = recovered
         .replay()
         .canonical_commit_envelope(execution, feature_commit.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered feature envelope");
     let recovered_current = recovered
         .read_truth()
@@ -301,7 +299,6 @@ pub(crate) fn certify_replay_recovery(
             controller_feature_idempotent_commit.commit.commit_id,
         )
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered controller noop envelope");
     let recovered_branch_heads = StrategyBranchHeadEvidence {
         main: recovered

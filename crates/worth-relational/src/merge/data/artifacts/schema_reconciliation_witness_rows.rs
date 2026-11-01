@@ -1,3 +1,4 @@
+use super::correspondence_witness::{lowercase_sha256, CorrespondenceHashWriter};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
@@ -246,10 +247,11 @@ fn schema_reconciliation_row_digest(
     input: &RelationalSchemaReconciliationWitnessRowInput,
     derived: &DerivedSchemaReconciliationTruth,
 ) -> String {
-    let mut bytes = Vec::new();
-    bytes.extend_from_slice(b"worth.relational.merge.schema_reconciliation_row.v1");
-    bytes.extend_from_slice(
-        &rmp_serde::to_vec_named(&(
+    let mut digest = Sha256::new();
+    digest.update(b"worth.relational.merge.schema_reconciliation_row.v1");
+    rmp_serde::encode::write_named(
+        &mut CorrespondenceHashWriter(&mut digest),
+        &(
             &input.record,
             &input.target_record,
             &input.basis,
@@ -264,9 +266,97 @@ fn schema_reconciliation_row_digest(
             derived.policy,
             derived.denial,
             derived.posture,
-        ))
-        .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "schema reconciliation witness row must encode"),
-    );
-    let digest = Sha256::digest(bytes);
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+        ),
+    )
+    .expect("closed native schema reconciliation row must encode");
+    lowercase_sha256(digest.finalize().into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::schema_reconciliation_witness::RelationalSchemaReconciliationWitness;
+    use super::*;
+    use crate::identity::data::{EntityId, PartitionId};
+    use crate::merge::data::{IdentityBasisKind, IdentityBasisScope};
+
+    #[test]
+    fn streamed_schema_witness_digests_preserve_prior_named_row_bytes_and_reject_tampering() {
+        let input = RelationalSchemaReconciliationWitnessRowInput {
+            record: RecordRef::Entity(EntityId::new(PartitionId(1), 2, 1)),
+            target_record: None,
+            basis: RelationalSchemaReconciliationBasisRow {
+                source_kind_id: None,
+                target_kind_id: None,
+                source_schema_id: Some(SchemaId("schema-λ".into())),
+                source_schema_version_id: Some(SchemaVersionId(3)),
+                target_schema_id: None,
+                target_schema_version_id: None,
+                registry_digest: "c".repeat(64),
+            },
+            source_only_aspect_count: 2,
+            target_only_aspect_count: 0,
+            divergent_aspect_count: 0,
+            unavailable_aspect_count: 0,
+            decision_boundary: MergePolicyDecisionBoundary::AutoResolved,
+            relation_endpoint_divergence: false,
+            correspondence_linkage: Some(RelationalSchemaReconciliationCorrespondenceLinkRow {
+                scope: IdentityBasisScope::EntityKind(KindId(4)),
+                basis: IdentityBasisKind::StorageIdentity,
+                source_record: RecordRef::Entity(EntityId::new(PartitionId(1), 2, 1)),
+                target_record: RecordRef::Entity(EntityId::new(PartitionId(1), 3, 1)),
+            }),
+        };
+        let derived = derive_schema_reconciliation_truth(&input);
+        let mut old_row = b"worth.relational.merge.schema_reconciliation_row.v1".to_vec();
+        old_row.extend(
+            rmp_serde::to_vec_named(&(
+                &input.record,
+                &input.target_record,
+                &input.basis,
+                input.source_only_aspect_count,
+                input.target_only_aspect_count,
+                input.divergent_aspect_count,
+                input.unavailable_aspect_count,
+                input.decision_boundary,
+                input.relation_endpoint_divergence,
+                &input.correspondence_linkage,
+                derived.classification,
+                derived.policy,
+                derived.denial,
+                derived.posture,
+            ))
+            .unwrap(),
+        );
+        let row = RelationalSchemaReconciliationWitnessRow::retained(input);
+        assert_eq!(row.row_digest(), format!("{:x}", Sha256::digest(old_row)));
+        let request = "a".repeat(64);
+        let branch = "b".repeat(64);
+        let mut old = b"worth.relational.merge.schema_reconciliation_witness.v1".to_vec();
+        old.extend(request.as_bytes());
+        old.extend(branch.as_bytes());
+        old.extend(b"1");
+        old.extend(rmp_serde::to_vec_named(&row).unwrap());
+        let witness = RelationalSchemaReconciliationWitness::retained(
+            request,
+            branch,
+            std::sync::Arc::from([row.clone()]),
+        );
+        assert_eq!(
+            witness.witness_digest(),
+            format!("{:x}", Sha256::digest(old))
+        );
+        let wire = rmp_serde::to_vec_named(&witness).unwrap();
+        assert_eq!(
+            rmp_serde::from_slice::<RelationalSchemaReconciliationWitness>(&wire).unwrap(),
+            witness
+        );
+        let mut tampered = row;
+        tampered.divergent_aspect_count = 1;
+        assert!(
+            rmp_serde::from_slice::<RelationalSchemaReconciliationWitnessRow>(
+                &rmp_serde::to_vec_named(&tampered).unwrap()
+            )
+            .is_err()
+        );
+    }
 }

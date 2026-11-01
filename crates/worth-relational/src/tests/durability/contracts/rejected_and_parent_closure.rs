@@ -137,7 +137,6 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         .replay()
         .canonical_commit_envelope(execution, latest_commit_before.unwrap().commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .is_some());
 }
 
@@ -153,7 +152,6 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
         .replay()
         .canonical_commit_envelope(execution, child.commit.commit_id)
         .unwrap()
-        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let corrupt_plan = RecoveryPlan::new(
         runtime.config().clone(),
@@ -162,7 +160,7 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
             crate::durability::migration::ReadmittedCanonicalCommit::exact(
                 crate::history::data::PositionedCanonicalCommit::for_test(
                     child.patch_position(),
-                    std::sync::Arc::new(child_envelope),
+                    child_envelope.into_arc(),
                 ),
             ),
         ],

@@ -26,10 +26,11 @@ struct FakeHistorySource {
 }
 
 impl CommitEnvelopeSource for FakeHistorySource {
-    fn resident_commit_envelope(&self, commit_id: CommitId) -> Option<CanonicalCommitEnvelope> {
-        self.envelopes
-            .get(&commit_id)
-            .map(|envelope| envelope.as_ref().clone())
+    fn resident_commit_envelope(
+        &self,
+        commit_id: CommitId,
+    ) -> Option<Arc<CanonicalCommitEnvelope>> {
+        self.envelopes.get(&commit_id).cloned()
     }
 }
 
@@ -151,9 +152,13 @@ fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
         &runtime,
         "predicate-semantic-source",
     );
-    let mut envelope = produced.envelope().clone();
-    *envelope.body_mut_for_test() = (*draft).clone();
+    let envelope = produced.publication().envelope.clone().into_arc();
     crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
+    drop(produced);
+    drop(runtime);
+    let mut envelope = std::sync::Arc::try_unwrap(envelope)
+        .expect("source owner and result released their actual envelope shares");
+    *envelope.body_mut_for_test() = draft.into_body();
     envelope
 }
 
