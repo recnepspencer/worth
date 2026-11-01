@@ -3,10 +3,14 @@ use super::*;
 use worth_query_decl::facade::{application_schema::*, worth_query_application_contribution};
 use worth_query_host::facade::application_contribution::*;
 
+mod box_provider;
+mod box_query;
 mod model;
 mod mutation;
 mod query;
 mod triangle;
+pub use box_provider::{SceneBoxObservations, SceneFaceBoxIndex, SceneFaceConfiguration};
+pub use box_query::*;
 pub use model::*;
 pub use mutation::*;
 pub use query::*;
@@ -32,17 +36,26 @@ worth_query_application_contribution! {
             schema.invariant(triangle::definition::<S>())
                 .application_query(query::definition::<S>())
                 .application_query_binding::<SceneFacesReadBinding<S>>()
+                .application_query(box_query::definition::<S>())
+                .application_query_binding::<SceneFaceBoxesReadBinding<S>>()
+                .managed_index(worth_query_decl::facade::application_query::ApplicationManagedIndexDefinition::<S,SceneFaceBoxIndex<S>>::new())
         }
     }
 }
 
 impl<S: SceneFaceSchemaBinding> WorthQueryApplicationContribution<S> for SceneFaceContribution {
-    type Configuration = ();
+    type Configuration = SceneFaceConfiguration;
     fn configure(
-        (): (),
+        configuration: SceneFaceConfiguration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
     ) -> Result<(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial>
     {
+        setup
+            .managed_index_provider::<SceneFaceBoxIndex<S>, _>(box_provider::Provider(
+                configuration.observations,
+            ))
+            .with_predicate_routing()
+            .install()?;
         setup.handler::<AttachPlanarFaceBinding<S>, _>(mutation::AttachFaceHandler)?;
         setup.invariant(
             TriangleFaceContour::reference(),

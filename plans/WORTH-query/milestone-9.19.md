@@ -2506,3 +2506,27 @@ Scene/context custody still supplies model affinity and Native contour authority
 ordinary consumer tests. See the [typed-box evidence](milestone-9.19-phase5-typed-boxes-evidence.md).
 Maintained Scene Source/provider, exact face-contact integration, genuine same-Scene
 authoring, spatial locality courts, public closure and Phase6 remain unfinished.
+
+### Phase5 maintained Scene Source and enclosure candidates (2026-11-01)
+
+SceneFaceContribution now installs the actual Native/AdmitRebuild box provider with
+inverse predicate routing over unchanged SceneFacesRead v1. ConsumerSchema adopts
+required SceneFaceConfiguration at minor1.3. Full-generation Source slots and
+framework nodes feed the existing unsigned box AVL; a separate current-only
+SceneFaceBoxesRead Parent orders projected root keys and returns AABB candidates.
+Source v1 retains empty parameters and current/pinned support. Candidate enclosures
+do not establish exact face contact.
+
+The real managed receiver required bounded admitted decoding at the existing
+TopologyLengthBinding owner. UInt64 wire, identity, unit/frame, nonzero constructor
+and absent canonical/native-input profiles are preserved; strict decoding remains
+unchanged. Source cardinality refusal retains its original typed projection cause
+before provider callbacks and Native invariants. A causal boundary-check vocabulary
+repair distinguishes actual unambiguous enum variants from runtime-root references,
+preserving the exact cancellation oracle and genuine-root guards.
+
+209 selected consumer tests and37 checker tests pass. The final eight Scene courts
+protect replacement extent, original cancellation and Source-pinned/Parent-current-only
+posture. See the [provider evidence](milestone-9.19-phase5-scene-box-provider-evidence.md).
+Exact face-contact validation, genuine same-Scene creation, invalid Body-only
+contour-length mutation, spatial scale, public closure and Phase6 remain unfinished.

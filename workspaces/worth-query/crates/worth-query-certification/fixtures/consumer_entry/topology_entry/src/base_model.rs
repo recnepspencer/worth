@@ -2,7 +2,7 @@
 use super::fixture_values::PositiveLength;
 use worth_query_decl::facade::{
     application_schema::*, worth_query_aspect, worth_query_entity, worth_query_field,
-    worth_query_unit, worth_query_value_binding,
+    worth_query_unit,
 };
 
 /// What the shared topology model asks of the schema that declares it. A
@@ -15,16 +15,7 @@ pub trait TopologyModelBinding: ApplicationSchema {
     }
 }
 
-worth_query_value_binding! {
-    pub TopologyLengthBinding for PositiveLength {
-        identity: "worth.query.certification.positive-length.v1",
-        scalar: UInt64,
-        unit: "Metre",
-        frame: "worth.frames.model-local.v1",
-        encode: PositiveLength::get,
-        decode: PositiveLength::new,
-    }
-}
+use super::TopologyLengthBinding;
 
 worth_query_entity!(pub Body for Schema: TopologyModelBinding);
 worth_query_unit!(pub Metre(()) for Schema: TopologyModelBinding);

@@ -965,8 +965,11 @@ Face records, required Scene membership and Body anchor, a Native exact-three
 contour rule, `AttachPlanarFace` and the parameter-free `SceneFacesRead` structural
 query. Coordinates remain on Body in Metre/model-local.v1. Attachment derives
 context from the actual anchor; each Scene contains faces from that Native context.
-This ordinary complete query is the future provider's Source profile; maintained
-Source custody and spatial discovery remain unfinished. See the
+The ordinary complete query also supplies the actual Native-maintained Source
+profile for `SceneFaceBoxesRead`, a current-only enclosure-candidate query with
+inverse predicate routing. `SceneFaceConfiguration` installs its actual provider
+at the existing contribution boundary. Exact face-contact validation and large
+spatial discovery qualification remain unfinished. See the
 [Scene/Face evidence](../plans/WORTH-query/milestone-9.19-phase5-scene-face-evidence.md).
 
 `SceneFaceRow::bounds()` derives an exact `IntegerBox2<ModelLocalMetre>` enclosure
@@ -975,6 +978,10 @@ retains the existing concrete signed `Box2` domain and raw serde carrier meaning
 Cross-domain box operations are type errors. The type identifies the unit/frame
 class; Scene/context custody still supplies actual model affinity. These bounds
 are candidates and do not certify contour validity or exact face contact.
+The concrete `TopologyLengthBinding` now supplies bounded admitted decoding of its
+unchanged UInt64 wire so strict managed reads can consume PositionX/Y lawfully.
+It preserves original admission refusal; the generic manual-scalar macro remains
+unchanged. See the [Scene box provider evidence](../plans/WORTH-query/milestone-9.19-phase5-scene-box-provider-evidence.md).
 
 ### Native managed Source impact history
 

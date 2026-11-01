@@ -1,6 +1,8 @@
 //! Real model, Native eligibility and complete structural Source receivers.
 use super::*;
 mod bounds;
+mod box_candidates;
+mod length_codec;
 mod structural;
 use worth_query_consumer_values::{PlanarVertex, PlanarVertexReplacement};
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
@@ -89,6 +91,8 @@ fn scene_faces_preserve_actual_identity_and_indirect_coordinate_and_rewire_reads
     assert_eq!(rewired[0].points, [[1, 1], [11, 2], [1, 10]]);
     assert_eq!(rewired[1], original[1]);
     let before = source_version(&request);
+    let updates = world.scene_box_observations.updates.load(Ordering::SeqCst);
+    let builds = world.scene_box_observations.builds.load(Ordering::SeqCst);
     let duplicate = request
         .advanced()
         .mutate(AttachPlanarFace {
@@ -108,19 +112,14 @@ fn scene_faces_preserve_actual_identity_and_indirect_coordinate_and_rewire_reads
     else {
         panic!("{duplicate:?}")
     };
-    let Some(worth_query_host::facade::primary_graph::WorthQueryRelationLawDenial::Cardinality {
-        count,
-        limit,
-        boundary,
-        ..
-    }) = denial.relation_law()
-    else {
-        panic!("{denial:?}")
-    };
-    assert_eq!((count, limit), (2, 1));
+    box_candidates::require_projection_cardinality(&denial);
     assert_eq!(
-        boundary,
-        worth_query_host::facade::application_invariants::RelationCardinalityBoundary::Target
+        world.scene_box_observations.updates.load(Ordering::SeqCst),
+        updates
+    );
+    assert_eq!(
+        world.scene_box_observations.builds.load(Ordering::SeqCst),
+        builds
     );
     assert!(denial.custom_invariant_denial().is_none());
     assert_eq!(source_version(&request), before);

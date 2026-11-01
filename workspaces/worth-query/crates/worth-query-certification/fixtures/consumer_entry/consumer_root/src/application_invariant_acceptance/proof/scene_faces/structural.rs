@@ -31,7 +31,7 @@ fn missing_scene_membership_and_missing_anchor_refuse_real_seed_publication() {
                 },
                 Arc::new(AtomicUsize::new(0)),
                 (),
-                (),
+                worth_query_topology_entry::SceneFaceConfiguration::default(),
             ),
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             resources::application_limits(),

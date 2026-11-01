@@ -73,6 +73,8 @@ pub use source_adjustment::*;
 
 mod base_model;
 pub use base_model::*;
+mod length_binding;
+pub use length_binding::TopologyLengthBinding;
 mod schema_binding;
 pub use schema_binding::TopologySchemaBinding;
 mod scene_faces;

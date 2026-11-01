@@ -6031,12 +6031,13 @@ one actual Body contour. Its Native `TriangleFaceContour` rule requires three
 distinct vertices and closure on the third successor. The existing positive-turn
 rule continues to own orientation. `SceneFacesRead` is a complete ordinary
 structural query with exact root/successor/predecessor coordinates and actual
-Face/anchor identities; it does not yet perform spatial lookup or install a
-managed provider.
+Face/anchor identities. The same profile supplies the actual Native-maintained
+Source for `SceneFaceBoxesRead`, which discovers enclosure candidates through the
+shared typed box tree. Candidate overlap does not promise exact face contact.
 
-The existing ConsumerSchema demonstrates explicit opt-in through minor1.2, a
-fourth contribution/configuration element, a dedicated scene action and the
-installed rule roster. With its ordinary authenticated request and program:
+The existing ConsumerSchema demonstrates explicit opt-in through minor1.3, a
+fourth contribution with required `SceneFaceConfiguration`, a dedicated scene
+action and the installed rule roster. With its ordinary authenticated request and program:
 
 ```rust
 use worth_query_topology_entry::{AttachPlanarFace, SceneFacesRead};
@@ -6070,6 +6071,27 @@ keeps its old default i64 meaning. Typed bounds cannot be combined across these
 unit/frame classes. A shared frame class does not prove that two model instances
 share an origin: actual Scene/context custody remains necessary. The enclosure is
 derived from real projected points, and supplies no contour or publication proof.
+
+For the maintained candidate read, provide a probe in the selected Scene's local
+frame. The Source remains parameter-free/current-and-pinned; the Parent has its
+own probe and refuses retained bases before provider work:
+
+```rust
+use worth_query_topology_entry::{SceneFaceBoxesRead, SceneBoxProbe};
+let candidates = request.query(SceneFaceBoxesRead {
+    scene_key: "scene".into(),
+    probe: SceneBoxProbe { lower_x: 9, lower_y: 9, upper_x: 9, upper_y: 9 },
+}).execute()?;
+```
+
+The actual cold root may be built during Attach's Native preparation, before any
+Parent read. Warm coordinate motion and vertex replacement maintain that root.
+A box hit outside the triangle remains a candidate, as the finite receiving court
+demonstrates. No implicit cross-model transform or private cache is introduced.
+The concrete topology length binding supplies an explicit bounded admitted
+UInt64 decoder for these managed field reads, preserving its old identity,
+wire, Metre/frame and nonzero domain constructor. Strict managed decoding never
+falls back to an unadmitted manual decoder.
 
 A result-set/source expectation also retains the original Source READ support.
 Revoking a Source-only permission refuses a later non-querying mutation before

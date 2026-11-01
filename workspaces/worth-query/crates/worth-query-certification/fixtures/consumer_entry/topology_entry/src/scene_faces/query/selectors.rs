@@ -3,8 +3,9 @@ use super::*;
 use worth_query_decl::facade::worth_query_portable_type;
 pub struct RootXSlot;
 worth_query_portable_type!(RootXSlot => "worth.query.scene-face.root_x.v1");
-pub(super) fn root_x<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn root_x<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultFieldRef<
+    Q,
     RootXSlot,
     S,
     Body,
@@ -19,8 +20,9 @@ pub(super) fn root_x<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultField
 }
 pub struct RootYSlot;
 worth_query_portable_type!(RootYSlot => "worth.query.scene-face.root_y.v1");
-pub(super) fn root_y<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn root_y<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultFieldRef<
+    Q,
     RootYSlot,
     S,
     Body,
@@ -35,8 +37,9 @@ pub(super) fn root_y<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultField
 }
 pub struct NextXSlot;
 worth_query_portable_type!(NextXSlot => "worth.query.scene-face.next_x.v1");
-pub(super) fn next_x<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn next_x<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultFieldRef<
+    Q,
     NextXSlot,
     S,
     Body,
@@ -51,8 +54,9 @@ pub(super) fn next_x<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultField
 }
 pub struct NextYSlot;
 worth_query_portable_type!(NextYSlot => "worth.query.scene-face.next_y.v1");
-pub(super) fn next_y<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn next_y<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultFieldRef<
+    Q,
     NextYSlot,
     S,
     Body,
@@ -67,8 +71,9 @@ pub(super) fn next_y<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultField
 }
 pub struct PreviousXSlot;
 worth_query_portable_type!(PreviousXSlot => "worth.query.scene-face.previous_x.v1");
-pub(super) fn previous_x<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn previous_x<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultFieldRef<
+    Q,
     PreviousXSlot,
     S,
     Body,
@@ -83,8 +88,9 @@ pub(super) fn previous_x<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultF
 }
 pub struct PreviousYSlot;
 worth_query_portable_type!(PreviousYSlot => "worth.query.scene-face.previous_y.v1");
-pub(super) fn previous_y<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn previous_y<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultFieldRef<
+    Q,
     PreviousYSlot,
     S,
     Body,
@@ -99,8 +105,9 @@ pub(super) fn previous_y<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultF
 }
 pub struct AnchorKeySlot;
 worth_query_portable_type!(AnchorKeySlot => "worth.query.scene-face.anchor_key.v1");
-pub(super) fn anchor_key<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn anchor_key<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultFieldRef<
+    Q,
     AnchorKeySlot,
     S,
     Body,
@@ -115,8 +122,9 @@ pub(super) fn anchor_key<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultF
 }
 pub struct FaceKeySlot;
 worth_query_portable_type!(FaceKeySlot => "worth.query.scene-face.face_key.v1");
-pub(super) fn face_key<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn face_key<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultFieldRef<
+    Q,
     FaceKeySlot,
     S,
     Face,
@@ -131,8 +139,9 @@ pub(super) fn face_key<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultFie
 }
 pub struct NextSlot;
 worth_query_portable_type!(NextSlot => "worth.query.scene-face.next.v1");
-pub(super) fn next<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultRelationRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn next<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultRelationRef<
+    Q,
     NextSlot,
     S,
     PlanarSuccessor,
@@ -145,8 +154,9 @@ pub(super) fn next<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultRelatio
 }
 pub struct PreviousSlot;
 worth_query_portable_type!(PreviousSlot => "worth.query.scene-face.previous.v1");
-pub(super) fn previous<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultRelationRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn previous<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultRelationRef<
+    Q,
     PreviousSlot,
     S,
     PlanarSuccessor,
@@ -159,8 +169,9 @@ pub(super) fn previous<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultRel
 }
 pub struct FaceSlot;
 worth_query_portable_type!(FaceSlot => "worth.query.scene-face.face.v1");
-pub(super) fn face<S: SceneFaceSchemaBinding>() -> ApplicationQueryResultRelationRef<
-    SceneFacesQuery,
+pub(in crate::scene_faces) fn face<S: SceneFaceSchemaBinding, Q>(
+) -> ApplicationQueryResultRelationRef<
+    Q,
     FaceSlot,
     S,
     FaceAnchor,

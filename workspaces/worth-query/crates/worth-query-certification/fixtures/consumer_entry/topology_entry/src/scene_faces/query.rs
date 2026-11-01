@@ -4,7 +4,8 @@ use worth_query_decl::facade::{application_query::*, worth_query_structured_valu
 use worth_query_host::facade::primary_graph::*;
 mod binding;
 mod projection;
-mod selectors;
+pub(super) use projection::points;
+pub(super) mod selectors;
 pub use binding::*;
 use selectors::*;
 
@@ -49,52 +50,7 @@ impl<S: SceneFaceSchemaBinding> ApplicationQueryMarkerIdentity<S> for SceneFaces
 }
 pub(super) fn definition<S: SceneFaceSchemaBinding>(
 ) -> ApplicationQueryDefinition<S, SceneFacesQuery, SceneFacesParameters, SceneFaceRow, Scene> {
-    let shape = ApplicationQueryResultShapeBuilder::<
-        S,
-        SceneFacesQuery,
-        Body,
-        SceneFaceRow,
-        SceneFaceRowBinding,
-    >::new(Body::reference())
-    .field(anchor_key())
-    .field(root_x())
-    .field(root_y())
-    .relation(
-        next(),
-        ApplicationQueryResultShapeBuilder::<
-            S,
-            SceneFacesQuery,
-            Body,
-            SceneFaceRow,
-            SceneFaceRowBinding,
-        >::new(Body::reference())
-        .field(next_x())
-        .field(next_y()),
-    )
-    .relation(
-        previous(),
-        ApplicationQueryResultShapeBuilder::<
-            S,
-            SceneFacesQuery,
-            Body,
-            SceneFaceRow,
-            SceneFaceRowBinding,
-        >::new(Body::reference())
-        .field(previous_x())
-        .field(previous_y()),
-    )
-    .relation(
-        face(),
-        ApplicationQueryResultShapeBuilder::<
-            S,
-            SceneFacesQuery,
-            Face,
-            SceneFaceRow,
-            SceneFaceRowBinding,
-        >::new(Face::reference())
-        .field(face_key()),
-    )
-    .build();
+    let shape = shape::<S, SceneFacesQuery>();
     ApplicationQueryDefinitionBuilder::declare(ApplicationQueryReference::from_declaration())
         .root(Body::reference())
         .scope(Scene::reference())
@@ -111,4 +67,40 @@ pub(super) fn definition<S: SceneFaceSchemaBinding>(
         )
         .build()
         .expect("the scene face Source profile is canonical")
+}
+
+pub(in crate::scene_faces) fn shape<
+    S: SceneFaceSchemaBinding,
+    Q: ApplicationQueryMarkerIdentity<S, ResultBinding = SceneFaceRowBinding>,
+>() -> TypedApplicationQueryResultShape<S, Q, Body, SceneFaceRow, SceneFaceRowBinding> {
+    ApplicationQueryResultShapeBuilder::<S, Q, Body, SceneFaceRow, SceneFaceRowBinding>::new(
+        Body::reference(),
+    )
+    .field(anchor_key())
+    .field(root_x())
+    .field(root_y())
+    .relation(
+        next(),
+        ApplicationQueryResultShapeBuilder::<S, Q, Body, SceneFaceRow, SceneFaceRowBinding>::new(
+            Body::reference(),
+        )
+        .field(next_x())
+        .field(next_y()),
+    )
+    .relation(
+        previous(),
+        ApplicationQueryResultShapeBuilder::<S, Q, Body, SceneFaceRow, SceneFaceRowBinding>::new(
+            Body::reference(),
+        )
+        .field(previous_x())
+        .field(previous_y()),
+    )
+    .relation(
+        face(),
+        ApplicationQueryResultShapeBuilder::<S, Q, Face, SceneFaceRow, SceneFaceRowBinding>::new(
+            Face::reference(),
+        )
+        .field(face_key()),
+    )
+    .build()
 }

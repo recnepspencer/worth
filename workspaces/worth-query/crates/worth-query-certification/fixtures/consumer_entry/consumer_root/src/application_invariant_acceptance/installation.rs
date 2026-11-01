@@ -24,6 +24,7 @@ use worth_query_topology_entry::{ConsumerPrincipalBinding, TopologyConfiguration
 pub(super) struct ConsumerWorld<Program = ConsumerProgram> {
     pub(super) application:
         installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, Program>,
+    pub(super) scene_box_observations: Arc<worth_query_topology_entry::SceneBoxObservations>,
     pub(super) invariant_calls: Arc<AtomicUsize>,
     pub(super) invariant_probe: Arc<AtomicUsize>,
     pub(super) producer_authorization_denials: Arc<AtomicUsize>,
@@ -49,7 +50,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
         },
         Arc::new(AtomicUsize::new(0)),
         (),
-        (),
+        worth_query_topology_entry::SceneFaceConfiguration::default(),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -102,7 +103,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         },
         Arc::new(AtomicUsize::new(0)),
         (),
-        (),
+        worth_query_topology_entry::SceneFaceConfiguration::default(),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -156,7 +157,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         },
         Arc::new(AtomicUsize::new(0)),
         (),
-        (),
+        worth_query_topology_entry::SceneFaceConfiguration::default(),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),

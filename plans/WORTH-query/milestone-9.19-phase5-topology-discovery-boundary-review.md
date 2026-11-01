@@ -1,9 +1,9 @@
 # Phase5 actual topology spatial discovery: boundary review
 
-Status: spatial integration review remains in progress. Exact integer orientation
-and the Scene/Face model with ordinary structural Source query have separate
+Status: exact contact and spatial scale integration remain in progress. Exact integer orientation,
+typed bounds and the Scene/Face model with actual maintained Source/candidate query have separate
 boundary reviews, plans and evidence. Those implemented prerequisites do not
-install a managed spatial provider or complete face discovery.
+complete exact-contact validation or large face-discovery qualification.
 Bank receiving is committed as6a8d81886a2a985ef6e701086a7947120ecdc967.
 
 ## Verified authority and existing paths
@@ -30,7 +30,8 @@ Bank receiving is committed as6a8d81886a2a985ef6e701086a7947120ecdc967.
   own identity. Reuse the numerical mechanics and generic lifecycle through an
   actual topology adapter, not that Catalog-specific provider wholesale.
 - ConsumerSchema now composes TopologyContribution, ParameterContribution,
-  ConsumerProgramDeployment and SceneFaceContribution at minor1.2.
+  ConsumerProgramDeployment and SceneFaceContribution at minor1.3, with required
+  SceneFaceConfiguration installing the real box provider and predicate routing.
   worth_query_application fixes that declaration
   and host contribution tuple together. No dynamic optional-contribution builder
   was found in that ordinary path. Existing geometry Catalog is a separate schema.
@@ -64,7 +65,7 @@ not discharge this face-discovery requirement.
    epsilon, clamp or duplicated geometry. SceneFaceRow::bounds() is the actual
    unsigned consumer. Model-instance affinity remains with Scene/context custody.
 3. Established by the Scene/Face slice: the existing ConsumerSchema owner adopts
-   a fourth contribution at minor1.2, preserving v1 query meanings and using the
+   a fourth contribution, now at minor1.3 with its actual provider, preserving v1 query meanings and using the
    matching host tuple and actual program roster. No new schema is created solely
    for the size court, and no competing declaration authority is introduced.
 
@@ -74,9 +75,10 @@ not discharge this face-discovery requirement.
   Source profile are implemented in the Scene/Face slice. A later invalid Body-only
   contour-length edit remains an explicit hostile receiver target; lawful vertex
   replacement alone proves projection freshness.
-- The next managed binding must consume that exact Scene->Face->anchor Source
+- The implemented managed binding consumes that exact Scene->Face->anchor Source
   profile, including root, predecessor/successor coordinates and reverse FaceAnchor
-  identity. No current prerequisite supplies maintained Native Source custody.
+  identity. Native Source custody and ordinary AABB candidate reading are now real;
+  exact contact validation and large spatial qualification remain unfinished.
 - AttachPlanarFace preserves actual Native context. Later same-Scene growth needs
   genuine scene-context contour creation; legacy CreateCycle issues a fresh context.
   Never divide the50000-face universe into per-face Scenes to obtain locality.

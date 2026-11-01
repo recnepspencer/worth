@@ -30,6 +30,8 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
     let invariant_calls = Arc::new(AtomicUsize::new(0));
     let invariant_probe = Arc::new(AtomicUsize::new(0));
     let producer_authorization_denials = Arc::new(AtomicUsize::new(0));
+    let scene_box_observations =
+        Arc::new(worth_query_topology_entry::SceneBoxObservations::default());
     let configuration = (
         TopologyConfiguration {
             final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
@@ -42,7 +44,9 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         },
         Arc::clone(&parameter_calls),
         (),
-        (),
+        worth_query_topology_entry::SceneFaceConfiguration {
+            observations: Arc::clone(&scene_box_observations),
+        },
     );
     let limits = resources::application_limits();
     let deployment_scopes: std::collections::BTreeSet<_> = std::iter::once(*program.revision())
@@ -94,6 +98,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
     assert_eq!(topology_calls.load(Ordering::SeqCst), 1);
     assert_eq!(parameter_calls.load(Ordering::SeqCst), 1);
     Ok(ConsumerWorld {
+        scene_box_observations,
         application,
         invariant_calls,
         invariant_probe,
