@@ -1176,6 +1176,16 @@ Do not put historical payloads into the eager manifest, select fully Embedded
 placement for Directory Homes, or trigger the old decoder's inline-expansion
 branch by adding inline envelopes alongside external members.
 
+CHK18 always requires canonical_members as a nondefault ordered sequence. It is
+empty only when the commit index is empty; a partial nonempty index cannot use
+the same magic to imply complete backing. Standalone Embedded serialized capture
+also supplies the complete original prefix. Newly published Memory entries use
+their actual retained original frames; Journal and prior selected entries use
+their original protected sources. A strict require-original route never calls
+the ordinary CHK17 resident-envelope/export fallback. Missing originals refuse
+before checkpoint effects. The separate in-memory DurableCheckpoint API keeps
+its existing contract; selected CHK17 bytes refuse at the clean format cutover.
+
 The first format uses one original artifact per member and one directory entry
 `{ position: PatchStreamPosition, member: RelationalDurableMemberLocator }`.
 Entries are strictly ordered and correspond one-to-one with the commit index.
@@ -1188,10 +1198,9 @@ digest. Validate both at their existing owners.
 The Native directory validates the new position/page inventory, complete
 coverage, uniqueness and agreement with its actual commit index. Construct
 selected-checkpoint canonical backing only from that validated directory and
-its genuine source/member custody. Existing standalone capture may retain its
-declared partial history contract; the coupled operation must issue and retain
-complete canonical backing for every covered commit, and coupled Home opening
-must require it. A missing covered member or incomplete inventory refuses; it
+its genuine source/member custody. Every CHK18 capture issues and retains complete
+canonical backing for every covered commit, and coupled Home opening must require
+it. A missing covered member or incomplete inventory refuses; it
 never falls back to a canonical journal read or to index-only meaning.
 
 Extend the actual envelope-residency source placement with selected-checkpoint
@@ -1203,8 +1212,8 @@ receipt, position, digest, schema, roots, association and complete authoritative
 projection. Covered head admission, historical image materialization, component
 admission and associated-effect admission all consume the actual selected
 backing retained by their catalog residency. Only uncovered tails use journal
-backing. Strengthen component admission's legacy tuple equality to the same full
-Artifact predicate. No live performed capability is reconstructed.
+backing. Keep component admission's existing full Artifact predicate while
+changing its actual placement route. No live performed capability is reconstructed.
 
 New Directory canonical members remain demand-read native data. World may
 require all historical semantic results during reconciliation, so that work is
@@ -1214,6 +1223,39 @@ admission rather than rereading journals or duplicating payloads. Explicitly
 fund page/index decode, temporary/retained bytes and escaped backing grants with
 the original request. Fully Embedded checkpoint support remains distinct and
 keeps its own cost contract; no new ownership-policy mode enum is introduced.
+
+Each selected directory retains protection over the actual installed, verified
+selected read and its member table. Add the narrow selected-read provider port
+beside existing protected-source admission; Native still constructs the issuer
+Weak from the original source, and validates its data identity before callbacks.
+Never acquire a fresh latest reader on member demand or wrap the source in a new
+issuer. Member-directory coverage comes from its validated complete inventory;
+it does not pretend that those members are a readable canonical journal prefix.
+Inline member-only sources retain zero journal heads. Uncovered journal tails
+keep their existing ordinary recovery/replay contract; this slice's no-replay
+claim concerns covered canonical history, not service-free bare reconstruction.
+
+Fund each new canonical roster, directory array, mixed member-list buffer,
+selected-read/control owner, replacement map and ACK cursor with the SAME original
+request before growth. The required wire sequence uses an intrinsic shared data
+owner so whole-manifest Clone cannot deep-copy it without funding. Its explicit
+request-aware decode admits that array before deserialization growth; no ambient
+System allocation fallback or blanket manifest grant is allowed. Older untouched
+manifest/schema/image heaps remain separately open. Keep one original framed
+artifact per member, with no extra member-frame wrapper or packing policy.
+
+The destination adds durability/checkpoint_history/{capture,inventory,readmission}
+and history/commit/envelope_residency/selected_checkpoint.rs, integrates the
+existing capture/codec/cold catalog and all placement consumers, and adds Store
+cold_source/selected_replacement.rs beside its existing real selection owner.
+The existing section/Home checkpoint journey passes the original request through
+acknowledge_selected into Native publication advancement. Retain the SAME actual
+prepared attempt, selected read, old placement and captured cells through stop or
+Busy; do not drop them and reconstruct a purported retry. Controlled replacement
+uses the fixed original pending selection identity and actual verified EOF read,
+not selected_membership's bare Vec clones. Initial-map and ordinary different-
+selection refusals remain intact. Retire the old read through the existing owner;
+final inert metadata destruction remains explicitly unbudgeted.
 
 Complete-operation acknowledgement also installs validated selected-member
 backing into its ORIGINAL frozen covered residency cells. Preserve the actual
