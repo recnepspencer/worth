@@ -1,6 +1,6 @@
 //! Ordinary contribution authoring/install, reusing the existing catalog and provider.
 use super::{
-    authoring, generated, geometry,
+    authoring, correction, generated, geometry,
     handler::{DecisionRead, Handler},
     mutation, prefix, protected, query, rule,
     schema::*,
@@ -22,12 +22,22 @@ impl ApplicationSchemaContribution<Catalog> for Contribution {
     ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
         // Declare this root's typed Source, fields, index and public bindings.
         // Its fixed contribution adds the rule and original decision reads.
-        geometry::generated::declare(generated::declare(super::schema::declare(builder)))
-            .operation_managed_index_read::<query::PrefixBinding, _, _>(
-                mutation::RenameItem::reference(),
-            )
-            .operation_read_field(mutation::RenameItem::reference(), ItemEnabled::reference())
-            .invariant(rule::definition())
+        correction::declare(geometry::generated::declare(generated::declare(
+            super::schema::declare(builder),
+        )))
+        .operation_managed_index_read::<query::PrefixBinding, _, _>(
+            mutation::RenameItem::reference(),
+        )
+        .operation_read_field(mutation::RenameItem::reference(), ItemEnabled::reference())
+        .invariant(rule::definition())
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Catalog>,
+    >(
+        source_binding: std::any::TypeId,
+        visitor: V,
+    ) -> Result<V::Output, V> {
+        correction::visit(source_binding, visitor)
     }
 }
 pub struct Configuration {
@@ -69,6 +79,7 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
             registration.with_refinement()
         };
         registration.install()?;
+        correction::configure(setup)?;
         setup.handler::<mutation::Binding, _>(Handler(configuration.decision_read))?;
         setup.handler::<super::refinement::mutation::Binding, _>(mutation::Handler)?;
         setup.handler::<protected::expectation::Binding, _>(mutation::Handler)?;
@@ -133,6 +144,10 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .action::<geometry::generated::request::Binding, geometry::generated::program::Delivery>()
                 .finish_action()
                 .action::<generated::source::operation::Binding, generated::program::Delivery>()
+                .finish_action()
+                .action::<correction::note::Binding, correction::NoteDelivery>()
+                .finish_action()
+                .action::<correction::mover::Binding, correction::MoverDelivery>()
                 .finish_action()
                 .native_action::<mutation::Binding>()
                 .finish_action()

@@ -8,6 +8,7 @@ use crate::validation::candidate_source::{
 use std::sync::Weak;
 pub(in crate::mvcc::publication::companion) mod affinity;
 mod correspondence;
+mod history;
 
 pub struct ManagedIndexSourceObservation {
     pub(in crate::mvcc) core: Weak<CompanionBranchCellCore>,

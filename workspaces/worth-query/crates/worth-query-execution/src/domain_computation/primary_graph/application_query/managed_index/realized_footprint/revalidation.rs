@@ -68,6 +68,18 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
                     .same_membership(&other.candidates, checkpoint),
             }
     }
+    fn history_selector(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<worth_relational::facade::history::RelationalAuthoredManagedSourceSelector>,
+        worth_relational::facade::history::RelationalAuthoredWriteDenial,
+    > {
+        self.original
+            .authored_history_selector(runtime, *execution)
+            .map(Some)
+    }
     fn revalidate(
         &self,
         runtime: &RelationalRuntime,

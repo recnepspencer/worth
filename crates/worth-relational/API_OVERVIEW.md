@@ -351,4 +351,12 @@ preparation, without advancing the cursor. Explicit generation rebuild may
 succeed with marked gaps; managed admission still refuses those intervals.
 Merge, schema and materialization transitions have no supported coverage in
 this profile. Ordinary authored record/index/adjacency history keeps its own
-contract. Query relevance, performed cancellation and paired-support correction remain separate work.
+contract. Query owns relevance, performed cancellation and paired-support comparison;
+the conservative Query integration below does not establish exact relevance.
+
+A genuine `ManagedIndexSourceObservation` can call
+`authored_history_selector(runtime, execution)` to issue that same opaque selector
+using its private observed Source program and scope. Issuance checks the actual
+observation/runtime correspondence and original controls. This is metadata only;
+Query must still admit its retained influence, require canonical performed
+cancellation and compare support before correction.

@@ -10,6 +10,7 @@ use worth_query_host::facade::{
 };
 
 mod cancellation;
+mod correction;
 mod decision_scope;
 mod exact_refinement;
 mod membership;

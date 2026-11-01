@@ -2,6 +2,7 @@
 //! The original explicit-rebuild catalog and its Phase1 courts remain unchanged.
 mod authoring;
 mod bounds;
+mod correction;
 #[cfg(test)]
 mod court;
 mod generated;

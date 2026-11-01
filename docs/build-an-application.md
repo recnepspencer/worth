@@ -5900,7 +5900,12 @@ record entering an empty range invalidates it. A changed candidate input prevent
 equality even if the returned exact rows stay empty. Installed slot correspondence,
 full-generation relation/row identities, predicate support and order remain part
 of the comparison. Semantic restoration alone never proves canonical authored
-history cancellation; managed correction-history support remains unfinished.
+history cancellation. Qualified retained managed facts can join ordinary recorded
+correction through conservative Native scope-impact candidates: every selected
+candidate needs a genuine performed cancellation before strict original and
+complete target comparison. Same-scope unrelated edits can still refuse; exact
+historical relevance and other correction profiles remain unfinished. See the
+[correction guide](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
 Independent ordinary field and adjacency revision facts still apply. Thus equal
 restored managed content does not guarantee that every populated observation
 remains eligible. Actual root-predicate reads keep their revision facts even
@@ -5956,8 +5961,9 @@ readmission and canonical input-cutoff integration remain unqualified here; the
 selected governed execution mode still refuses that pipeline. The producer reuse
 and cutoff results above apply to the supported Public pipeline.
 
-This profile retains full candidate inputs; it does not trace narrower field use
-or qualify correction history.
+The governed profile retains full candidate inputs; narrower field-use tracing
+and governed correction-history qualification remain unfinished. The separate
+conservative correction court qualifies Public prefix inputs only.
 Successful regeneration after changed inputs depends on the declared producer
 lifecycle; an Initial-only/Create operation cannot replace a prior live output.
 Keep the observation until the mutation consumes it, then reread and reassess

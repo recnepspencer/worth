@@ -946,3 +946,14 @@ custody is required: deep clone, decoded recovery and journal settlement cannot
 recreate sidecar issuance, and missing metadata refuses as
 `IncompleteManagedSourceHistory`. See the [Native API contract](../crates/worth-relational/API_OVERVIEW.md#managed-source-authored-impact-candidates)
 and [slice plan](../plans/WORTH-query/milestone-9.19-phase4-membership-history-plan.md).
+
+### Conservative managed Source correction
+
+Qualified retained managed Source facts join ordinary recorded correction through
+existing receipt selection and preparation. Their actual Native observation
+issues the history selector; ordinary occurrences and conservative managed scope
+candidates share one canonical union and unchanged performed-cancellation checks.
+Strict original and complete target support remain required. Same-scope irrelevant
+uncancelled edits can still refuse; exact relevance and governed/box/refined
+correction qualification remain unfinished. No historical READ is granted. See
+the [correction contract](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).

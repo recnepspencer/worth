@@ -88,6 +88,19 @@ impl ManagedSourceRead {
     ) -> bool {
         self.influence.is_some()
     }
+    pub(in crate::domain_computation::primary_graph) fn history_selector(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<worth_relational::facade::history::RelationalAuthoredManagedSourceSelector>,
+        worth_relational::facade::history::RelationalAuthoredWriteDenial,
+    > {
+        match &self.influence {
+            Some(capture) => capture.history_selector(runtime, execution),
+            None => Ok(None),
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn same_truth<E>(
         &self,
         other: &Self,

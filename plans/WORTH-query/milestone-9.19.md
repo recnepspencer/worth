@@ -2293,3 +2293,20 @@ this does not close Phase4 or qualify Phases5/6.
 
 The [declared-field history receipt](milestone-9.19-phase4-projected-history-evidence.md)
 records actual conservative candidate courts and their qualification limits.
+
+### Phase4 conservative managed correction integration
+
+The [boundary review](milestone-9.19-phase4-managed-correction-boundary-review.md)
+and [plan](milestone-9.19-phase4-managed-correction-plan.md) connect admitted
+retained influence to the actual Native observation's history selector. Ordinary
+and managed conservative scope candidates share the existing canonical occurrence
+union and performed-cancellation court before strict original/complete target
+support comparison. This is conservative candidate correction, not exact
+historical relevance or qualification of governed/box/refined correction. Same-
+scope irrelevant edits can still refuse. Exact relevance, remaining paired-
+support/field tracing and ordinary consumer qualification keep Phase 4 open.
+
+The [conservative correction receipt](milestone-9.19-phase4-managed-correction-evidence.md)
+records genuine populated/empty cancellation, no-op/transient/raw-restoration
+refusals, the explicit conservative false positive, an ordinary disjoint-publication
+control and the unchanged prefix growth guard. Phase4 remains in progress.

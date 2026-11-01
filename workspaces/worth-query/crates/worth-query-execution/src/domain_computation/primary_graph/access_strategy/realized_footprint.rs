@@ -31,6 +31,14 @@ pub(in crate::domain_computation::primary_graph) trait RetainedManagedInfluence:
         purpose: CapturedInfluenceComparison,
         checkpoint: &mut dyn FnMut(u64) -> bool,
     ) -> bool;
+    fn history_selector(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<worth_relational::facade::history::RelationalAuthoredManagedSourceSelector>,
+        worth_relational::facade::history::RelationalAuthoredWriteDenial,
+    >;
     fn revalidate(
         &self,
         runtime: &RelationalRuntime,
@@ -129,6 +137,24 @@ impl CapturedManagedInfluence {
             support,
             _allocation: allocation,
         })
+    }
+    /// Only an admitted retained realized capture can select managed history.
+    /// Scope candidates remain conservative and require canonical cancellation.
+    pub(in crate::domain_computation::primary_graph) fn history_selector(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<worth_relational::facade::history::RelationalAuthoredManagedSourceSelector>,
+        worth_relational::facade::history::RelationalAuthoredWriteDenial,
+    > {
+        execution
+            .consult()
+            .map_err(worth_relational::facade::history::RelationalAuthoredWriteDenial::Request)?;
+        if !self.authority.admits(&self.proof) {
+            return Ok(None);
+        }
+        self.support.history_selector(runtime, execution)
     }
     pub(in crate::domain_computation::primary_graph) fn revalidate(
         &self,

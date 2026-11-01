@@ -122,6 +122,28 @@ target: even a later equal-value write makes an older prepared target stale.
 Compensation keeps its fresh ordinary reads, and reapplication keeps its
 separate declared source-action and active-reversal checks.
 
+## Qualified managed Source support
+
+A qualified retained managed Source observation can join ordinary recorded
+correction through the existing receipt selection and preparation APIs. The
+original observation issues its Native history selector from its actual Source
+program, full-generation scope and runtime. It grants no historical READ.
+
+The canonical history union includes ordinary field/aspect/adjacency occurrences
+and every conservative managed scope-impact candidate. Every selected occurrence
+must have an authentic performed recorded cancellation before strict original
+support and complete target support are compared. Equal present results, raw
+value restoration and authored no-ops cannot replace cancellation. Missing live
+Native history metadata and unqualified captures refuse.
+
+This initial posture can reject an unrelated uncancelled edit in the same Source
+scope. Exact historical candidate relevance remains unfinished. The compiled
+[maintained Catalog correction court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/correction.rs)
+exercises genuine recorded reversals for populated and empty prefix input,
+transient entrants, no-ops and conservative same-scope refusal. It does not qualify
+governed, box or refined correction profiles. Current authority, disclosure,
+ordinary revision facts and exact prepared-target publication remain required.
+
 ## Select a source after closing its operation
 
 Capture the completed receipt's `correction_source()` locator, then close

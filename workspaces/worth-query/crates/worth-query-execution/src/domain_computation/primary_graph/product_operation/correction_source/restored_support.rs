@@ -2,6 +2,7 @@
 //! then actual retained original-root support. Ordinary reuse stays unchanged.
 mod cancellation;
 mod eligibility;
+mod history;
 mod overlap;
 pub(super) use eligibility::require;
 
