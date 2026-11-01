@@ -720,6 +720,19 @@ mode type is introduced. Controlled opening consumers must install the actual
 funded selection before Native readmission and must not overwrite it through
 the ordinary shared recovery core.
 
+The two Store Relational readmit_home_from_read methods remain closed Home
+recipe doors. Only Store Application open/mod.rs and
+relational_preparation/unrecovered.rs may call them outside their owner. Those
+recipes retain the SAME private selected-source owner before fallible Native
+admission, lend its funded whole Home payload/checked Native range/verified EOF
+membership together, and return Native's two descriptive coverage coordinates
+only after actual recovery authority succeeds. The shared recovery core accepts
+the decoded owner checkpoint; ordinary entry points alone select legacy members.
+Enforce these exact callers in the existing factory seal, not a family exception.
+The owning Host refusal preserves its original Home/context and source. Legacy
+generic bare-error opening retains its declared ordinary abandonment semantics;
+it does not establish custody-preserving refusal or bounded D11 teardown.
+
 The exact owner-private leaf
 workspaces/worth-store/crates/worth-store-relational/src/cold_source/initial_selection/tests.rs
 may construct original SDK ExecutionRequest/SerialRequest inputs for:

@@ -129,3 +129,6 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 native-checkpoint-read-protection workspaces/worth-store/crates/worth-store-relational/src/cold_source/read_protection.rs
 world-home-checkpoint-selection workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/selection.rs
 world-home-checkpoint-source workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/read.rs
+# Coupled opening consumes one original selected Home payload and its EOF custody.
+native-selected-home-readmission workspaces/worth-store/crates/worth-store-application/src/open/mod.rs
+native-selected-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs

@@ -12,6 +12,7 @@ const FACTORIES: &[&str] = &[
     "from_owner_partition_publication",
     "certification_query",
     "readmit_world_home",
+    "readmit_home_from_read",
     "world_composition_runtime",
     "world_recovery_authority",
     "discover_recovered_associated_effects",
@@ -261,6 +262,11 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
                 let (class, owner) = if *name == "world_recovery_authority" {
                     (
                         "native-world-readmission",
+                        "workspaces/worth-store/crates/worth-store-relational/",
+                    )
+                } else if *name == "readmit_home_from_read" {
+                    (
+                        "native-selected-home-readmission",
                         "workspaces/worth-store/crates/worth-store-relational/",
                     )
                 } else if matches!(*name, "readmit_no_pending_owners" | "into_no_pending_home") {
