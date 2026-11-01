@@ -185,6 +185,18 @@ hold actual gates/indexes without exposing a production gate or constructing
 hidden SDK/runtime roots. Root records only mechanically observed exact test
 classes and named private helper/caller pairs, with no family-wide exemption.
 
+The exact new court child bridge_snapshot_reader_tests/retirement.rs and two
+owner assertion children branch_head_bindings/retirement/tests.rs and
+observation_bindings/retirement/tests.rs receive only their scanner-observed
+ExecutionRequest/RuntimeBridgeRelationalSource classes. Assertion children only
+borrow original fixtures and issue no runtime or SDK requests. Bind the three
+exported helper/caller pairs in src-court-private-logic-audit.json; the head-gate
+assertion is private inside its wrapped-successor owner helper. The exact
+negative wrap fixture may set the ORIGINAL next_binding_id to MAX under cfg(test)
+and issue max/wrapped leases via the PUBLIC source over a genuine admitted basis;
+it creates no fake lease or production counter change. All captured gates and
+original index values remain private, with no authority or guard returned.
+
 Prove actual lock Busy/retry, original stop between committed stages, foreign
 sources sharing one Native runtime, superseded-head preservation, commit-index
 consistency and deferred reclaim. An already-open reader must still read its

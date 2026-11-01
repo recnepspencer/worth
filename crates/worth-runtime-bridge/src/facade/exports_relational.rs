@@ -16,14 +16,17 @@ pub use crate::relational_source::identity_parts::{
 };
 pub use crate::relational_source::{
     bridge_snapshot_identity_for_commit, bridge_snapshot_identity_for_handle,
-    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeBranchHeadLease,
-    RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeCanonicalSubscription,
-    RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
+    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeBasisRetirementDenial,
+    RelationalBridgeBasisRetirementProgress, RelationalBridgeBranchHeadLease,
+    RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeBranchHeadRetirement,
+    RelationalBridgeCanonicalSubscription, RelationalBridgeObservationLease,
+    RelationalBridgeObservationReleaseReceipt, RelationalBridgeObservationRetirement,
     RelationalBridgePatchPublication, RelationalBridgePublicationDeferred,
     RelationalBridgePublicationDenial, RelationalBridgePublicationFailure,
     RelationalBridgePublicationOutcome, RelationalBridgePublicationRebindRequired,
     RelationalBridgePublicationStale, RelationalBridgeRetainedSnapshot,
     RelationalBridgeSourceConfigurationError, RelationalOpaqueAspectWideningAdmission,
-    RelationalOpaqueAspectWideningAdmissionDenial, RetiredRelationalBridgeCanonicalSubscription,
+    RelationalOpaqueAspectWideningAdmissionDenial, RetiredRelationalBridgeBranchHead,
+    RetiredRelationalBridgeCanonicalSubscription, RetiredRelationalBridgeObservation,
     RuntimeBridgeRelationalSource,
 };

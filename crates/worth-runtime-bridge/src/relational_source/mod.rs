@@ -38,11 +38,14 @@ pub use publication_outcome::{
     RelationalBridgePublicationStale,
 };
 pub use runtime_source::{
-    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeBranchHeadLease,
-    RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeCanonicalSubscription,
-    RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
+    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeBasisRetirementDenial,
+    RelationalBridgeBasisRetirementProgress, RelationalBridgeBranchHeadLease,
+    RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeBranchHeadRetirement,
+    RelationalBridgeCanonicalSubscription, RelationalBridgeObservationLease,
+    RelationalBridgeObservationReleaseReceipt, RelationalBridgeObservationRetirement,
     RelationalBridgeRetainedSnapshot, RelationalBridgeSourceConfigurationError,
-    RetiredRelationalBridgeCanonicalSubscription, RuntimeBridgeRelationalSource,
+    RetiredRelationalBridgeBranchHead, RetiredRelationalBridgeCanonicalSubscription,
+    RetiredRelationalBridgeObservation, RuntimeBridgeRelationalSource,
 };
 #[cfg(test)]
 pub use test_catalog::{PublicationBridgeCatalog, PublicationBridgeSnapshot};

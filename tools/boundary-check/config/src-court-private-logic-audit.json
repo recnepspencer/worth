@@ -867,6 +867,29 @@
       ],
       "audit": "Coordinator exact owner-private cfg(test) assertion placement ruling, 2026-11-01; only the named helper and its named SDK-leaf caller are admitted. Original request/runtime/task are borrowed; no SDK or runtime constructors, production getter, guard return, or factory audience are added. Exact caller: change_source::retained_observation::retirement::tests::retained_observation_successor_registration_and_metrics_survive_original_retirement.",
       "private_subject": "The borrowed genuine owner admits an actual successor after the original Weak expires. Verify exact successor identity and real entries.len versus metrics, original-task noninterference, and final successor release to zero. No hand-inserted positive registration is used."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/relational_source/runtime_source/observation_bindings/retirement/tests.rs",
+      "test": "relational_source::runtime_source::observation_bindings::retirement::tests::assert_observation_busy_and_indexes",
+      "constructors": [],
+      "audit": "Coordinator exact owner-private cfg(test) placement ruling, 2026-11-01; only the named assertion helper and original court caller are admitted. Helpers borrow genuine source/task/request/basis, construct no runtime or SDK request, and return no authority/guard. Observed borrowed-type classifications are exact file rows, not a family exemption. Exact court caller: relational_source::bridge_snapshot_reader_tests::retirement::bridge_lease_retirement_actual_busy_keeps_both_commit_indexes_consistent.",
+      "private_subject": "Holds the actual observation-index mutex and checks repeat Busy without changes, then verifies both original by-snapshot and by-commit indexes, retained removed metadata and the original now-empty set after actual point removal."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/relational_source/runtime_source/observation_bindings/retirement/tests.rs",
+      "test": "relational_source::runtime_source::observation_bindings::retirement::tests::assert_observation_index_refusals",
+      "constructors": [],
+      "audit": "Coordinator exact owner-private cfg(test) placement ruling, 2026-11-01; only the named assertion helper and original court caller are admitted. Helpers borrow genuine source/task/request/basis, construct no runtime or SDK request, and return no authority/guard. Observed borrowed-type classifications are exact file rows, not a family exemption. Exact court caller: relational_source::bridge_snapshot_reader_tests::retirement::bridge_lease_retirement_missing_or_inconsistent_original_index_refuses_owned.",
+      "private_subject": "Negative-only corruption temporarily moves the SAME original private row or commit membership out of its real index, observes typed refusal before effects, then restores those SAME original values. No synthetic successful registration or reconstructed authority is inserted."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/relational_source/runtime_source/branch_head_bindings/retirement/tests.rs",
+      "test": "relational_source::runtime_source::branch_head_bindings::retirement::tests::assert_wrapped_successor_survives_abandonment",
+      "constructors": [
+        "RuntimeBridgeRelationalSource::bind_branch_head_basis_for_bridge"
+      ],
+      "audit": "Coordinator exact owner-private cfg(test) placement ruling, 2026-11-01; only the named assertion helper and original court caller are admitted. Helpers borrow genuine source/task/request/basis, construct no runtime or SDK request, and return no authority/guard. Observed borrowed-type classifications are exact file rows, not a family exemption. Exact court caller: relational_source::bridge_snapshot_reader_tests::retirement::bridge_lease_retirement_wrapped_head_successor_survives_abandonment.",
+      "private_subject": "Negative-only boundary scheduling sets the ORIGINAL existing next_binding_id to MAX, then issues genuine max and wrapped-zero heads via the public source and admitted basis. Original zero-task abandonment and superseded max-task completion must preserve the real wrapped successor, distinguished by its owner-issued snapshot identity. No fake lease, new counter, Native runtime construction or production mutation door is added."
     }
   ]
 }

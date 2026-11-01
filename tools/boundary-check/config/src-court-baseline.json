@@ -3032,5 +3032,8 @@
 {"source":"crates/worth-relational/src/change_source/retained_observation/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/history/data/codec_retirement_closure/payload_reconstruction/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/branch/basis_registry/retirement/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
-{"source":"crates/worth-relational/src/history/retention/lane/retained_release/tests.rs","module":"file","roots":["ExecutionRequest"]}
+{"source":"crates/worth-relational/src/history/retention/lane/retained_release/tests.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-runtime-bridge/src/relational_source/bridge_snapshot_reader_tests/retirement.rs","module":"file","roots":["ExecutionRequest","RuntimeBridgeRelationalSource"]},
+{"source":"crates/worth-runtime-bridge/src/relational_source/runtime_source/branch_head_bindings/retirement/tests.rs","module":"file","roots":["ExecutionRequest","RuntimeBridgeRelationalSource"]},
+{"source":"crates/worth-runtime-bridge/src/relational_source/runtime_source/observation_bindings/retirement/tests.rs","module":"file","roots":["ExecutionRequest","RuntimeBridgeRelationalSource"]}
 ]

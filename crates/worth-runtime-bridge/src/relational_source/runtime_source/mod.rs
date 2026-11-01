@@ -4,7 +4,17 @@ use worth_relational::facade::change_source::RelationalRuntimeHandle;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::runtime::RelationalRuntime;
 
+mod basis_retirement;
 mod branch_basis;
+pub use basis_retirement::{
+    RelationalBridgeBasisRetirementDenial, RelationalBridgeBasisRetirementProgress,
+};
+#[cfg(test)]
+pub(in crate::relational_source) use branch_head_bindings::assert_wrapped_successor_survives_abandonment;
+#[cfg(test)]
+pub(in crate::relational_source) use observation_bindings::{
+    assert_observation_busy_and_indexes, assert_observation_index_refusals,
+};
 mod branch_head_bindings;
 mod branch_heads;
 mod canonical_subscription;
@@ -21,6 +31,7 @@ mod source_profile;
 
 pub use branch_head_bindings::{
     RelationalBridgeBranchHeadLease, RelationalBridgeBranchHeadReleaseReceipt,
+    RelationalBridgeBranchHeadRetirement, RetiredRelationalBridgeBranchHead,
 };
 pub use canonical_subscription::{
     PendingRelationalBridgeCanonicalSubscription, RelationalBridgeCanonicalSubscription,
@@ -28,6 +39,7 @@ pub use canonical_subscription::{
 };
 pub use observation_bindings::{
     RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
+    RelationalBridgeObservationRetirement, RetiredRelationalBridgeObservation,
 };
 pub(in crate::relational_source) use observation_bindings::{
     RelationalBridgeSelectedCommitObservation, RelationalBridgeSelectedObservation,
