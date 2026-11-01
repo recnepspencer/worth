@@ -140,6 +140,7 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ("certification_query", "installation"),
         ("readmit_world_home", "world-home"),
         ("readmit_home_from_read", "native-selected-home-readmission"),
+        ("begin_after_world_seal", "query-home-retirement"),
         ("world_composition_runtime", "native-home-composition"),
         ("world_recovery_authority", "native-world-readmission"),
         (

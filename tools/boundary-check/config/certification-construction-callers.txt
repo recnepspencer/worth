@@ -1,4 +1,6 @@
 # Closed callers recorded at the one-build inventory; owners are allowed by the rule.
+# Only actual Host close may consume its uniquely prepared original Query after World seal.
+query-home-retirement workspaces/worth-query/crates/worth-query-host/src/application_home/close/retirement.rs
 # D1/D17: only the concrete Native-readmitted Home may consume its private World slot.
 world-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
 # Exact private consumer-affinity unit, compiled only as readmission's cfg(test) child.
