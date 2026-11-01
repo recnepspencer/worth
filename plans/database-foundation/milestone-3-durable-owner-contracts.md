@@ -612,8 +612,15 @@ parses World coverage or stages an uncharged Vec of all frames. Each record owns
 its original-request-funded immutable bytes and validated position/digest. Read
 selected Home payloads through the actual provided-reader anchored stream, and
 journal payloads through the same reader. Metadata exposed before EOF is
-descriptive; full frame/anchor SHA, payload SHA and exact length must verify
-before record/source admission.
+descriptive. The Home stream verifies the full anchored-record SHA, payload SHA
+and exact length. Journal reads preserve the selected root's actual physical
+record identity, admitted manifest/frame integrity and journal/spine positions,
+then verify the target payload SHA and exact length at EOF. The head's full
+record SHA is checked when that head is consumed. Existing journal jump entries
+carry record identities, not predecessor hashes: this is protected physical
+integrity, not a transitive SHA chain or a stronger tamper-authentication claim.
+No decoded World image or journal record admission may precede its required
+verification. Issuing the protected source port alone does not attest its bytes.
 
 Only the actual Home checkpoint owner constructs World selection acknowledgement
 from the SAME pending World subject and actual anchored completion/resolution.

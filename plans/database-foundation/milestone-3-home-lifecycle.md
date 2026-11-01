@@ -177,6 +177,70 @@ this very admission. This prerequisite does not qualify full Host D11; arbitrary
 installed payload destruction and actual World/Bridge/Signal/Native source
 retirement remain the consuming owner work described below.
 
+## Installed handler retirement boundary
+
+This is a consuming Query prerequisite, not implemented full Host D11. The
+actual registration moves each Handler into a fresh Arc inside its existing
+TypedHandlerSlot, itself inside the erased entry Arc. Sealing clones that
+outer slot; active/prepared work may clone the inner handler Arc. The public
+installation API does not expose Query's newly allocated handler Arc. A
+supplier can independently share operational state nested inside its Handler;
+exclusivity of the outer allocation alone proves nothing about that state.
+
+Preserve those SAME allocations. At registration, retain a monomorphized
+function pointer beside the existing entry, sufficient to recover its original
+Schema/Binding. The non-consuming preflight takes a mutable borrow of the
+original erased Arc, uses Arc::get_mut, downcasts to the original typed slot,
+then uses Arc::get_mut on its original handler Arc. Either uniqueness refusal
+is Busy with the original payload untouched. These atomic uniqueness checks
+also exclude Weak aliases; no strong_count probe, second typed Arc anchor,
+alias destruction, replacement allocation or drop-and-restore is permitted.
+
+The existing OperationHandler contract gains family-local object-safe
+preflight_home_retirement and advance_home_retirement hooks, both defaulting
+to Unsupported. They borrow the original invoking ExecutionRequest and the
+original mutable handler. Preflight preserves business state. Only an audited
+supported handler can establish how its ACTUAL operational fields retire; a
+declared durable-family roster or empty capability list is insufficient.
+Known supported nested operational sharing refuses Busy before seal. Unknown
+wrappers, opaque closures and externally mutable state without an authentic
+owner admission contract remain Unsupported.
+
+Run every actual handler/inventory preflight before World seal. A refusal
+preserves the same usable Query and its genuine pre-seal resume. Once sealed,
+the existing close phase retains the original registry, slots, handler Arcs,
+payloads and advancement position through Busy, stop and retry; it never
+recreates Query service. Retire only their actual operational capabilities.
+Keep arbitrary inert supplier payloads until the SAME retired Home allocation's
+explicit unbudgeted reclaim. A handler's Complete observation does not certify
+Native binding exclusion, source retirement or physical Store Closed; those
+actual owner gates remain independent prerequisites.
+
+The adversarial proof covers both erased-slot and active-handler aliases,
+nested external operational sharing, unchanged execution after pre-seal
+refusal, stopped post-seal retry retaining the original handler, and actual
+filesystem Store Closed while a user Drop probe remains alive until reclaim.
+Owner-private tests may create otherwise inaccessible internal aliases; those
+are not public external-handler handles. Passing only those private courts
+cannot qualify physical close.
+
+Committed successor topology stays with the existing owners:
+
+```text
+worth-query-execution/src/domain_computation/
+  primary_graph/application_entry/mutation/ [extend original handler contract/refusals]
+  primary_graph/handler/registry/registration.rs [issue typed entry thunk]
+  primary_graph/handler/registry/retirement.rs [consume original entry owners]
+  primary_graph/application_runtime/ [preflight actual installed inventories]
+worth-query-host/src/application_home/close/ [retain original post-seal Query task]
+```
+
+No empty placeholder or general retirement registry belongs here. Query's
+runtime Drop extraction and actual World/Bridge/Signal/Native consuming ports
+must be qualified together with their real close consumer before SourceGO or
+a full bounded Host-close claim. The current drop(query) remains an explicit
+gap until that cutover.
+
 ## Native and Store source-close prerequisite
 
 This is the next source-close destination, not implemented completion. It
