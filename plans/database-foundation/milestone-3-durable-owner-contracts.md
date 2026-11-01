@@ -686,6 +686,46 @@ Upstream portable intent copies, supplemental projection, replay staging and
 Complete remain separate unqualified work; existing MaintenanceWork field-index
 preparation is not an assumed bypass of this lowering owner.
 
+Replay copy custody is a separate bounded predecessor. Keep public
+WorkerIntentBatch, MergedCommitPlan and MergeCommitMutationPlan meaning and wire
+unchanged. The private DetachedRelationalTransactionOverlay owns its copied
+inputs/key cache before one LAST optional reservation; remove implicit Clone.
+Consuming replay/validation copies use the original request and checked actual
+copy bounds before allocation. Existing ordinary preview copies are explicitly
+ordinary/unfunded and cannot witness controlled copy admission. Adopt one copied
+replay batch into its genuinely fresh transaction before another fallible step;
+remove clone().to_vec() and keep its bill through validation's input destruction.
+
+Use private nonClone normalized-plan and reconstructed-merge-plan owners for the
+new independent copies. Borrow pure plans explicitly and move each whole owner
+through preparation, validation, authoritative context and execution admission;
+never shed the reservation at validate(). No automatic From/Deref/Clone or naked
+funded extraction is allowed. Check Vec/Box/String/nested-value copy layouts with
+actual checked traversal; existing saturating capacity reports are not admission
+proof. Shared intrinsic MERGE leaves retain their own existing grants and must
+not be billed again as copied headers, branch names, parents or intent backing.
+
+Build replacement normalized-key rows once in original interning order, sort
+once and linearly merge sorted backing while preserving prior last-assignment
+meaning. Admit old/new overlap before growth; do not add quadratic incremental
+sorted insertion. Move the successful preparation overlay rather than copying it
+again. On failure restore the original transaction meaning and destroy abandoned
+copied data before its bill. Retain copied-input funding through rollback's
+actual scalar-effect conversion; no copied input heap may escape without custody.
+Large raw inputs cannot pin their bill in a small accepted normalized plan.
+
+Exact owner-custody controls belong to the transaction-owner child
+tests/transactions/core/replay_copy_custody.rs: pre-growth input refusal, accepted
+plan surviving input destruction, small-output release, interrupted round
+restoration and merge-header versus shared-leaf custody. Root records only the
+observed exact SDK audience and necessary named private placements. Use existing
+genuine cancellation/retry and merge replay controls as the integrated journey.
+Preserve typed request/allocation denial through existing commit/recovery
+channels. Raw-key collection, stable-sort/conflict scratch, working-state
+construction, ordinary mutation/rollback allocation and later canonical/
+publication copies remain unqualified. Add no public budgeting API, replacement
+request, retained execution authority, generic ledger or resource framework.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
