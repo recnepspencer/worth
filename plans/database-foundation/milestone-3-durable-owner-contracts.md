@@ -837,6 +837,40 @@ proof, and must install no live service/cell or replay handlers. Decisive eviden
 reconstructs an unused historical constraint after live services/resident sources
 are gone; the records-only twin must refuse missing original schema authority.
 
+Protected owned Native source admission is an ordinary prerequisite, not Complete.
+Add a RelationalDurableReadProtection retaining the original issuer Weak, frozen
+canonical/transition bounds and the original opaque provider payload. Validate
+actual issuer data identity before provider callbacks, without upgrading Weak;
+cached descriptor equality is insufficient. Store's payload owns its actual
+provided reader, original membership/EOF and metadata grants, with the same
+Serving Arc dropped last. It may cover requested bounds from that protected
+snapshot, but later heads cannot expand those bounds or substitute current reads.
+
+Owned canonical, transition and member callbacks return ExecutionImmutableBytes.
+Check exact source, bounds, length and limits before buffer growth; admit the
+actual buffer under the original ExecutionRequest and seal only after verified
+EOF/integrity. Reuse existing canonical owned-frame admission and add the matching
+transition owner path, preserving typed request/storage causes. Unknown providers
+refuse Unsupported; no new owned operation falls back to a legacy Vec callback.
+
+Implement the actual StoreColdSource and both genuine TestDurableMedium identities
+(Native unit and relational testkit). Memory protection preserves original
+published frames with pre-growth admitted copies/metadata. InlineCheckpointSource
+may supply owned member bytes but cannot advertise an original canonical/
+transition prefix derived from checkpoint images. Retain legacy interfaces as
+explicit ordinary contracts, without making them positive owned-source witnesses.
+
+Cut over actual Store section recovery ingress to one source-owned protected cut
+and feed Native medium_recovery_plan through the owned path. Reuse the physical
+provided-reader journal/member stream APIs; never reopen current heads during the
+protected read. Prove genuine filesystem stability after later writes, foreign
+same-Serving source refusal before reads, exact EOF/integrity/limits, entered
+finite-request refusal before buffer growth, memory snapshot/refund and a legacy
+callback-panic/default-Unsupported fence. No new runtime fixture is granted a
+blanket exception. This qualifies cut/raw-buffer custody only: RecoveryPlan,
+decoded transition/capture heaps, CHK18/full-prefix/schema reconstruction, selected
+residency/ACK and Complete remain independent obligations.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
