@@ -643,6 +643,41 @@ Field-lowering scratch, replay input/plan copies, radix/path backing, per-commit
 whole-history rollback, capture, ACK and Complete remain explicit unqualified
 successors; this state-and-extra slice cannot claim whole replay or Host closure.
 
+Field-authoring lowering is the next bounded ownership slice. Its original
+Workspace/read-view ExecutionRequest pays before selected field/value copies,
+portable construction, endpoint suffix growth and Foundation readmission.
+Validate bindings in original input order, then use a borrowed ordinal roster
+instead of the three temporary BTreeMaps. AspectFieldPatch accepts mixed locator
+authorities: preserve that language, original first-error order, first-key/last-
+value winners and scalar-first/struct-second operation order. Sort actual unique
+birth fields once and use the existing from_sorted_fields constructor.
+
+A concrete private MutationAspectPatch under mutation/outcomes owns the actual
+Foundation patch and a LAST optional original reservation. It adds no Arc, heap
+wrapper or retained request. Measure its real localized inline footprint. Its
+funded constructor pre-admits the actual resulting allocation; any pre-existing
+ordinary unfunded construction remains explicitly unqualified and cannot be used
+as the positive controlled-path witness. Remove unused private RecordMutation/
+MutationOutcome Clone rather than introducing an infallible funded deep copy.
+Keep patch access borrowed and move this whole owner through the actual mutation
+outcome and publication consumer. Original data must die before its grant on
+success and failure, including the by-value delta-supplement transformation.
+New supplemental/canonical copies do not inherit the original input's bill.
+
+Separate real temporary backing from retained output so large lowering scratch
+cannot remain pinned by a small patch. Scratch admission precedes growth and
+ends after its actual owners die, before Extra application. Relation endpoints
+append to the original owned operations vector before one portable constructor;
+do not clone an already constructed candidate. Preserve the existing typed
+request/allocation versus semantic denial channels and the caller's real request.
+No fresh policy, generic ledger, resource framework or pure-Foundation execution
+dependency is permitted. Qualify original-order/winner/legacy-byte compatibility,
+pre-growth refusal, scratch release, actual retained consumer custody and final
+refund using named owner leaves and the existing genuine field/endpoint journey.
+Upstream portable intent copies, supplemental projection, replay staging and
+Complete remain separate unqualified work; existing MaintenanceWork field-index
+preparation is not an assumed bypass of this lowering owner.
+
 Decoded body custody resides INSIDE the existing Arc-owned
 `CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
 `RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
