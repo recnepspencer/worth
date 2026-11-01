@@ -80,7 +80,7 @@ fn assert_borrowed_title(
         .entity_arena
         .get_slot(entity.slot_index())
         .unwrap();
-    let state = slot.extra().authoritative_aspect_state.as_ref().unwrap();
+    let state = slot.extra().authoritative_aspect_state().unwrap();
     let ContractValidatedAspectValueView::Struct(summary) =
         state.get(&aspect_key("summary")).unwrap().view()
     else {

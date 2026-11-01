@@ -5,7 +5,7 @@ use crate::authority::mutation::stale_targets::{
 use crate::authority::mutation::MutationWorkspace;
 use crate::authority::mutation::{apply_adjacency_deltas, AdjacencyDelta, AdjacencyDeltaKind};
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::storage::substrate::{RelationEndpoints, RelationExtra};
+use crate::storage::substrate::RelationEndpoints;
 use crate::transactions::data::{
     CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
     RelationEndpointUpdateMissingState, UpdateRelationEndpointsIntent,
@@ -17,7 +17,7 @@ use super::{record_aspect_patch, relation_endpoint_candidate};
 pub(super) fn apply(
     intent: &UpdateRelationEndpointsIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let slot = intent.relation_id.slot_index();
     let source = resolve_relation_endpoint(workspace, &intent.source, "source")?;
@@ -67,8 +67,7 @@ pub(super) fn apply(
                     missing: RelationEndpointUpdateMissingState::Endpoints,
                 })
             })?;
-            let old_authoritative_aspect_state =
-                slot_view.extra().authoritative_aspect_state.clone();
+            let old_authoritative_aspect_state = Some(slot_view.retained_extra());
 
             context
                 .state
@@ -111,29 +110,33 @@ pub(super) fn apply(
         plan,
         patch_target,
     )?;
-    let authoritative_aspect_state = record_aspect_patch::apply(
-        old_authoritative_aspect_state.as_ref(),
+    let mut authoritative_aspect_state = record_aspect_patch::apply_relation(
+        &workspace.execution(),
+        old_authoritative_aspect_state
+            .as_ref()
+            .and_then(|extra| extra.authoritative_aspect_state()),
         &authoritative_patch,
         patch_target,
     )?;
+    authoritative_aspect_state.endpoints = Some(RelationEndpoints { source, target });
     workspace.with_context(|context| {
         let partition = context
             .state
             .get_partition_mut(intent.relation_id.partition_id);
         partition
             .relation_arena
-            .apply_extra_update(
-                slot,
-                RelationExtra {
-                    endpoints: Some(RelationEndpoints { source, target }),
-                    authoritative_aspect_state: authoritative_aspect_state.clone(),
-                },
-                version_id,
-            )
+            .apply_extra_update(slot, authoritative_aspect_state, version_id)
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
         Ok::<_, CommitConflict>(())
     })?;
 
+    let authoritative_aspect_state = workspace.with_context(|context| {
+        context
+            .state
+            .get_partition_mut(intent.relation_id.partition_id)
+            .relation_arena
+            .retained_extra(slot)
+    });
     Ok(MutationOutcome::relation_updated(
         intent.relation_id,
         kind_id,

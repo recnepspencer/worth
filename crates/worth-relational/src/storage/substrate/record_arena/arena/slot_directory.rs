@@ -101,12 +101,6 @@ impl RecordSlotDirectory {
         self.logical_by_physical.len()
     }
 
-    pub(crate) fn allocation_bytes(&self) -> u64 {
-        self.logical_by_physical
-            .allocation_bytes()
-            .saturating_add(self.physical_by_logical.allocation_bytes())
-    }
-
     pub(super) fn visit_allocations(
         &self,
         unique: bool,

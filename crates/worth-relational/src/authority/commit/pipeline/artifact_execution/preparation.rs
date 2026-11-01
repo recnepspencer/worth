@@ -6,7 +6,6 @@ use crate::authority::commit::publication::diagnostics_summary_artifact;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::history::data::RelationalCommitReceipt;
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
-use crate::publication::{bundle::PublicationStage, data::PublicationError};
 use crate::transactions::data::{
     AspectEvaluationTrace, CommitAspectSummary, CommitChangeSummary, CommitPublicationSummary,
     MergedCommitPlan, PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
@@ -125,6 +124,7 @@ pub(super) fn prepare_publication_artifacts(
         diagnostics.entries,
     );
     let authority = prepare_authoritative_publication(
+        execution,
         runtime,
         PublicationAuthorityInput {
             index_definition_delta,
@@ -187,6 +187,7 @@ struct PreparedPublicationAuthority {
 }
 
 fn prepare_authoritative_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     input: PublicationAuthorityInput<'_>,
 ) -> Result<PreparedPublicationAuthority, TransactionCommitError> {
@@ -203,17 +204,12 @@ fn prepare_authoritative_publication(
     let prepared_lineage = runtime
         .lineage_preparation_authority()
         .ensure_lineage_for_commit(
+            execution,
             input.working_state,
             input.commit_reference,
             &input.merged_plan.merged_intents,
             input.changed_records,
-        )
-        .map_err(|detail| {
-            TransactionCommitError::publication(PublicationError::new(
-                PublicationStage::BundleAssembly,
-                detail,
-            ))
-        })?;
+        )?;
     let lineage_event_count = prepared_lineage
         .artifact()
         .event_batch()

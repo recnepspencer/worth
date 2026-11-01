@@ -20,7 +20,7 @@ pub(crate) use data::{
     AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta,
     EvaluatedAspectBinding,
 };
-pub(crate) use engine::canonical_delta_for_mutation;
+pub(crate) use engine::{canonical_delta_for_mutation, evaluate_relation_deletion_state};
 pub(crate) use patch_fragments::{
     authoritative_patch_with_delta_supplements, published_patch_for_delta,
     FoundationalPatchFragment,

@@ -12,6 +12,9 @@ impl<K: RecordKind> RecordArena<K> {
         unique: bool,
         visitor: &mut dyn StorageAllocationVisitor,
     ) {
+        let mut union = super::extra_allocations::AllocationUnion::new(visitor);
+        let visitor: &mut dyn StorageAllocationVisitor = &mut union;
+
         self.slots.visit_allocations(unique, visitor);
         self.partition_ids
             .visit_allocations(unique, visitor, &mut visit_inline_value);

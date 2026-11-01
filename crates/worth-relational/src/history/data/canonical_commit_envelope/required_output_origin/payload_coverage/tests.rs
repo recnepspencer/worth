@@ -47,7 +47,7 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
-    let payload = row.extra().authoritative_aspect_state.as_ref();
+    let payload = row.extra().authoritative_aspect_state();
     assert!(payload.is_none());
     assert!(validate(execution, envelope, id, plan, payload).is_ok());
 
@@ -152,7 +152,7 @@ fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
-    let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
+    let payload = row.extra().authoritative_aspect_state().unwrap();
     assert!(validate(execution, envelope, id, plan, Some(payload)).is_ok());
     assert!(matches!(
         validate(execution, envelope, id, plan, None),

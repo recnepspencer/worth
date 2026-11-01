@@ -57,7 +57,7 @@ impl IndexProjectionSource<'_> {
                 visit(
                     EntityId::new(partition_id, slot as u64, record.generation()),
                     authoritative_state_query_locus_value(
-                        record.extra().authoritative_aspect_state.as_ref(),
+                        record.extra().authoritative_aspect_state(),
                         field,
                     ),
                 )
@@ -119,7 +119,7 @@ impl IndexProjectionSource<'_> {
                 visit(
                     RelationId::new(partition_id, slot as u64, record.generation()),
                     authoritative_state_query_locus_value(
-                        record.extra().authoritative_aspect_state.as_ref(),
+                        record.extra().authoritative_aspect_state(),
                         field,
                     ),
                 )

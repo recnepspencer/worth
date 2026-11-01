@@ -185,7 +185,7 @@ pub(super) fn capture(
                 envelope,
                 id,
                 plan,
-                record.extra().authoritative_aspect_state.as_ref(),
+                record.extra().authoritative_aspect_state(),
                 context,
             )
             .map_err(|failure| {

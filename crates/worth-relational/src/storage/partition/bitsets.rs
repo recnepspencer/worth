@@ -182,10 +182,6 @@ impl DenseSlotBitSet {
             .map_or(0, |(&word, _)| (word + 1).saturating_mul(64))
     }
 
-    pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        self.words.allocation_bytes()
-    }
-
     pub(crate) fn visit_allocations(
         &self,
         unique: bool,

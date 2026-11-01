@@ -13,7 +13,7 @@ use super::{record_aspect_patch, relation_endpoint_candidate};
 pub(super) fn apply(
     intent: &RelationAspectCreateIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let source = resolve_endpoint(workspace, &intent.source, "source")?;
     let target_entity = resolve_endpoint(workspace, &intent.target, "target")?;
     let target = RecordAspectPatchTarget::RelationCreation {
@@ -32,7 +32,8 @@ pub(super) fn apply(
         plan,
         target,
     )?;
-    let authoritative_aspect_state = record_aspect_patch::apply(None, &patch, target)?;
+    let authoritative_aspect_state =
+        record_aspect_patch::apply_relation(&workspace.execution(), None, &patch, target)?;
     let version_id = workspace.version_id();
     let relation_id = workspace.with_context(|context| {
         let relation_id = allocate_relation(
@@ -48,7 +49,7 @@ pub(super) fn apply(
         context
             .state
             .mark_relation_slot_touched(relation_id.partition_id, relation_id.slot_index());
-        Ok(relation_id)
+        Ok::<_, CommitConflict>(relation_id)
     })?;
     workspace.register_created_relation(
         CreatedRelationRef {

@@ -152,8 +152,7 @@ fn aspect<'a>(
         >(&entity))
         .ok_or(())?;
     let value = extra
-        .authoritative_aspect_state
-        .as_ref()
+        .authoritative_aspect_state()
         .and_then(|state| state.get(contract.key()));
     match value {
         None => Ok(None),

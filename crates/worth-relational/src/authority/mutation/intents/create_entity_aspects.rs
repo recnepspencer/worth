@@ -3,7 +3,6 @@ use worth_foundational::facade::PortablePatchReadmissionPurpose;
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::allocate_entity_with_extra;
 use crate::authority::mutation::MutationWorkspace;
-use crate::storage::substrate::EntityExtra;
 use crate::transactions::data::{
     CommitConflict, CreatedEntityRef, EntityAspectCreateIntent, RecordAspectPatchTarget,
 };
@@ -13,7 +12,7 @@ use super::record_aspect_patch;
 pub(super) fn apply(
     intent: &EntityAspectCreateIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let target = RecordAspectPatchTarget::EntityCreation {
         kind_id: intent.kind_id,
     };
@@ -23,7 +22,8 @@ pub(super) fn apply(
         workspace.entity_aspect_plan(intent.kind_id),
         target,
     )?;
-    let authoritative_aspect_state = record_aspect_patch::apply(None, &patch, target)?;
+    let authoritative_aspect_state =
+        record_aspect_patch::apply_entity(&workspace.execution(), None, &patch, target)?;
     let version_id = workspace.version_id();
     let entity_id = workspace.with_context(|context| {
         let entity_id = allocate_entity_with_extra(
@@ -32,15 +32,12 @@ pub(super) fn apply(
             version_id,
             intent.partition_id,
             intent.kind_id,
-            EntityExtra {
-                authoritative_aspect_state,
-                ..EntityExtra::default()
-            },
+            authoritative_aspect_state,
         )?;
         context
             .state
             .mark_entity_slot_touched(entity_id.partition_id, entity_id.slot_index());
-        Ok(entity_id)
+        Ok::<_, CommitConflict>(entity_id)
     })?;
     workspace.register_created_entity(
         CreatedEntityRef {

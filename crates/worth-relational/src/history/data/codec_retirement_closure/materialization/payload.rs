@@ -54,7 +54,7 @@ pub(super) fn candidate_matches(
                 if row.kind_id() != Some(entry.kind) {
                     return Ok(false);
                 }
-                let actual = row.extra().authoritative_aspect_state.as_ref();
+                let actual = row.extra().authoritative_aspect_state();
                 charge(
                     context,
                     actual.map_or(0, |state| state.owned_allocation_capacity_bytes()),
@@ -94,7 +94,7 @@ pub(super) fn candidate_matches(
                 {
                     return Ok(false);
                 }
-                let actual = row.extra().authoritative_aspect_state.as_ref();
+                let actual = row.extra().authoritative_aspect_state();
                 charge(
                     context,
                     actual.map_or(0, |state| state.owned_allocation_capacity_bytes()),

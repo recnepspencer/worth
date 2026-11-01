@@ -4,7 +4,6 @@ use crate::authority::mutation::record_changes::{
 };
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::storage::substrate::EntityExtra;
 use crate::transactions::data::{CommitConflict, RecordAspectPatchTarget, ReplaceEntityIntent};
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
@@ -14,7 +13,7 @@ use super::record_aspect_patch;
 pub(super) fn apply(
     intent: &ReplaceEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let cascade_delete_policy = workspace.cascade_delete_policy();
     let target = RecordAspectPatchTarget::EntityCreation {
@@ -27,7 +26,8 @@ pub(super) fn apply(
         target,
         FieldAuthoringDomain::Entity,
     )?;
-    let replacement_state = record_aspect_patch::apply(None, &patch, target)?;
+    let replacement_state =
+        record_aspect_patch::apply_entity(&workspace.execution(), None, &patch, target)?;
     let mut outcome = MutationOutcome::entity_deleted(intent.entity_id);
     let replacement_id = workspace.with_context(|context| {
         ensure_entity_target_is_current(context.state, intent.entity_id)?;
@@ -45,10 +45,7 @@ pub(super) fn apply(
             version_id,
             intent.replacement.partition_id,
             intent.replacement.kind_id,
-            EntityExtra {
-                authoritative_aspect_state: replacement_state,
-                ..EntityExtra::default()
-            },
+            replacement_state,
         )?;
         context
             .state

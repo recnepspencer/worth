@@ -3,13 +3,6 @@ use super::RecordKind;
 use crate::symbols::data::Symbol;
 use std::collections::BTreeMap;
 
-pub(super) fn history_prefix_bytes(prefix: &Option<super::super::RecordHistoryPrefix>) -> u64 {
-    prefix.as_ref().map_or(0, |prefix| {
-        crate::storage::substrate::StorageAllocation::<super::super::RecordHistoryOpening>::layout_bytes()
-            + prefix.history_opening.owned_allocation_bytes()
-    })
-}
-
 pub(super) fn visit_history_prefix(
     prefix: &Option<super::super::RecordHistoryPrefix>,
     allocation: crate::storage::substrate::StorageAllocationObservation,
@@ -48,26 +41,19 @@ fn visit_prefix_opening(
     }
 }
 
-pub(super) fn metadata_history_bytes<K: RecordKind>(
-    history: &crate::storage::substrate::SharedColumn<K::Meta>,
-) -> u64 {
-    history.allocation_bytes().saturating_add(
-        history
-            .iter()
-            .map(K::metadata_owned_allocation_bytes)
-            .sum::<u64>(),
-    )
-}
-
 pub(super) fn visit_metadata<K: RecordKind>(
     metadata: &K::Meta,
-    mut allocation: crate::storage::substrate::StorageAllocationObservation,
+    allocation: crate::storage::substrate::StorageAllocationObservation,
     visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
 ) {
-    allocation.bytes = allocation
-        .bytes
-        .saturating_add(K::metadata_owned_allocation_bytes(metadata));
-    visitor.visit(allocation);
+    if visitor.visit(allocation) {
+        let extra = K::metadata_extra(metadata);
+        let mut payload = extra.observation(allocation.unique);
+        payload.bytes = payload
+            .bytes
+            .saturating_add(K::extra_owned_allocation_bytes(extra));
+        visitor.visit(payload);
+    }
 }
 
 pub(super) fn aspect_version_bytes(versions: &BTreeMap<Symbol, u64>) -> u64 {

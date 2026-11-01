@@ -112,7 +112,9 @@ struct RelationMutationSnapshot {
     kind_id: crate::identity::data::KindId,
     source: crate::identity::data::EntityId,
     target: crate::identity::data::EntityId,
-    authoritative_aspect_state: Option<worth_foundational::facade::AuthoritativeRecordAspectState>,
+    authoritative_aspect_state: Option<
+        crate::storage::substrate::StorageAllocation<crate::storage::substrate::RelationExtra>,
+    >,
 }
 
 fn relation_mutation_snapshot(
@@ -128,7 +130,7 @@ fn relation_mutation_snapshot(
         kind_id: relation_slot.kind_id()?,
         source: endpoints.source,
         target: endpoints.target,
-        authoritative_aspect_state: relation_slot.extra().authoritative_aspect_state.clone(),
+        authoritative_aspect_state: Some(relation_slot.retained_extra()),
     })
 }
 

@@ -492,6 +492,30 @@ original result and independent snapshot handles release. Native close then
 truthfully refuses `ReadCustodyRetained`; cache retirement remains a separate
 Native terminal-cleanup obligation.
 
+## Retain applied aspect payloads
+
+Entity and relation mutation application admits the Foundation output and its
+existing extra allocation against the original execution request before growth.
+Current rows, historical metadata and private mutation views retain that same
+extra owner and its reservation. Replacement and lineage copies admit independent
+output; old snapshots retain their original owners. Public materialized records
+remain independent copies. Checkpoint image export borrows state while retaining
+the whole extra. Moving a unique extra also moves its reservation; its small fixed
+allocation bill remains conservatively charged until that moved value drops.
+
+The generic storage handle stays one word and gains no allocation or footer.
+Only entity/relation extras gain a move-only reservation. On the qualified
+64-bit target, their inline sizes change from 80 to 128 and 56 to 104 bytes;
+entity/relation metadata changes from 64 to 56 and 80 to 72 bytes. The concrete
+existing extra Arc layout is included in the admitted bill. Metadata preserves
+its six original wire fields and order, and funding is excluded from extra
+serialization and relation-content hashing. Ordinary extra cloning makes an
+independent copy and carries no old reservation.
+
+This qualifies applied state and extra custody. Field-lowering scratch, replay
+staging, radix backing, rollback, Complete capture and selected-backing handoff
+remain separate funding obligations.
+
 ## Retire an immutable Memory runtime
 
 Platform lifecycle owners consume their actual `RelationalRuntimeHandle` with

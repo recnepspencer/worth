@@ -6,8 +6,8 @@ use worth_foundational::facade::{
 use worth_proof::TransitionOutcome;
 
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
-pub(super) fn export_state(
-    state: Option<AuthoritativeRecordAspectState>,
+pub(crate) fn export_state(
+    state: Option<&AuthoritativeRecordAspectState>,
     contracts: Option<&CheckpointAspectContractCatalog>,
 ) -> Result<Option<PortableRecordAspectState>, DurabilityError> {
     state
@@ -18,7 +18,7 @@ pub(super) fn export_state(
                     "checkpoint aspect state belongs to a slot without a kind plan",
                 )
             })?;
-            export_portable_record_aspect_state(&state, contracts).map_err(|denial| {
+            export_portable_record_aspect_state(state, contracts).map_err(|denial| {
                 DurabilityError::new(
                     RecoveryFailureClass::SchemaMismatch,
                     format!("checkpoint aspect export denied: {denial:?}"),

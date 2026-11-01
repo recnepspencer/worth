@@ -135,26 +135,26 @@ mod tests {
             partition_id,
             kind_id: KindId(9),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(RelationEndpoints {
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
                     source,
                     target: left,
                 }),
-                authoritative_aspect_state: None,
-            },
+                None,
+            ),
         });
         let relation_id = RelationId::new(partition_id, relation_slot as u64, relation_generation);
         let (decoy_slot, decoy_generation, _) = relation_arena.push_slot(SlotInit {
             partition_id,
             kind_id: KindId(9),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(RelationEndpoints {
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
                     source,
                     target: right,
                 }),
-                authoritative_aspect_state: None,
-            },
+                None,
+            ),
         });
         let decoy_id = RelationId::new(partition_id, decoy_slot as u64, decoy_generation);
         let other_source_ids = (0..2)
@@ -164,13 +164,13 @@ mod tests {
                     partition_id,
                     kind_id: kind,
                     version_id: VersionId(1),
-                    extra: RelationExtra {
-                        endpoints: Some(RelationEndpoints {
+                    extra: RelationExtra::from_unbudgeted_parts(
+                        Some(RelationEndpoints {
                             source: right,
                             target: left,
                         }),
-                        authoritative_aspect_state: None,
-                    },
+                        None,
+                    ),
                 });
                 (kind, RelationId::new(partition_id, slot as u64, generation))
             })

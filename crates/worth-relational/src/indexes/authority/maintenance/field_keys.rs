@@ -55,12 +55,8 @@ pub(super) fn entity(
     if entity_index_projection_scope(plan, locator).is_none() {
         return Ok(None);
     }
-    value(
-        slot.extra().authoritative_aspect_state.as_ref(),
-        locator,
-        work,
-    )
-    .map(|key| key.map(|key| (key, id)))
+    value(slot.extra().authoritative_aspect_state(), locator, work)
+        .map(|key| key.map(|key| (key, id)))
 }
 
 pub(super) fn relation(
@@ -107,12 +103,8 @@ pub(super) fn relation(
     if relation_index_projection_scope(plan, locator).is_none() {
         return Ok(None);
     }
-    value(
-        slot.extra().authoritative_aspect_state.as_ref(),
-        locator,
-        work,
-    )
-    .map(|key| key.map(|key| (key, id)))
+    value(slot.extra().authoritative_aspect_state(), locator, work)
+        .map(|key| key.map(|key| (key, id)))
 }
 
 fn prepare_scope(

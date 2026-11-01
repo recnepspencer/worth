@@ -48,19 +48,42 @@ pub(crate) fn readmit_field_authoring(
     readmit(candidate, purpose, plan, target)
 }
 
-pub(crate) fn apply(
+pub(crate) fn apply_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     current: Option<&AuthoritativeRecordAspectState>,
     patch: &AuthoritativeRecordAspectPatch,
     target: RecordAspectPatchTarget,
-) -> Result<Option<AuthoritativeRecordAspectState>, CommitConflict> {
-    match patch.apply_to_optional(current) {
-        TransitionOutcome::Success(state) => {
-            Ok(state.map(|artifact| artifact.into_parts().into_parts().0))
+) -> Result<crate::storage::substrate::EntityExtra, crate::transactions::data::TransactionCommitError>
+{
+    crate::storage::substrate::EntityExtra::apply_payload(execution, current, patch)
+        .map_err(|denial| payload_denial(target, denial))
+}
+pub(crate) fn apply_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    current: Option<&AuthoritativeRecordAspectState>,
+    patch: &AuthoritativeRecordAspectPatch,
+    target: RecordAspectPatchTarget,
+) -> Result<
+    crate::storage::substrate::RelationExtra,
+    crate::transactions::data::TransactionCommitError,
+> {
+    crate::storage::substrate::RelationExtra::apply_payload(execution, current, patch)
+        .map_err(|denial| payload_denial(target, denial))
+}
+pub(crate) fn payload_denial(
+    target: RecordAspectPatchTarget,
+    denial: crate::storage::substrate::ExtraPayloadDenial,
+) -> crate::transactions::data::TransactionCommitError {
+    match denial {
+        crate::storage::substrate::ExtraPayloadDenial::Request(cause) => {
+            crate::transactions::data::TransactionCommitError::execution(cause.into())
         }
-        TransitionOutcome::Denied(denial) => Err(conflict(
-            target,
-            RecordAspectPatchDenial::ApplicationDenied(denial),
-        )),
+        crate::storage::substrate::ExtraPayloadDenial::Application(denial) => {
+            crate::transactions::data::TransactionCommitError::conflict(conflict(
+                target,
+                RecordAspectPatchDenial::ApplicationDenied(denial),
+            ))
+        }
     }
 }
 
@@ -79,7 +102,7 @@ fn target_kind(target: RecordAspectPatchTarget) -> crate::identity::data::KindId
     }
 }
 
-pub(super) fn conflict(
+pub(crate) fn conflict(
     target: RecordAspectPatchTarget,
     denial: RecordAspectPatchDenial,
 ) -> CommitConflict {

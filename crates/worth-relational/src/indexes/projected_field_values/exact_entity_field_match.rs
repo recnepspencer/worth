@@ -26,7 +26,7 @@ pub(in crate::indexes) fn exact_entity_field_matches(
         .ok()?;
     let matches =
         crate::visibility::materialization::read_records::authoritative_state_query_locus_value(
-            slot.extra().authoritative_aspect_state.as_ref(),
+            slot.extra().authoritative_aspect_state(),
             locator,
         )
         .is_some_and(|actual| actual == expected);

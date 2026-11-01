@@ -1,5 +1,5 @@
 use crate::identity::data::{EntityId, KindId, RelationId};
-use worth_foundational::facade::AuthoritativeRecordAspectState;
+use crate::storage::substrate::{EntityExtra, RelationExtra, StorageAllocation};
 
 use super::{MutationEvent, RecordMutation};
 
@@ -35,8 +35,8 @@ impl MutationOutcome {
     pub(crate) fn entity_updated_with_authoritative_patch(
         entity_id: EntityId,
         kind_id: KindId,
-        old_authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
-        new_authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
+        old_authoritative_aspect_state: Option<StorageAllocation<EntityExtra>>,
+        new_authoritative_aspect_state: Option<StorageAllocation<EntityExtra>>,
         authoritative_patch: worth_foundational::facade::AuthoritativeRecordAspectPatch,
     ) -> Self {
         let mut outcome = Self::with_capacity(1, 1);
@@ -120,8 +120,8 @@ impl MutationOutcome {
         old_target: EntityId,
         new_source: EntityId,
         new_target: EntityId,
-        old_authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
-        new_authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
+        old_authoritative_aspect_state: Option<StorageAllocation<RelationExtra>>,
+        new_authoritative_aspect_state: Option<StorageAllocation<RelationExtra>>,
         authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
     ) -> Self {
         let mut outcome = Self::with_capacity(1, 1);

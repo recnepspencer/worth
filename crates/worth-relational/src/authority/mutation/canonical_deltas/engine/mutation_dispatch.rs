@@ -3,7 +3,7 @@ use crate::publication::patch::data::RecordStructuralChange;
 use crate::authority::mutation::canonical_deltas::data::{
     CanonicalDeltaError, CanonicalRecordAspectDelta,
 };
-use crate::authority::mutation::outcomes::RecordMutation;
+use crate::authority::mutation::RecordMutation;
 use crate::capabilities::AspectPlanSource;
 
 use super::entity_delta::{
@@ -43,10 +43,14 @@ pub(crate) fn canonical_delta_for_mutation(
             *entity_id,
             *kind_id,
             EntityAuthoritativeState {
-                authoritative_state: old_authoritative_aspect_state.as_ref(),
+                authoritative_state: old_authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             EntityAuthoritativeState {
-                authoritative_state: new_authoritative_aspect_state.as_ref(),
+                authoritative_state: new_authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             authoritative_patch.as_ref(),
         ),
@@ -71,7 +75,9 @@ pub(crate) fn canonical_delta_for_mutation(
             *entity_id,
             *kind_id,
             EntityAuthoritativeState {
-                authoritative_state: old_authoritative_aspect_state.as_ref(),
+                authoritative_state: old_authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             EntityAuthoritativeState {
                 authoritative_state: None,
@@ -123,12 +129,16 @@ pub(crate) fn canonical_delta_for_mutation(
             RelationState {
                 source: Some(*old_source),
                 target: Some(*old_target),
-                authoritative_state: old_authoritative_aspect_state.as_ref(),
+                authoritative_state: old_authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             RelationState {
                 source: Some(*new_source),
                 target: Some(*new_target),
-                authoritative_state: new_authoritative_aspect_state.as_ref(),
+                authoritative_state: new_authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             authoritative_patch.as_ref(),
         ),
@@ -146,7 +156,9 @@ pub(crate) fn canonical_delta_for_mutation(
             RelationState {
                 source: Some(*source),
                 target: Some(*target),
-                authoritative_state: authoritative_aspect_state.as_ref(),
+                authoritative_state: authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             RelationState {
                 source: None,
@@ -169,12 +181,16 @@ pub(crate) fn canonical_delta_for_mutation(
             RelationState {
                 source: Some(*source),
                 target: Some(*target),
-                authoritative_state: authoritative_aspect_state.as_ref(),
+                authoritative_state: authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             RelationState {
                 source: Some(*source),
                 target: Some(*target),
-                authoritative_state: authoritative_aspect_state.as_ref(),
+                authoritative_state: authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             RecordStructuralChange::RetainedForAudit,
         )
@@ -195,7 +211,9 @@ pub(crate) fn canonical_delta_for_mutation(
             RelationState {
                 source: Some(*source),
                 target: Some(*target),
-                authoritative_state: old_authoritative_aspect_state.as_ref(),
+                authoritative_state: old_authoritative_aspect_state
+                    .as_ref()
+                    .and_then(|extra| extra.authoritative_aspect_state()),
             },
             RelationState {
                 source: None,

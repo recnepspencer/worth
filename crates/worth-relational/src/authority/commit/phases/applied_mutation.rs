@@ -106,6 +106,7 @@ pub(crate) fn apply_mutation_draft(
     let allowance = branch_local_delete_allowance_for_plan(selected_state, &state, merged_plan);
     let mut records = runtime.record_identity.begin_allocations();
     let outcome = apply_plan_to_working_state(
+        execution,
         &mut state,
         &apply_plan,
         &config,

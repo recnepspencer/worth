@@ -22,6 +22,7 @@ use super::support::{
 
 #[test]
 fn entity_field_delta_materializes_authoritative_aspect_patch() {
+    let host = crate::test_execution_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -43,7 +44,7 @@ fn entity_field_delta_materializes_authoritative_aspect_patch() {
 
     let delta = canonical_delta_for_mutation(
         &mutation,
-        &empty_workspace(&mut state, &mut symbols, &catalog, &config, &schema),
+        &empty_workspace(&host, &mut state, &mut symbols, &catalog, &config, &schema),
     )
     .expect("entity field evidence should come from authoritative patch");
 
@@ -73,6 +74,7 @@ fn entity_field_delta_materializes_authoritative_aspect_patch() {
 
 #[test]
 fn entity_struct_delta_materializes_authoritative_patch_value() {
+    let host = crate::test_execution_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -94,7 +96,7 @@ fn entity_struct_delta_materializes_authoritative_patch_value() {
 
     let delta = canonical_delta_for_mutation(
         &mutation,
-        &empty_workspace(&mut state, &mut symbols, &catalog, &config, &schema),
+        &empty_workspace(&host, &mut state, &mut symbols, &catalog, &config, &schema),
     )
     .expect("struct evidence should come from authoritative patch");
 
@@ -133,6 +135,7 @@ fn entity_struct_delta_materializes_authoritative_patch_value() {
 
 #[test]
 fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
+    let host = crate::test_execution_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -154,7 +157,7 @@ fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
 
     let delta = canonical_delta_for_mutation(
         &mutation,
-        &empty_workspace(&mut state, &mut symbols, &catalog, &config, &schema),
+        &empty_workspace(&host, &mut state, &mut symbols, &catalog, &config, &schema),
     )
     .expect("field-level struct evidence should come from authoritative patch");
 
@@ -197,6 +200,7 @@ fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
 
 #[test]
 fn relation_field_delta_materializes_authoritative_aspect_patch() {
+    let host = crate::test_execution_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -223,7 +227,7 @@ fn relation_field_delta_materializes_authoritative_aspect_patch() {
 
     let delta = canonical_delta_for_mutation(
         &mutation,
-        &empty_workspace(&mut state, &mut symbols, &catalog, &config, &schema),
+        &empty_workspace(&host, &mut state, &mut symbols, &catalog, &config, &schema),
     )
     .expect("relation field evidence should come from authoritative aspect patch");
 

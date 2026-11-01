@@ -98,7 +98,7 @@ impl PartitionContentCommitment {
                     &(
                         fingerprint,
                         &extra.lineage_id,
-                        &extra.authoritative_aspect_state,
+                        &extra.authoritative_aspect_state(),
                     ),
                 )
             },

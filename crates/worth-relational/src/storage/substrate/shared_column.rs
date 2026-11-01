@@ -97,6 +97,10 @@ impl<T: Clone> SharedColumn<T> {
         self.get_shared(index).map(Arc::as_ref)
     }
 
+    pub(in crate::storage) fn retained_value(&self, index: usize) -> Option<Arc<T>> {
+        self.get_shared(index).cloned()
+    }
+
     pub(crate) fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index >= self.len {
             return None;
@@ -122,7 +126,7 @@ impl<T: Clone> SharedColumn<T> {
         self.push_shared(Arc::new(value))
     }
 
-    fn push_shared(&mut self, value: Arc<T>) -> u64 {
+    pub(in crate::storage) fn push_shared(&mut self, value: Arc<T>) -> u64 {
         let next_len = self.len.checked_add(1).expect(/* Proof: Columns are populated from addressable arena rows, each retaining at least one allocated value; a live column cannot contain usize::MAX rows in this process. */ "column length exhausted");
         if self.len / PAGE_LEN == 1usize << self.height {
             self.root = Some(Arc::new(ColumnNode::branch(self.root.take(), None)));
@@ -172,7 +176,7 @@ impl<T: Clone> SharedColumn<T> {
             .or(self.default.as_ref())
     }
 
-    fn set_shared(&mut self, index: usize, value: Arc<T>) -> u64 {
+    pub(in crate::storage) fn set_shared(&mut self, index: usize, value: Arc<T>) -> u64 {
         let root = self
             .root
             .get_or_insert_with(|| Arc::new(ColumnNode::empty(self.height)));

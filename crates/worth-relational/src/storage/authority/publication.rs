@@ -135,13 +135,13 @@ mod tests {
             partition_id,
             kind_id: KindId(2),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(RelationEndpoints {
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
                     source: EntityId::new(partition_id, 0, 1),
                     target: EntityId::new(partition_id, 1, 1),
                 }),
-                authoritative_aspect_state: None,
-            },
+                None,
+            ),
         });
         let mut overlay = PartitionState {
             partition_id,

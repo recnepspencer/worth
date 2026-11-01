@@ -12,22 +12,25 @@ use super::{
 
 pub(crate) trait RecordKind: Clone + Debug + 'static {
     type Domain: Copy + Ord + Debug + 'static;
-    type Meta: Clone + Debug;
+    type Meta: Clone + Debug + HistoricalMetadata;
     type Extra: Clone + Debug;
     type ReadRecord: Clone + Debug;
 
     fn arena(partition: &PartitionState) -> &RecordArena<Self>;
     fn arena_mut(partition: &mut PartitionState) -> &mut RecordArena<Self>;
     fn empty_extra() -> Self::Extra;
+    #[cfg(test)]
     fn unavailable_extra(extra: &Self::Extra) -> Self::Extra;
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId);
     fn metadata_for_create(
         kind_id: KindId,
         generation: u32,
         version_id: VersionId,
-        extra: &Self::Extra,
+        extra: crate::storage::substrate::StorageAllocation<Self::Extra>,
     ) -> Option<Self::Meta>;
-    fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64;
+    fn metadata_extra(
+        metadata: &Self::Meta,
+    ) -> &crate::storage::substrate::StorageAllocation<Self::Extra>;
     fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64;
 }
 
@@ -58,12 +61,9 @@ impl RecordKind for EntityRecordKind {
         EntityExtra::default()
     }
 
+    #[cfg(test)]
     fn unavailable_extra(extra: &Self::Extra) -> Self::Extra {
-        EntityExtra {
-            structural_fingerprint: None,
-            lineage_id: extra.lineage_id,
-            authoritative_aspect_state: None,
-        }
+        EntityExtra::from_unbudgeted_parts(None, extra.lineage_id, None)
     }
 
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId) {
@@ -74,7 +74,7 @@ impl RecordKind for EntityRecordKind {
         kind_id: KindId,
         generation: u32,
         version_id: VersionId,
-        extra: &Self::Extra,
+        extra: crate::storage::substrate::StorageAllocation<Self::Extra>,
     ) -> Option<Self::Meta> {
         Some(VersionedEntityMetadata {
             effective_at: version_id,
@@ -82,21 +82,19 @@ impl RecordKind for EntityRecordKind {
             generation,
             kind_id,
             lineage_id: extra.lineage_id,
-            authoritative_aspect_state: extra.authoritative_aspect_state.clone(),
+            extra,
         })
     }
 
-    fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64 {
-        metadata
-            .authoritative_aspect_state
-            .as_ref()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    fn metadata_extra(
+        metadata: &Self::Meta,
+    ) -> &crate::storage::substrate::StorageAllocation<Self::Extra> {
+        &metadata.extra
     }
 
     fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64 {
         extra
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
     }
 }
@@ -136,6 +134,7 @@ impl RecordKind for RelationRecordKind {
         RelationExtra::default()
     }
 
+    #[cfg(test)]
     fn unavailable_extra(_extra: &Self::Extra) -> Self::Extra {
         RelationExtra::default()
     }
@@ -148,7 +147,7 @@ impl RecordKind for RelationRecordKind {
         kind_id: KindId,
         generation: u32,
         version_id: VersionId,
-        extra: &Self::Extra,
+        extra: crate::storage::substrate::StorageAllocation<Self::Extra>,
     ) -> Option<Self::Meta> {
         Some(VersionedRelationMetadata {
             effective_at: version_id,
@@ -156,21 +155,19 @@ impl RecordKind for RelationRecordKind {
             generation,
             kind_id,
             endpoints: extra.endpoints.clone()?,
-            authoritative_aspect_state: extra.authoritative_aspect_state.clone(),
+            extra,
         })
     }
 
-    fn metadata_owned_allocation_bytes(metadata: &Self::Meta) -> u64 {
-        metadata
-            .authoritative_aspect_state
-            .as_ref()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    fn metadata_extra(
+        metadata: &Self::Meta,
+    ) -> &crate::storage::substrate::StorageAllocation<Self::Extra> {
+        &metadata.extra
     }
 
     fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64 {
         extra
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
     }
 }

@@ -166,7 +166,7 @@ pub(super) fn protected_payload(runtime: &RelationalRuntime, id: EntityId) -> Ve
         record.kind_id(),
         record.generation(),
         record.extra().lineage_id,
-        &record.extra().authoritative_aspect_state,
+        &record.extra().authoritative_aspect_state(),
     ))
     .unwrap()
 }

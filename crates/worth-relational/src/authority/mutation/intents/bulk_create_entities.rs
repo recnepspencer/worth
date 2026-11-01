@@ -29,9 +29,7 @@ use crate::transactions::data::{
     RecordAspectPatchTarget, TransactionCommitError,
 };
 use crate::validation::data::InvariantGroupSet;
-use worth_foundational::facade::{
-    AuthoritativeRecordAspectPatch, AuthoritativeRecordAspectState, PortablePatchReadmissionPurpose,
-};
+use worth_foundational::facade::{AuthoritativeRecordAspectPatch, PortablePatchReadmissionPurpose};
 
 use super::field_authoring_candidate::FieldAuthoringDomain;
 use super::record_aspect_patch;
@@ -66,10 +64,7 @@ pub(super) fn apply(
                 version_id,
                 intent.partition_id,
                 intent.kind_id,
-                crate::storage::substrate::EntityExtra {
-                    authoritative_aspect_state: aspect_plan.1,
-                    ..crate::storage::substrate::EntityExtra::default()
-                },
+                aspect_plan.1,
             )?;
             context
                 .state
@@ -101,9 +96,9 @@ fn stage_bulk_entity_aspect_plans(
 ) -> Result<
     Vec<(
         AuthoritativeRecordAspectPatch,
-        Option<AuthoritativeRecordAspectState>,
+        crate::storage::substrate::EntityExtra,
     )>,
-    CommitConflict,
+    TransactionCommitError,
 > {
     let lowered_plan = workspace.entity_aspect_plan(intent.kind_id);
     let target = RecordAspectPatchTarget::EntityCreation {
@@ -119,7 +114,8 @@ fn stage_bulk_entity_aspect_plans(
                 target,
                 FieldAuthoringDomain::Entity,
             )?;
-            let state = record_aspect_patch::apply(None, &patch, target)?;
+            let state =
+                record_aspect_patch::apply_entity(&workspace.execution(), None, &patch, target)?;
             Ok((patch, state))
         })
         .collect()

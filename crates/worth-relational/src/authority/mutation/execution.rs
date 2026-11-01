@@ -17,6 +17,7 @@ pub(crate) struct MutationApplyOutcome {
 }
 
 pub(crate) fn apply_plan_to_working_state(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
     apply_plan: &AuthoritativeApplyPlan,
     config: &MutationConfig,
@@ -29,6 +30,7 @@ pub(crate) fn apply_plan_to_working_state(
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
 ) -> Result<MutationApplyOutcome, super::MutationApplyDenial> {
     let mut workspace = MutationWorkspace::new(
+        *execution,
         state,
         symbols,
         config,

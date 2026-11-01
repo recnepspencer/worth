@@ -46,6 +46,7 @@ fn entity_field_patch_evidence_denial_carries_typed_target() {
 
 #[test]
 fn entity_field_delta_requires_authoritative_state() {
+    let host = crate::test_execution_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -77,7 +78,7 @@ fn entity_field_delta_requires_authoritative_state() {
 
     let delta = canonical_delta_for_mutation(
         &mutation,
-        &empty_workspace(&mut state, &mut symbols, &catalog, &config, &schema),
+        &empty_workspace(&host, &mut state, &mut symbols, &catalog, &config, &schema),
     )
     .expect("missing authoritative state should leave absent aspect evidence");
 

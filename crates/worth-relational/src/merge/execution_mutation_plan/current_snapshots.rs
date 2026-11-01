@@ -38,7 +38,7 @@ pub(super) fn current_entity_snapshot(
                 }
             ))?,
         retired_at_version: slot.retired_at(),
-        authoritative_aspect_state: slot.extra().authoritative_aspect_state.clone(),
+        authoritative_aspect_state: slot.extra().authoritative_aspect_state().cloned(),
     }))
         },
     )

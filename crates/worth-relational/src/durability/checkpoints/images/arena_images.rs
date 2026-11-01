@@ -1,3 +1,5 @@
+mod entity;
+mod relation;
 use std::marker::PhantomData;
 
 use crate::durability::data::{
@@ -30,7 +32,7 @@ pub(super) trait CheckpointArenaKind: RecordKind {
         meta: &<Self::ImageKind as RecordArenaCheckpointKind>::MetaImage,
     ) -> KindId;
     fn extra_to_image(
-        extra: Self::Extra,
+        extra: &Self::Extra,
         contracts: Option<&CheckpointAspectContractCatalog>,
     ) -> Result<<Self::ImageKind as RecordArenaCheckpointKind>::ExtraImage, DurabilityError>;
     fn extra_from_image(
@@ -38,7 +40,7 @@ pub(super) trait CheckpointArenaKind: RecordKind {
         contracts: &CheckpointAspectContractCatalog,
     ) -> Result<Self::Extra, DurabilityError>;
     fn meta_to_image(
-        meta: Self::Meta,
+        meta: &Self::Meta,
         contracts: &CheckpointAspectContractCatalog,
     ) -> Result<<Self::ImageKind as RecordArenaCheckpointKind>::MetaImage, DurabilityError>;
     fn meta_from_image(
@@ -57,160 +59,6 @@ fn missing_plan(kind_id: KindId) -> DurabilityError {
     )
 }
 
-impl CheckpointArenaKind for EntityRecordKind {
-    type ImageKind = EntityCheckpointImageKind;
-
-    fn plan(
-        catalog: &AspectContractPlanCatalog,
-        kind_id: KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        catalog.entity_plans.get(&kind_id)
-    }
-
-    fn meta_kind(meta: &Self::Meta) -> KindId {
-        meta.kind_id
-    }
-
-    fn meta_kind_from_image(meta: &VersionedEntityMetadataImage) -> KindId {
-        meta.kind_id
-    }
-
-    fn extra_to_image(
-        extra: Self::Extra,
-        contracts: Option<&CheckpointAspectContractCatalog>,
-    ) -> Result<EntityExtraImage, DurabilityError> {
-        Ok(EntityExtraImage {
-            structural_fingerprint: extra.structural_fingerprint,
-            lineage_id: extra.lineage_id,
-            authoritative_aspect_state: export_state(extra.authoritative_aspect_state, contracts)?,
-        })
-    }
-
-    fn extra_from_image(
-        extra: EntityExtraImage,
-        contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Extra, DurabilityError> {
-        Ok(EntityExtra {
-            structural_fingerprint: extra.structural_fingerprint,
-            lineage_id: extra.lineage_id,
-            authoritative_aspect_state: readmit_state(extra.authoritative_aspect_state, contracts)?,
-        })
-    }
-
-    fn meta_to_image(
-        meta: Self::Meta,
-        contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<VersionedEntityMetadataImage, DurabilityError> {
-        Ok(VersionedEntityMetadataImage {
-            effective_at: meta.effective_at,
-            retired_at: meta.retired_at,
-            generation: meta.generation,
-            kind_id: meta.kind_id,
-            lineage_id: meta.lineage_id,
-            authoritative_aspect_state: export_state(
-                meta.authoritative_aspect_state,
-                Some(contracts),
-            )?,
-        })
-    }
-
-    fn meta_from_image(
-        meta: VersionedEntityMetadataImage,
-        contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Meta, DurabilityError> {
-        Ok(VersionedEntityMetadata {
-            effective_at: meta.effective_at,
-            retired_at: meta.retired_at,
-            generation: meta.generation,
-            kind_id: meta.kind_id,
-            lineage_id: meta.lineage_id,
-            authoritative_aspect_state: readmit_state(meta.authoritative_aspect_state, contracts)?,
-        })
-    }
-}
-
-impl CheckpointArenaKind for RelationRecordKind {
-    type ImageKind = RelationCheckpointImageKind;
-
-    fn plan(
-        catalog: &AspectContractPlanCatalog,
-        kind_id: KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        catalog.relation_plans.get(&kind_id)
-    }
-
-    fn meta_kind(meta: &Self::Meta) -> KindId {
-        meta.kind_id
-    }
-
-    fn meta_kind_from_image(meta: &VersionedRelationMetadataImage) -> KindId {
-        meta.kind_id
-    }
-
-    fn extra_to_image(
-        extra: Self::Extra,
-        contracts: Option<&CheckpointAspectContractCatalog>,
-    ) -> Result<RelationExtraImage, DurabilityError> {
-        Ok(RelationExtraImage {
-            endpoints: extra.endpoints.map(|endpoints| RelationEndpointsImage {
-                source: endpoints.source,
-                target: endpoints.target,
-            }),
-            authoritative_aspect_state: export_state(extra.authoritative_aspect_state, contracts)?,
-        })
-    }
-
-    fn extra_from_image(
-        extra: RelationExtraImage,
-        contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Extra, DurabilityError> {
-        Ok(crate::storage::substrate::RelationExtra {
-            endpoints: extra.endpoints.map(|endpoints| RelationEndpoints {
-                source: endpoints.source,
-                target: endpoints.target,
-            }),
-            authoritative_aspect_state: readmit_state(extra.authoritative_aspect_state, contracts)?,
-        })
-    }
-
-    fn meta_to_image(
-        meta: Self::Meta,
-        contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<VersionedRelationMetadataImage, DurabilityError> {
-        Ok(VersionedRelationMetadataImage {
-            effective_at: meta.effective_at,
-            retired_at: meta.retired_at,
-            generation: meta.generation,
-            kind_id: meta.kind_id,
-            endpoints: RelationEndpointsImage {
-                source: meta.endpoints.source,
-                target: meta.endpoints.target,
-            },
-            authoritative_aspect_state: export_state(
-                meta.authoritative_aspect_state,
-                Some(contracts),
-            )?,
-        })
-    }
-
-    fn meta_from_image(
-        meta: VersionedRelationMetadataImage,
-        contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Meta, DurabilityError> {
-        Ok(VersionedRelationMetadata {
-            effective_at: meta.effective_at,
-            retired_at: meta.retired_at,
-            generation: meta.generation,
-            kind_id: meta.kind_id,
-            endpoints: RelationEndpoints {
-                source: meta.endpoints.source,
-                target: meta.endpoints.target,
-            },
-            authoritative_aspect_state: readmit_state(meta.authoritative_aspect_state, contracts)?,
-        })
-    }
-}
-
 pub(super) fn arena_to_image<K: CheckpointArenaKind>(
     arena: RecordArena<K>,
     catalog: &AspectContractPlanCatalog,
@@ -218,10 +66,10 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
 ) -> Result<RecordArenaCheckpointImage<K::ImageKind>, DurabilityError> {
     let metadata_history = arena
         .metadata_history
-        .into_iter()
+        .iter()
         .map(|entries| {
             entries
-                .into_iter()
+                .iter()
                 .map(|meta| {
                     let kind_id = K::meta_kind(&meta);
                     K::plan(catalog, kind_id).ok_or_else(|| missing_plan(kind_id))?;
@@ -232,7 +80,7 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
         .collect::<Result<Vec<_>, _>>()?;
     let extra = arena
         .extra
-        .into_iter()
+        .iter()
         .zip(arena.kind_ids.iter().copied())
         .map(|(extra, kind_id)| {
             let contracts = kind_id

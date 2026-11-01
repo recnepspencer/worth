@@ -38,12 +38,12 @@ pub(super) fn collect_head(partition: &PartitionState) -> BTreeSet<Symbol> {
         .entity_arena
         .extra
         .iter()
-        .map(|extra| extra.authoritative_aspect_state.as_ref());
+        .map(|extra| extra.authoritative_aspect_state());
     let relations = partition
         .relation_arena
         .extra
         .iter()
-        .map(|extra| extra.authoritative_aspect_state.as_ref());
+        .map(|extra| extra.authoritative_aspect_state());
     for state in entities.chain(relations).flatten() {
         visit_state(state, &mut symbols);
     }
@@ -59,7 +59,7 @@ pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
         .flat_map(|history| {
             history
                 .iter()
-                .map(|metadata| metadata.authoritative_aspect_state.as_ref())
+                .map(|metadata| metadata.authoritative_aspect_state())
         })
         .chain(
             partition
@@ -69,7 +69,7 @@ pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
                 .flat_map(|history| {
                     history
                         .iter()
-                        .map(|metadata| metadata.authoritative_aspect_state.as_ref())
+                        .map(|metadata| metadata.authoritative_aspect_state())
                 }),
         )
         .flatten()

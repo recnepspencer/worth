@@ -175,16 +175,13 @@ fn sparse_speculative_overlay_reads_untouched_relation_truth_from_base_partition
             partition_id,
             kind_id: KindId(9),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(RelationEndpoints {
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
                     source: left,
                     target: right,
                 }),
-                authoritative_aspect_state: Some(authoritative_string_state(
-                    &relation_kind_contract,
-                    "edge",
-                )),
-            },
+                Some(authoritative_string_state(&relation_kind_contract, "edge")),
+            ),
         });
     let relation_id = RelationId::new(partition_id, relation_slot as u64, relation_generation);
     base_partition.adjacency = vec![AdjacencySet::new(&policy), AdjacencySet::new(&policy)].into();
@@ -290,8 +287,9 @@ fn authoritative_string_state(
 fn entity_extra_with_aspect_state(
     authoritative_aspect_state: AuthoritativeRecordAspectState,
 ) -> crate::storage::substrate::EntityExtra {
-    crate::storage::substrate::EntityExtra {
-        authoritative_aspect_state: Some(authoritative_aspect_state),
-        ..EntityRecordKind::empty_extra()
-    }
+    crate::storage::substrate::EntityExtra::from_unbudgeted_parts(
+        None,
+        None,
+        Some(authoritative_aspect_state),
+    )
 }

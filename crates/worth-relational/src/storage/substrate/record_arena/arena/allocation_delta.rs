@@ -1,6 +1,6 @@
 //! Publication delta accounting traverses changed column/index paths, not occupied rows.
 use super::payload_allocation::{
-    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, visit_metadata,
+    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes,
     visit_new_history_prefix,
 };
 use super::{RecordArena, RecordKind};
@@ -77,23 +77,21 @@ impl<K: RecordKind> RecordArena<K> {
                             previous,
                             visitor,
                             &mut |metadata, _, allocation, visitor| {
-                                visit_metadata::<K>(metadata, allocation, visitor)
+                                let _ = metadata;
+                                visitor.visit(allocation);
                             },
                         );
                     } else {
-                        history.visit_allocations(false, visitor, &mut visit_metadata::<K>);
+                        history.visit_allocations(false, visitor, &mut |_, allocation, visitor| {
+                            visitor.visit(allocation);
+                        });
                     }
                 }
             },
         );
-        self.extra.visit_new_allocations(
-            &previous.extra,
-            visitor,
-            &mut |extra, _, mut allocation, visitor| {
-                allocation.bytes += K::extra_owned_allocation_bytes(extra);
-                visitor.visit(allocation);
-            },
-        );
+        self.extra
+            .visit_new_allocations(&previous.extra, visitor, &mut |_, _, _, _| {});
+        self.visit_new_extra_allocations(previous, visitor);
         self.aspect_versions.visit_new_allocations(
             &previous.aspect_versions,
             visitor,

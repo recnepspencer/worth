@@ -85,7 +85,7 @@ pub(crate) fn capture_materialization_producers(
                                     basis,
                                     &selected,
                                     member.id,
-                                    row.extra().authoritative_aspect_state.as_ref(),
+                                    row.extra().authoritative_aspect_state(),
                                     context,
                                     lease,
                                 )?;

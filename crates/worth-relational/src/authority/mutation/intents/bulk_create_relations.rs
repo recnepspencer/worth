@@ -162,7 +162,7 @@ fn apply_staged_relation_row(
     source: EntityReference,
     target: EntityReference,
     fields: AspectFieldPatch,
-) -> Result<(), CommitConflict> {
+) -> Result<(), TransactionCommitError> {
     let source_id = resolve_entity_reference(workspace, &source)?;
     let target_id = resolve_entity_reference(workspace, &target)?;
     let patch_target = RecordAspectPatchTarget::RelationCreation {
@@ -186,8 +186,12 @@ fn apply_staged_relation_row(
         plan,
         patch_target,
     )?;
-    let authoritative_aspect_state =
-        record_aspect_patch::apply(None, &authoritative_patch, patch_target)?;
+    let authoritative_aspect_state = record_aspect_patch::apply_relation(
+        &workspace.execution(),
+        None,
+        &authoritative_patch,
+        patch_target,
+    )?;
     let relation_id = workspace.with_context(|context| {
         let relation_id = allocate_relation(
             context.state,
@@ -202,7 +206,7 @@ fn apply_staged_relation_row(
         context
             .state
             .mark_relation_slot_touched(relation_id.partition_id, relation_id.slot_index());
-        Ok(relation_id)
+        Ok::<_, CommitConflict>(relation_id)
     })?;
     if let Some(client_key) = client_key {
         workspace.register_created_relation(

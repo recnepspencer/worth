@@ -57,7 +57,7 @@ pub(super) fn project_entity(
                     target,
                     field_authoring_candidate::FieldAuthoringDomain::Entity,
                 )?;
-                record.authoritative_aspect_state = record_aspect_patch::apply(
+                record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
                     &patch,
                     target,
@@ -77,7 +77,7 @@ pub(super) fn project_entity(
                     schema.entity_aspect_plan(record.kind.kind_id),
                     target,
                 )?;
-                record.authoritative_aspect_state = record_aspect_patch::apply(
+                record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
                     &patch,
                     target,
@@ -121,7 +121,7 @@ pub(super) fn project_relation(
                     schema.relation_aspect_plan(record.kind.kind_id),
                     target,
                 )?;
-                record.authoritative_aspect_state = record_aspect_patch::apply(
+                record.authoritative_aspect_state = apply_projection_state(
                     record.authoritative_aspect_state.as_ref(),
                     &patch,
                     target,
@@ -132,4 +132,21 @@ pub(super) fn project_relation(
         }
     }
     Ok(effective)
+}
+
+/// Independent ordinary read-record copies; no Native extra or retained bill moves here.
+fn apply_projection_state(
+    current: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+    patch: &worth_foundational::facade::AuthoritativeRecordAspectPatch,
+    target: RecordAspectPatchTarget,
+) -> Result<Option<worth_foundational::facade::AuthoritativeRecordAspectState>, CommitConflict> {
+    match patch.apply_to_optional(current) {
+        worth_proof::TransitionOutcome::Success(state) => {
+            Ok(state.map(|value| value.into_parts().into_parts().0))
+        }
+        worth_proof::TransitionOutcome::Denied(denial) => Err(record_aspect_patch::conflict(
+            target,
+            crate::transactions::data::RecordAspectPatchDenial::ApplicationDenied(denial),
+        )),
+    }
 }

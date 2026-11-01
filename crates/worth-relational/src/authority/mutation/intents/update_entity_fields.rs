@@ -14,7 +14,7 @@ use super::record_aspect_patch;
 pub(super) fn apply(
     intent: &UpdateEntityFieldsIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let slot = intent.entity_id.slot_index();
     let (kind_id, authoritative_aspect_state) = workspace.with_context(|context| {
@@ -40,10 +40,7 @@ pub(super) fn apply(
                 missing: EntityFieldUpdateMissingState::KindId,
             })
         })?;
-        Ok::<_, CommitConflict>((
-            kind_id,
-            slot_view.extra().authoritative_aspect_state.clone(),
-        ))
+        Ok::<_, CommitConflict>((kind_id, Some(slot_view.retained_extra())))
     })?;
     let target = RecordAspectPatchTarget::Entity {
         entity_id: intent.entity_id,
@@ -56,8 +53,14 @@ pub(super) fn apply(
         target,
         FieldAuthoringDomain::Entity,
     )?;
-    let new_authoritative_aspect_state =
-        record_aspect_patch::apply(authoritative_aspect_state.as_ref(), &patch, target)?;
+    let mut new_authoritative_aspect_state = record_aspect_patch::apply_entity(
+        &workspace.execution(),
+        authoritative_aspect_state
+            .as_ref()
+            .and_then(|extra| extra.authoritative_aspect_state()),
+        &patch,
+        target,
+    )?;
     workspace.with_context(|context| {
         context
             .state
@@ -65,18 +68,23 @@ pub(super) fn apply(
         let partition = context
             .state
             .get_partition_mut(intent.entity_id.partition_id);
-        let mut updated_extra = partition
-            .entity_arena
-            .extra_at(slot)
-            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?
-            .clone();
-        updated_extra.authoritative_aspect_state = new_authoritative_aspect_state.clone();
+        if let Some(prior) = &authoritative_aspect_state {
+            new_authoritative_aspect_state.lineage_id = prior.lineage_id;
+            new_authoritative_aspect_state.structural_fingerprint = prior.structural_fingerprint;
+        }
         partition
             .entity_arena
-            .apply_extra_update(slot, updated_extra, version_id)
+            .apply_extra_update(slot, new_authoritative_aspect_state, version_id)
             .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
         Ok::<_, CommitConflict>(())
     })?;
+    let new_authoritative_aspect_state = workspace.with_context(|context| {
+        context
+            .state
+            .get_partition_mut(intent.entity_id.partition_id)
+            .entity_arena
+            .retained_extra(slot)
+    });
     Ok(MutationOutcome::entity_updated_with_authoritative_patch(
         intent.entity_id,
         kind_id,

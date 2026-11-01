@@ -176,14 +176,14 @@ impl Projection<'_, '_, '_, '_, '_> {
                     let old = values::field(
                         before
                             .as_ref()
-                            .and_then(|(_, slot)| slot.extra().authoritative_aspect_state.as_ref()),
+                            .and_then(|(_, slot)| slot.extra().authoritative_aspect_state()),
                         field_locator,
                         context,
                     )?;
                     let new = values::field(
                         after
                             .as_ref()
-                            .and_then(|(_, slot)| slot.extra().authoritative_aspect_state.as_ref()),
+                            .and_then(|(_, slot)| slot.extra().authoritative_aspect_state()),
                         field_locator,
                         context,
                     )?;

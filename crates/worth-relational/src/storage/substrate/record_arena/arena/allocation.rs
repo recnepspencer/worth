@@ -1,7 +1,4 @@
-use super::payload_allocation::{
-    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, history_prefix_bytes,
-    metadata_history_bytes,
-};
+use super::payload_allocation::diagnostic_enrichment_bytes;
 use super::{RecordArena, RecordKind};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -31,32 +28,19 @@ impl RecordArenaAllocationInventory {
 
 impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn allocation_inventory(&self) -> RecordArenaAllocationInventory {
-        let authoritative_bytes = [
-            self.slots.allocation_bytes(),
-            self.partition_ids.allocation_bytes(),
-            self.generations.allocation_bytes(),
-            self.lifecycle.allocation_bytes(),
-            self.kind_ids.allocation_bytes(),
-            self.metadata_history.allocation_bytes(),
-            self.history_prefixes.allocation_bytes(),
-            self.history_prefixes.iter().map(history_prefix_bytes).sum(),
-            self.created_at.allocation_bytes(),
-            self.retired_at.allocation_bytes(),
-            self.extra.allocation_bytes(),
-            self.aspect_versions.allocation_bytes(),
-            self.field_revisions.allocation_bytes(),
-            self.live_bitset.authoritative_allocation_bytes(),
-            self.reclaimable_bitset.authoritative_allocation_bytes(),
-            self.metadata_history
-                .iter()
-                .map(metadata_history_bytes::<K>)
-                .sum(),
-            self.extra.iter().map(K::extra_owned_allocation_bytes).sum(),
-            self.aspect_versions.iter().map(aspect_version_bytes).sum(),
-            self.field_revisions.iter().map(field_revision_bytes).sum(),
-        ]
-        .into_iter()
-        .fold(0_u64, u64::saturating_add);
+        struct Bytes(u64);
+        impl crate::storage::substrate::StorageAllocationVisitor for Bytes {
+            fn visit(
+                &mut self,
+                allocation: crate::storage::substrate::StorageAllocationObservation,
+            ) -> bool {
+                self.0 = self.0.saturating_add(allocation.bytes);
+                true
+            }
+        }
+        let mut observed = Bytes(0);
+        self.visit_authoritative_allocations(false, &mut observed);
+        let authoritative_bytes = observed.0;
         let diagnostic_bytes = self
             .diagnostics_enrichment
             .allocation_bytes()

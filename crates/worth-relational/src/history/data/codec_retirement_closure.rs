@@ -243,7 +243,7 @@ fn derive_metered(
             if !record.is_live() {
                 continue;
             }
-            let Some(payload) = record.extra().authoritative_aspect_state.as_ref() else {
+            let Some(payload) = record.extra().authoritative_aspect_state() else {
                 continue;
             };
             let mut has_changed_present_aspect = false;
@@ -290,8 +290,7 @@ fn derive_metered(
             .ok_or("affected output generation changed")?;
         let payload = row
             .extra()
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .ok_or("affected output payload missing")?;
         let selected = membership::latest(runtime, basis, id, context, lease)?;
         let origin = membership::validate_member(

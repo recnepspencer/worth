@@ -8,7 +8,13 @@ use worth_foundational::facade::AspectBinding;
 
 #[test]
 fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retirement() {
-    let host = crate::test_execution_policy::serial_request();
+    let producer_budget = worth_execution::SerialMemoryBudget::new(Some(4 * 1024 * 1024));
+    let producer_cancel = worth_execution::CancellationSource::new();
+    let host = worth_execution::SerialRequest::from_memory(
+        producer_budget.clone(),
+        producer_cancel.token(),
+        None,
+    );
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -68,7 +74,17 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         "copied descriptive producer origin must not authenticate another native commit"
     );
     let result = runtime.settle_performed_publication(performed).unwrap();
+    let public_copy = runtime
+        .read_truth()
+        .project_snapshot(&result.snapshot)
+        .unwrap()
+        .all_authoritative_entity_records(execution)
+        .unwrap()
+        .into_iter()
+        .find(|record| record.entity_id == entity)
+        .unwrap();
     release_test_commit_snapshot(&runtime, &result);
+    assert!(producer_budget.charged_memory_bytes() > 0, "the actual published row retains its original application bill after result snapshot release");
     let loci = [crate::runtime::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
@@ -77,7 +93,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
             field: field_key("name"),
         },
     }];
-    // Genuine publication/preparation above is ordinary setup. Only actual
+    // The genuine producer above uses its own finite original request. Actual
     // cold derive/readmission/application below uses this finite original request.
     let budget = worth_execution::SerialMemoryBudget::new(Some(1024 * 1024));
     let cancellation = worth_execution::CancellationSource::new();
@@ -96,6 +112,22 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         .entities,
         vec![entity]
     );
+    let original_basis = basis;
+    let original_partition = original_basis
+        .inner
+        .root
+        .partition_state(entity.partition_id)
+        .unwrap()
+        .unwrap();
+    let original_payload = rmp_serde::to_vec(
+        &original_partition
+            .entity_arena
+            .get(&entity)
+            .unwrap()
+            .extra()
+            .authoritative_aspect_state(),
+    )
+    .unwrap();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -120,6 +152,41 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         )
         .is_err(),
         "equal supplied bytes must not preserve the prior producer's migration permission"
+    );
+    let changed = update_entity(execution, &runtime, entity, "different");
+    release_test_commit_snapshot(&runtime, &changed);
+    let current_basis = test_owner_main_basis(&runtime).unwrap();
+    let current_partition = current_basis
+        .inner
+        .root
+        .partition_state(entity.partition_id)
+        .unwrap()
+        .unwrap();
+    let old_record = original_partition.entity_arena.get(&entity).unwrap();
+    let new_record = current_partition.entity_arena.get(&entity).unwrap();
+    assert_eq!(
+        rmp_serde::to_vec(&old_record.extra().authoritative_aspect_state()).unwrap(),
+        original_payload
+    );
+    assert_ne!(
+        rmp_serde::to_vec(&new_record.extra().authoritative_aspect_state()).unwrap(),
+        original_payload
+    );
+    assert_ne!(
+        old_record.retained_extra().id(),
+        new_record.retained_extra().id()
+    );
+    assert_eq!(read_entity_name(&public_copy).as_deref(), Some("output"));
+    let latest = runtime
+        .read_truth()
+        .read_version(execution, changed.version_id)
+        .unwrap();
+    assert_eq!(
+        latest
+            .get_entity(entity)
+            .and_then(read_entity_name)
+            .as_deref(),
+        Some("different")
     );
 }
 

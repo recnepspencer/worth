@@ -61,12 +61,9 @@ pub(super) fn allocate_relation(
     kind_id: KindId,
     source: EntityId,
     target: EntityId,
-    authoritative_aspect_state: Option<worth_foundational::facade::AuthoritativeRecordAspectState>,
+    mut extra: RelationExtra,
 ) -> Result<RelationId, CommitConflict> {
-    let extra = RelationExtra {
-        endpoints: Some(RelationEndpoints { source, target }),
-        authoritative_aspect_state,
-    };
+    extra.endpoints = Some(RelationEndpoints { source, target });
     let (slot, generation) = allocate_record::<RelationRecordKind>(
         state,
         allocations,
@@ -105,7 +102,7 @@ pub(super) fn delete_entity_with_cascade(
         )
     })?;
     let authoritative_patch = plan_entity_authoritative_deletion_patch(
-        slot_view.extra().authoritative_aspect_state.as_ref(),
+        slot_view.extra().authoritative_aspect_state(),
         &schema_registry
             .entity_registration(kind_id)
             .map_err(|error| {

@@ -28,7 +28,7 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
-    let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
+    let payload = row.extra().authoritative_aspect_state().unwrap();
     assert!(validate(execution, original, id, plan, Some(payload)).is_ok());
     let operation = original.patch.authoritative_record_patches[0]
         .authoritative_patch
@@ -186,7 +186,7 @@ fn birth_field_clear_refuses_with_the_selected_struct_operation_summary() {
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let row = partition.entity_arena.get(&id).unwrap();
-    let payload = row.extra().authoritative_aspect_state.as_ref().unwrap();
+    let payload = row.extra().authoritative_aspect_state().unwrap();
     let mut envelope = result
         .publication()
         .envelope

@@ -34,6 +34,7 @@ pub(crate) struct BranchLocalDeleteAllowance {
 }
 
 pub(crate) struct MutationWorkspace<'a> {
+    execution: worth_execution::ExecutionRequest<'a, 'a>,
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     state: &'a mut WorkingState,
     symbols: &'a mut PendingSymbolMeanings,
@@ -50,6 +51,7 @@ pub(crate) struct MutationWorkspace<'a> {
 
 impl<'a> MutationWorkspace<'a> {
     pub(crate) fn new(
+        execution: worth_execution::ExecutionRequest<'a, 'a>,
         state: &'a mut WorkingState,
         symbols: &'a mut PendingSymbolMeanings,
         config: &'a MutationConfig,
@@ -61,6 +63,7 @@ impl<'a> MutationWorkspace<'a> {
         commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     ) -> Self {
         Self {
+            execution,
             commit_work_budget,
             state,
             symbols,
@@ -74,6 +77,10 @@ impl<'a> MutationWorkspace<'a> {
             created_relations: BTreeMap::new(),
             record_allocations,
         }
+    }
+
+    pub(crate) fn execution(&self) -> worth_execution::ExecutionRequest<'a, 'a> {
+        self.execution
     }
 
     pub(crate) fn commit_work_budget(&self) -> Option<&crate::execution::RequestWorkBudget> {

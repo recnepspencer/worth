@@ -28,14 +28,14 @@ mod tests {
             extra: EntityExtra::default(),
         });
         assert_eq!(generation, 1);
-        arena.extra[slot] = EntityExtra {
-            structural_fingerprint: Some(crate::identity::data::StructuralFingerprint {
+        arena.extra[slot] = EntityExtra::from_unbudgeted_parts(
+            Some(crate::identity::data::StructuralFingerprint {
                 family: Symbol(9),
                 value: 42,
             }),
-            lineage_id: Some(crate::identity::data::LineageId(12)),
-            authoritative_aspect_state: None,
-        };
+            Some(crate::identity::data::LineageId(12)),
+            None,
+        );
         arena
             .retire(slot, version_two)
             .expect("fixture slot is materialized");
@@ -54,7 +54,7 @@ mod tests {
         assert_eq!(reused_generation, 2);
         assert!(arena.extra[slot].structural_fingerprint.is_none());
         assert!(arena.extra[slot].lineage_id.is_none());
-        assert!(arena.extra[slot].authoritative_aspect_state.is_none());
+        assert!(arena.extra[slot].authoritative_aspect_state().is_none());
     }
 
     #[test]
@@ -74,10 +74,7 @@ mod tests {
             partition_id,
             kind_id: KindId(21),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(first),
-                authoritative_aspect_state: None,
-            },
+            extra: RelationExtra::from_unbudgeted_parts(Some(first), None),
         });
         assert_eq!(generation, 1);
         arena
@@ -92,15 +89,12 @@ mod tests {
             partition_id,
             kind_id: KindId(22),
             version_id: VersionId(3),
-            extra: RelationExtra {
-                endpoints: Some(second.clone()),
-                authoritative_aspect_state: None,
-            },
+            extra: RelationExtra::from_unbudgeted_parts(Some(second.clone()), None),
         });
         assert!(reused);
         assert_eq!(reused_generation, 2);
         assert_eq!(arena.extra[slot].endpoints, Some(second));
-        assert!(arena.extra[slot].authoritative_aspect_state.is_none());
+        assert!(arena.extra[slot].authoritative_aspect_state().is_none());
     }
 
     #[test]
@@ -112,13 +106,13 @@ mod tests {
             partition_id,
             kind_id: KindId(21),
             version_id: VersionId(1),
-            extra: RelationExtra {
-                endpoints: Some(RelationEndpoints {
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
                     source: EntityId::new(partition_id, 1, 1),
                     target: EntityId::new(partition_id, 2, 1),
                 }),
-                authoritative_aspect_state: None,
-            },
+                None,
+            ),
         });
 
         let wrong_partition_id = RelationId::new(other_partition_id, slot as u64, generation);
@@ -190,11 +184,7 @@ mod tests {
             partition_id: PartitionId::main(),
             kind_id: KindId(1),
             version_id: VersionId(1),
-            extra: EntityExtra {
-                structural_fingerprint: None,
-                lineage_id: None,
-                authoritative_aspect_state: Some(state),
-            },
+            extra: EntityExtra::from_unbudgeted_parts(None, None, Some(state)),
         });
         arena
     }

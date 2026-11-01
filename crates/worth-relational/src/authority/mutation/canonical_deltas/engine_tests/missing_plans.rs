@@ -8,6 +8,7 @@ use super::support::{empty_working_state, empty_workspace, mutation_config};
 
 #[test]
 fn missing_entity_aspect_plan_returns_typed_error() {
+    let host = crate::test_execution_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -21,7 +22,7 @@ fn missing_entity_aspect_plan_returns_typed_error() {
 
     let error = canonical_delta_for_mutation(
         &mutation,
-        &empty_workspace(&mut state, &mut symbols, &catalog, &config, &schema),
+        &empty_workspace(&host, &mut state, &mut symbols, &catalog, &config, &schema),
     )
     .unwrap_err();
 
@@ -35,6 +36,7 @@ fn missing_entity_aspect_plan_returns_typed_error() {
 
 #[test]
 fn missing_relation_aspect_plan_returns_typed_error() {
+    let host = crate::test_execution_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -52,7 +54,7 @@ fn missing_relation_aspect_plan_returns_typed_error() {
 
     let error = canonical_delta_for_mutation(
         &mutation,
-        &empty_workspace(&mut state, &mut symbols, &catalog, &config, &schema),
+        &empty_workspace(&host, &mut state, &mut symbols, &catalog, &config, &schema),
     )
     .unwrap_err();
 

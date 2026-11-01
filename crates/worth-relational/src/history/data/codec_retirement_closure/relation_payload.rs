@@ -66,7 +66,7 @@ pub(super) fn validate(
         .relation_aspect_plan(entry.kind)
         .ok_or("relation physical contract plan absent")?;
     let state = reconstruct(runtime, selected, id, plan, context, lease)?;
-    let payload = row.extra().authoritative_aspect_state.as_ref();
+    let payload = row.extra().authoritative_aspect_state();
     charge(
         context,
         payload.map_or(0, |payload| payload.owned_allocation_capacity_bytes()),

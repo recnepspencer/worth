@@ -36,7 +36,7 @@ pub(crate) fn materialize_current_authoritative_relation_record(
         retired_at_version: relation_slot.retired_at(),
         source: endpoints.source,
         target: endpoints.target,
-        authoritative_aspect_state: relation_slot.extra().authoritative_aspect_state.clone(),
+        authoritative_aspect_state: relation_slot.extra().authoritative_aspect_state().cloned(),
     })
 }
 
@@ -72,6 +72,6 @@ pub(crate) fn materialize_authoritative_relation_record_at_version(
         retired_at_version: retired_at,
         source: metadata.endpoints.source,
         target: metadata.endpoints.target,
-        authoritative_aspect_state: metadata.authoritative_aspect_state.clone(),
+        authoritative_aspect_state: metadata.authoritative_aspect_state().cloned(),
     })
 }

@@ -98,7 +98,7 @@ pub(super) fn capture_created_relations(
         match validate_created_relation_payload(
             envelope,
             *id,
-            record.extra().authoritative_aspect_state.as_ref(),
+            record.extra().authoritative_aspect_state(),
             context,
         ) {
             Ok(()) => captured.push(CanonicalRequiredOutputRelation {

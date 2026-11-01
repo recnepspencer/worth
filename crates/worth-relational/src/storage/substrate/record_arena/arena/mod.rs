@@ -1,4 +1,7 @@
 mod allocation;
+mod entity_lineage;
+mod extra_allocations;
+pub(crate) use entity_lineage::ExtraLineageDenial;
 mod allocation_delta;
 mod allocation_walk;
 mod materialization_quote;
@@ -176,6 +179,13 @@ impl<K: RecordKind> RecordArena<K> {
     ) -> Option<&mut BTreeMap<(Symbol, Symbol), RelationalFieldRevision>> {
         let physical = self.physical_index(slot)?;
         self.field_revisions.get_mut(physical)?.as_mut()
+    }
+
+    pub(crate) fn retained_extra(
+        &self,
+        slot: usize,
+    ) -> Option<crate::storage::substrate::StorageAllocation<K::Extra>> {
+        self.extra.retained_value(self.physical_index(slot)?)
     }
 
     pub(crate) fn extra_at(&self, slot: usize) -> Option<&K::Extra> {

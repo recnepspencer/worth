@@ -153,6 +153,13 @@ an absent generation. The no-load `generation_residency_for_observation` observe
 returns `DerivedIndexGenerationResidency::{DeferredImage, Absent, Published}`.
 That cache status carries no payload or read authority and does not warm an image.
 
+Applied Native aspect payloads retain their original-request reservation in the
+actual entity/relation extra shared by current rows, historical metadata and
+private mutation views. Replacement admits its own output; snapshot holders keep
+their original owners. This qualifies state/extra custody, with a localized
+inline footprint cost, rather than whole replay or Complete capture funding.
+See [applied aspect custody](../crates/worth-relational/README.md#retain-applied-aspect-payloads).
+
 Native storage statistics, partition statistics, chunk summaries and chunk
 diagnostics take the caller's execution request and return a fallible result.
 They explicitly demand the whole mirror and retain that resident edition for

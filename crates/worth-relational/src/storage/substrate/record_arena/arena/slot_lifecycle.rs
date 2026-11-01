@@ -4,7 +4,20 @@ use crate::storage::data::RecordLifecycleState;
 use super::{RecordArena, RecordKind, SlotInit};
 
 impl<K: RecordKind> RecordArena<K> {
+    #[cfg(test)]
     pub(crate) fn suspend_materialization(&mut self, slot: usize) -> Result<(), &'static str> {
+        let physical = self
+            .physical_index(slot)
+            .ok_or("materialization suspension requires an existing slot")?;
+        let extra = K::unavailable_extra(&self.extra[physical]);
+        self.suspend_materialization_with_extra(slot, extra)
+    }
+
+    pub(crate) fn suspend_materialization_with_extra(
+        &mut self,
+        slot: usize,
+        extra: K::Extra,
+    ) -> Result<(), &'static str> {
         let physical = self
             .physical_index(slot)
             .ok_or("materialization suspension requires an existing slot")?;
@@ -12,8 +25,7 @@ impl<K: RecordKind> RecordArena<K> {
             return Err("materialization suspension requires a live record");
         }
         self.lifecycle[physical] = RecordLifecycleState::MaterializationUnavailable;
-        self.extra
-            .set(physical, K::unavailable_extra(&self.extra[physical]));
+        self.extra.set(physical, extra);
         self.metadata_history.set(physical, Default::default());
         self.history_prefixes.set(physical, None);
         self.aspect_versions.set(physical, Default::default());
@@ -45,11 +57,16 @@ impl<K: RecordKind> RecordArena<K> {
         {
             return Err("rematerialization identity or kind does not match retained metadata");
         }
-        let metadata =
-            K::metadata_for_create(kind_id, self.generations[physical], version_id, &extra)
-                .ok_or("record extra cannot construct its native metadata")?;
+        let extra = crate::storage::substrate::StorageAllocation::new(extra);
+        let metadata = K::metadata_for_create(
+            kind_id,
+            self.generations[physical],
+            version_id,
+            extra.clone(),
+        )
+        .ok_or("record extra cannot construct its native metadata")?;
         self.metadata_history[physical].push(metadata);
-        self.extra.set(physical, extra);
+        self.extra.set_shared(physical, extra);
         self.field_revisions.set(physical, Some(Default::default()));
         self.lifecycle[physical] = RecordLifecycleState::Live;
         self.retired_at[physical] = None;
@@ -66,13 +83,18 @@ impl<K: RecordKind> RecordArena<K> {
     ) -> Option<()> {
         let physical = self.physical_index(slot)?;
         let kind_id = self.kind_ids[physical]?;
-        let metadata =
-            K::metadata_for_create(kind_id, self.generations[physical], version_id, &extra)?;
+        let extra = crate::storage::substrate::StorageAllocation::new(extra);
+        let metadata = K::metadata_for_create(
+            kind_id,
+            self.generations[physical],
+            version_id,
+            extra.clone(),
+        )?;
         if let Some(current) = self.metadata_history[physical].last_mut() {
             K::retire_metadata(current, version_id);
         }
         self.metadata_history[physical].push(metadata);
-        self.extra.set(physical, extra);
+        self.extra.set_shared(physical, extra);
         Some(())
     }
 
@@ -147,7 +169,8 @@ impl<K: RecordKind> RecordArena<K> {
             version_id,
             extra,
         } = init;
-        let metadata = K::metadata_for_create(kind_id, generation, version_id, &extra)
+        let extra = crate::storage::substrate::StorageAllocation::new(extra);
+        let metadata = K::metadata_for_create(kind_id, generation, version_id, extra.clone())
             .ok_or("record extra cannot construct its native metadata")?;
         if let Some(current) = self.metadata_history[physical].last_mut() {
             K::retire_metadata(current, version_id);
@@ -159,7 +182,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.metadata_history[physical].push(metadata);
         self.created_at[physical] = version_id;
         self.retired_at[physical] = None;
-        self.extra.set(physical, extra);
+        self.extra.set_shared(physical, extra);
         self.aspect_versions.set(physical, Default::default());
         self.field_revisions.set(physical, Some(Default::default()));
         self.diagnostics_enrichment
@@ -185,7 +208,8 @@ impl<K: RecordKind> RecordArena<K> {
             version_id,
             extra,
         } = init;
-        let metadata = K::metadata_for_create(kind_id, generation, version_id, &extra)
+        let extra = crate::storage::substrate::StorageAllocation::new(extra);
+        let metadata = K::metadata_for_create(kind_id, generation, version_id, extra.clone())
             .ok_or("record extra cannot construct its native metadata")?;
         self.slots.insert(logical_slot as u64)?;
         self.partition_ids.push(partition_id);
@@ -196,7 +220,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.history_prefixes.push(None);
         self.created_at.push(version_id);
         self.retired_at.push(None);
-        self.extra.push(extra);
+        self.extra.push_shared(extra);
         self.aspect_versions.push(std::collections::BTreeMap::new());
         self.field_revisions
             .push(Some(std::collections::BTreeMap::new()));

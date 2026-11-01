@@ -24,31 +24,23 @@ impl PartitionState {
             .entity_arena
             .metadata_history
             .iter()
-            .flat_map(|history| {
-                history
-                    .iter()
-                    .map(|row| row.authoritative_aspect_state.as_ref())
-            })
+            .flat_map(|history| history.iter().map(|row| row.authoritative_aspect_state()))
             .chain(
                 self.entity_arena
                     .extra
                     .iter()
-                    .map(|row| row.authoritative_aspect_state.as_ref()),
+                    .map(|row| row.authoritative_aspect_state()),
             );
         let relations = self
             .relation_arena
             .metadata_history
             .iter()
-            .flat_map(|history| {
-                history
-                    .iter()
-                    .map(|row| row.authoritative_aspect_state.as_ref())
-            })
+            .flat_map(|history| history.iter().map(|row| row.authoritative_aspect_state()))
             .chain(
                 self.relation_arena
                     .extra
                     .iter()
-                    .map(|row| row.authoritative_aspect_state.as_ref()),
+                    .map(|row| row.authoritative_aspect_state()),
             );
         for state in entities.chain(relations).flatten() {
             visit_state(state, visit)?;

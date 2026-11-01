@@ -41,6 +41,13 @@ impl<'a, K: RecordKind> SlotView<'a, K> {
     pub(crate) fn retired_at(&self) -> Option<VersionId> {
         self.arena.retired_at[self.physical]
     }
+    pub(crate) fn retained_extra(&self) -> crate::storage::substrate::StorageAllocation<K::Extra> {
+        self.arena
+            .extra
+            .retained_value(self.physical)
+            // Proof: an admitted slot retains its extra; this shared borrow cannot remove it.
+            .expect("an admitted slot retains its extra")
+    }
     pub(crate) fn extra(&self) -> &K::Extra {
         &self.arena.extra[self.physical]
     }

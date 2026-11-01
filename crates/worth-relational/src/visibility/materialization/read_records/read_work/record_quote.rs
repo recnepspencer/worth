@@ -22,8 +22,7 @@ pub(crate) fn entity(
                 record.kind_id()?,
                 record
                     .extra()
-                    .authoritative_aspect_state
-                    .as_ref()
+                    .authoritative_aspect_state()
                     .map_or(0, |state| state.owned_allocation_capacity_bytes()),
             ))
         }),
@@ -35,8 +34,7 @@ pub(crate) fn entity(
                 (
                     metadata.kind_id,
                     metadata
-                        .authoritative_aspect_state
-                        .as_ref()
+                        .authoritative_aspect_state()
                         .map_or(0, |state| state.owned_allocation_capacity_bytes()),
                 )
             }),
@@ -66,8 +64,7 @@ pub(crate) fn relation(
                 record.kind_id()?,
                 record
                     .extra()
-                    .authoritative_aspect_state
-                    .as_ref()
+                    .authoritative_aspect_state()
                     .map_or(0, |state| state.owned_allocation_capacity_bytes()),
             ))
         }),
@@ -76,8 +73,7 @@ pub(crate) fn relation(
                 (
                     metadata.kind_id,
                     metadata
-                        .authoritative_aspect_state
-                        .as_ref()
+                        .authoritative_aspect_state()
                         .map_or(0, |state| state.owned_allocation_capacity_bytes()),
                 )
             })
@@ -115,8 +111,7 @@ pub(crate) fn relation_head(
         registration.schema_id.0.len(),
         record
             .extra()
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .map_or(0, |state| state.owned_allocation_capacity_bytes()),
     )
 }
@@ -140,8 +135,7 @@ pub(crate) fn entity_head(
         registration.schema_id.0.len(),
         record
             .extra()
-            .authoritative_aspect_state
-            .as_ref()
+            .authoritative_aspect_state()
             .map_or(0, |state| state.owned_allocation_capacity_bytes()),
     )
 }

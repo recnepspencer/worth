@@ -242,11 +242,11 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         assert_eq!(row.kind_id(), Some(*kind));
         assert_eq!(row.generation(), id.generation_value());
         if *kind == KindId(1) {
-            assert!(row.extra().authoritative_aspect_state.is_none());
+            assert!(row.extra().authoritative_aspect_state().is_none());
         }
     }
     let row = partition.entity_arena.get(&members[0].0).unwrap();
-    let aspects = row.extra().authoritative_aspect_state.as_ref().unwrap();
+    let aspects = row.extra().authoritative_aspect_state().unwrap();
     assert!(aspects.get(&aspect_key("attachment")).is_none());
     let ContractValidatedAspectValueView::Struct(facts) =
         aspects.get(&aspect_key("facts")).unwrap().view()
@@ -258,8 +258,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
     let row = partition.entity_arena.get(&members[5].0).unwrap();
     assert!(row
         .extra()
-        .authoritative_aspect_state
-        .as_ref()
+        .authoritative_aspect_state()
         .unwrap()
         .get(&aspect_key("nominal"))
         .is_none());
