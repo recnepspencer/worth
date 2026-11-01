@@ -165,7 +165,7 @@ pub fn observations(input: &Inputs) -> Vec<Finding> {
             let roots: BTreeSet<_> = region
                 .iter()
                 .enumerate()
-                .filter(|(at, t)| names.contains(t.text) && !one_shot_denial_variant(&region, *at))
+                .filter(|(at, t)| names.contains(t.text) && !execution_denial_variant(&region, *at))
                 .map(|(_, t)| t.text.to_owned())
                 .collect();
             if !roots.is_empty() {
@@ -181,12 +181,15 @@ pub fn observations(input: &Inputs) -> Vec<Finding> {
     found.dedup();
     found
 }
-fn one_shot_denial_variant(region: &[Token<'_>], at: usize) -> bool {
-    // This established Query enum carries diagnostic values. Its variant has
-    // the same name as Execution's work-hosting type; qualification matters.
+fn execution_denial_variant(region: &[Token<'_>], at: usize) -> bool {
+    // These Query enums carry diagnostics, not Execution's work-hosting type.
+    // Only their exact qualified variants are excluded; runtime types still flag.
     region[at].text == "ExecutionRequest"
         && at >= 3
-        && region[at - 3].text == "WorthQueryApplicationOneShotDenialKind"
+        && matches!(
+            region[at - 3].text,
+            "WorthQueryApplicationOneShotDenialKind" | "WorthQueryApplicationHistoryDenial"
+        )
         && region[at - 2].text == ":"
         && region[at - 1].text == ":"
 }
@@ -248,34 +251,38 @@ mod tests {
     use super::*;
     #[test]
     fn denial_variant_is_a_value_while_runtime_type_references_still_flag() {
-        let variant = "WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)";
-        for actual_root in [
-            "",
-            "let _: ExecutionRequest;",
-            "ExecutionRequest::serial();",
-            "worth_execution::ExecutionRequest::leased();",
-            "let _: Option<worth_execution::ExecutionRequest>;",
+        for variant in [
+            "WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)",
+            "WorthQueryApplicationHistoryDenial::ExecutionRequest(cause)",
         ] {
-            let source = format!(
+            for actual_root in [
+                "",
+                "let _: ExecutionRequest;",
+                "ExecutionRequest::serial();",
+                "worth_execution::ExecutionRequest::leased();",
+                "let _: Option<worth_execution::ExecutionRequest>;",
+            ] {
+                let source = format!(
                 "#[cfg(test)] mod tests {{ fn case() {{ match kind {{ {variant} => (), _ => () }} {actual_root} }} }}"
             );
-            let mut input = Inputs::fixture(
-                &[
-                    ("crates/a/Cargo.toml", "[package]\nname='a'"),
-                    ("crates/a/src/lib.rs", &source),
-                ],
-                "",
-            );
-            input.files.insert(
-                format!("{CONFIG}runtime-roots.toml"),
-                "[[roots]]\ntype='ExecutionRequest'".into(),
-            );
-            let found = observations(&input);
-            if actual_root.is_empty() {
-                assert!(found.is_empty());
-            } else {
-                assert_eq!(found.len(), 1, "{actual_root}");
-                assert_eq!(found[0].roots, ["ExecutionRequest"], "{actual_root}");
+                let mut input = Inputs::fixture(
+                    &[
+                        ("crates/a/Cargo.toml", "[package]\nname='a'"),
+                        ("crates/a/src/lib.rs", &source),
+                    ],
+                    "",
+                );
+                input.files.insert(
+                    format!("{CONFIG}runtime-roots.toml"),
+                    "[[roots]]\ntype='ExecutionRequest'".into(),
+                );
+                let found = observations(&input);
+                if actual_root.is_empty() {
+                    assert!(found.is_empty());
+                } else {
+                    assert_eq!(found.len(), 1, "{actual_root}");
+                    assert_eq!(found[0].roots, ["ExecutionRequest"], "{actual_root}");
+                }
             }
         }
     }
