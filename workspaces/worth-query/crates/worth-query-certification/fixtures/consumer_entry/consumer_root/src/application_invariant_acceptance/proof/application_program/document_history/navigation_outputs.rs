@@ -1,6 +1,9 @@
 //! Real public checkout drives the document's original SDK output tree.
 use super::*;
 use worth_query_host::facade::application_entry::WorthQueryHistoryNavigationIntent;
+use worth_query_host::facade::application_entry::{
+    WorthQueryHistoryPageLimits, WorthQueryHistoryRedoChoice,
+};
 use worth_query_topology_entry::PlanarHistoryNavigation;
 mod authority;
 mod checkout;
@@ -202,6 +205,28 @@ fn checkout_with_required_outputs_preserves_both_futures_and_the_document_mode()
             0x9182_e204,
         ),
     ] {
+        let hint = with_request(app, |request| {
+            document
+                .redo_choices(
+                    request,
+                    WorthQueryHistoryPageLimits {
+                        maximum_entries: std::num::NonZeroUsize::MIN,
+                        maximum_examined_entries: std::num::NonZeroUsize::MIN,
+                        maximum_owned_bytes: std::num::NonZeroUsize::new(16 * 1024).unwrap(),
+                    },
+                    None,
+                )
+                .unwrap()
+        });
+        assert_eq!(
+            hint.choice(),
+            match intent {
+                WorthQueryHistoryNavigationIntent::UndoStep => WorthQueryHistoryRedoChoice::NoChild,
+                WorthQueryHistoryNavigationIntent::RedoTo(_) =>
+                    WorthQueryHistoryRedoChoice::ChoiceRequired,
+                WorthQueryHistoryNavigationIntent::Checkout(_) => unreachable!(),
+            }
+        );
         let mut owner = with_request(app, |request| {
             let builder = document.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
             let target = match intent {

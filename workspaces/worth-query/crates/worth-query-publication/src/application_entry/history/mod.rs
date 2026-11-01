@@ -108,6 +108,7 @@ pub use payload::{
 mod preview;
 pub use preview::{WorthQueryApplicationHistoryPreview, WorthQueryHistoryPreviewResult};
 mod read;
+mod redo;
 #[doc(hidden)]
 pub use edit::WorthQueryHistoryEditHandoffPauseForTest;
 pub use edit::{
@@ -131,6 +132,9 @@ pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
     WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
     WorthQueryHistoryPageRow, WorthQueryHistoryStep,
+};
+pub use worth_query_execution::publication_boundary::document_history::{
+    WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
 };
 pub use worth_query_installation::facade::WorthQueryDocumentHistoryInstallationDenialKind;
 

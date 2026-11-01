@@ -26,6 +26,9 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/budget.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/redo/authority.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/redo/handoff.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/redo_choices.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs

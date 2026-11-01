@@ -43,6 +43,8 @@ mod page_pause;
 mod paging;
 mod preview;
 mod receiver_pause;
+mod redo;
+pub use redo::{WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices};
 mod reservation;
 mod sealing;
 mod selection;

@@ -190,6 +190,16 @@ fn payload_revocation_after_paging_blocks_detail_and_old_holder_until_real_resto
             )
             .unwrap_err(),
         document
+            .redo_choices_governed(
+                &request,
+                capability::MetadataCapability::reference(),
+                capability::MetadataRead::reference(),
+                input(),
+                page_limits(),
+                None,
+            )
+            .unwrap_err(),
+        document
             .preview_governed(
                 &request,
                 old.id(),
@@ -220,6 +230,7 @@ fn payload_revocation_after_paging_blocks_detail_and_old_holder_until_real_resto
         payload_denied(cause);
     }
     assert_eq!(observed.snapshot().node_probes, 0);
+    assert_eq!(observed.snapshot().child_index_probes, 0);
     let edit = begin(&host, document, 9, 0x9182_c003);
     let Advance::Refused {
         edit,
@@ -275,6 +286,20 @@ fn payload_revocation_after_paging_blocks_detail_and_old_holder_until_real_resto
         .unwrap();
     assert_eq!(old_read.rows()[0].retention, 3);
     assert_eq!(old_read.source(), old.endpoint());
+    assert_eq!(
+        document
+            .redo_choices_governed(
+                &request,
+                capability::MetadataCapability::reference(),
+                capability::MetadataRead::reference(),
+                input(),
+                page_limits(),
+                None,
+            )
+            .unwrap()
+            .choice(),
+        worth_query_host::facade::application_entry::WorthQueryHistoryRedoChoice::NoChild
+    );
     assert_eq!(document.read(&request).unwrap().rows()[0].retention, 5);
     assert_eq!(
         document

@@ -68,8 +68,8 @@ pub mod document_history {
         WorthQueryHistoryNodeId, WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource,
         WorthQueryHistoryPage, WorthQueryHistoryPageAssemblyPauseForTest,
         WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
-        WorthQueryHistoryPageRow, WorthQueryHistoryPreview, WorthQueryHistorySelection,
-        WorthQueryHistoryStep,
+        WorthQueryHistoryPageRow, WorthQueryHistoryPreview, WorthQueryHistoryRedoChoice,
+        WorthQueryHistoryRedoChoices, WorthQueryHistorySelection, WorthQueryHistoryStep,
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{

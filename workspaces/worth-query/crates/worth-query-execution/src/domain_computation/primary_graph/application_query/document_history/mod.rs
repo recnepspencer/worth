@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph) use retained_permission::Histor
 mod paging;
 mod pending;
 mod preview;
+mod redo;
 pub use preview::WorthQueryHistoryPreviewReadAdmission;
 
 use super::{

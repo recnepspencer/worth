@@ -16,6 +16,7 @@ pub struct WorthQueryHistoryPageCursor {
     pub(super) document: DocumentIncarnation,
     pub(super) generation: u64,
     pub(super) after: u64,
+    pub(super) parent: Option<WorthQueryHistoryNodeId>,
 }
 impl std::fmt::Debug for WorthQueryHistoryPageCursor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -44,6 +45,7 @@ impl WorthQueryHistoryPageRow {
 pub enum WorthQueryHistoryPageDenial {
     ForeignCursor,
     StaleCursor,
+    CursorScopeMismatch,
     StorageLimitExceeded,
     SizeOverflow,
     Allocation(std::collections::TryReserveError),

@@ -9,6 +9,7 @@ mod paging;
 mod payload;
 mod preview;
 pub(crate) mod recording;
+mod redo;
 
 use worth_query_host::facade::{
     application_entry::{WorthQueryApplicationHistoryDocument, WorthQueryApplicationRequestExt},

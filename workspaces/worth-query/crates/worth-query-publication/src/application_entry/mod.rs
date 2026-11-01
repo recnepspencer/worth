@@ -64,6 +64,7 @@ pub use history::{
     WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode, WorthQueryHistoryPage,
     WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
     WorthQueryHistoryPageRow, WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult,
+    WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
     WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
     WorthQueryHistoryWithOutputs,
 };

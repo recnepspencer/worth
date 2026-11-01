@@ -353,6 +353,25 @@ original current model READ, metadata disclosure and current NAV admission.
 The navigation request reuses that READ's resolved principal; historical grants
 never supply current permission.
 
+Read `document.redo_choices(&request, limits, after)` to build a redo picker for
+the selected step. `choice()` returns `NoChild`, `Single(child)`, or
+`ChoiceRequired`; even a one-row page distinguishes multiple children. Read
+completed child steps from `children().rows()` and continue with
+`children().continuation()`. Reserved or cancelled edits are not alternatives.
+Use `redo_choices_governed` when metadata requires its own capability.
+
+The entry, examined-entry and byte limits bound the child page. Classification
+also performs a fixed bounded set of charged index probes for the first two
+children and the last-child boundary. Unrelated futures are not scanned. A
+cursor is bound to its document, selected parent, generation and listing scope;
+it cannot be reused for a whole-history page. On `StaleCursor`, start a new
+picker read with `None`.
+
+These are metadata hints. A remembered single child or preferred branch grants
+no navigation authority and promises no future source availability. Pass the
+explicit chosen child to `redo_to(child)` with the click's expected selection
+and key; preparation rechecks membership and current permission.
+
 Obtain a sealed description of the actual current selection for a new click.
 This compiled callback body uses the planar example's `ConsumerSchema` and
 `PlanarHistoryNavigation`; substitute your application's declarations. It returns
