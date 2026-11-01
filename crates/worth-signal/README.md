@@ -67,6 +67,27 @@ Its [Owner Component Port](./BRANCH_BASES.md#owner-component-port) is the only
 branch/basis surface available to later composite-owner integration; legacy
 head tuples and graph internals are not production facade contracts.
 
+## Retain an initial-empty owner during composite close
+
+Platform composition can consume an unchanged, genuinely sealed initial-empty
+`SignalRuntime` with `try_prepare_initial_empty_stop(original_request)`. Busy,
+stop, poison or an unsupported graph returns the same runtime in
+`SignalInitialEmptyStopRefused`; `into_runtime()` restores the owning value.
+Preparation checks the actual private owner state through nonwaiting gates and
+stops new admission. It retains genuine sealed definition/service custody.
+
+`PreparedInitialEmptySignalStop::resume()` reopens that same owner before the
+composite close commits. `commit(original_request)` closes retention acquisition
+and returns `StoppedInitialEmptySignalAllocation`; Busy or stop returns the same
+prepared owner for retry. Neither step runs Signal cleanup or destroys the root.
+Keep the stopped allocation until explicit, **unbudgeted** `reclaim()`. Generic
+Drop is also unbudgeted abandonment. The stopped posture remains Closing, not
+Signal cleanup Closed.
+
+This is the narrow initial-empty composition primitive. It does not stop an
+arbitrary authored graph, retire Bridge/Native capabilities or close a Home.
+See the [governing owner contract](../../plans/database-foundation/milestone-3-home-lifecycle.md#initial-empty-signal-stop-and-composite-close-preparation).
+
 ## Change And Commit Semantics
 
 `mark_changed` records source recompute intent. It says which producer-local

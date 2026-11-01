@@ -1246,3 +1246,16 @@ integrity, with no transitive journal-hash promise. Callers admit their own
 payload storage and perform I/O outside logical reservations. This physical
 producer grants no World reconciliation, Native complete-history image or Home
 close authority. See [protected physical reads](../workspaces/worth-store/crates/worth-store/README.md#protected-physical-reads).
+
+### Prepare an initial Signal stop under actual World close admission
+
+Platform composition uses the original owning Signal runtime's
+`try_prepare_initial_empty_stop` and the actual World owner's
+`try_prepare_close_admission`. Signal preparation is reversible; World guard
+Drop preserves Open. After Signal preparation succeeds, infallible World
+`begin()` commits the existing close task before owner gates release. Signal
+commit retains its original stopped allocation until explicit unbudgeted
+reclaim. These owner primitives neither invoke general Signal cleanup nor
+certify Bridge/Native/Store or full Host close. See the
+[Signal owner workflow](../crates/worth-signal/README.md#retain-an-initial-empty-owner-during-composite-close)
+and [World lifecycle](../crates/worth-runtime-world/README.md).

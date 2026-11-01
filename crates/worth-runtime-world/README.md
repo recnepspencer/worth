@@ -54,6 +54,17 @@ returns any owner-created component retirement work. Drop caller observations an
 results, then the closed World state before checking final component lease release.
 World close does not close component owners.
 
+For a short composite-owner preparation cut,
+`owner.try_prepare_close_admission(original_request)` returns a borrowed
+`RuntimeWorldPreCloseAdmission`. It performs the same final checks used by
+ordinary close and holds the existing bootstrap, operation and close gates.
+Dropping it preserves Open; `begin()` installs the same prepared close task and
+releases the gates infallibly. Keep only narrow, try-only owner metadata work
+inside that interval. Perform no I/O, allocation or supplier callbacks there.
+After another owner's reversible stop succeeds, introduce no fallible step
+before World `begin`; later interruption retains Closing custody. This primitive
+does not implement Bridge/Store retirement or full owning Home close.
+
 See [history](COMPOSITE_HISTORY.md), [publication](COORDINATED_PUBLICATION.md),
 and [retention/recovery](RETENTION_AND_RECOVERY.md) for exact contracts.
 
