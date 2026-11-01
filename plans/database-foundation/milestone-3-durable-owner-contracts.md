@@ -659,13 +659,26 @@ remaining work after a scope closes: restarting the full policy is forbidden.
 Existing nested meter charging carries consumed work, remaining ceiling and
 latched stops; do not replace it with a copied remainder or counter.
 
-For accounted placement, use the existing value-preserving
-`ExecutionRequest::run`/`ExecutionWorkCeiling::run` contract. Its callback value
-is the complete original business Result, returned whenever the callback ran,
-even if later maintenance causes a final scope stop. Maintenance lies after the
-INNER business result handoff, but inside the outer accounted completion scope.
-Return the exact business R/denial; an outer refusal before callback entry still
-returns its normal typed advancement denial.
+For accounted placement, use `ExecutionRequest::run_completion(ceiling, body)`
+around the existing value-preserving `ExecutionWorkCeiling::run` contract.
+Ordinary `ExecutionRequest::run` already preserves a returned callback value;
+its missing requirements here are the invoking own/joined stop guard and actual
+descendant projection BEFORE scope admission. The completion port captures the
+original stop, delegates one accounted scope under that descendant and declared
+ceiling, and returns its actual aggregate report. An admitted existing-stop
+observation succeeds without invoking the body or settling its failure again;
+actual admission or a newly arising stop retains its normal precedence. No
+extra native/accounted wrapper scope or Query-side result drain is needed.
+
+The callback value is the complete original business Result, returned whenever
+the callback ran, even if later maintenance causes a final scope stop.
+Maintenance lies after the INNER business result handoff, but inside that
+accounted completion scope. Return the exact business R/denial; an outer refusal
+before callback entry still returns its normal typed advancement denial.
+Test the declared ceiling against a wider parent allowance, exact aggregate
+work, original returned move-only custody, root-under-active-child admission,
+child memory policy, foreign/sibling precedence, own/untaken stop recovery and
+the existing single-scope memory footprint.
 
 For worker-only placement, add the narrow Execution-owned
 `ExecutionRequest::run_native_completion` counterpart to `run_native`, with the

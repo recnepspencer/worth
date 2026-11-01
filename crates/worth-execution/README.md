@@ -37,6 +37,15 @@ Completion keeps the actual descendant and meter alive throughout the callback;
 accounted ancestors retain remaining work, one charge and latched stops. It
 adds no accounting contract or fresh allowance to worker-only requests.
 
+For accounted effectful completion, use
+`ExecutionRequest::run_completion(ceiling, operation)`. It uses the existing
+value-preserving `ExecutionWorkCeiling::run` scope and returns its aggregate
+`ExecutionReport`. The declared ceiling and remaining parent allowance both
+apply. Admission projects the actual descendant before checking its memory and
+worker policy. Both completion ports refuse an invoking owner's existing or
+unpolled joined stop without calling the operation or settling that cause again.
+No extra scope surrounds the accounted operation.
+
 For a platform entry that prepares several dependent values before publishing
 effects, use `ExecutionRequest::prepare_native`. Standalone leased entry opens
 one original scope for the complete preparation; active carriage reuses the

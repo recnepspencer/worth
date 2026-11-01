@@ -1,8 +1,8 @@
-//! Effectful callback custody through the original native scope's settlement.
+//! Effectful callback custody through the original request scope's settlement.
 use super::{ExecutionRequest, RequestBacking};
 use crate::backend::{KernelFailure, ScopeStop};
-use crate::{ExecutionResourceLease, WorkCeilingDenial};
-use worth_foundational::ExecutionPhysicalReport;
+use crate::{ExecutionResourceLease, ExecutionWorkCeiling, WorkCeilingDenial};
+use worth_foundational::{ExecutionPhysicalReport, ExecutionReport};
 
 impl<'authority> ExecutionRequest<'_, 'authority> {
     /// Complete effectful work on the original request, preserving its returned owner.
@@ -25,10 +25,7 @@ impl<'authority> ExecutionRequest<'_, 'authority> {
     ) -> Result<(R, ExecutionPhysicalReport), WorkCeilingDenial> {
         // Scope admission keeps lineage precedence. Preserve the original
         // meter's control fact before entering its descendant scope.
-        let original_refusal = self.consult().err().or_else(|| {
-            crate::backend::active_nested_stop_owner()
-                .map(|_| WorkCeilingDenial::Stopped(crate::backend::KernelStop::NestedStopped))
-        });
+        let original_refusal = self.completion_refusal();
         let mut value = None;
         let outcome = self.run_native_scope::<(), std::convert::Infallible>(None, |context| {
             if original_refusal.is_some() {
@@ -56,5 +53,48 @@ impl<'authority> ExecutionRequest<'_, 'authority> {
             }
             (None, _) => Err(WorkCeilingDenial::Panicked),
         }
+    }
+
+    /// Complete effectful work under the original request and declared ceiling.
+    ///
+    /// The existing accounted scope retains the exact returned business value
+    /// through later control stops and returns its actual aggregate report.
+    /// Admission or an original invoking stop prevents callback entry. An
+    /// admitted observation of an existing stop never settles that cause again.
+    /// The active descendant supplies admission, memory and worker policy before
+    /// the scope opens; this creates neither another meter nor fresh allowance.
+    /// A returned value is not evidence that canonical business work committed.
+    pub fn run_completion<R>(
+        self,
+        ceiling: ExecutionWorkCeiling,
+        operation: impl for<'scope> FnOnce(Option<&'scope ExecutionResourceLease<'authority>>) -> R,
+    ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
+        let original_refusal = self.completion_refusal();
+        let guarded = |lease| {
+            if original_refusal.is_some() {
+                None
+            } else {
+                Some(operation(lease))
+            }
+        };
+        let outcome = match self.form {
+            RequestBacking::Leased(lease) => {
+                let active = lease.current_descendant();
+                let carried = active.as_ref().unwrap_or(lease);
+                ceiling.run(carried, || guarded(Some(carried)))
+            }
+            RequestBacking::Serial(serial) => ceiling.run_serial(serial, || guarded(None)),
+        };
+        outcome.and_then(|(value, report)| match value {
+            Some(value) => Ok((value, report)),
+            None => Err(original_refusal.expect("uninvoked callback retains refusal")),
+        })
+    }
+
+    fn completion_refusal(self) -> Option<WorkCeilingDenial> {
+        self.consult().err().or_else(|| {
+            crate::backend::active_nested_stop_owner()
+                .map(|_| WorkCeilingDenial::Stopped(crate::backend::KernelStop::NestedStopped))
+        })
     }
 }

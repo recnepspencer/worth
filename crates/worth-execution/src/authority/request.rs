@@ -1,6 +1,6 @@
 //! Borrowed request authority with scoped execution and fixed-size backing metadata.
 
-mod native_completion;
+mod completion;
 mod native_preparation;
 mod retained_memory;
 

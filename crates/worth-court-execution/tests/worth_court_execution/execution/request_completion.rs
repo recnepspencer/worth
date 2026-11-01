@@ -8,6 +8,7 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
+mod accounted;
 mod own_stop;
 
 fn worker_grant() -> LeaseRequest {
@@ -29,6 +30,20 @@ fn on_request(leased: bool, grant: LeaseRequest, operation: impl FnOnce(Executio
     } else {
         let serial = SerialRequest::from_policy(&grant.policy, grant.cancellation, grant.deadline);
         operation(ExecutionRequest::serial(&serial));
+    }
+}
+
+fn complete<'authority, R>(
+    request: ExecutionRequest<'_, 'authority>,
+    accounted: bool,
+    operation: impl for<'scope> FnOnce(Option<&'scope ExecutionResourceLease<'authority>>) -> R,
+) -> Result<(R, worth_foundational::ExecutionPhysicalReport), WorkCeilingDenial> {
+    if accounted {
+        request
+            .run_completion(ExecutionWorkCeiling::new(None), operation)
+            .map(|(value, report)| (value, report.physical()))
+    } else {
+        request.run_native_completion(operation)
     }
 }
 
@@ -222,32 +237,34 @@ fn completion_contains_a_callback_panic_before_a_business_value_returns() {
 #[test]
 fn completion_preserves_an_untaken_computational_panic_and_allows_recovery_after_take() {
     for leased in [false, true] {
-        on_request(leased, worker_grant(), |request| {
-            request
-                .run_native_with_checkpoint(|parent| {
-                    assert_eq!(
-                        request.run_native::<()>(|_| panic!("original nested panic")),
-                        Err(WorkCeilingDenial::Panicked)
-                    );
-                    // The unpolled cause remains computation-owned through
-                    // refusal; callers can still explicitly take and recover it.
-                    assert_eq!(
-                        request.run_native_completion::<()>(|_| {
-                            panic!("untaken computation stop must refuse effects")
-                        }),
-                        Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped))
-                    );
-                    assert_eq!(
-                        parent.take_nested_computation_stop(),
-                        Some(worth_execution::NestedComputationStop::Panic)
-                    );
-                    let (recovered, _) = request
-                        .run_native_completion(|_| Box::new("recovered business owner"))
-                        .unwrap();
-                    assert_eq!(*recovered, "recovered business owner");
-                })
-                .unwrap();
-        });
+        for accounted in [false, true] {
+            on_request(leased, worker_grant(), |request| {
+                request
+                    .run_native_with_checkpoint(|parent| {
+                        assert_eq!(
+                            request.run_native::<()>(|_| panic!("original nested panic")),
+                            Err(WorkCeilingDenial::Panicked)
+                        );
+                        // The unpolled cause remains computation-owned through
+                        // refusal; callers can still explicitly take and recover it.
+                        assert_eq!(
+                            complete::<()>(request, accounted, |_| {
+                                panic!("untaken computation stop must refuse effects")
+                            }),
+                            Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped))
+                        );
+                        assert_eq!(
+                            parent.take_nested_computation_stop(),
+                            Some(worth_execution::NestedComputationStop::Panic)
+                        );
+                        let (recovered, _) =
+                            complete(request, accounted, |_| Box::new("recovered business owner"))
+                                .unwrap();
+                        assert_eq!(*recovered, "recovered business owner");
+                    })
+                    .unwrap();
+            });
+        }
     }
 }
 

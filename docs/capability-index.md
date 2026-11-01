@@ -189,8 +189,13 @@ the same native scope. Returned callback values survive final or nested stops;
 pre-callback admission and interruption still refuse. This retains actual parent
 accounting and latched stops without granting new allowance or imposing
 accounting on worker-only requests. The physical report observes execution;
-returning custody does not prove commitment. See
-[Execution request entry](../crates/worth-execution/README.md).
+returning custody does not prove commitment. Accounted effectful owners use
+`ExecutionRequest::run_completion(ceiling, operation)` for the same guarded
+custody contract and the existing aggregate `ExecutionReport`. It reuses one
+accounted scope, projects the actual descendant before admission, and retains
+the original declared ceiling and remaining allowance. Neither completion port
+invokes an effectful callback through an existing own or untaken joined stop.
+See [Execution request entry](../crates/worth-execution/README.md).
 
 Platform-owned ordered retained metadata uses `ExecutionOrderedMap<K, V>`:
 shared-root cloning and canonical iteration preserve original custody.
