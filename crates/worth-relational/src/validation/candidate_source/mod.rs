@@ -3,6 +3,7 @@ mod context;
 mod correspondence;
 mod denial;
 mod interpretation;
+pub(crate) mod opaque_custody;
 pub use context::{
     ManagedIndexSourceContextFactory, ManagedIndexSourceContextReceipt,
     ManagedIndexSourceContextShare, ManagedIndexSourcePreparationMetadata,

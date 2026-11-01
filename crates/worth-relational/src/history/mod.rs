@@ -11,9 +11,10 @@ pub(crate) use access::relevant_writes::{
 pub use access::{BoundedCanonicalCommitPatchDenial, HistoryAccess};
 pub(crate) use access::{CommitAncestryInspection, CommitAncestryPosture};
 pub use access::{
-    RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceSelector,
-    RelationalAuthoredWriteCursor, RelationalAuthoredWriteDenial,
-    RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
+    RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceImpact,
+    RelationalAuthoredManagedSourceMaterial, RelationalAuthoredManagedSourcePayloads,
+    RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteCursor,
+    RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalAuthoredWriteScope,
     RelationalAuthoredWriteSelector, RelationalPreparedAuthoredWritePage,
 };
@@ -37,3 +38,5 @@ pub use commit::{
 pub(crate) use commit::{RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry};
 
 pub(crate) use access::relevant_writes::posting_key::AuthoredWritePostingKey;
+
+pub(crate) use access::relevant_writes::source_impact;

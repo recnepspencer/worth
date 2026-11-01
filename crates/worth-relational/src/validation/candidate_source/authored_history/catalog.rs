@@ -26,6 +26,9 @@ impl SourceHistoryCatalog {
     pub(crate) fn len(&self) -> usize {
         self.programs.len()
     }
+    pub(crate) fn program(&self, slot: usize) -> Option<&ManagedIndexSourceProgram> {
+        self.programs.get(slot)
+    }
     pub(crate) fn has_programs(&self) -> bool {
         !self.programs.is_empty()
     }

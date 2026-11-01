@@ -2310,3 +2310,19 @@ The [conservative correction receipt](milestone-9.19-phase4-managed-correction-e
 records genuine populated/empty cancellation, no-op/transient/raw-restoration
 refusals, the explicit conservative false positive, an ordinary disjoint-publication
 control and the unchanged prefix growth guard. Phase4 remains in progress.
+
+### Phase4 Native historical material custody prerequisite
+
+The [boundary review](milestone-9.19-phase4-historical-candidate-boundary-review.md)
+and [final plan](milestone-9.19-phase4-historical-candidate-plan.md) add actual
+canonical/cell-bound historical material receipts. Funded weak custody leaves
+opaque destruction with existing Source owners and explicit outside-guard strong
+carriers, including over-aligned allocation lifetime and expiration. Query
+historical predicate filtering remains a follow-on until its outer runtime/
+attempt custody boundary is established; conservative correction is unchanged.
+Phase4 remains in progress, with Phases5/6 unfinished.
+
+The [Native material receipt](milestone-9.19-phase4-historical-candidate-evidence.md)
+records actual weak-funding/opaque-retirement and ownership controls,238 distinct
+scoped passes and the unchanged prefix work guard. It qualifies Native material
+custody only; the ordinary Query relevance consumer remains unfinished.

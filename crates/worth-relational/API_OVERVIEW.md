@@ -360,3 +360,30 @@ using its private observed Source program and scope. Issuance checks the actual
 observation/runtime correspondence and original controls. This is metadata only;
 Query must still admit its retained influence, require canonical performed
 cancellation and compare support before correction.
+
+## Historical Source material metadata
+
+A genuine `ManagedIndexSourceObservation::authored_history_impact(runtime,
+execution, &occurrence)` binds an actual authored canonical occurrence to its
+actual runtime, frozen Source catalog, branch and cell affinity. It returns
+`Unaffected`, `Conservative`, or `Retained(metadata)`. The owned metadata carries
+actual program/full-generation scope and affected rows plus funded weak payload
+receipts. It grants no historical READ or Query correction permission.
+
+The canonical sidecar keeps no opaque payload alive. Both prepared sides must be
+present/available; birth, retirement, cold/unsupported or missing material stays
+conservative. A completed preparation roster may carry unchanged selected
+material for authored no-ops. Exact dynamic outer Arc allocations remain funded
+through weak expiration, including over-aligned values; recursively freed heaps
+remain with strong owners. Context and history share internal custody mechanics,
+with distinct public contracts.
+
+Leave all Native/runtime/attempt gates before calling
+`metadata.acquire_payloads(execution)`. Keep and release its returned strong
+carrier at that outside boundary, including failure/cancellation. `None` means
+expired data and requires conservative selection; it never proves empty Source.
+Native acquisition itself performs no opaque upgrade. Metadata's program/rows
+are immutable owner-carried cells, and callers admit the roster count before
+traversal. No serialization/deep clone can recreate live issuance. Query's
+historical relevance consumer remains unfinished; existing recorded managed
+correction still requires every conservative candidate to cancel.

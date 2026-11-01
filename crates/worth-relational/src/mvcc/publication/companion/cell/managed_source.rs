@@ -9,6 +9,7 @@ use std::sync::Weak;
 pub(in crate::mvcc::publication::companion) mod affinity;
 mod correspondence;
 mod history;
+pub(crate) use history::ManagedSourceHistoryOwner;
 
 pub struct ManagedIndexSourceObservation {
     pub(in crate::mvcc) core: Weak<CompanionBranchCellCore>,

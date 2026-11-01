@@ -25,7 +25,7 @@ pub(crate) use candidate::{CandidatePayload, PreparedRelationalCandidateAdmissio
 pub use candidate::{DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate};
 pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
-    ManagedSourceRootImage, PreparedManagedIndexSourceFork,
+    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,
 };
 pub use companion::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,

@@ -23,6 +23,7 @@ use worth_relational::facade::{
 mod authored_fields;
 mod context;
 mod derived_admission;
+mod historical_material;
 mod history;
 mod journal;
 mod registry;

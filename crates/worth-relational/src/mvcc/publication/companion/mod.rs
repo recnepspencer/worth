@@ -1,6 +1,6 @@
 pub(in crate::mvcc) use cell::CompanionReadCondition;
 pub(in crate::mvcc) use cell::ManagedSourceReadConditions;
-pub(crate) use cell::ManagedSourceRootImage;
+pub(crate) use cell::{ManagedSourceHistoryOwner, ManagedSourceRootImage};
 mod cell;
 mod managed_fork;
 mod preflight;

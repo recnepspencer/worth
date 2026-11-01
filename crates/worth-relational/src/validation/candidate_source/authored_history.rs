@@ -8,6 +8,7 @@ use std::sync::Arc;
 use worth_execution::{ChargedBytes, ExecutionOrderedMap};
 mod admission;
 mod collection;
+pub(crate) mod material;
 mod record_use;
 pub(crate) use record_use::AuthoredSourceRecordUse;
 

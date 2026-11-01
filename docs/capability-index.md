@@ -957,3 +957,14 @@ Strict original and complete target support remain required. Same-scope irreleva
 uncancelled edits can still refuse; exact relevance and governed/box/refined
 correction qualification remain unfinished. No historical READ is granted. See
 the [correction contract](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
+
+### Native historical Source material receipts
+
+An actual Source observation may call `authored_history_impact` on a genuine
+canonical occurrence. The sealed view validates actual Native ownership and
+carries affected rows plus funded weak before/after material receipts. Opaque
+payload acquisition/use/release occurs outside all runtime/attempt gates; expiry
+is conservative. This admits no historical READ or Query narrowing. The existing
+Query correction path remains conservative until its outside-guard consumer is
+implemented. See the [Native API](../crates/worth-relational/API_OVERVIEW.md#historical-source-material-metadata)
+and [foundation plan](../plans/WORTH-query/milestone-9.19-phase4-historical-candidate-plan.md).

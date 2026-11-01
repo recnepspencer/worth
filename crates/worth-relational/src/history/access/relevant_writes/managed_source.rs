@@ -81,3 +81,10 @@ pub(super) fn require_packet(
     }
     Err(Denial::IncompleteManagedSourceHistory)
 }
+
+mod impact;
+pub(crate) use impact::source_impact;
+pub use impact::{
+    RelationalAuthoredManagedSourceImpact, RelationalAuthoredManagedSourceMaterial,
+    RelationalAuthoredManagedSourcePayloads,
+};

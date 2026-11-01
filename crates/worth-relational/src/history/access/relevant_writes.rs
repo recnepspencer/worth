@@ -7,6 +7,11 @@ pub(crate) mod posting_key;
 mod selection;
 
 pub use cursor::RelationalAuthoredWriteCursor;
+pub(crate) use managed_source::source_impact;
+pub use managed_source::{
+    RelationalAuthoredManagedSourceImpact, RelationalAuthoredManagedSourceMaterial,
+    RelationalAuthoredManagedSourcePayloads,
+};
 pub use page::{
     RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalPreparedAuthoredWritePage,

@@ -33,9 +33,10 @@ pub use publication::{
     StaleRelationalBranchObservation,
 };
 pub(crate) use publication::{
-    ManagedSourceRootImage, PreparedIndexRefreshBasis, PreparedManagedIndexSourceFork,
-    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
-    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
+    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedIndexRefreshBasis,
+    PreparedManagedIndexSourceFork, PreparedRelationalCandidateAdmissionStop,
+    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
+    PublicationPreparationDenial,
 };
 pub use publication::{
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,

@@ -1,6 +1,9 @@
 //! Disposable live metadata; never canonical serialized truth or Source authority.
 use super::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
-use crate::validation::candidate_source::authored_history::PreparedSourceImpactHistory;
+use crate::validation::candidate_source::authored_history::{
+    material::RetainedSourceHistoryMaterial, PreparedSourceImpactHistory,
+};
+use crate::validation::candidate_source::NativeManagedSourceInterpretation;
 use std::sync::{Arc, Weak};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
@@ -9,6 +12,7 @@ pub(crate) struct LiveManagedSourceHistory(Option<Arc<BoundHistory>>);
 struct BoundHistory {
     prepared: Arc<PreparedSourceImpactHistory>,
     owner: Weak<CanonicalCommitEnvelope>,
+    material: RetainedSourceHistoryMaterial,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl Clone for LiveManagedSourceHistory {
@@ -36,12 +40,17 @@ impl LiveManagedSourceHistory {
     pub(crate) fn verified<'a>(
         envelope: &'a Arc<CanonicalCommitEnvelope>,
     ) -> Option<&'a PreparedSourceImpactHistory> {
+        Some(&Self::bound(envelope)?.prepared)
+    }
+    pub(crate) fn verified_material<'a>(
+        envelope: &'a Arc<CanonicalCommitEnvelope>,
+    ) -> Option<&'a RetainedSourceHistoryMaterial> {
+        Some(&Self::bound(envelope)?.material)
+    }
+    fn bound(envelope: &Arc<CanonicalCommitEnvelope>) -> Option<&BoundHistory> {
         let live = envelope.live_managed_source_history.0.as_ref()?;
         let owner = live.owner.upgrade()?;
-        if !Arc::ptr_eq(&owner, envelope) {
-            return None;
-        }
-        Some(&live.prepared)
+        Arc::ptr_eq(&owner, envelope).then_some(live)
     }
 }
 impl CanonicalCommitEnvelope {
@@ -49,14 +58,18 @@ impl CanonicalCommitEnvelope {
     /// The final immutable envelope binds its entire receipt/schema/plan at once.
     pub(crate) fn freeze_with_managed_source_history(
         mut self,
-        prepared: Option<Arc<PreparedSourceImpactHistory>>,
+        interpretation: &NativeManagedSourceInterpretation,
         execution: ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, crate::transactions::data::TransactionCommitError> {
-        let prepared = prepared.filter(|packet| packet_matches(packet, &self));
+        let prepared = interpretation
+            .prepared_source_impact_history()
+            .filter(|packet| packet_matches(packet, &self));
         let Some(prepared) = prepared else {
             self.live_managed_source_history = LiveManagedSourceHistory::default();
             return Ok(Arc::new(self));
         };
+        let material = RetainedSourceHistoryMaterial::capture(execution, interpretation, &prepared)
+            .map_err(|cause| cause.into_commit_error(interpretation.physical_basis()))?;
         let layout = std::alloc::Layout::new::<BoundHistory>()
             .extend(std::alloc::Layout::new::<[usize; 2]>())
             .map_err(|_| {
@@ -72,6 +85,7 @@ impl CanonicalCommitEnvelope {
             self.live_managed_source_history =
                 LiveManagedSourceHistory(Some(Arc::new(BoundHistory {
                     prepared,
+                    material,
                     owner: owner.clone(),
                     _memory: memory,
                 })));
