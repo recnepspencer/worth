@@ -797,8 +797,11 @@ original admitted and pinned subject after head advancement, preserving its
 original receipt/position/digest. Historical Journal and checkpoint subjects use
 request-driven catalog materialization; independent body readmission checks the
 complete authoritative payload, while resident canonical identity avoids that
-reconstructive comparison. Failed source demands refuse explicitly. Native's
-durability authority provides
+reconstructive comparison. Failed source demands refuse explicitly. Native
+recovery binds root images to the original source envelope before subsequent
+commits make them historical, preserving original validation without executor
+replay. Recorded-component admission checks the complete authoritative payload.
+The durability authority provides
 `discover_associated_effects`, `discover_all_associated_effects` and
 `readmit_associated_effect` for selected or all opaque associations: discovery leaves unrelated bodies cold, and readmission verifies
 the exact retained Journal source/index/body rather than a resident re-encoding.
