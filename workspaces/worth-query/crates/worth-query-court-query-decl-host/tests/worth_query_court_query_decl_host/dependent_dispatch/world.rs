@@ -16,6 +16,20 @@ pub fn install(width: u64, selections: Selections) -> App {
     install_with_cell(width, selections, false)
 }
 pub fn install_with_cell(width: u64, selections: Selections, self_supersede: bool) -> App {
+    install_source(width, selections, self_supersede, None)
+}
+pub fn restore(
+    checkpoint: installation::WorthQueryApplicationCheckpoint,
+    selections: Selections,
+) -> App {
+    install_source(1, selections, false, Some(checkpoint))
+}
+fn install_source(
+    width: u64,
+    selections: Selections,
+    self_supersede: bool,
+    checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
+) -> App {
     let schema = Schema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .with_schema(&schema)
@@ -32,6 +46,21 @@ pub fn install_with_cell(width: u64, selections: Selections, self_supersede: boo
         ),
         SignalConditionalEvaluationBudget::development(),
     );
+    if let Some(checkpoint) = checkpoint {
+        return installation::in_memory_program_from_checkpoint(
+            program,
+            schema,
+            (Configuration {
+                selections,
+                self_supersede,
+            },),
+            installation::ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111")
+                .unwrap(),
+            limits,
+            checkpoint,
+        )
+        .unwrap();
+    }
     installation::in_memory_program(
         program,
         schema,

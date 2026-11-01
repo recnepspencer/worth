@@ -786,7 +786,7 @@ the program's output graph says which connections produce settled outputs.
 For a generated child, keep its source and its realization in **separate
 records**, joined by a declared typed relation. The parent produces and owns the
 child's source record; the child produces its own realization and any next-level
-sources. Its `GeneratedBy` relation names its immediate parent. A parent's output
+sources. A declared relation names each source's immediate parent. A parent's output
 witness covers the whole source entity, including absent aspects: a child writing
 its realization onto that source invalidates the parent's witness. Corrections
 to a generated source therefore go through its owning producer, from that
