@@ -75,3 +75,4 @@ fn field_value<'a>(
 mod access;
 pub use access::PreparedManagedIndexRelationRead;
 pub(crate) use access::SourceProjectionBacking;
+pub(in crate::validation::candidate_source) use access::SourceProjectionRetention;

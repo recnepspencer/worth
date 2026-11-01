@@ -26,6 +26,7 @@ mod derived_admission;
 mod historical_material;
 mod history;
 mod journal;
+mod nested;
 mod public_only;
 mod registry;
 mod row_read;

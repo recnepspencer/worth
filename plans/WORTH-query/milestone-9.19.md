@@ -2634,3 +2634,23 @@ code-quality-qa final closeout gates pass. No new public CAD or numerical API,
 SDK family, root or heavy runtime repetition was required. Phases1–5 are complete.
 Phase6 remains open for the one final private SDK adoption and real CAD
 contact/topology/actual-face acceptance in the updated-main integration worktree.
+
+
+### Phase6 Native nested occurrence-route prerequisite (2026-11-01)
+
+The real private source trace demonstrated a finite nested projection gap. The
+[boundary review](milestone-9.19-phase6-nested-projection-boundary-review.md),
+[plan](milestone-9.19-phase6-native-nested-projection-plan.md) and
+[evidence](milestone-9.19-phase6-native-nested-projection-evidence.md) qualify the
+Native prerequisite: preceding-parent direct routes, exact current parent-occurrence
+custody, original-funded flat lineage and both-image inverse ancestor scheduling.
+Actual convergent parent paths retain separate descendant occurrences. No Native
+identity rule was weakened to manufacture duplicate edges in a fixture.
+
+Fresh26Native tests (including4new) and17existing one-hop Query consumer cases
+pass. Boundary/context/caps and independent closeout are recorded in the receipt.
+Query deliberately retains its explicit nested-Source refusal until complete
+materialization/content/equality/footprint receivers are qualified in the next
+batch. Ordered event membership, real private profile/admission/sharing and the
+integrated SDK/contact/scale/full-gate handoff remain open. This prerequisite
+closes neither Phase6 nor milestone9.19 and changes no SDK pin.

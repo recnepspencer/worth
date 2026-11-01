@@ -15,6 +15,11 @@ pub(crate) struct Court {
     pub expected: Mutex<BTreeMap<EntityId, (Vec<EntityId>, Vec<EntityId>)>>,
     previous: Mutex<Option<Arc<PreparedManagedIndexSourceRead>>>,
     pub foreign_observation: AtomicUsize,
+    pub(super) probe_nested: std::sync::atomic::AtomicBool,
+    pub(super) nested: Mutex<BTreeMap<(EntityId, EntityId), Vec<super::nested::Record>>>,
+    pub(super) nested_before: Mutex<BTreeMap<(EntityId, EntityId), Vec<super::nested::Record>>>,
+    pub(super) cancel_nested_field: Mutex<Option<CancellationSource>>,
+    pub(super) nested_checks: AtomicUsize,
     pub probe_row_reads: std::sync::atomic::AtomicBool,
     pub row_read_checks: Mutex<[usize; 4]>,
     pub cancel_row_field: Mutex<Option<CancellationSource>>,
@@ -120,6 +125,9 @@ impl RelationalPublicationCompanion for SourceOwner {
         if self.0.probe_row_reads.load(Ordering::SeqCst) {
             super::row_read::observe(source, &self.0)?;
         }
+        if self.0.probe_nested.load(Ordering::SeqCst) {
+            super::nested::observe(source, &self.0)?;
+        }
         let mut roots = Vec::new();
         for scope in source.scopes() {
             let committed = if scope.committed_scope_exists()? {
@@ -172,6 +180,13 @@ impl CustomInvariantRule for Reader {
     type Scope = Arc<PreparedManagedIndexSourceRead>;
 
     fn descriptor(&self) -> CustomInvariantDescriptor {
+        let mut relations = vec![KindId(2)];
+        for route in self.program.projection_routes() {
+            let kind = route.physical_relation().0;
+            if !relations.contains(&kind) {
+                relations.push(kind);
+            }
+        }
         CustomInvariantDescriptor {
             identity: CustomInvariantSemanticIdentity {
                 rule_id: CustomInvariantRuleId::new("native-managed-source-scopes"),
@@ -182,9 +197,9 @@ impl CustomInvariantRule for Reader {
                 maximum_work_units: self.maximum_work,
                 access: CustomInvariantAccessContract {
                     read_entity_kinds: vec![KindId(1), KindId(4)],
-                    read_relation_kinds: vec![KindId(2)],
+                    read_relation_kinds: relations.clone(),
                     affected_entity_kinds: vec![KindId(1), KindId(4)],
-                    affected_relation_kinds: vec![KindId(2)],
+                    affected_relation_kinds: relations,
                     include_relation_endpoint_entity_touches: true,
                 },
                 execution_point: InvariantExecutionPoint::CommitBoundary,
