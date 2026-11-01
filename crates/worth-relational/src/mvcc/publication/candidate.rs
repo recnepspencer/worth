@@ -1,3 +1,5 @@
+mod current_read;
+mod publication_parts;
 mod read_condition;
 mod retained_selection;
 use std::cell::Cell;
@@ -26,6 +28,7 @@ pub struct PreparedRelationalCommitCandidate {
 }
 
 pub(crate) struct CandidatePayload {
+    current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
     companion_read: Option<super::companion::CompanionReadCondition>,
     expected_basis: crate::branch::RelationalBranchBasisDescriptor,
     expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
@@ -37,6 +40,7 @@ pub(crate) struct CandidatePayload {
 }
 
 pub(super) struct PreparedRelationalPublicationParts {
+    pub(super) current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
     pub(super) companion_read: Option<super::companion::CompanionReadCondition>,
     pub(super) runtime_instance_id: u64,
     pub(super) candidate_id: u64,
@@ -123,6 +127,7 @@ impl PreparedRelationalCommitCandidate {
             .unwrap_or_else(std::time::Instant::now);
         let reservation_count = execution.reservation_count();
         let payload = std::sync::Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
+            current_read: None,
             companion_read: None,
             expected_basis,
             expected_root,
@@ -277,36 +282,6 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn lifetime_expired(&self) -> bool {
         std::time::Instant::now() >= self.expires_at
-    }
-
-    pub(super) fn into_publication_parts(
-        mut self,
-    ) -> Result<PreparedRelationalPublicationParts, super::RelationalPublicationDeferred> {
-        let payload = self
-            .publication_binding
-            .take_candidate(self.candidate_id)
-            .ok_or(
-                super::RelationalPublicationDeferred::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: self.maximum_lifetime_millis,
-                },
-            )?;
-        self.consumed = true;
-        let (movement, completion) = payload.execution.split(payload.published_snapshot_slot);
-        Ok(PreparedRelationalPublicationParts {
-            companion_read: payload.companion_read,
-            runtime_instance_id: self.runtime_instance_id,
-            candidate_id: self.candidate_id,
-            publication_binding: self.publication_binding.clone(),
-            expected: payload.expected_basis,
-            expected_root: payload.expected_root,
-            publication_cell: payload.publication_cell,
-            movement,
-            completion,
-            candidate_retention: payload.retention,
-            control: payload.control,
-            expires_at: self.expires_at,
-            maximum_lifetime_millis: self.maximum_lifetime_millis,
-        })
     }
 
     #[cfg(test)]

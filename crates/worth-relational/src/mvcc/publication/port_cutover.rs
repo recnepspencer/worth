@@ -45,7 +45,11 @@ impl PreparedBranchPublicationPreflight {
             }
             None => {}
         }
-        let _critical_section = self.publication_cell.coordination().enter();
+        let _critical_section =
+            crate::mvcc::publication::current_read::PublicationReadCoordination::enter(
+                &self.publication_cell,
+                self.current_read.as_ref(),
+            );
         if std::time::Instant::now() >= self.expires_at {
             return RelationalPublicationOutcome::deferred(
                 RelationalPublicationDeferred::CandidateLifetimeExpired {
@@ -64,7 +68,14 @@ impl PreparedBranchPublicationPreflight {
             return RelationalPublicationOutcome::interrupted(event);
         }
         self.control.pause_inside_critical_section_for_test();
-        let mut publication_state = self.publication_cell.enter_state();
+        let (mut publication_state, read_state) = match _critical_section.enter_states() {
+            Ok(states) => states,
+            Err(denial) => {
+                return RelationalPublicationOutcome::denied(
+                    RelationalPublicationDenial::CurrentReadDependency(denial),
+                )
+            }
+        };
         match publication_state.lifecycle_posture() {
             crate::branch::RelationalBranchLifecyclePosture::Live => {}
             crate::branch::RelationalBranchLifecyclePosture::Archived => {
@@ -199,6 +210,8 @@ impl PreparedBranchPublicationPreflight {
             }
         };
         drop(companion_cutover);
+        drop(read_state);
+        let _critical_section = _critical_section.into_target_guard();
         self.control.pause_after_linearization_for_test();
         drop(_critical_section);
         let settlement_retention = head_retirement.replace_head_for_publication(

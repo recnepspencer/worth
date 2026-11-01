@@ -1,3 +1,4 @@
+mod current_read_publication;
 #[path = "denial_matrix/mod.rs"]
 pub(crate) mod denial_matrix;
 #[path = "equivalence/mod.rs"]

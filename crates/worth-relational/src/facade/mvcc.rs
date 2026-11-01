@@ -45,4 +45,5 @@ pub use crate::transactions::data::{
     CommitConflict, CommitResult, ConflictClass, TransactionCommitError, WorkerIntentBatch,
 };
 
+pub use crate::mvcc::RelationalPublicationReadDependencyDenial;
 pub use crate::runtime::RelationalPatchPositionReservationGateForTest;

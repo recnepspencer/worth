@@ -193,6 +193,7 @@ impl StaleRelationalBranchObservation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationDenial {
+    CurrentReadDependency(super::RelationalPublicationReadDependencyDenial),
     RecoveredCodecTransitionRequired,
     StaleInvariantGeneration {
         expected_generation: u64,

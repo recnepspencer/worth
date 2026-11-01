@@ -1,5 +1,6 @@
 mod observation;
 pub(crate) mod publication;
+pub use publication::RelationalPublicationReadDependencyDenial;
 pub(crate) mod retained_entity_selection;
 mod transaction;
 #[cfg(test)]

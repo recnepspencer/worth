@@ -13,6 +13,8 @@ mod candidate;
 mod candidate_consumption;
 mod candidate_preparation;
 mod companion;
+mod current_read;
+pub use current_read::RelationalPublicationReadDependencyDenial;
 mod outcome;
 mod port;
 mod validation;
