@@ -46,6 +46,13 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         &self.access
     }
 
+    pub fn navigation_resources(
+        &self,
+    ) -> worth_query_declaration::facade::application_history::ApplicationHistoryNavigationResources
+    {
+        self.compiled.descriptor.navigation_resources()
+    }
+
     /// Compare the original typed recipe and every portable navigation field.
     /// This establishes installation correspondence, never request permission.
     pub fn contains_navigation<N: ApplicationHistoryNavigationBinding<S, H>>(&self) -> bool {
@@ -93,6 +100,7 @@ impl<S: ApplicationSchema> WorthQueryInstalledApplicationSchema<S> {
         if compiled.descriptor.binding_type() != TypeId::of::<H>()
             || compiled.descriptor.history_type() != &H::PORTABLE_TYPE_IDENTITY
             || compiled.descriptor.group_resources() != H::GROUP_RESOURCES
+            || compiled.descriptor.navigation_resources() != H::NAVIGATION_RESOURCES
         {
             return Err(Denial::new(Kind::BindingMeaningChanged, H::IDENTITY));
         }

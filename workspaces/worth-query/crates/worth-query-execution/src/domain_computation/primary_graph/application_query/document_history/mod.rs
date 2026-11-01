@@ -133,6 +133,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         let binding = read.history.binding_identity().clone();
+        let navigation_resources = read.history.navigation_resources();
         let (pending, _read) = match read.execute(self, phase) {
             Ok(completed) => completed,
             Err(denial) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),
@@ -161,7 +162,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         let application = head.application();
         let selection = match crate::domain_computation::primary_graph::product_operation::document_history::HistorySelectionCell::attach(
-            &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self),
+            &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self), navigation_resources,
         ) {
             Ok(selection) => selection,
             Err((head, denial)) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),

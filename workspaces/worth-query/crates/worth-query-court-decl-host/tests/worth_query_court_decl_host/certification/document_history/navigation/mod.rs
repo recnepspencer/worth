@@ -17,6 +17,7 @@ mod commands;
 mod eligibility;
 mod race;
 mod recovery;
+mod resources;
 mod retirement;
 mod retries;
 mod user_tree;

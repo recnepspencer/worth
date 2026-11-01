@@ -4,6 +4,7 @@ mod definition;
 mod descriptor;
 mod group_resources;
 mod navigation;
+mod navigation_resources;
 
 pub use binding::{
     ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,
@@ -19,3 +20,4 @@ pub use navigation::{
     ApplicationHistoryNavigationBinding, ApplicationHistoryNavigationBindingDescriptor,
     ApplicationHistoryNavigationDeclaration, WorthQueryPortableApplicationHistoryNavigationParts,
 };
+pub use navigation_resources::ApplicationHistoryNavigationResources;

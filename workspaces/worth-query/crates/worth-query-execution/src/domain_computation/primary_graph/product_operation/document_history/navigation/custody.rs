@@ -63,6 +63,7 @@ pub(super) enum NavigationPhase<'runtime, S> {
 }
 
 pub(super) struct NavigationProgress<'runtime, S> {
+    pub(super) pending_slot: Option<super::pending_capacity::PendingNavigationSlot>,
     pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<S>,
     pub(super) meaning: WorthQueryApplicationIdempotencyBinding,
     pub(super) output_profile: Option<WorthQueryHistoryOutputProfile>,

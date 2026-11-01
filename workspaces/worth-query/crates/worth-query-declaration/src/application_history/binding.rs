@@ -15,6 +15,8 @@ pub trait ApplicationHistoryBinding<Schema: ApplicationSchema>:
     const IDENTITY: &'static str;
     const GROUP_RESOURCES: super::ApplicationHistoryGroupResources =
         super::ApplicationHistoryGroupResources::DEFAULT;
+    const NAVIGATION_RESOURCES: super::ApplicationHistoryNavigationResources =
+        super::ApplicationHistoryNavigationResources::DEFAULT;
 }
 
 pub type ApplicationHistoryAccessBinding<Schema, History> =

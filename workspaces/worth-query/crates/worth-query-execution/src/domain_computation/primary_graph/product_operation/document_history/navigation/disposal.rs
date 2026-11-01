@@ -119,6 +119,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         };
         let closed = cleanup.retry(self.application, phase)?;
         self.phase = NavigationPhase::Discarded;
+        drop(self.pending_slot.take());
         Ok(closed)
     }
 }

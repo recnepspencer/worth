@@ -16,6 +16,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::document_his
     S,
 > {
     pub(super) attempts: BTreeMap<[u8; 32], RegisteredAttempt<'runtime, S>>,
+    capacity: Arc<super::pending_capacity::PendingNavigationCapacity>,
 }
 
 pub(super) struct RegisteredAttempt<'runtime, S> {
@@ -25,10 +26,16 @@ pub(super) struct RegisteredAttempt<'runtime, S> {
 
 impl<S> NavigationJournal<'_, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn new(
-    ) -> Self {
-        Self {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        resources: worth_query_declaration::facade::application_history::ApplicationHistoryNavigationResources,
+    ) -> Result<Self, super::WorthQueryDocumentHistoryDenial> {
+        Ok(Self {
             attempts: BTreeMap::new(),
-        }
+            capacity: super::pending_capacity::PendingNavigationCapacity::new(
+                execution,
+                resources.maximum_unfinished_attempts,
+            )?,
+        })
     }
 }
 
@@ -51,31 +58,31 @@ where
 {
     use WorthQueryHistoryNavigationDenial as Denial;
     let key = meaning.canonical_key();
-    let existing = document
-        .selection
-        .lock()
-        .navigation
-        .attempts
-        .get(&key)
-        .map(|entry| Arc::clone(&entry.attempt));
-    if let Some(attempt) = existing {
-        return bind(
-            phase,
-            document,
-            attempt,
-            &expected,
-            intent,
-            meaning,
-            output_profile.as_ref(),
-        );
-    }
     let (requested, source, view_after) = {
         let selected = document.selection.lock();
+        if let Some(attempt) = selected
+            .navigation
+            .attempts
+            .get(&key)
+            .map(|entry| Arc::clone(&entry.attempt))
+        {
+            drop(selected);
+            return bind(
+                phase,
+                document,
+                attempt,
+                &expected,
+                intent,
+                meaning,
+                output_profile.as_ref(),
+            );
+        }
         if selected.expected != expected.physical
             || selected.journal.current_step() != &expected.step
         {
             return Err(Denial::HeadChanged);
         }
+        selected.navigation.capacity.check()?;
         let requested = selected.journal.resolve_navigation(intent)?;
         let view_after = selected
             .journal
@@ -122,27 +129,6 @@ where
     } else {
         None
     };
-    let attempt = Arc::new(NavigationAttempt {
-        progress: Mutex::new(NavigationProgress {
-            application,
-            meaning,
-            output_profile: output_profile.clone(),
-            output_source: None,
-            output_source_memory,
-            expected: expected.clone(),
-            model: document.model.clone(),
-            source: Some(source),
-            requested,
-            intent,
-            view_after,
-            phase: NavigationPhase::Prepared,
-            previous: None,
-            prior_cleanup: None,
-            selection_pause: None,
-            delivery_pause: None,
-        }),
-        _allocation: allocation,
-    });
     let mut selected = document.selection.lock();
     if let Some(existing) = selected
         .navigation
@@ -164,7 +150,8 @@ where
     if selected.expected != expected.physical || selected.journal.current_step() != &expected.step {
         return Err(Denial::HeadChanged);
     }
-    let (allocation, _) = HistoryInsertionAllocation::reserve::<(
+    let pending_slot = selected.navigation.capacity.acquire()?;
+    let (registration_allocation, _) = HistoryInsertionAllocation::reserve::<(
         [u8; 32],
         RegisteredAttempt<'runtime, S>,
     )>(&execution, selected.navigation.attempts.len(), 0)
@@ -173,11 +160,33 @@ where
             cause,
         ))
     })?;
+    let attempt = Arc::new(NavigationAttempt {
+        progress: Mutex::new(NavigationProgress {
+            pending_slot: Some(pending_slot),
+            application,
+            meaning,
+            output_profile,
+            output_source: None,
+            output_source_memory,
+            expected,
+            model: document.model.clone(),
+            source: Some(source),
+            requested,
+            intent,
+            view_after,
+            phase: NavigationPhase::Prepared,
+            previous: None,
+            prior_cleanup: None,
+            selection_pause: None,
+            delivery_pause: None,
+        }),
+        _allocation: allocation,
+    });
     selected.navigation.attempts.insert(
         key,
         RegisteredAttempt {
             attempt: Arc::clone(&attempt),
-            _allocation: allocation,
+            _allocation: registration_allocation,
         },
     );
     drop(selected);

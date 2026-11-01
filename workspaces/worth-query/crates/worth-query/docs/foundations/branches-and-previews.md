@@ -146,6 +146,10 @@ worth_query_portable_type!(RetentionHistory => "example.retention-history.v1");
 impl ApplicationHistoryBinding<DocumentRetentionSchema> for RetentionHistory {
     type Access = DocumentRetentionRead;
     const IDENTITY: &'static str = "DocumentRetentionHistory";
+    const NAVIGATION_RESOURCES: ApplicationHistoryNavigationResources =
+        ApplicationHistoryNavigationResources {
+            maximum_unfinished_attempts: std::num::NonZeroUsize::new(4).unwrap(),
+        };
 }
 let schema = schema.application_history(
     ApplicationHistoryDefinition::<DocumentRetentionSchema, RetentionHistory>::for_binding(
@@ -461,6 +465,15 @@ later navigation returns that original completion without moving the current
 selection. Keep the original expected selection, target and key when preparing
 again after losing a handle. A new selection captured under that old key changes
 the intent and refuses.
+
+`ApplicationHistoryBinding::NAVIGATION_RESOURCES` bounds unfinished attempts per
+attached document (8 by default). Set `maximum_unfinished_attempts` to a positive
+finite count. At capacity, a distinct key receives `UnfinishedAttemptLimitExceeded`
+before target lookup or fork. Same-key resolution shares its original slot even
+at capacity. Actual selection or completed disposal releases the slot; a dropped
+frontend handle, interruption or refused cleanup does not. Completed history and
+cleanup retain their separate resource owners. The [compiled capacity journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs)
+show retry, independent documents, cancellation and concurrent callers.
 
 For governed metadata, use `selection_governed(..)`,
 `prepare_governed(..)` and `advance_governed(..)` with the current metadata

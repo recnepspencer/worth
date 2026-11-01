@@ -2035,6 +2035,15 @@ and other records outside the model remain current. Read the
 [checkout contract and supported component meaning](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#select-a-historical-step-for-editing)
 before enabling navigation. A retained preview or page supplies no NAV authority.
 
+Set `ApplicationHistoryBinding::NAVIGATION_RESOURCES.maximum_unfinished_attempts`
+to bound unfinished navigation attempts per attached document (default 8).
+At capacity a new key receives `UnfinishedAttemptLimitExceeded` before target
+lookup or candidate creation. Retrying an existing key shares its original slot.
+Selection or completed `discard(&request)` releases that slot; a dropped handle
+or refused disposal keeps the original attempt registered. Use a fresh request
+to finish or discard it. This limit does not bound completed history or its
+separately owned cleanup.
+
 For undo and redo buttons, capture the expected selection for each new click.
 Represent its command as `Button::Undo` or `Button::RedoTo(child)` and lower it
 through the same prepared navigation owner:

@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph) use output_lookup::{
     HistoryOutputLookup, HistoryOutputLookupPhase,
 };
 mod output_source;
+mod pending_capacity;
 mod progression;
 mod publication;
 mod registration;
@@ -75,6 +76,7 @@ pub enum WorthQueryHistoryNavigationDenial {
     NotChild,
     IntentDrift,
     Busy,
+    UnfinishedAttemptLimitExceeded,
     Discarded,
     DisposalInProgress,
     AlreadySelected,

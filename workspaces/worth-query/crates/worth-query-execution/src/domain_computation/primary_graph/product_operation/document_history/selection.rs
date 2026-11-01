@@ -32,6 +32,7 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
         retained: Arc<
             crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
+        navigation_resources: worth_query_declaration::facade::application_history::ApplicationHistoryNavigationResources,
     ) -> Result<Arc<Self>, (WorthQueryOwnedProductHead<'runtime, S>, Denial)> {
         let allocation = match super::allocation::reserve_arc::<Self>(execution) {
             Ok(allocation) => allocation,
@@ -46,6 +47,11 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
             Ok(journal) => journal,
             Err(denial) => return Err((head, denial)),
         };
+        let navigation =
+            match super::navigation::NavigationJournal::new(execution, navigation_resources) {
+                Ok(navigation) => navigation,
+                Err(denial) => return Err((head, denial)),
+            };
         Ok(Arc::new(Self {
             state: Mutex::new(Some(HistorySelection {
                 head,
@@ -53,7 +59,7 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
                 physical_source: source,
                 output_authority: None,
                 journal,
-                navigation: super::navigation::NavigationJournal::new(),
+                navigation,
             })),
             _allocation: allocation,
         }))

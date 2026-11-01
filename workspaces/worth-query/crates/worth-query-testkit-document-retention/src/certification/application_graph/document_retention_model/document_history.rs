@@ -53,6 +53,19 @@ impl ApplicationHistoryBinding<DocumentRetentionSchema> for DetailedRetentionHis
     const IDENTITY: &'static str = "DetailedDocumentRetentionHistory";
 }
 
+/// The real navigation recipe with one unfinished attempt per attached document.
+pub struct NavigationBoundedRetentionHistory;
+worth_query_portable_type!(NavigationBoundedRetentionHistory => "worth.query.document-retention.navigation-bounded-history.v1");
+impl ApplicationHistoryBinding<DocumentRetentionSchema> for NavigationBoundedRetentionHistory {
+    type Access = DocumentRetentionRead;
+    const IDENTITY: &'static str = "NavigationBoundedDocumentRetentionHistory";
+    const NAVIGATION_RESOURCES:
+        worth_query_decl::facade::application_history::ApplicationHistoryNavigationResources =
+        worth_query_decl::facade::application_history::ApplicationHistoryNavigationResources {
+            maximum_unfinished_attempts: std::num::NonZeroUsize::MIN,
+        };
+}
+
 pub fn detailed_edit_label() -> String {
     "Set retention ".repeat(4096)
 }
@@ -98,6 +111,12 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
     control_roles::declare(navigation::declare(schema))
+        .application_history(
+            ApplicationHistoryDefinition::<DocumentRetentionSchema, NavigationBoundedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
+                .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+                .navigation::<navigation::Navigation>()
+                .operation::<SetRetentionBinding>("Set retention"),
+        )
         .application_history(
             ApplicationHistoryDefinition::<DocumentRetentionSchema, ResultBoundedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
                 .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)

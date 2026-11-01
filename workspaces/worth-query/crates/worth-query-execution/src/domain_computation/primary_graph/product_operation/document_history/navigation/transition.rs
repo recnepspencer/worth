@@ -186,6 +186,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .complete_navigation(self.requested, self.view_after);
         self.previous = Some(previous);
         self.phase = NavigationPhase::Selected(completion);
+        drop(self.pending_slot.take());
         let source = self.source.take();
         drop(selected);
         drop(previous_source);
