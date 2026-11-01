@@ -241,6 +241,102 @@ must be qualified together with their real close consumer before SourceGO or
 a full bounded Host-close claim. The current drop(query) remains an explicit
 gap until that cutover.
 
+## Initial-empty Signal stop and composite close preparation
+
+This narrow prerequisite stops the actual first supported Signal owner and
+retains its original allocation. It does not perform general Signal cleanup or
+report Signal Closed. Unknown/nonempty configurations remain unsupported; the
+actual Native and physical Store close gates still decide their own completion.
+
+SignalRuntime consumes its original owning value into an opaque
+PreparedInitialEmptySignalStop, or returns that same value with a typed refusal.
+It takes only nonwaiting guards on the existing transition gate, registry,
+original witness cell, metadata, retention, conditional-retention and temporal
+state. Require the actual same initial witness/branch/incarnation, sole selected
+live cell, generation zero, next branch one, no snapshots/restoration/history/
+retirement/reservations and the graph's genuine producer-empty state with no
+nodes, dependencies or authorization identities. Compare borrowed owner fields;
+reconstructing an observation allocates strings and is unnecessary here.
+
+The pre-seal BranchState initial-origin predicate requires absent installed
+definition custody, so it cannot be reused verbatim after sealing. The real
+baseline has authentic sealed definition/service/basis custody. Retain it;
+requiring absent conditional services or zero retention counts would reject the
+supported baseline. Bridge separately checks actual empty lowerings, indexes,
+reservations, targets, async declarations, clock lanes, execution-basis
+reservations and matching baseline dependency state through their owning locks.
+Descriptive count methods or durable-family declarations are not that proof.
+
+No Signal operation admission may exist in this preparation. With all required
+guards held, poll the original request and CAS the EXISTING packed OPEN|0 to
+CLOSING|0 once. A competing admission makes this Busy with no state change.
+Keep the original SignalOwnerRoot in the prepared value. Do not call
+request_close, claim_cleanup, a cleanup coordinator or the root's Drop. Count
+zero excludes a later last-admission Drop initiating cleanup. Defer retention
+acquisition-close flags until commit. Before commitment the genuine owning
+prepared value alone may resume the SAME CLOSING|0 owner to OPEN|0, with no
+cleanup claim. It cannot mint a replacement root or resume another owner.
+
+Borrowed preflight followed by World seal leaves a real race: externally cloned
+Signal service ports can change the baseline between those calls. Use reversible
+Signal preparation inside World's ACTUAL existing final close admission cut.
+Expose an opaque RuntimeWorldPreCloseAdmission borrowing the authentic World
+owner. It retains the existing bootstrap -> operation -> close guards and the
+same preallocated close task, after all existing frontier, owner, custody,
+durable-publication and original-request checks have passed. Active or recovery
+operations refuse as before. The same World gates exclude installed calls.
+
+Store orchestrates above the owners: obtain that World guard, perform only the
+narrow try-only Signal preparation, then consume the World guard with an
+INFALLIBLE begin that installs the SAME close task and existing Closing state.
+No poll, allocation, supplier callback, I/O or other fallible operation may occur
+between Signal's successful CAS and World begin. Signal refusal drops the World
+guard without changing either owner. Release all World guards immediately after
+begin, then commit Signal's existing ledger flags and drive existing World
+drain outside admission locks. A later Busy/stop retains the same owning close
+posture; it never resumes service. Any future pre-begin refusal must restore
+the authentic Signal owner before reopening World admission.
+
+World product-head retirement updates World-local component claims while
+retaining the actual owner leases; it does not need Signal admission. Its
+history drain is World-local and original-result cleanup calls Native. Preserve
+that direction. World must not own a Signal callback or a second admission
+ledger, counter, mode or scheduler.
+
+Signal commit closes actual acquisition flags under their nonwaiting guards and
+returns the original stopped allocation for explicit unbudgeted reclaim. It
+never reports cleanup Closed. Bridge's current owning Drop blocks/scans and can
+allocate. A later consuming Bridge cutover must take the SAME original private
+state from a takeable inner slot, transfer RuntimeBridge's actual Native/source
+capabilities to their owner retirement, and retain Signal/root plus arbitrary
+inert payloads. Ordinary Drop still cleans its actual Some state. No replacement
+runtime, ManuallyDrop or whole-Bridge retention may conceal those capabilities.
+
+Proof covers admission-versus-CAS races, each actual lock Busy, original stop,
+nonempty refusal, external mutation before preparation, unchanged execution
+after resume, denied service after commit and no root/payload destruction until
+reclaim. World tests prove guard exclusion and refusal preserves Open. The
+eventual Store consumer must prove the joint cut and actual physical Closed
+while retired allocations remain alive; owner-local tests alone cannot certify
+full Host D11.
+
+```text
+worth-signal/src/branch/owner_services/owner/initial_empty_stop.rs [create owner cut]
+worth-signal/src/branch/owner_services/lifecycle_state/ [extend original phase gate]
+worth-signal/src/logic/transaction/runtime/state/runtime_state/
+  initial_empty_stop.rs [create consuming original-runtime API]
+worth-runtime-world/src/lifecycle/close/
+  admission.rs [extract existing final admission; no competing checks]
+worth-runtime-bridge/src/conditional_execution/contract.rs
+  [later consuming original inner-state extraction]
+worth-store-application/src/world_section/close.rs
+  [later joint owner orchestration and retained stop task]
+```
+
+No empty placeholders are required. Qualify the narrow owner primitives and
+their coherent ordinary-path cutover before integrating the consuming Store
+composition. Native/Bridge/Query retirement remains independently required.
+
 ## Native and Store source-close prerequisite
 
 This is the next source-close destination, not implemented completion. It
