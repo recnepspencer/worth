@@ -864,6 +864,39 @@ proof, and must install no live service/cell or replay handlers. Decisive eviden
 reconstructs an unused historical constraint after live services/resident sources
 are gone; the records-only twin must refuse missing original schema authority.
 
+Original Memory artifact retention is a producer prerequisite to CHK18. The
+existing unpositioned authoritative payload is not an original canonical frame.
+At performed_stream::record_with_cutover, the real publication position is known
+before visible cutover. Thread the SAME original ExecutionRequest from
+mvcc/publication/port_cutover through the existing performed-stream and medium
+publication ports. Admit and issue the original v4 frame there, before route,
+head or position publication. Request/allocation/encoding refusal preserves the
+original prepared state and leaves those effects absent.
+
+Retain that actual frame in the SAME Memory residency cell, replacing its old
+unpositioned byte backing rather than retaining a second canonical payload copy.
+Existing body-byte and body-digest observations use the canonical subrange of
+that same frame. Keep the positioned artifact-payload digest distinct. A narrow
+private canonical byte view may retain the existing immutable byte owner and
+range; expose no bare funded extraction, new ownership mode or generic framework.
+Admit actual old/new construction overlap and report the transient cost honestly.
+
+The destination updates mvcc/publication/port_cutover.rs, the existing canonical
+performed-stream/publication owners, medium/commit publication, canonical artifact
+encoding and history/commit/envelope_residency plus its artifact_export child.
+Known byte-view consumers follow the same canonical owner; no source registry,
+runtime service or new live authority is reconstructed. Journal original-byte
+meaning and canonical artifact v4 wire remain unchanged.
+
+The first working journey is genuine Memory publication followed by the existing
+artifact-export port sharing its original frame without encoding. Prove original
+byte/owner identity, entered admission refusal and cancellation before effects,
+alias lifetime/refund, and an unchanged Journal route. Existing CHK17 serialized
+checkpoint behavior remains until the coherent CHK18 cutover; retaining original
+frames alone issues no CHK18 or Complete qualification. That later cutover uses
+these original frames, never regenerates missing old frames during capture, and
+preserves normal newly produced Memory serialized checkpoints.
+
 Protected owned Native source admission is an ordinary prerequisite, not Complete.
 Add a RelationalDurableReadProtection retaining the original issuer Weak, frozen
 canonical/transition bounds and the original opaque provider payload. Validate
