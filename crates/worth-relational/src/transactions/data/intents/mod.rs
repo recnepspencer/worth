@@ -1,4 +1,5 @@
 mod client_keys;
+pub(crate) mod copy_storage;
 mod materialization_intent;
 mod mutation_intent;
 

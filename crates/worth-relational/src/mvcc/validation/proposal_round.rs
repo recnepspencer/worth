@@ -86,7 +86,7 @@ impl RelationalPreparationRuntime {
             self,
             &basis,
             |mut symbols, round| {
-                transaction.with_preparation_overlay(|transaction| {
+                transaction.with_funded_preparation_overlay(execution, |transaction| {
                     transaction.ensure_current_basis(self)?;
                     if let Some(prior) = &transaction.pending_symbols {
                         symbols.adopt(prior)?;
@@ -106,14 +106,11 @@ impl RelationalPreparationRuntime {
                             &runtime,
                             transaction,
                             selected,
-                            plan.clone(),
+                            crate::mvcc::OwnedNormalizedPlan::copy_for_request(plan, execution)?,
                         ),
-                        None => prepare_working_state_scope(
-                            &runtime,
-                            transaction,
-                            selected,
-                            execution.allocation_policy(),
-                        )?,
+                        None => {
+                            prepare_working_state_scope(&runtime, transaction, selected, execution)?
+                        }
                     };
                     let validation_input =
                         RelationalTransactionValidationInput::from_transaction(transaction);
@@ -122,7 +119,7 @@ impl RelationalPreparationRuntime {
                         &runtime,
                         &selected,
                         &prepared.working_state,
-                        &prepared.merged_plan,
+                        prepared.merged_plan.plan(),
                         prepared.schema_authority.as_ref(),
                         &identity,
                         symbols,
@@ -141,7 +138,7 @@ impl RelationalPreparationRuntime {
                             &selected,
                             mutation.state(),
                             identity.proposed_version_id(),
-                            &prepared.merged_plan,
+                            prepared.merged_plan.plan(),
                             Some(&identity),
                             mutation.aggregate_source(selected),
                             execution,
@@ -162,7 +159,7 @@ impl RelationalPreparationRuntime {
                         execution,
                         round,
                         selected,
-                        &prepared.merged_plan,
+                        prepared.merged_plan.plan(),
                     )?;
                     Ok(PreparedProposalRound {
                         prepared,

@@ -639,9 +639,10 @@ and compact metadata/extra bytes and relation-content hashes. Reuse the genuine
 publication court for application, lineage, retained old-root reads and refused
 publication. Exact pure owner allocation leaves and any owner-private assertions
 receive only named, observed SDK classes after Root's closed-placement ruling.
-Field-lowering scratch, replay input/plan copies, radix/path backing,
-capture, ACK and Complete remain explicit unqualified
-successors; this state-and-extra slice cannot claim whole replay or Host closure.
+State-and-extra custody alone does not qualify field lowering, replay input/plan
+copies, radix/path backing, capture, ACK or Complete. Each successor needs its own
+production lifetime and evidence; this slice cannot claim whole replay or Host
+closure.
 
 Private recovery rebuild owns a fresh runtime without a durable medium and
 abandons it on any replay error. Do not copy/restore the whole history before each

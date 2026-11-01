@@ -95,7 +95,13 @@ fn native_staging_allocation_refusal_and_shared_footprint_custody() {
     );
     assert_eq!(transaction.batches(), before_batches);
     assert_eq!(transaction.footprint(), &before_footprint);
-    assert_eq!(transaction.last_merged_plan.as_ref(), Some(&cached));
+    assert_eq!(
+        transaction
+            .last_merged_plan
+            .as_ref()
+            .map(|plan| plan.plan()),
+        Some(&cached)
+    );
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, before);
     drop(zero);
     let cancellation = CancellationSource::new();
@@ -123,7 +129,13 @@ fn native_staging_allocation_refusal_and_shared_footprint_custody() {
     );
     assert_eq!(transaction.batches(), before_batches);
     assert_eq!(transaction.footprint(), &before_footprint);
-    assert_eq!(transaction.last_merged_plan.as_ref(), Some(&cached));
+    assert_eq!(
+        transaction
+            .last_merged_plan
+            .as_ref()
+            .map(|plan| plan.plan()),
+        Some(&cached)
+    );
     drop(cancelled);
     transaction
         .push_batch(

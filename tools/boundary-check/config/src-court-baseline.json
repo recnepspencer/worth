@@ -3040,5 +3040,6 @@
 {"source":"crates/worth-relational/src/authority/mutation/canonical_deltas/engine_tests/support.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/change_source/runtime_handle/alias_retirement/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","SerialRequest"]},
 {"source":"crates/worth-runtime-bridge/src/relational_source/bridge_snapshot_reader_tests/retained_snapshot_retirement.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","RuntimeBridgeRelationalSource"]},
-{"source":"crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+{"source":"crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
+{"source":"crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
 ]

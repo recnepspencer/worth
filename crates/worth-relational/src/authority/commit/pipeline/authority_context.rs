@@ -3,15 +3,14 @@ use super::rejection::invalid_merge_context;
 use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::transactions::data::{
-    CommitPhaseTiming, MergeCommitMutationPlan, MergedCommitPlan, TransactionCommitError,
-    TransactionId,
+    CommitPhaseTiming, MergeCommitMutationPlan, TransactionCommitError, TransactionId,
 };
 use crate::validation::engine::InvariantExecutionResult;
 
 #[derive(Debug)]
 pub(super) enum CommitAuthorityInput {
-    Mutation(MergedCommitPlan),
-    Merge(MergeCommitMutationPlan),
+    Mutation(crate::mvcc::OwnedNormalizedPlan),
+    Merge(crate::mvcc::OwnedMergePlan),
 }
 
 #[derive(Debug)]
@@ -102,7 +101,7 @@ impl AuthoritativeCommitContext {
             .map(telemetry_from_strategy_batch)
             .or_else(|| {
                 super::bulk_mutation_telemetry::summarize_bulk_mutation_telemetry(
-                    &prepared.merged_plan,
+                    prepared.merged_plan.plan(),
                     batch_count,
                 )
             });
@@ -141,7 +140,7 @@ impl AuthoritativeCommitContext {
 
     pub(crate) fn from_merge(
         validation_input: RelationalTransactionValidationInput,
-        merge_plan: MergeCommitMutationPlan,
+        merge_plan: crate::mvcc::OwnedMergePlan,
     ) -> Result<Self, TransactionCommitError> {
         Self::from_merge_execution(validation_input, merge_plan, None, None)
     }
@@ -154,7 +153,7 @@ impl AuthoritativeCommitContext {
     ) -> Result<Self, TransactionCommitError> {
         Self::from_merge_execution(
             validation_input,
-            merge_plan,
+            crate::mvcc::OwnedMergePlan::from_ordinary_plan(merge_plan),
             Some(diagnostics_plan),
             Some(complexity_baseline),
         )
@@ -162,11 +161,11 @@ impl AuthoritativeCommitContext {
 
     fn from_merge_execution(
         validation_input: RelationalTransactionValidationInput,
-        merge_plan: MergeCommitMutationPlan,
+        merge_plan: crate::mvcc::OwnedMergePlan,
         diagnostics_plan: Option<crate::merge::data::MergeExecutionDiagnosticsPlan>,
         complexity_baseline: Option<crate::performance::data::RuntimeComplexityCounters>,
     ) -> Result<Self, TransactionCommitError> {
-        validate_merge_context_proof(&validation_input, &merge_plan)?;
+        validate_merge_context_proof(&validation_input, merge_plan.plan())?;
 
         Ok(Self {
             recovered_index_catalog: None,
@@ -175,12 +174,13 @@ impl AuthoritativeCommitContext {
             required_output_materialization: None,
             commit_work_budget: None,
             _mutation_authority: None,
-            transaction_id: merge_plan.transaction_id,
+            transaction_id: merge_plan.plan().transaction_id,
             validation_input,
             phase_timing: CommitPhaseTiming::default(),
             merge_execution_accounting: Some(MergeExecutionAccounting {
-                admitted_records: merge_plan.structural_summary.executed_record_count,
+                admitted_records: merge_plan.plan().structural_summary.executed_record_count,
                 emitted_mutation_intents: merge_plan
+                    .plan()
                     .structural_summary
                     .emitted_mutation_intent_count,
             }),

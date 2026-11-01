@@ -2,8 +2,11 @@ mod observation;
 pub use crate::history::data::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) mod publication;
 mod transaction;
+pub(crate) use transaction::normalized_plan as plan_copy_admission;
+pub(crate) use transaction::normalized_plan::OwnedNormalizedPlan;
 #[cfg(test)]
 pub(crate) use transaction::split_contacts;
+pub(crate) use transaction::OwnedMergePlan;
 pub(crate) mod validation;
 
 pub use crate::runtime::{

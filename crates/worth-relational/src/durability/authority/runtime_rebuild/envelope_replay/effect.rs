@@ -6,7 +6,6 @@ use crate::authority::commit::pipeline::{
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
 use crate::runtime::RelationalRuntime;
-use crate::transactions::data::WorkerIntentBatch;
 
 use super::super::branch_readmission::recovered_branch_basis;
 use super::super::history_parity::{
@@ -28,7 +27,15 @@ pub(super) fn replay_envelope_effect(
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         if governed_merge_authority_was_published(envelope) {
-            require_merge_execution_authority(envelope)?;
+            // Metadata-only replay consumes proof consistency, not a copied
+            // mutation plan. Use the same actual published authority predicate.
+            if !envelope
+                .merge_execution_authority
+                .as_ref()
+                .is_some_and(|authority| authority.retains_consistent_proof_packet_authority())
+            {
+                return Err(missing_merge_authority(envelope).into());
+            }
         }
         recovered_branch_basis(restored, &envelope.branch_context)?;
         apply_authoritative_commit_artifacts(restored, positioned, false, false)?;
@@ -133,19 +140,15 @@ pub(super) fn replay_ordinary_commit(
                 format!("failed to admit durable transaction basis: {error:?}"),
             )
         })?;
-    txn.push_batch(
-        WorkerIntentBatch {
-            name: format!("recovery-commit-{}", envelope.commit.commit_id.0),
-            partition_key: None,
-            worker_local_only: true,
-            intents: envelope.merged_plan.merged_intents.clone().to_vec(),
-        },
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    txn.stage_recovered_intents(
+        execution,
+        envelope.commit.commit_id,
+        &envelope.merged_plan.merged_intents,
     )
-    .map_err(|denial| {
-        DurabilityError::new(
-            RecoveryFailureClass::ReplayFailure,
-            format!("durable transaction staging denied: {denial:?}"),
+    .map_err(|error| {
+        super::commit_stop::replay_commit_stop(
+            error,
+            "durable transaction copy/staging denied".into(),
         )
     })?;
     let proposal = txn.validate(execution, restored).map_err(|error| {
@@ -220,7 +223,7 @@ pub(super) fn replay_merge_commit(
     catalog: crate::durability::authority::RecoveredIndexCatalog,
 ) -> Result<(), RelationalRecoveryStop> {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-    let merge_plan = require_merge_execution_authority(envelope)?;
+    let merge_plan = require_merge_execution_authority(envelope, execution)?;
     let schema_basis = RecoveredSchemaBasis::admit(restored, envelope)?;
     let mut options = owner_options_for_branch(restored, &envelope.branch_context)?;
     options = options.with_merge_parent_bases(owner_merge_parent_bases(
@@ -279,16 +282,23 @@ fn release_replayed_snapshot(
 
 fn require_merge_execution_authority(
     envelope: &CanonicalCommitEnvelope,
-) -> Result<crate::transactions::data::MergeCommitMutationPlan, DurabilityError> {
-    merge_commit_mutation_plan_from_envelope(envelope).ok_or_else(|| {
-        DurabilityError::new(
-            RecoveryFailureClass::ReplayFailure,
-            format!(
-                "failed to reconstruct merge execution summary for durable merge commit {}",
-                envelope.commit.commit_id.0
-            ),
-        )
-    })
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<crate::mvcc::OwnedMergePlan, RelationalRecoveryStop> {
+    merge_commit_mutation_plan_from_envelope(envelope, request)
+        .map_err(|error| {
+            super::commit_stop::replay_commit_stop(error, "merge plan copy denied".into())
+        })?
+        .ok_or_else(|| missing_merge_authority(envelope).into())
+}
+
+fn missing_merge_authority(envelope: &CanonicalCommitEnvelope) -> DurabilityError {
+    DurabilityError::new(
+        RecoveryFailureClass::ReplayFailure,
+        format!(
+            "failed to reconstruct merge execution summary for durable merge commit {}",
+            envelope.commit.commit_id.0
+        ),
+    )
 }
 
 pub(super) fn is_metadata_only_merge_commit(envelope: &CanonicalCommitEnvelope) -> bool {

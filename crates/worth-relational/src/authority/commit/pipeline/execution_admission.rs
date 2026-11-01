@@ -63,9 +63,9 @@ impl<'a> AdmittedCommitPhaseView<'a> {
         &'a mut CommitPhaseTiming,
     ) {
         let (merged_plan, merge_history_plan) = match self.authority_input {
-            super::authority_context::CommitAuthorityInput::Mutation(plan) => (plan, None),
+            super::authority_context::CommitAuthorityInput::Mutation(plan) => (plan.plan(), None),
             super::authority_context::CommitAuthorityInput::Merge(plan) => {
-                (&plan.merged_plan, Some(plan))
+                (&plan.plan().merged_plan, Some(plan.plan()))
             }
         };
         (
@@ -86,8 +86,8 @@ impl AdmittedCommitState {
 
     pub(super) fn merged_plan(&self) -> &MergedCommitPlan {
         match &self.authority_input {
-            super::authority_context::CommitAuthorityInput::Mutation(plan) => plan,
-            super::authority_context::CommitAuthorityInput::Merge(plan) => &plan.merged_plan,
+            super::authority_context::CommitAuthorityInput::Mutation(plan) => plan.plan(),
+            super::authority_context::CommitAuthorityInput::Merge(plan) => &plan.plan().merged_plan,
         }
     }
 
@@ -100,7 +100,7 @@ impl AdmittedCommitState {
     ) -> Option<&crate::transactions::data::MergeCommitMutationPlan> {
         match &self.authority_input {
             super::authority_context::CommitAuthorityInput::Mutation(_) => None,
-            super::authority_context::CommitAuthorityInput::Merge(plan) => Some(plan),
+            super::authority_context::CommitAuthorityInput::Merge(plan) => Some(plan.plan()),
         }
     }
 

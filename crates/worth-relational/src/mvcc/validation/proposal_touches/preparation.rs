@@ -81,7 +81,7 @@ fn run<'p>(
             checkpoint,
         };
         let mut work = ValidatedMutationTouchProjectionWork::default();
-        for intent in &proposal.prepared.merged_plan.merged_intents {
+        for intent in &proposal.prepared.merged_plan.plan().merged_intents {
             (sink.checkpoint)(1)?;
             work.validated_intents_examined += 1;
             match intent {

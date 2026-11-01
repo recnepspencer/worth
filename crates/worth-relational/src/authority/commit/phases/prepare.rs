@@ -17,7 +17,7 @@ use std::time::Instant;
 
 pub(crate) struct PreparedWorkingStateScope {
     pub(crate) selected_branch_state: SelectedRelationalBranchState,
-    pub(crate) merged_plan: MergedCommitPlan,
+    pub(crate) merged_plan: crate::mvcc::OwnedNormalizedPlan,
     pub(crate) structural_summary: CommitStructuralSummary,
     pub(crate) working_state: WorkingState,
     pub(crate) phase_timing: CommitPhaseTiming,
@@ -163,13 +163,12 @@ pub(crate) fn prepare_working_state_scope(
     runtime: &RelationalPreparationRuntime,
     transaction: &mut crate::mvcc::BranchBoundRelationalTransaction,
     selected: SelectedRelationalBranchRead<'_>,
-    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PreparedWorkingStateScope, TransactionCommitError> {
+    let allocation_policy = request.allocation_policy();
     let mut phase_timing = CommitPhaseTiming::default();
     let normalization_started = Instant::now();
-    let intents = transaction
-        .normalized_intents_for_merge(runtime, allocation_policy)
-        .map_err(TransactionCommitError::conflict)?;
+    let intents = transaction.normalized_intents_for_merge(runtime, request)?;
     phase_timing.draft_intent_normalization_micros =
         normalization_started.elapsed().as_micros() as u64;
     let merge_plan_started = Instant::now();
@@ -182,13 +181,13 @@ pub(crate) fn prepare_working_state_scope(
     phase_timing.draft_conflict_detection_micros = merged_plan_timing.conflict_detection_micros;
     transaction
         .footprint
-        .derive_validation_dependencies(&merged_plan, allocation_policy)
+        .derive_validation_dependencies(merged_plan.plan(), allocation_policy)
         .map_err(|denial| TransactionCommitError::conflict(denial.into_conflict()))?;
     let (structural_summary, working_state, prepare_phase_timing) =
         prepare_authoritative_working_state_scope_for_base(
             runtime,
             &selected,
-            &merged_plan,
+            merged_plan.plan(),
             transaction.merge_parent_bases.len(),
             Some(&transaction.footprint),
         );
@@ -212,13 +211,13 @@ pub(crate) fn prepare_lowered_working_state_scope(
     runtime: &RelationalPreparationRuntime,
     transaction: &crate::mvcc::BranchBoundRelationalTransaction,
     selected: SelectedRelationalBranchRead<'_>,
-    merged_plan: MergedCommitPlan,
+    merged_plan: crate::mvcc::OwnedNormalizedPlan,
 ) -> PreparedWorkingStateScope {
     let (structural_summary, working_state, phase_timing) =
         prepare_authoritative_working_state_scope_for_base(
             runtime,
             &selected,
-            &merged_plan,
+            merged_plan.plan(),
             transaction.merge_parent_bases.len(),
             Some(&transaction.footprint),
         );

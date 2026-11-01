@@ -129,7 +129,7 @@ impl RelationalPreparationRuntime {
             let validation_cost =
                 crate::commit_strategies::data::StrategyPreviewValidationCostSummary::new(
                     proposed_version,
-                    prepared.merged_plan.merged_intents.len(),
+                    prepared.merged_plan.plan().merged_intents.len(),
                     prepared.structural_summary.touched_partitions.len(),
                     prepared.structural_summary.bulk_entity_slots_reserved,
                     prepared.structural_summary.bulk_relation_slots_reserved,

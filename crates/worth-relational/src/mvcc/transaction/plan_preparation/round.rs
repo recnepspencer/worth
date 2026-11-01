@@ -4,10 +4,10 @@ use super::BranchBoundRelationalTransaction;
 use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
 use crate::mvcc::RelationalTransactionFootprint;
 use crate::runtime::{PendingSymbolMeanings, RelationalPreparationRuntime};
-use crate::transactions::data::{MergedCommitPlan, TransactionCommitError};
+use crate::transactions::data::TransactionCommitError;
 
 pub(super) struct PreparedPlanRound {
-    pub(super) plan: MergedCommitPlan,
+    pub(super) plan: super::super::OwnedNormalizedPlan,
     pub(super) symbols: PendingSymbolMeanings,
     pub(super) overlay: DetachedRelationalTransactionOverlay,
     pub(super) footprint: RelationalTransactionFootprint,
@@ -44,13 +44,13 @@ pub(super) fn prepare(
                         )?;
                         let runtime = round.with_candidate_symbols(&symbols);
                         let intents =
-                            transaction.normalized_intents_for_merge(&runtime, allocation)?;
+                            transaction.normalized_intents_for_merge(&runtime, execution)?;
                         let plan =
                             transaction.build_merged_plan_for_state(&runtime, &read, intents)?;
                         Ok(PreparedPlanRound {
                             plan,
                             symbols,
-                            overlay: transaction.overlay.clone(),
+                            overlay: std::mem::take(&mut transaction.overlay),
                             footprint: transaction.footprint.clone(),
                         })
                     })

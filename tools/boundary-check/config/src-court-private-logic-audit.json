@@ -923,6 +923,61 @@
       ],
       "audit": "Coordinator exact private original-handle/slot/tenure placement ruling, 2026-11-01; only this named Native owner unit and observed exact file classes are admitted. Existing genuine owner fixture is reused; no new runtime constructor, source factory or public test getter is added.",
       "private_subject": "Inspects exact private Shared/Immutable Arc identity and original observation slot after unsupported Shared or original-request stop. Returned handles are the same inputs, before effects; ordinary unbudgeted disposal and genuine original owner closure remain separate."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::replay_input_copy_refuses_before_growth",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Calls the genuine private stage_recovered_intents operation on an owner-issued fresh transaction and observes its private input roster, exact zero-budget refusal and unchanged real branch observation. No synthetic prepared state or factory is substituted."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::replay_validation_keeps_normalized_copy_after_inputs_drop",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Moves the SAME private proposal.prepared.merged_plan whole owner out of consuming genuine validation; every other proposal/index/prepared owner dies before the budget oracle, so only that real independent plan can retain its own bill. Whole owner disposal must refund to zero; no bare funded extraction or test getter."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::normalized_small_output_does_not_retain_large_input_bill",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Inspects the actual private accepted normalized plan after genuine raw client-key interning. The smaller Symbol representation must release the independently copied large raw input charge instead of retaining a shared peak ticket."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::interrupted_copy_round_restores_original_transaction",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Invokes the actual private preparation restoration round and normalizer, then cancels the original request. Private original transaction batches and cached-plan state must be restored, abandoned-copy funding released and real branch unchanged. No public control door is added."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/transactions/core/replay_copy_custody.rs",
+      "test": "tests::transactions::core::replay_copy_custody::merge_copy_funds_headers_without_rebilling_shared_leaves",
+      "constructors": [
+        "ExecutionRequest::serial",
+        "SerialRequest::from_memory",
+        "crate::tests::support::runtime_with_test_schema"
+      ],
+      "audit": "Coordinator exact owner-private copy-custody placement ruling, 2026-11-01, against governing ea81886ea1. Only this named unit and observed exact ExecutionRequest/SerialRequest file row are admitted. Existing genuine Native owner fixture is reused; no new runtime factory, private gate helper, getter or family-wide audience is introduced.",
+      "private_subject": "Produces actual merge authority through existing genuine prepare/execute workflow, then invokes the private reconstructed merge-plan copy owner. Exact intrinsic row/ancestor backing identity must remain shared while new independent headers/intents retain a separate original-budget bill until this owner drops."
     }
   ]
 }

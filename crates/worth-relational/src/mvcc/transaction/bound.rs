@@ -1,9 +1,10 @@
-use crate::transactions::data::{MergedCommitPlan, TransactionId, WorkerIntentBatch};
+use crate::transactions::data::{TransactionId, WorkerIntentBatch};
 
 use super::{
     DetachedRelationalTransactionOverlay, RelationalTransactionFootprint,
     RelationalTransactionIntent,
 };
+mod replay_staging;
 
 /// Move-only detached transaction bound to one owner-admitted exact basis.
 /// It contains no reference to `RelationalRuntime`.
@@ -28,7 +29,7 @@ pub struct BranchBoundRelationalTransaction {
     pub(crate) footprint: RelationalTransactionFootprint,
     pub(crate) savepoints: Vec<super::RelationalTransactionSavepoint>,
     pub(crate) next_savepoint_ordinal: u64,
-    pub(crate) last_merged_plan: Option<MergedCommitPlan>,
+    pub(crate) last_merged_plan: Option<super::OwnedNormalizedPlan>,
     pub(crate) pending_symbols: Option<crate::runtime::PendingSymbolMeanings>,
     pub(crate) client_key_symbol_policy: crate::symbols::data::ClientKeySymbolPolicy,
     pub(crate) retention:
