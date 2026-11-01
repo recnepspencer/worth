@@ -820,6 +820,33 @@ Ordinary image/maintenance constructors and independently allocated Digest/
 default payloads remain explicit obligations wherever not actually admitted.
 Node/page qualification cannot claim whole-arena, full replay, capture or Complete.
 
+Adjacency's independently allocated RelationSet and AdjacencySet values contain
+only existing shallow map headers and the backend discriminator. Remove these
+header Arcs: kind maps store RelationSet directly, and SparseAdjacencyTable stores
+AdjacencySet directly. Extend the closed shallow carrier list to existing
+SharedMap headers and these exact storage-owned adjacency headers. Keep the seal
+storage-private; substrate must not depend on the adjacency domain. No arbitrary
+deep Clone, new wrapper Arc, ownership mode or generic storage footer is admitted.
+
+The destination keeps stored_value.rs and shared_map.rs in storage/substrate,
+updates storage/partition/{adjacency,sparse_adjacency_table}.rs and the existing
+adjacency/allocation.rs owner walk, and adds adjacency/carrier.rs for the exact
+adjacency carrier implementation. Narrow module visibility may admit this
+storage-owned implementation without exporting a public carrier extension point.
+Measure actual old-carrier/new-carrier node layouts and eliminated header Arc
+layouts. Inline headers receive no allocation ID or separate payload bill;
+existing child nodes keep their actual identities and independent reservations.
+Preserve named/compact wire meaning, old-root membership, kind-history semantics
+and owner/delta inventory through real clone and mutation journeys.
+
+This representation slice changes no ordinary mutation or selective publication
+algorithm and claims no new adjacency/bitset request funding. Publication may
+settle different commits out of order after the branch critical section ends;
+whole prepared-header installation could erase later unrelated changes. Do not
+replace selective adoption with whole-header installation or add fallible
+admission after durable acceptance. Published funding still requires a separately
+closed selective preallocation or publication-ordering design.
+
 Bare Complete reconstruction also needs original admitted schema authority.
 Canonical records and branch transitions alone do not contain full executable
 contracts: schema snapshots retain references, diff atoms are descriptive, and
