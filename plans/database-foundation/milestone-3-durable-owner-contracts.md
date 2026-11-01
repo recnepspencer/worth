@@ -424,6 +424,17 @@ the invoked decode admission must have a checked funded path too. The 1 GiB
 wire/read limit is not a reconstruction heap budget. Refusal or stop before Home
 publication preserves prior selection and the actual live runtime.
 
+Decoded body custody resides INSIDE the existing Arc-owned
+`CanonicalCommitEnvelope`; semantic custody resides INSIDE the existing
+`RelationalCommitSemanticResult`, because `semantic_result_arc()` escapes
+independently. Remove their infallible deep Clone implementations: admitted
+owners share/move the actual Arcs, and any necessary draft copying has explicit
+original-policy admission. Do not add a second body Arc to every ordinary
+commit or share one ticket across separate deep copies. Grants do not enter
+wire meaning or semantic equality. Moving `ReadmittedCanonicalCommit` into a
+positioned value must retain these grants; its discarded sidecar is not their
+owner. Document the added inline ownership footprint.
+
 ### Selected canonical backing without covered-journal replay
 
 Actual root images alone are insufficient. Directory CHK17 omits complete
@@ -443,6 +454,15 @@ symbol/lineage/index members. Store remains an opaque member transporter.
 Do not put historical payloads into the eager manifest, select fully Embedded
 placement for Directory Homes, or trigger the old decoder's inline-expansion
 branch by adding inline envelopes alongside external members.
+
+The first format uses one original artifact per member and one directory entry
+`{ position: PatchStreamPosition, member: RelationalDurableMemberLocator }`.
+Entries are strictly ordered and correspond one-to-one with the commit index.
+Retain the existing bounded individual artifact size; add no packing policy or
+smaller limit that rejects a lawful large artifact. Do not reuse symbol-page
+sentinel assumptions for canonical positions. The member locator hashes the
+ORIGINAL FULL artifact bytes; it is distinct from the index's artifact-payload
+digest. Validate both at their existing owners.
 
 The Native directory validates the new position/page inventory, complete
 coverage, uniqueness and agreement with its actual commit index. Construct
@@ -473,6 +493,19 @@ admission rather than rereading journals or duplicating payloads. Explicitly
 fund page/index decode, temporary/retained bytes and escaped backing grants with
 the original request. Fully Embedded checkpoint support remains distinct and
 keeps its own cost contract; no new ownership-policy mode enum is introduced.
+
+Complete-operation acknowledgement also installs validated selected-member
+backing into its ORIGINAL frozen covered residency cells. Preserve the actual
+entry, original source Arc and unchanged canonical meaning/private completeness;
+this is placement transfer, not replay or a canonical-envelope replacement.
+Later entries remain untouched. The existing prepared operation retains a
+request-polled per-entry acknowledgement cursor and actual selected directory.
+Busy/stop retains its remaining handoff in the SAME Home attempt. Coverage is
+not fully acknowledged for cadence until that required handoff completes.
+Partial transfer never recaptures, republishes, moves a head or acknowledges
+uncaptured definitions. A completed operation can then reuse selected backing
+for later capture without covered-journal demand. Test interruption mid-transfer
+and source/member protection through final acknowledgement.
 
 The decisive Native prerequisite court legally releases observations and
 reclaims old live roots/history metadata BEFORE coupled capture. A fresh
