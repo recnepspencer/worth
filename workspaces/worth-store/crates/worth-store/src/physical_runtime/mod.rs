@@ -36,7 +36,6 @@ pub mod stability;
 #[cfg(test)]
 mod terminal_head_retirement_fixture;
 mod work;
-
 pub use admission::{
     AdmissionError, CancelledPhysicalRuntimeAdmission, DeclaredStoreRootDenialKind,
     PhysicalRuntimeAdmission, PhysicalStore,
@@ -295,9 +294,10 @@ pub use recovery_yieldpoint::{
 pub use runtime::AdmittedPhysicalRuntime;
 pub use shutdown::{AbortedRuntime, ClosedRuntime};
 pub use stability::{
-    PhysicalProtectedRootObservation, PhysicalReadProtectionDenial,
-    PhysicalReadProtectionDisposition, PhysicalReadProtectionObservation,
-    PhysicalReadProtectionObserver, PhysicalReadProtectionPolicy, PhysicalReadProtectionShutdown,
+    PhysicalCheckpointReadProtectionDenial, PhysicalProtectedRootObservation,
+    PhysicalReadProtectionDenial, PhysicalReadProtectionDisposition,
+    PhysicalReadProtectionObservation, PhysicalReadProtectionObserver,
+    PhysicalReadProtectionPolicy, PhysicalReadProtectionShutdown,
 };
 pub use work::{
     AdmittedPhysicalWork, AdmittedPhysicalWorkAuthority, BlockedPhysicalWork,

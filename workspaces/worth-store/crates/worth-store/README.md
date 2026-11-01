@@ -31,6 +31,25 @@ for the implemented caller contract, limits, and later-phase boundaries.
 returns a typed admission denial. Readers, sessions, and scans retain that
 root's protection; root observations cannot manufacture a reader.
 
+`try_records_for_checkpoint(original_request)` makes one nonwaiting attempt
+under the same current-root, reclaim and protection-registry order. Busy,
+stopped and protection refusals install no reader. Retain the accepted reader
+before consulting cancellation again; no fallible request check follows lease
+installation. Existing reader construction still allocates its read-source Arc;
+this is no hard wall-clock or allocation-free guarantee.
+
+`AnchoredRecords::open_payload_from` and `OrderedJournal::open_payload_from`
+read through that exact protected reader. Their streams retain the original
+request, copy at most 64 KiB per call, and latch any refusal. Header coordinates
+are descriptive until verified EOF. Anchor EOF validates the complete anchor
+record, member table and payload; journal EOF validates the target payload and,
+for the selected head, its full record hash. Older journal linkage uses the
+selected physical manifest's immutable identities and validated frames, not a
+transitive journal hash chain. Metadata is admitted before growth; payload
+storage belongs to the caller. Perform payload I/O outside logical reservations.
+Disposal follows ordinary unbudgeted physical protection release, not a Home
+close or complete semantic-checkpoint proof.
+
 `physical_runtime::stability` owns the live chunk guard, security-scope
 propagation adapter, and `StablePhysicalReadExecution`. Its
 `StablePhysicalReadReceipt` carries actual execution counters plus lower plan

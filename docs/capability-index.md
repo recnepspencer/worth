@@ -1222,3 +1222,19 @@ Multiple-branch readmission, recovered continuation, general Signal/Bridge state
 checkpoint coverage remain required for phase completion.
 See [Milestone 3](../plans/database-foundation/milestone-3.md)
 and the owning [Home attachment](../workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs).
+
+### Read one protected physical checkpoint cut
+
+Use `ServingPhysicalRuntime::try_records_for_checkpoint(original_request)` to
+retain one actual reader without waiting on capture locks. Store owner adapters
+then use `AnchoredRecords::open_payload_from` and
+`OrderedJournal::{head_position_from,open_payload_from}` with that same reader;
+newer physical roots cannot expand its selected anchor or journal heads.
+Payload streams retain the same request and stop after a refusal. Only actual
+verified EOF validates payload bytes; pre-EOF sizes and coordinates are
+metadata. Anchor EOF additionally validates the full anchor-record SHA.
+Historical journal linkage uses protected physical identities and frame
+integrity, with no transitive journal-hash promise. Callers admit their own
+payload storage and perform I/O outside logical reservations. This physical
+producer grants no World reconciliation, Native complete-history image or Home
+close authority. See [protected physical reads](../workspaces/worth-store/crates/worth-store/README.md#protected-physical-reads).

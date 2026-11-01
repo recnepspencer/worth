@@ -9,6 +9,55 @@ use crate::physical_runtime::{RecordByteLimit, RecordReadLimits, RecordReadSessi
 type Failure = AnchoredRecordMemberReadFailure;
 
 impl AnchoredRecords<'_> {
+    /// Open one selected member without allocating its payload. The returned
+    /// protected stream returns EOF only after checking length and SHA. This
+    /// lower-level primitive retains no request or refusal latch; its owning
+    /// caller polls the original request and bounds scratch before every read.
+    pub fn open_member(
+        &self,
+        name: AnchoredRecordName,
+        locator: AnchoredRecordMemberLocator,
+        maximum_bytes: u64,
+    ) -> Result<super::AnchoredRecordMemberStream, Failure> {
+        let reader = self.reader().map_err(Failure::Value)?;
+        self.open_member_from(&reader, name, locator, maximum_bytes)
+    }
+
+    pub fn open_member_from(
+        &self,
+        reader: &crate::physical_runtime::PhysicalRecordReader,
+        name: AnchoredRecordName,
+        locator: AnchoredRecordMemberLocator,
+        maximum_bytes: u64,
+    ) -> Result<super::AnchoredRecordMemberStream, Failure> {
+        if !reader.belongs_to(self.runtime) {
+            return Err(Failure::ForeignReader);
+        }
+        if locator.length() > maximum_bytes {
+            return Err(Failure::LimitExceeded {
+                length: locator.length(),
+            });
+        }
+        let anchor = self
+            .current_anchor(reader, name)
+            .ok_or(Failure::NotCurrentMember)?;
+        if !self
+            .membership(reader, name, anchor)
+            .map_err(Failure::Value)?
+            .lists(&locator)
+        {
+            return Err(Failure::NotCurrentMember);
+        }
+        let limit = RecordReadLimits::new(RecordByteLimit::new(u32::MAX).expect("nonzero limit"));
+        let session = reader
+            .open(locator.record(), limit)
+            .map_err(Failure::Open)?;
+        if session.observation().bytes_requested() != locator.length() {
+            return Err(Failure::Damaged(AnchoredRecordMemberDamage::Truncated));
+        }
+        Ok(super::AnchoredRecordMemberStream::new(session, locator))
+    }
+
     /// The bytes of one member of the current value of `name`.
     ///
     /// The locator must be listed by the value the anchor selects in this

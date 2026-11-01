@@ -83,6 +83,13 @@ pub struct PhysicalRecordReader {
 }
 
 impl PhysicalRecordReader {
+    pub(in crate::physical_runtime) fn belongs_to(
+        &self,
+        serving: &crate::physical_runtime::ServingPhysicalRuntime,
+    ) -> bool {
+        serving.owns_reader(self)
+    }
+
     /// Retains this selected root while changing only its internal frame work
     /// to diagnostic-background admission. No raw record route escapes.
     pub(in crate::physical_runtime) fn for_diagnostic_scrub(mut self) -> Self {

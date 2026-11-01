@@ -157,6 +157,13 @@ impl std::fmt::Debug for AnchoredRecordMemberWriteFailure {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum AnchoredRecordReadFailure {
+    /// A nonterminal stream was called with no output storage.
+    EmptyReadBuffer,
+    /// The original refusal was returned; this same stream cannot advance again.
+    PreviouslyRefused,
+    Allocation(worth_execution::ExecutionAllocationDenial),
+    Execution(worth_execution::WorkCeilingDenial),
+    ForeignReader,
     Protection(PhysicalReadProtectionDenial),
     Open(RecordReadError),
     Stream(RecordStreamFailure),
@@ -193,6 +200,7 @@ pub enum AnchoredRecordDamage {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum AnchoredRecordMemberReadFailure {
+    ForeignReader,
     /// The current value, whose table decides membership, could not be read
     /// and verified.
     Value(AnchoredRecordReadFailure),

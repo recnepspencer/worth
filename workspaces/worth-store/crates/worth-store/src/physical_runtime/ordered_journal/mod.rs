@@ -25,6 +25,8 @@ use crate::physical_runtime::{
 
 mod frame;
 mod lookup;
+mod payload_stream;
+pub use payload_stream::OrderedJournalPayloadStream;
 mod name;
 mod publication;
 mod registry;
@@ -225,6 +227,10 @@ impl std::fmt::Debug for OrderedJournalPublicationFailure {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum OrderedJournalReadFailure {
+    EmptyReadBuffer,
+    PreviouslyRefused,
+    ForeignReader,
+    Execution(worth_execution::WorkCeilingDenial),
     Protection(PhysicalReadProtectionDenial),
     Open(RecordReadError),
     Stream(RecordStreamFailure),
