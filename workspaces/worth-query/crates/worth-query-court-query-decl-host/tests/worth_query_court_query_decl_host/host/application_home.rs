@@ -383,3 +383,5 @@ fn effect_bearing_native_nine_world_eight_reopens_only_into_owned_custody_refusa
     // explicitly, without claiming D9 disposition or successful close.
     drop(refused.close(&execution));
 }
+
+mod close_admission;

@@ -9,6 +9,7 @@ use crate::publication::{
 use super::RuntimeWorldOwnerRoot;
 
 mod attempt;
+mod call_admission;
 #[path = "operation/creation_reservation.rs"]
 mod creation_reservation;
 mod open_attempt;

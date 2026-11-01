@@ -883,3 +883,9 @@ original-start reacquisition, independent history audit and native live marks.
 `retain_current_read()` and subscription `close()` take no phase/request argument.
 The first retains data; the second releases subscription custody. Neither grants
 execution permission or settles operation cleanup.
+
+Installed Query calls retain World close admission for their whole advancement.
+This includes calls entered through a cloned ProductRuntime. Close refuses
+before World sealing while such a call remains active; resume retains the same
+Home service. Releasing the call permits owning close. This admission fence
+alone does not establish bounded destruction of arbitrary installed payloads.

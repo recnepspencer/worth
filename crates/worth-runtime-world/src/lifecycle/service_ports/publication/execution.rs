@@ -14,6 +14,9 @@ where
         body: impl for<'owner> FnOnce(crate::lifecycle::RuntimeWorldExecutionPlacement<'owner>) -> R,
     ) -> Result<R, RuntimeWorldOwnerUnavailable> {
         let owner = self.service()?;
+        let _admission = owner
+            .try_admit_call()
+            .ok_or_else(RuntimeWorldOwnerUnavailable::new)?;
         Ok(body(owner.state.execution.placement()))
     }
 

@@ -148,6 +148,35 @@ cutover and honest fixtures, then run focused provider tests, relevant Native
 regressions, formatting, scoped line caps, boundary and context checks. Fresh
 independent source review must approve the coherent batch before integration.
 
+## Installed call close-admission prerequisite
+
+All four installed Query opening sites borrow placement through World publication
+port `with_execution_placement`. That whole callback now retains a borrowed
+admission on the EXISTING World operation ledger, including its original
+completion scope. A cloned ProductRuntime cannot bypass close admission merely
+because it does not retain the outer Query program allocation.
+
+Admission try-locks bootstrap, operation and close in the existing order,
+requires performed bootstrap, a present owner and Open, then increments active
+with checked arithmetic. Release every lock before the callback. Return or
+unwind decrements that SAME entry once with the existing reservation Drop and
+poison contract; it allocates no attempt, ledger, registry or per-call Arc.
+World close checks this ledger before sealing and refuses InFlightCriticalSection.
+The refusal preserves the actual serving Home and permits its real resume.
+
+The decisive existing-filesystem Host court pauses a genuine ProductRuntime
+advancement, observes World(Denied(InFlightCriticalSection)) rather than a later
+Native/Bridge share refusal, resumes the same Home while the call remains held,
+then releases it, reads the original balance and completes owning close. An
+owner-local unwind court protects once-only admission release.
+
+Bootstrap, standalone owner placement and stopped-owned D12 capture use separate
+ports. D12 capture still checks its actual three durable flights and adapter
+slots, not unrelated active installed calls: mandatory maintenance runs inside
+this very admission. This prerequisite does not qualify full Host D11; arbitrary
+installed payload destruction and actual World/Bridge/Signal/Native source
+retirement remain the consuming owner work described below.
+
 ## Native and Store source-close prerequisite
 
 This is the next source-close destination, not implemented completion. It
