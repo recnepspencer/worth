@@ -383,6 +383,49 @@ its concrete map/array representation and per-entry allocation/reference-count
 costs must be reported, not described as free or unchanged constants. Do not introduce a history-policy mode enum, persistent pin
 registry, second serving runtime, or a second recovery/selection authority.
 
+The actual non-Clone RelationalStoreSection issues a cloneable opaque complete
+checkpoint preparation port. Its only operation prepares a
+PreparedCompleteRelationalSection from the original ExecutionRequest. That
+strong result owns the actual CompleteRelationalNativeCheckpoint; ordinary
+PreparedRelationalSection remains the standalone contract. No marker field,
+Deref, downgrade or public raw-capture pairing turns the ordinary result into
+the complete result. Share their private framing and selection algorithm.
+
+The section currently owns a bare Native runtime, not an Arc of that runtime.
+The port therefore retains a Native-owner-issued complete-capture service with
+ONLY Weak<RelationalRuntimeState>, plus Weak<StoreColdSource> and Weak of the
+section's actual checkpoint-selection source. It retains no runtime handle,
+persistent lifecycle binding, Serving Arc, Home Arc or replacement section.
+Idle clones perform O(1) Weak increments and keep those control allocations,
+without keeping operational owners alive. Missing owners or stopped Native
+admission return typed OwnerUnavailable; there is no fallback or reopening.
+
+Invocation first checks the original request and upgrades the actual Store
+source/selection. Native upgrades its original state, admits one operation
+through the EXISTING owner lifecycle and constructs its admitted runtime
+internally. Do not construct a preparation snapshot merely to gain admission.
+The service delegates the SAME complete producer; its factory call outside
+Native stays confined to StoreRelational section/checkpoint.rs. No runtime or
+source getter, close tenure or lifecycle authority escapes through this port.
+
+Before the temporary Native operation releases, the complete result must own
+the SAME actual basis observation holds, bound manifest/medium, N protection,
+source affinity and selected-backing transfer state. The existing capture
+holds already become real detached retention obligations: prepare_close must
+refuse ReadCustodyRetained. Store frames that owned result without borrowing
+Native; no extra long-lived operation guard or callback framework is needed.
+Retain that protection through the actual Home attempt and acknowledgement.
+Prove that a retained prepared result causes the genuine close refusal,
+acknowledgement releases it, idle port clones do not veto close, and later calls
+refuse after stop or owner loss.
+
+Coupled close uses this port while Native remains Serving. World may already
+be stopped; that grants no permission to bypass Native's admission gate.
+Resolve/select/acknowledge the coupled capture and release its pins before
+Native prepare_close. The existing legacy Store close path prepares Native
+before its ordinary checkpoint; it is not complete-capture authority and must
+not become the coupled Home path.
+
 Use the existing Native selection/revalidation path to freeze the ORIGINAL
 `CapturedCheckpointBasis`, canonical/transition coverage, source affinities and
 expected source artifact metadata. Release logical guards before the original
@@ -390,8 +433,10 @@ cold source acquires a protected immutable physical read cut N and verifies its
 selected membership. N may contain later entries, but its heads must cover the
 frozen bounds. Later entries never expand the original checkpoint coverage.
 Keep the original basis and validate every read against its expected metadata.
-Do not hold another Native lifecycle guard around optimistic capture: selection
-and revalidation already acquire their own nonwaiting guards.
+Do not hold an additional logical selection/revalidation guard around
+optimistic capture or reconstruction: those operations already acquire their
+own nonwaiting guards. The weak service's actual operation admission above is
+the owner-liveness fence, not another checkpoint mutex.
 
 N is distinct from the earlier protected World cut W. W selects one World image
 and all three World journal prefixes; Native captures later and may be ahead.
