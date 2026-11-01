@@ -868,6 +868,30 @@ tradeoffs in owner proofs and documentation; do not extrapolate a fixed savings
 per logical entry. The accepted cost simplifies actual allocation custody;
 Patricia/last-value funding, general defaults and publication funding stay open.
 
+Borrowed SharedMap traversal uses a fixed inline stack bounded by the existing
+MAXIMUM_ADDRESSABLE_AVL_HEIGHT = 2 * usize::BITS. Replace only its pending Vec
+with Option<&MapNode> slots and a pending length. Keep ONE descent/advancement
+algorithm for ordinary next and checked try_next; this owns borrowed references,
+not nodes, grants or escaping payloads. Checked construction and advancement
+retain their exact original work/stop callback sequence before cursor mutation,
+but report zero heap scratch. Refusal preserves the exact next item and length.
+Do not retain fictional memory charges or skip polling because scratch is zero.
+
+The destination changes storage/substrate/shared_map/iteration.rs, adds its
+iteration/tests.rs owner controls, corrects the existing bitsets/logical_slots
+comments, and updates the existing projected-field native_fields navigation
+controls to zero-extra-scratch semantics. Caller signatures and the initial or
+terminal polling contract stay unchanged. Owned IntoIterator and iter_mut have
+different lifetime/ownership responsibilities and remain unchanged/open.
+
+On the 64-bit target the iterator moves from a 32-byte handle plus heap scratch
+to an approximately 1,040-byte inline object, even when empty. An existing
+two-cursor merge therefore carries roughly 2 KiB plus adapters, and compiler
+temporaries may add frame usage. This is an explicit bounded stack tradeoff,
+not universal memory savings. Prove real forward/exact-size/seek/retained-root
+behavior, original stop/work sequencing and nested stack size; preserve wire
+and genuine Native field-navigation behavior without new Runtime audiences.
+
 Bare Complete reconstruction also needs original admitted schema authority.
 Canonical records and branch transitions alone do not contain full executable
 contracts: schema snapshots retain references, diff atoms are descriptive, and
