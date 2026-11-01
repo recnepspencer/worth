@@ -41,6 +41,8 @@ pub struct WorthQueryPortableApplicationHistoryParts {
     pub model_domain: ApplicationHistoryModelDomain,
     pub operations: Vec<ApplicationHistoryOperation>,
     pub navigation: Option<ApplicationHistoryNavigationDeclaration>,
+    pub window: Option<super::ApplicationHistoryRetentionDeclaration>,
+    pub bookmarks: Option<super::ApplicationHistoryRetentionDeclaration>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -58,6 +60,7 @@ pub enum ApplicationHistoryDefinitionDenial {
     DuplicateOperation,
     InvalidNavigation,
     UnsupportedNavigationDomain,
+    InvalidRetentionPolicy,
 }
 
 impl ErasedApplicationHistoryDefinition {
@@ -72,6 +75,13 @@ impl ErasedApplicationHistoryDefinition {
     pub fn validate(&self) -> Result<(), ApplicationHistoryDefinitionDenial> {
         use ApplicationHistoryDefinitionDenial as Denial;
         let parts = &self.parts;
+        if [&parts.window, &parts.bookmarks]
+            .into_iter()
+            .flatten()
+            .any(|policy| !policy.is_valid())
+        {
+            return Err(Denial::InvalidRetentionPolicy);
+        }
         if let Some(navigation) = &parts.navigation {
             if !navigation.is_valid() {
                 return Err(Denial::InvalidNavigation);
@@ -152,6 +162,8 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDe
                     model_domain: ApplicationHistoryModelDomain::WholeComposite,
                     operations: Vec::new(),
                     navigation: None,
+                    window: None,
+                    bookmarks: None,
                 },
             ),
             descriptor: ApplicationHistoryBindingDescriptor::of::<S, H>(),
@@ -183,6 +195,22 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDe
         let navigation = ApplicationHistoryNavigationBindingDescriptor::of::<S, H, N>();
         self.erased.parts.navigation = Some(navigation.declaration().clone());
         self.descriptor.set_navigation(navigation);
+        self
+    }
+
+    /// Install the separate current capability recipe for finite window changes.
+    pub fn window_policy<N: super::ApplicationHistoryWindowBinding<S, H>>(mut self) -> Self {
+        let policy = super::ApplicationHistoryRetentionBindingDescriptor::of::<S, H, N>();
+        self.erased.parts.window = Some(policy.declaration().clone());
+        self.descriptor.set_window(policy);
+        self
+    }
+
+    /// Install the separate current capability recipe for explicit bookmarks.
+    pub fn bookmark_policy<N: super::ApplicationHistoryBookmarkBinding<S, H>>(mut self) -> Self {
+        let policy = super::ApplicationHistoryRetentionBindingDescriptor::of::<S, H, N>();
+        self.erased.parts.bookmarks = Some(policy.declaration().clone());
+        self.descriptor.set_bookmarks(policy);
         self
     }
 

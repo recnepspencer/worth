@@ -84,13 +84,13 @@ fn redo_classification_and_child_page_visits_stay_local_with_unrelated_futures()
         };
         let page = document.redo_choices(&request, limits, None).unwrap();
         assert_eq!(page.choice(), WorthQueryHistoryRedoChoice::ChoiceRequired);
-        assert_eq!(page.children().rows()[0].step(), &first);
+        assert_page_entry(page.children().rows()[0].step(), &first);
         assert_eq!(page.children().examined_entries(), 1);
         let next = document
             .redo_choices(&request, limits, page.children().continuation().as_ref())
             .unwrap();
         assert_eq!(next.choice(), WorthQueryHistoryRedoChoice::ChoiceRequired);
-        assert_eq!(next.children().rows()[0].step(), &second);
+        assert_page_entry(next.children().rows()[0].step(), &second);
         assert_eq!(next.children().examined_entries(), 1);
         assert!(
             next.children().continuation().is_none(),

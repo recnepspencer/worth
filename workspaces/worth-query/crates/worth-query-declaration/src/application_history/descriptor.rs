@@ -18,8 +18,11 @@ pub struct ApplicationHistoryBindingDescriptor {
     access: ApplicationQueryBindingDescriptor,
     group_resources: super::ApplicationHistoryGroupResources,
     navigation_resources: super::ApplicationHistoryNavigationResources,
+    retention_resources: super::ApplicationHistoryRetentionResources,
     operations: Vec<ApplicationMutationBindingDescriptor>,
     navigation: Option<ApplicationHistoryNavigationBindingDescriptor>,
+    window: Option<super::ApplicationHistoryRetentionBindingDescriptor>,
+    bookmarks: Option<super::ApplicationHistoryRetentionBindingDescriptor>,
 }
 
 impl ApplicationHistoryBindingDescriptor {
@@ -31,8 +34,11 @@ impl ApplicationHistoryBindingDescriptor {
             access: ApplicationHistoryAccessBinding::<S, H>::descriptor(),
             group_resources: H::GROUP_RESOURCES,
             navigation_resources: H::NAVIGATION_RESOURCES,
+            retention_resources: H::RETENTION_RESOURCES,
             operations: Vec::new(),
             navigation: None,
+            window: None,
+            bookmarks: None,
         }
     }
 
@@ -49,6 +55,25 @@ impl ApplicationHistoryBindingDescriptor {
 
     pub fn navigation(&self) -> Option<&ApplicationHistoryNavigationBindingDescriptor> {
         self.navigation.as_ref()
+    }
+
+    pub(super) fn set_window(
+        &mut self,
+        policy: super::ApplicationHistoryRetentionBindingDescriptor,
+    ) {
+        self.window = Some(policy);
+    }
+    pub(super) fn set_bookmarks(
+        &mut self,
+        policy: super::ApplicationHistoryRetentionBindingDescriptor,
+    ) {
+        self.bookmarks = Some(policy);
+    }
+    pub fn window(&self) -> Option<&super::ApplicationHistoryRetentionBindingDescriptor> {
+        self.window.as_ref()
+    }
+    pub fn bookmarks(&self) -> Option<&super::ApplicationHistoryRetentionBindingDescriptor> {
+        self.bookmarks.as_ref()
     }
 
     pub const fn binding_type(&self) -> TypeId {
@@ -68,6 +93,9 @@ impl ApplicationHistoryBindingDescriptor {
     }
     pub const fn navigation_resources(&self) -> super::ApplicationHistoryNavigationResources {
         self.navigation_resources
+    }
+    pub const fn retention_resources(&self) -> super::ApplicationHistoryRetentionResources {
+        self.retention_resources
     }
     pub fn operations(&self) -> &[ApplicationMutationBindingDescriptor] {
         &self.operations

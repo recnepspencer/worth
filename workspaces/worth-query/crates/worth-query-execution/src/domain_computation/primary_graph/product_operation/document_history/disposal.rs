@@ -1,56 +1,28 @@
-//! Disposal owns every remaining writable head and every actual retired cleanup.
+//! Disposal discharges the same actual custody used by bounded maintenance.
 use super::{
+    head_custody::{ClosedHistoryHead, HistoryHeadCustody},
     journal::{HistoryJournal, PastHead},
     WorthQueryOwnedProductHead,
 };
-use crate::domain_computation::{
-    execution_runtime::product_world::{
-        WorthQueryProductBranchCloseReceipt, WorthQueryProductBranchOwnerCleanupReceipt,
-    },
-    primary_graph::{
-        WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
-        WorthQueryApplicationProductBranchCleanupDenial,
-        WorthQueryApplicationProductBranchCleanupFailure,
-        WorthQueryApplicationProductBranchCloseDenial, WorthQueryOwnedProductHeadCloseFailure,
-        WorthQueryPrimaryGraphApplicationRuntime,
-    },
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
+    WorthQueryApplicationProductBranchCleanupDenial,
+    WorthQueryApplicationProductBranchCleanupFailure,
+    WorthQueryApplicationProductBranchCloseDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use std::collections::btree_map::IntoValues;
 use worth_query_installation::facade::ApplicationSchema;
 
-enum PendingHead<'runtime, S> {
-    Live {
-        head: WorthQueryOwnedProductHead<'runtime, S>,
-        denial: WorthQueryApplicationProductBranchCloseDenial,
-    },
-    Retired {
-        branch: crate::basis::WorthQueryProductBranch,
-        failure: WorthQueryApplicationProductBranchCleanupFailure,
-    },
-}
-
-enum ClosedHead {
-    Direct {
-        _receipt: WorthQueryProductBranchCloseReceipt,
-    },
-    Cleanup {
-        _receipt: WorthQueryProductBranchOwnerCleanupReceipt,
-    },
-}
-
-/// All document-managed pins and head custody have been discharged.
-/// This records actual owner completions; unrelated holders can retain their own history.
+/// Actual session-owned head completions; other holders retain their own rights.
 pub struct WorthQueryDocumentHistoryCloseReceipt {
     heads: usize,
-    _final_head: ClosedHead,
+    _final_head: ClosedHistoryHead,
 }
-
 impl WorthQueryDocumentHistoryCloseReceipt {
     pub fn closed_heads(&self) -> usize {
         self.heads
     }
 }
-
 impl std::fmt::Debug for WorthQueryDocumentHistoryCloseReceipt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryDocumentHistoryCloseReceipt")
@@ -67,16 +39,16 @@ pub enum WorthQueryDocumentHistoryClosingDenial<'a> {
     Navigation(&'a super::WorthQueryHistoryNavigationDenial),
 }
 
-/// A closing document cannot read, edit, navigate or become a live document again.
+/// A closing document cannot become a live document again.
 #[must_use = "retain and retry every refused document cleanup owner"]
 pub struct WorthQueryDocumentHistoryClosing<'runtime, S> {
     application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<S>,
     current: Option<WorthQueryOwnedProductHead<'runtime, S>>,
     past: IntoValues<u64, PastHead<'runtime, S>>,
-    pending: Option<PendingHead<'runtime, S>>,
+    pending: Option<HistoryHeadCustody<'runtime, S>>,
     opening_denial: Option<WorthQueryAdvancementDenial>,
     closed: usize,
-    last: Option<ClosedHead>,
+    last: Option<ClosedHistoryHead>,
     navigation: super::navigation::NavigationDisposal<'runtime, S>,
     navigation_denial: Option<super::WorthQueryHistoryNavigationDenial>,
 }
@@ -87,9 +59,8 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         journal: HistoryJournal<'runtime, S>,
         navigation: super::navigation::NavigationJournal<'runtime, S>,
     ) -> Self {
-        // Drop every document-owned read pin before retiring any of its heads.
-        // Native close/retry occurs only after these resource drops have finished.
-        let past = journal.into_disposal();
+        // Every controller source is released before any branch retirement.
+        let (closed, past) = journal.into_disposal();
         let navigation = navigation.into_disposal();
         Self {
             application: current.application(),
@@ -97,7 +68,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
             past,
             pending: None,
             opening_denial: None,
-            closed: 0,
+            closed,
             last: None,
             navigation,
             navigation_denial: None,
@@ -105,19 +76,20 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
     }
 
     pub fn denial(&self) -> Option<WorthQueryDocumentHistoryClosingDenial<'_>> {
+        use WorthQueryDocumentHistoryClosingDenial as Denial;
         if let Some(denial) = &self.opening_denial {
-            return Some(WorthQueryDocumentHistoryClosingDenial::Execution(denial));
+            return Some(Denial::Execution(denial));
         }
         if let Some(denial) = &self.navigation_denial {
-            return Some(WorthQueryDocumentHistoryClosingDenial::Navigation(denial));
+            return Some(Denial::Navigation(denial));
         }
         match self.pending.as_ref()? {
-            PendingHead::Live { denial, .. } => {
-                Some(WorthQueryDocumentHistoryClosingDenial::Head(denial))
-            }
-            PendingHead::Retired { failure, .. } => Some(
-                WorthQueryDocumentHistoryClosingDenial::Cleanup(failure.denial()),
-            ),
+            HistoryHeadCustody::Refused { denial, .. } => Some(Denial::Head(denial)),
+            HistoryHeadCustody::Retired { failure, .. } => Some(Denial::Cleanup(failure.denial())),
+            HistoryHeadCustody::Live(_)
+            | HistoryHeadCustody::Reserved
+            | HistoryHeadCustody::Advancing
+            | HistoryHeadCustody::Closed(_) => None,
         }
     }
 
@@ -139,32 +111,15 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
             }
         }
         loop {
-            if let Some(pending) = self.pending.take() {
-                match pending {
-                    PendingHead::Live { head, .. } => {
-                        if !self.close_head(head, phase) {
-                            return Err(self);
-                        }
-                    }
-                    PendingHead::Retired { branch, failure } => {
-                        match failure.into_cleanup().retry() {
-                            Ok(receipt) => {
-                                self.closed += 1;
-                                self.last = Some(ClosedHead::Cleanup { _receipt: receipt });
-                            }
-                            Err(failure) => {
-                                self.pending = Some(PendingHead::Retired { branch, failure });
-                                return Err(self);
-                            }
-                        }
-                    }
-                }
-                continue;
-            }
             let next = self
-                .past
-                .find_map(|entry| entry.head)
-                .or_else(|| self.current.take());
+                .pending
+                .take()
+                .or_else(|| {
+                    self.past.next().map(|entry| {
+                        std::mem::replace(&mut *entry.custody.lock(), HistoryHeadCustody::Reserved)
+                    })
+                })
+                .or_else(|| self.current.take().map(HistoryHeadCustody::Live));
             let Some(head) = next else {
                 return Ok(WorthQueryDocumentHistoryCloseReceipt {
                     heads: self.closed,
@@ -173,30 +128,16 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
                         .expect("the document's actual current head closed"),
                 });
             };
-            if !self.close_head(head, phase) {
-                return Err(self);
-            }
-        }
-    }
-
-    fn close_head(
-        &mut self,
-        head: WorthQueryOwnedProductHead<'runtime, S>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-    ) -> bool {
-        match head.close(phase) {
-            Ok(receipt) => {
-                self.closed += 1;
-                self.last = Some(ClosedHead::Direct { _receipt: receipt });
-                true
-            }
-            Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
-                self.pending = Some(PendingHead::Live { head, denial });
-                false
-            }
-            Err(WorthQueryOwnedProductHeadCloseFailure::Retired { branch, failure }) => {
-                self.pending = Some(PendingHead::Retired { branch, failure });
-                false
+            match head.retry(phase) {
+                Ok(Some(receipt)) => {
+                    self.closed += 1;
+                    self.last = Some(receipt);
+                }
+                Ok(None) => {}
+                Err(head) => {
+                    self.pending = Some(head);
+                    return Err(self);
+                }
             }
         }
     }
@@ -213,9 +154,9 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         if self.current.is_none()
             && self.navigation.is_empty()
             && self.past.len() == 0
-            && matches!(self.pending, Some(PendingHead::Retired { .. }))
+            && matches!(self.pending, Some(HistoryHeadCustody::Retired { .. }))
         {
-            let Some(PendingHead::Retired { branch, failure }) = self.pending.take() else {
+            let Some(HistoryHeadCustody::Retired { branch, failure }) = self.pending.take() else {
                 unreachable!()
             };
             Ok((branch, failure))
@@ -224,7 +165,6 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         }
     }
 }
-
 impl<S: ApplicationSchema> std::fmt::Debug for WorthQueryDocumentHistoryClosing<'_, S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryDocumentHistoryClosing")

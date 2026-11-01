@@ -12,6 +12,10 @@ pub struct PlanarDocumentHistory<S>(PhantomData<fn() -> S>);
 pub struct PlanarSourceDocumentHistory<S>(PhantomData<fn() -> S>);
 mod navigation;
 pub use navigation::*;
+mod permission;
+pub use permission::*;
+mod retention_policy;
+pub use retention_policy::*;
 impl<S: TopologySchemaBinding> WorthQueryPortableType for PlanarSourceDocumentHistory<S> {
     const PORTABLE_TYPE_NAME: &'static str = "PlanarSourceDocumentHistory";
     const PORTABLE_TYPE_IDENTITY: WorthQueryPortableTypeIdentity =
@@ -37,13 +41,15 @@ impl<S: TopologySchemaBinding> ApplicationHistoryBinding<S> for PlanarDocumentHi
 pub(super) fn declare<S: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
-    navigation::declare(schema)
+    retention_policy::declare(navigation::declare(permission::declare(schema)))
         .application_history(
             ApplicationHistoryDefinition::<S, PlanarDocumentHistory<S>>::for_binding(
                 ApplicationQueryDisclosureContract::public(),
             )
             .model_domain(worth_query_decl::facade::application_history::ApplicationHistoryModelDomain::ScopeEntityRecord)
             .navigation::<PlanarHistoryNavigation<S>>()
+            .window_policy::<PlanarHistoryWindow<S>>()
+            .bookmark_policy::<PlanarHistoryBookmark<S>>()
             .operation::<PlanarInitialAdjustmentBinding<S>>("Set model Y"),
         )
         .application_history(

@@ -66,10 +66,12 @@ pub use history::{
     WorthQueryHistoryNavigationPosture, WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId,
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputDenial,
     WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode, WorthQueryHistoryPage,
-    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
-    WorthQueryHistoryPageRow, WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult,
-    WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
-    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry,
+    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary,
+    WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice,
+    WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
+    WorthQueryHistoryRetentionStatus, WorthQueryHistoryRootOutputAdmissionDenial,
+    WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryWindowChange,
     WorthQueryHistoryWithOutputs,
 };
 #[doc(hidden)]

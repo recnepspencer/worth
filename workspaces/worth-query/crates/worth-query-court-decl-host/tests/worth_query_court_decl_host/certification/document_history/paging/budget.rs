@@ -80,7 +80,7 @@ fn page_backing_refusal_keeps_the_original_cursor_for_a_funded_retry() {
         .history_page(&request, roomy, Some(&cursor))
         .unwrap();
     assert_eq!(page.rows().len(), 1);
-    assert_eq!(page.rows()[0].step(), &expected);
+    assert_page_entry(page.rows()[0].step(), &expected);
     assert!(page.continuation().is_none());
     close(&host, document, 2);
 }

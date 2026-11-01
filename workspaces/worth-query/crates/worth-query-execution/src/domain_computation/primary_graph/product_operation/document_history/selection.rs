@@ -33,25 +33,28 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
             crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
         navigation_resources: worth_query_declaration::facade::application_history::ApplicationHistoryNavigationResources,
+        retention_resources: worth_query_declaration::facade::application_history::ApplicationHistoryRetentionResources,
     ) -> Result<Arc<Self>, (WorthQueryOwnedProductHead<'runtime, S>, Denial)> {
         let allocation = match super::allocation::reserve_arc::<Self>(execution) {
             Ok(allocation) => allocation,
             Err(cause) => return Err((head, Denial::Recording(cause))),
-        };
-        let journal = match HistoryJournal::attach(
-            execution,
-            head.application().runtime.authority_identity().as_u64(),
-            expected.clone(),
-            retained,
-        ) {
-            Ok(journal) => journal,
-            Err(denial) => return Err((head, denial)),
         };
         let navigation =
             match super::navigation::NavigationJournal::new(execution, navigation_resources) {
                 Ok(navigation) => navigation,
                 Err(denial) => return Err((head, denial)),
             };
+        let journal = match HistoryJournal::attach(
+            execution,
+            head.application().runtime.authority_identity().as_u64(),
+            expected.clone(),
+            retained,
+            retention_resources,
+            Arc::clone(&navigation.capacity),
+        ) {
+            Ok(journal) => journal,
+            Err(denial) => return Err((head, denial)),
+        };
         Ok(Arc::new(Self {
             state: Mutex::new(Some(HistorySelection {
                 head,

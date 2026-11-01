@@ -16,7 +16,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::document_his
     S,
 > {
     pub(super) attempts: BTreeMap<[u8; 32], RegisteredAttempt<'runtime, S>>,
-    capacity: Arc<super::pending_capacity::PendingNavigationCapacity>,
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) capacity:
+        Arc<super::pending_capacity::PendingNavigationCapacity>,
 }
 
 pub(super) struct RegisteredAttempt<'runtime, S> {
@@ -58,7 +59,7 @@ where
 {
     use WorthQueryHistoryNavigationDenial as Denial;
     let key = meaning.canonical_key();
-    let (requested, source, view_after) = {
+    let (requested, source) = {
         let selected = document.selection.lock();
         if let Some(attempt) = selected
             .navigation
@@ -84,7 +85,7 @@ where
         }
         selected.navigation.capacity.check()?;
         let requested = selected.journal.resolve_navigation(intent)?;
-        let view_after = selected
+        selected
             .journal
             .prepare_navigation(requested)
             .map_err(Denial::Document)?;
@@ -92,7 +93,7 @@ where
             .journal
             .preview(requested, document.model.clone())
             .map_err(Denial::Document)?;
-        (requested, source, view_after)
+        (requested, source)
     };
     let application = document.application();
     let current = application
@@ -150,7 +151,14 @@ where
     if selected.expected != expected.physical || selected.journal.current_step() != &expected.step {
         return Err(Denial::HeadChanged);
     }
-    let pending_slot = selected.navigation.capacity.acquire()?;
+    let pending_slot = selected
+        .navigation
+        .capacity
+        .acquire(source.step.endpoint().product_branch())?;
+    selected
+        .journal
+        .prepare_navigation(requested)
+        .map_err(Denial::Document)?;
     let (registration_allocation, _) = HistoryInsertionAllocation::reserve::<(
         [u8; 32],
         RegisteredAttempt<'runtime, S>,
@@ -160,6 +168,10 @@ where
             cause,
         ))
     })?;
+    let head_slot = selected
+        .journal
+        .reserve_head(&execution)
+        .map_err(Denial::Document)?;
     let attempt = Arc::new(NavigationAttempt {
         progress: Mutex::new(NavigationProgress {
             pending_slot: Some(pending_slot),
@@ -173,9 +185,8 @@ where
             source: Some(source),
             requested,
             intent,
-            view_after,
             phase: NavigationPhase::Prepared,
-            previous: None,
+            head_slot: Some(head_slot),
             prior_cleanup: None,
             selection_pause: None,
             delivery_pause: None,

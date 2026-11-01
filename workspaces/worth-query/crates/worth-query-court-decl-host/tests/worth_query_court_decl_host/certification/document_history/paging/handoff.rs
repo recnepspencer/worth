@@ -40,7 +40,7 @@ fn cancellation_after_assembly_preserves_the_cursor_for_a_fresh_read() {
     let page = document
         .history_page(&request, limits(1), Some(&cursor))
         .unwrap();
-    assert_eq!(page.rows()[0].step(), &expected[1]);
+    assert_page_entry(page.rows()[0].step(), &expected[1]);
     close(&host, document, 4);
 }
 

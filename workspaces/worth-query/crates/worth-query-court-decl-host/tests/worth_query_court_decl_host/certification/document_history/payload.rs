@@ -130,7 +130,7 @@ fn payload_revocation_after_paging_blocks_detail_and_old_holder_until_real_resto
         )
         .unwrap();
     assert_eq!(page.rows().len(), 3);
-    assert_eq!(page.rows()[1].step(), &old);
+    assert_page_entry(page.rows()[1].step(), &old);
     assert_eq!(page.current_step_id(), selected.id());
     let preview = document
         .preview_governed(
@@ -312,7 +312,7 @@ fn payload_revocation_after_paging_blocks_detail_and_old_holder_until_real_resto
             .unwrap(),
         selected
     );
-    assert_eq!(page.rows()[1].step(), &old);
+    assert_page_entry(page.rows()[1].step(), &old);
     drop(old_read);
     drop(observed);
     preview.close();

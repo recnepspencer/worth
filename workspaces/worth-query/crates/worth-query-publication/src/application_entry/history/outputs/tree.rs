@@ -38,6 +38,18 @@ where
         step: Step<'_, '_>,
     ) -> Result<Option<WorthQueryCompletedHistoryOutputs>, WorthQueryHistoryOutputDenial> {
         use WorthQueryHistoryOutputDenial as Denial;
+        if matches!(step, Step::Selected(_)) {
+            if let Some(slot) = self.existing_slot(&key)? {
+                let mut state = slot.try_state()?;
+                state.selected = true;
+                let disposed = state.dispose(phase, &self.application).is_ok();
+                drop(state);
+                if disposed {
+                    self.remove_slot(&key, &slot)?;
+                }
+            }
+            return Ok(None);
+        }
         // Native has already admitted H READ, metadata, NAV and complete source C.
         let slot = self.slot(phase, key)?;
         let mut state = slot.try_state()?;
@@ -49,12 +61,7 @@ where
                     Ok(None)
                 }
             }
-            Step::Selected(_) => {
-                // Selection is already real. Cleanup refusal keeps these owners
-                // for document close and cannot undo its successful outcome.
-                let _ = state.dispose(phase, &self.application);
-                return Ok(None);
-            }
+            Step::Selected(_) => unreachable!("selected replays never allocate another slot"),
             Step::Outputs {
                 branch,
                 source,

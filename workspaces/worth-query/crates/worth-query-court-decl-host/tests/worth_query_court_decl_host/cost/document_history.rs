@@ -1,6 +1,8 @@
 //! Warm ordinary append; retained-history depth varies, model and local edit do not.
 mod group;
 mod redo_choices;
+mod retention_frontier;
+use crate::certification::document_history::assert_page_entry;
 use crate::certification::document_history::recording::{begin, close, finish, ready};
 use crate::certification::document_history::{attach, head, value, App, Document};
 use std::time::Instant;
@@ -169,7 +171,10 @@ fn a_tiny_page_visits_only_its_admitted_prefix_at_short_and_longer_histories() {
         drop(observed);
         assert_eq!(page.rows().len(), 1);
         assert_eq!(page.examined_entries(), 1);
-        assert!(page.rows()[0].step().parent().is_none());
+        assert_eq!(
+            page.rows()[0].step().parent(),
+            worth_query_host::facade::application_entry::WorthQueryHistoryParentBoundary::Root
+        );
         assert!(page.continuation().is_some());
         samples.push((visits, page.admitted_backing_bytes()));
         close(&host, document, depth + 1);
@@ -237,7 +242,7 @@ fn nearby_and_distant_checkouts_validate_receiving_owners_without_replaying_inte
         let journal = journal_observer.snapshot();
         drop(journal_observer);
         drop(observer);
-        assert_eq!(completed.selection().step(), &target);
+        assert_page_entry(&target, completed.selection().step());
         assert_eq!(value(&host, &document), 3);
         assert!(native.iter().all(|entry| entry.refusal.is_none()));
         let work: u64 = native.iter().map(|entry| entry.report.charged_work()).sum();

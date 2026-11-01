@@ -1,8 +1,9 @@
 //! Seek directly to a finite visible prefix; private reservations never enter page hints.
 use super::super::paging::{
     WorthQueryHistoryPage as Page, WorthQueryHistoryPageCursor as Cursor,
-    WorthQueryHistoryPageDenial as Failure, WorthQueryHistoryPageLimits as Limits,
-    WorthQueryHistoryPageRow as Row,
+    WorthQueryHistoryPageDenial as Failure, WorthQueryHistoryPageEntry as Entry,
+    WorthQueryHistoryPageLimits as Limits, WorthQueryHistoryPageRow as Row,
+    WorthQueryHistoryParentBoundary as Parent,
 };
 use super::super::{
     WorthQueryHistoryRedoChoice as Choice, WorthQueryHistoryRedoChoices as Choices,
@@ -28,6 +29,7 @@ impl<S> HistoryJournal<'_, S> {
             view_generation: self.view_generation,
             completed_end: self.completed_end,
             nodes: &self.nodes,
+            retained: &self.retained,
             children: &self.children,
             parent: None,
             observation: self.observation.as_ref(),
@@ -48,6 +50,7 @@ impl<S> HistoryJournal<'_, S> {
             view_generation: self.view_generation,
             completed_end: self.completed_end,
             nodes: &self.nodes,
+            retained: &self.retained,
             children: &self.children,
             parent: Some(self.current),
             observation: self.observation.as_ref(),
@@ -66,6 +69,7 @@ struct PageSource<'a> {
     view_generation: u64,
     completed_end: u64,
     nodes: &'a BTreeMap<u64, HistoryNode>,
+    retained: &'a BTreeMap<u64, RetainedHistorySource>,
     children: &'a BTreeMap<(u64, u64), ChildLink>,
     parent: Option<WorthQueryHistoryNodeId>,
     observation: Option<&'a EnrollmentSink>,
@@ -121,7 +125,13 @@ impl PageSource<'_> {
         header: usize,
     ) -> Result<(Page, Option<Choice>), Failure> {
         let (choice, end) = match self.parent {
-            None => (None, self.completed_end),
+            None => (
+                None,
+                self.retained
+                    .range(..self.completed_end)
+                    .next_back()
+                    .map_or(0, |(ordinal, _)| ordinal + 1),
+            ),
             Some(parent) => {
                 let (choice, end) = self.child_summary(context, parent)?;
                 (Some(choice), end)
@@ -151,7 +161,7 @@ impl PageSource<'_> {
         let seek = seek_work(if self.parent.is_some() {
             self.children.len()
         } else {
-            self.nodes.len()
+            self.retained.len()
         });
         checkpoint(context, seek)?;
         let mut examined = 0;
@@ -183,8 +193,25 @@ impl PageSource<'_> {
                     })?;
             }
             bytes = next_bytes;
+            checkpoint(context, seek_work(self.retained.len()) + 1)?;
             rows.push(Row {
-                step: node.step.clone(),
+                step: Entry {
+                    id: node.step.id(),
+                    parent: match node.step.parent() {
+                        None => Parent::Root,
+                        Some(parent)
+                            if self
+                                .retained
+                                .get(&parent.ordinal)
+                                .is_some_and(|source| source.source.is_some()) =>
+                        {
+                            Parent::Retained(parent)
+                        }
+                        Some(_) => Parent::Truncated,
+                    },
+                    label: node.step.label.clone(),
+                    endpoint: node.step.endpoint.clone(),
+                },
             });
         }
         let next = last

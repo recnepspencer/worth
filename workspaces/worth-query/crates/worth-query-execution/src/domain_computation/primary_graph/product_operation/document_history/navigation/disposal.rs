@@ -53,7 +53,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     fn prepare_disposal(&mut self) {
         let state = std::mem::replace(&mut self.phase, NavigationPhase::Discarded);
         let mut cleanup = NavigationCleanup {
-            head: self.previous.take(),
+            head: None,
             _head_denial: None,
             retired: None,
             fork: None,
@@ -282,6 +282,14 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
             return Err(WorthQueryHistoryNavigationDenial::AlreadySelected);
         }
         progress.prepare_disposal();
-        progress.finish_disposal(phase).map(|_| ())
+        progress.finish_disposal(phase)?;
+        if let Some(slot) = progress.head_slot.take() {
+            if let Some(cell) = self.cell.upgrade() {
+                if let Some(mut selected) = cell.live() {
+                    selected.journal.cancel_head(slot);
+                }
+            }
+        }
+        Ok(())
     }
 }

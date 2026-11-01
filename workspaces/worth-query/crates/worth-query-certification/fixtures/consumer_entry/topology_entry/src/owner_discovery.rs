@@ -1,5 +1,5 @@
 //! Explicit owner-only discovery; navigation supplies scope facts, not READ permission.
-use crate::document_history::{PlanarNavigationGrantee, PlanarNavigationResource};
+use crate::document_history::{PlanarHistoryGrantee, PlanarHistoryResource};
 use crate::*;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 use worth_query_host::facade::primary_graph::{
@@ -38,8 +38,8 @@ pub(crate) fn declare<S: TopologySchemaBinding>(
                         ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(1)
                             .unwrap(),
                     )
-                    .forward(PlanarNavigationGrantee::reference::<S>())
-                    .forward(PlanarNavigationResource::reference::<S>())
+                    .forward(PlanarHistoryGrantee::reference::<S>())
+                    .forward(PlanarHistoryResource::reference::<S>())
                     .allow(Body::reference::<S>()),
             ],
         )

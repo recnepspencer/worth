@@ -14,6 +14,7 @@ pub use context_pause::WorthQueryHistoryContextRefreshPauseForTest;
 mod denial;
 mod disposal;
 mod group;
+mod head_custody;
 pub use group::{
     WorthQueryDocumentHistoryGroupAborting, WorthQueryDocumentHistoryGroupAdoptionFailure,
     WorthQueryDocumentHistoryGroupPreparation, WorthQueryDocumentHistoryGroupReservation,
@@ -51,7 +52,10 @@ mod paging;
 mod preview;
 mod receiver_pause;
 mod redo;
+mod retention;
 pub use redo::{WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices};
+pub(in crate::domain_computation::primary_graph) use retention::HistoryRetentionChange;
+pub use retention::{WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus};
 mod reservation;
 mod sealing;
 mod selection;
@@ -82,7 +86,8 @@ pub use observation::{
 pub use page_pause::WorthQueryHistoryPageAssemblyPauseForTest;
 pub use paging::{
     WorthQueryHistoryPage, WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial,
-    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
+    WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
+    WorthQueryHistoryParentBoundary,
 };
 pub use preview::WorthQueryHistoryPreview;
 pub(in crate::domain_computation::primary_graph) use selection::HistorySelectionCell;

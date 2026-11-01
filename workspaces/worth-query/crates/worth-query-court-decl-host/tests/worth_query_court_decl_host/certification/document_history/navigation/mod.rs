@@ -170,7 +170,7 @@ fn checkout_forks_from_an_old_occurrence_and_keeps_both_authored_futures() {
         )
         .unwrap();
     let rows: Vec<_> = page.rows().iter().map(|row| row.step().clone()).collect();
-    assert_eq!(rows, original);
+    assert_page_entries(&rows, &original);
     assert!(page.continuation().is_none());
     drop(page);
     let (document, t2) = finish(

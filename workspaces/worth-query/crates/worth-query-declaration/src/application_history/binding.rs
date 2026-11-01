@@ -17,6 +17,8 @@ pub trait ApplicationHistoryBinding<Schema: ApplicationSchema>:
         super::ApplicationHistoryGroupResources::DEFAULT;
     const NAVIGATION_RESOURCES: super::ApplicationHistoryNavigationResources =
         super::ApplicationHistoryNavigationResources::DEFAULT;
+    const RETENTION_RESOURCES: super::ApplicationHistoryRetentionResources =
+        super::ApplicationHistoryRetentionResources::DEFAULT;
 }
 
 pub type ApplicationHistoryAccessBinding<Schema, History> =

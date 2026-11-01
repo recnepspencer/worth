@@ -1883,6 +1883,27 @@ head or recreated model refuses. Close with
 `document.close(&phase)` and retain any live-document or retired-cleanup failure.
 See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
 
+To bound selectable history across all futures, declare separate
+`ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`
+recipes and install them with `.window_policy::<Window>()` and
+`.bookmark_policy::<Bookmark>()`. The default unpinned window is 200 steps;
+current and bookmarked steps are protected separately. Set a positive
+`ApplicationHistoryRecentSteps` with `document.set_history_window(target)`,
+then call the returned borrow's `advance::<Window>(&request)` until
+`pending_window` is empty. Each call has fresh READ, metadata and window
+admission and excludes at most one entry. Resume a dropped borrow with the same
+target. Use `set_history_bookmark::<Bookmark>(&request, node, true/false)`
+for independently admitted pin/unpin, `history_retention_status` for counts
+and pending ownership, and `maintain_history` for one release attempt.
+Pages distinguish `Root`, `Retained(parent)` and `Truncated`; do not invent
+an edge through an excluded node. Existing previews and registered checkout
+retain their original observations, while new requests refuse excluded IDs.
+Release holders independently and explicitly close the session, retaining
+refused cleanup. See the
+[window, bookmark and disposal example](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-a-navigation-window-and-bookmarks)
+and its linked compiled public journeys. This bounds availability, without
+promising storage reclamation or a byte limit.
+
 To record an isolated edit, consume the attached document with
 `document.edit(intent).idempotency_owned(&request, key)?`, then
 `retain_in_program::<Program, Action>(host)`. Repeatedly call `advance(&request)`

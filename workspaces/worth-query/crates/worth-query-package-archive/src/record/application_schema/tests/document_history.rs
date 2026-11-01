@@ -1,6 +1,7 @@
 //! Pure declaration carriage: no runtime, binding recipe or live head is made.
 use super::*;
 mod navigation;
+mod retention;
 use crate::facade::WorthQueryPackageArchiveDenialKind as Kind;
 use worth_query_declaration::facade::{
     application_history::{
@@ -24,6 +25,8 @@ fn definition(domain: Domain, governed: bool) -> Definition {
         },
         model_domain: domain,
         navigation: None,
+        window: None,
+        bookmarks: None,
         operations: vec![
             ApplicationHistoryOperation {
                 binding: "ZEdit".into(),

@@ -47,7 +47,7 @@ fn finish(host: &App, group: Group<'_>) {
         .history_page(&request, limits, None)
         .unwrap();
     assert_eq!(page.rows().len(), 2);
-    assert_eq!(page.rows()[1].step(), &finished.step);
+    assert_page_entry(page.rows()[1].step(), &finished.step);
     assert_eq!(finished.step.parent(), Some(page.rows()[0].step().id()));
     assert_eq!(value(host, &finished.document), 5);
     drop(page);

@@ -10,20 +10,30 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationReadObservation,
     WorthQueryOwnedProductHead,
 };
-use std::{collections::BTreeMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    sync::Arc,
+};
 use worth_execution::ExecutionRequest;
 #[path = "journal/group.rs"]
 mod group;
+#[path = "journal/heads.rs"]
+mod heads;
 #[path = "journal/navigation.rs"]
 mod navigation;
 #[path = "journal/paging.rs"]
 mod paging;
 #[path = "journal/preview.rs"]
 mod preview;
+#[path = "journal/recording.rs"]
+mod recording;
+#[path = "journal/retention.rs"]
+mod retention;
+#[path = "journal/retention_work.rs"]
+mod retention_work;
 
 pub(super) struct RecordedNode {
     pub(super) step: WorthQueryHistoryStep,
-    pub(super) _source: Arc<WorthQueryApplicationReadObservation>,
     pub(super) root_posture:
         Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }
@@ -38,7 +48,15 @@ pub(super) enum NodeBinding {
 
 pub(super) struct HistoryNode {
     pub(super) binding: NodeBinding,
+    head_slot: Option<u64>,
     _allocation: HistoryInsertionAllocation,
+}
+
+pub(super) struct RetainedHistorySource {
+    source: Option<Arc<WorthQueryApplicationReadObservation>>,
+    bookmarked: bool,
+    _allocation: HistoryInsertionAllocation,
+    released_child: Option<ChildLink>,
 }
 
 pub(super) enum AttemptBinding {
@@ -53,7 +71,8 @@ pub(super) struct HistoryAttempt {
 }
 
 pub(super) struct PastHead<'runtime, S> {
-    pub(super) head: Option<WorthQueryOwnedProductHead<'runtime, S>>,
+    pub(super) custody: Arc<super::head_custody::HistoryHeadSlot<'runtime, S>>,
+    queued: bool,
     _allocation: HistoryInsertionAllocation,
 }
 
@@ -85,6 +104,18 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal<'runtime,
     nodes: BTreeMap<u64, HistoryNode>,
     attempts: BTreeMap<[u8; 32], HistoryAttempt>,
     past_heads: BTreeMap<u64, PastHead<'runtime, S>>,
+    retained: BTreeMap<u64, RetainedHistorySource>,
+    retained_completed: usize,
+    bookmarked: usize,
+    window: worth_query_declaration::facade::application_history::ApplicationHistoryRecentSteps,
+    pending_window:
+        Option<worth_query_declaration::facade::application_history::ApplicationHistoryRecentSteps>,
+    retention_resources:
+        worth_query_declaration::facade::application_history::ApplicationHistoryRetentionResources,
+    releases: VecDeque<u64>,
+    _release_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    navigation_sources: Arc<super::navigation::PendingNavigationCapacity>,
+    closed_heads: usize,
     // Rebuildable annotation index; its links confer no source or disclosure authority.
     children: BTreeMap<(u64, u64), ChildLink>,
     observation: Option<EnrollmentSink>,
@@ -106,11 +137,13 @@ pub(super) struct ReservedHistoryRecord {
 }
 
 impl<'runtime, S> HistoryJournal<'runtime, S> {
-    pub(in crate::domain_computation::primary_graph) fn attach(
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn attach(
         execution: &ExecutionRequest<'_, '_>,
         runtime: u64,
         endpoint: WorthQueryProductBranchReadIdentity,
         source: Arc<WorthQueryApplicationReadObservation>,
+        retention_resources: worth_query_declaration::facade::application_history::ApplicationHistoryRetentionResources,
+        navigation_sources: Arc<super::navigation::PendingNavigationCapacity>,
     ) -> Result<Self, Denial> {
         let incarnation =
             DocumentIncarnation::mint(runtime).ok_or(Denial::RecordingIdentityExhausted)?;
@@ -119,6 +152,29 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             HistoryInsertionAllocation::reserve::<(u64, HistoryNode)>(execution, 0, 0)
                 .map_err(Denial::Recording)?;
         let mut nodes = BTreeMap::new();
+        let (source_allocation, _) =
+            HistoryInsertionAllocation::reserve::<(u64, RetainedHistorySource)>(execution, 0, 0)
+                .map_err(Denial::Recording)?;
+        let release_capacity = retention_resources.maximum_pending_releases.get();
+        let release_bytes = release_capacity
+            .checked_next_power_of_two()
+            .and_then(|capacity| capacity.checked_mul(size_of::<u64>()))
+            .ok_or(Denial::RecordingIdentityExhausted)?;
+        let release_memory = super::allocation::reserve_buffer(execution, release_bytes)
+            .map_err(Denial::Recording)?;
+        let mut releases = VecDeque::new();
+        releases
+            .try_reserve_exact(release_capacity)
+            .map_err(Denial::Allocation)?;
+        let retained = BTreeMap::from([(
+            0,
+            RetainedHistorySource {
+                source: Some(source),
+                bookmarked: false,
+                _allocation: source_allocation,
+                released_child: None,
+            },
+        )]);
         nodes.insert(
             0,
             HistoryNode {
@@ -129,9 +185,9 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
                         label: None,
                         endpoint,
                     },
-                    _source: source,
                     root_posture: None,
                 }),
+                head_slot: None,
                 _allocation: allocation,
             },
         );
@@ -146,6 +202,16 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             nodes,
             attempts: BTreeMap::new(),
             past_heads: BTreeMap::new(),
+            retained,
+            retained_completed: 1,
+            bookmarked: 0,
+            window: worth_query_declaration::facade::application_history::ApplicationHistoryRecentSteps::DEFAULT,
+            pending_window: None,
+            retention_resources,
+            releases,
+            _release_memory: release_memory,
+            navigation_sources,
+            closed_heads: 0,
             children: BTreeMap::new(),
             observation: None,
         })
@@ -165,145 +231,6 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
                 ..
             }) => AttemptLookup::Completed(*id),
         }
-    }
-
-    pub(super) fn reserve(
-        &mut self,
-        execution: &ExecutionRequest<'_, '_>,
-        meaning: WorthQueryApplicationIdempotencyBinding,
-        label: &str,
-    ) -> Result<ReservedHistoryRecord, Denial> {
-        self.access(Access::Selection);
-        if self.pending.is_some() {
-            return Err(Denial::AttemptInFlight);
-        }
-        let node = self.incarnation.node(self.next);
-        let next = self
-            .next
-            .checked_add(1)
-            .ok_or(Denial::RecordingIdentityExhausted)?;
-        let transition = self.next_transition;
-        let next_transition = transition
-            .checked_add(1)
-            .ok_or(Denial::RecordingIdentityExhausted)?;
-        let key = meaning.canonical_key();
-        let view_after = self
-            .view_generation
-            .checked_add(1)
-            .ok_or(Denial::RecordingIdentityExhausted)?;
-        // Every real tree slot is inserted before any candidate creation or operation effect.
-        // Failure while acquiring the grants drops only new grants, leaving the journal intact.
-        let node_allocation = self
-            .allocate::<(u64, HistoryNode)>(execution, self.nodes.len(), label.len())
-            .map_err(Denial::Recording)?;
-        let attempt_allocation = self
-            .allocate::<([u8; 32], HistoryAttempt)>(execution, self.attempts.len(), 0)
-            .map_err(Denial::Recording)?;
-        let head_allocation = self
-            .allocate::<(u64, PastHead<'runtime, S>)>(execution, self.past_heads.len(), 0)
-            .map_err(Denial::Recording)?;
-        let link_allocation = self
-            .allocate::<((u64, u64), ChildLink)>(execution, self.children.len(), 0)
-            .map_err(Denial::Recording)?;
-        let label = Arc::from(label);
-        self.access(Access::Attempt);
-        assert!(
-            !self.attempts.contains_key(&key),
-            "only an unseen attempt reserves storage"
-        );
-        self.access(Access::Node);
-        self.nodes.insert(
-            node.ordinal,
-            HistoryNode {
-                binding: NodeBinding::Reserved {
-                    parent: self.current,
-                    label,
-                },
-                _allocation: node_allocation,
-            },
-        );
-        self.access(Access::Attempt);
-        self.attempts.insert(
-            key,
-            HistoryAttempt {
-                meaning,
-                binding: AttemptBinding::Reserved(node),
-                _allocation: attempt_allocation,
-            },
-        );
-        self.access(Access::Custody);
-        self.past_heads.insert(
-            transition,
-            PastHead {
-                head: None,
-                _allocation: head_allocation,
-            },
-        );
-        self.access(Access::Child);
-        self.children.insert(
-            (self.current.ordinal, node.ordinal),
-            ChildLink {
-                _allocation: link_allocation,
-            },
-        );
-        self.next = next;
-        self.next_transition = next_transition;
-        self.pending = Some(PendingRecord::Ordinary(node));
-        Ok(ReservedHistoryRecord {
-            node,
-            parent: self.current,
-            transition,
-            key,
-            view_after,
-        })
-    }
-
-    pub(super) fn cancel(&mut self, reserved: ReservedHistoryRecord) {
-        self.access(Access::Node);
-        self.nodes.remove(&reserved.node.ordinal);
-        self.access(Access::Attempt);
-        self.attempts.remove(&reserved.key);
-        self.access(Access::Child);
-        self.children
-            .remove(&(reserved.parent.ordinal, reserved.node.ordinal));
-        self.access(Access::Custody);
-        let head = self
-            .past_heads
-            .remove(&reserved.transition)
-            .expect("reserved custody slot");
-        assert!(head.head.is_none(), "an adopted head cannot be cancelled");
-        self.access(Access::Selection);
-        self.pending = None;
-    }
-
-    /// All lookup slots already exist. Invoke only while the same exclusive
-    /// document owner performs its genuine head adoption; this cannot allocate.
-    pub(super) fn complete(
-        &mut self,
-        reserved: ReservedHistoryRecord,
-        completed: RecordedNode,
-        previous: WorthQueryOwnedProductHead<'runtime, S>,
-    ) {
-        self.access(Access::Node);
-        self.nodes
-            .get_mut(&reserved.node.ordinal)
-            .expect("reserved node")
-            .binding = NodeBinding::Completed(completed);
-        self.access(Access::Attempt);
-        self.attempts
-            .get_mut(&reserved.key)
-            .expect("reserved attempt")
-            .binding = AttemptBinding::Completed(reserved.node);
-        self.access(Access::Custody);
-        self.past_heads
-            .get_mut(&reserved.transition)
-            .expect("reserved head custody")
-            .head = Some(previous);
-        self.access(Access::Selection);
-        self.current = reserved.node;
-        self.completed_end = reserved.node.ordinal + 1; // Successor was admitted by reserve.
-        self.view_generation = reserved.view_after;
-        self.pending = None;
     }
 
     pub(super) fn step(&self, id: WorthQueryHistoryNodeId) -> Option<&WorthQueryHistoryStep> {
@@ -355,11 +282,19 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             .expect("the selected user step completed")
     }
 
+    pub(in crate::domain_computation::primary_graph) fn view_generation(&self) -> u64 {
+        self.view_generation
+    }
+
     pub(super) fn into_disposal(
         self,
-    ) -> std::collections::btree_map::IntoValues<u64, PastHead<'runtime, S>> {
+    ) -> (
+        usize,
+        std::collections::btree_map::IntoValues<u64, PastHead<'runtime, S>>,
+    ) {
         drop(self.nodes);
-        self.past_heads.into_values()
+        drop(self.retained);
+        (self.closed_heads, self.past_heads.into_values())
     }
 
     pub(super) fn observe(&mut self) -> WorthQueryHistoryEnrollmentObservationForTest {

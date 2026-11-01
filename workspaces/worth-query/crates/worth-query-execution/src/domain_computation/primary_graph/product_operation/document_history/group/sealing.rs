@@ -68,9 +68,9 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             Ok(PreparedBinding {
                 node: RecordedNode {
                     step: step.clone(),
-                    _source: source,
                     root_posture: last.root_posture,
                 },
+                source,
                 endpoint,
                 exact,
                 returned: step,

@@ -23,7 +23,7 @@ type Navigation<'d, 'r> = WorthQueryHistoryNavigation<
     Outputs,
 >;
 
-fn prepare<'d, 'r>(
+pub(super) fn prepare<'d, 'r>(
     document: &'d OutputDocument<'r>,
     app: &Runtime,
     node: WorthQueryHistoryNodeId,
@@ -55,7 +55,7 @@ fn with_scope<T>(
     perform(&app.request(&principal, scope))
 }
 
-fn finish(
+pub(super) fn finish(
     mut navigation: Navigation<'_, '_>,
     app: &Runtime,
 ) -> WorthQueryHistoryNavigationCompletion {
@@ -71,12 +71,12 @@ fn finish(
     panic!("finite output navigation did not select")
 }
 
-enum Boundary {
+pub(super) enum Boundary {
     BeforeSelection,
     AfterSelection,
 }
 
-fn cancelled_at<'d, 'r>(
+pub(super) fn cancelled_at<'d, 'r>(
     mut navigation: Navigation<'d, 'r>,
     app: &Runtime,
     boundary: Boundary,

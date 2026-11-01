@@ -1,29 +1,31 @@
 //! Current navigation admits an actual grant on the same full model.
 use super::*;
-pub(super) fn contract<S: TopologySchemaBinding>(
-) -> ApplicationCapabilityContract<S, NavigatePlanar<S>, NavigatePlanarOperation, PlanarOutputRead>
+pub(in crate::document_history) fn contract<S: TopologySchemaBinding, C: HistoryPermission<S>, O>(
+) -> ApplicationCapabilityContract<S, C, O, PlanarOutputRead>
+where
+    O: ApplicationOperationMarkerIdentity<S, InputBinding = PlanarOutputReadInputBinding> + 'static,
 {
     let path = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference::<S>())
-        .forward(PlanarNavigationGrantee::reference::<S>())
-        .forward(PlanarNavigationResource::reference::<S>())
+        .forward(PlanarHistoryGrantee::reference::<S>())
+        .forward(PlanarHistoryResource::reference::<S>())
         .allow(Body::reference::<S>());
     ApplicationCapabilityContractBuilder::new(
-        NavigatePlanar::<S>::reference(),
-        NavigatePlanarOperation::reference::<S>(),
-        PlanarNavigationGrant::reference::<S>(),
+        ApplicationCapabilityRef::<S, C>::from_declaration(),
+        ApplicationOperationRef::<S, O, PlanarOutputRead>::from_declaration(),
+        PlanarHistoryGrant::reference::<S>(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            PlanarNavigationAction::reference::<S>(),
-            encoded("navigate".to_owned()),
+            PlanarHistoryAction::reference::<S>(),
+            encoded(C::ACTION.to_owned()),
         ),
         ApplicationCapabilityRelationBinding::from_reference(
-            PlanarNavigationResource::reference::<S>(),
+            PlanarHistoryResource::reference::<S>(),
         ),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
-            PlanarNavigationPurpose::reference::<S>(),
+            PlanarHistoryPurpose::reference::<S>(),
             encoded("model-history".to_owned()),
         ),
     ))
@@ -32,12 +34,12 @@ pub(super) fn contract<S: TopologySchemaBinding>(
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                PlanarNavigationStatus::reference::<S>(),
+                PlanarHistoryStatus::reference::<S>(),
                 encoded("active".to_owned()),
             ),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
-                    PlanarNavigationScopeKey::reference::<S>(),
+                    PlanarHistoryScopeKey::reference::<S>(),
                 ),
                 ApplicationCapabilityFieldBinding::from_reference(
                     BodyKey::reference::<S>(),
@@ -46,27 +48,27 @@ pub(super) fn contract<S: TopologySchemaBinding>(
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                 ApplicationCapabilityFieldBinding::from_reference(
-                    PlanarNavigationNotBefore::reference::<S>(),
+                    PlanarHistoryNotBefore::reference::<S>(),
                 ),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    PlanarNavigationNotAfter::reference::<S>(),
+                    PlanarHistoryNotAfter::reference::<S>(),
                 ),
             ),
         ),
-        PlanarNavigationContext::<S>::reference(),
+        PlanarHistoryContext::<S>::reference(),
     ))
     .delegation(ApplicationCapabilityDelegationDefinition::new(
         ApplicationCapabilityRelationBinding::from_reference(
-            PlanarNavigationParent::reference::<S>(),
+            PlanarHistoryParent::reference::<S>(),
         ),
         ApplicationCapabilityRelationBinding::from_reference(
-            PlanarNavigationGrantor::reference::<S>(),
+            PlanarHistoryGrantor::reference::<S>(),
         ),
         ApplicationCapabilityRelationBinding::from_reference(
-            PlanarNavigationGrantee::reference::<S>(),
+            PlanarHistoryGrantee::reference::<S>(),
         ),
-        ApplicationCapabilityFieldBinding::from_reference(PlanarNavigationDepth::reference::<S>()),
-        PlanarNavigationProvenance::<S>::reference(),
+        ApplicationCapabilityFieldBinding::from_reference(PlanarHistoryDepth::reference::<S>()),
+        PlanarHistoryProvenance::<S>::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(
         ApplicationCapabilityDecisionComposition::new(
@@ -89,7 +91,7 @@ pub(super) fn contract<S: TopologySchemaBinding>(
 }
 
 /// Bind an explicit current grant through the ordinary bootstrap owner.
-pub fn bind_navigation_grant<S: TopologySchemaBinding>(
+fn bind_permission<S: TopologySchemaBinding, C: HistoryPermission<S>>(
     graph: &mut worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<S>,
     principal: &str,
     model: &str,
@@ -98,50 +100,62 @@ pub fn bind_navigation_grant<S: TopologySchemaBinding>(
         WorthQueryApplicationEntityKey as Key, WorthQueryApplicationEntitySeed as Entity,
         WorthQueryApplicationRelationSeed as Relation,
     };
-    let grant = format!("history-navigation:{principal}:{model}");
+    let grant = format!("history-{}:{principal}:{model}", C::GRANT_KIND);
     graph.bind_entity(
         Entity::new(
-            PlanarNavigationGrant::reference::<S>(),
+            PlanarHistoryGrant::reference::<S>(),
             Key::new(grant.clone()).unwrap(),
         )
+        .field(PlanarHistoryGrantIdentity::reference::<S>(), grant.clone())
+        .field(PlanarHistoryScopeKey::reference::<S>(), model.to_owned())
+        .field(PlanarHistoryAction::reference::<S>(), C::ACTION.to_owned())
         .field(
-            PlanarNavigationGrantIdentity::reference::<S>(),
-            grant.clone(),
-        )
-        .field(PlanarNavigationScopeKey::reference::<S>(), model.to_owned())
-        .field(
-            PlanarNavigationAction::reference::<S>(),
-            "navigate".to_owned(),
-        )
-        .field(
-            PlanarNavigationPurpose::reference::<S>(),
+            PlanarHistoryPurpose::reference::<S>(),
             "model-history".to_owned(),
         )
-        .field(
-            PlanarNavigationStatus::reference::<S>(),
-            "active".to_owned(),
-        )
-        .field(PlanarNavigationNotBefore::reference::<S>(), 0)
-        .field(PlanarNavigationNotAfter::reference::<S>(), u64::MAX)
-        .field(PlanarNavigationDepth::reference::<S>(), 0),
+        .field(PlanarHistoryStatus::reference::<S>(), "active".to_owned())
+        .field(PlanarHistoryNotBefore::reference::<S>(), 0)
+        .field(PlanarHistoryNotAfter::reference::<S>(), u64::MAX)
+        .field(PlanarHistoryDepth::reference::<S>(), 0),
     )?;
     graph.bind_relation(Relation::new(
-        PlanarNavigationResource::reference::<S>(),
+        PlanarHistoryResource::reference::<S>(),
         format!("{grant}:resource"),
         Key::new(grant.clone()).unwrap(),
         Key::new(model.to_owned()).unwrap(),
     ))?;
     graph.bind_relation(Relation::new(
-        PlanarNavigationGrantor::reference::<S>(),
+        PlanarHistoryGrantor::reference::<S>(),
         format!("{grant}:grantor"),
         Key::new(principal.to_owned()).unwrap(),
         Key::new(grant.clone()).unwrap(),
     ))?;
     graph.bind_relation(Relation::new(
-        PlanarNavigationGrantee::reference::<S>(),
+        PlanarHistoryGrantee::reference::<S>(),
         format!("{grant}:grantee"),
         Key::new(principal.to_owned()).unwrap(),
         Key::new(grant).unwrap(),
     ))?;
     Ok(())
+}
+
+pub fn bind_navigation_grant<S: TopologySchemaBinding>(
+    graph: &mut worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<S>,
+    principal: &str,
+    model: &str,
+) -> Result<(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    bind_permission::<S, super::super::navigation::NavigatePlanar<S>>(graph, principal, model)
+}
+
+pub fn bind_retention_grants<S: TopologySchemaBinding>(
+    graph: &mut worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<S>,
+    principal: &str,
+    model: &str,
+) -> Result<(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+    bind_permission::<S, super::super::retention_policy::ChangePlanarHistoryWindow<S>>(
+        graph, principal, model,
+    )?;
+    bind_permission::<S, super::super::retention_policy::ChangePlanarHistoryBookmark<S>>(
+        graph, principal, model,
+    )
 }

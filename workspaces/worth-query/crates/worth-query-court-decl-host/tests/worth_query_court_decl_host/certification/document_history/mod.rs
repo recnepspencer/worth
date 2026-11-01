@@ -6,11 +6,14 @@ mod group;
 mod membership;
 mod metadata;
 mod navigation;
+mod page_descriptions;
 mod paging;
 mod payload;
 mod preview;
 pub(crate) mod recording;
 mod redo;
+mod retention;
+pub(crate) use page_descriptions::{assert_page_entries, assert_page_entry};
 
 use worth_query_host::facade::{
     application_entry::{WorthQueryApplicationHistoryDocument, WorthQueryApplicationRequestExt},

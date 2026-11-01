@@ -66,12 +66,12 @@ fn verify(
             "no empty or repeated continuation"
         );
     }
-    assert_eq!(
-        actual,
-        children
+    assert_page_entries(
+        &actual,
+        &children
             .iter()
             .map(|index| issued[*index].clone())
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>(),
     );
 }
 
@@ -187,10 +187,7 @@ fn generated_edits_and_navigation_match_an_independent_tree_without_reentering_t
             break;
         }
     }
-    assert_eq!(
-        all, issued,
-        "only authored edits add nodes; navigation preserves every alternative"
-    );
+    assert_page_entries(&all, &issued);
     for (index, step) in issued.iter().enumerate() {
         assert_eq!(
             step.parent(),

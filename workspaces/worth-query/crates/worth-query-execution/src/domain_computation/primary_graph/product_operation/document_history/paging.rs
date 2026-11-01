@@ -1,5 +1,5 @@
 //! Admitted metadata pages carry descriptions, not historical payload custody.
-use super::{step::DocumentIncarnation, WorthQueryHistoryNodeId, WorthQueryHistoryStep};
+use super::{step::DocumentIncarnation, WorthQueryHistoryNodeId};
 use std::num::NonZeroUsize;
 use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
 
@@ -30,14 +30,45 @@ impl std::fmt::Debug for WorthQueryHistoryPageCursor {
 /// availability, payload permission, or preview admission.
 #[derive(Clone, Debug)]
 pub struct WorthQueryHistoryPageRow {
-    pub(super) step: WorthQueryHistoryStep,
+    pub(super) step: WorthQueryHistoryPageEntry,
 }
 impl WorthQueryHistoryPageRow {
-    pub fn step(&self) -> &WorthQueryHistoryStep {
+    pub fn step(&self) -> &WorthQueryHistoryPageEntry {
         &self.step
     }
     pub fn retained_source_at_read(&self) -> &crate::basis::WorthQueryProductBranchReadIdentity {
         self.step.endpoint()
+    }
+}
+
+/// A visible edge never substitutes another ancestor for an excluded parent.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryHistoryParentBoundary {
+    Root,
+    Retained(WorthQueryHistoryNodeId),
+    Truncated,
+}
+
+/// An admitted page description, deliberately weaker than a canonical step.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryHistoryPageEntry {
+    pub(super) id: WorthQueryHistoryNodeId,
+    pub(super) parent: WorthQueryHistoryParentBoundary,
+    pub(super) label: Option<std::sync::Arc<str>>,
+    pub(super) endpoint: crate::basis::WorthQueryProductBranchReadIdentity,
+}
+impl WorthQueryHistoryPageEntry {
+    pub fn id(&self) -> WorthQueryHistoryNodeId {
+        self.id
+    }
+    pub fn parent(&self) -> WorthQueryHistoryParentBoundary {
+        self.parent
+    }
+    pub fn label(&self) -> Option<&str> {
+        self.label.as_deref()
+    }
+    pub fn endpoint(&self) -> &crate::basis::WorthQueryProductBranchReadIdentity {
+        &self.endpoint
     }
 }
 

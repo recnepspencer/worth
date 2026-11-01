@@ -57,6 +57,26 @@ pub(super) fn confirm_in_execution<S: ApplicationSchema, Value>(
     ),
     (Value, Denial),
 > {
+    confirm_in_execution_with_effect(runtime, execution, product, request, value, |_| {})
+}
+
+/// Only the document owner supplies this platform metadata transition.
+pub(super) fn confirm_in_execution_with_effect<S: ApplicationSchema, Value>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    product: &WorthQueryProductObservationLease,
+    request: Option<
+        &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
+    >,
+    value: Value,
+    effect: impl FnOnce(&mut Value),
+) -> Result<
+    (
+        Value,
+        Option<crate::domain_computation::authorization::WorthQueryAdmissionLapse>,
+    ),
+    (Value, Denial),
+> {
     if let Err(stop) = execution.check_live() {
         return Err((value, stopped(stop)));
     }
@@ -70,7 +90,7 @@ pub(super) fn confirm_in_execution<S: ApplicationSchema, Value>(
         .primary_provider
         .graph
         .with_runtime(&execution, |native| {
-            confirm_in_native(
+            confirm_in_native_with_effect(
                 runtime,
                 execution,
                 product,
@@ -78,6 +98,7 @@ pub(super) fn confirm_in_execution<S: ApplicationSchema, Value>(
                 &_coordination,
                 native,
                 value,
+                effect,
             )
         })
 }
@@ -101,6 +122,36 @@ pub(super) fn confirm_in_native<S: ApplicationSchema, Value>(
     ),
     (Value, Denial),
 > {
+    confirm_in_native_with_effect(
+        runtime,
+        execution,
+        product,
+        request,
+        coordination,
+        native,
+        value,
+        |_| {},
+    )
+}
+
+fn confirm_in_native_with_effect<S: ApplicationSchema, Value>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    product: &WorthQueryProductObservationLease,
+    request: Option<
+        &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
+    >,
+    coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+    native: &worth_relational::facade::runtime::RelationalRuntime,
+    value: Value,
+    effect: impl FnOnce(&mut Value),
+) -> Result<
+    (
+        Value,
+        Option<crate::domain_computation::authorization::WorthQueryAdmissionLapse>,
+    ),
+    (Value, Denial),
+> {
     if !coordination.admits(product.observation()) {
         return Err((value, Denial::HeadDiverged));
     }
@@ -112,12 +163,16 @@ pub(super) fn confirm_in_native<S: ApplicationSchema, Value>(
         return Err((value, Denial::NativeBasis(denial)));
     }
     let world = runtime.product_runtime.owner.observation_port();
-    match world.while_product_branch_current(product.observation(), value, |value, _current| {
+    match world.while_product_branch_current(product.observation(), value, |mut value, _current| {
         if let Err(stop) = execution.check_live() {
             return Err((value, stopped(stop)));
         }
         // Denial allocation and refused-value cleanup belong outside owner guards.
-        Ok((value, request.and_then(|request| request.lapse())))
+        let lapse = request.and_then(|request| request.lapse());
+        if lapse.is_none() {
+            effect(&mut value);
+        }
+        Ok((value, lapse))
     }) {
         Ok(outcome) => outcome,
         Err(ProductBranchCurrentnessFailure::ExpectedHeadUnavailable(value)) => {

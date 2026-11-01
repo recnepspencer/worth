@@ -3,6 +3,17 @@ use crate::domain_computation::primary_graph::structural_walk::memory;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
+pub(super) fn reserve_buffer(
+    execution: &ExecutionRequest<'_, '_>,
+    bytes: usize,
+) -> Result<Option<ExecutionMemoryReservation>, Cause> {
+    memory::reserve(
+        execution,
+        execution.has_accounting(),
+        u64::try_from(bytes).map_err(|_| Cause::ChargedBytesOverflow)?,
+    )
+}
+
 pub(super) fn reserve_arc<T>(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<Option<ExecutionMemoryReservation>, Cause> {

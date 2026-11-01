@@ -70,9 +70,10 @@ pub mod document_history {
         WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId,
         WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
         WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
-        WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
-        WorthQueryHistoryPreview, WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
-        WorthQueryHistorySelection, WorthQueryHistoryStep,
+        WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
+        WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPreview,
+        WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
+        WorthQueryHistoryRetentionStatus, WorthQueryHistorySelection, WorthQueryHistoryStep,
     };
     pub use crate::domain_computation::primary_graph::{
         WorthQueryDocumentHistoryIdentity, WorthQueryHistoryGroupCandidateCreation,

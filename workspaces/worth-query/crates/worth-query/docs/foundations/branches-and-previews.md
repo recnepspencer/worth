@@ -289,8 +289,12 @@ input, limits, after.as_ref())` supplies the separate metadata purpose. These
 calls execute the original model READ and current metadata policy before
 checking cursors, storage limits or journal entries.
 
-Rows arrive in creation order. Each sealed step identifies its parent, so the
-consumer can derive child lists and layout without making that cache authority.
+Rows arrive in creation order. `row.step()` is an admitted page description,
+with `parent()` equal to `Root`, `Retained(parent_id)` or `Truncated`.
+Draw a truncated boundary when the original parent is excluded. Do not connect
+the row directly to some other visible ancestor. The page omits the excluded
+parent ID and its protected metadata. Canonical step identities remain the
+targets for independently admitted preview and navigation requests.
 `row.retained_source_at_read()` describes exact source custody at assembly. It
 does not retain historical payloads or grant payload READ, preview or mutation
 permission. Dropping a page releases its own metadata backing; it does not close
@@ -298,7 +302,9 @@ the document or invalidate another page's descriptions.
 
 Use `page.continuation()` for the next call. Foreign and changed-view cursors
 refuse explicitly; they never restart silently. A successful edit changes the
-view, as does selecting another history node. Private reservations and discarded
+view, as does selecting another history node or changing window eligibility or
+bookmarks. Each batch of a resumed window change invalidates older cursors.
+Private reservations and discarded
 attempts leave it unchanged.
 `edit.history_page(..)` continues to show that completed selected view.
 `examined_entries()` counts visited existing map entries, not skipped ordinal
@@ -440,8 +446,9 @@ endpoint through the original head owner. A competing selection or changed
 candidate refuses rather than substituting a later equal-looking state.
 
 Navigation adds no authored node. An ordinary edit after selecting S1 becomes a
-child of S1; previously authored S2/S3 remain independently previewable and
-selectable. `done.selection().physical_endpoint()` describes the new writable
+child of S1; previously authored S2/S3 remain independent alternatives while
+eligible under the document window or a bookmark.
+`done.selection().physical_endpoint()` describes the new writable
 context; `done.selection().step().endpoint()` still describes the original
 authored source.
 
@@ -480,6 +487,66 @@ For governed metadata, use `selection_governed(..)`,
 capability. Governed payload documents also repeat their original payload
 purpose. See the [compiled checkout and fork journey](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/mod.rs)
 and [owned retry cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/retries.rs).
+
+### Configure a navigation window and bookmarks
+
+The default window keeps the newest 200 unpinned steps across the entire
+document tree, in creation order. The current step and explicit bookmarks are
+protected separately. Clicking an older step does not make it a newer authored
+edit. Exclusion removes this controller's source ownership; an already opened
+preview or registered checkout keeps its original immutable observation.
+Fresh preview, navigation and bookmark requests refuse an excluded ID.
+
+Declare independent `ApplicationHistoryWindowBinding` and
+`ApplicationHistoryBookmarkBinding` recipes. Each extends
+`ApplicationHistoryRetentionBinding`: provide its installed capability,
+operation, structured input binding and pure `input(&history_access)` recipe.
+Install them with `.window_policy::<Window>()` and
+`.bookmark_policy::<Bookmark>()` on the history definition. Each change
+executes fresh model READ and metadata admission, followed by its own current
+capability decision for that same model and principal.
+
+`ApplicationHistoryBinding::RETENTION_RESOURCES` bounds bookmarks and pending
+branch releases (32 each by default). Bookmark exhaustion refuses before adding
+another bookmark; no existing bookmark is silently lost.
+
+```rust,ignore
+let target = ApplicationHistoryRecentSteps::new(
+    std::num::NonZeroUsize::new(3).unwrap(),
+);
+let mut change = document.set_history_window(target);
+let status = change.advance::<Window>(&request)?;
+// Schedule another advance while status.pending_window.is_some().
+drop(change);
+```
+
+Each advancement excludes at most one old eligible step and attempts one
+pending owner release. Dropping the progress borrow leaves the target in the
+document. Resume it with `set_history_window(target)` and a fresh request.
+Edits and other policy changes refuse while that frontier is unfinished.
+An existing registered checkout can still finish; its actual target becomes
+the protected current step.
+
+Use `document.set_history_bookmark::<Bookmark>(&request, node, true)` to pin,
+and pass `false` to unpin. Unpinning can immediately exclude an old step.
+`history_retention_status(&request)` reports the applied window, unfinished
+target, unprotected count, bookmark count, current ID and pending releases.
+
+Call `document.maintain_history(&request)` to attempt one pending release.
+`WaitingForNavigation` means an original unfinished checkout still needs that
+live source. `HeadRefused` or `CleanupRefused` leaves the original owner
+registered for retry. Release other holders independently when appropriate.
+Drain pending maintenance before transferring the document into an edit or
+group owner. A full release queue refuses new effects; discard or abort an
+unselected owner if necessary to regain the document and retry its maintenance.
+Finally consume the document with `close(&phase)`; retain and retry its
+returned closing owner if cleanup refuses.
+
+The [compiled window and holder journeys](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention.rs)
+show these calls with real edits, two futures, bookmarks, previews, resumed
+checkout and explicit session close. Navigation availability is a count of
+selectable steps. It promises no byte limit, catalog deletion or immediate
+heap/disk reclamation; see [storage retention](../execution/storage-retention.md).
 
 ### Configure required outputs
 

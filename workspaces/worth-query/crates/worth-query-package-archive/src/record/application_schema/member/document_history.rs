@@ -7,9 +7,11 @@ use crate::record::{
 };
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryModelDomain as Domain, ApplicationHistoryNavigationDeclaration,
-    ApplicationHistoryOperation, ErasedApplicationHistoryDefinition as Definition,
+    ApplicationHistoryOperation, ApplicationHistoryRetentionDeclaration as Retention,
+    ErasedApplicationHistoryDefinition as Definition,
     WorthQueryPortableApplicationHistoryNavigationParts as NavigationParts,
     WorthQueryPortableApplicationHistoryParts as Parts,
+    WorthQueryPortableApplicationHistoryRetentionParts as RetentionParts,
 };
 
 pub(super) fn require_shape(member: &ApplicationSchemaMember) -> Result<(), Denial> {
@@ -26,7 +28,14 @@ pub(super) fn write(
     definition: &Definition,
 ) -> Result<(), Denial> {
     let parts = definition.parts();
-    output.u16(if parts.navigation.is_some() { 2 } else { 1 })?;
+    let retention = parts.window.is_some() || parts.bookmarks.is_some();
+    output.u16(if retention {
+        3
+    } else if parts.navigation.is_some() {
+        2
+    } else {
+        1
+    })?;
     output.u16(match parts.model_domain {
         Domain::WholeComposite => 1,
         Domain::ScopeEntityRecord => 2,
@@ -40,6 +49,13 @@ pub(super) fn write(
         output.text(&operation.binding)?;
         output.text(&operation.label)
     })?;
+    if retention {
+        output.u16(
+            u16::from(parts.navigation.is_some())
+                | (u16::from(parts.window.is_some()) << 1)
+                | (u16::from(parts.bookmarks.is_some()) << 2),
+        )?;
+    }
     if let Some(navigation) = &parts.navigation {
         let navigation = navigation.parts();
         output.text(&navigation.binding)?;
@@ -47,6 +63,14 @@ pub(super) fn write(
         wire_vocabulary::write_type_identity(output, &navigation.capability_type)?;
         output.text(&navigation.operation)?;
         wire_vocabulary::write_type_identity(output, &navigation.input_type)?;
+    }
+    for policy in [&parts.window, &parts.bookmarks].into_iter().flatten() {
+        let policy = policy.parts();
+        output.text(&policy.binding)?;
+        output.text(&policy.capability)?;
+        wire_vocabulary::write_type_identity(output, &policy.capability_type)?;
+        output.text(&policy.operation)?;
+        wire_vocabulary::write_type_identity(output, &policy.input_type)?;
     }
     Ok(())
 }
@@ -56,7 +80,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1 | 2) {
+    if !matches!(version, 1 | 2 | 3) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     budget.require_nesting_depth(2)?;
@@ -75,7 +99,16 @@ pub(super) fn decode(
             label: input.text()?.to_owned(),
         })
     })?;
-    let navigation = if version == 2 {
+    let flags = if version == 3 {
+        let flags = input.u16()?;
+        if flags & !7 != 0 || flags & 6 == 0 {
+            return Err(Denial::new(Kind::UnsupportedRecordVariant));
+        }
+        flags
+    } else {
+        u16::from(version == 2)
+    };
+    let navigation = if flags & 1 != 0 {
         Some(
             ApplicationHistoryNavigationDeclaration::from_untrusted_parts(NavigationParts {
                 binding: input.text()?.to_owned(),
@@ -88,6 +121,16 @@ pub(super) fn decode(
     } else {
         None
     };
+    let window = if flags & 2 != 0 {
+        Some(decode_retention(input)?)
+    } else {
+        None
+    };
+    let bookmarks = if flags & 4 != 0 {
+        Some(decode_retention(input)?)
+    } else {
+        None
+    };
     let member = ApplicationSchemaMember::ApplicationHistory {
         definition: Definition::from_untrusted_parts(Parts {
             identity,
@@ -97,8 +140,20 @@ pub(super) fn decode(
             model_domain,
             operations,
             navigation,
+            window,
+            bookmarks,
         }),
     };
     require_shape(&member)?;
     Ok(member)
+}
+
+fn decode_retention(input: &mut BinaryInput<'_>) -> Result<Retention, Denial> {
+    Ok(Retention::from_untrusted_parts(RetentionParts {
+        binding: input.text()?.to_owned(),
+        capability: input.text()?.to_owned(),
+        capability_type: wire_vocabulary::decode_type_identity(input)?,
+        operation: input.text()?.to_owned(),
+        input_type: wire_vocabulary::decode_type_identity(input)?,
+    }))
 }

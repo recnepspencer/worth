@@ -21,6 +21,8 @@ pub mod control_roles;
 pub mod matching_read;
 #[path = "document_history/navigation.rs"]
 pub mod navigation;
+#[path = "document_history/retention_policy.rs"]
+pub mod retention_policy;
 
 pub struct RetentionHistory;
 worth_query_portable_type!(RetentionHistory => "worth.query.document-retention.history.v1");
@@ -28,6 +30,10 @@ worth_query_portable_type!(RetentionHistory => "worth.query.document-retention.h
 impl ApplicationHistoryBinding<DocumentRetentionSchema> for RetentionHistory {
     type Access = DocumentRetentionRead;
     const IDENTITY: &'static str = "DocumentRetentionHistory";
+    const RETENTION_RESOURCES: worth_query_decl::facade::application_history::ApplicationHistoryRetentionResources = worth_query_decl::facade::application_history::ApplicationHistoryRetentionResources {
+        maximum_bookmarks: std::num::NonZeroUsize::new(2).unwrap(),
+        ..worth_query_decl::facade::application_history::ApplicationHistoryRetentionResources::DEFAULT
+    };
 }
 
 /// Distinct installed counts expose result admission independently of membership.
@@ -110,7 +116,7 @@ fn metadata_disclosure_for<
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
-    control_roles::declare(navigation::declare(schema))
+    control_roles::declare(retention_policy::declare(navigation::declare(schema)))
         .application_history(
             ApplicationHistoryDefinition::<DocumentRetentionSchema, NavigationBoundedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
                 .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
@@ -130,6 +136,8 @@ pub fn declare(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, RetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
             .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
             .navigation::<navigation::Navigation>()
+            .window_policy::<retention_policy::Window>()
+            .bookmark_policy::<retention_policy::Bookmark>()
             .operation::<SetRetentionBinding>("Set retention"),
     ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, DetailedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())

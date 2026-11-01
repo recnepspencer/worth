@@ -6,6 +6,8 @@ pub use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap
 
 pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>) {
     for (grant, action) in [
+        (super::super::document_history::retention_policy::WINDOW_GRANT, <super::super::document_history::retention_policy::WindowCapability as super::capability::Role>::ACTION),
+        (super::super::document_history::retention_policy::BOOKMARK_GRANT, <super::super::document_history::retention_policy::BookmarkCapability as super::capability::Role>::ACTION),
         (
             super::super::document_history::navigation::GRANT,
             <super::super::document_history::navigation::NavigationCapability as super::capability::Role>::ACTION,

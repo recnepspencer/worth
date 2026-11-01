@@ -16,6 +16,10 @@ pub struct WorthQueryHistoryEnrollmentReportForTest {
     pub custody_probes: u64,
     pub child_index_probes: u64,
     pub selection_accesses: u64,
+    /// Actual entries visited while finding one oldest unprotected source.
+    pub retention_frontier_probes: u64,
+    /// Conservative owner work admitted independently of payload READ work.
+    pub retention_quoted_work: u64,
     /// Conservative BTree path and label quotes from successful reservations.
     pub requested_backing_bytes: u64,
     /// The part of those quotes actually backed by retained execution tickets.
@@ -25,7 +29,8 @@ pub struct WorthQueryHistoryEnrollmentReportForTest {
 
 #[derive(Default)]
 struct Counters {
-    accesses: [AtomicU64; 5],
+    accesses: [AtomicU64; 6],
+    retention_work: AtomicU64,
     requested: AtomicU64,
     backed: AtomicU64,
 }
@@ -36,6 +41,7 @@ pub(super) enum Access {
     Custody,
     Child,
     Selection,
+    RetentionFrontier,
 }
 pub(super) struct EnrollmentSink(Weak<Counters>);
 
@@ -53,6 +59,8 @@ impl WorthQueryHistoryEnrollmentObservationForTest {
             custody_probes: access(2),
             child_index_probes: access(3),
             selection_accesses: access(4),
+            retention_frontier_probes: access(5),
+            retention_quoted_work: self.counters.retention_work.load(Ordering::Relaxed),
             requested_backing_bytes: self.counters.requested.load(Ordering::Relaxed),
             ticket_backing_bytes: self.counters.backed.load(Ordering::Relaxed),
         }
@@ -65,6 +73,11 @@ impl WorthQueryHistoryEnrollmentObservationForTest {
 }
 
 impl EnrollmentSink {
+    pub(super) fn retention_work(&self, units: u64) {
+        if let Some(counters) = self.0.upgrade() {
+            counters.retention_work.fetch_add(units, Ordering::Relaxed);
+        }
+    }
     pub(super) fn access(&self, access: Access) {
         if let Some(counters) = self.0.upgrade() {
             counters.accesses[access as usize].fetch_add(1, Ordering::Relaxed);

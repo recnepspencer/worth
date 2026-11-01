@@ -12,6 +12,7 @@ pub enum WorthQueryApplicationHistoryDenial {
     Query(super::super::WorthQueryApplicationRequestQueryDenial),
     Mutation(super::super::WorthQueryApplicationRequestMutationDenial),
     Document(WorthQueryDocumentHistoryDenial),
+    Outputs(super::WorthQueryHistoryOutputDenial),
     ExecutionRequest(WorthQueryAdvancementDenial),
 }
 

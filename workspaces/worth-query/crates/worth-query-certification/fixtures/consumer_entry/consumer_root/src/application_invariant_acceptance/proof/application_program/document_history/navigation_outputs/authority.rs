@@ -5,7 +5,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryOperationAuthorizationRefusalKind as Refusal,
 };
 use worth_query_host::facade::product::WorthQueryProductBranch;
-use worth_query_topology_entry::SetPlanarNavigationStatus;
+use worth_query_topology_entry::SetPlanarHistoryStatus;
 
 pub(super) fn grant(app: &Runtime, branch: WorthQueryProductBranch, active: bool, key: u64) {
     let outcome = app
@@ -13,7 +13,7 @@ pub(super) fn grant(app: &Runtime, branch: WorthQueryProductBranch, active: bool
             with_branch_request(app, branch, |request| {
                 request
                     .advanced()
-                    .mutate(SetPlanarNavigationStatus {
+                    .mutate(SetPlanarHistoryStatus {
                         grant: "history-navigation:model-owner:anchor-a".into(),
                         active,
                     })

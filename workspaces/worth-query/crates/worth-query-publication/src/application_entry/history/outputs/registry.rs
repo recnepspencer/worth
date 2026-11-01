@@ -9,6 +9,41 @@ where
     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
 {
+    pub(super) fn existing_slot(
+        &self,
+        key: &[u8; 32],
+    ) -> Result<Option<Arc<OutputSlot<S, P, R>>>, WorthQueryHistoryOutputDenial> {
+        Ok(self
+            .slots
+            .try_lock()
+            .map_err(|_| WorthQueryHistoryOutputDenial::Busy)?
+            .get(key)
+            .map(Arc::clone))
+    }
+
+    pub(super) fn remove_slot(
+        &self,
+        key: &[u8; 32],
+        original: &Arc<OutputSlot<S, P, R>>,
+    ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        let removed = {
+            let mut registry = self
+                .slots
+                .try_lock()
+                .map_err(|_| WorthQueryHistoryOutputDenial::Busy)?;
+            if registry
+                .get(key)
+                .is_some_and(|slot| Arc::ptr_eq(slot, original))
+            {
+                registry.remove(key)
+            } else {
+                None
+            }
+        };
+        drop(removed);
+        Ok(())
+    }
+
     pub(super) fn slot(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

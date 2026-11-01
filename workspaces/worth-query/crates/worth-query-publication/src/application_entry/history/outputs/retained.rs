@@ -111,6 +111,7 @@ where
         worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup,
     )>,
     pub(super) terminal: bool,
+    pub(super) selected: bool,
 }
 
 impl<S, P, R> SlotState<S, P, R>
@@ -129,6 +130,16 @@ where
             read_cleanup: None,
             managed_cleanup: None,
             terminal: false,
+            selected: false,
         }
+    }
+
+    pub(super) fn empty(&self) -> bool {
+        self.original.is_none()
+            && self.source.is_none()
+            && self.tree.is_none()
+            && self.settlement.is_none()
+            && self.read_cleanup.is_none()
+            && self.managed_cleanup.is_none()
     }
 }

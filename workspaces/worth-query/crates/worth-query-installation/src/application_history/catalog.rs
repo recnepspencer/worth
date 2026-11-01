@@ -58,6 +58,9 @@ impl WorthQueryInstalledApplicationHistoryCatalog {
                     .navigation()
                     .map(|navigation| navigation.declaration())
                     != parts.navigation.as_ref()
+                || descriptor.window().map(|policy| policy.declaration()) != parts.window.as_ref()
+                || descriptor.bookmarks().map(|policy| policy.declaration())
+                    != parts.bookmarks.as_ref()
             {
                 return Err(Denial::new(Kind::BindingMeaningChanged, &parts.identity));
             }

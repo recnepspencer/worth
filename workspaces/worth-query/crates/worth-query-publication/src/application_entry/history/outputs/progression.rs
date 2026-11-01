@@ -42,6 +42,14 @@ where
     >,
     R::Dependents: ProgramOutputContinuationFactory<S, P, Demand<S, R>>,
 {
+    fn release_for_branch(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        branch: WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        self.release_selected_branch(phase, branch)
+    }
+
     fn close(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -56,9 +64,11 @@ where
     ) -> Result<(), WorthQueryHistoryNavigationAdvanceDenial> {
         navigation
             .discard_after_output_cleanup(phase, &program_publication_access(), |key| {
-                let slot = self.slot(phase, key)?;
-                let result = slot.try_state()?.dispose(phase, &self.application);
-                result
+                if let Some(slot) = self.existing_slot(&key)? {
+                    slot.try_state()?.dispose(phase, &self.application)?;
+                    self.remove_slot(&key, &slot)?;
+                }
+                Ok(())
             })
             .map_err(WorthQueryHistoryNavigationAdvanceDenial::Navigation)?
             .map_err(WorthQueryHistoryNavigationAdvanceDenial::Outputs)
@@ -162,13 +172,18 @@ where
             .map_err(Denial::Query)
             .and_then(|result| result)
             .map_err(WorthQueryHistoryNavigationAdvanceDenial::Outputs);
-        if matches!(result, Ok(Some(_))) {
+        if navigation.posture() == WorthQueryHistoryNavigationPosture::Selected {
             if let Some(key) = original_slot {
-                if let Ok(slot) = self.slot(phase, key) {
+                if let Ok(Some(slot)) = self.existing_slot(&key) {
                     if let Ok(mut state) = slot.try_state() {
                         // Actual selection survives failed cleanup. The document
                         // retains every remainder for its disposal-only close.
-                        let _ = state.dispose(phase, &self.application);
+                        state.selected = true;
+                        let disposed = state.dispose(phase, &self.application).is_ok();
+                        drop(state);
+                        if disposed {
+                            let _ = self.remove_slot(&key, &slot);
+                        }
                     }
                 }
             }

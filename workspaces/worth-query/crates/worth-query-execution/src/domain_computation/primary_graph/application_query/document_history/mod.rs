@@ -6,6 +6,7 @@ mod navigation;
 mod operation;
 mod output_intent;
 mod output_read;
+mod retention;
 pub use output_intent::{WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial};
 pub(in crate::domain_computation::primary_graph) use output_read::HistoryOutputControlPlan;
 mod retained_permission;
@@ -134,6 +135,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         let binding = read.history.binding_identity().clone();
         let navigation_resources = read.history.navigation_resources();
+        let retention_resources = read.history.retention_resources();
         let (pending, _read) = match read.execute(self, phase) {
             Ok(completed) => completed,
             Err(denial) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),
@@ -162,7 +164,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         let application = head.application();
         let selection = match crate::domain_computation::primary_graph::product_operation::document_history::HistorySelectionCell::attach(
-            &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self), navigation_resources,
+            &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self), navigation_resources, retention_resources,
         ) {
             Ok(selection) => selection,
             Err((head, denial)) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),

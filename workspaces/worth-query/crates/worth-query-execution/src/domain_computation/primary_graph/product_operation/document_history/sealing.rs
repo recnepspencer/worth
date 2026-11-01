@@ -53,6 +53,9 @@ impl<S> std::fmt::Debug for WorthQueryDocumentHistoryAdoptionFailure<'_, S> {
 
 pub(super) struct PreparedBinding {
     pub(super) node: RecordedNode,
+    pub(super) source: std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+    >,
     pub(super) endpoint: WorthQueryProductBranchReadIdentity,
     pub(super) exact: WorthQueryProductObservationLease,
     pub(super) returned: WorthQueryHistoryStep,
@@ -224,10 +227,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         // Only infallible metadata moves remain while the selection is guarded.
         selected.expected = prepared.endpoint;
         let previous_source = std::mem::replace(&mut selected.physical_source, prepared.exact);
-        selected
-            .journal
-            .complete(reserved.record, prepared.node, previous);
+        let excluded =
+            selected
+                .journal
+                .complete(reserved.record, prepared.node, prepared.source, previous);
         drop(selected);
+        drop(excluded);
         drop(previous_source);
         drop(release);
         Ok(prepared.returned)
@@ -296,14 +301,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .lock()
             .journal
             .prepared_step(&reserved.record, endpoint.clone());
-        let node = RecordedNode {
-            step,
-            _source: retained.unwrap_or_else(|| selected.retain_application_read()),
-            root_posture,
-        };
+        let node = RecordedNode { step, root_posture };
         let returned = node.step.clone();
         Ok(PreparedBinding {
             node,
+            source: retained.unwrap_or_else(|| selected.retain_application_read()),
             endpoint,
             exact,
             returned,

@@ -62,7 +62,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for HistoryProgram {
             .provides::<PlanarBodyOutput>()
             .action::<Binding, HistoryDelivery>()
             .finish_action()
-            .action::<worth_query_topology_entry::SetPlanarNavigationStatusBinding<ConsumerSchema>,
+            .action::<worth_query_topology_entry::SetPlanarHistoryStatusBinding<ConsumerSchema>,
                 super::source_completion::ConsumerSourceCompletion>()
             .finish_action()
             .finish(),

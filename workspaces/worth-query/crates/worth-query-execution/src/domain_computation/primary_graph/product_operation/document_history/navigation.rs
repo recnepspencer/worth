@@ -14,6 +14,7 @@ pub(in crate::domain_computation::primary_graph) use output_lookup::{
 };
 mod output_source;
 mod pending_capacity;
+pub(super) use pending_capacity::PendingNavigationCapacity;
 mod progression;
 mod publication;
 mod registration;

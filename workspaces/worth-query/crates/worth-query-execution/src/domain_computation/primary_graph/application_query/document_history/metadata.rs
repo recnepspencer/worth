@@ -56,6 +56,26 @@ impl CompletedMetadataRead<'_, '_> {
         }
         self.source.confirm_selection(self.phase, document, value)
     }
+
+    pub(super) fn confirm_generation<S: ApplicationSchema, H: ApplicationHistoryBinding<S>, T>(
+        &self,
+        document: &WorthQueryDocumentHistory<'_, S, H>,
+        generation: u64,
+        value: T,
+    ) -> Result<T, Denial> {
+        let value = self.confirm(document, value)?;
+        let selected = document.selection.lock();
+        if self.source.identity() != selected.expected {
+            return Err(Denial::HeadDiverged);
+        }
+        if selected.journal.view_generation() != generation {
+            return Err(Denial::Paging(
+                crate::domain_computation::primary_graph::WorthQueryHistoryPageDenial::StaleCursor,
+            ));
+        }
+        drop(selected);
+        Ok(value)
+    }
 }
 
 impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>

@@ -179,12 +179,13 @@ fn two_ordinary_edits_select_one_history_edge_and_undo_redo_its_complete_endpoin
             None,
         )
         .unwrap();
-    assert_eq!(
-        page.rows()
+    assert_page_entries(
+        &page
+            .rows()
             .iter()
             .map(|row| row.step().clone())
             .collect::<Vec<_>>(),
-        [root.clone(), step.clone()]
+        &[root.clone(), step.clone()],
     );
     let undo = super::navigation::complete(
         &host,

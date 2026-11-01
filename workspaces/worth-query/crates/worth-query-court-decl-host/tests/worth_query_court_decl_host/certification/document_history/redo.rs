@@ -108,7 +108,7 @@ fn completed_alternatives_require_explicit_choice_and_cancelled_reservations_sta
     let document = edit.discard(&request).unwrap();
     let single = document.redo_choices(&request, limits(1), None).unwrap();
     assert_eq!(single.choice(), Choice::Single(first.id()));
-    assert_eq!(single.children().rows()[0].step(), &first);
+    assert_page_entry(single.children().rows()[0].step(), &first);
     assert!(single.children().continuation().is_none());
     let remembered = document.selection(&request).unwrap();
     let (document, second) = finish(
@@ -147,7 +147,7 @@ fn completed_alternatives_require_explicit_choice_and_cancelled_reservations_sta
                 break;
             }
         }
-        assert_eq!(rows, [first.clone(), second.clone()]);
+        assert_page_entries(&rows, &[first.clone(), second.clone()]);
     }
     assert_eq!(document.selection(&request).unwrap(), before);
     assert_eq!(value(&host, &document), SEED_RETENTION);
@@ -226,7 +226,7 @@ fn child_cursors_cannot_change_listing_scope_document_or_selected_parent() {
     let second = document
         .redo_choices(&request, limits(1), Some(&child_cursor))
         .unwrap();
-    assert_eq!(second.children().rows()[0].step(), &children[1]);
+    assert_page_entry(second.children().rows()[0].step(), &children[1]);
     assert!(second.children().continuation().is_none());
     checkout(&host, &document, children[0].id(), 0x9182_f220);
     assert!(matches!(

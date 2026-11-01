@@ -34,6 +34,9 @@ pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> 
                 | History::ReceiptMismatch | History::CandidateSelection(_) | History::Adoption(_)
                 | History::HeadAdmission(_) | History::Read(_) | History::MetadataCapabilityInstallation(_) | History::Paging(_)
                 | History::UnsupportedContextRefresh | History::ContextRefresh(_)
+                | History::HistoryNodeExcluded | History::RetentionMaintenancePending
+                | History::RetentionReleaseCapacityExhausted | History::BookmarkCapacityExhausted
+                | History::RetentionPolicyNotDeclared | History::RetentionOperationInstallation(_) | History::Allocation(_)
                 | History::EmptyGroup | History::GroupMemberLimitExceeded
                 | History::GroupResultLimitExceeded | History::GroupMemberMismatch | History::GroupNotComplete => None,
             }

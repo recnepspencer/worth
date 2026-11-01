@@ -18,6 +18,7 @@ impl<S> HistoryJournal<'_, S> {
         retain_preview(
             self.incarnation,
             &self.nodes,
+            &self.retained,
             self.observation.as_ref(),
             id,
             model,
@@ -28,6 +29,7 @@ impl<S> HistoryJournal<'_, S> {
 fn retain_preview(
     document: DocumentIncarnation,
     nodes: &BTreeMap<u64, HistoryNode>,
+    retained: &BTreeMap<u64, RetainedHistorySource>,
     observation: Option<&EnrollmentSink>,
     id: WorthQueryHistoryNodeId,
     model: HistoryModelIdentity,
@@ -48,7 +50,12 @@ fn retain_preview(
     Ok(WorthQueryHistoryPreview {
         step: node.step.clone(),
         model,
-        source: Arc::clone(&node._source),
+        source: Arc::clone(
+            retained
+                .get(&id.ordinal)
+                .and_then(|entry| entry.source.as_ref())
+                .ok_or(Denial::HistoryNodeExcluded)?,
+        ),
         root_posture: node.root_posture,
     })
 }

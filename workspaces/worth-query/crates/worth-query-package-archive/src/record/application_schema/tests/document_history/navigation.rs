@@ -8,7 +8,7 @@ use worth_query_declaration::facade::{
     portable_identity::WorthQueryPortableTypeIdentity as Identity,
 };
 
-fn navigation() -> ApplicationHistoryNavigationDeclaration {
+pub(super) fn navigation() -> ApplicationHistoryNavigationDeclaration {
     ApplicationHistoryNavigationDeclaration::from_untrusted_parts(
         WorthQueryPortableApplicationHistoryNavigationParts {
             binding: "NavigateDocument".into(),
@@ -23,7 +23,7 @@ fn navigation() -> ApplicationHistoryNavigationDeclaration {
 // Unchanged access/disclosure codecs remain their own owners. This test writes
 // the member version, domain, operation order and navigation fields directly;
 // it never asks the document-history writer to create its decode input.
-fn frame(version: u16, navigation: bool) -> Vec<u8> {
+pub(super) fn frame(version: u16, navigation: bool) -> Vec<u8> {
     let definition = definition(Domain::ScopeEntityRecord, false);
     let parts = definition.parts();
     let mut output = BinaryOutput::with_capacity(0);

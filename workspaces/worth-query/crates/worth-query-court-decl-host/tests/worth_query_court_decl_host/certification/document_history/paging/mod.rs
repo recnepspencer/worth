@@ -84,11 +84,11 @@ fn bounded_pages_rebuild_the_same_completed_tree_at_multiple_widths() {
                 break;
             }
         }
-        assert_eq!(layout, expected);
+        assert_page_entries(&layout, &expected);
         for (index, step) in layout.iter().enumerate() {
             assert_eq!(
                 step.parent(),
-                index.checked_sub(1).map(|parent| expected[parent].id())
+                index.checked_sub(1).map_or(worth_query_host::facade::application_entry::WorthQueryHistoryParentBoundary::Root, |parent| worth_query_host::facade::application_entry::WorthQueryHistoryParentBoundary::Retained(expected[parent].id()))
             );
             assert_eq!(
                 step.label(),
@@ -166,12 +166,13 @@ fn private_reservations_and_discarded_attempts_do_not_change_the_visible_view() 
         panic!("actual reservation");
     };
     let page = edit.history_page(&request, limits(8), None).unwrap();
-    assert_eq!(
-        page.rows()
+    assert_page_entries(
+        &page
+            .rows()
             .iter()
             .map(|row| row.step().clone())
             .collect::<Vec<_>>(),
-        expected
+        &expected,
     );
     assert!(page.continuation().is_none());
     assert!(edit
@@ -181,12 +182,13 @@ fn private_reservations_and_discarded_attempts_do_not_change_the_visible_view() 
     let page = document
         .history_page(&request, limits(8), Some(&cursor))
         .unwrap();
-    assert_eq!(
-        page.rows()
+    assert_page_entries(
+        &page
+            .rows()
             .iter()
             .map(|row| row.step().clone())
             .collect::<Vec<_>>(),
-        expected[1..]
+        &expected[1..],
     );
     assert!(page.continuation().is_none());
     // Publish after the cancelled ordinal: traversal must cross a real private gap.
@@ -215,7 +217,7 @@ fn private_reservations_and_discarded_attempts_do_not_change_the_visible_view() 
                 break;
             }
         }
-        assert_eq!(visible, reference);
+        assert_page_entries(&visible, &reference);
     }
     close(&host, document, 5);
     // A retained page describes past retention; it did not secretly pin payloads.
@@ -268,7 +270,10 @@ fn metadata_refusal_precedes_foreign_cursor_and_small_page_diagnostics() {
         )
         .unwrap();
     assert_eq!(page.rows().len(), 1);
-    assert_eq!(page.rows()[0].step().parent(), None);
+    assert_eq!(
+        page.rows()[0].step().parent(),
+        worth_query_host::facade::application_entry::WorthQueryHistoryParentBoundary::Root
+    );
     close(&host, public, 4);
     close(&host, document, 1);
 }

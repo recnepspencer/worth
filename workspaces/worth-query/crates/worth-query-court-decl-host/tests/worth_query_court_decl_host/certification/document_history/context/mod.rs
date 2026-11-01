@@ -209,7 +209,7 @@ fn refresh_preserves_the_immutable_tree_cursor_and_the_next_edit_parent() {
     let next = document
         .history_page(&request, page_limits, Some(&cursor))
         .unwrap();
-    assert_eq!(next.rows()[0].step(), &child);
+    assert_page_entry(next.rows()[0].step(), &child);
     assert_eq!(
         preview.read(&document, &request).unwrap().rows()[0].retention_days,
         7

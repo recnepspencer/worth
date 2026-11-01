@@ -21,13 +21,20 @@ where
             S,
             H,
             impl WorthQueryHistoryPayloadMode<S, H>,
+            impl Sized,
         >,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
         WorthQueryHistoryPreviewResult<Query<S, H>, Rows<S, H>>,
         WorthQueryApplicationHistoryDenial,
     > {
-        self.read_with(document, request, |_, _, read| Ok(read))
+        self.read_with(
+            &document.owner,
+            &document.access,
+            &document.payload,
+            request,
+            |_, _, read| Ok(read),
+        )
     }
     pub fn read_governed<C, O, I>(
         &self,
@@ -36,6 +43,7 @@ where
             S,
             H,
             impl WorthQueryHistoryPayloadMode<S, H>,
+            impl Sized,
         >,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         capability: ApplicationCapabilityRef<S, C>,
@@ -50,19 +58,22 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        self.read_with(document, request, |phase, runtime, read| {
-            read.with_metadata_capability(runtime, phase, capability, operation, input)
-        })
+        self.read_with(
+            &document.owner,
+            &document.access,
+            &document.payload,
+            request,
+            |phase, runtime, read| {
+                read.with_metadata_capability(runtime, phase, capability, operation, input)
+            },
+        )
     }
 
     fn read_with(
         &self,
-        document: &WorthQueryApplicationHistoryDocument<
-            '_,
-            S,
-            H,
-            impl WorthQueryHistoryPayloadMode<S, H>,
-        >,
+        owner: &WorthQueryDocumentHistory<'_, S, H>,
+        history_access: &H::Access,
+        payload: &impl WorthQueryHistoryPayloadMode<S, H>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         prepare: impl for<'read> FnOnce(
             &WorthQueryAdvancementPhase<'_>,
@@ -76,7 +87,7 @@ where
         WorthQueryHistoryPreviewResult<Query<S, H>, Rows<S, H>>,
         WorthQueryApplicationHistoryDenial,
     > {
-        let runtime = document.owner.application();
+        let runtime = owner.application();
         if !std::ptr::eq(runtime, request.application) {
             return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
         }
@@ -84,21 +95,21 @@ where
             application: runtime,
             principal: request.principal,
             scope: request.scope,
-            branch: document.owner.branch(),
+            branch: owner.branch(),
         };
         runtime
             .with_application_advancement(request.scope, |phase| {
                 let admission = super::super::metadata::with_metadata_read::<S, H, _>(
                     &phase,
                     &current,
-                    document.access.clone(),
-                    &document.payload,
+                    history_access.clone(),
+                    payload,
                     |runtime, _, read| {
                         let read = prepare(&phase, runtime, read)?;
                         runtime.prepare_document_history_preview_read(
                             &phase,
                             &program_publication_access(),
-                            &document.owner,
+                            owner,
                             &self.owner,
                             read,
                         )
@@ -108,10 +119,9 @@ where
                     .installed_schema()
                     .installed_history::<H>()
                     .map_err(WorthQueryApplicationHistoryDenial::Installation)?;
-                document
-                    .payload
+                payload
                     .with_read(
-                        current.query(document.access.clone()),
+                        current.query(history_access.clone()),
                         &phase,
                         Some(&admission),
                         |runtime, binding, external, plan| {
@@ -122,7 +132,7 @@ where
                                 .read_document_history_preview(
                                     &phase,
                                     &program_publication_access(),
-                                    &document.owner,
+                                    owner,
                                     &admission,
                                     read,
                                 )

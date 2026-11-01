@@ -5,6 +5,8 @@ mod descriptor;
 mod group_resources;
 mod navigation;
 mod navigation_resources;
+mod retention;
+mod retention_resources;
 
 pub use binding::{
     ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,
@@ -21,3 +23,11 @@ pub use navigation::{
     ApplicationHistoryNavigationDeclaration, WorthQueryPortableApplicationHistoryNavigationParts,
 };
 pub use navigation_resources::ApplicationHistoryNavigationResources;
+pub use retention::{
+    ApplicationHistoryBookmarkBinding, ApplicationHistoryRetentionBinding,
+    ApplicationHistoryRetentionBindingDescriptor, ApplicationHistoryRetentionDeclaration,
+    ApplicationHistoryWindowBinding, WorthQueryPortableApplicationHistoryRetentionParts,
+};
+pub use retention_resources::{
+    ApplicationHistoryRecentSteps, ApplicationHistoryRetentionResources,
+};

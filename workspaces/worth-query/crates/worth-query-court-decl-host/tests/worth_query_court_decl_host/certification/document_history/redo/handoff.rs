@@ -71,7 +71,7 @@ fn assembled_redo_hints_cannot_escape_a_stop_or_move_and_a_cancelled_cursor_can_
                     || matches!(denied, Failure::ExecutionRequest(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))), "{denied:?}");
                 let retried = document.redo_choices(&request, limits(1), Some(&cursor)).unwrap();
                 assert_eq!(retried.choice(), Choice::ChoiceRequired);
-                assert_eq!(retried.children().rows()[0].step(), &children[1]);
+                assert_page_entry(retried.children().rows()[0].step(), &children[1]);
                 assert_eq!(document.selection(&request).unwrap(), original);
             }
             Change::SelectChild => assert!(matches!(denied, Failure::Document(Native::HeadDiverged)), "{denied:?}"),

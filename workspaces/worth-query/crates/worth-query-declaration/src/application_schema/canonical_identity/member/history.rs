@@ -38,6 +38,13 @@ pub(super) fn append(
             basis.text(format!("{prefix}.snapshot-navigation.{field}"), value);
         }
     }
+    for (role, policy) in [("window", &parts.window), ("bookmarks", &parts.bookmarks)] {
+        if let Some(policy) = policy {
+            for (field, value) in policy.canonical_fields() {
+                basis.text(format!("{prefix}.{role}.{field}"), value);
+            }
+        }
+    }
     for (index, operation) in parts.operations.iter().enumerate() {
         basis.text(
             format!("{prefix}.operation[{index}].binding"),

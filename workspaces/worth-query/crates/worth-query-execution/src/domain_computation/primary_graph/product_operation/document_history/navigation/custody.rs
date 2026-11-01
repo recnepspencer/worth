@@ -6,7 +6,7 @@ use crate::{
         execution_runtime::product_world::WorthQueryPreparedProductPublication,
         primary_graph::{
             WorthQueryApplicationIdempotencyBinding, WorthQueryExpectedProductBranch,
-            WorthQueryOwnedProductHead, WorthQueryPrimaryGraphApplicationRuntime,
+            WorthQueryPrimaryGraphApplicationRuntime,
         },
         WorthQueryProductUnpublishedRecovery,
     },
@@ -75,10 +75,9 @@ pub(super) struct NavigationProgress<'runtime, S> {
     pub(super) source: Option<super::super::WorthQueryHistoryPreview>,
     pub(super) requested: super::super::WorthQueryHistoryNodeId,
     pub(super) intent: WorthQueryHistoryNavigationIntent,
-    pub(super) view_after: u64,
     pub(super) phase: NavigationPhase<'runtime, S>,
     // Preallocated in the attempt before fork; filled in the adoption transition.
-    pub(super) previous: Option<WorthQueryOwnedProductHead<'runtime, S>>,
+    pub(super) head_slot: Option<u64>,
     pub(super) prior_cleanup:
         Option<crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure>,
     pub(super) selection_pause: Option<Arc<super::super::receiver_pause::ReceiverPause>>,

@@ -49,6 +49,11 @@ pub trait WorthQueryHistoryOutputsMode<S: ApplicationSchema, H: ApplicationHisto
 }
 
 pub(super) trait OutputDriver<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> {
+    fn release_for_branch(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial>;
     fn discard(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -100,6 +105,13 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryHistoryOut
 impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> OutputDriver<S, H>
     for WorthQueryHistoryNoOutputs
 {
+    fn release_for_branch(
+        &self,
+        _: &WorthQueryAdvancementPhase<'_>,
+        _: worth_query_execution::facade::product::WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        Ok(())
+    }
     fn discard(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

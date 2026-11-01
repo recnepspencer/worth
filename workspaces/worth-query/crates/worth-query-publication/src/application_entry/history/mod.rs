@@ -121,6 +121,7 @@ mod preview;
 pub use preview::{WorthQueryApplicationHistoryPreview, WorthQueryHistoryPreviewResult};
 mod read;
 mod redo;
+mod retention;
 #[doc(hidden)]
 pub use edit::WorthQueryHistoryEditHandoffPauseForTest;
 pub use edit::{
@@ -132,6 +133,7 @@ pub use edit_builder::{
     WorthQueryHistoryEditBuilder, WorthQueryHistoryEditCaptureDenial,
     WorthQueryHistoryEditCaptureFailure, WorthQueryHistoryEditDescription,
 };
+pub use retention::WorthQueryHistoryWindowChange;
 
 pub use close::{WorthQueryApplicationHistoryCloseFailure, WorthQueryHistoryClosingOutputs};
 pub use denial::{
@@ -143,8 +145,9 @@ pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
     WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
     WorthQueryHistoryNodeId, WorthQueryHistoryPage, WorthQueryHistoryPageCursor,
-    WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
-    WorthQueryHistoryStep,
+    WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
+    WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryReleaseOutcome,
+    WorthQueryHistoryRetentionStatus, WorthQueryHistoryStep,
 };
 pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,

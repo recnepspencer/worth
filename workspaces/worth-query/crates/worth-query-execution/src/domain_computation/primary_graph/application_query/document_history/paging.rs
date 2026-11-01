@@ -22,12 +22,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let execution = phase
             .checked_execution_request_for(&self.product_runtime)
             .map_err(Denial::Stopped)?;
-        let page = document
-            .selection
-            .lock()
-            .journal
-            .page(execution, limits, after)
-            .map_err(Denial::Paging)?;
+        let (page, generation) = {
+            let selected = document.selection.lock();
+            (
+                selected
+                    .journal
+                    .page(execution, limits, after)
+                    .map_err(Denial::Paging)?,
+                selected.journal.view_generation(),
+            )
+        };
         if let Some(pause) = &document.page_pause {
             pause.pause();
         }
@@ -35,6 +39,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .run_native(|_| page)
             .map_err(|cause| Denial::Paging(WorthQueryHistoryPageDenial::Request(cause)))?
             .0;
-        completed.confirm(document, page)
+        completed.confirm_generation(document, generation, page)
     }
 }

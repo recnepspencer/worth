@@ -15,6 +15,7 @@ mod panic_disposal;
 mod producer_admission;
 mod profile;
 mod publication;
+mod retention;
 type Outputs = WorthQueryHistoryWithOutputs<ConsumerSchema, HistoryProgram, HistoryRoot>;
 type OutputDocument<'a> = WorthQueryApplicationHistoryDocument<
     'a,

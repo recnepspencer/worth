@@ -53,6 +53,38 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         self.compiled.descriptor.navigation_resources()
     }
 
+    pub fn retention_resources(
+        &self,
+    ) -> worth_query_declaration::facade::application_history::ApplicationHistoryRetentionResources
+    {
+        self.compiled.descriptor.retention_resources()
+    }
+
+    pub fn contains_window<
+        N: worth_query_declaration::facade::application_history::ApplicationHistoryWindowBinding<S, H>,
+    >(
+        &self,
+    ) -> bool {
+        self.compiled
+            .descriptor
+            .window()
+            .is_some_and(|policy| policy.matches::<S, H, N>())
+    }
+
+    pub fn contains_bookmarks<
+        N: worth_query_declaration::facade::application_history::ApplicationHistoryBookmarkBinding<
+            S,
+            H,
+        >,
+    >(
+        &self,
+    ) -> bool {
+        self.compiled
+            .descriptor
+            .bookmarks()
+            .is_some_and(|policy| policy.matches::<S, H, N>())
+    }
+
     /// Compare the original typed recipe and every portable navigation field.
     /// This establishes installation correspondence, never request permission.
     pub fn contains_navigation<N: ApplicationHistoryNavigationBinding<S, H>>(&self) -> bool {
@@ -101,6 +133,7 @@ impl<S: ApplicationSchema> WorthQueryInstalledApplicationSchema<S> {
             || compiled.descriptor.history_type() != &H::PORTABLE_TYPE_IDENTITY
             || compiled.descriptor.group_resources() != H::GROUP_RESOURCES
             || compiled.descriptor.navigation_resources() != H::NAVIGATION_RESOURCES
+            || compiled.descriptor.retention_resources() != H::RETENTION_RESOURCES
         {
             return Err(Denial::new(Kind::BindingMeaningChanged, H::IDENTITY));
         }

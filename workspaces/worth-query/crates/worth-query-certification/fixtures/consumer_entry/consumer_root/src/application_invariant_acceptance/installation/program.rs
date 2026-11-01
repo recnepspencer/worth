@@ -105,6 +105,8 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
             seed::seed_cycles_with(bootstrap_phase, graph, |graph| {
+                worth_query_topology_entry::bind_retention_grants(graph, "model-owner", "anchor-a")
+                    .unwrap();
                 worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "anchor-a")
                     .unwrap();
                 worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "remote-a")

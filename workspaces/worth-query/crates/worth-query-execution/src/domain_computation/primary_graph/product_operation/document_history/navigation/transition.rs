@@ -136,14 +136,15 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .source
             .as_ref()
             .expect("pending navigation owns its retained source");
-        let next_view = selected
+        let execution = phase
+            .checked_execution_request_for(&self.application.product_runtime)
+            .map_err(Denial::Stopped)?;
+        let restoration = selected
             .journal
-            .prepare_navigation(self.requested)
+            .reserve_navigation_source(&execution, self.requested)
             .map_err(Denial::Document)?;
-        if next_view != self.view_after {
-            return Err(Denial::HeadChanged);
-        }
-        debug_assert!(self.previous.is_none());
+        let view_after = restoration.view_after;
+        let retained_source = Arc::clone(&source.source);
         let NavigationPhase::Selecting {
             candidate,
             exact,
@@ -168,6 +169,9 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let (previous, release) = match selected.head.adopt_at_deferred(candidate, phase, &exact) {
             Ok(adopted) => adopted,
             Err(failure) => {
+                selected
+                    .journal
+                    .cancel_navigation_source(self.requested, restoration);
                 drop(selected);
                 let (candidate, cause) = failure.into_parts();
                 self.phase = NavigationPhase::Selecting {
@@ -181,14 +185,26 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         };
         selected.expected = physical;
         let previous_source = std::mem::replace(&mut selected.physical_source, exact);
-        selected
+        selected.journal.store_previous(
+            self.head_slot
+                .take()
+                .expect("original prepaid head destination"),
+            previous,
+        );
+        let unused_source = selected
             .journal
-            .complete_navigation(self.requested, self.view_after);
-        self.previous = Some(previous);
+            .fill_navigation_source(self.requested, retained_source);
+        let excluded = selected
+            .journal
+            .complete_navigation(self.requested, view_after);
         self.phase = NavigationPhase::Selected(completion);
         drop(self.pending_slot.take());
         let source = self.source.take();
         drop(selected);
+        drop(excluded);
+        drop(unused_source);
+        drop(self.output_source.take());
+        drop(self.output_source_memory.take());
         drop(previous_source);
         drop(source);
         drop(_publication);
