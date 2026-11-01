@@ -799,6 +799,21 @@ The owning Host refusal preserves its original Home/context and source. Legacy
 generic bare-error opening retains its declared ordinary abandonment semantics;
 it does not establish custody-preserving refusal or bounded D11 teardown.
 
+The exact Store Application private leaf
+src/tests/world_section/readmission/selected_source.rs may invoke the existing
+World Home and Native recovery-authority doors only for
+controlled_home_refusal_retains_original_selection_across_anchor_advance and
+selected_home_source_keeps_its_original_root_and_refuses_a_foreign_store.
+It reuses the existing genuine Native/Signal/Bridge component recipe. An actual
+ordinary Native capture plus actual World image is administratively framed into
+Home2 as an explicitly INVALID coupled input, expected to refuse before Native
+admission. Retrying the same owning refusal after real anchor advancement must
+retain the original selection; foreign Serving affinity must refuse. Original
+SDK requests are direct inputs, with no new runtime-builder helper or public
+test door. Register only this leaf for world-home/native-world-readmission.
+Ordinary abandonment ends fixture ownership; these negative proofs claim
+neither Complete production nor physical Closed/bounded teardown.
+
 The exact owner-private leaf
 workspaces/worth-store/crates/worth-store-relational/src/cold_source/initial_selection/tests.rs
 may construct original SDK ExecutionRequest/SerialRequest inputs for:

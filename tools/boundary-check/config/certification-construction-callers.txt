@@ -132,3 +132,6 @@ world-home-checkpoint-source workspaces/worth-store/crates/worth-store-applicati
 # Coupled opening consumes one original selected Home payload and its EOF custody.
 native-selected-home-readmission workspaces/worth-store/crates/worth-store-application/src/open/mod.rs
 native-selected-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
+# Exact owner-private selected-source refusal proof uses the existing genuine recipe.
+world-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
