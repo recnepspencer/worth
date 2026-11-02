@@ -122,3 +122,76 @@ fn initialization_no_effect_preserves_original_cells_and_indeterminate_blocks_la
         }
     }
 }
+
+#[test]
+fn birth_admission_preserves_typed_no_effect_and_unresolved_publication_fates() {
+    for answer in [Answer::NoEffect, Answer::Indeterminate] {
+        let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+        let request = ExecutionRequest::serial(&policy);
+        let medium = TestDurableMedium::new();
+        let offered = Arc::new(Mutex::new(None));
+        let mut runtime = RelationalRuntimeApi::builder()
+            .profile(worth_relational::facade::config::RelationalRuntimeProfile::CertificationCore)
+            .schema_registry(worth_testkit_relational::durable_publication::schema())
+            .build_durable(Box::new(InitialStep {
+                actual: medium.attachment(),
+                answer,
+                offered: offered.clone(),
+            }))
+            .unwrap();
+        let original = current(&request, &runtime);
+        let main = runtime.main_branch_identity();
+        let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
+        let plan = runtime
+            .durability()
+            .recovery_plan_from_source(
+                &request,
+                RelationalDurableRecoverySource::new(None, vec![], vec![], source),
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+        let denied = runtime
+            .durability_recovery()
+            .admit_fresh_home_source(&request, plan)
+            .unwrap_err();
+        let RelationalFreshSourceAdmissionStop::Publication(denied) = denied else {
+            panic!("Birth must preserve its original publisher's typed outcome");
+        };
+        assert_eq!(current(&request, &runtime), original);
+        assert!(medium.offered().is_empty());
+        assert!(medium
+            .artifact_bytes(worth_relational::facade::publication::PatchStreamPosition(
+                1
+            ))
+            .is_none());
+        let offered = offered.lock().unwrap();
+        let artifact = offered
+            .as_ref()
+            .expect("the actual Birth reached its owner's step");
+        assert_eq!(artifact.revision(), 1);
+        match answer {
+            Answer::NoEffect => assert!(matches!(
+                denied,
+                RelationalInitialInputsPublicationStop::Refused(
+                    RelationalDurablePublicationRefusal::ProvenNoEffect { .. }
+                )
+            )),
+            Answer::Indeterminate => {
+                let RelationalInitialInputsPublicationStop::Unresolved(unresolved) = denied else {
+                    panic!("Birth indeterminacy must carry its original unresolved subject");
+                };
+                assert_eq!(
+                    unresolved.subject(),
+                    RelationalDurabilityUnresolvedSubject::InitialInputs {
+                        revision: artifact.revision(),
+                        digest: artifact.payload_digest(),
+                    }
+                );
+                assert!(matches!(runtime.archive_branch(&request, &main),
+                    Err(RelationalBranchTransitionStop::DurabilityUnresolved(actual))
+                        if actual == unresolved));
+                assert_eq!(current(&request, &runtime), original);
+            }
+        }
+    }
+}

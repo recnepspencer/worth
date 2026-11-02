@@ -173,3 +173,4 @@ native-durable-initial-installation crates/worth-court-relational-certification/
 # Existing Complete capture door, exact relocated public court/fixture callers.
 native-home-complete-checkpoint crates/worth-testkit-relational/src/initial_input_source.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
+native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs

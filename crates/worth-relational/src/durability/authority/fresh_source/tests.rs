@@ -227,7 +227,9 @@ fn fresh_receipt_refuses_actual_movement_and_preserves_original_cancellation() {
         runtime
             .durability_recovery()
             .admit_fresh_home_source(&stopped_execution, plan),
-        Err(Stop::Request(_))
+        Err(RelationalFreshSourceAdmissionStop::Recovery(Stop::Request(
+            _
+        )))
     ));
     let written = create_entity_outcome(&execution, &runtime, "advanced-genesis");
     release_test_commit_snapshot(&runtime, &written);

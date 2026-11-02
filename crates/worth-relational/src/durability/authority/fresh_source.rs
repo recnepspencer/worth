@@ -8,7 +8,9 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod initial_inputs;
 mod receipt;
+mod stop;
 pub use receipt::FreshRelationalSourceAdmission;
+pub use stop::RelationalFreshSourceAdmissionStop;
 #[cfg(test)]
 mod tests;
 
@@ -19,7 +21,7 @@ impl DurabilityRecoveryAuthority<'_> {
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         plan: RecoveryPlan,
-    ) -> Result<FreshRelationalSourceAdmission, Stop> {
+    ) -> Result<FreshRelationalSourceAdmission, RelationalFreshSourceAdmissionStop> {
         crate::execution::check_request(execution).map_err(Stop::Request)?;
         let admitted = super::recovery::admit_recovery_or_emit(self.runtime, plan)?;
         let plan = admitted.into_plan();
@@ -28,7 +30,7 @@ impl DurabilityRecoveryAuthority<'_> {
             || !plan.branch_transitions.transitions().is_empty()
             || !plan.restore_authoritative_envelope_commit_ids.is_empty()
         {
-            return Err(refused("fresh source contains durable history"));
+            return Err(refused("fresh source contains durable history").into());
         }
         let source = plan
             .cold_source
@@ -40,7 +42,7 @@ impl DurabilityRecoveryAuthority<'_> {
             .cold_source()
             .ok_or_else(|| refused("fresh runtime has no attached source"))?;
         if !Arc::ptr_eq(source, &actual) {
-            return Err(refused("fresh source belongs to another attachment"));
+            return Err(refused("fresh source belongs to another attachment").into());
         }
         // Provider locks and protected source observation precede logical epochs.
         let mut protection = RelationalDurableReadProtection::capture(source, execution)
@@ -49,7 +51,7 @@ impl DurabilityRecoveryAuthority<'_> {
             || protection.bounds().transitions.0 != 0
             || protection.bounds().selected_checkpoint
         {
-            return Err(refused("fresh protected source has a nonempty head"));
+            return Err(refused("fresh protected source has a nonempty head").into());
         }
         if initial_inputs::ensure_original_initialization(
             self.runtime,

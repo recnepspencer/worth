@@ -36,6 +36,7 @@ pub enum RelationalSectionReadmissionDenial {
     Journal(crate::RelationalStoreJournalRefusal),
     Transitions(crate::RelationalStoreTransitionJournalRefusal),
     Native(RelationalRecoveryStop),
+    FreshSource(worth_relational::facade::durability::RelationalFreshSourceAdmissionStop),
     OwnedSource(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal),
 }
 

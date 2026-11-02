@@ -160,6 +160,17 @@ fn frame_defects_refuse_before_decoding_each_with_its_own_refusal() {
         Refusal::Frame(FrameRefusal::TruncatedHeader { available }) if available == COMMIT.end
     ));
 
+    // A MessagePack value inside the declared payload is a different defect
+    // from extra bytes outside the frame. The three original value commitments
+    // stay intact; the v5 grammar refuses the fourth value before decoding.
+    let mut payload_tail = frame.bytes.clone();
+    payload_tail.push(0xc0);
+    write_u64(&mut payload_tail, LENGTH, payload_len + 1);
+    assert!(matches!(
+        refusal(&payload_tail, execution),
+        Refusal::Frame(FrameRefusal::InvalidPayloadShape)
+    ));
+
     let mut trailing = frame.bytes.clone();
     trailing.push(0);
     assert!(matches!(

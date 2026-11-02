@@ -1,6 +1,5 @@
 //! Fresh admission requires the original owner's actual initialization step.
 use super::*;
-use crate::durability::medium::RelationalInitialInputsPublicationStop;
 use crate::durability::source_initial_inputs::RelationalInitialInputsRefusal;
 
 pub(super) fn ensure_original_initialization(
@@ -8,7 +7,7 @@ pub(super) fn ensure_original_initialization(
     request: &ExecutionRequest<'_, '_>,
     source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     protection: &RelationalDurableReadProtection,
-) -> Result<bool, Stop> {
+) -> Result<bool, RelationalFreshSourceAdmissionStop> {
     let original = runtime
         .history
         .capture_original_branch_schema_inputs(request)
@@ -33,7 +32,7 @@ pub(super) fn ensure_original_initialization(
                 .as_ref()
                 .ok_or_else(|| refused("accepted original initialization has no frame"))?;
             if bytes.len() != expected.as_bytes().len() {
-                return Err(refused("initialization source differs from its producer"));
+                return Err(refused("initialization source differs from its producer").into());
             }
             for (actual, original) in bytes
                 .bytes()
@@ -44,7 +43,7 @@ pub(super) fn ensure_original_initialization(
                     .consult()
                     .map_err(|cause| Stop::Request(cause.into()))?;
                 if actual != original {
-                    return Err(refused("initialization source differs from its producer"));
+                    return Err(refused("initialization source differs from its producer").into());
                 }
             }
             Ok(false)
@@ -63,15 +62,7 @@ pub(super) fn ensure_original_initialization(
                 .ok_or_else(|| refused("fresh initialization medium detached"))?;
             let committed = medium
                 .publish_initial_inputs(image, request)
-                .map_err(|cause| match cause {
-                    RelationalInitialInputsPublicationStop::Request(cause) => Stop::Request(cause),
-                    RelationalInitialInputsPublicationStop::Refused(cause) => {
-                        refused_detail(format!("initialization was not published: {cause:?}"))
-                    }
-                    RelationalInitialInputsPublicationStop::Unresolved(cause) => {
-                        refused_detail(format!("initialization requires reopen: {cause:?}"))
-                    }
-                })?;
+                .map_err(RelationalFreshSourceAdmissionStop::Publication)?;
             committed.consume(|publication| {
                 runtime
                     .history
@@ -80,9 +71,9 @@ pub(super) fn ensure_original_initialization(
             });
             Ok(true)
         }
-        (None, None) | (None, Some(_)) | (Some(_), None) => Err(refused(
-            "fresh installation lacks its own durable original inputs",
-        )),
+        (None, None) | (None, Some(_)) | (Some(_), None) => {
+            Err(refused("fresh installation lacks its own durable original inputs").into())
+        }
     }
 }
 fn inputs_stop(cause: RelationalInitialInputsRefusal) -> Stop {

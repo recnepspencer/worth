@@ -2533,3 +2533,20 @@ That owner is `runtime/state/subsystems/indexing.rs` and `indexing/`, outside
 P-A's current granted paths. A coordinator decision is pending for this exact
 owner integration and for the World fork-stop projection already recorded
 above. Filesystem qualification and approving final review remain outstanding.
+
+
+### Corrective review: fresh Birth publication custody and payload tails
+
+Fresh Home admission carries `RelationalFreshSourceAdmissionStop::Publication`
+with the original initialization publisher's concrete stop, including the
+unresolved revision/digest subject. Store retains that stop in its fresh-source
+readmission denial. A proven-no-effect Birth cannot become accepted live input;
+an indeterminate Birth bars later publication through the same medium owner.
+
+Canonical v5 (decision implemented in `9ce79d758d`) commits exactly three
+MessagePack values. The earlier v4 negative that resealed an arbitrary payload
+with an appended MessagePack value cannot retain that framing premise: a fourth
+value has no valid v5 commitment shape. The retained negative now agrees with the
+header length, preserves all three original commitments, and requires
+`InvalidPayloadShape` before decoding. The independent outer-frame trailing-byte
+and reordered-map negatives remain separate assertions.
