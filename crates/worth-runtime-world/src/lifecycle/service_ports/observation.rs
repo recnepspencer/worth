@@ -8,6 +8,20 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    /// Observe actual resident owner artifacts explicitly, without claiming
+    /// Home durability or acquiring any performed/live result authority.
+    pub fn observe_memory_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ObservedRelationalMemoryCommit,
+    ) -> Result<
+        crate::history::WorldObservedMemoryPublication,
+        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .observe_memory_original_publication(execution, effect)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
     /// Read the original durable occurrence for this exact Native owner-admitted
     /// effect. Reconstruction reads the selected World image and bounded tails;
     /// it never executes a handler, publishes, or manufactures a live result.

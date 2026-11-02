@@ -28,8 +28,9 @@ mod owner_services;
 mod recorded_basis;
 mod reference;
 pub use recorded_basis::{
-    RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
-    RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
+    ObservedRelationalMemoryComponent, RecordedRelationalCanonicalComponent,
+    RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
+    RelationalRecordedComponentRefusal,
 };
 pub(crate) use reference::CheckpointComponentCellSource;
 mod reference_publication_cell;

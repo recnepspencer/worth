@@ -136,3 +136,6 @@ mod outcomes;
 mod performed_recovery;
 #[path = "publication_service_tests/retirement_race.rs"]
 mod retirement_race;
+
+#[path = "publication_service_tests/memory_original.rs"]
+mod memory_original;

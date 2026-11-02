@@ -6,6 +6,8 @@ mod denial;
 mod entry;
 mod exact_position;
 mod history_retirement;
+mod memory_original;
+pub(crate) use memory_original::MemoryOriginalRegistration;
 mod metadata;
 mod publication;
 mod publication_page;
@@ -94,6 +96,7 @@ mod tests;
 #[derive(Debug, Clone)]
 pub(crate) struct CompositeHistoryCatalog {
     state: Arc<Mutex<CompositeHistoryCatalogState>>,
+    originals: memory_original::MemoryOriginalRegistry,
 }
 
 #[derive(Debug)]
@@ -125,6 +128,7 @@ impl CompositeHistoryCatalog {
             &counters,
         ))));
         Self {
+            originals: Default::default(),
             state: Arc::new(Mutex::new(CompositeHistoryCatalogState {
                 owner,
                 limits: contract,

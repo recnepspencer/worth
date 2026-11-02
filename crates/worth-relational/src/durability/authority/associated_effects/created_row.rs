@@ -49,54 +49,67 @@ impl ReadmittedRelationalAssociatedEffect {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
     ) -> Result<Option<ReadmittedRelationalCreatedEntity<'_>>, Refusal> {
-        crate::execution::request_stage::optional_stage(
+        read_created_entity(
             execution,
-            |context, _memory| {
-                let mut created = None;
-                for value in self.semantic_result().created_entities() {
-                    crate::execution::request_stage::checkpoint(context, 1).map_err(|cause| {
-                        Refusal::Recovery(crate::durability::data::RelationalRecoveryStop::Request(
-                            cause.into(),
-                        ))
-                    })?;
-                    if value.assigned == entity {
-                        created = Some(value);
-                    }
-                }
-                let Some(created) = created else {
-                    return Ok(None);
-                };
-                let mut found = None;
-                for patch in &self.source_envelope().patch.authoritative_record_patches {
-                    crate::execution::request_stage::checkpoint(context, 1).map_err(|cause| {
-                        Refusal::Recovery(crate::durability::data::RelationalRecoveryStop::Request(
-                            cause.into(),
-                        ))
-                    })?;
-                    if patch.target != RecordRef::Entity(entity) {
-                        continue;
-                    }
-                    if found.is_some() || patch.structural_change != RecordStructuralChange::Created
-                    {
-                        return Err(Refusal::SubjectMismatch);
-                    }
-                    found = Some(patch);
-                }
-                match found {
-                    Some(patch) => Ok(Some(ReadmittedRelationalCreatedEntity {
-                        entity,
-                        kind: created.key.kind,
-                        patch,
-                    })),
-                    None => Err(Refusal::SubjectMismatch),
-                }
-            },
-            |_| 0,
+            self.semantic_result(),
+            self.source_envelope(),
+            entity,
         )
-        .map_err(|cause| {
-            Refusal::Recovery(crate::durability::data::RelationalRecoveryStop::Request(
-                cause,
-            ))
-        })?
     }
+}
+
+pub(super) fn read_created_entity<'original>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    semantic: &crate::transactions::data::RelationalCommitSemanticResult,
+    envelope: &'original crate::history::data::CanonicalCommitEnvelope,
+    entity: EntityId,
+) -> Result<Option<ReadmittedRelationalCreatedEntity<'original>>, Refusal> {
+    crate::execution::request_stage::optional_stage(
+        execution,
+        |context, _memory| {
+            let mut created = None;
+            for value in semantic.created_entities() {
+                crate::execution::request_stage::checkpoint(context, 1).map_err(|cause| {
+                    Refusal::Recovery(crate::durability::data::RelationalRecoveryStop::Request(
+                        cause.into(),
+                    ))
+                })?;
+                if value.assigned == entity {
+                    created = Some(value);
+                }
+            }
+            let Some(created) = created else {
+                return Ok(None);
+            };
+            let mut found = None;
+            for patch in &envelope.patch.authoritative_record_patches {
+                crate::execution::request_stage::checkpoint(context, 1).map_err(|cause| {
+                    Refusal::Recovery(crate::durability::data::RelationalRecoveryStop::Request(
+                        cause.into(),
+                    ))
+                })?;
+                if patch.target != RecordRef::Entity(entity) {
+                    continue;
+                }
+                if found.is_some() || patch.structural_change != RecordStructuralChange::Created {
+                    return Err(Refusal::SubjectMismatch);
+                }
+                found = Some(patch);
+            }
+            match found {
+                Some(patch) => Ok(Some(ReadmittedRelationalCreatedEntity {
+                    entity,
+                    kind: created.key.kind,
+                    patch,
+                })),
+                None => Err(Refusal::SubjectMismatch),
+            }
+        },
+        |_| 0,
+    )
+    .map_err(|cause| {
+        Refusal::Recovery(crate::durability::data::RelationalRecoveryStop::Request(
+            cause,
+        ))
+    })?
 }

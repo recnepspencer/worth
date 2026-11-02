@@ -5,6 +5,7 @@ mod publication;
 mod reclamation;
 mod retention;
 
+pub(crate) use catalog::MemoryOriginalRegistration;
 pub(crate) use catalog::{AncestorSelectionPath, HistoryTraversalControl};
 pub use catalog::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, CompositeHistoryTraversal,
@@ -28,12 +29,15 @@ pub use commit::{
     CompositeSignalPublicationIdentity,
 };
 pub use parentage::OrdinaryParent;
+pub(crate) use publication::MemoryPublicationRecord;
 pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim, PublicationRevision,
 };
 pub(crate) use publication::{PublicationEvidence, ReadmittedPublicationRecord};
-pub use publication::{WorldReadmittedPublication, WorldReadmittedPublicationDenial};
+pub use publication::{
+    WorldObservedMemoryPublication, WorldReadmittedPublication, WorldReadmittedPublicationDenial,
+};
 #[cfg(test)]
 pub(crate) use reclamation::CompositeHistoryReclamationRequest;
 pub use reclamation::{HistoryReclamationDenial, RetiredBranchHistoryRelease};

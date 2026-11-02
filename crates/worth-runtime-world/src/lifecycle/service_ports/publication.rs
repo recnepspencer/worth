@@ -112,7 +112,7 @@ where
             return foreign(prepared.expected_head().clone());
         }
         let outcome = owner.execute_without_signal(execution, prepared, cancellation);
-        owner.finish_publication(outcome, cancellation)
+        owner.finish_publication(&execution, outcome, cancellation)
     }
     pub fn execute_with_signal<F>(
         &self,
@@ -134,7 +134,7 @@ where
             return foreign(prepared.expected_head().clone());
         }
         let outcome = owner.execute_with_signal(execution, prepared, context, cancellation, apply);
-        owner.finish_publication(outcome, cancellation)
+        owner.finish_publication(&execution, outcome, cancellation)
     }
 
     pub(crate) fn execute_conditional_definition_with_signal<F, H>(
@@ -179,7 +179,10 @@ where
             |transaction| apply(transaction, &custody),
             || admit_activation(&custody),
         );
-        (owner.finish_publication(outcome, cancellation), custody)
+        (
+            owner.finish_publication(&execution, outcome, cancellation),
+            custody,
+        )
     }
 }
 

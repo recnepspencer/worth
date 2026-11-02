@@ -10,6 +10,8 @@ use std::sync::{Arc, Weak};
 mod created_row;
 mod readmission;
 pub use created_row::ReadmittedRelationalCreatedEntity;
+mod memory_original;
+pub use memory_original::ObservedRelationalMemoryCommit;
 
 /// Exact discovered index and weak owner/source identities. The actual Native
 /// owner retains source custody; an observer cannot keep a closed Home serving.

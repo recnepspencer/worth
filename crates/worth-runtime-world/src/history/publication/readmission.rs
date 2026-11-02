@@ -95,6 +95,7 @@ impl PublicationEvidence {
 
 #[derive(Debug)]
 pub enum WorldReadmittedPublicationDenial {
+    Request(worth_execution::WorkCeilingDenial),
     ForeignHome,
     OwnerUnavailable,
     History(crate::history::CompositeHistoryCatalogDenial),

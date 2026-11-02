@@ -405,8 +405,9 @@ pub use crate::durability::{
     DurableProductUnpublishedOwnerEffectsIdentity, DurableQueryOutputSettlement,
     DurableStateFamily, DurableWorldBootstrapAttemptIdentity, DurableWorldOwnerIdentity,
     HomeIdentity, HomeIdentityDenial, HomeIncarnation, HomeIncarnationExhausted,
-    HomeProgramBinding, RetentionClass, UnsupportedDurableOwnerTag, WorldDurableJournal,
-    WorldOwnerCoordinate, WorldOwnerSlotIdentity,
+    HomeProgramBinding, MemoryProductBranchReference, RecordedCompositePublicationAttemptIdentity,
+    RecordedProductBranchReference, RetentionClass, UnsupportedDurableOwnerTag,
+    WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

@@ -36,6 +36,31 @@ impl RelationalBranchBasisPort {
         super::result_snapshot_release::release(&runtime, result)
     }
 
+    pub fn observe_memory_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<
+        crate::branch::ObservedRelationalMemoryComponent,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .observe_memory_component(execution, basis)
+    }
+    pub fn export_memory_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        component: &crate::branch::ObservedRelationalMemoryComponent,
+    ) -> Result<
+        crate::branch::RecordedRelationalComponentReference,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .export_memory_component(execution, component)
+    }
+
     /// Describe the original owner-admitted pinned subject independently of
     /// later branch advancement. This creates no recovery or durability proof.
     pub fn export_recorded_retained_component(
