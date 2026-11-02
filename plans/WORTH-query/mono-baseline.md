@@ -164,6 +164,10 @@ Instrument tests are measurement tests, not a claim of a symbol-growth guard.
   the available evidence; no Query literal traversal court is claimed.
 - Measurement begins after Slice 0 and sync, using the existing test profile.
   There is no dev-to-test-profile reduction claim.
+- Workflow formatting retains the existing exact Error parameter. Its dynamic
+  emitter removes application specialization without inventing an erased error
+  channel or widening a refusal. The final application archive verifies that
+  the large formatter bodies are no longer instantiated there.
 
 ## Slice results
 
@@ -172,6 +176,7 @@ Instrument tests are measurement tests, not a claim of a symbol-growth guard.
 | Baseline | 160,719 | 0 | 674,508,286 | 0 | 48,544,077 |
 | Concrete source meanings | 157,807 | -2,912 (-1.81%) | 659,337,342 | -15,170,944 (-2.25%) | 46,914,499 |
 | Concrete completed facts | 156,880 | -3,839 (-2.39%) | 655,841,648 | -18,666,638 (-2.77%) | 46,647,854 |
+| Shared workflow emission | 156,909 | -3,810 (-2.37%) | 654,806,940 | -19,701,346 (-2.92%) | 46,360,124 |
 
 The source-meaning slice keeps the public generic entry and typed observations,
 but uses the exact existing relational denial and a dynamic comparator inside
@@ -204,3 +209,75 @@ unattributed code is 56,216 and shared-alias code is zero. SHA-256:
 Reproduce with `completed-facts-court-build.jsonl` and `mono-completed-facts.json`
 in the same commands. Source parent is `e55d089b77`, plus its following
 completed-fact commit; fetched sync branches were unchanged.
+
+
+Workflow emission saves a further 1,034,708 archive bytes and 287,730 physical
+code bytes, while **adding 29 external symbols** relative to completed facts.
+This is a byte reduction, not a per-slice symbol reduction. Query Execution
+namespace count is 44,102 and primary_graph is 38,338. The 23-copy transition
+formatting body and new common start-record body are absent from the application
+archive; the 18-copy start ownership shell is 26,190 bytes instead of 160,092.
+Existing Error specialization is retained exactly, while application callback
+specialization leaves the large bodies. No erased error container was added.
+Independent totals agree at 156,909 symbols and 46,360,124 code bytes;
+unattributed code is 58,481 and shared-alias code is zero. SHA-256:
+`b601d3320681e37f6e9b525418aefe3225ebd85b84d70cc302fe55be68c3f598`.
+Reproduce with `workflow-facts-court-build.jsonl` and `mono-workflow-facts.json`
+in the same commands. Source parent is `e9dfbfa019`, plus its following workflow
+commit; fetched sync branches were unchanged.
+
+## Stopping point and remaining ranking
+
+The measured final fixture is 19,701,346 bytes (2.92%) and 3,810 symbols (2.37%)
+smaller than baseline; physical code falls 2,183,953 bytes (4.50%). No downstream
+size reduction or controlled build-time/throughput improvement is claimed.
+
+These are the final leading remaining Query families, using the same normalization:
+
+| Rank | Normalized family | Code bytes | Copies |
+| --- | --- | ---: | ---: |
+| 1 | `worth_query_execution::domain_computation::primary_graph::application_query::one_shot::outcome::complete_one_shot_with_capture::<>` | 667,168 | 32 |
+| 2 | `worth_query_execution::domain_computation::primary_graph::application_installation::construction::in_memory_with_contributions_in_advancement::<>` | 569,692 | 23 |
+| 3 | `worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::source_readmission::ready_on_selected::certify_ready_on_selected_with_disclosure::<>::{closure#5}` | 344,134 | 28 |
+| 4 | `worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_native` | 340,488 | 24 |
+| 5 | `worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::commit_preparation::prepare_application_commit::<>` | 313,329 | 23 |
+| 6 | `worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttempt<>::complete_full` | 277,896 | 24 |
+| 7 | `worth_query_execution::domain_computation::primary_graph::application_attempt::provider_binding::registration::register_provider_attempt::<>` | 258,842 | 23 |
+| 8 | `worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime<>::finish_application_query_admission_with_basis::<>` | 165,620 | 28 |
+| 9 | `worth_query_execution::domain_computation::authorization::application_disclosure::contract::compilation::admit_rule::<>` | 153,203 | 23 |
+| 10 | `worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::unpublished::ContinuationState::progress::<>` | 146,272 | 14 |
+
+Boundary review of the next candidates found:
+
+- Remaining one-shot completion constructs typed observations and invokes typed
+  capture/projection/results. Its common source-meaning work is already shared.
+  Turning the remaining aggregate bytes into a saving needs another result or
+  observation representation change, rather than another large concrete loop.
+- Installation construction carries Schema/Contributions configuration, typed
+  installed schema and bootstrap, initial-state callback, program admission,
+  checkpoint transition, and publication. Its common installer already exists;
+  the small setup remainder does not justify another slice on this evidence.
+- Ready-on-selected disclosure owns prepared typed Query permission and its
+  one-shot disclosure continuation across current/pending/rebound states. An
+  erased view here would need to preserve that lifecycle across several owners.
+- Native/full read completion mix exact admitted operation/scope contracts,
+  authority checks, expected-fact custody, and typed completed read sets. The
+  large completed-fact admission loop is shared. Smaller patch/validation
+  fragments could be extracted, but require additional phase/drop boundaries
+  for a smaller uncertain marginal archive saving.
+- Commit preparation, registration, and admission finish bind the exact admitted
+  operation/query to provider, effect or result phases. Their aggregate family
+  sizes are not evidence that all bytes are removable common work.
+- Disclosure rule compilation is a possible later independent optimization:
+  153,203 bytes/23 copies. Its remaining query type crosses admission,
+  result-rule and influence compilers. Sharing it needs a borrowed installed
+  query view across those owners; no benefit for that change was measured here.
+
+I stopped after the concrete completion/formatting cuts. The last low-risk
+extraction saved only 0.16% of the preceding archive and added 29 symbols. The
+next ranked opportunities require new erased lifecycle/query views or smaller
+multi-phase helpers; that proof-interface/maintenance cost is not justified as
+another slice by the remaining measured common bodies. This is a deliberate
+marginal-benefit judgment, not a hard-rule blocker or a claim that the remaining
+engine cannot be optimized. The record identifies where to resume with a new
+boundary review. No court or refusal was weakened to obtain these numbers.

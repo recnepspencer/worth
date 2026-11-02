@@ -213,3 +213,43 @@ slice without changes. Reviewer independently traced all ownership/check phases;
 2 Rust files, 3 advisories, 0 scan errors. It accepted the test-only constructor
 correction, independently matched final measurements and gates, and approved
 the slice with no open finding.
+
+
+## Workflow fact emission slice
+
+Shape: two existing workflow formatting owners now borrow a dynamic emitter.
+The start entry keeps the original owned subject and emitter, and emits the
+created-subject relation only after the shared four record/link effects.
+Transition formatting consumes the same earned basis. Error remains exact and
+generic; the large bodies no longer specialize on the application callback.
+There is no boxed error, mutable error slot, new authority, or allocation.
+
+Commands use the same Query manifest/environment:
+
+| Command | Result |
+| --- | --- |
+| `cargo clippy -p worth-query-execution --all-targets --message-format=json` | exit 0, 0 errors, 114 warning diagnostics |
+| `cargo fmt --check -p worth-query-execution` | exit 0 |
+| `cargo test -p worth-query-execution --lib workflow::definition::compilation::reconstruction::start_provenance_tests` | 5 passed, 0 failed/ignored/measured, 2210 filtered |
+| `cargo test -p worth-query-court-decl-host --test worth_query_court_decl_host --no-run --message-format=json` | exit 0; successful artifact selected |
+| `cargo test -p worth-query-court-decl-host --test worth_query_court_decl_host certification::native_workflow_operations::capability::workflow::` | 2 passed, 0 failed/ignored/measured, 325 filtered |
+| Boundary-check and agent-context commands above | both exit 0 |
+| `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 2 Rust files pass |
+| Working and origin/master...HEAD diff checks | exit 0 |
+
+The five existing owner courts read genuine native provenance for existing and
+newly created subjects, distinguish immutable start provenance from mutable
+current revision, retain data after original payer drop, and inject corrupted or
+missing native truth to require refusal. Those native reconstruction/read checks
+are independent of the moved effect formatter. The two installed public courts
+check fresh selected capability at workflow completion and captured actor meaning
+against the original proposal rather than replacement input. No tests changed.
+
+Review caught the proposed naive callback borrow's owned-subject drop seam
+before implementation. The accepted shell retains subject ownership and final
+transfer, avoiding an Option/error-slot abstraction. The reviewer independently
+traced first-error propagation, effect order and capture-before-subject drop;
+2 Rust files, 8 advisories, 0 scan errors. The reviewer independently matched
+final measurements, all gates and the remaining ranking, inspected the named
+continuation seams, and approved both the slice and the documented marginal
+stopping judgment with no open material finding.

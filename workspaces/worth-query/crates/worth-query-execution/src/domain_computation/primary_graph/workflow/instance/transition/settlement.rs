@@ -54,7 +54,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_set
     basis: &WorkflowOperationSettlementBasis,
     operation_receipt_identity: &[u8; 32],
     executor: WorkflowAdmittedActor,
-    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+    mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     visit_transition_facts_from_basis(
         layout,
@@ -65,7 +65,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_set
         } else { super::super::state::WorkflowInstanceState::Ready },
         Some(operation_receipt_identity),
         Some(executor),
-        emit,
+        &mut emit,
     )
 }
 
@@ -76,7 +76,7 @@ fn visit_transition_facts<Schema, Operation, Input, Scope, Error>(
     state: super::super::state::WorkflowInstanceState,
     operation_receipt_identity: Option<&[u8; 32]>,
     executor: Option<WorkflowAdmittedActor>,
-    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+    mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     visit_transition_facts_from_basis(
         layout,
@@ -85,7 +85,7 @@ fn visit_transition_facts<Schema, Operation, Input, Scope, Error>(
         state,
         operation_receipt_identity,
         executor,
-        emit,
+        &mut emit,
     )
 }
 
@@ -134,7 +134,7 @@ fn visit_transition_facts_from_basis<Error>(
     state: super::super::state::WorkflowInstanceState,
     operation_receipt_identity: Option<&[u8; 32]>,
     executor: Option<WorkflowAdmittedActor>,
-    mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+    emit: &mut dyn FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     let transition = CreatedEntityRef {
         partition_id: admitted.instance.partition_id,
