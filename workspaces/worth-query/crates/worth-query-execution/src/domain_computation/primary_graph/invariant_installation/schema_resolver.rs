@@ -159,17 +159,26 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
         Field: worth_query_declaration::facade::application_schema::DeclaredApplicationFieldValue<Value = Value>,
         Field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,
 {
-        self.layout
-            .field(field.entity(), field.aspect(), field.field())
-            .map(|layout| super::super::application_invariant::WorthQueryApplicationInvariantFieldBinding {
+        let layout = self
+            .layout
+            .field(field.entity(), field.aspect(), field.field())?;
+        let aspect_absence = self
+            .layout
+            .aspect_contract(field.entity(), layout.locator.aspect().aspect_key())?
+            .absence();
+        Some(
+            super::super::application_invariant::WorthQueryApplicationInvariantFieldBinding {
                 binding_identity: self.binding_identity.clone(),
                 entity_kind: layout.entity_kind,
                 locator: layout.locator.clone(),
+                aspect_absence,
                 presence: Field::PRESENCE,
-                decode: |value| <Field::Binding as worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding>::decode(value)
-                    .map_err(|error| format!("{error:?}")),
+                decode: |value| {
+                    <Field::Binding as worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding>::decode(value).map_err(|error| format!("{error:?}"))
+                },
                 _marker: PhantomData,
-            })
+            },
+        )
     }
 }
 

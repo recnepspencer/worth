@@ -61,6 +61,8 @@ pub struct WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value> {
         ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) locator: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) aspect_absence:
+        worth_foundational::facade::AbsenceLaw,
     pub(in crate::domain_computation::primary_graph) presence:
         worth_query_declaration::facade::application_schema::ApplicationFieldPresence,
     pub(in crate::domain_computation::primary_graph) decode:
