@@ -22,6 +22,30 @@ where
             Value = ActivityResult,
         >,
 {
+    let path = ApplicationQueryRootPath::from(Account::reference());
+    let path = if reverse {
+        path.reverse_closure(AccountNext::reference())
+    } else {
+        path.forward_closure(AccountNext::reference())
+    };
+    definition_on_path(reference, path)
+}
+pub(super) fn definition_on_path<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> + 'static>(
+    reference: ApplicationQueryReference<
+        PlanningTestSchema,
+        Q,
+        ActivityParameters,
+        ActivityResult,
+        Account,
+    >,
+    path: ApplicationQueryRootPath<PlanningTestSchema, Account, Account>,
+) -> ApplicationQueryDefinition<PlanningTestSchema, Q, ActivityParameters, ActivityResult, Account>
+where
+    Q::ResultBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = ActivityResult,
+        >,
+{
     let field = ApplicationQueryResultFieldRef::<Q, AccountIdSlot, _, _, _, _, _, _, _, _>::new(
         "account_id",
         AccountId::reference(),
@@ -35,12 +59,6 @@ where
     >::new(Account::reference())
     .field(field)
     .build();
-    let path = ApplicationQueryRootPath::from(Account::reference());
-    let path = if reverse {
-        path.reverse_closure(AccountNext::reference())
-    } else {
-        path.forward_closure(AccountNext::reference())
-    };
     ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Account::reference())
         .scope(Account::reference())
@@ -149,5 +167,144 @@ fn check<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> + 'static>(
     assert_eq!(
         estimate.complexity_contract().as_str(),
         "broad_traversal_candidate"
+    );
+}
+
+use worth_query_declaration::facade::application_schema::ApplicationDerivedRelationRef;
+worth_query_application_query!(pub(super) ForwardQuery for PlanningTestSchema, identity "planning-derived-source", parameters ActivityParametersBinding, result ActivityResultBinding, scope Account => "Account", name "planning_derived_source");
+worth_query_application_query!(pub(super) ReverseQuery for PlanningTestSchema, identity "planning-reverse-derived-source", parameters ActivityParametersBinding, result ActivityResultBinding, scope Account => "Account", name "planning_reverse_derived_source");
+pub(super) struct Source;
+pub(super) fn source() -> ApplicationDerivedRelationRef<PlanningTestSchema, Source, Account, Account>
+{
+    ApplicationDerivedRelationRef::from_schema_identifiers("AccountNext", "Account", "Account")
+}
+pub(super) fn derived_definition<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> + 'static>(
+    reference: ApplicationQueryReference<
+        PlanningTestSchema,
+        Q,
+        ActivityParameters,
+        ActivityResult,
+        Account,
+    >,
+    reverse: bool,
+) -> ApplicationQueryDefinition<PlanningTestSchema, Q, ActivityParameters, ActivityResult, Account>
+where
+    Q::ResultBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = ActivityResult,
+        >,
+{
+    let path = ApplicationQueryRootPath::from(Account::reference());
+    let path = if reverse {
+        path.reverse_derived(source())
+    } else {
+        path.forward_derived(source())
+    };
+    complete_closure::definition_on_path(reference, path)
+}
+#[test]
+fn derived_source_requirements_keep_direction_namespace_and_complete_native_support() {
+    check_derived(ForwardQuery::reference(), false);
+    check_derived(ReverseQuery::reference(), true);
+    let schema = installed_schema();
+    let stored = schema
+        .certification_query(complete_closure::ClosureQuery::reference())
+        .unwrap();
+    let parameters =
+        admit_application_query_parameters(&stored, ApplicationQueryParameterSet::new()).unwrap();
+    let requirements = admitted_requirements(
+        stored.read_graph(),
+        WorthQueryApplicationQueryLane::OneShot,
+        32,
+        parameters.identity(),
+    );
+    assert!(!requirements.contains_kind(&WorthQueryGraphReadAccessRequirementKind::DerivedSource));
+    assert!(
+        requirements.contains_kind(&WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency)
+    );
+}
+fn check_derived<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> + 'static>(
+    reference: ApplicationQueryReference<
+        PlanningTestSchema,
+        Q,
+        ActivityParameters,
+        ActivityResult,
+        Account,
+    >,
+    reverse: bool,
+) where
+    Q::ResultBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = ActivityResult,
+        >,
+{
+    let schema = installed_schema();
+    let query = schema.certification_query(reference).unwrap();
+    let parameters =
+        admit_application_query_parameters(&query, ApplicationQueryParameterSet::new()).unwrap();
+    let ordinary = admitted_requirements(
+        query.read_graph(),
+        WorthQueryApplicationQueryLane::OneShot,
+        32,
+        parameters.identity(),
+    );
+    let admitted = derive_graph_read_access_requirements_for_contract_admitted(
+        query.read_family_binding().planning_contract(),
+        WorthQueryApplicationQueryLane::OneShot,
+        32,
+        parameters.identity(),
+        test_canonical_budget(),
+        &mut |_, _| Ok::<_, ()>(()),
+    )
+    .unwrap();
+    assert_eq!(ordinary, admitted);
+    assert_eq!(ordinary.counters().derived_source_count(), 1);
+    for kind in [
+        WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
+        WorthQueryGraphReadAccessRequirementKind::ReverseAdjacency,
+    ] {
+        assert!(!ordinary.contains_kind(&kind));
+    }
+    let row = ordinary
+        .rows()
+        .iter()
+        .find(|row| row.kind() == &WorthQueryGraphReadAccessRequirementKind::DerivedSource)
+        .unwrap();
+    assert_eq!(row.relation_name(), Some("AccountNext"));
+    assert_eq!(
+        row.traversal_operator(),
+        Some(&WorthQueryGraphReadTraversalOperator::CompleteDerivedSource)
+    );
+    assert_eq!(
+        row.relation_direction(),
+        Some(&if reverse {
+            WorthQueryAdmittedGraphReadRelationDirection::Ancestor
+        } else {
+            WorthQueryAdmittedGraphReadRelationDirection::Forward
+        })
+    );
+    assert_eq!(
+        row.complexity_contract(),
+        &WorthQueryGraphReadAccessComplexityContract::CompleteTraversalWorkset
+    );
+    assert_eq!(
+        row.memory_estimate_basis(),
+        &WorthQueryGraphReadAccessMemoryEstimateBasis::DiscoveredWorkset
+    );
+    let inventory = WorthQueryGraphIndexInventory::from_current_runtime_support();
+    let report = match_graph_index_inventory_for_requirements(&ordinary, &inventory);
+    assert!(
+        report
+            .matches()
+            .iter()
+            .all(|row| row.outcome().as_str() == "exact_match"),
+        "{report:?}"
+    );
+    let support = inventory
+        .row_for_requirement_kind(&WorthQueryGraphReadAccessRequirementKind::DerivedSource)
+        .unwrap();
+    assert_eq!(
+        support.lifecycle_owner(),
+        &WorthQueryGraphIndexLifecycleOwner::LowerRuntime
     );
 }

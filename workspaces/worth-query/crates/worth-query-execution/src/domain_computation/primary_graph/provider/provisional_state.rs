@@ -41,7 +41,9 @@ impl WorthQueryProvisionalGraphProvider for Arc<WorthQueryPrimaryGraphProvider> 
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .discard_overlay(evidence);
-        discarded.then_some(()).ok_or_else(|| {
+        let admitted = discarded.is_some();
+        drop(discarded); // The attempt gate has released before final custody Drop.
+        admitted.then_some(()).ok_or_else(|| {
             WorthQueryProvisionalFailure::invalid_program(
                 "provider overlay evidence does not belong to the exact application attempt",
             )

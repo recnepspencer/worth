@@ -23,7 +23,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
     }
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
         // Capture stores the binding's complete AspectValue representation.
-        let encoded_width = U64ApplicationValueBinding::encode(&u64::MAX)
+        let encoded_width = InlineCounterBinding::encode(&u64::MAX)
             .unwrap()
             .semantic_byte_width();
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
@@ -44,7 +44,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
         };
         let value = match original.value {
             Value::Primary(_) | Value::AdjacentPrimary(_) => Value::Primary(
-                U64ApplicationValueBinding::decode(
+                InlineCounterBinding::decode(
                     preimage
                         .field(&DeclaredPreImageLocus::from_field(Primary::reference()))
                         .ok_or(MissingPreImage)?,

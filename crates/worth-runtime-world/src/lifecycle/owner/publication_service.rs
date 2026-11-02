@@ -45,12 +45,18 @@ where
         else {
             return ready.retain(crate::recovery::ProductUnpublishedCause::StaleProductHead);
         };
-        ready.publish_controlled(
+        let outcome = ready.publish_controlled(
             &cell,
             cancellation,
             &self.state.clock,
             &self.state.operation_control,
-        )
+        );
+        if let RuntimeWorldPublicationOutcome::Performed(performed) = &outcome {
+            self.state
+                .operation_control
+                .observe_performed_publication_for_test(performed);
+        }
+        outcome
     }
 
     /// Recover the original committed delivery after caller loss. This reads

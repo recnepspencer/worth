@@ -12,11 +12,19 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGr
 /// The primary-graph layout an installed identity schema lowers to.
 pub(in crate::domain_computation::primary_graph) fn installed_layout(
 ) -> WorthQueryPrimaryGraphLayout {
-    let declaration = IdentityExecutionSchema::declaration().unwrap();
+    installed_schema_layout::<IdentityExecutionSchema>().0
+}
+
+/// Installed declaration/native contract custody for a schema-layout owner court.
+/// This uses the same existing installation root; it creates no graph or read grant.
+pub(in crate::domain_computation::primary_graph) fn installed_schema_layout<
+    Schema: ApplicationSchema,
+>() -> (WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry) {
+    let declaration = Schema::declaration().unwrap();
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        IdentityExecutionSchema::OWNER,
-        IdentityExecutionSchema::MAJOR,
-        IdentityExecutionSchema::MINOR,
+        Schema::OWNER,
+        Schema::MAJOR,
+        Schema::MINOR,
     ))
     .application_schema(declaration.clone())
     .validate()
@@ -38,5 +46,4 @@ pub(in crate::domain_computation::primary_graph) fn installed_layout(
         &RelationalSchemaRegistry::new(),
     )
     .unwrap()
-    .0
 }

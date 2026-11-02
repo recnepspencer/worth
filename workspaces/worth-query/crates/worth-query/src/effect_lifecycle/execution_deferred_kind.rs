@@ -25,6 +25,11 @@ pub enum EffectExecutionDeferredKind {
     /// this commit. An unchanged retry meets the same limit until capacity is
     /// released or the installation is enlarged.
     InvalidationCompanionCapacityExhausted,
+    /// Original managed Source availability/correspondence stop. This diagnostic
+    /// promises neither a successful retry nor capacity exhaustion.
+    InvalidationCompanionUnavailable {
+        stop: CompanionPreflightStop,
+    },
 }
 
 /// Whether an invalidation companion stop clears without any change to the
@@ -41,6 +46,8 @@ pub(crate) const fn companion_stop_is_transient(stop: &CompanionPreflightStop) -
         // Publication reports interruption as its own outcome before a
         // companion deferral is built, so it never reaches this split.
         CompanionPreflightStop::Interrupted(_)
+        | CompanionPreflightStop::ManagedSourceNotPrepared
+        | CompanionPreflightStop::ManagedSourceChanged
         | CompanionPreflightStop::ForeignCell
         | CompanionPreflightStop::WorkCounterOverflow
         | CompanionPreflightStop::PreparationMemoryCounterOverflow => false,
@@ -62,5 +69,27 @@ mod tests {
                 "a resource refusal recurs on an unchanged effect: {stop:?}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn managed_source_preflight_preserves_effect_stop_without_retry_or_capacity_claim() {
+    use super::{relational_execution_deferred::publication, RelationalEffectExecutionFailure};
+    for stop in [
+        CompanionPreflightStop::ManagedSourceNotPrepared,
+        CompanionPreflightStop::ManagedSourceChanged,
+    ] {
+        assert!(!companion_stop_is_transient(&stop));
+        let failure = publication(
+            worth_relational::facade::mvcc::RelationalPublicationDeferred::CompanionPreflight(stop),
+        );
+        let RelationalEffectExecutionFailure::Deferred { kind, .. } = failure else {
+            panic!("{failure:?}")
+        };
+        assert_eq!(
+            kind,
+            EffectExecutionDeferredKind::InvalidationCompanionUnavailable { stop }
+        );
     }
 }

@@ -35,6 +35,7 @@ pub enum WorthQueryApplicationQueryFreshness {
 pub struct WorthQueryApplicationQueryControls<'a, Schema> {
     producer: Option<Arc<OriginalSettledProducerObservation>>,
     basis: WorthQueryApplicationQueryBasis,
+    selection_origin: super::super::product_operation::SelectedQueryOrigin,
     security_product: crate::basis::WorthQueryProductObservationLease,
     publication_product: Option<crate::basis::WorthQueryProductBranchLease>,
     lane: WorthQueryApplicationQueryLane,
@@ -58,7 +59,6 @@ pub struct WorthQueryApplicationQueryResumeControls<'a> {
 /// freshness, basis deadline, result and work limits, and request scope.
 pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
     producer: Option<Arc<OriginalSettledProducerObservation>>,
-    current_product_one_shot: bool,
     basis: WorthQueryApplicationQueryBasisPosture,
     consistency: WorthQueryApplicationQueryConsistency,
     freshness: WorthQueryApplicationQueryFreshness,
@@ -80,6 +80,18 @@ pub(super) enum WorthQueryApplicationQueryBasis {
 }
 
 impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
+    pub(in crate::domain_computation::primary_graph) fn with_selection_origin(
+        mut self,
+        origin: super::super::product_operation::SelectedQueryOrigin,
+    ) -> Self {
+        self.selection_origin = origin;
+        self
+    }
+
+    pub(super) fn selected_current_at_selection(&self) -> bool {
+        self.selection_origin.is_current()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn with_original_settled_producer(
         mut self,
         producer: Option<Arc<OriginalSettledProducerObservation>>,
@@ -114,6 +126,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -138,6 +151,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -162,6 +176,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -186,6 +201,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -238,8 +254,6 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     ) {
         let basis_deadline = self.request_scope.deadline();
         let admitted = WorthQueryAdmittedApplicationQueryControls {
-            current_product_one_shot: self.publication_product.is_some()
-                && self.lane == WorthQueryApplicationQueryLane::OneShot,
             basis: self.basis_posture(),
             consistency: self.consistency(),
             freshness: self.freshness(),
@@ -267,6 +281,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
             request_scope: controls.request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -303,11 +318,6 @@ impl WorthQueryAdmittedApplicationQueryControls<'_> {
             .as_ref()
             .filter(|origin| origin.matches_read(actual))
             .cloned()
-    }
-    pub(in crate::domain_computation::primary_graph::application_query) fn is_current_product_one_shot(
-        &self,
-    ) -> bool {
-        self.current_product_one_shot
     }
     pub const fn basis_posture(&self) -> WorthQueryApplicationQueryBasisPosture {
         self.basis

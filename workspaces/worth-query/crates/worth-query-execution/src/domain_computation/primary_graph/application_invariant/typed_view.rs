@@ -16,7 +16,11 @@ use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
 use super::read_observation::InvariantReadObservation;
 
 pub(super) mod component;
+mod derived_changes;
 mod derived_component;
+pub use derived_changes::{
+    WorthQueryInvariantDerivedChanges, WorthQueryPreparedInvariantDerivedChanges,
+};
 pub use derived_component::{
     WorthQueryApplicationInvariantGraphComponent, WorthQueryApplicationInvariantGraphComponents,
 };
@@ -116,6 +120,11 @@ enum ViewPosture {
     Proposed,
     Committed,
 }
+mod managed_index;
+pub use managed_index::{
+    WorthQueryApplicationInvariantManagedIndexBinding, WorthQueryInvariantManagedIndexPair,
+    WorthQueryInvariantManagedIndexRead, WorthQueryPreparedInvariantManagedIndex,
+};
 
 pub struct WorthQueryApplicationInvariantReadView<'runtime, Schema> {
     aspects: worth_relational::facade::runtime::StructuralAspectStateView<'runtime>,

@@ -20,6 +20,7 @@ impl SourceFacts {
             aspects,
             adjacencies,
             walks,
+            derived,
             allocation: _,
         } = self;
         digest.update((entities.len() as u64).to_be_bytes());
@@ -62,6 +63,14 @@ impl SourceFacts {
             for walk in walks.values() {
                 poll()?;
                 digest.update(walk.commitment());
+            }
+        }
+        if let Some(derived) = derived {
+            digest.update(b"complete-derived-sources:v1");
+            digest.update((derived.values().len() as u64).to_be_bytes());
+            for body in derived.values() {
+                poll()?;
+                digest.update(body.commitment());
             }
         }
         poll()?;

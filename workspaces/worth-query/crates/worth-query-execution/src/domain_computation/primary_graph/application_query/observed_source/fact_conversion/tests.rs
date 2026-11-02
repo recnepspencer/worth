@@ -28,8 +28,7 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
     assert!(projected
         .merge_same_source_fact(
             path,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            None
+            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
         )
         .unwrap());
     assert!(
@@ -46,8 +45,7 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
     assert!(!projected
         .merge_same_source_fact(
             changed,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            None
+            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
         )
         .unwrap());
 }

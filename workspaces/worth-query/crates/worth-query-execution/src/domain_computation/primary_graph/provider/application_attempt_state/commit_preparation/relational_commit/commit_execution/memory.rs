@@ -21,6 +21,7 @@ pub(super) fn commit(
     }
     let durable_custody::QueryPreparingApplicationCommit {
         mut attempt,
+        predicate,
         native,
         work,
         retained_preimage,
@@ -67,6 +68,7 @@ pub(super) fn commit(
                     managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary
                 },
                 attempt,
+                predicate,
                 work,
                 index_maintenance_work,
                 retained_preimage,
@@ -105,6 +107,7 @@ pub(super) fn commit(
         .expect("World performed a prepared Relational application candidate");
     Ok(WorthQueryCommittedApplicationSession {
         attempt,
+        predicate,
         work,
         index_maintenance_work,
         retained_preimage,

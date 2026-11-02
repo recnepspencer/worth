@@ -9,7 +9,9 @@ native-fresh-home-readmission workspaces/worth-store/crates/worth-store-applicat
 native-unconfigured-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
 native-home-source-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
 application-home-fresh-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
+application-home-fresh-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
 application-home-recovered-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
+application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs
 native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
 native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/transition.rs
 native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs

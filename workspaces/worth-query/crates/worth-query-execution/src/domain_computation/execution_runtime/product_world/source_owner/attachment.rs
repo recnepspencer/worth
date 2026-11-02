@@ -6,7 +6,7 @@ impl WorthQueryRelationalSourceOwner {
     pub(in crate::domain_computation) fn attach_home_source(
         source: RuntimeBridgeRelationalSource,
         receipt: &RelationalInitialSchemaInstallationReceipt,
-        invalidation_resources: super::super::super::WorthQueryInvalidationResources,
+        invalidation_owner: Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
     ) -> Result<Self, HomeSourceAttachmentDenial> {
         let runtime = source.query_runtime_handle();
         let runtime_instance_id = runtime.runtime_instance_id();
@@ -15,7 +15,7 @@ impl WorthQueryRelationalSourceOwner {
         }
         // Only after authentic installed-Native identity matches may Query
         // activate a publication companion or lend any bootstrap effect lane.
-        Self::from_registered_handle(runtime, source, runtime_instance_id, invalidation_resources)
+        Self::from_registered_handle(runtime, source, runtime_instance_id, invalidation_owner)
             .map_err(HomeSourceAttachmentDenial::Installation)
     }
 }

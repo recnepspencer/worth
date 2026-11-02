@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
-use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 
@@ -55,20 +54,15 @@ where
     let plan = runtime
         .finish_prepared_application_query_permission(execution, permission)
         .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
-    let read = runtime
-        .execute_application_query_one_shot_admitted(execution, plan)
-        .map_err(|stop| match stop {
-            WorthQueryAdmittedOneShotStop::Admission(stop) => {
-                ready::ready_resource_denial(Binding::IDENTITY, stop)
-            }
-            WorthQueryAdmittedOneShotStop::WorkCounterOverflow
-            | WorthQueryAdmittedOneShotStop::WorkAccountingMismatch => {
-                ready::ready_work_denial(Binding::IDENTITY)
-            }
-            WorthQueryAdmittedOneShotStop::Execution(stop) => {
-                query_execution_denied(Binding::IDENTITY, stop)
-            }
-        })?;
+    let access =
+        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess {
+            application: runtime,
+            shared,
+            principal,
+            request,
+        };
+    let read = access.read_admitted_result::<SourceBinding<Schema, Binding>>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+        .map_err(|stop| super::super::denial::selected_source_read_denied(Binding::IDENTITY, stop))?;
     crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(
         retained.source_root(),retained.selected_product_commit().expect("retained Product source").clone(),
         shared.selected().product().observation().selected_commit().clone());

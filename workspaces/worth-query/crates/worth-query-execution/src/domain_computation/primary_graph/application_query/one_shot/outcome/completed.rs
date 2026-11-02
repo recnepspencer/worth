@@ -23,6 +23,8 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Compl
 pub(in crate::domain_computation::primary_graph::application_query) struct CompletedSourceParts<
     Query,
 > {
+    pub authorization:
+        crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
     pub sources: Vec<super::super::super::WorthQueryObservedSource<Query>>,
     pub result_set: super::super::super::WorthQueryObservedResultSet<Query>,
     pub affinity: super::super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity,
@@ -65,6 +67,7 @@ impl<Query> CompletedOneShotRead<Query, ()> {
             "source context session",
         ))?;
         Ok(CompletedSourceParts {
+            authorization: self.authorization,
             sources: self.read.observed_sources,
             result_set: self.read.result_set_observation,
             affinity: self.read.request_affinity,

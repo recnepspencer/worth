@@ -128,6 +128,7 @@ pub fn features<
         super::compensation_movement::feature(),
         super::source_output_model::feature(),
         super::composite_definition_model::feature(),
+        super::write_admission::feature(),
         super::authored_identity_model::feature(),
         super::authored_identity_reference::feature(),
         super::adjacency_link::feature(),

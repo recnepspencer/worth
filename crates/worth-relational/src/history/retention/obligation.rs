@@ -37,6 +37,12 @@ impl RelationalObservationRetentionObligation {
     pub(crate) fn try_retire(&mut self) -> bool {
         self._guard.try_retire_observation()
     }
+    pub(crate) fn owner_relationship(
+        &self,
+        binding: &super::RelationalBranchRetentionBinding,
+    ) -> super::RelationalRetentionOwnerRelationship {
+        self._guard.owner_relationship(binding)
+    }
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
         root: Arc<RelationalBranchRoot>,

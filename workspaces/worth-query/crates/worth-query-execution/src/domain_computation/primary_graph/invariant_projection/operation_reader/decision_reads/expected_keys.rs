@@ -10,6 +10,7 @@ pub(in crate::domain_computation::primary_graph) struct ExpectedFactKeys {
     components: super::components::IssuedComponentValues,
     handler: Arc<BTreeSet<Key>>,
     source_publications: Option<Arc<super::source_publications::IssuedSourcePublicationValues>>,
+    managed_sources: super::managed_sources::IssuedManagedSourceValues,
     // Last: retains original authoring payment until every authoring map drops.
     computation: Arc<ComputationFactAttribution>,
 }
@@ -18,6 +19,7 @@ impl ExpectedFactKeys {
         handler: Arc<BTreeSet<Key>>,
         computation: Arc<ComputationFactAttribution>,
         source_publications: Option<Arc<super::source_publications::IssuedSourcePublicationValues>>,
+        managed_sources: super::managed_sources::IssuedManagedSourceValues,
         walks: super::structural_walks::IssuedWalkValues,
         aggregates: super::aggregates::IssuedAggregateValues,
         components: super::components::IssuedComponentValues,
@@ -26,6 +28,7 @@ impl ExpectedFactKeys {
             handler,
             computation,
             source_publications,
+            managed_sources,
             walks,
             aggregates,
             components,
@@ -43,6 +46,35 @@ impl ExpectedFactKeys {
         &Arc<crate::domain_computation::primary_graph::component_selection::ComponentSelection>,
     > {
         self.components.get(key, admission, contracts, snapshot)
+    }
+    pub(in crate::domain_computation::primary_graph) fn source_authorization(
+        &self,
+        key: &crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,
+        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        contracts: &Arc<
+            worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+        >,
+        source: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Option<
+        &Arc<
+            crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization,
+        >,
+    > {
+        self.managed_sources
+            .authorization(key, admission, contracts, source)
+    }
+    pub(in crate::domain_computation::primary_graph) fn managed_source(
+        &self,
+        key: &crate::domain_computation::primary_graph::application_attempt::ManagedSourceReadKey,
+        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        contracts: &Arc<
+            worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+        >,
+        source: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Option<
+        &Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
+    > {
+        self.managed_sources.get(key, admission, contracts, source)
     }
     pub(in crate::domain_computation::primary_graph) fn aggregate(
         &self,

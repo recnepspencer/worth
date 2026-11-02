@@ -1,5 +1,4 @@
 use super::*;
-use worth_query_consumer_values::PositiveLength;
 use worth_query_host::facade::primary_graph::{
     HandlerExecutionDenial, WorthQueryApplicationEffectEntity, WorthQueryApplicationEntityKey,
 };
@@ -62,22 +61,7 @@ fn allocate_replacement<Schema: TopologySchemaBinding>(
     let replacement = writer
         .create_entity_in_context(context, Body::reference(), key)
         .map_err(HandlerExecutionDenial::new)?;
-    writer
-        .initialize_field(&replacement, BodyKey::reference(), vertex.body_key.clone())
-        .map_err(HandlerExecutionDenial::new)?;
-    writer
-        .initialize_field(&replacement, PositionX::reference(), vertex.x)
-        .map_err(HandlerExecutionDenial::new)?;
-    writer
-        .initialize_field(&replacement, PositionY::reference(), vertex.y)
-        .map_err(HandlerExecutionDenial::new)?;
-    writer
-        .initialize_field(
-            &replacement,
-            Length::reference(),
-            PositiveLength::new(1).unwrap(),
-        )
-        .map_err(HandlerExecutionDenial::new)?;
+    crate::planar_vertex::initialize_planar_vertex(writer, &replacement, vertex)?;
     Ok(replacement)
 }
 

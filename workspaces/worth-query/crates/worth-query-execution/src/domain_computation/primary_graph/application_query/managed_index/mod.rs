@@ -1,5 +1,8 @@
 //! Controlled provider mechanics over a genuine completed source image.
 mod adapter;
+mod admitted_read;
+pub(in crate::domain_computation::primary_graph) use admitted_read::read_decision;
+pub(in crate::domain_computation::primary_graph::application_query) use admitted_read::read_source_admitted;
 mod build;
 mod candidates;
 mod configuration;
@@ -7,20 +10,51 @@ mod control;
 mod denial;
 mod execution;
 mod handle;
+pub(in crate::domain_computation::primary_graph) mod invariant_read;
 mod invocation;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph::application_query) use invocation::tests::with_original_content_scope;
+mod maintained_read;
+pub(in crate::domain_computation::primary_graph) mod realized_footprint;
+pub use invariant_read::WorthQueryManagedIndexInvariantDenial;
 mod node_backing;
 mod nodes;
+pub(in crate::domain_computation::primary_graph::application_query) mod predicate;
+pub(in crate::domain_computation::primary_graph) use predicate::WatchSlot;
 mod provider;
+pub(in crate::domain_computation::primary_graph) mod refinement;
+pub use predicate::{
+    WorthQueryManagedIndexPredicateProvider, WorthQueryManagedIndexPredicateSummary,
+};
+pub use refinement::WorthQueryManagedIndexRefinementProvider;
 mod provider_failure;
 mod receiver;
 pub(in crate::domain_computation::primary_graph::application_query) mod retention;
 pub(in crate::domain_computation::primary_graph::application_query) mod selection;
-mod source_acquisition;
+mod source;
+pub(in crate::domain_computation::primary_graph::application_query) use source::failure::source_preparation_denial;
+pub(in crate::domain_computation::primary_graph::application_query) mod source_acquisition;
 mod source_completion;
 mod source_dependencies;
 mod source_image;
 mod source_order;
+mod source_row;
 mod source_rows;
+mod source_text;
+pub use source_row::{WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexTextReadDenial};
+pub(in crate::domain_computation::primary_graph) use source_rows::SourceImageView;
+mod source_structure;
+pub(in crate::domain_computation::primary_graph) use source::{
+    initialization::{
+        initialization_execution_denial, SelectedSources, SourceInitializationIssuer,
+        SourceInitializationRequest,
+    },
+    ManagedSourceInstallation,
+};
+pub(in crate::domain_computation::primary_graph) use source_structure::SourceTree;
+pub use source_structure::{
+    WorthQueryManagedIndexNodeRegion, WorthQueryManagedIndexSummarySources,
+};
 mod stop;
 
 pub use candidates::WorthQueryManagedIndexCandidateWriter;
@@ -34,8 +68,15 @@ pub use invocation::WorthQueryManagedIndexWorkDenial;
 pub use nodes::{
     WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
 };
-pub use provider::{WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider};
+pub use provider::{
+    WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
+    WorthQueryManagedIndexSourceChange,
+};
 pub use provider_failure::WorthQueryManagedIndexProviderFailure;
+pub use receiver::{
+    WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
+    WorthQueryManagedIndexWatchUpdate,
+};
 pub use retention::WorthQueryManagedIndexLifecycle;
 pub use source_rows::{WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSourceSlot};
 pub use stop::{WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexStop};

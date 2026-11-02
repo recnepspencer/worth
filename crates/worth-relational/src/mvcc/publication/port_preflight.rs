@@ -22,6 +22,7 @@ impl PreparedCanonicalBranchMovement {
     ) -> Result<PreparedBranchPublicationPreflight, RelationalPublicationOutcome> {
         let PreparedRelationalPublicationParts {
             companion_read,
+            managed_source_reads,
             runtime_instance_id,
             candidate_id,
             publication_binding,
@@ -85,7 +86,7 @@ impl PreparedCanonicalBranchMovement {
                 }
             };
         let (companion, companion_binding) = match companion_epoch.active() {
-            Ok(None) if companion_read.is_some() => {
+            Ok(None) if companion_read.is_some() || managed_source_reads.is_some() => {
                 return Err(companion_stop_outcome(
                     super::super::CompanionPreflightStop::RegistrationChanged,
                     &publication_cell,
@@ -140,7 +141,10 @@ impl PreparedCanonicalBranchMovement {
                     binding.clone(),
                     envelope,
                     &control,
-                );
+                    &completion.source_interpretation,
+                    execution,
+                )
+                .map_err(|stop| companion_stop_outcome(stop, &publication_cell, &expected))?;
                 let prepared = participant.prepare(&mut context);
                 // A companion cannot hide an original request stop behind
                 // either a successful preparation or its own refusal.
@@ -159,6 +163,16 @@ impl PreparedCanonicalBranchMovement {
                         companion_stop_outcome(stop, &publication_cell, &expected)
                     })?;
                 }
+                if let Some(condition) = &managed_source_reads {
+                    effect
+                        .matches_managed_source_reads(condition)
+                        .map_err(|stop| {
+                            companion_stop_outcome(stop, &publication_cell, &expected)
+                        })?;
+                }
+                effect
+                    .attach_managed_source_root(&movement.root)
+                    .map_err(|stop| companion_stop_outcome(stop, &publication_cell, &expected))?;
                 (Some(effect), Some(binding))
             }
         };
@@ -330,6 +344,8 @@ const fn follows_concurrent_publication(stop: &super::super::CompanionPreflightS
         | Stop::SelectedPositionUnavailable { .. }
         | Stop::ForeignCell
         | Stop::RegistrationChanged
+        | Stop::ManagedSourceNotPrepared
+        | Stop::ManagedSourceChanged
         | Stop::WorkCounterOverflow
         | Stop::PreparationMemoryCounterOverflow
         | Stop::Interrupted(_) => false,

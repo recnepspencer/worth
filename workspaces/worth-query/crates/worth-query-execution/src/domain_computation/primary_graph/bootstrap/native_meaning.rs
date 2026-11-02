@@ -3,6 +3,10 @@ use super::*;
 use worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt;
 
 pub(in crate::domain_computation::primary_graph) struct InstalledNativeSchemaMeaning {
+    pub(in crate::domain_computation::primary_graph) managed_views:
+        Arc<super::super::application_query::derived_view::ManagedDerivedViewRegistry>,
+    pub(in crate::domain_computation::primary_graph) source_initializer:
+        Option<super::super::application_query::managed_index::SourceInitializationIssuer>,
     pub(in crate::domain_computation::primary_graph) layout: WorthQueryPrimaryGraphLayout,
     pub(in crate::domain_computation::primary_graph) receipt:
         RelationalInitialSchemaInstallationReceipt,
@@ -46,24 +50,27 @@ impl WorthQueryExecutionInstallationAuthority {
             installed_schema.native_contracts(),
             &relational_runtime.config().schema.registry,
         )?;
-        let registrations =
-            invariant_factories.lower(installed_schema.binding_identity(), &layout)?;
-        let expected_invariant_inventory_digest =
-            worth_relational::facade::runtime::custom_invariant_inventory_digest(&registrations);
-        let invariant_installation_receipt = relational_runtime
-            .prepare_initial_schema_installation()
-            .map_err(map_initial_schema_installation_denial)?
-            .install_with_custom_invariants(additions, registrations)
-            .map_err(map_initial_schema_installation_denial)?;
-        if invariant_installation_receipt.custom_invariant_inventory_digest()
-            != &expected_invariant_inventory_digest
-        {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::InvariantInstallationReceiptMismatch,
-                "Relational installed an invariant inventory outside the application catalog",
-            ));
-        }
+        let (registrations, managed_sources, source_initializer) = invariant_factories.lower(
+            &_phase.execution_request(),
+            installed_schema.binding_identity(),
+            &layout,
+        )?;
+        let (invariant_installation_receipt, expected_invariant_inventory_digest) =
+            super::initial_installation::install(
+                relational_runtime,
+                additions,
+                registrations,
+                &layout,
+            )?;
+        let managed_views = Arc::new(
+            super::super::application_query::derived_view::ManagedDerivedViewRegistry::with_sources(
+                managed_sources,
+                &relational_runtime.main_branch_identity(),
+            ),
+        );
         Ok(InstalledNativeSchemaMeaning {
+            managed_views,
+            source_initializer,
             layout,
             receipt: invariant_installation_receipt,
             expected_invariant_inventory_digest,

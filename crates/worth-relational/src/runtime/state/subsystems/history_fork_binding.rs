@@ -28,6 +28,7 @@ pub(crate) struct RelationalForkOwnerBinding {
     visibility: Option<RelationalForkVisibilityBinding>,
     /// The publication routes whose transition stream records each fork.
     routes: Arc<super::RelationalCanonicalPublicationRoutes>,
+    root_issuer: crate::branch::RelationalBranchRootIdentityIssuer,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +39,12 @@ struct RelationalForkVisibilityBinding {
 }
 
 impl RelationalForkOwnerBinding {
+    pub(crate) fn root_identity_issuer(
+        &self,
+    ) -> &crate::branch::RelationalBranchRootIdentityIssuer {
+        &self.root_issuer
+    }
+
     pub(super) fn new(
         branches: RelationalBranchReferenceRegistry,
         costs: RelationalPhase4ReferenceCostOwner,
@@ -45,6 +52,7 @@ impl RelationalForkOwnerBinding {
         retention: RelationalBranchRetentionBinding,
         basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
         routes: Arc<super::RelationalCanonicalPublicationRoutes>,
+        root_issuer: crate::branch::RelationalBranchRootIdentityIssuer,
     ) -> Self {
         Self {
             branches,
@@ -54,6 +62,7 @@ impl RelationalForkOwnerBinding {
             basis_metrics,
             visibility: None,
             routes,
+            root_issuer,
         }
     }
 

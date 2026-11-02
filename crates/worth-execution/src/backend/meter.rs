@@ -40,11 +40,15 @@ pub(crate) fn active_stop() -> Option<KernelStop> {
 }
 
 mod activity;
+mod observation_scope;
+pub(crate) use observation_scope::ObservationScope;
 mod memory_observation;
 pub(crate) use memory_observation::available_serial_memory_bytes;
 mod detached;
 pub(crate) use detached::detach_meter_for_test;
 mod checkpoint;
+mod work_loan;
+pub use work_loan::{ExecutionWorkLoan, ExecutionWorkLoanDenial};
 mod kernel_receipt;
 pub use kernel_receipt::{ExecutionKernelReceipt, ExecutionKernelReceiptStorage};
 mod framework_bytes;
@@ -104,6 +108,7 @@ impl<E> From<KernelStop> for KernelFailure<E> {
 
 #[derive(Clone)]
 pub(crate) struct RunLimits {
+    work_loan_affinity: Option<Arc<work_loan::WorkLoanAffinity>>,
     tokens: Vec<CancellationToken>,
     deadline: Option<Instant>,
     ceiling: Option<u64>,
@@ -284,6 +289,7 @@ struct KernelMeter {
 }
 
 struct KernelState {
+    issued_work_loan: Option<Arc<work_loan::WorkLoanAffinity>>,
     limits: RunLimits,
     accounting: Option<KernelMeter>,
     nested_stop: NestedStop,
@@ -329,6 +335,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
     pub(crate) fn new(limits: RunLimits) -> Self {
         Self {
             meter: Rc::new(RefCell::new(KernelState {
+                issued_work_loan: None,
                 accounting: limits.accounted.then(|| KernelMeter {
                     capture: None,
                     work: 0,
@@ -370,14 +377,6 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
 }
 
 pub(crate) struct KernelMeterGuard;
-
-impl Drop for KernelMeterGuard {
-    fn drop(&mut self) {
-        ACTIVE_METER.with(|active| {
-            active.borrow_mut().pop().expect("balanced kernel meter");
-        });
-    }
-}
 
 // The owned observation guard lends, but cannot replace, the active meter.
 pub(super) fn visit_active_meter_for_test(

@@ -118,9 +118,9 @@ pub(super) fn prepared(
         .consume(|home| home);
     let (query, home) = home
         .initialize_new_home(&request, |mut home| {
-            let (native, authority, outcome) = home.query_finalization_parts();
+            let (native, admission) = home.fresh_query_finalization_parts().unwrap();
             let query = query
-                .finish_fresh_home_native_readmission(phase, native, authority, outcome)
+                .finish_fresh_home_native_readmission(phase, native, admission)
                 .unwrap_or_else(|refused| panic!("fresh finalization: {:?}", refused.reason()));
             let bridge = query.home_bridge_definition().unwrap();
             let (budgets, clock, policy, execution, conditionals) = query.home_world_resources();
@@ -208,7 +208,7 @@ fn failed_completion_retains_seed_history_and_same_home_without_retry_or_genesis
         home.physical_serving_for_test().certification_reject_next_candidate_retention_before_effect();
         let cause = query.publish_home_query_seed(&phase).unwrap_err();
         assert_eq!(cause.kind(), WorthQueryPrimaryGraphInstallationDenialKind::RelationalDurabilityUnresolved, "{cause:?}");
-        assert_eq!(cause.subject(), "Relational rejected the application principal bootstrap transaction: durable publication of canonical commit 4 at position 4 is unresolved: Indeterminate { stage: DataDispatch }");
+        assert_eq!(cause.subject(), "Relational rejected the application seed transaction: durable publication of canonical commit 4 at position 4 is unresolved: Indeterminate { stage: DataDispatch }");
         {
             let journal = home.physical_serving_for_test().canonical_commits().unwrap();
             assert_eq!(journal.head().unwrap().unwrap().position(), 3);

@@ -162,7 +162,7 @@ fn run() {
             .collect::<Vec<_>>(),
         ["box-a", "box-b", "box-c"]
     );
-    let navigation = calls.navigation.load(Ordering::SeqCst);
+    let matched_sources = calls.matched_sources.load(Ordering::SeqCst);
     bounds_denial(
         request
             .query(input("boxes", Coordinates::new(2, 0, 1, 1)))
@@ -171,9 +171,9 @@ fn run() {
             .expect("raw but well-encoded invalid interval"),
     );
     assert_eq!(
-        calls.navigation.load(Ordering::SeqCst),
-        navigation,
-        "numerical admission precedes node navigation"
+        calls.matched_sources.load(Ordering::SeqCst),
+        matched_sources,
+        "numerical admission precedes Source matching"
     );
     assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Ready);
     let before = calls.totals();
@@ -228,6 +228,21 @@ fn run() {
         .unwrap()
         .rows()
         .is_empty());
+    let before = calls.totals();
+    let matched_sources = calls.matched_sources.load(Ordering::SeqCst);
+    bounds_denial(
+        request
+            .query(input("empty-boxes", Coordinates::new(2, 0, 1, 1)))
+            .execute()
+            .err()
+            .expect("an invalid probe refuses even when the genuine Source is empty"),
+    );
+    assert_eq!(calls.totals(), (before.0, before.1, before.2 + 1));
+    assert_eq!(
+        calls.matched_sources.load(Ordering::SeqCst),
+        matched_sources
+    );
+    assert_eq!(empty.lifecycle(), WorthQueryManagedIndexLifecycle::Ready);
     empty.close();
     let invalid = request
         .query(input("invalid-boxes", broad))

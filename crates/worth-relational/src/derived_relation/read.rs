@@ -30,12 +30,14 @@ pub struct DerivedRelationData {
 }
 
 impl DerivedRelationData {
+    /// Canonical sorted, distinct member keys from the complete acquisition.
     pub fn endpoints(&self) -> &[NativeMemberKey] {
         &self.endpoints
     }
     pub fn entity_dependencies(&self) -> &[(EntityId, KindId)] {
         &self.entities
     }
+    /// Canonical relation-ID order, retaining every distinct physical edge.
     pub fn physical_relations(&self) -> &[StructuralRelationRecord] {
         &self.relations
     }

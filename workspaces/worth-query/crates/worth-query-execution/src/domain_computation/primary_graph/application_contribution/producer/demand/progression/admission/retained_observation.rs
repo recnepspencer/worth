@@ -225,6 +225,7 @@ where
                         snapshot,
                         &selected,
                     ) {
+                        Err(ConsumedOutputVerificationStop::ManagedIndex(cause)) => Err(WorthQueryOutputDemandDenial::managed_index(cause, Family::IDENTITY)),
                         Ok(verification) => Ok(verification == ConsumedOutputVerification::Current),
                         // What it consumed was not current at this observation.
                         Err(ConsumedOutputVerificationStop::PendingUpstream) => Ok(false),

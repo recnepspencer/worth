@@ -19,16 +19,22 @@ mod inspection;
 mod lane_eligibility;
 mod live_cause;
 mod managed_index;
+pub use managed_index::{
+    ApplicationManagedIndexMatchPosture, ApplicationManagedIndexRefinement,
+    ApplicationManagedIndexRefinementMeaning, WorthQueryPortableManagedIndexRefinementParts,
+};
 mod marker_identity;
 pub use managed_index::{
-    ApplicationManagedIndexBinding, ApplicationManagedIndexBindingDescriptor,
+    ApplicationInvariantManagedIndexSource, ApplicationManagedIndexBinding,
+    ApplicationManagedIndexBindingDescriptor, ApplicationManagedIndexColdSource,
     ApplicationManagedIndexDefinition, ApplicationManagedIndexDefinitionDenial,
+    ApplicationManagedIndexMaintenance, ApplicationManagedIndexMembership,
     ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexRef,
     ApplicationManagedIndexSelectionRecipe, ApplicationManagedIndexSourceMeaning,
     ApplicationManagedIndexSourceParameters, ApplicationManagedIndexSourceScope,
-    ApplicationQueryManagedIndexMeaning, ErasedApplicationManagedIndexDefinition,
-    WorthQueryPortableManagedIndexParts, WorthQueryPortableManagedIndexProbeParts,
-    WorthQueryPortableQueryManagedIndexParts,
+    ApplicationManagedIndexSourceStructure, ApplicationQueryManagedIndexMeaning,
+    ErasedApplicationManagedIndexDefinition, WorthQueryPortableManagedIndexParts,
+    WorthQueryPortableManagedIndexProbeParts, WorthQueryPortableQueryManagedIndexParts,
 };
 mod orbit;
 mod ordering;
@@ -133,7 +139,8 @@ pub use result_traversal::{
 };
 pub use root_selection::{
     ApplicationQueryRootPath, ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning,
-    ApplicationQueryRootPathStep, ApplicationQueryRootPathTraversal, RelationDirection,
+    ApplicationQueryRootPathSourceKind, ApplicationQueryRootPathStep,
+    ApplicationQueryRootPathTraversal, RelationDirection,
     WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
 };

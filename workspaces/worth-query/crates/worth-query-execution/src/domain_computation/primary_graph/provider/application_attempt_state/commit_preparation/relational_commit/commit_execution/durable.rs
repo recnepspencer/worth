@@ -65,11 +65,14 @@ pub(super) fn commit(
         };
     let mut before = before_world::BeforeWorldPreparation::new(query, reservation);
     // Admission of the actual subject precedes these causal reservations.
-    let (live, demand, client) = match before.reserve_successor_observations(provider) {
+    let (live, demand, client) = match before.reserve_successor_observations(&execution, provider) {
         Ok(flags) => flags,
         Err(cause) => {
             return Err(Stop::ProductPreparationRefused(Refused::new(
-                Refusal::QuerySuccessorObservation(cause),
+                match cause {
+                    crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => Refusal::QuerySuccessorObservationRequest(cause),
+                    crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(detail) => Refusal::QuerySuccessorObservation(detail),
+                },
                 before.refuse(),
             )))
         }
@@ -140,6 +143,7 @@ fn into_managed(retained: RetainedQueryDurablePreparation) -> ManagedUnpublished
         _completion: query.completion,
         publication_mode: managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary,
         attempt: query.attempt,
+        predicate: query.predicate,
         work: query.work,
         index_maintenance_work: query
             .index_maintenance_work

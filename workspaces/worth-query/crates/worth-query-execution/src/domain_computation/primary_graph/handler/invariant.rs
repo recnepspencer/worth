@@ -10,6 +10,7 @@ use super::super::{
 use super::DecisionContextUse;
 
 mod interruption;
+mod managed_index;
 mod operation_body;
 mod predecode_admission;
 

@@ -162,6 +162,28 @@ impl<K: Clone, V: Clone> Entry<K, V> {
         Ok(Arc::new(entry))
     }
 }
+impl<K, V> Entry<K, V> {
+    pub(super) fn owned_native(
+        key: K,
+        value: V,
+        policy: Funding<'_, '_>,
+    ) -> Result<Arc<Self>, Denial> {
+        let bytes = policy
+            .uses_accounting()
+            .then(arc_bytes::<Self>)
+            .transpose()?;
+        let memory = bytes
+            .map(|bytes| policy.reserve_memory(bytes))
+            .transpose()?
+            .flatten();
+        Ok(Arc::new(Self {
+            key,
+            value,
+            bytes,
+            _memory: memory,
+        }))
+    }
+}
 pub(super) fn height<K, V>(link: &Link<K, V>) -> u8 {
     link.as_ref().map_or(0, |n| n.height)
 }

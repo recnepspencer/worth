@@ -1,4 +1,4 @@
-//! Law 2: registered runtime names inside cfg(test) module text, not constructors.
+//! Law 2: runtime names in test text, preserving actual qualified enum vocabulary.
 use crate::{
     config::*,
     inputs::Inputs,
@@ -9,6 +9,7 @@ use serde::{
     Serialize,
 };
 use std::collections::{BTreeMap, BTreeSet};
+mod vocabulary;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Finding {
@@ -142,6 +143,7 @@ pub fn observations(input: &Inputs) -> Vec<Finding> {
         .map(|r| string(r, "type").to_owned())
         .collect();
     let mut found = Vec::new();
+    let vocabulary = vocabulary::Vocabulary::read(input, &names);
     for (source, scopes) in scopes(input) {
         let Some((manifest, _)) = input
             .manifests
@@ -161,10 +163,12 @@ pub fn observations(input: &Inputs) -> Vec<Finding> {
         }
         let text = input.text(&source);
         for (module, start, end) in scopes {
-            let roots: BTreeSet<_> = tokens(&text[start..end])
+            let scope = tokens(&text[start..end]);
+            let roots: BTreeSet<_> = scope
                 .iter()
-                .filter(|t| names.contains(t.text))
-                .map(|t| t.text.to_owned())
+                .enumerate()
+                .filter(|(at, t)| names.contains(t.text) && !vocabulary.variant(&scope, *at))
+                .map(|(_, t)| t.text.to_owned())
                 .collect();
             if !roots.is_empty() {
                 found.push(Finding {

@@ -11,8 +11,12 @@ pub(super) fn write(
     output: &mut dyn std::fmt::Write,
 ) -> std::fmt::Result {
     match fact {
+        WorthQueryApplicationObservedFact::SourceReadAuthorization { observation } => write!(output, "application-source-read-authorization:{:?}", observation.key()),
+        WorthQueryApplicationObservedFact::ManagedIndexSource { observation } =>
+            write!(output, "application-managed-source:{:?}", observation.key()),
         WorthQueryApplicationObservedFact::ComponentSelection {observation}=>observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::Aggregate { observation } => observation.key().write_locator(output),
+        WorthQueryApplicationObservedFact::DerivedSource { observation } => observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::SourcePublication { observation } =>
             write!(output, "application-source-publication:{:?}", observation.address()),

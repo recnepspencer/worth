@@ -78,10 +78,14 @@ pub(super) fn decode_basis_support(
     let current = foundational_value::decode_bool(input)?;
     let pinned = foundational_value::decode_bool(input)?;
     let preview = foundational_value::decode_bool(input)?;
-    if !current || !pinned {
+    if !current {
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
-    let value = ApplicationQueryBasisSupport::current_and_pinned();
+    let value = if pinned {
+        ApplicationQueryBasisSupport::current_and_pinned()
+    } else {
+        ApplicationQueryBasisSupport::current_only()
+    };
     Ok(if preview { value.with_preview() } else { value })
 }
 
@@ -117,3 +121,6 @@ pub(super) fn decode_lanes(
     }
     Ok(value)
 }
+
+#[cfg(test)]
+mod tests;

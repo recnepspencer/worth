@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 impl WorthQueryApplicationAttemptDenial {
     pub(in crate::domain_computation::primary_graph) fn output_observation(stop: Stop) -> Self {
         let kind = match stop {
+            Stop::ManagedIndex(cause) => return Self::managed_index(cause, "source output observation"),
             Stop::Execution(cause) => return Self::relational_read_stopped(cause, "source output observation"),
             Stop::SourceQueryAuthorization(kind) => return Self::request_authority_lost(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(kind, "source query permission")),

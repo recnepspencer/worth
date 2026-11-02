@@ -6,13 +6,6 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 
-/// What follows every history release a branch or recovery cleanup makes.
-pub(crate) trait WorthQueryReleasedHistoryFollower: Send + Sync {
-    /// History a walk released may have been the last to keep evidence Query
-    /// inherited onto its commits; that evidence goes now.
-    fn history_released(&self);
-}
-
 impl WorthQueryProductBranchOwnerCleanupRecord {
     pub(super) fn release_retired_history(
         &mut self,

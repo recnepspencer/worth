@@ -74,10 +74,12 @@ impl WorthQueryProviderSessionLifecycle for Arc<WorthQueryPrimaryGraphProvider> 
         WorthQueryProviderSessionFailure,
     > {
         self.application_attempt_work.observe_attempt_abort();
-        self.attempts
+        let retired = self
+            .attempts
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .abort(*session);
+        drop(retired);
         crate::domain_computation::WorthQueryProviderTerminalDescription::new(format!(
             "primary application abort completed for {}",
             session.identity()

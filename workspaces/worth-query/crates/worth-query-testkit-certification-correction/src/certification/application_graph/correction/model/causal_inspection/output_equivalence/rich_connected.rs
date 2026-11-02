@@ -66,9 +66,17 @@ pub(super) fn assert_source(
         .find(|field| field.output_name() == Some("input"))
         .unwrap();
     assert_eq!(input.effect(), Effect::Present);
+    // Frozen wire literals are independent of the binding's encoder/decoder.
+    let literal = match expected {
+        4 => vec![1, 4, 0, 0, 0, 0, 0, 0, 0],
+        5 => vec![1, 5, 0, 0, 0, 0, 0, 0, 0],
+        other => panic!("this source court has no literal oracle for {other}"),
+    };
     assert_eq!(
         input.value(),
-        Some(&WorthQueryMaterializedFieldValue::UInt64(expected))
+        Some(&WorthQueryMaterializedFieldValue::InlineBytes(
+            worth_foundational::facade::InlineBytes::try_new(literal).unwrap(),
+        ))
     );
     for name in ["calculated", "operand"] {
         let field = fields

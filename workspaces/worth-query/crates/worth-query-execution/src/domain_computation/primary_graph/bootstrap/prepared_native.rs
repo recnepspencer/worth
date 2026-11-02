@@ -6,6 +6,7 @@ use worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceip
 pub(in crate::domain_computation::primary_graph) struct PreparedNativeGraph {
     pub(super) native: RelationalRuntime,
     pub(in crate::domain_computation::primary_graph) layout: Arc<WorthQueryPrimaryGraphLayout>,
+    managed_views: Arc<super::super::application_query::derived_view::ManagedDerivedViewRegistry>,
     binding: ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph) application_publication:
         Option<Arc<super::super::root::application_publication::ApplicationPublication>>,
@@ -16,6 +17,9 @@ impl PreparedNativeGraph {
         native: RelationalRuntime,
         mut layout: WorthQueryPrimaryGraphLayout,
         binding: ApplicationSchemaBindingIdentity,
+        managed_views: Arc<
+            super::super::application_query::derived_view::ManagedDerivedViewRegistry,
+        >,
         recovered: bool,
     ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial> {
         use super::super::root::index_installation::{
@@ -32,6 +36,7 @@ impl PreparedNativeGraph {
             native,
             layout: Arc::new(layout),
             binding,
+            managed_views,
             application_publication: None,
         })
     }
@@ -65,6 +70,8 @@ impl PreparedNativeGraph {
 }
 
 pub(in crate::domain_computation::primary_graph) struct PreparedPrimaryGraphMeaning {
+    pub(in crate::domain_computation::primary_graph) source_initializer:
+        Option<super::super::application_query::managed_index::SourceInitializationIssuer>,
     pub(in crate::domain_computation::primary_graph) resource_support:
         super::super::provider::WorthQueryPrimaryGraphResourceSupport,
     pub(in crate::domain_computation::primary_graph) recovered_publication:
@@ -118,6 +125,7 @@ impl PreparedPrimaryGraphInstallation {
             native,
             layout,
             binding,
+            managed_views,
             application_publication,
         } = self.graph;
         let mut graph = WorthQueryPrimaryGraph::from_installed_native(
@@ -126,6 +134,7 @@ impl PreparedPrimaryGraphInstallation {
             layout,
             native,
             product_world_resources.invalidation_resources(),
+            managed_views,
         );
         graph.application_publication = application_publication;
         Ok(self
@@ -167,6 +176,8 @@ impl PreparedPrimaryGraphMeaning {
             mutation_handlers: Default::default(),
             resources: Default::default(),
             managed_indexes: Default::default(),
+            source_initializer: self.source_initializer,
+            pending_source_initialization: None,
             program_activation_seed: None,
             program_activation: None,
             invariant_installation_receipt: self.invariant_installation_receipt,

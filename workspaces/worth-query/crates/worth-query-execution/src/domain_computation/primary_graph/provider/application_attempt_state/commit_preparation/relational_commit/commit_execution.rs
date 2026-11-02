@@ -12,6 +12,7 @@ pub(in crate::domain_computation) use durable_custody::QueryPreparingApplication
 pub(in crate::domain_computation::primary_graph::provider) use durable_custody::RetainedQueryDurablePreparation;
 
 mod consumed_output;
+mod managed_source;
 mod managed_unpublished;
 mod managed_views;
 pub(in crate::domain_computation::primary_graph::provider) use managed_unpublished::ManagedUnpublishedAttempt;
@@ -41,6 +42,7 @@ use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryCommittedApplicationSession {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
     work: WorthQueryPrimaryMutationWorkCounters,
+    predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
     retained_preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
@@ -145,6 +147,9 @@ fn world_no_effect(
     }
 }
 impl WorthQueryCommittedApplicationSession {
+    pub(super) fn take_predicate_preparation(&mut self) -> Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>{
+        self.predicate.take()
+    }
     pub(in crate::domain_computation::primary_graph::provider) fn take_recovered_output_source(
         &self,
     ) -> crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource{
@@ -194,11 +199,15 @@ impl WorthQueryCommittedApplicationSession {
         provider: &WorthQueryPrimaryGraphProvider,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         evidence: super::WorthQueryPrimaryGraphCommitEvidence,
+        predicate: &mut Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
+        retired: &mut crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         WorthQueryProviderSessionFailure,
     > {
-        let published = publication::publish(execution, provider, runtime, self, evidence)?;
+        let published = publication::publish(
+            execution, provider, runtime, self, evidence, predicate, retired,
+        )?;
         publication::encode(provider, published)
     }
 }

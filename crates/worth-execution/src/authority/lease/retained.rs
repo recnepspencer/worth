@@ -82,6 +82,9 @@ impl ExecutionResourceLease<'_> {
             lineage.iter().map(|node| node.id).collect()
         };
         memory.bytes = memory_bytes;
+        let retired = ledger.take_unused_nodes();
+        drop(ledger);
+        drop(retired);
         Ok(())
     }
 }

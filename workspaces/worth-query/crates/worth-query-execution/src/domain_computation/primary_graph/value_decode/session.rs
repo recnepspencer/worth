@@ -1,4 +1,5 @@
 use super::WorthQueryValueDecodeDenial as Stop;
+mod installed;
 use worth_execution::MapKernelStop;
 use worth_foundational::facade::{AspectValue, ValueCodecDenial};
 use worth_query_installation::facade::{
@@ -200,19 +201,6 @@ impl<'a> ValueDecodeSession<'a> {
         if !Binding::SUPPORTS_ADMITTED_DECODE {
             return Binding::decode(raw).ok();
         }
-        let value = binding
-            .decode_admitted::<Binding::Value>(raw, &mut |work, bytes| self.admit(work, bytes));
-        // A seed is permitted to return success after catching its callback's
-        // error; that success never clears the original native refusal.
-        if self.stopped() {
-            return None;
-        }
-        match value {
-            Ok(value) => Some(value),
-            Err(_) => {
-                self.refuse(Stop::CodecRejected);
-                None
-            }
-        }
+        self.decode_installed::<Binding>(binding, raw)
     }
 }

@@ -156,6 +156,9 @@ fn scalar_samples() -> Vec<AspectValue> {
             11,
         )),
         AspectValue::ContentRef(ContentRefId(42)),
+        AspectValue::InlineBytes(
+            worth_foundational::InlineBytes::try_new(vec![0, 128, 255]).unwrap(),
+        ),
     ]
 }
 

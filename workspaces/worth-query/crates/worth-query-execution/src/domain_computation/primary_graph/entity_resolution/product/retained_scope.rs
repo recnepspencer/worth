@@ -30,6 +30,39 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        self.resolve_retained_query_scope_with_native_access(execution, field, selector, request,
+            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn resolve_retained_query_scope_with_native_access<
+        Aspect,
+        Entity,
+        Field,
+        Value,
+        Write,
+        Unit,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: ApplicationFieldRef<
+            Schema,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            EqualityPredicate,
+            Unit,
+        >,
+        selector: &WorthQueryObservedScopeSelector,
+        request: &WorthQueryRequestScope,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
+    where
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Write: WritePosture,
+        Unit: ApplicationFieldUnit,
+    {
         // Every terminal refusal in this admitted route copies either the
         // entity or field name. Fund that one possible copy before validation.
 
@@ -80,7 +113,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             ));
         }
 
-        self.resolve_encoded_entity_admitted(
+        self.resolve_encoded_entity_admitted_with_native_access(
             execution,
             field.entity(),
             field.field(),
@@ -88,6 +121,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             request,
             index,
             installed_field,
+            native,
         )
     }
 }

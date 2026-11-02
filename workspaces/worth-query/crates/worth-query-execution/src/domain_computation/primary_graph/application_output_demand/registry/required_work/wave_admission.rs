@@ -95,6 +95,10 @@ fn requested_read_denial(
             crate::domain_computation::primary_graph::output_reuse::read_denial(cause).kind()
         }
         Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        Stop::ManagedSourceNotPrepared => {
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+        }
+        Stop::ManagedSourceChanged => WorthQueryOutputDemandDenialKind::Superseded,
         Stop::PreparationMemoryCounterOverflow => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }

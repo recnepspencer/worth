@@ -8,15 +8,23 @@ pub use laws::{
 pub(crate) mod canonical;
 pub(crate) mod catalog;
 pub(crate) mod evaluation;
+mod ordered_events;
 mod pinned;
 mod proof;
 mod source;
-pub use pinned::PinnedDerivedRelationRead;
+mod source_buffer;
+pub(crate) mod support;
+pub use pinned::{
+    PinnedDerivedRelationDenial, PinnedDerivedRelationRead, PinnedDerivedRelationScope,
+};
 mod structural;
 pub use proof::{
     DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationWalkStep,
     PreparedDerivedRelationRead,
 };
+pub(crate) use structural::StructuralSource;
+pub(crate) use structural::{prepare_changes, read_changes};
+pub use structural::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
 mod read;
 pub use read::{
     DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial, DerivedRelationReads,

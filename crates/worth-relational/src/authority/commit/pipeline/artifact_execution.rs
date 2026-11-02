@@ -10,6 +10,8 @@ use phase::{assemble_authoritative_publication_phase, ArtifactAssemblyInput};
 use preparation::PublicationPreparation;
 
 pub(super) struct AssembledCommitExecution {
+    source_interpretation:
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     admitted: super::execution_admission::AdmittedCommitState,
     selected_branch_state: crate::branch::SelectedRelationalBranchState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
@@ -48,6 +50,7 @@ impl AssembledCommitExecution {
         crate::snapshots::data::SnapshotHandle,
         Vec<crate::transactions::data::AspectEvaluationTrace>,
         Vec<preparation::PreparedAspectEmissionTrace>,
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     ) {
         (
             self.admitted,
@@ -65,6 +68,7 @@ impl AssembledCommitExecution {
             self.publication_snapshot,
             self.aspect_evaluation_traces,
             self.aspect_emission_traces,
+            self.source_interpretation,
         )
     }
 }
@@ -92,6 +96,7 @@ pub(super) fn assemble_commit_artifacts(
         merge_execution_authority,
         schema_continuity,
         deferred_diagnostic_artifacts,
+        source_interpretation,
     ) = validated.into_parts();
     let strategy_artifacts = admitted.strategy_artifacts().cloned();
     let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
@@ -122,6 +127,7 @@ pub(super) fn assemble_commit_artifacts(
     let aspect_emission_traces = publication.aspect_emission_traces().to_vec();
     let publication_snapshot = publication.snapshot().clone();
     Ok(AssembledCommitExecution {
+        source_interpretation,
         admitted,
         selected_branch_state,
         public_structural_summary,

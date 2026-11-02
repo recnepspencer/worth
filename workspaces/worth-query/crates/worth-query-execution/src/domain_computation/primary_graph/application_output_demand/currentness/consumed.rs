@@ -55,6 +55,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 fn verification_denial(stop: ConsumedOutputVerificationStop) -> WorthQueryOutputDemandDenial {
     use WorthQueryOutputDemandDenialKind as Kind;
     match stop {
+        ConsumedOutputVerificationStop::ManagedIndex(cause) => {
+            WorthQueryOutputDemandDenial::managed_index(cause, "settled managed source consistency")
+        }
         ConsumedOutputVerificationStop::SourceQueryAuthorization(cause) => {
             output_reuse::verification_denial(
                 ConsumedOutputVerificationStop::SourceQueryAuthorization(cause),

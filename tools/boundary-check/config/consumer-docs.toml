@@ -168,10 +168,46 @@ source = "src/certification/application_graph/relation_laws/logical/committed.rs
 name = "managed_prefix_index.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"
-source = "src/application_invariant_acceptance/managed_index/prefix.rs"
+source = "src/application_invariant_acceptance/managed_index/prefix/definition.rs"
 
 [[compiled_sources]]
 name = "managed_box_index.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"
 source = "src/application_invariant_acceptance/managed_index/boxes/provider.rs"
+
+[[compiled_sources]]
+name = "managed_prefix_decision.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/maintained/handler.rs"
+
+[[compiled_sources]]
+name = "managed_prefix_invariant.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/maintained/rule/evaluation.rs"
+
+[[compiled_sources]]
+name = "managed_geometry_source.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/maintained/geometry/query.rs"
+
+[[compiled_sources]]
+name = "managed_prefix_initialization.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/refusing/host.rs"
+
+[[compiled_sources]]
+name = "protected_continuation.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/maintained/protected/court/continuation.rs"
+
+[[compiled_sources]]
+name = "managed_exact_refinement.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
+target = "src/main.rs"
+source = "src/application_invariant_acceptance/managed_index/maintained/refinement/query.rs"

@@ -6,6 +6,9 @@ mod provider_result;
 pub(in crate::domain_computation::primary_graph) use committed_application::WorthQueryPrimaryGraphCommittedApplication;
 
 use super::{PublishedSnapshotCustody, WorthQueryCommittedApplicationSession};
+use crate::domain_computation::primary_graph::application_query::derived_view::{
+    PredicatePreparationOwner, PredicatePreparationRetirement,
+};
 use crate::domain_computation::primary_graph::provider::{
     pending_application_publication::WorthQueryPendingApplicationPublication,
     WorthQueryPrimaryGraphProvider,
@@ -33,13 +36,17 @@ pub(super) fn publish(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
+    predicate: &mut Option<PredicatePreparationOwner>,
+    retired: &mut PredicatePreparationRetirement,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
     let release_published_snapshot = matches!(
         committed.published_snapshot_custody,
         PublishedSnapshotCustody::LiveOwned
     );
     let native_result = std::sync::Arc::clone(&committed.committed);
-    let publication = publish_retained(execution, provider, runtime, committed, evidence);
+    let publication = publish_retained(
+        execution, provider, runtime, committed, evidence, predicate, retired,
+    );
     if release_published_snapshot {
         crate::relational_snapshot_release::release_query_snapshot(
             runtime,
@@ -55,6 +62,8 @@ fn publish_retained(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
+    predicate: &mut Option<PredicatePreparationOwner>,
+    retired: &mut PredicatePreparationRetirement,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
     let WorthQueryCommittedApplicationSession {
         mut attempt,
@@ -123,6 +132,8 @@ fn publish_retained(
             required_prerequisites,
             prepared_lineage_slot,
         ),
+        predicate,
+        retired,
     )?;
     Ok(WorthQueryPublishedApplicationCommit { _private: () })
 }

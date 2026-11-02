@@ -13,6 +13,52 @@ pub(super) fn append(
     basis.text(format!("{prefix}.name"), &parts.name);
     basis.text(format!("{prefix}.provider"), &parts.provider);
     basis.u32(format!("{prefix}.provider-version"), parts.provider_version);
+    if parts.semantic_version >= 2 {
+        basis.text(
+            format!("{prefix}.source-structure"),
+            parts.structure.canonical_token(),
+        );
+    }
+    if parts.semantic_version >= 3 {
+        basis.text(
+            format!("{prefix}.membership"),
+            parts.membership.canonical_token(),
+        );
+    }
+    if parts.semantic_version >= 5 {
+        let maintenance = definition.maintenance();
+        basis.text(
+            format!("{prefix}.public-maintenance"),
+            maintenance.canonical_token(),
+        );
+        basis.optional_text(
+            format!("{prefix}.public-maintenance.cold"),
+            maintenance.native_cold().map(|cold| cold.canonical_token()),
+        );
+        basis.bool(
+            format!("{prefix}.refinement.present"),
+            definition.refinement().is_some(),
+        );
+    }
+    if let Some(refinement) = definition.refinement() {
+        let refinement = refinement.parts();
+        basis.u64(
+            format!("{prefix}.refinement.version"),
+            refinement.semantic_version.into(),
+        );
+        basis.text(
+            format!("{prefix}.refinement.identity"),
+            &refinement.identity,
+        );
+        basis.u32(
+            format!("{prefix}.refinement.domain-version"),
+            refinement.version,
+        );
+        basis.text(
+            format!("{prefix}.refinement.inputs"),
+            "row-local-source-projection",
+        );
+    }
     basis.text(format!("{prefix}.entity"), &parts.entity);
     for (name, value) in parts.source.binding.canonical_fields() {
         basis.text(format!("{prefix}.source.{name}"), value);

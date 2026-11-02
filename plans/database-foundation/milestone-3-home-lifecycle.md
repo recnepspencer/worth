@@ -1728,3 +1728,28 @@ graphs under the existing build policy. Reuse unchanged closed evidence and
 record source hashes and actual results. Fresh admission does not close
 selected Complete Home reconstruction, original serving graph retirement,
 callback/provider release, D11, the joint landing oracle or the milestone.
+
+
+### Phase 3 master integration boundary ruling (2026-11-02)
+
+The existing Store application courts retain their exact construction authority
+when migrating from `query_finalization_parts` to the split, typed owner doors.
+`query_readmission/bootstrap_publication.rs` is an exact caller of
+`application-home-fresh-finalization`; it consumes the actual fresh Native and
+admission from its unshared Directory Home before Query seeding and World genesis.
+`query_readmission/native_artifacts.rs` is an exact caller of
+`application-home-recovered-finalization`; its existing artifact/basis courts
+consume that same Home's actual recovered Native, authority and outcome. Both
+paths are under `worth-store-court-application/tests/worth_store_court_application/
+process/application/`. These are migrations of the already-ruled courts, not a
+new factory, wrapper, production audience, wildcard caller or forged authority.
+The sealed calls remain in their original files; no child module inherits them.
+
+Query 9.19 integration preserves one managed Source registry through installation
+and Home attachment, and the original predicate owner across Memory and Directory
+publication. A returned preparation-pending terminal boxes its original checkout
+guard so ordinary result enums do not embed the full retained Native/World
+preparation on every stack frame. The existing recorded-correction consumer's
+explicit 8 MiB thread is the reproducer; its stack size and the repository's
+configured stack size are unchanged. Guard handback, recovery and destructor
+ordering retain their existing semantics.

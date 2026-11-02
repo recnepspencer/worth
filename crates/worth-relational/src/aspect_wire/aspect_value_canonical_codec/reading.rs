@@ -86,6 +86,15 @@ impl<'a> AspectValueBodyReader<'a> {
 
     fn read_aspect_value_body(&mut self) -> Result<AspectValue, AspectValueCanonicalCodecError> {
         match self.read_u8()? {
+            tags::INLINE_BYTES => {
+                let length = self.read_u32()? as usize;
+                worth_foundational::InlineBytes::admit_length(length)
+                    .map_err(|cause| AspectValueCanonicalCodecError::new(cause.to_string()))?;
+                let value =
+                    worth_foundational::InlineBytes::try_new(self.read_exact(length)?.to_vec())
+                        .map_err(|cause| AspectValueCanonicalCodecError::new(cause.to_string()))?;
+                Ok(AspectValue::InlineBytes(value))
+            }
             tags::NULL => Ok(AspectValue::Null),
             tags::BOOL => Ok(AspectValue::Bool(self.read_bool()?)),
             tags::INT8 => Ok(AspectValue::Int8(self.read_u8()? as i8)),

@@ -33,6 +33,9 @@ pub enum WorthQueryManagedIndexRefusal {
     EpochExhausted,
     StaleImage,
     NotReady,
+    /// The selected physical Source has no retained managed material.
+    RootUnavailable,
+    InvariantOwned,
     RegistrationCapacityExceeded,
     RegistrationIdentityExhausted,
     SessionIdentityExhausted,
@@ -52,8 +55,13 @@ pub enum WorthQueryManagedIndexRefusal {
 }
 
 /// The actual original cause, borrowed from the owned operation denial.
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexDenialCause<'a> {
+    SourceVerification {
+        kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
+        authorization: Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
+        execution: Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
+    },
     Refused(WorthQueryManagedIndexRefusal),
     Execution(&'a worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Request(worth_execution::WorkCeilingDenial),
@@ -69,14 +77,54 @@ pub enum WorthQueryManagedIndexDenialCause<'a> {
     Scope(&'a crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
     QueryAdmission(&'a application_query::WorthQueryApplicationQueryAdmissionDenial),
     QueryRead(&'a application_query::WorthQueryApplicationOneShotDenial),
+    LiveAdmission(&'a application_query::WorthQueryApplicationLiveOpenDenial),
     Source(&'a application_query::WorthQuerySourceExpectationDenial),
     Work(&'a super::super::WorthQueryManagedIndexWorkDenial),
+    NativeSource(&'a worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
+    NativeAdmission(&'a worth_relational::facade::mvcc::CompanionPreflightStop),
 }
 use WorthQueryManagedIndexDenialCause as Cause;
 use WorthQueryManagedIndexRefusal as Refusal;
 
 pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
     match cause {
+        ProviderExecutionDenial::SourceVerification(cause) => Cause::SourceVerification {
+            kind: cause.kind(),
+            authorization: cause.request_authority().map(|denial| denial.kind()),
+            execution: cause.relational_execution_cause(),
+        },
+        ProviderExecutionDenial::NativeSource(cause) => native_source(cause),
+        ProviderExecutionDenial::NativeAdmission(cause) => Cause::NativeAdmission(cause),
+        ProviderExecutionDenial::Product(cause) => Cause::Product(cause),
+        ProviderExecutionDenial::GraphRead(cause) => graph_read(cause),
+        ProviderExecutionDenial::SourceCompletion(cause) => source(cause),
+        ProviderExecutionDenial::SourceRead(cause) => {
+            use application_query::output_source_observation::SourceQueryObservationStop as Stop;
+            match cause {
+                Stop::ManagedIndex(cause) => cause.cause(),
+                Stop::Installation(cause) => Cause::Installation(cause),
+                Stop::Principal(cause) => Cause::Principal(cause),
+                Stop::Scope(cause) => Cause::Scope(cause),
+                Stop::Admission(cause) | Stop::Preparation { cause, .. } => {
+                    Cause::QueryAdmission(cause)
+                }
+                Stop::SourceFacts(cause) => Cause::Source(cause),
+                Stop::Read(application_query::WorthQueryAdmittedOneShotStop::Execution(cause)) => {
+                    Cause::QueryRead(cause)
+                }
+                Stop::Read(application_query::WorthQueryAdmittedOneShotStop::Admission(cause)) => {
+                    Cause::NativeAdmission(cause)
+                }
+                Stop::Basis(_) => Cause::Refused(Refusal::ForeignBasis),
+                Stop::Read(
+                    application_query::WorthQueryAdmittedOneShotStop::WorkCounterOverflow
+                    | application_query::WorthQueryAdmittedOneShotStop::WorkAccountingMismatch,
+                ) => Cause::Refused(Refusal::CapacityAccountingOverflow),
+                Stop::Missing | Stop::Ambiguous | Stop::ForeignClosure => {
+                    Cause::Refused(Refusal::ForeignContext)
+                }
+            }
+        }
         ProviderExecutionDenial::Execution(cause) => Cause::Execution(cause),
         ProviderExecutionDenial::Capacity(cause) => match cause {
             WorthQueryGraphWorkCapacityAdmissionStop::Admission(cause) => Cause::Execution(cause),
@@ -120,8 +168,36 @@ pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
         ProviderExecutionDenial::ForeignAssociation => Cause::Refused(Refusal::ForeignAssociation),
     }
 }
+fn native_source(
+    cause: &worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
+) -> Cause<'_> {
+    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
+    use worth_relational::facade::runtime::{
+        CustomInvariantInterruption as Stop, DerivedRelationReadDenial as Read,
+        ManagedIndexSourcePreparationDenial as Native, StructuralWalkDenialKind as Structural,
+    };
+    match cause {
+        Native::Source(Read::Request(cause)) => Cause::Execution(cause),
+        Native::Source(Read::Structural(Structural::Interrupted(stop))) => {
+            Cause::Interrupted(match stop {
+                Stop::Cancelled => Interruption::Cancelled,
+                Stop::DeadlineElapsed => Interruption::DeadlineExceeded,
+            })
+        }
+        Native::Source(Read::Structural(Structural::MemoryAdmission(cause))) => {
+            Cause::Request(worth_execution::WorkCeilingDenial::Admission(
+                worth_execution::LeaseDenial::MemoryExhausted(*cause),
+            ))
+        }
+        Native::Publication(cause) => Cause::NativeAdmission(cause),
+        Native::RootUnavailable => Cause::Refused(Refusal::RootUnavailable),
+        cause => Cause::NativeSource(cause),
+    }
+}
 fn source(cause: &SourceDenial) -> Cause<'_> {
     match cause {
+        SourceDenial::Admission(cause) => Cause::NativeAdmission(cause),
+        SourceDenial::Native(cause) => native_source(cause),
         SourceDenial::Read(cause) => Cause::QueryRead(cause),
         SourceDenial::Work(cause) => Cause::Work(cause),
         SourceDenial::Source(cause) => Cause::Source(cause),
@@ -144,6 +220,7 @@ pub(super) fn lifecycle(cause: &WorthQueryManagedIndexLifecycleDenial) -> Cause<
         Denial::EpochExhausted => Cause::Refused(Refusal::EpochExhausted),
         Denial::StaleImage => Cause::Refused(Refusal::StaleImage),
         Denial::NotReady => Cause::Refused(Refusal::NotReady),
+        Denial::InvariantOwned => Cause::Refused(Refusal::InvariantOwned),
     }
 }
 fn session(cause: &WorthQueryManagedIndexSessionDenial) -> Cause<'_> {
@@ -155,28 +232,34 @@ fn session(cause: &WorthQueryManagedIndexSessionDenial) -> Cause<'_> {
         Denial::Product(cause) => Cause::Product(cause),
         Denial::AuthorityMismatch => Cause::Refused(Refusal::SessionAuthorityMismatch),
         Denial::TerminalReleaseMismatch => Cause::Refused(Refusal::TerminalReleaseMismatch),
-        Denial::Parent(cause) => match cause {
-            WorthQueryManagedGraphReadDenial::RequestStop(cause) => Cause::Execution(cause),
-            WorthQueryManagedGraphReadDenial::SnapshotUnavailable => {
-                Cause::Refused(Refusal::SnapshotUnavailable)
-            }
-            WorthQueryManagedGraphReadDenial::IndexNotInstalled(id) => {
-                Cause::Refused(Refusal::IndexNotInstalled(*id))
-            }
-            WorthQueryManagedGraphReadDenial::MutationSession => {
-                Cause::Refused(Refusal::MutationSession)
-            }
-            WorthQueryManagedGraphReadDenial::ForeignBasis => Cause::Refused(Refusal::ForeignBasis),
-            WorthQueryManagedGraphReadDenial::ForeignGraph => Cause::Refused(Refusal::ForeignGraph),
-            WorthQueryManagedGraphReadDenial::ForeignReadProof => {
-                Cause::Refused(Refusal::ForeignReadProof)
-            }
-            WorthQueryManagedGraphReadDenial::ForeignReadIntent => {
-                Cause::Refused(Refusal::ForeignReadIntent)
-            }
-            WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch => {
-                Cause::Refused(Refusal::TerminalReleaseMismatch)
-            }
-        },
+        Denial::Parent(cause) => graph_read(cause),
     }
 }
+fn graph_read(cause: &WorthQueryManagedGraphReadDenial) -> Cause<'_> {
+    match cause {
+        WorthQueryManagedGraphReadDenial::RequestStop(cause) => Cause::Execution(cause),
+        WorthQueryManagedGraphReadDenial::SnapshotUnavailable => {
+            Cause::Refused(Refusal::SnapshotUnavailable)
+        }
+        WorthQueryManagedGraphReadDenial::IndexNotInstalled(id) => {
+            Cause::Refused(Refusal::IndexNotInstalled(*id))
+        }
+        WorthQueryManagedGraphReadDenial::MutationSession => {
+            Cause::Refused(Refusal::MutationSession)
+        }
+        WorthQueryManagedGraphReadDenial::ForeignBasis => Cause::Refused(Refusal::ForeignBasis),
+        WorthQueryManagedGraphReadDenial::ForeignGraph => Cause::Refused(Refusal::ForeignGraph),
+        WorthQueryManagedGraphReadDenial::ForeignReadProof => {
+            Cause::Refused(Refusal::ForeignReadProof)
+        }
+        WorthQueryManagedGraphReadDenial::ForeignReadIntent => {
+            Cause::Refused(Refusal::ForeignReadIntent)
+        }
+        WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch => {
+            Cause::Refused(Refusal::TerminalReleaseMismatch)
+        }
+    }
+}
+
+#[cfg(test)]
+mod native_source_tests;

@@ -47,10 +47,13 @@ pub use typed_view::{
     WorthQueryApplicationInvariantDerivedWalk, WorthQueryApplicationInvariantDerivedWalkStep,
     WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantGraphComponent,
     WorthQueryApplicationInvariantGraphComponents, WorthQueryApplicationInvariantGraphMember,
-    WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantReadView,
-    WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantScopePlanner,
-    WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
-    WorthQueryApplicationInvariantWalkStep,
+    WorthQueryApplicationInvariantManagedIndexBinding, WorthQueryApplicationInvariantOrbit,
+    WorthQueryApplicationInvariantReadView, WorthQueryApplicationInvariantRelation,
+    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantWalk,
+    WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
+    WorthQueryInvariantDerivedChanges, WorthQueryInvariantManagedIndexPair,
+    WorthQueryInvariantManagedIndexRead, WorthQueryPreparedInvariantDerivedChanges,
+    WorthQueryPreparedInvariantManagedIndex,
 };
 
 /// Supplies domain validation without supplying its own installation authority.

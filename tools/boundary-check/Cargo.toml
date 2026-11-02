@@ -11,6 +11,9 @@ publish = false
 serde = "1"
 serde_json = "1"
 toml = { version = "1", default-features = false, features = ["std", "serde", "parse"] }
+syn = { version = "2", features = ["full", "visit"] }
+quote = "1"
+proc-macro2 = "1"
 [profile.dev]
 debug = 0
 [profile.dev.package.boundary-check]

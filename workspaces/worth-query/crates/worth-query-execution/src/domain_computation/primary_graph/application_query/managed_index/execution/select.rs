@@ -3,7 +3,8 @@ use super::{purpose, ProviderExecutionDenial as Denial};
 use crate::domain_computation::{
     primary_graph::{
         application_query::managed_index::{
-            retention::ManagedIndexState, selection::ManagedSelectionLease,
+            retention::{ManagedIndexState, ReadyIndexMaterial},
+            selection::ManagedSelectionLease,
         },
         source_facts::SourceFactsAllocation,
         WorthQueryPrimaryGraphApplicationRuntime,
@@ -32,6 +33,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     parent: &'a WorthQueryManagedGraphWorkSession,
     request: &'a WorthQueryRequestScope,
     association: &WorthQueryInstalledManagedIndexParent,
+    selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, S>,
     state: Arc<ManagedIndexState<S, I>>,
     probe: &AspectValue,
     allocation: &Arc<SourceFactsAllocation>,
@@ -49,6 +51,43 @@ where
         return Err(Denial::ForeignAssociation);
     }
     let (epoch, root) = state.ready().map_err(Denial::Lifecycle)?;
+    let graph = application
+        .runtime
+        .primary_graph()
+        .ok_or(Denial::ForeignAssociation)?;
+    let terminal = &root.source.terminal;
+    if terminal.runtime() != parent.runtime_authority()
+        || terminal.principal() != parent.principal()
+        || Some(terminal.scope()) != parent.entity_access_context()
+        || terminal.binding() != parent.binding()
+        || terminal.binding() != association.binding_identity()
+        || terminal.obligation() != association.access_contract().source_obligation()
+        || !state
+            .adapter
+            .installed()
+            .source_read()
+            .query()
+            .binding_observation()
+            .is_some_and(|binding| root.source.authorization.matches_binding(binding))
+        || !root.source.authorization.validates_terminal(terminal)
+    {
+        return Err(Denial::ForeignAssociation);
+    }
+    graph.with_runtime(execution, |runtime| {
+        root.source.authorization.validate_current(runtime, execution, selected.application_basis().snapshot_handle())
+    }).map_err(|stop| Denial::SourceVerification(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::output_observation(stop)))?;
+    let material = graph.with_runtime(execution, |runtime| {
+        runtime.read_truth().public_managed_index_cache_payload(
+            execution, selected.application_basis().snapshot_handle(), &root.cache,
+        )
+    }).map_err(|cause| match cause {
+        worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::RootUnavailable =>
+            Denial::Lifecycle(super::super::retention::WorthQueryManagedIndexLifecycleDenial::NotReady),
+        cause => Denial::NativeSource(cause),
+    })?.downcast::<ReadyIndexMaterial>().map_err(|_| Denial::ForeignAssociation)?;
+    if !Arc::ptr_eq(&material.source, &root.source.material) {
+        return Err(Denial::ForeignAssociation);
+    }
     let session = purpose::start(
         execution,
         application,
@@ -58,18 +97,25 @@ where
         Arc::clone(&root.source.terminal),
         allocation,
     )?;
-    let (slots, callback) = session
-        .call(|actual| {
-            state.adapter.candidates(
-                actual,
-                root.source
-                    .view(application.installed_schema().value_bindings()),
-                root.nodes.as_ref(),
-                probe,
-            )
-        })
+    let frame =
+        crate::domain_computation::primary_graph::access_strategy::coverage::CoverageFrame::public(
+            root.source
+                .view(application.installed_schema().value_bindings()),
+            &material.nodes,
+            root.source.material.as_ref(),
+            probe,
+            parent,
+            association.access_contract().meaning().match_posture(),
+        );
+    let (selection, callback) = session
+        .call(|actual| state.adapter.candidates(actual, frame))
         .map_err(Denial::Session)?
         .map_err(Denial::Work)?;
+    let slots = super::super::invocation::controlled(execution, |control| selection.receive(
+        frame, state.adapter.coverage_authority(),
+        association.definition().parts().membership != worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::Candidates,
+        control,
+    )).map_err(Denial::Work)?;
     let proof = session.complete(callback).map_err(Denial::Session)?;
     ManagedSelectionLease::issue(proof, parent, request, state, root, epoch, slots)
         .map_err(Denial::Selection)

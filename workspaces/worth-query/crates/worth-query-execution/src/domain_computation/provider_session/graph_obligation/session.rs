@@ -20,8 +20,8 @@ mod inspection_read;
 mod managed_index_read;
 mod mutation_readmission;
 pub(in crate::domain_computation) use managed_index_read::{
-    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
-    WorthQueryManagedIndexSessionDenial,
+    WorthQueryManagedIndexCallbackProof, WorthQueryManagedIndexReadSession,
+    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
 };
 mod prepared_query_read;
 mod product_read;
@@ -230,6 +230,15 @@ impl WorthQueryManagedGraphWorkSession {
         match &mut self.basis {
             WorthQueryGraphWorkBasis::ProductRead { .. } => None,
             WorthQueryGraphWorkBasis::Mutation(lease) => lease.take(),
+        }
+    }
+
+    pub(in crate::domain_computation) fn mutation_lease_mut(
+        &mut self,
+    ) -> Option<&mut WorthQueryApplicationSnapshotLease> {
+        match &mut self.basis {
+            WorthQueryGraphWorkBasis::ProductRead { .. } => None,
+            WorthQueryGraphWorkBasis::Mutation(lease) => lease.as_mut(),
         }
     }
 

@@ -53,6 +53,9 @@ impl crate::runtime::RelationalRuntime {
         {
             return Err(RelationalBranchTransactionAdmissionDenial::BasisIdentityMismatch);
         }
+        if !intent.admits_materialization_source(basis) {
+            return Err(RelationalBranchTransactionAdmissionDenial::BasisIdentityMismatch);
+        }
         let cell = self
             .history
             .branch_cell(basis.identity().branch_id())

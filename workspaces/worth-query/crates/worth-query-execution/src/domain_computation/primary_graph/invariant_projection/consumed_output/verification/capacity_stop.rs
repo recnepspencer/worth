@@ -33,6 +33,8 @@ impl VerificationCapacityStop {
             | CompanionPreflightStop::SelectedPositionUnavailable { .. }
             | CompanionPreflightStop::ForeignCell
             | CompanionPreflightStop::RegistrationChanged
+            | CompanionPreflightStop::ManagedSourceNotPrepared
+            | CompanionPreflightStop::ManagedSourceChanged
             | CompanionPreflightStop::WorkCounterOverflow
             | CompanionPreflightStop::Interrupted(_) => None,
         }

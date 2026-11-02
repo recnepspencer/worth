@@ -1,4 +1,5 @@
 // Physical typed payload custody; nested payload heaps remain uncharged here.
+mod replacement;
 #[allow(unused_imports)]
 use crate::array_backing::isolated_context::*;
 #[allow(unused_imports)]

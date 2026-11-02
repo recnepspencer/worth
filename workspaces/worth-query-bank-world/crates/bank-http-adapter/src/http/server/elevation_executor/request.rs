@@ -58,6 +58,12 @@ where
         Err(denial) => return (request_denied(Some(request_id), estate_denial(denial))).into(),
     };
     let (authority, disposition) = match outcome {
+        BankEstateElevationRequestOutcome::ProductPreparationPending(_)
+        | BankEstateElevationRequestOutcome::ProductPreparationRefused(_) => {
+            // Drop returns any checkout to its original Query registry; no
+            // recovery, no-effect proof or handler retry is authorized here.
+            return (request_denied(Some(request_id), indeterminate())).into();
+        }
         BankEstateElevationRequestOutcome::CleanupRequired(custody) => {
             return super::super::native_route::NativeRouteResult::Cleanup {
                 owner,

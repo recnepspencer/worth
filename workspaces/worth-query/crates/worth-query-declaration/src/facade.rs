@@ -144,7 +144,7 @@ pub mod schema_view {
 pub mod typed {
     pub use crate::schema_view::{QuerySchemaView, SchemaFieldView, SchemaRelationView};
     pub use crate::typed::*;
-    pub use worth_foundational::facade::ScalarAspectType;
+    pub use worth_foundational::facade::{InlineBytes, InlineBytesLengthDenial, ScalarAspectType};
 }
 
 /// Validation of a canonical query bundle against a schema view, producing a

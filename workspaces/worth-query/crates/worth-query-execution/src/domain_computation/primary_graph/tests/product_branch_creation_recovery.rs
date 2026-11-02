@@ -262,15 +262,27 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
         .replace_owner_cleanup_after_component_progress_hook(Some(Box::new(|| {
             panic!("injected unwind after one owner retirement")
         })));
-    let unwind = world
+    let failure = world
         .application
-        .with_host_advancement(|phase| {
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                let _ = world.application.on_branch(branch).close(&phase);
-            }))
-        })
-        .expect("the fixture read owns its installed host call");
-    assert!(unwind.is_err());
+        .with_host_advancement(|phase| world.application.on_branch(branch).close(&phase))
+        .expect("the fixture read owns its installed host call")
+        .expect_err("the original Execution request classifies the cleanup unwind");
+    let WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(failure) = failure
+    else {
+        panic!("Native progress must remain in an inspectable cleanup obligation");
+    };
+    assert!(matches!(
+        failure.denial(),
+        crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupDenial::Product(
+            WorthQueryProductBranchOwnerCleanupDenial::Execution(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Panicked
+            )
+        )
+    ));
+    assert!(matches!(
+        failure.into_cleanup().pending_work().as_slice(),
+        [crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupWork::SignalBranch { .. }]
+    ));
     world
         .application
         .product_runtime

@@ -9,6 +9,9 @@ use super::{
     ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial,
 };
 
+#[cfg(test)]
+mod admitted_tests;
+
 macro_rules! primitive_binding {
     ($binding:ident, $value:ty, $identity:literal, $family:ident, $variant:ident,
      $identity_posture:ty, $aggregate_posture:ty) => {
@@ -24,6 +27,7 @@ macro_rules! primitive_binding {
 
             const IDENTITY_NAME: &'static str = $identity;
             const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::$family;
+            const SUPPORTS_ADMITTED_DECODE: bool = true;
             const NATIVE_INPUT_ADMISSION: Option<ApplicationNativeInputDecodeProfile> =
                 Some(ApplicationNativeInputDecodeProfile::new(
                     1,
@@ -92,6 +96,12 @@ primitive_binding!(
 macro_rules! readable_copy_binding {
     ($binding:ident, $variant:ident) => {
         impl ApplicationReadableScalarValueBinding for $binding {
+            fn decode_admitted(
+                value: &AspectValue,
+                admission: &mut super::ValueDecodeAdmission<'_>,
+            ) -> Result<Self::Value, ApplicationValueDecodeDenial> {
+                decode_primitive_admitted::<Self>(value, admission)
+            }
             fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial> {
                 match value {
                     AspectValue::$variant(value) => Ok(*value),
@@ -107,6 +117,12 @@ readable_copy_binding!(I64ApplicationValueBinding, Int64);
 readable_copy_binding!(U64ApplicationValueBinding, UInt64);
 
 impl ApplicationReadableScalarValueBinding for StringApplicationValueBinding {
+    fn decode_admitted(
+        value: &AspectValue,
+        admission: &mut super::ValueDecodeAdmission<'_>,
+    ) -> Result<Self::Value, ApplicationValueDecodeDenial> {
+        decode_primitive_admitted::<Self>(value, admission)
+    }
     fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial> {
         match value {
             AspectValue::String(InternedString::Raw(value)) => Ok(value.clone()),
@@ -119,6 +135,12 @@ impl ApplicationReadableScalarValueBinding for StringApplicationValueBinding {
 }
 
 impl ApplicationReadableScalarValueBinding for InternedStringApplicationValueBinding {
+    fn decode_admitted(
+        value: &AspectValue,
+        admission: &mut super::ValueDecodeAdmission<'_>,
+    ) -> Result<Self::Value, ApplicationValueDecodeDenial> {
+        decode_primitive_admitted::<Self>(value, admission)
+    }
     fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial> {
         match value {
             AspectValue::String(value) => Ok(value.clone()),
@@ -135,6 +157,22 @@ impl ApplicationSignedAggregateValueBinding for I64ApplicationValueBinding {
     fn decode_aggregate(value: i64) -> Result<Self::Value, ApplicationValueDecodeDenial> {
         Ok(value)
     }
+}
+
+fn decode_primitive_admitted<Binding: ApplicationReadableScalarValueBinding>(
+    value: &AspectValue,
+    admission: &mut super::ValueDecodeAdmission<'_>,
+) -> Result<Binding::Value, ApplicationValueDecodeDenial> {
+    if value.value_family() != Binding::SCALAR_FAMILY {
+        return Err(family_mismatch::<Binding>(value));
+    }
+    admission
+        .admit(1, value.owned_allocation_capacity_bytes())
+        .map_err(|cause| ApplicationValueDecodeDenial::Canonical {
+            binding_identity: Binding::IDENTITY,
+            cause,
+        })?;
+    Binding::decode(value)
 }
 
 fn family_mismatch<Binding: ApplicationScalarValueBinding>(

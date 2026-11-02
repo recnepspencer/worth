@@ -8,6 +8,11 @@ pub struct RelationalTransactionIntent {
     pub(crate) proposed_schema_transition: Option<ProposedSchemaTransition>,
     pub(crate) schema_reconciliation_policy: Option<SchemaReconciliationPolicy>,
     pub(crate) materialization_mode: Option<RelationalMaterializationTransactionMode>,
+    restoration: Option<crate::validation::candidate_source::NativeSourceRestorationOrigin>,
+    materialization_source: Option<(
+        crate::branch::AdmittedRelationalBranchBasis,
+        std::sync::Arc<crate::validation::candidate_source::NativeMaterializationSource>,
+    )>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,6 +28,8 @@ impl RelationalTransactionIntent {
             proposed_schema_transition: None,
             schema_reconciliation_policy: None,
             materialization_mode: None,
+            materialization_source: None,
+            restoration: None,
         }
     }
 
@@ -32,7 +39,68 @@ impl RelationalTransactionIntent {
             proposed_schema_transition: None,
             schema_reconciliation_policy: None,
             materialization_mode: Some(mode),
+            materialization_source: None,
+            restoration: None,
         }
+    }
+
+    pub(crate) fn with_materialization_source(
+        mut self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        source: std::sync::Arc<crate::validation::candidate_source::NativeMaterializationSource>,
+    ) -> Self {
+        self.materialization_source = Some((basis.clone(), source));
+        self
+    }
+
+    pub(crate) fn with_materialization_custody(
+        self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        custody: &crate::branch::RelationalMaterializationCustody,
+    ) -> Self {
+        let mut intent =
+            self.with_materialization_source(basis, std::sync::Arc::clone(&custody.data().source));
+        intent.restoration = Some(
+            crate::validation::candidate_source::NativeSourceRestorationOrigin::from_custody(
+                basis, custody,
+            ),
+        );
+        intent
+    }
+
+    pub(crate) fn restoration_origin(
+        &self,
+    ) -> Option<&crate::validation::candidate_source::NativeSourceRestorationOrigin> {
+        self.restoration.as_ref()
+    }
+
+    pub(crate) fn materialization_source(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::validation::candidate_source::NativeMaterializationSource>>
+    {
+        self.materialization_source
+            .as_ref()
+            .map(|(_, source)| source)
+    }
+
+    pub(crate) fn admits_materialization_source(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+    ) -> bool {
+        self.materialization_source
+            .as_ref()
+            .is_none_or(|(selected, source)| {
+                selected == basis
+                    && match self.materialization_mode {
+                        Some(RelationalMaterializationTransactionMode::Suspend) => {
+                            source.basis() == basis
+                        }
+                        Some(RelationalMaterializationTransactionMode::Rematerialize) => {
+                            source.basis().identity() == basis.identity()
+                        }
+                        None => false,
+                    }
+            })
     }
 
     pub(crate) const fn materialization_mode(

@@ -30,7 +30,10 @@ pub enum WorthQueryProductPreparationStage {
 pub struct WorthQueryProductPreparationPending {
     stage: WorthQueryProductPreparationStage,
     recovery: WorthQueryProductUnpublishedRecovery,
-    preparation: Option<crate::domain_computation::primary_graph::QueryDurablePreparationGuard>,
+    // The checked-out preparation contains the full Native and World phases.
+    // Keep that original owner out of every ordinary commit-result stack frame.
+    preparation:
+        Option<Box<crate::domain_computation::primary_graph::QueryDurablePreparationGuard>>,
 }
 impl WorthQueryProductPreparationPending {
     pub(in crate::domain_computation) fn new(
@@ -49,7 +52,7 @@ impl WorthQueryProductPreparationPending {
         mut self,
         preparation: crate::domain_computation::primary_graph::QueryDurablePreparationGuard,
     ) -> Self {
-        self.preparation = Some(preparation);
+        self.preparation = Some(Box::new(preparation));
         self
     }
     pub const fn stage(&self) -> WorthQueryProductPreparationStage {
@@ -93,6 +96,9 @@ impl std::fmt::Debug for WorthQueryProductPreparationPending {
 pub enum WorthQueryProductPreparationRefusal {
     World(WorldOpenAttemptRefusal),
     QuerySuccessorObservation(&'static str),
+    QuerySuccessorObservationRequest(
+        worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    ),
     QueryPreparationReservationRefused,
     ConditionalPublicationRequired,
 }

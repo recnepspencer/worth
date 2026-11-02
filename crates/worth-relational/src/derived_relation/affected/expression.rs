@@ -77,6 +77,28 @@ pub(super) fn collect(
                     continue;
                 }
                 match &key.definition.parts().nodes[key.node] {
+                    Node::OrderedEvents {
+                        predecessor,
+                        introduced,
+                        retired,
+                    } => {
+                        let acquired = crate::derived_relation::ordered_events::affected::collect(
+                            registry,
+                            &key.definition,
+                            crate::derived_relation::ordered_events::Recipe {
+                                predecessor: *predecessor,
+                                introduced: *introduced,
+                                retired: *retired,
+                            },
+                            key.reverse,
+                            adjacency,
+                            events,
+                            before,
+                            after,
+                        )?;
+                        super::super::support::append(after, &mut support, acquired.support)?;
+                        (key, acquired.members)
+                    }
                     Node::Stored { relation, .. } => {
                         let mut roots = BTreeSet::new();
                         for delta in adjacency {
@@ -242,8 +264,7 @@ pub(super) fn collect(
                             for member in data.endpoints() {
                                 insert_member(after, &mut roots, member.clone())?;
                             }
-                            after.retain(size_of::<super::super::DerivedRelationData>())?;
-                            support.push(data);
+                            super::super::support::push(after, &mut support, data)?;
                         }
                     } else {
                         insert_member(after, &mut roots, anchor.clone())?;

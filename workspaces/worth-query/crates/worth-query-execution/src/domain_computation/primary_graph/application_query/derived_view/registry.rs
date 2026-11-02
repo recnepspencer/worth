@@ -3,11 +3,28 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
+mod index_directory;
 mod managed_index;
-mod material;
+mod managed_source;
 mod native_count;
+mod predicate;
+pub(in crate::domain_computation::primary_graph) use predicate::PredicateNoticeDisposition;
+pub(in crate::domain_computation::primary_graph::application_query) use predicate::{
+    mark_prepared_predicates_unavailable, route_prepared_predicates,
+};
+pub(in crate::domain_computation::primary_graph) use predicate::{
+    PredicatePreparationFactory, PredicatePreparationOwner, PredicatePreparationRetirement,
+    PredicateWorld, PreparedPredicateNotices, PreparedPredicatePublication, SourcePredicateAxis,
+};
+pub(in crate::domain_computation::primary_graph::application_query) use predicate::{
+    PredicateRegistration, PredicateRootReservation,
+};
 
-use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredManagedIndex:
+    Send + Sync
+{
+    fn dispose(&self);
+}
 
 pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredDerivedView:
     Send + Sync
@@ -52,35 +69,49 @@ impl PreparedManagedViewPublication {
     }
 }
 
-enum OwnedDerivedView {
-    NativeCount(
-        Arc<
-            super::retention::ManagedDerivedViewState<
-                worth_relational::facade::identity::EntityId,
-                native_count::ClosedCount,
-            >,
-        >,
-    ),
-    ManagedIndex {
-        state: Arc<dyn Any + Send + Sync>,
-        _publication: Arc<dyn RegisteredDerivedView>,
-    },
-}
+type NativeCountState = Arc<
+    super::retention::ManagedDerivedViewState<
+        worth_relational::facade::identity::EntityId,
+        native_count::ClosedCount,
+    >,
+>;
 
 #[derive(Default)]
 struct RegistryState {
+    source_branches:
+        BTreeMap<worth_relational::facade::history::BranchId, managed_source::SourceBranchSlot>,
     next_id: u64,
     views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
-    owned: Vec<(u64, OwnedDerivedView)>,
-    material_allocations: Vec<Arc<SourceFactsAllocation>>,
+    native_counts: Vec<(u64, NativeCountState)>,
+    indexes: index_directory::ManagedIndexDirectory,
+}
+
+impl RegistryState {
+    fn registration_count(&self) -> usize {
+        self.views.len() + self.indexes.len()
+    }
 }
 
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
+    native_runtime: Option<u64>,
+    sources: super::super::managed_index::ManagedSourceInstallation,
+    initialization: Mutex<Weak<managed_source::initialization::InitializationSession>>,
 }
 
 impl ManagedDerivedViewRegistry {
+    pub(in crate::domain_computation::primary_graph) fn with_sources(
+        sources: super::super::managed_index::ManagedSourceInstallation,
+        owner: &worth_relational::facade::branch::RelationalBranchIdentity,
+    ) -> Self {
+        Self {
+            state: Mutex::new(RegistryState::default()),
+            native_runtime: Some(owner.runtime_instance_id()),
+            sources,
+            initialization: Mutex::new(Weak::new()),
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn has_live_views(&self) -> bool {
         self.state
             .lock()
@@ -136,7 +167,7 @@ impl ManagedDerivedViewRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.views.retain(|_, view| view.strong_count() > 0);
         let result = (|| {
-            if state.views.len() >= MAXIMUM_REGISTERED_VIEWS {
+            if state.registration_count() >= MAXIMUM_REGISTERED_VIEWS {
                 return None;
             }
             let id = state.next_id.checked_add(1)?;
@@ -144,7 +175,10 @@ impl ManagedDerivedViewRegistry {
             state.views.insert(id, Arc::downgrade(view));
             Some(id)
         })();
-        let empty = state.take_empty_material_storage();
+        let empty = state
+            .views
+            .is_empty()
+            .then(|| std::mem::take(&mut state.views));
         drop(state);
         drop(empty);
         result
@@ -159,27 +193,37 @@ impl ManagedDerivedViewRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.views.remove(&id);
-        let removed = state
-            .owned
-            .iter()
-            .position(|(actual, _)| *actual == id)
-            .map(|position| state.owned.remove(position));
-        let empty = state.take_empty_material_storage();
+        let removed_index = state.indexes.remove(id);
+        let removed_count = if removed_index.is_none() {
+            state
+                .native_counts
+                .iter()
+                .position(|(actual, _)| *actual == id)
+                .map(|position| state.native_counts.remove(position))
+        } else {
+            None
+        };
+        let empty = state
+            .views
+            .is_empty()
+            .then(|| std::mem::take(&mut state.views));
         drop(state);
-        drop(removed);
+        drop(removed_index);
+        drop(removed_count);
         drop(empty);
     }
 
     pub(in crate::domain_computation::primary_graph) fn dispose(&self) {
-        let (views, owned, allocations) = {
+        let (views, native_counts, indexes, source_branches) = {
             let mut state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             (
                 std::mem::take(&mut state.views),
-                std::mem::take(&mut state.owned),
-                std::mem::take(&mut state.material_allocations),
+                std::mem::take(&mut state.native_counts),
+                std::mem::take(&mut state.indexes),
+                std::mem::take(&mut state.source_branches),
             )
         };
         // Move the real containers out. No upgrade, disposal, final owner drop
@@ -189,8 +233,10 @@ impl ManagedDerivedViewRegistry {
                 view.dispose();
             }
         }
-        drop(owned);
-        drop(allocations);
+        indexes.dispose();
+        self.sources.dispose_predicates();
+        drop(native_counts);
+        drop(source_branches);
     }
 }
 

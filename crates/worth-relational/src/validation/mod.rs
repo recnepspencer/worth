@@ -1,3 +1,4 @@
+pub(crate) mod candidate_source;
 mod custom_registry;
 mod custom_rule;
 pub mod data;
@@ -10,5 +11,5 @@ pub mod reduction;
 
 pub use custom_registry::DuplicateCustomInvariantRegistration;
 pub(crate) use custom_registry::FrozenCustomInvariantRegistry;
-pub(crate) use custom_rule::CustomInvariantWorkMeter;
+pub(crate) use custom_rule::{CustomInvariantWorkMeter, CustomPreparationBudget};
 pub use invariant_access::InvariantAccess;

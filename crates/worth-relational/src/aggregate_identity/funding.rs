@@ -67,6 +67,27 @@ impl AggregateWork<'_, '_, '_, '_> {
         }
         Ok(())
     }
+    pub(super) fn check_scratch_peak(&mut self, bytes: u64) -> BuildResult<()> {
+        self.checkpoint(0)?;
+        let peak = self
+            .claimed
+            .checked_add(bytes)
+            .ok_or(MapKernelFailure::Domain(PlanDenial::Execution(
+                crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+            )))?;
+        if let Some(memory) = self.memory.as_mut() {
+            if peak > memory.bytes() {
+                memory.resize(peak).map_err(|denial| {
+                    MapKernelFailure::Domain(PlanDenial::Execution(
+                        crate::execution::denial::lease_denial(
+                            worth_execution::LeaseDenial::MemoryExhausted(denial),
+                        ),
+                    ))
+                })?;
+            }
+        }
+        Ok(())
+    }
     pub(super) fn invalid<T>(&self, denial: PlanDenial) -> BuildResult<T> {
         Err(MapKernelFailure::Domain(denial))
     }

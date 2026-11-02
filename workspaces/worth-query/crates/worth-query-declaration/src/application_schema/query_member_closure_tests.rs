@@ -383,3 +383,6 @@ fn build_query(
         .unwrap()
         .into_erased()
 }
+
+#[path = "query_member_closure_tests/managed_source_authorization.rs"]
+mod managed_source_authorization;

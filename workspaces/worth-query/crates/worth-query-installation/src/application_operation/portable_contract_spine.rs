@@ -134,6 +134,9 @@ fn compile_reads(
     let mut relations = BTreeSet::new();
     for read in reads {
         match read {
+            // The Parent and its Source admit their own reads. The operation's
+            // physical projection declarations are checked independently.
+            ApplicationOperationDecisionReadTarget::ManagedIndex { .. } => {}
             ApplicationOperationDecisionReadTarget::Entity { entity } => {
                 entities.insert(entity);
             }

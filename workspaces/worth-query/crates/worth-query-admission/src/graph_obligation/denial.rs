@@ -34,7 +34,7 @@ impl WorthQueryGraphObligationSelectionDenial {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryGraphWorkAdmissionDenial {
     Selection(WorthQueryGraphObligationSelectionDenial),
     IntentMismatch,

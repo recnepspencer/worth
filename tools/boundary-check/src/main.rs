@@ -1,5 +1,6 @@
 mod config;
 mod document_rules;
+mod domain_values;
 mod graph_rules;
 mod inputs;
 mod lexical;
@@ -14,17 +15,21 @@ fn main() {
     let mut root = PathBuf::from(".");
     let mut config = format!("{}road1.toml", config::CONFIG);
     let mut json = false;
+    let mut domain_registry = None;
+    let mut manifest = None;
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
         match (arg.as_str(), args.next()) {
             ("--root", Some(value)) => root = value.into(),
             ("--config", Some(value)) => config = value,
+            ("--domain-values", Some(value)) => domain_registry = Some(value),
+            ("--manifest-path", Some(value)) => manifest = Some(value),
             ("--format", Some(value)) if value == "json" || value == "human" => {
                 json = value == "json"
             }
             _ => {
                 eprintln!(
-                    "usage: boundary-check [--root PATH] [--config PATH] [--format human|json]"
+                    "usage: boundary-check [--root PATH] [--config PATH] [--format human|json] [--domain-values REGISTRY --manifest-path MANIFEST]"
                 );
                 std::process::exit(2);
             }
@@ -33,15 +38,27 @@ fn main() {
     let result = root
         .canonicalize()
         .map_err(|e| e.to_string())
-        .and_then(|root| Inputs::read(&root, &config));
+        .and_then(|root| match (&domain_registry, &manifest) {
+            (Some(_), Some(manifest)) => Inputs::read_domain_sources(&root, manifest),
+            (None, None) => Inputs::read(&root, &config),
+            _ => Err("--domain-values and --manifest-path must be supplied together".into()),
+        });
+    if let Some(registry) = domain_registry {
+        let outcome = match result {
+            Ok(input) => Outcome::Checked(domain_values::check_registry(&input, &registry)),
+            Err(error) => Outcome::InputFailure(error),
+        };
+        return emit(outcome, json);
+    }
     let outcome = match result {
         Ok(input) => thread::scope(|s| {
-            let rules: [fn(&Inputs) -> Vec<Diagnostic>; 5] = [
+            let rules: [fn(&Inputs) -> Vec<Diagnostic>; 6] = [
                 graph_rules::check,
                 text_rules::check,
                 document_rules::check,
                 seal_rules::check,
                 runtime_courts::check,
+                domain_values::check,
             ];
             let handles: Vec<_> = rules
                 .into_iter()

@@ -12,6 +12,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         control.admit(self, expected)?;
         self.validate_completeness(expected)?;
         source_fact_count(self, expected)?;
+        self.invocation_source_authorization()?;
         let footprint = self.source_meaning.footprint();
         footprint.validate_selections(layout, &|subject| control.poll(subject))?;
         // Temporary borrowed-key indexes remain outside payload custody. They

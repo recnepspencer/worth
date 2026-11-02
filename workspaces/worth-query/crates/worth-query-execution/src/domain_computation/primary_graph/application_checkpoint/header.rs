@@ -70,6 +70,7 @@ impl CheckpointDecodeDenial {
                     I::DeadlineExceeded => MapKernelStop::DeadlineElapsed,
                 }))
             },
+            FactDecodeDenial::Retention(StoreDenial::PhysicalAllocation) => Self::allocator(),
             FactDecodeDenial::Retention(StoreDenial::Representability) => Self::capacity(),
             FactDecodeDenial::Retention(StoreDenial::ConflictingBody) =>
                 "checkpoint facts contain conflicting bodies".to_owned().into(),

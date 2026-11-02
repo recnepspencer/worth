@@ -2,15 +2,15 @@ use super::page::{
     RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalPreparedAuthoredWritePage,
 };
-use super::{RelationalAuthoredWriteDenial as Denial, RelationalAuthoredWriteSelector as Key};
+use super::RelationalAuthoredWriteDenial as Denial;
+use crate::history::AuthoredWritePostingKey as Key;
+mod admission;
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::change_source::RelationalSelectedCommit;
 use crate::history::data::CommitId;
 use crate::runtime::{AuthoredWriteGeneration, RelationalRuntime};
 use std::sync::Arc;
-use worth_execution::{
-    ChargedBytes, ExecutionRequest, ExecutionRequestArrayBuilder, MapKernelContext,
-};
+use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder, MapKernelContext};
 
 /// A finite continuation over one owner-selected canonical single-parent prefix.
 #[derive(Debug)]
@@ -22,174 +22,13 @@ pub struct RelationalAuthoredWriteCursor {
 pub(super) struct RetainedAuthoredWriteSelection {
     generation: AuthoredWriteGeneration,
     keys: worth_execution::ExecutionArray<Key>,
+    managed_catalog: Option<
+        Arc<crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
+    >,
     _key_memory: Option<worth_execution::ExecutionMemoryReservation>,
     _original: AdmittedRelationalBranchBasis,
     target: AdmittedRelationalBranchBasis,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
-}
-
-impl RelationalRuntime {
-    /// Select relevant authored writes strictly after the genuine source root.
-    /// Prefix membership is taken from the target's canonical parent-derived
-    /// generation, never from branch names or a supplied revision equality.
-    /// Multi-parent histories and unavailable accelerators fail closed. Index
-    /// predicates additionally require actual installed-definition coverage
-    /// throughout the open source-to-target canonical interval.
-    pub fn authored_write_history_cursor(
-        &self,
-        execution: ExecutionRequest<'_, '_>,
-        original: &AdmittedRelationalBranchBasis,
-        target: RelationalSelectedCommit,
-        selectors: &[Key],
-    ) -> Result<RelationalAuthoredWriteCursor, Denial> {
-        if original.identity().runtime_instance_id() != self.runtime_instance_id()
-            || target.runtime_instance_id() != self.runtime_instance_id()
-        {
-            return Err(Denial::ForeignOwner);
-        }
-        if target.observation().commit_id() != Some(target.commit_id()) {
-            return Err(Denial::NotExactSelection);
-        }
-        if selectors.is_empty() {
-            return Err(Denial::EmptySelection);
-        }
-        super::run(execution, |context| {
-            for key in selectors {
-                super::visit(context)?;
-                if let Key::Adjacency { anchor, .. } = key
-                    && anchor.generation_value() == 0
-                {
-                    return Err(Denial::UnsupportedAdjacencySelector);
-                }
-                if let Key::EntityFieldIndex { definition, .. } = key
-                    && !super::RelationalAuthoredEntityIndexDefinition::supports_locator(
-                        &definition.locator,
-                    )
-                {
-                    return Err(Denial::UnsupportedIndexSelector);
-                }
-            }
-            let original_commit = original
-                .observation()
-                .commit_id()
-                .ok_or(Denial::NoSelectedCommit)?;
-            if self
-                .history_access()
-                .immutable_commit_receipt(original_commit)
-                .is_none()
-            {
-                return Err(Denial::SourceUnavailable);
-            }
-            let generation = self
-                .history
-                .authored_write_generation(target.commit_id())
-                .ok_or(Denial::GenerationUnavailable)?;
-            if generation.unsupported_merge {
-                return Err(Denial::UnsupportedMergeInterval);
-            }
-            super::ordered_visit(context, generation.prefix.len())?;
-            let original_ordinal = *generation
-                .prefix
-                .get(&original_commit)
-                .ok_or(Denial::NotSelectedPrefix)?;
-            let next = original_ordinal
-                .checked_add(1)
-                .ok_or(Denial::SizeOverflow)?;
-            if selectors
-                .iter()
-                .any(|key| matches!(key, Key::Adjacency { .. }))
-            {
-                super::ordered_visit(context, generation.incomplete_adjacency.len())?;
-                if let Some((&ordinal, gap)) =
-                    generation.incomplete_adjacency.first_at_or_after(&next)
-                {
-                    return Err(Denial::IncompleteAdjacencyHistory {
-                        ordinal,
-                        commit: gap.commit,
-                        relation: gap.relation,
-                        kind: gap.kind,
-                        reason: gap.reason,
-                    });
-                }
-            }
-            if selectors
-                .iter()
-                .any(|key| matches!(key, Key::EntityFieldIndex { .. }))
-            {
-                super::ordered_visit(context, generation.incomplete_indexes.len())?;
-                if generation
-                    .incomplete_indexes
-                    .first_at_or_after(&next)
-                    .is_some()
-                {
-                    return Err(Denial::IncompleteIndexHistory);
-                }
-            }
-            // Resolve at the real receiving catalog. A descriptive tuple is
-            // insufficient even when older packets were complete for a smaller
-            // installed roster. The first coverage and monotone-run boundary
-            // prove every packet in this open selected interval.
-            let catalog = self.indexes.definition_read_binding().snapshot();
-            for key in selectors {
-                super::visit(context)?;
-                let Key::EntityFieldIndex { definition, .. } = key else {
-                    continue;
-                };
-                let introduction = catalog
-                    .introduction(definition, context)?
-                    .ok_or(Denial::IncompleteIndexHistory)?;
-                if next > generation.ordinal {
-                    continue;
-                }
-                if next < generation.index_run_start {
-                    return Err(Denial::IncompleteIndexHistory);
-                }
-                super::ordered_visit(context, generation.index_coverage.len())?;
-                let Some((_, coverage)) = generation.index_coverage.first_at_or_after(&next) else {
-                    return Err(Denial::IncompleteIndexHistory);
-                };
-                if !coverage.extends(introduction) {
-                    return Err(Denial::IncompleteIndexHistory);
-                }
-            }
-            let memory = execution
-                .reserve_retained_memory(
-                    (std::mem::size_of::<RetainedAuthoredWriteSelection>()
-                        + 2 * std::mem::size_of::<usize>()) as u64,
-                )
-                .map_err(Denial::Request)?;
-            let bytes = selectors.iter().try_fold(0u64, |bytes, key| {
-                super::visit(context)?;
-                bytes
-                    .checked_add(key.additional_charged_bytes())
-                    .ok_or(Denial::SizeOverflow)
-            })?;
-            let key_memory = execution
-                .reserve_retained_memory(bytes)
-                .map_err(Denial::Request)?;
-            let mut keys = ExecutionRequestArrayBuilder::allocate(execution, selectors.len())?;
-            for key in selectors {
-                super::visit(context)?;
-                keys.push(key.clone())?;
-            }
-            // These sealed bases already own immutable root/history custody.
-            // Sharing it must not readmit a historical commit's closed branch
-            // as a live branch or acquire a second snapshot/retention identity.
-            let original = original.clone();
-            let target = target.observation().admitted_basis();
-            Ok(RelationalAuthoredWriteCursor {
-                source: Arc::new(RetainedAuthoredWriteSelection {
-                    generation,
-                    keys: keys.seal()?,
-                    _key_memory: key_memory,
-                    _original: original,
-                    target,
-                    _memory: memory,
-                }),
-                next,
-            })
-        })
-    }
 }
 
 impl RelationalAuthoredWriteCursor {
@@ -282,6 +121,15 @@ impl RelationalAuthoredWriteCursor {
                 .demand_commit_envelope(&execution, commit)
                 .map_err(Denial::Execution)?
                 .ok_or(Denial::CanonicalEvidenceUnavailable)?;
+            if let Some(catalog) = &self.source.managed_catalog {
+                super::managed_source::require_packet(
+                    &canonical,
+                    catalog,
+                    &self.source.keys,
+                    runtime.runtime_instance_id(),
+                    context,
+                )?;
+            }
             super::ordered_visit(context, self.source.generation.prefix.len())?;
             if self
                 .source

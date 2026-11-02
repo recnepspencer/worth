@@ -28,7 +28,9 @@ fn world(cause: RuntimeWorldRecoveryDenial) -> BankHttpDenial {
         D::Busy | D::TooYoung | D::OutputCapacityExhausted | D::CallerCapabilityLive => {
             unavailable()
         }
-        D::OwnerUnavailable(_)
+        D::RecoveredCustodyRequired
+        | D::ReopenRequired
+        | D::OwnerUnavailable(_)
         | D::ForeignHandle
         | D::MissingRecord
         | D::ClockRegressed
@@ -49,7 +51,8 @@ fn companion(cause: CompanionPreflightStop) -> BankHttpDenial {
                 BankHttpDenial::new(Kind::DeadlineExceeded, Next::Retry)
             }
         },
-        D::TopologyPending => unavailable(),
+        D::TopologyPending | D::ManagedSourceNotPrepared => unavailable(),
+        D::ManagedSourceChanged => BankHttpDenial::new(Kind::Stale, Next::Refresh),
         D::SelectedSourceMismatch
         | D::SelectedPositionUnavailable { .. }
         | D::RegistrationChanged => BankHttpDenial::new(Kind::Stale, Next::Refresh),
@@ -71,7 +74,8 @@ fn adoption(cause: NoEffectCause) -> BankHttpDenial {
             cause,
         )) => companion(cause),
         NoEffectCause::RelationalDeferred(_) => unavailable(),
-        NoEffectCause::OwnerDeniedBeforeEffect
+        NoEffectCause::DurableOpenRequired
+        | NoEffectCause::OwnerDeniedBeforeEffect
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::OwnerUnavailable

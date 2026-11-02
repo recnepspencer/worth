@@ -118,6 +118,8 @@ impl WorthQueryExecutionInstallationAuthority {
         let execution = phase.execution_request();
 
         let super::native_meaning::InstalledNativeSchemaMeaning {
+            managed_views,
+            source_initializer,
             layout,
             receipt: mut invariant_installation_receipt,
             expected_invariant_inventory_digest,
@@ -177,6 +179,7 @@ impl WorthQueryExecutionInstallationAuthority {
             relational_runtime,
             layout,
             installed_schema.binding_identity(),
+            managed_views,
             checkpoint.is_some(),
         )?;
         if let Some(publisher) = source_publisher {
@@ -202,6 +205,7 @@ impl WorthQueryExecutionInstallationAuthority {
                 invariant_installation_receipt,
                 expected_invariant_inventory_digest,
                 typed_rows: Default::default(),
+                source_initializer,
             },
         })
     }

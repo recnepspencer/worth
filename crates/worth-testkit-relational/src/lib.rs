@@ -10,3 +10,6 @@ pub mod shared_relational_certification_test_execution_policy;
 #[allow(dead_code, unused_imports)]
 #[path = "test_process/mod.rs"]
 pub mod test_process;
+
+/// Genuine Native registry and transaction stimuli shared by derived-source courts.
+pub mod derived_relation;

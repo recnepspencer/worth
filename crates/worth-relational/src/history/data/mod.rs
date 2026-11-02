@@ -225,3 +225,4 @@ pub(crate) use canonical_commit_envelope::{
 pub(crate) use canonical_commit_envelope::EnvelopeProjection;
 
 pub(crate) use canonical_commit_envelope::CanonicalEnvelopeControlAllocation;
+pub(crate) use canonical_commit_envelope::LiveManagedSourceHistory;

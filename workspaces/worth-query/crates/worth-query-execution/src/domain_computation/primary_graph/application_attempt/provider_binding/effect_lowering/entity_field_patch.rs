@@ -5,9 +5,8 @@ use worth_foundational::facade::{
     AbsenceLaw, AspectContract, AspectKey, AspectMask, AspectShape, AuthoritativeRecordAspectPatch,
     CanonicalFieldPath, ContractValidationInput, FieldKey, MutationMask,
     PortableAspectContractBasis, PortableAspectFieldSet, PortableAspectPatchOperation,
-    PortableRecordAspectPatch, StructAspectValue,
+    StructAspectValue,
 };
-use worth_relational::facade::transactions::ApplyEntityAspectPatchIntent;
 
 pub(super) fn ordinary(
     facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
@@ -138,12 +137,7 @@ fn lower<'a>(
                 .next()
                 .expect("one actual scalar field set");
             let input = ContractValidationInput::Scalar(value);
-            if !matches!(
-                worth_foundational::facade::validate_aspect_value(group.contract, input.clone()),
-                worth_proof::TransitionOutcome::Success(_)
-            ) {
-                return Err(progression_denial());
-            }
+            validate_input(group.contract, input.clone(), entity, id)?;
             operations.push(PortableAspectPatchOperation::SetWhole {
                 basis,
                 value: input,
@@ -188,12 +182,7 @@ fn lower<'a>(
             let value = StructAspectValue::new(group.sets).map_err(|_| progression_denial())?;
             let input = ContractValidationInput::Struct(value);
             // The foundational owner enforces every Required field and codec.
-            if !matches!(
-                worth_foundational::facade::validate_aspect_value(group.contract, input.clone()),
-                worth_proof::TransitionOutcome::Success(_)
-            ) {
-                return Err(progression_denial());
-            }
+            validate_input(group.contract, input.clone(), entity, id)?;
             operations.push(PortableAspectPatchOperation::SetWhole {
                 basis,
                 value: input,
@@ -214,13 +203,24 @@ fn lower<'a>(
     if operations.is_empty() {
         return Ok(WorthQueryLoweredProviderEffect::ObservedNoop { steps });
     }
-    mutation(
+    Ok(WorthQueryLoweredProviderEffect::EntityAspectPatch {
         steps,
-        MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(
-            ApplyEntityAspectPatchIntent {
-                entity_id: id,
-                aspect_patch: PortableRecordAspectPatch::new(operations),
-            },
-        )),
-    )
+        entity_id: id,
+        operations,
+    })
+}
+
+fn validate_input(
+    contract: &AspectContract,
+    input: ContractValidationInput,
+    entity: &str,
+    id: EntityId,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    worth_foundational::facade::validate_aspect_value(contract, input)
+        .into_result()
+        .map(|_| ())
+        .map_err(|cause| WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+            format!("{entity} {id:?}.{}: {cause:?}", contract.key().as_str()),
+        ))
 }

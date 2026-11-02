@@ -16,6 +16,7 @@ mod derived_relation;
 mod history;
 mod inspection;
 mod invariant;
+mod invariant_source;
 mod managed_index;
 mod mutation_description;
 mod operation;
@@ -61,6 +62,7 @@ pub(super) fn require_encoding_contract(
     if matches!(
         member,
         ApplicationSchemaMember::ManagedIndex { .. }
+            | ApplicationSchemaMember::InvariantManagedIndexSource { .. }
             | ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ProjectedMemberDomain { .. }
             | ApplicationSchemaMember::ApplicationQueryInspection { .. }
@@ -96,6 +98,9 @@ pub(super) fn write(
     }
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::InvariantManagedIndexSource { .. } => {
+            invariant_source::write(output, member)
+        }
         ApplicationSchemaMember::ManagedIndex { definition } => {
             managed_index::write(output, definition)
         }
@@ -180,6 +185,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        49 => invariant_source::decode(input, budget),
         50 => Ok(ApplicationSchemaMember::ScalarAspectField {
             entity: input.text()?.to_owned(),
             aspect: input.text()?.to_owned(),
@@ -221,6 +227,7 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::InvariantManagedIndexSource { .. } => 49,
         ApplicationSchemaMember::ScalarAspectField { .. } => 50,
         ApplicationSchemaMember::ManagedIndex { .. } => 48,
         ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,

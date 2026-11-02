@@ -1,4 +1,5 @@
 //! Current authored inputs for the installed temporal definition.
+use super::composite_definition_model::{DefinitionRevision, DefinitionRevisionFacts};
 use super::schema::*;
 use worth_query_host::facade::{
     declaration::{application_query::*, application_schema::*},
@@ -43,14 +44,14 @@ pub fn revision_field() -> ApplicationQueryResultFieldRef<
     RevisionSlot,
     NumericSchema,
     Number,
-    NumberFacts,
-    Primary,
+    DefinitionRevisionFacts,
+    DefinitionRevision,
     u64,
     ReadWrite,
     EqualityPredicate,
     NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("revision", Primary::reference())
+    ApplicationQueryResultFieldRef::new("revision", DefinitionRevision::reference())
 }
 pub fn due_field() -> ApplicationQueryResultFieldRef<
     ReadQuery,

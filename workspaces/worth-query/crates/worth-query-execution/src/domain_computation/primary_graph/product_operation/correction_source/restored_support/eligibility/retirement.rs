@@ -4,8 +4,12 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, live_scope, publish_relational_mutation, AccountIdentity,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use std::num::NonZeroUsize;
 use worth_relational::facade::{
-    history::{RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector},
+    history::{
+        RelationalAuthoredWritePageLimits, RelationalAuthoredWriteScope,
+        RelationalAuthoredWriteSelector,
+    },
     identity::{EntityId, KindId, VersionId},
     transactions::{
         DeleteEntityIntent, EntityMutationIntent, MutationIntent, RecordRef, WorkerIntentBatch,
@@ -67,7 +71,7 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
             let original_view = runtime.read_truth().project_snapshot(original_snapshot).unwrap();
             let target_view = runtime.read_truth().project_snapshot(target_snapshot).unwrap();
             let facts = payload(fact.clone());
-            let selection = overlap::select(execution, &facts, &original_view, &target_view).unwrap();
+            let selection = overlap::select(execution, &facts, runtime, &original_view, &target_view).unwrap();
             let keys = selection.keys.iter().cloned().collect::<Vec<_>>();
             assert_eq!(keys, [RelationalAuthoredWriteSelector::Record {
                 record: RecordRef::Entity(entity), scope: RelationalAuthoredWriteScope::Lifecycle,

@@ -178,6 +178,8 @@ where
     }
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let result_set_footprint = set_footprint.materialize();
+    let invocation_managed_source = result_set_footprint.maintained_source().cloned();
+    let invocation_source_authorization = result_set_footprint.source_authorization().cloned();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
     let mut source_comparisons = crate::domain_computation::primary_graph::source_read_equivalence::SourceReadEquivalence::default();
     let source_control = || {
@@ -272,6 +274,8 @@ where
             selection: basis_identity.selection().clone(),
             model_root: plan.scope.entity_id(),
             source_meaning: std::sync::Arc::clone(source_meaning),
+            invocation_managed_source: invocation_managed_source.clone(),
+            invocation_source_authorization: invocation_source_authorization.clone(),
             scope_selector: std::sync::Arc::clone(&scope_selector),
 
             _marker: PhantomData,
@@ -319,6 +323,8 @@ where
             selection: basis_identity.selection().clone(),
             model_root: plan.scope.entity_id(),
             source_meaning: result_set_meaning,
+            invocation_managed_source,
+            invocation_source_authorization,
             scope_selector,
 
             _marker: PhantomData,

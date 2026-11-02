@@ -1,3 +1,5 @@
+#[path = "canonical_identity_version_tests/managed_index.rs"]
+mod managed_index;
 use worth_foundational::facade::ScalarAspectType;
 
 use super::{

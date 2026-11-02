@@ -3,6 +3,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
@@ -116,6 +117,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
         request: &WorthQueryRequestScope,
     ) -> Result<Posture, Denial> {
+        let mut retirements = OwnerCleanupRetirements::default();
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         let state = self
             .inbound_custody
             .lock()
@@ -143,7 +148,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .as_ref()
             .expect("claimed recovery is retained")
             .clone();
-        match self.continue_inbound_recovery_state(phase, &accepted, state, request) {
+        match self.continue_inbound_recovery_state(
+            &execution,
+            &accepted,
+            state,
+            request,
+            &mut retirements,
+        ) {
             RecoveryStep::Retain(state, result) => {
                 guard.retain(state);
                 result
@@ -168,18 +179,27 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn continue_inbound_recovery_state(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
 
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
         state: State,
         request: &WorthQueryRequestScope,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> RecoveryStep {
         match state {
-            State::Active(recovery) => {
-                self.continue_active_inbound_recovery(phase, accepted, recovery, request)
+            State::Active(recovery) => self.continue_active_inbound_recovery(
+                execution,
+                accepted,
+                recovery,
+                request,
+                retirements,
+            ),
+            State::HandoffWorld { old, next } => {
+                self.finish_inbound_handoff(execution, old, next, retirements)
             }
-            State::HandoffWorld { old, next } => self.finish_inbound_handoff(old, next),
-            State::HandoffCleanup { cleanup, next } => match cleanup.retry() {
+            State::HandoffCleanup { cleanup, next } => match cleanup
+                .retry_in_request_with_retirements(execution, retirements)
+            {
                 Ok(_) => RecoveryStep::Retain(State::Active(next), Ok(Posture::AcceptedPending)),
                 Err(failed) => RecoveryStep::Retain(
                     State::HandoffCleanup {
@@ -189,45 +209,44 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     Err(Denial::RecoveryUnavailable),
                 ),
             },
-            State::PublishedWorld { old, terminal } => self.finish_inbound_published(old, terminal),
-            State::PublishedCleanup { cleanup, terminal } => match cleanup.retry() {
-                Ok(_) => RecoveryStep::Terminal(terminal),
-                Err(failed) => RecoveryStep::Retain(
-                    State::PublishedCleanup {
-                        cleanup: failed.into_cleanup(),
-                        terminal,
-                    },
-                    Err(Denial::RecoveryUnavailable),
-                ),
-            },
-            State::StaleWorld(old) => self.finish_inbound_stale(old),
-            State::StaleCleanup(cleanup) => match cleanup.retry() {
-                Ok(_) => RecoveryStep::StaleReleased,
-                Err(failed) => RecoveryStep::Retain(
-                    State::StaleCleanup(failed.into_cleanup()),
-                    Err(Denial::RecoveryUnavailable),
-                ),
-            },
+            State::PublishedWorld { old, terminal } => {
+                self.finish_inbound_published(execution, old, terminal, retirements)
+            }
+            State::PublishedCleanup { cleanup, terminal } => {
+                match cleanup.retry_in_request_with_retirements(execution, retirements) {
+                    Ok(_) => RecoveryStep::Terminal(terminal),
+                    Err(failed) => RecoveryStep::Retain(
+                        State::PublishedCleanup {
+                            cleanup: failed.into_cleanup(),
+                            terminal,
+                        },
+                        Err(Denial::RecoveryUnavailable),
+                    ),
+                }
+            }
+            State::StaleWorld(old) => self.finish_inbound_stale(execution, old, retirements),
+            State::StaleCleanup(cleanup) => {
+                match cleanup.retry_in_request_with_retirements(execution, retirements) {
+                    Ok(_) => RecoveryStep::StaleReleased,
+                    Err(failed) => RecoveryStep::Retain(
+                        State::StaleCleanup(failed.into_cleanup()),
+                        Err(Denial::RecoveryUnavailable),
+                    ),
+                }
+            }
         }
     }
 
     fn continue_active_inbound_recovery(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        publication_execution: &worth_execution::ExecutionRequest<'_, '_>,
 
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
         recovery: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
         request: &WorthQueryRequestScope,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> RecoveryStep {
-        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return RecoveryStep::Retain(
-                    State::Active(recovery),
-                    Err(Denial::ExecutionDenied(cause.into())),
-                )
-            }
-        };
+        let publication_execution = *publication_execution;
         // One load fences new adoption. A concurrent revoke may follow this
         // admission point while this exact World attempt is already in flight.
         if self.inbound_source_posture_for_operation(accepted.operation())
@@ -274,7 +293,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             drop(unpublished);
             drop(lease);
             drop(binding);
-            return self.finish_inbound_stale(recovery);
+            return self.finish_inbound_stale(&publication_execution, recovery, retirements);
         }
         let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
             Ok(prepared) => prepared,
@@ -313,7 +332,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 let terminal = Arc::new(WorthQueryInboundTerminalOwnerResult::from_performed(
                     performed,
                 ));
-                self.finish_inbound_published(recovery, terminal)
+                self.finish_inbound_published(
+                    &publication_execution,
+                    recovery,
+                    terminal,
+                    retirements,
+                )
             }
             Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
                 State::Active(recovery),
@@ -329,7 +353,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     self.primary_provider.unpublished_idempotency_disposition(),
                 )
                 .into_recovery();
-                self.finish_inbound_handoff(recovery, next)
+                self.finish_inbound_handoff(&publication_execution, recovery, next, retirements)
             }
         }
     }

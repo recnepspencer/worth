@@ -73,7 +73,8 @@ impl RelationalSchemaRegistry {
                     | Node::Reverse { .. }
                     | Node::WithoutSelfEdges { .. }
                     | Node::Union { .. }
-                    | Node::Intersection { .. } => {}
+                    | Node::Intersection { .. }
+                    | Node::OrderedEvents { .. } => {}
                 }
             }
             let carriers = domains
@@ -85,6 +86,7 @@ impl RelationalSchemaRegistry {
             self.derived_relations.insert(
                 identity.clone(),
                 Arc::new(RegisteredDerivedRelation {
+                    managed_source_binding: Default::default(),
                     parts,
                     leaves: leaves.into_iter().collect(),
                     domains: domains.into_iter().collect(),

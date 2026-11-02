@@ -88,6 +88,18 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
                 self.reader.walk_stop(cause, subject)
             }
             PathDenial::Source { cause, .. } => self.component_source_denial(cause, subject),
+            PathDenial::Derived { kind, .. } => match kind {
+                worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause) => {
+                    self.reader.walk_stop(cause, subject)
+                }
+                worth_relational::facade::runtime::DerivedRelationReadDenial::Structural(cause) => {
+                    Denial::new(Kind::DerivedSource(cause), subject)
+                }
+                worth_relational::facade::runtime::DerivedRelationReadDenial::Definition(
+                    worth_relational::facade::schema::DerivedRelationDenial::WorkBudgetExceeded,
+                ) => Denial::new(Kind::WorkBudgetExceeded, subject),
+                _ => Denial::new(Kind::EndpointUnavailable, subject),
+            },
             PathDenial::Walk {
                 kind: PinnedStructuralWalkDenialKind::Read(cause),
                 ..
@@ -151,6 +163,10 @@ fn record_reads(reads: &mut WorthQueryInvariantProjectionWork, event: Observatio
             reads.record_endpoints(endpoints);
         }
         Observation::Predicate { fields, .. } => reads.record_fields(fields),
+        Observation::Derived { reads: native, .. } => {
+            reads.record_adjacencies(native.adjacency_lists, native.relation_records);
+            reads.record_endpoints(native.entity_records);
+        }
         Observation::Walk { reads: native, .. } => {
             reads.record_adjacencies(native.adjacency_lists, native.relation_records);
             reads.record_endpoints(native.entity_records);

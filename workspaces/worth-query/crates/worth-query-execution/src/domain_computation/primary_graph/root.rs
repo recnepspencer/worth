@@ -48,10 +48,20 @@ impl WorthQueryPrimaryGraph {
         layout: Arc<WorthQueryPrimaryGraphLayout>,
         runtime: RelationalRuntime,
         invalidation_resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
+        managed_views: Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
     ) -> Self {
-        let source_owner =
-            WorthQueryRelationalSourceOwner::new(runtime, "primary", invalidation_resources)
-                .expect("the installed primary graph role is canonical");
+        let runtime_id = runtime.main_branch_identity().runtime_instance_id();
+        let invalidation_owner = Arc::new(super::SourceInvalidationOwner::with_managed_views(
+            invalidation_resources,
+            runtime_id,
+            managed_views,
+        ));
+        let source_owner = WorthQueryRelationalSourceOwner::with_invalidation_owner(
+            runtime,
+            "primary",
+            invalidation_owner,
+        )
+        .expect("the installed primary graph role is canonical");
         Self::from_installed_source(runtime_authority, binding_identity, layout, source_owner)
     }
 
@@ -62,6 +72,7 @@ impl WorthQueryPrimaryGraph {
         source_owner: WorthQueryRelationalSourceOwner,
     ) -> Self {
         let relational_runtime_instance_id = source_owner.runtime_instance_id;
+        let managed_derived_views = Arc::clone(&source_owner.invalidation_owner.managed_views);
         Self {
             application_publication: None,
             runtime_authority,
@@ -73,7 +84,7 @@ impl WorthQueryPrimaryGraph {
                 super::aggregate_projection::WorthQueryAggregateProjections::default(),
             )),
             output_lineage: Arc::new(Mutex::new(Default::default())),
-            managed_derived_views: Arc::new(Default::default()),
+            managed_derived_views,
             workflow_compilation_reuse: Arc::new(Mutex::new(Default::default())),
             workflow_instance_progress_retention:
                 super::workflow::instance::default_progress_retention_shards(),

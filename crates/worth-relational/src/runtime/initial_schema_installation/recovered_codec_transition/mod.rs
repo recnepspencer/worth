@@ -37,6 +37,10 @@ impl RelationalRuntime {
         let registry = &self.config().schema.registry;
         super::RelationalInitialSchemaInstallationReceipt {
             runtime_instance_id: self.runtime_instance_id(),
+            source_groups: self
+                .schema_contract_runtime
+                .custom_invariant_registries
+                .source_inventory(),
             custom_invariant_generation: self.schema_contract_runtime.custom_invariant_generation,
             custom_invariant_inventory_digest: super::custom_invariant_inventory_digest(
                 &registrations,

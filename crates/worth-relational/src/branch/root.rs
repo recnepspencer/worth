@@ -143,7 +143,11 @@ pub(crate) struct RelationalBranchRoot {
     schema_authority: Arc<RelationalBranchRootSchemaAuthority>,
     committed: Option<RelationalCommittedBranchRoot>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(crate) managed_source_image: std::sync::OnceLock<crate::mvcc::ManagedSourceRootImage>,
 }
+
+#[path = "root_managed_fork.rs"]
+mod managed_fork;
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRootState {
@@ -189,6 +193,7 @@ impl RelationalBranchRoot {
             schema_authority: RelationalBranchRootSchemaAuthority::empty(),
             committed: None,
             _memory: None,
+            managed_source_image: std::sync::OnceLock::new(),
         })
     }
 
@@ -219,6 +224,7 @@ impl RelationalBranchRoot {
             .expect(/* Proof: Both runtime schema plans and this initial root are built from the same validated registry and current descriptor semantics policy. */ "runtime schema plans match the runtime registry"),
             committed: None,
             _memory: None,
+            managed_source_image: std::sync::OnceLock::new(),
         })
     }
     pub(crate) fn prepare_capture(

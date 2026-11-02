@@ -15,6 +15,18 @@ pub trait ApplicationManagedIndexBinding<Schema: ApplicationSchema>: Sized + 'st
     const NAME: &'static str;
     const PROVIDER: &'static str;
     const PROVIDER_VERSION: u32;
+    /// Source structure only; this grants no complete query or narrowed influence.
+    const STRUCTURE: super::ApplicationManagedIndexSourceStructure =
+        super::ApplicationManagedIndexSourceStructure::Opaque;
+    const MEMBERSHIP: super::ApplicationManagedIndexMembership =
+        super::ApplicationManagedIndexMembership::Candidates;
+
+    /// Additional public maintenance; invariant requirements remain independent.
+    const MAINTENANCE: super::ApplicationManagedIndexMaintenance =
+        super::ApplicationManagedIndexMaintenance::WhenRequired;
+
+    /// Optional exact row-local domain meaning, separately requested by consumers.
+    const REFINEMENT: Option<super::ApplicationManagedIndexRefinement> = None;
 
     #[doc(hidden)]
     fn descriptor() -> super::ApplicationManagedIndexBindingDescriptor {

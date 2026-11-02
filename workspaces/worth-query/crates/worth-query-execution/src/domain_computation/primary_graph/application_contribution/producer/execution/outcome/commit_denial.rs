@@ -50,6 +50,7 @@ pub(super) fn stopped(
             | Kind::ExecutionIdentitiesNotCanonical { .. }
             | Kind::ProviderRejected
             | Kind::CustomInvariantDenied
+            | Kind::DomainValueRejected
             | Kind::WorkflowSettlementDenied { .. }
             | Kind::UniqueValueTaken
             | Kind::UniqueIndexUnavailable

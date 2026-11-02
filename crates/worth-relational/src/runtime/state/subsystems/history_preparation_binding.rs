@@ -93,6 +93,13 @@ impl RelationalPreparationHistory {
         self.canonical_routes.catalog_len_bound()
     }
 
+    pub(crate) fn canonical_stream_position(
+        &self,
+        commit: CommitId,
+    ) -> Option<crate::publication::patch::data::PatchStreamPosition> {
+        self.canonical_routes.stream_position(commit)
+    }
+
     pub(crate) fn publication_requires_settlement(&self, commit_id: CommitId) -> bool {
         self.canonical_routes.has_unsettled_performed_publication() == Some(commit_id)
     }

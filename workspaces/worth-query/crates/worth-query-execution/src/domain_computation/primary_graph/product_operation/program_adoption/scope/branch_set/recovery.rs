@@ -1,4 +1,5 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::NoEffectCompositePublication;
@@ -329,8 +330,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         ),
         WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
     > {
+        let mut retirements = OwnerCleanupRetirements::default();
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
         let (branch, adoption, recovery) = recovery.into_parts();
-        match self.release_branch_adoption_custody(recovery, minimum_age_ticks) {
+        match self.release_branch_adoption_custody(
+            &worth_execution::ExecutionRequest::serial(&host),
+            &mut retirements,
+            recovery,
+            minimum_age_ticks,
+        ) {
             Ok(receipt) => Ok((cancel_unstarted(adoption), receipt)),
             Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::Recovery { denial, recovery }) => {
                 Err(

@@ -22,6 +22,8 @@ use crate::domain_operation::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCompiledApplicationOperationContracts {
+    pub(super) managed_index_reads:
+        Vec<worth_query_declaration::facade::application_query::ApplicationQueryBindingReference>,
     pub(super) signing_lifecycle: super::SigningLifecycleClosure,
     pub(super) body: Option<ApplicationOperationBodyProgram>,
     pub(super) authorization: WorthQueryInstalledApplicationOperationAuthorization,
@@ -47,6 +49,14 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
 }
 
 impl WorthQueryCompiledApplicationOperationContracts {
+    /// Exact Parent bindings declared by this operation; these describe reads,
+    /// while each invocation still admits its current principal and Source.
+    pub fn managed_index_reads(
+        &self,
+    ) -> &[worth_query_declaration::facade::application_query::ApplicationQueryBindingReference]
+    {
+        &self.managed_index_reads
+    }
     /// Native publication closure; it does not enlarge a product handler's writer contract.
     pub fn publication_touches(&self) -> &WorthQueryOperationTouchContract {
         &self.signing_lifecycle.publication_touches

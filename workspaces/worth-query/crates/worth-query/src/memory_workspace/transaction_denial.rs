@@ -79,9 +79,7 @@ pub(super) fn staging(
 pub(super) fn commit(
     error: worth_relational::facade::transactions::TransactionCommitError,
 ) -> WorthQueryWorkspaceError {
-    use worth_relational::facade::mvcc::{
-        RelationalPublicationDeferred as Deferred, RelationalPublicationFailureKind as Failure,
-    };
+    use worth_relational::facade::mvcc::RelationalPublicationFailureKind as Failure;
     use worth_relational::facade::transactions::{
         CommitPreparationReason, TransactionCommitError as Error,
     };
@@ -100,36 +98,7 @@ pub(super) fn commit(
                 Err(kind) => WorthQueryWorkspaceErrorKind::ExecutionControlStopped(kind),
             }
         }
-        Error::PublicationDeferred { deferred, .. } => match deferred {
-            Deferred::PatchPositionReservationContended => {
-                WorthQueryWorkspaceErrorKind::PatchPositionReservationContended
-            }
-            Deferred::RetentionBackpressure => {
-                WorthQueryWorkspaceErrorKind::RetentionCapacityExhausted
-            }
-            Deferred::CandidateCapacityExhausted { maximum_candidates } => {
-                WorthQueryWorkspaceErrorKind::CandidateCapacityExhausted {
-                    maximum_candidates: *maximum_candidates,
-                }
-            }
-            Deferred::PublishedSnapshotCapacityExhausted { maximum_handles } => {
-                WorthQueryWorkspaceErrorKind::PublishedSnapshotCapacityExhausted {
-                    maximum_handles: *maximum_handles,
-                }
-            }
-            Deferred::CandidateLifetimeExpired { .. } => WorthQueryWorkspaceErrorKind::Unclassified,
-            Deferred::CompanionRegistrationPending | Deferred::CompanionRebindRequired => {
-                WorthQueryWorkspaceErrorKind::InvalidationCompanionPending
-            }
-            Deferred::CompanionPreflight(stop)
-                if crate::effect_lifecycle::companion_stop_is_transient(stop) =>
-            {
-                WorthQueryWorkspaceErrorKind::InvalidationCompanionPending
-            }
-            Deferred::CompanionPreflight(_) => {
-                WorthQueryWorkspaceErrorKind::InvalidationCompanionCapacityExhausted
-            }
-        },
+        Error::PublicationDeferred { deferred, .. } => publication_kind(deferred),
         Error::PublicationFailed { failure, .. } => match failure.kind() {
             Failure::SnapshotIdentityExhausted => {
                 WorthQueryWorkspaceErrorKind::SnapshotIdentityExhausted
@@ -285,6 +254,58 @@ mod tests {
                 partition_identity: source,
                 policy_ancestor: None,
             })
+        );
+    }
+}
+
+fn publication_kind(
+    deferred: &worth_relational::facade::mvcc::RelationalPublicationDeferred,
+) -> WorthQueryWorkspaceErrorKind {
+    use worth_relational::facade::mvcc::{
+        CompanionPreflightStop as Stop, RelationalPublicationDeferred as Deferred,
+    };
+    match deferred {
+        Deferred::PatchPositionReservationContended => {
+            WorthQueryWorkspaceErrorKind::PatchPositionReservationContended
+        }
+        Deferred::RetentionBackpressure => WorthQueryWorkspaceErrorKind::RetentionCapacityExhausted,
+        Deferred::CandidateCapacityExhausted { maximum_candidates } => {
+            WorthQueryWorkspaceErrorKind::CandidateCapacityExhausted {
+                maximum_candidates: *maximum_candidates,
+            }
+        }
+        Deferred::PublishedSnapshotCapacityExhausted { maximum_handles } => {
+            WorthQueryWorkspaceErrorKind::PublishedSnapshotCapacityExhausted {
+                maximum_handles: *maximum_handles,
+            }
+        }
+        Deferred::CandidateLifetimeExpired { .. } => WorthQueryWorkspaceErrorKind::Unclassified,
+        Deferred::CompanionRegistrationPending | Deferred::CompanionRebindRequired => {
+            WorthQueryWorkspaceErrorKind::InvalidationCompanionPending
+        }
+        Deferred::CompanionPreflight(
+            stop @ (Stop::ManagedSourceNotPrepared | Stop::ManagedSourceChanged),
+        ) => WorthQueryWorkspaceErrorKind::InvalidationCompanionUnavailable { stop: *stop },
+        Deferred::CompanionPreflight(stop)
+            if crate::effect_lifecycle::companion_stop_is_transient(stop) =>
+        {
+            WorthQueryWorkspaceErrorKind::InvalidationCompanionPending
+        }
+        Deferred::CompanionPreflight(_) => {
+            WorthQueryWorkspaceErrorKind::InvalidationCompanionCapacityExhausted
+        }
+    }
+}
+#[cfg(test)]
+#[test]
+fn managed_source_preflight_preserves_workspace_stop_without_retry_or_capacity_claim() {
+    use worth_relational::facade::mvcc::{
+        CompanionPreflightStop as Stop, RelationalPublicationDeferred as Deferred,
+    };
+    for stop in [Stop::ManagedSourceNotPrepared, Stop::ManagedSourceChanged] {
+        assert_eq!(
+            publication_kind(&Deferred::CompanionPreflight(stop)),
+            WorthQueryWorkspaceErrorKind::InvalidationCompanionUnavailable { stop }
         );
     }
 }

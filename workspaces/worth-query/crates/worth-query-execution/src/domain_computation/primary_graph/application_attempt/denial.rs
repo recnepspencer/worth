@@ -29,6 +29,7 @@ enum AttemptDenialMeaning {
 /// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
+    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     UnobservedWrite(Box<WorthQueryApplicationUnobservedWrite>),
     SourceDisclosureParameters(Box<worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial>),
     IndexedLookup(Box<worth_relational::facade::indexes::BoundedEntityFieldLookupDenial>),
@@ -176,18 +177,6 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_native_query_read_stop(
-        self,
-    ) -> Option<Box<worth_relational::facade::runtime::QueryReadExecutionStop>> {
-        match self.meaning {
-            AttemptDenialMeaning::Authored {
-                cause: AttemptDenialCause::NativeQueryRead(stop),
-                ..
-            } => Some(stop),
-            _ => None,
-        }
-    }
-
     /// The language denial behind a workflow condition or body requirement refusal.
     pub const fn expression(
         &self,
@@ -230,6 +219,7 @@ mod source_disclosure;
 impl std::error::Error for WorthQueryApplicationAttemptDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self.cause() {
+            Some(AttemptDenialCause::ManagedIndex(cause)) => Some(cause),
             Some(AttemptDenialCause::IndexedLookup(denial)) => Some(denial.as_ref()),
             Some(AttemptDenialCause::OutputObservation(stop)) => Some(stop.as_ref()),
             Some(AttemptDenialCause::NativeQueryRead(stop)) => Some(stop.as_ref()),
@@ -252,6 +242,9 @@ mod request_read;
 
 mod capacity;
 mod indexed_lookup;
+mod managed_index;
 
 #[cfg(test)]
 mod native_storage_tests;
+
+mod decision_read_set;

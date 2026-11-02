@@ -24,13 +24,17 @@ impl BeforeWorldPreparation {
     }
     pub(super) fn reserve_successor_observations(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &WorthQueryPrimaryGraphProvider,
-    ) -> Result<(bool, bool, bool), &'static str> {
+    ) -> Result<
+        (bool, bool, bool),
+        crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial,
+    > {
         self.query
             .as_mut()
             .expect("original staged Query")
             .attempt
-            .reserve_successor_observations(provider)
+            .reserve_successor_observations(execution, provider)
     }
     pub(super) fn refuse(mut self) -> QueryPreparingApplicationCommit {
         let query = self.query.take().expect("same original Query preparation");

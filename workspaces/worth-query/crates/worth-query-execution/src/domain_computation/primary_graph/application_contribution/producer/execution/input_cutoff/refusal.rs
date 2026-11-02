@@ -68,3 +68,50 @@ pub(super) fn cutoff_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutp
         _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source moved"),
     }
 }
+
+/// A stopped caller relinquishes pre-effect custody rather than failing shared work.
+pub(super) fn cutoff_verification_stop(stop: InputCutoffVerificationStop) -> ProducerExecutionStop {
+    let denial = cutoff_denial(stop);
+    if matches!(
+        denial.kind(),
+        WorthQueryOutputDemandDenialKind::Cancelled | WorthQueryOutputDemandDenialKind::TimedOut
+    ) {
+        super::super::denial::request_admission_rejected(denial)
+    } else {
+        ProducerExecutionStop::ExecutionStopped(denial)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+    #[test]
+    fn paid_cutoff_control_stops_relinquish_only_the_caller() {
+        for (cause, kind) in [
+            (
+                Cause::Cancelled,
+                WorthQueryOutputDemandDenialKind::Cancelled,
+            ),
+            (
+                Cause::DeadlineElapsed,
+                WorthQueryOutputDemandDenialKind::TimedOut,
+            ),
+        ] {
+            let ProducerExecutionStop::RequestAdmissionDenied(stop) =
+                cutoff_verification_stop(InputCutoffVerificationStop::Execution(cause))
+            else {
+                panic!("pre-effect interruption cannot fail shared output work");
+            };
+            let denial = stop.into_denial();
+            assert_eq!(denial.kind(), kind);
+            assert_eq!(denial.recovery_posture(), crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable);
+        }
+        assert!(matches!(
+            cutoff_verification_stop(InputCutoffVerificationStop::Execution(
+                Cause::WorkCounterOverflow
+            )),
+            ProducerExecutionStop::ExecutionStopped(_)
+        ));
+    }
+}

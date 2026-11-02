@@ -10,8 +10,9 @@ use super::WorthQueryInstalledApplicationValueBinding;
 /// Immutable installed bindings indexed by their exact field locus.
 #[derive(Clone, Debug, Default)]
 pub struct WorthQueryInstalledApplicationValueBindingCatalog {
-    bindings:
-        Arc<BTreeMap<ApplicationFieldBindingLocus, WorthQueryInstalledApplicationValueBinding>>,
+    bindings: Arc<
+        BTreeMap<ApplicationFieldBindingLocus, Arc<WorthQueryInstalledApplicationValueBinding>>,
+    >,
 }
 
 #[derive(Debug)]
@@ -37,7 +38,12 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         >,
     ) -> Self {
         Self {
-            bindings: Arc::new(bindings),
+            bindings: Arc::new(
+                bindings
+                    .into_iter()
+                    .map(|(key, value)| (key, Arc::new(value)))
+                    .collect(),
+            ),
         }
     }
 
@@ -84,7 +90,7 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
                 ApplicationFieldBindingLocus::for_relation(name, aspect, field)
             }
         };
-        self.bindings.get(&locus)
+        self.bindings.get(&locus).map(Arc::as_ref)
     }
 
     /// Inspect the existing immutable catalogue after funding its lookup and
@@ -123,6 +129,25 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         )
     }
 
+    /// Retain the actual immutable entry after the same admitted field lookup.
+    pub fn shared_field_admitted<E>(
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    ) -> Result<Option<Arc<WorthQueryInstalledApplicationValueBinding>>, AdmittedFieldBindingStop<E>>
+    {
+        self.entry_for_owner_admitted(
+            ApplicationFieldBindingOwnerKind::Entity,
+            entity,
+            aspect,
+            field,
+            prepare,
+        )
+        .map(|entry| entry.cloned())
+    }
+
     fn field_for_owner_admitted<E>(
         &self,
         owner: ApplicationFieldBindingOwnerKind,
@@ -131,6 +156,19 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         field: &str,
         prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
     ) -> Result<Option<&WorthQueryInstalledApplicationValueBinding>, AdmittedFieldBindingStop<E>>
+    {
+        self.entry_for_owner_admitted(owner, entity, aspect, field, prepare)
+            .map(|entry| entry.map(Arc::as_ref))
+    }
+
+    fn entry_for_owner_admitted<E>(
+        &self,
+        owner: ApplicationFieldBindingOwnerKind,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    ) -> Result<Option<&Arc<WorthQueryInstalledApplicationValueBinding>>, AdmittedFieldBindingStop<E>>
     {
         let input = entity
             .len()
@@ -155,13 +193,21 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         let bytes =
             u64::try_from(input).map_err(|_| AdmittedFieldBindingStop::AccountingOverflow)?;
         prepare(work, bytes).map_err(AdmittedFieldBindingStop::Admission)?;
-        Ok(self.field_for_owner(owner, entity, aspect, field))
+        let locus = match owner {
+            ApplicationFieldBindingOwnerKind::Entity => {
+                ApplicationFieldBindingLocus::new(entity, aspect, field)
+            }
+            ApplicationFieldBindingOwnerKind::Relation => {
+                ApplicationFieldBindingLocus::for_relation(entity, aspect, field)
+            }
+        };
+        Ok(self.bindings.get(&locus))
     }
 
     pub fn bindings(
         &self,
     ) -> impl ExactSizeIterator<Item = &WorthQueryInstalledApplicationValueBinding> {
-        self.bindings.values()
+        self.bindings.values().map(Arc::as_ref)
     }
 
     pub fn len(&self) -> usize {

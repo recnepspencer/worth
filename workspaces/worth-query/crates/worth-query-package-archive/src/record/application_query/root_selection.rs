@@ -1,6 +1,7 @@
 pub(super) mod choice;
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep,
+    ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning,
+    ApplicationQueryRootPathSourceKind as SourceKind, ApplicationQueryRootPathStep,
     ApplicationQueryRootPathTraversal as Traversal, RelationDirection,
     WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
@@ -52,29 +53,73 @@ fn write_step(
     output: &mut dyn BinaryEncodingSink,
     step: &ApplicationQueryRootPathStep,
 ) -> Result<(), Denial> {
+    if step.from_member().entity().is_none()
+        || step.to_member().entity().is_none()
+        || (step.source_kind() == SourceKind::Derived && step.traversal() != Traversal::OneHop)
+    {
+        return Err(Denial::new(Kind::InvalidRecordShape));
+    }
     output.text(step.relation())?;
     output.text(step.from())?;
     output.text(step.to())?;
-    output.u16(match (step.traversal(), step.direction()) {
-        (Traversal::OneHop, RelationDirection::Forward) => 1,
-        (Traversal::OneHop, RelationDirection::Reverse) => 2,
-        (Traversal::Closure, RelationDirection::Forward) => 3,
-        (Traversal::Closure, RelationDirection::Reverse) => 4,
-    })
+    output.u16(
+        match (step.source_kind(), step.traversal(), step.direction()) {
+            (SourceKind::Stored, Traversal::OneHop, RelationDirection::Forward) => 1,
+            (SourceKind::Stored, Traversal::OneHop, RelationDirection::Reverse) => 2,
+            (SourceKind::Stored, Traversal::Closure, RelationDirection::Forward) => 3,
+            (SourceKind::Stored, Traversal::Closure, RelationDirection::Reverse) => 4,
+            (SourceKind::Derived, Traversal::OneHop, RelationDirection::Forward) => 5,
+            (SourceKind::Derived, Traversal::OneHop, RelationDirection::Reverse) => 6,
+            (SourceKind::Derived, Traversal::Closure, _) => {
+                return Err(Denial::new(Kind::InvalidRecordShape))
+            }
+        },
+    )
 }
 fn decode_step(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryRootPathStep, Denial> {
     let relation = input.text()?.to_owned();
     let from = input.text()?.to_owned();
     let to = input.text()?.to_owned();
-    let (traversal, direction) = match input.u16()? {
-        1 => (Traversal::OneHop, RelationDirection::Forward),
-        2 => (Traversal::OneHop, RelationDirection::Reverse),
-        3 => (Traversal::Closure, RelationDirection::Forward),
-        4 => (Traversal::Closure, RelationDirection::Reverse),
+    let (source_kind, traversal, direction) = match input.u16()? {
+        1 => (
+            SourceKind::Stored,
+            Traversal::OneHop,
+            RelationDirection::Forward,
+        ),
+        2 => (
+            SourceKind::Stored,
+            Traversal::OneHop,
+            RelationDirection::Reverse,
+        ),
+        3 => (
+            SourceKind::Stored,
+            Traversal::Closure,
+            RelationDirection::Forward,
+        ),
+        4 => (
+            SourceKind::Stored,
+            Traversal::Closure,
+            RelationDirection::Reverse,
+        ),
+        5 => (
+            SourceKind::Derived,
+            Traversal::OneHop,
+            RelationDirection::Forward,
+        ),
+        6 => (
+            SourceKind::Derived,
+            Traversal::OneHop,
+            RelationDirection::Reverse,
+        ),
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
-    Ok(ApplicationQueryRootPathStep::from_untrusted_fields(
-        relation, from, to, direction, traversal,
+    Ok(ApplicationQueryRootPathStep::from_untrusted_source_fields(
+        relation,
+        from.into(),
+        to.into(),
+        source_kind,
+        direction,
+        traversal,
     ))
 }
 

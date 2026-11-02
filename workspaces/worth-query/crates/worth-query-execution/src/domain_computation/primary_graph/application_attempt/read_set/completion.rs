@@ -153,6 +153,35 @@ impl<Schema, Operation, Input, Scope, Phase>
                             .and_then(|expected| expected.source_publication(read))
                             .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
                 }
+                if let (super::InstalledScopePosition::SourceQuery,
+                    super::super::fact::WorthQueryApplicationFactKey::SourceReadAuthorization(key),
+                    super::super::fact::WorthQueryApplicationObservedFact::SourceReadAuthorization { observation },
+                ) = (scope, fact_key, fact) {
+                    return self.expected_facts.as_ref().and_then(|expected| expected.source_authorization(
+                        key, self.admission.admission_identity(), &self.admission.retain_graph_contract(), self.lease.snapshot(),
+                    )).is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
+                }
+                if let (
+                    super::InstalledScopePosition::SourceQuery,
+                    super::super::fact::WorthQueryApplicationFactKey::ManagedIndexSource(key),
+                    super::super::fact::WorthQueryApplicationObservedFact::ManagedIndexSource {
+                        observation,
+                    },
+                ) = (scope, fact_key, fact)
+                {
+                    return self
+                        .expected_facts
+                        .as_ref()
+                        .and_then(|expected| {
+                            expected.managed_source(
+                                key,
+                                self.admission.admission_identity(),
+                                &self.admission.retain_graph_contract(),
+                                self.lease.snapshot(),
+                            )
+                        })
+                        .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
+                }
                 scope
                     .resolve(self.admission.allowed_graph_contract())
                     .is_some_and(|scope| {

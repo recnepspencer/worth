@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
-use super::history::WorthQueryReleasedHistoryFollower;
+use super::follower::WorthQueryProductRetentionFollower;
 use super::{
-    WorthQueryProductBranchOwnerCleanupCapacityExhausted,
+    OwnerCleanupRetirements, WorthQueryProductBranchOwnerCleanupCapacityExhausted,
     WorthQueryProductBranchOwnerCleanupDenial, WorthQueryProductBranchOwnerCleanupReceipt,
     WorthQueryProductBranchOwnerCleanupRecord, WorthQueryProductBranchOwnerCleanupWork,
     WorthQueryRetiredProductOccurrence,
@@ -33,7 +33,7 @@ struct CleanupRegistryState {
 #[derive(Clone)]
 pub(crate) struct WorthQueryProductBranchOwnerCleanupRegistry {
     state: Arc<Mutex<CleanupRegistryState>>,
-    follower: Arc<OnceLock<Weak<dyn WorthQueryReleasedHistoryFollower>>>,
+    pub(super) follower: Arc<OnceLock<Weak<dyn WorthQueryProductRetentionFollower>>>,
 }
 
 impl WorthQueryProductBranchOwnerCleanupRegistry {
@@ -50,9 +50,9 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
     }
 
     /// The one follower every history release these cleanups make reaches.
-    pub(crate) fn follow_history_releases(
+    pub(crate) fn follow_product_retention(
         &self,
-        follower: Weak<dyn WorthQueryReleasedHistoryFollower>,
+        follower: Weak<dyn WorthQueryProductRetentionFollower>,
     ) {
         assert!(
             self.follower.set(follower).is_ok(),
@@ -180,7 +180,9 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         &self,
         identity: u64,
         runtime: &WorthQueryProductRuntime,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+        retirements.bind(self)?;
         let entry = lock(&self.state)
             .entries
             .get(&identity)
@@ -215,6 +217,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         &self,
         identity: u64,
         runtime: &WorthQueryProductRuntime,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
     {
         // The unbounded door: its checkpoints admit any work, so its owner
@@ -225,7 +228,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
             None,
         );
         let execution = worth_execution::ExecutionRequest::serial(&host);
-        self.retry_admitted(&execution, identity, runtime, |_| Ok(()))
+        self.retry_admitted(&execution, identity, runtime, retirements, |_| Ok(()))
     }
 
     pub(super) fn retry_admitted(
@@ -233,6 +236,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: u64,
         runtime: &WorthQueryProductRuntime,
+        retirements: &mut OwnerCleanupRetirements,
         checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
     {
@@ -241,10 +245,12 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
             .get(&identity)
             .cloned()
             .ok_or(WorthQueryProductBranchOwnerCleanupDenial::CleanupUnavailable)?;
+        retirements.bind(self)?;
         let mut record = RetryRecordGuard::take(&entry.record)?;
         match record.record_mut().retry(
             execution,
             runtime,
+            retirements,
             || self.after_component_progress(),
             checkpoint,
         ) {
@@ -366,3 +372,6 @@ fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 #[cfg(test)]
 #[path = "registry/canonical_retirement.rs"]
 mod canonical_retirement;
+
+#[cfg(test)]
+mod retirement_tests;

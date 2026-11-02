@@ -30,6 +30,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
         compilation: WorthQuerySealedOperationContractCompilation,
     ) -> Result<Self, ()> {
         let (
+            managed_index_reads,
             body,
             authorization,
             mut ability_requirements,
@@ -66,6 +67,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
         let decision_facts = application_decision_fact_contract(authorization_fact_count);
         let resources = application_resource_contract()?;
         Ok(Self {
+            managed_index_reads,
             signing_lifecycle,
             body,
             authorization,

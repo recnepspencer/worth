@@ -60,12 +60,15 @@ bank_provider_contribution!(BankPaymentsProvider, BankPayments);
 bank_provider_contribution!(BankEstateProvider, BankEstate);
 
 impl WorthQueryApplicationContribution<BankSchema> for BankAccountsProvider {
-    type Configuration = ();
+    type Configuration = std::sync::Arc<super::current_accounts::AccountIndexWork>;
 
     fn configure(
-        (): Self::Configuration,
+        observations: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, BankSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.managed_index::<bank_domain::queries::CurrentAccountsIndex, _>(
+            super::current_accounts::Provider(observations),
+        )?;
         setup.handler::<bank_domain::schema::ProgramDeploymentRevocationBinding, _>(
             crate::mutation_handlers::ProgramDeploymentRevocationHandler,
         )?;

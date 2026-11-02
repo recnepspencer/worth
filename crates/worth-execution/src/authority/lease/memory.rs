@@ -89,6 +89,9 @@ impl LeaseMemory {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let held = self.bytes;
+        if held == 0 && bytes == 0 {
+            return Ok(());
+        }
         room::check(
             &ledger,
             self.authority.config.charged_memory_bytes,
@@ -105,6 +108,9 @@ impl LeaseMemory {
             }
         }
         self.bytes = bytes;
+        let retired = ledger.take_unused_nodes();
+        drop(ledger);
+        drop(retired);
         Ok(())
     }
 
@@ -154,6 +160,9 @@ impl LeaseMemory {
         }
         self.node = Arc::clone(&lease.node);
         self.bytes = bytes;
+        let retired = ledger.take_unused_nodes();
+        drop(ledger);
+        drop(retired);
         Ok(())
     }
 }

@@ -29,6 +29,7 @@ pub(crate) fn classify_merge_validation_kind(kind: Kind) -> Denial {
         | Kind::ProposalIdentityExhausted
         | Kind::RelationalBasisUnavailable
         | Kind::InvalidationCompanionPending
+        | Kind::InvalidationCompanionUnavailable { .. }
         | Kind::InvalidationCompanionCapacityExhausted
         // Validation stops before publication, so no durable fate is pending.
         | Kind::DurabilityUnresolved => Denial::StaleSnapshot,

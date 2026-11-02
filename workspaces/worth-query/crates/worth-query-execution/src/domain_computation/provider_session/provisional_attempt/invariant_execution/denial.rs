@@ -32,6 +32,8 @@ pub enum WorthQueryCustomInvariantDenial {
 /// amount the attempt needed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantExecutionDenialKind {
+    /// The existing Live occurrence cannot fence this candidate preparation.
+    ManagedPredicatePreparationUnavailable,
     /// Validation was refused by the execution owner before effects.
     ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// Validation was stopped by cancellation or its deadline.
@@ -179,6 +181,21 @@ impl WorthQueryInvariantExecutionFailure {
         detail: impl Into<Arc<str>>,
     ) -> Self {
         Self::native_denied(NativeDenial::Staging(denial), detail)
+    }
+    pub(crate) fn managed_source(
+        denial: worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::ManagedSource(denial), detail)
+    }
+    /// Original Source preparation cause, including the provider's owned error chain.
+    pub fn managed_source_denial(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial> {
+        match self.native.as_ref()? {
+            NativeDenial::ManagedSource(denial) => Some(denial),
+            _ => None,
+        }
     }
     pub(crate) fn relation_law_denied(
         fields: worth_relational::facade::transactions::InvariantViolationFields,

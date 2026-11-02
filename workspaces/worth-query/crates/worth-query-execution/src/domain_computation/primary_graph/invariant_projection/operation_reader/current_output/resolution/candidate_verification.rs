@@ -100,8 +100,9 @@ where
             }
             self.reader.retention_exhausted |=
                 matches!(stop, ConsumedOutputVerificationStop::CapacityExhausted(_));
+            let pending = stop == ConsumedOutputVerificationStop::PendingUpstream;
             let mut denial = super::verification_denial::from_stop(stop, subject);
-            if stop == ConsumedOutputVerificationStop::PendingUpstream {
+            if pending {
                 match self.retain_requested_output(candidate, selected) {
                     Ok(read) => denial.requested_output = Some(read),
                     Err(stopped) => return stopped,

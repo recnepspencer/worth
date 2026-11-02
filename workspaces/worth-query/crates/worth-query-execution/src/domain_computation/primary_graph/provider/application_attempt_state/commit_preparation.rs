@@ -24,6 +24,7 @@ pub(in crate::domain_computation::primary_graph) use relational_commit::{
 pub(super) struct WorthQueryPreparedApplicationCommit {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
     candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     work: WorthQueryPrimaryMutationWorkCounters,
     retained_preimage: Option<WorthQueryRetainedPreImage>,
     preimage_retention_work: WorthQueryPreImageRetentionWork,
@@ -94,7 +95,12 @@ fn take_prepared_session(
     .ok_or_else(|| {
         commit_failure("primary graph session has no exact commit-prepared application attempt")
     })?;
-    let (mut attempt, candidate, work, completion) = prepared.into_parts();
+    let (mut attempt, approved, completion) = prepared.into_parts();
+    let super::WorthQueryApprovedApplicationCandidate {
+        native: candidate,
+        work,
+        predicate,
+    } = approved;
     let source_fact_rebase = attempt.take_source_fact_rebase();
     let (retained_preimage, preimage_retention_work) =
         preimage_retention::retain_attempt_preimage(&attempt, &candidate, allocation_policy)?
@@ -102,6 +108,7 @@ fn take_prepared_session(
     Ok(WorthQueryPreparedApplicationCommit {
         attempt,
         candidate,
+        predicate,
         work,
         retained_preimage,
         preimage_retention_work,

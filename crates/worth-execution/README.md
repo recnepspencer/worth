@@ -96,9 +96,14 @@ for truly native execution. Keep the reservation with the actual backing until
 its final owner drops. Cancellation and deadlines still apply to native calls.
 
 `ExecutionRequestArrayBuilder::allocate(request, count)` borrows the original
-request and shares the existing fixed array allocation owner. Push and seal
-check that request; the sealed array retains one backing reservation without
-retaining the borrowed request. `ExecutionRequestArrayDenial` distinguishes
+request and shares the existing fixed array allocation owner. Push, initialized
+element replacement and seal check that request; the sealed array retains one
+backing reservation without retaining the borrowed request.
+`replace_initialized(index, value)` moves within the initialized prefix, consumes
+input on every outcome, keeps the same allocation and ticket, and checks the
+original request before and after the move. Its physical
+bounds denial is `UninitializedElement`; a stopped request cannot seal. The sealed
+`ExecutionArray` remains immutable. `ExecutionRequestArrayDenial` distinguishes
 original request refusal from physical allocation failure.
 
 For retained immutable bytes, finish a byte request builder with
@@ -118,6 +123,22 @@ Consume that detached cell with `insert_owned_vacant_prepared` on the unique map
 dispose of the payload outside its gate. The caller still owns the admission
 contract of any heap inside the moved value; these APIs share no mutable payload
 or raw `Arc` and require no value clone.
+## Original-scoped work
+
+Within `ExecutionRequest::run_native_with_checkpoint`, use
+`context.work_loan(&execution)` when a synchronous downstream visitor needs to
+charge the same request without retaining the borrowed `KernelContext`. The
+returned `ExecutionWorkLoan` supports `checkpoint(units)` and `poll()` on the
+actual current SDK context. Genuine nested and framework worker contexts inherit
+its affinity; their normal report joins carry each charge to the original once.
+
+The loan owns no work counter or worker allowance. It refuses foreign contexts
+and stops working when its issuing scope exits, even if a prepared owner retains
+it. Its affinity backing is paid by the original retained-memory owner before
+allocation and remains charged until the final loan drops. Worker-only Native execution
+polls the effective cancellation and deadline controls without inventing a work
+invoice. `checkpoint_in(context, units)` additionally checks that the supplied
+context is the actual authorized current context.
 
 ## Checked component edits
 

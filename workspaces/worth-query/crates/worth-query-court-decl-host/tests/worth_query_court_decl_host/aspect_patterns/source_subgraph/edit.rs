@@ -1,0 +1,81 @@
+use super::*;
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub struct Edit {
+    pub key: String,
+    pub value: u64,
+}
+#[derive(Clone, Debug)]
+pub struct Edited;
+#[derive(Clone, Debug, Eq, PartialEq, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub enum Denial {
+    InvalidSourceGraph,
+    SourceMismatch,
+}
+worth_query_structured_value_binding!(pub ResultBinding for Edited { identity: "source-subgraph.edit-result.v1" });
+worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "source-subgraph.denial.v1" });
+worth_query_value_binding!(pub ProducerDenialBinding for Denial { identity: "source-subgraph.producer-denial.v1", scalar: String, canonical: ValueDecodeBounds::new(64, 32, 4, 4), });
+macro_rules! edit_binding {
+    ($module:ident, $operation:ident, $entity:ident, $facts:ident, $key:ident, $value:ident, $identity:literal) => {
+        pub mod $module {
+            use super::*;
+            #[derive(Clone, Debug, WorthValue)]
+            #[worth_value(crate = "worth_query_decl::facade::application_schema")]
+            pub struct Intent(pub Edit);
+            worth_query_structured_value_binding!(pub Input for Intent { identity: $identity });
+            worth_query_operation!(pub $operation for Schema, input Input; access { read_fields: [$key, $value]; writes: [$value]; });
+            fn scope(input: &Intent) -> String { input.0.key.clone() }
+            worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
+                identity $identity, input Input, operation $operation, result ResultBinding,
+                idempotency String, identity $identity, decision WorthQueryInvariantMutationTarget<Schema, $entity>, denial DenialBinding,
+                handler identity $identity, program required, outputs NoApplicationMutationOutputs,
+                principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
+                scope $entity, $facts, $key, String, ReadOnly, NoApplicationUnit, field $key::reference(), value scope,
+            );
+            pub struct Handler;
+            impl OperationHandler<Schema, Binding> for Handler {
+                fn decide(&self, input: &Intent, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, $entity>, Denial> {
+                    let result = (|| { let entity = reader.resolve_entity($key::reference(), input.0.key.clone())?; reader.field(&entity, $value::reference())?; reader.mutation_target(&entity) })();
+                    match result { Ok(target) => HandlerResult::Completed(target), Err(error) => HandlerResult::ExecutionDenied(error) }
+                }
+                fn build_candidate(&self, input: &Intent, target: WorthQueryInvariantMutationTarget<Schema, $entity>, writer: &mut CandidateWriter<'_, Schema, Binding>) -> HandlerResult<Edited, Denial> {
+                    let result = writer.projected_entity(&target).and_then(|entity| writer.write_field(&entity, $value::reference(), input.0.value));
+                    match result { Ok(()) => HandlerResult::Completed(Edited), Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)) }
+                }
+            }
+        }
+    };
+}
+edit_binding!(
+    source,
+    PatchSource,
+    Source,
+    SourceFacts,
+    SourceKey,
+    SourceValue,
+    "source-subgraph.edit-source.v1"
+);
+edit_binding!(
+    generated,
+    PatchGenerated,
+    Generated,
+    GeneratedFacts,
+    GeneratedKey,
+    GeneratedValue,
+    "source-subgraph.corrupt-generated.v1"
+);
+pub fn declare(
+    schema: ApplicationSchemaDeclarationBuilder<Schema>,
+) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    schema
+        .application_mutation_binding::<source::Binding>()
+        .declared_operation::<generated::PatchGenerated>(
+            generated::PatchGenerated::reference()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        )
+        .application_mutation_binding::<generated::Binding>()
+}

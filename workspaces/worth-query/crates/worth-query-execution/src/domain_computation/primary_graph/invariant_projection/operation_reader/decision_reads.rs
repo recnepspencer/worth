@@ -7,6 +7,7 @@ mod aspect_presence;
 mod components;
 mod computation_inputs;
 mod expected_keys;
+mod managed_sources;
 mod source_publications;
 pub(super) mod structural_walks;
 pub(in crate::domain_computation::primary_graph) use computation_inputs::ObservedComputationInputs;
@@ -29,6 +30,8 @@ use crate::domain_computation::primary_graph::application_contribution::{
 pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
     source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
+    managed_sources: managed_sources::IssuedManagedSourceValues,
+    failed_managed_source: bool,
     aspect_presence: aspect_presence::PresenceKeys,
     /// The first read that failed. Its outcome depends on what its fact does
     /// not hold, so a handler or owner call that swallowed the failure has an
@@ -55,6 +58,7 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
 pub(in crate::domain_computation::primary_graph) enum FailedDecisionRead {
     Key(WorthQueryApplicationFactKey),
     StructuralWalk,
+    ManagedSource,
     ComponentSelection,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
 }
@@ -178,6 +182,7 @@ impl DecisionReads {
         let Self {
             mut handler,
             source_publications,
+            managed_sources,
             failed,
             mut computation,
             runs,
@@ -187,10 +192,14 @@ impl DecisionReads {
             failed_walk,
             components,
             failed_component,
+            failed_managed_source,
             ..
         } = self;
         if let Some(failed) = failed {
             return Err(FailedDecisionRead::Key(failed));
+        }
+        if failed_managed_source {
+            return Err(FailedDecisionRead::ManagedSource);
         }
         if failed_component {
             return Err(FailedDecisionRead::ComponentSelection);
@@ -209,6 +218,7 @@ impl DecisionReads {
             handler,
             std::sync::Arc::clone(&computation),
             source_publications,
+            managed_sources,
             walks,
             aggregates,
             components,

@@ -38,10 +38,35 @@ pub(in crate::application_query) fn prepare_definition_basis(
     if let Some(selection) = definition.managed_index() {
         let parts = selection.parts();
         entries.extend([
-            text("managed-index.grammar", "committed-index-v1"),
+            text(
+                "managed-index.grammar",
+                if selection.refinement().is_some() {
+                    "committed-refined-index-v1"
+                } else {
+                    "committed-index-v1"
+                },
+            ),
             text("managed-index.definition", &parts.index),
             text("managed-index.probe-parameter", &parts.probe_parameter),
         ]);
+        if let Some(refinement) = selection.refinement() {
+            let refinement = refinement.parts();
+            entries.extend([
+                text(
+                    "managed-index.refinement.version",
+                    refinement.semantic_version.to_string(),
+                ),
+                text("managed-index.refinement.identity", &refinement.identity),
+                text(
+                    "managed-index.refinement.domain-version",
+                    refinement.version.to_string(),
+                ),
+                text(
+                    "managed-index.refinement.inputs",
+                    "row-local-source-projection",
+                ),
+            ]);
+        }
     }
     append_result_shape(&mut entries, definition.result_shape(), "result");
     append_predicates(&mut entries, definition);

@@ -32,17 +32,47 @@ pub(super) fn commit_owner_validated(
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
+    let request = prepared.attempt.affinity().publication_request().clone();
     let mut committed = commit_execution::commit(
         execution,
         provider,
         prepared,
         WorthQueryCommitProgressionMint::witness(),
         allocation_policy,
-    )?;
+    )
+    .map_err(|stop| {
+        use crate::domain_computation::{
+            WorthQueryProviderSessionCommitControlStopped as Stopped,
+            WorthQueryProviderSessionCommitStop as Stop,
+            WorthQueryProviderSessionControlStopKind as Kind,
+        };
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+        // Every pre-publication stage uses the original caller's posture.
+        // A stopped lease with a live caller remains a preparation-retry denial.
+        match (stop, request.interruption()) {
+            (Stop::ControlStopped(stopped), Some(interruption)) => {
+                let kind = match interruption {
+                    WorthQueryRequestInterruption::Cancelled => Kind::Cancelled,
+                    WorthQueryRequestInterruption::DeadlineExceeded => Kind::TimedOut,
+                };
+                Stop::ControlStopped(Stopped::new(kind, stopped.detail()))
+            }
+            (stop, _) => stop,
+        }
+    })?;
     let evidence = evidence_seal::seal(&execution, provider, &mut committed);
+    let mut predicate = committed.take_predicate_preparation();
+    let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
     provider.graph.with_runtime(&execution, |runtime| {
         committed
-            .publish_and_encode(&execution, provider, runtime, evidence)
+            .publish_and_encode(
+                &execution,
+                provider,
+                runtime,
+                evidence,
+                &mut predicate,
+                &mut retired,
+            )
             .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
     })
 }
@@ -59,8 +89,17 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
     crate::domain_computation::WorthQueryProviderSessionFailure,
 > {
     let evidence = evidence_seal::seal(execution, provider, &mut committed);
+    let mut predicate = committed.take_predicate_preparation();
+    let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
     provider.graph.with_runtime(execution, |runtime| {
-        committed.publish_and_encode(execution, provider, runtime, evidence)
+        committed.publish_and_encode(
+            execution,
+            provider,
+            runtime,
+            evidence,
+            &mut predicate,
+            &mut retired,
+        )
     })
 }
 

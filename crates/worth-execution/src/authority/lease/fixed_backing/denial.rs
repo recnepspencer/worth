@@ -11,6 +11,7 @@ pub(crate) enum ExecutionAllocationDenialKind {
     Allocator,
     CapacityMismatch,
     WriteBeyondReserved,
+    UninitializedElement,
     IncompleteSeal,
 }
 
@@ -25,6 +26,8 @@ pub enum ExecutionPhysicalAllocationDenialKind {
     CapacityMismatch,
     /// A write exceeded the reserved payload.
     WriteBeyondReserved,
+    /// Replacement addressed a cell outside the initialized prefix.
+    UninitializedElement,
     /// Sealing encountered an incomplete payload.
     IncompleteSeal,
 }
@@ -53,6 +56,7 @@ impl ExecutionAllocationDenialKind {
             Self::Allocator => Physical(PhysicalKind::Allocator),
             Self::CapacityMismatch => Physical(PhysicalKind::CapacityMismatch),
             Self::WriteBeyondReserved => Physical(PhysicalKind::WriteBeyondReserved),
+            Self::UninitializedElement => Physical(PhysicalKind::UninitializedElement),
             Self::IncompleteSeal => Physical(PhysicalKind::IncompleteSeal),
         }
     }

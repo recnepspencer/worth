@@ -169,6 +169,7 @@ fn structural_stop(
     use crate::validation::custom_rule::CustomPreparationStop as Stop;
     use worth_execution::MapKernelStop;
     match stop {
+        Stop::Request(stop) => MapKernelFailure::Stop(stop),
         Stop::Cancelled => MapKernelFailure::Stop(MapKernelStop::Cancelled),
         Stop::DeadlineElapsed => MapKernelFailure::Stop(MapKernelStop::DeadlineElapsed),
         Stop::WorkExhausted => MapKernelFailure::Stop(MapKernelStop::WorkCeiling),

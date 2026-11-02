@@ -102,8 +102,11 @@ impl BankRecoveryTransitionReceipt {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub enum BankRecoveryIdempotencyResolution {
+    ProductPreparationPending(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationPending,
+    ),
     Unseen,
     AlreadyCommitted,
     IntentDrift,
@@ -226,6 +229,9 @@ pub(super) fn map_idempotency(
 ) -> BankRecoveryIdempotencyResolution {
     use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution;
     match resolution {
+        WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(pending) => {
+            BankRecoveryIdempotencyResolution::ProductPreparationPending(pending)
+        }
         WorthQueryApplicationIdempotencyResolution::Unseen => {
             BankRecoveryIdempotencyResolution::Unseen
         }

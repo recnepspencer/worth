@@ -14,13 +14,22 @@ impl RelationalPreparationRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        self.validate_consulted_branch_transaction_with_source_context(execution, transaction, None)
+    }
+
+    pub(crate) fn validate_consulted_branch_transaction_with_source_context(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         let runtime = if execution.is_leased() {
             self.with_commit_work_budget(None)
         } else {
             self.clone()
         };
         runtime
-            .validate_branch_transaction_source(execution, transaction, None, None)
+            .validate_branch_transaction_source(execution, transaction, None, None, context)
             .map_err(crate::execution::allocation_commit_error)
     }
 
@@ -42,6 +51,7 @@ impl RelationalPreparationRuntime {
             transaction,
             Some((selected_branch_state, merged_plan)),
             Some(strategy),
+            None,
         )
     }
 
@@ -54,6 +64,7 @@ impl RelationalPreparationRuntime {
             crate::transactions::data::MergedCommitPlan,
         )>,
         strategy: Option<StrategyProposalDecoration>,
+        context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         require_not_interrupted(
             &transaction.control,
@@ -107,7 +118,7 @@ impl RelationalPreparationRuntime {
             commit_boundary,
             mutation_sensitive,
             publication,
-        } = self.prepare_proposal_round(execution, &mut transaction, lowered.as_ref())?;
+        } = self.prepare_proposal_round(execution, &mut transaction, lowered.as_ref(), context)?;
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
@@ -200,6 +211,26 @@ impl RelationalRuntime {
         )?;
         self.preparation_runtime_snapshot()
             .validate_consulted_branch_transaction(execution, transaction)
+    }
+
+    /// Validate with metadata independently bound to every actual proposal round.
+    /// The factory is borrowed; the caller retains its outer fence ownership.
+    pub fn validate_branch_transaction_with_source_context(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        context: &dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )?;
+        self.preparation_runtime_snapshot()
+            .validate_consulted_branch_transaction_with_source_context(
+                execution,
+                transaction,
+                Some(context),
+            )
     }
 
     pub(crate) fn validate_consulted_lowered_strategy_proposal(

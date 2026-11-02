@@ -202,3 +202,14 @@ fn sealed_canonical_seed_moves_into_merge_without_cloning_values() {
         assert_eq!(record.value.roles, if index == 64 { 3 } else { 1 });
     }
 }
+
+#[test]
+fn physical_content_allocation_is_allocation_denial_without_fabricated_sdk_cause() {
+    use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Kind;
+    let denied = StoreDenial::PhysicalAllocation.into_attempt_denial("retained content scratch");
+    assert_eq!(denied.kind(), Kind::AllocationDenied);
+    assert!(denied.allocation_denial().is_none());
+    assert!(denied.source_retention_interruption().is_none());
+    let overflow = StoreDenial::Representability.into_attempt_denial("retained content scratch");
+    assert_eq!(overflow.kind(), Kind::RetainedSourceStorageDenied);
+}

@@ -7,8 +7,8 @@ use super::{
     WorthQueryProductEntry,
 };
 use crate::domain_computation::execution_runtime::product_world::{
-    WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCloseReceipt,
-    WorthQueryProductBranchCloseScope,
+    OwnerCleanupRetirements, WorthQueryProductBranchCloseDenial,
+    WorthQueryProductBranchCloseReceipt, WorthQueryProductBranchCloseScope,
 };
 
 /// Why closing a product branch from an application was refused or left
@@ -35,6 +35,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProductBranchCloseReceipt, WorthQueryApplicationProductBranchCloseDenial>
     {
+        let mut retirements = OwnerCleanupRetirements::default();
         let execution = phase
             .execution_request_for(&self.application.product_runtime)
             .map_err(|_| WorthQueryApplicationProductBranchCloseDenial::ForeignPhase)?;
@@ -99,7 +100,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             cleanup,
             self.application.bridge.conditional_operations(),
         )
-        .retry()
+        .retry_with_retirements(&execution, &mut retirements)
         .map(|receipt| WorthQueryProductBranchCloseReceipt::from_owner_cleanup(branch, receipt))
         .map_err(WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending)
     }

@@ -41,18 +41,12 @@ impl Fact {
     pub(in crate::domain_computation::primary_graph) fn merge_same_source_fact(
         &mut self,
         duplicate: Self,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-        request: Option<
-            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        >,
+        control: super::super::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
         if self.dependency_key() != duplicate.dependency_key() {
             return Ok(false);
         }
-        self.merge_after_equal_source_key(
-            duplicate,
-            super::super::retained_decision_facts::StorageControl::new(allocation_policy, request),
-        )
+        self.merge_after_equal_source_key(duplicate, control)
     }
     /// Private retained-store callback. The caller has compared the complete
     /// admitted typed key; native revision equality remains checked below.
@@ -62,6 +56,56 @@ impl Fact {
         control: super::super::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
         match (self, duplicate) {
+            (
+                Fact::SourceReadAuthorization { observation: first },
+                Fact::SourceReadAuthorization {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    return Ok(true);
+                }
+                let Some(execution) = control.execution() else {
+                    return Ok(false);
+                };
+                let equal = first.same_truth(&second, &mut |units| {
+                    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(&execution, units)
+                        .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
+                })?;
+                control.check_live()?;
+                Ok(equal)
+            }
+            (
+                Fact::ManagedIndexSource { observation: first },
+                Fact::ManagedIndexSource {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    return Ok(true);
+                }
+                let Some(execution) = control.execution() else {
+                    return Ok(false);
+                };
+                let equal = first.same_truth(&second, &mut |units| {
+                    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(&execution, units)
+                        .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
+                }, &mut |bytes| execution.reserve_retained_memory(bytes)
+                    .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest),
+                    &mut |cause| {
+                        use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
+                        use super::super::retained_decision_facts::StoreDenial;
+                        match cause {
+                            Fault::CapacityOverflow => StoreDenial::Representability,
+                            Fault::AllocationFailed => StoreDenial::PhysicalAllocation,
+                        }
+                    })?;
+                control.check_live()?;
+                Ok(equal)
+            }
+
             (
                 Fact::ComponentSelection { observation: first },
                 Fact::ComponentSelection {
@@ -87,6 +131,21 @@ impl Fact {
                 } else {
                     first.same_truth_with_poll(&second, || control.check_live())
                 }
+            }
+            (
+                Fact::DerivedSource { observation: first },
+                Fact::DerivedSource {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                let equal = if std::sync::Arc::ptr_eq(first, &second) {
+                    true
+                } else {
+                    first.same_truth_with_poll(&second, || control.check_live())?
+                };
+                control.check_live()?;
+                Ok(equal)
             }
             (
                 Fact::StructuralWalk { observation: first },
@@ -160,8 +219,7 @@ mod tests {
         assert!(forward
             .merge_same_source_fact(
                 second.clone(),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                None
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(forward, expected);
@@ -170,16 +228,14 @@ mod tests {
         assert!(reverse
             .merge_same_source_fact(
                 first,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                None
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(reverse, expected);
         assert!(forward
             .merge_same_source_fact(
                 expected.clone(),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                None
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(forward, expected);
@@ -192,8 +248,7 @@ mod tests {
         assert!(!observed
             .merge_same_source_fact(
                 adjacency(5, 7, vec![endpoint(3)]),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                None
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(observed, original);
@@ -204,8 +259,7 @@ mod tests {
         assert!(!observed
             .merge_same_source_fact(
                 foreign,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                None
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(observed, original);
@@ -215,8 +269,7 @@ mod tests {
         assert!(entity
             .merge_same_source_fact(
                 entity.clone(),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                None
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert!(!entity
@@ -224,8 +277,7 @@ mod tests {
                 Fact::SourceEntity {
                     entity_id: endpoint(2)
                 },
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                None
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(

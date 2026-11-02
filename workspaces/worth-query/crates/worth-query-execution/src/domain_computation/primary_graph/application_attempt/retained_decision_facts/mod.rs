@@ -41,6 +41,7 @@ pub(in crate::domain_computation) enum StoreDenial {
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
     ),
     Representability,
+    PhysicalAllocation,
     ConflictingBody,
     #[cfg(test)]
     InvalidOrdinal,
@@ -83,7 +84,7 @@ impl StoreDenial {
             WorthQueryApplicationAttemptDenialKind as Kind,
         };
         let kind = match &self {
-            Self::Allocation(_) => Kind::AllocationDenied,
+            Self::Allocation(_) | Self::PhysicalAllocation => Kind::AllocationDenied,
             Self::RequestInterruption(_) => Kind::CurrentAuthorityDenied,
             Self::ExecutionRequest(_) => Kind::RetainedSourceStorageDenied,
             Self::ConflictingBody => Kind::DecisionDependencyMismatch,
@@ -110,7 +111,7 @@ impl worth_execution::ChargedBytes for StoreDenial {
                 inline(cause);
                 0
             }
-            Self::Representability | Self::ConflictingBody => 0,
+            Self::Representability | Self::ConflictingBody | Self::PhysicalAllocation => 0,
             #[cfg(test)]
             Self::InvalidOrdinal => 0,
         }

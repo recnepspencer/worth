@@ -84,6 +84,29 @@ schema validation checks the named dependency DAG and exact endpoint kinds.
 `ApplicationRelationGraphLaws` describes endpoint-set graph obligations; stored
 edge deletion and physical uniqueness remain with stored relations.
 
+For newest-first event membership, declare one named recipe using three typed
+stored relations:
+
+```rust
+schema.derived_relation(
+    LiveRows::reference(),
+    ApplicationDerivedRelation::ordered_events(
+        Previous::reference(), Introduces::reference(), Retires::reference(),
+    ),
+    ApplicationRelationGraphLaws::unbounded(),
+)
+```
+
+`Previous` is Event->Event; `Introduces` and `Retires` are Event->Row. Each event
+retires before introducing, and an introduction nearer the root survives an older
+retirement. Native validates the complete actual predecessor chain before returning
+members. Multiple physical predecessor edges at one event or a cyclic predecessor
+chain return `InvalidEventChain`, including through the typed invariant view. This recipe composes and reverses through the existing
+derived relation grammar. It does not yet select a maintained Source or root path.
+The [typed recipe evidence](../../../../../../plans/WORTH-query/milestone-9.19-phase6-query-ordered-event-evidence.md)
+records archive compatibility, hostile admission and exact installed Native binding;
+the separate Native courts qualify event evaluation and physical support.
+
 `rule_readable_collection` records the existing Feature, Collection, Computation,
 output artifact and completeness identities. `operation_read_derived_relation`
 records an operation's declared source read. These associations grant no read,

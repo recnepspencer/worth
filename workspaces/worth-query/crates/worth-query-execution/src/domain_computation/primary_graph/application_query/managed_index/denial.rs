@@ -12,9 +12,15 @@ pub(super) enum ReceiverCause {
     Provider(ProviderExecutionDenial),
     Execution(ExecutionCause),
     Read(super::super::WorthQueryApplicationOneShotDenial),
+    LiveAdmission(super::super::WorthQueryApplicationLiveOpenDenial),
     Installation(WorthQueryInstalledQueryBindingAdmissionStop<ExecutionCause>),
     Product(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Refused(WorthQueryManagedIndexRefusal),
+}
+impl From<super::super::WorthQueryApplicationOneShotDenial> for ReceiverCause {
+    fn from(cause: super::super::WorthQueryApplicationOneShotDenial) -> Self {
+        Self::Read(cause)
+    }
 }
 impl From<ExecutionCause> for ReceiverCause {
     fn from(cause: ExecutionCause) -> Self {
@@ -50,6 +56,7 @@ impl WorthQueryManagedIndexDenial {
             ReceiverCause::Provider(cause) => causes::provider(cause),
             ReceiverCause::Execution(cause) => Cause::Execution(cause),
             ReceiverCause::Read(cause) => Cause::QueryRead(cause),
+            ReceiverCause::LiveAdmission(cause) => Cause::LiveAdmission(cause),
             ReceiverCause::Product(cause) => Cause::Product(cause),
             ReceiverCause::Refused(cause) => Cause::Refused(*cause),
             ReceiverCause::Installation(cause) => match cause {
@@ -79,3 +86,24 @@ impl std::fmt::Display for WorthQueryManagedIndexDenial {
     }
 }
 impl std::error::Error for WorthQueryManagedIndexDenial {}
+
+impl PartialEq for WorthQueryManagedIndexDenial {
+    fn eq(&self, other: &Self) -> bool {
+        self.cause() == other.cause()
+    }
+}
+impl Eq for WorthQueryManagedIndexDenial {}
+impl WorthQueryManagedIndexDenial {
+    pub(in crate::domain_computation::primary_graph) fn retain(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, ExecutionCause> {
+        let allocation = match &self._allocation {
+            Some(value) => Arc::clone(value),
+            None => SourceFactsAllocation::open(execution)?,
+        };
+        crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion::new(execution, &allocation).arc::<Self>()?;
+        self._allocation = Some(allocation);
+        Ok(Arc::new(self))
+    }
+}

@@ -38,6 +38,8 @@ pub enum WorthQueryReadGraphRelationDirection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryReadGraphRelationView<'a> {
+    pub source_kind:
+        worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind,
     pub relation: &'a str,
     pub direction: WorthQueryReadGraphRelationDirection,
     /// Repeats the endorelation until its frontier is exhausted. `depth`

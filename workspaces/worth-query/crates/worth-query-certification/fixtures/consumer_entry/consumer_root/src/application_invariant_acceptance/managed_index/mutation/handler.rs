@@ -1,11 +1,21 @@
 //! The ordinary handler observes the original field and publishes through its writer.
 use super::*;
 pub struct Handler;
-impl OperationHandler<Catalog, Binding> for Handler {
+impl<B> OperationHandler<Catalog, B> for Handler
+where
+    B: ApplicationMutationBinding<
+        Catalog,
+        Input = Rename,
+        Operation = RenameItem,
+        Decision = WorthQueryInvariantMutationTarget<Catalog, Item>,
+        Result = Renamed,
+        Denial = Denial,
+    >,
+{
     fn decide(
         &self,
         input: &Rename,
-        reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
+        reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Item>, Denial> {
         let mut observe = || -> Result<_, HandlerExecutionDenial> {
             let item = reader.resolve_entity(ItemIdentity::reference(), input.item.clone())?;
@@ -24,7 +34,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
         &self,
         input: &Rename,
         target: WorthQueryInvariantMutationTarget<Catalog, Item>,
-        writer: &mut CandidateWriter<'_, Catalog, Binding>,
+        writer: &mut CandidateWriter<'_, Catalog, B>,
     ) -> HandlerResult<Renamed, Denial> {
         let mut apply = || -> Result<(), HandlerExecutionDenial> {
             let item = writer

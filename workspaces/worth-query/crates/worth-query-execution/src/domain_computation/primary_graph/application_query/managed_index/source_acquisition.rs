@@ -31,7 +31,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-mod temporary;
+pub(in crate::domain_computation::primary_graph::application_query) mod temporary;
 
 pub(super) struct AcquisitionDenial {
     pub(super) cause: AcquisitionCause,

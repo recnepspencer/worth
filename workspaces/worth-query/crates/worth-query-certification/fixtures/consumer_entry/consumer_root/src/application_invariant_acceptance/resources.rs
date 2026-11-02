@@ -25,6 +25,19 @@ pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     );
 
 pub(super) fn world_resources() -> WorthQueryProductWorldResources {
+    world_resources_with_policy(EXECUTION_POLICY)
+}
+
+fn world_resources_with_policy(
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> WorthQueryProductWorldResources {
+    world_resources_with_observations(policy, ACTIVE_WORLD_OBSERVATIONS)
+}
+
+fn world_resources_with_observations(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    active_observations: u64,
+) -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -35,7 +48,7 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
                 history_metadata_bytes: 1_048_576,
             },
             observations: RuntimeWorldObservationBudgetInstallation {
-                active_observations: ACTIVE_WORLD_OBSERVATIONS,
+                active_observations,
             },
             publication: RuntimeWorldPublicationBudgetInstallation {
                 active_publication_attempts: 8,
@@ -54,15 +67,28 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
         },
         WorthQueryProductWorldClock::start(),
         WorthQueryInvalidationResources::new(),
-        EXECUTION_POLICY,
+        policy,
     )
     .expect("the consumer's finite World resources are valid")
 }
 
 pub(super) fn application_limits(
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    application_limits_with_policy(EXECUTION_POLICY)
+}
+
+pub(super) fn application_limits_with_policy(
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    application_limits_with_observations(policy, ACTIVE_WORLD_OBSERVATIONS)
+}
+
+pub(super) fn application_limits_with_observations(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    active_observations: u64,
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
-        world_resources(),
+        world_resources_with_observations(policy, active_observations),
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
         ),

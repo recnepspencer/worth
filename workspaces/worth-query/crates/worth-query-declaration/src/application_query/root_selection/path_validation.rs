@@ -3,6 +3,15 @@ use super::{ApplicationQueryRootPathMeaning, ApplicationQueryRootPathTraversal};
 
 impl ApplicationQueryRootPathMeaning {
     pub(crate) fn is_well_formed(&self) -> bool {
+        if self.steps().iter().any(|step| {
+            step.from_member().entity().is_none()
+                || step.to_member().entity().is_none()
+                || (step.source_kind() == super::ApplicationQueryRootPathSourceKind::Derived
+                    && step.traversal() != ApplicationQueryRootPathTraversal::OneHop)
+        }) {
+            return false;
+        }
+
         let endpoints_match = match (self.steps().first(), self.steps().last()) {
             (Some(first), Some(last)) => {
                 first.parent_entity() == self.start_entity()

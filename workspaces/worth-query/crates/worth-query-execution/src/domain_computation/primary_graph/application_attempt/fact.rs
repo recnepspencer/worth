@@ -8,11 +8,19 @@ mod entity_touch;
 mod equality;
 mod indexed_entity_selection;
 mod locator_identity;
+mod managed_source_read;
 mod movement;
 mod retirement_equality;
 mod source_currentness;
+mod source_read_authorization;
+pub(in crate::domain_computation::primary_graph) use source_read_authorization::{
+    SourceReadAuthorization, SourceReadAuthorizationKey,
+};
 mod source_merge;
 mod source_publication_read;
+pub(in crate::domain_computation::primary_graph) use managed_source_read::{
+    ManagedSourceRead, ManagedSourceReadKey,
+};
 pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
 mod workflow_definition_predecessor;
 mod workflow_history_basis;
@@ -53,6 +61,8 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
     Aggregate(super::super::aggregate_observation::AggregateKey),
     ComponentSelection(super::super::component_selection::ComponentSelectionKey),
     SourcePublication(SourcePublicationRead),
+    ManagedIndexSource(ManagedSourceReadKey),
+    SourceReadAuthorization(SourceReadAuthorizationKey),
     Entity {
         entity: String,
         entity_id: EntityId,
@@ -82,12 +92,24 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+    /// Actual conventional Source permission, independently retained and checked.
+    SourceReadAuthorization {
+        observation: std::sync::Arc<SourceReadAuthorization>,
+    },
+    /// The complete original Source, including nonmatches and empty membership.
+    ManagedIndexSource {
+        observation: std::sync::Arc<ManagedSourceRead>,
+    },
     ComponentSelection {
         observation: std::sync::Arc<super::super::component_selection::ComponentSelection>,
     },
     /// Actual Native aggregate identity and complete membership at the original source.
     Aggregate {
         observation: std::sync::Arc<super::super::aggregate_observation::AggregateObservation>,
+    },
+    /// Complete original derived acquisition, including negative physical support.
+    DerivedSource {
+        observation: std::sync::Arc<super::super::derived_source::DerivedSourceObservation>,
     },
     /// Exact complete Native observation, issued under the original projection.
     StructuralWalk {

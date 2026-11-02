@@ -199,6 +199,7 @@ impl Drop for Provider {
 }
 impl WorthQueryManagedIndexProvider<Catalog, Index> for Provider {
     type Node = u64;
+    type Summary = ();
     type Denial = std::convert::Infallible;
     const IDENTITY: &'static str = Index::PROVIDER;
     const VERSION: u32 = Index::PROVIDER_VERSION;
