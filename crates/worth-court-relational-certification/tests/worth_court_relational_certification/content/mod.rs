@@ -9,6 +9,7 @@ mod cold_envelope;
 mod durable_publication;
 pub(crate) mod expected;
 pub(crate) mod fixture;
+mod historical_kind;
 mod identity_conflict;
 mod journal_recovery;
 mod lifecycle;

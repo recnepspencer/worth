@@ -5,7 +5,7 @@ pub(crate) use {
 };
 pub(crate) use {
     crate::leased_preparation::ordinary_context::authority,
-    crate::leased_preparation::ordinary_context::lease_request,
+    crate::leased_preparation::ordinary_context::lease_request_with_work,
     crate::leased_preparation::ordinary_context::serial, worth_execution::CancellationToken,
     worth_foundational::facade::AspectValue, worth_relational::facade::identity::KindId,
 };
@@ -121,9 +121,15 @@ pub(crate) fn journey(partitions: u32, slots: usize, dependencies: Dependencies)
         slots,
     );
     let lease = authority()
-        .request_lease(lease_request(
-            32 * 1024 * 1024,
+        .request_lease(lease_request_with_work(
+            // Fixture funding includes admitted reconstruction scratch and the
+            // retained historical-kind paths for 1023 new relations. This is
+            // a bounded positive grant, not a claim of the minimal peak.
+            64 * 1024 * 1024,
             worth_execution::CancellationToken::new(),
+            // Projection traversal, retained-path rebuilding and streamed
+            // hashing now spend the same original Work grant.
+            8_000_000,
         ))
         .unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&lease);

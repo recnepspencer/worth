@@ -362,3 +362,94 @@ New bytes or exact bounded reads of Carried locators through that real preceding
 source. Never fabricate resident metadata or relax Native carry checks. Close
 all current runtimes/checkpoints and prove the actual old reader's last drop
 releases the final original-funded custody.
+
+## Full Native qualification follow-up
+
+The complete binary exposed two additional failures. The serialization court
+asserts the deliberately deleted pre-content 4/6-field authority and 7/9-field
+carrier forms. Keep its independent expected serializer, domain-only declaration
+checks, positional empty tails and named/compact/JSON roundtrips, but certify the
+required current seven-field authority and ten-field carrier, including empty
+content authority. No compatibility decoder is authorized.
+
+The persisted CDC property independently catches a checkpoint leaf mismatch.
+Preserve its saved regression seed and all six checkpoint checks. First run a
+deterministic version of the minimized scenario with temporary test-only leaf
+diagnostics, identifying the exact differing axis. Repair the owning publication
+invalidation proof rather than weakening checkpoint verification. Historical
+kind projection depends on relation rows/history and adjacency topology; an
+empty incidence journal alone may not certify unchanged relation history.
+Ordinary scalar entity edits must retain their incremental path. Add the
+deterministic checkpoint/recovery court, kill it by restoring the defective
+production condition, restore exact bytes and rebuild. Run both original failed
+families and scoped gates, then all three required full binaries to completion.
+
+The diagnostic identified partition31: the first five leaf facts and the head
+kind digest agree; only the historical kind digest differs. The relation-row
+journal is therefore a required input to the reuse proof. The deterministic
+court passes with that condition and fails when it is removed.
+
+Independent review then found that this newly reached reconstruction had no
+original-request admission. Carry the existing original ExecutionRequest down
+the same Native publication/root-capture chain, retaining exact typed request
+causes at every return boundary. Settle this top-level root stage once into the
+existing RequestWorkBudget. The projection engines remain single algorithms
+with erased per-row/per-kind/per-membership callbacks; stream MessagePack into
+the existing digest owner with bounded hashing chunks. Admit traversal backing
+before constructing iterators and use borrowed occupied-slot traversal.
+
+Scratch admission alone cannot fund retained kind buckets. Each newly rebuilt
+historical AdjacencyEntries receives its own original retained reservation,
+before persistent path/value/index allocation. Its existing Native allocation
+owner retains that ticket through actual map/value clones and partial adoption.
+A full reset creates a fresh grant; it never grows the ticket of a prior root.
+Cache inventories and allocation visitors include the token's actual backing.
+The custody mutex only protects the reservation counter; it creates no audience
+mutation door or content store. Preserve the SDK's explicit native-only None
+accounting mode. Add literal Work/memory/cancellation refusal and original-SDK
+charge courts, including replacement, cloned/adopted custody and final release.
+Mutation-check both new control courts after their positive baselines, then
+restore byte-exact source and rebuild before full qualification.
+
+The resulting full Native binary is green (2246 passed,31 ignored). Its full
+certification counterpart reaches an original-memory refusal in the positive
+1024-endpoint fixture: requested6648/admitted4384/ancestor0, after1023 new
+relations, on its32MiB grant. Fund this positive fixture at bounded64MiB (the
+existing authority ceiling). That first rerun then reaches WorkExhausted on the
+previous1million Work ceiling: projection traversal, retained-path rebuilding
+and streamed hashing now spend original Work too. Give this positive fixture a
+bounded8million Work grant through the existing helper. Preserve the exact
+1024/1025 clone boundary, all snapshot/source assertions and separate refusal
+courts. These are bounded positive grants, not claims of measured minimal peaks.
+Rerun the affected court and its complete binary. The Native and public
+production sources remain unchanged by these test-only funding corrections;
+preserve their complete qualification receipts.
+
+## Split-layer qualification ruling
+
+The user's new ruling supersedes the stopped proof placement, without granting
+an access door, registry edit, exemption or grandfathered relocation. The SDK's
+SerialMemoryBudget and its reservation are existing value vocabulary, so private
+entry custody and actual partial-table adoption can be tested without a runtime
+root. Extract the existing normalization body into one value engine taking the
+existing erased checkpoint and retention callbacks. The original request driver
+and value-only unit fixtures call that same engine. Preserve the production
+first-stop and settlement owners; do not create a second reconstruction path.
+
+Replace the two root-driving private tests with unit proofs over PartitionState,
+the real sparse table and real budget-funded reservation values. Freeze exact
+projection/custody outcomes and exercise the existing setter/adoption methods.
+Redesign the persisted CDC regression as a Native facade scenario in the existing
+relational certification crate. Its independent checkpoint reader must reject
+invalid historical root reuse. Add an original-Work literal refusal/positive
+invoice court, and use the existing Native checkpoint-plus-tail lifecycle doors
+to observe retained original custody through reopen. No new product facade.
+
+Each of the original three compiled mutants must be caught by a split test;
+restore byte-exact source, refresh timestamps and rebuild those tests. Keep the
+64MiB/8million positive endpoint fixture. After reviewer approval of the final
+source, rerun all three complete binaries on that source, then both-package
+fmt/Clippy, boundary (must pass), context, dirty line caps and whitespace checks.
+Record the replaced/moved test identities and every attempted run, including
+failures. Stop only if a specific required fact still needs private access and
+a runtime root together.

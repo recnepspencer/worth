@@ -57,6 +57,7 @@ pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum RelationalBranchRootCaptureDenial {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     PublishedPartitionMissing(PartitionId),
     DuplicateRegion(PartitionId),
     InvalidAdjacencyProjection(PartitionId),
@@ -227,6 +228,7 @@ impl RelationalBranchRoot {
         })
     }
     pub(crate) fn prepare_capture(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         issuer: &RelationalBranchRootIdentityIssuer,
         partitions: &impl PartitionAccess,
         published_delta: &RelationalPublishedPartitionDelta,
@@ -236,6 +238,7 @@ impl RelationalBranchRoot {
         symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         capture_preparation::prepare(
+            execution,
             issuer,
             partitions,
             published_delta,

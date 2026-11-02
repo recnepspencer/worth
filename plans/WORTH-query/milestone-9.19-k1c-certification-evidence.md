@@ -638,3 +638,347 @@ Process deviation: sync merge 99b9277d25 used Git's default merge message withou
 the required full sentence and coauthor trailer. The no-amend/no-rewrite rule
 prevents repairing that existing commit. It is preserved and disclosed; future
 merge commits must supply the required message explicitly.
+
+## Complete Native qualification repairs
+
+The first full public run completed: `cargo test --manifest-path
+workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test
+worth_query_court_decl_host`, with the prescribed build ID, passed 350 tests,
+0 failed, 2 ignored, 0 measured/filtered, 45.89s. The two Native failures were
+not treated as debt.
+
+The retired-shape test now expects required seven-field schema authority and
+ten-field durable carrier forms. It retains an independently declared serializer,
+literal positional tuple lengths, empty content authority, domain-only preceding
+tail checks and all named/compact/JSON/readmission roundtrips. This is the explicit
+deleted-old-form exception to changing expectations, not compatibility support.
+
+The frozen CDC scenario reproduced a historical-kind mismatch in partition31:
+partition identity, content digest, entity slots, relation slots, unavailable
+records and the current-kind digest all agreed; only historical-kind digest
+differed. Empty endpoint-incidence journals did not certify unchanged relation
+row/history meaning. Root publication now includes the relation-row journal in
+that reuse proof. All six independent checkpoint leaf checks remain intact.
+
+Review found missing admission on that newly required reconstruction. The same
+original request now crosses the existing Native root-capture path, with exact
+Execution refusals through root/publication/transaction and recovery receivers.
+Its top-level root stage settles once into the existing RequestWorkBudget.
+Single projection engines take erased per-item admission, use borrowed rows,
+poll empty kind buckets/directions, admit traversal backing before allocation,
+and stream MessagePack hashing under bounded chunk checkpoints. The old unused
+whole-index mutable materializers are deleted, including their complete-Vec
+construction. Ordinary scalar entity edits retain the existing reuse path.
+
+Scratch funding is separate from the historical-kind result's retained backing.
+Each rebuilt entry receives a fresh original reservation before persistent path,
+value and index allocation. Its existing StorageAllocation owns the custody
+mutex, so actual entry clones/adoptions retain exactly the same grant. Inventories
+and allocation visitors include its physical token. Reset never grows a prior
+root's ticket. The SDK's own charged-memory counter is the independent custody
+oracle; the court observes fresh replacement, cloned aliasing, partial Native
+table adoption and final release. Explicit native-only None accounting remains
+the SDK's existing mode; no free replacement account is created.
+
+| Focused command/attempt before final qualification | Exact result |
+| --- | --- |
+| Fetch and both explicitly messaged sync merges | Three successes; both merges already up to date. |
+| `cargo fmt -p worth-relational` before diagnostic and initial correction | Two successes. |
+| `cargo test -p worth-relational --lib retained_relation_history_checkpoint_matches_published_leaf_and_recovers -- --nocapture`, diagnostic | 0 passed, 1 failed, 2274 filtered, 0.46s; exact checkpoint CorruptCheckpoint leaf mismatch, diagnostic axes `[true,true,true,true,true,false]`. Temporary diagnostics removed byte-exactly before correction. |
+| Same deterministic court with relation journal correction | 1 passed, 0 failed/ignored/measured, 2274 filtered, 0.89s. |
+| `cargo test -p worth-relational --lib required_content_authority_keeps_exact_shape_and_positional_empty_tails -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2274 filtered, 0.03s. |
+| `cargo test -p worth-relational --lib cdc_property_persisted_random_operation_matrix_recovers -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2274 filtered, 36.37s; saved regression seed retained. |
+| First compiled relation-journal-guard deletion mutant | 0 passed, 1 failed, 2274 filtered, 0.55s; same checkpoint leaf mismatch. |
+| Byte-exact guard restoration and rebuilt deterministic court | Restoration assertion passed; 1 passed, 0 failed/ignored/measured, 2274 filtered, 0.86s. |
+| Control implementation first compile | E0308: exact execution cause required the existing CommitExecutionDenial wrapper, no tests ran. |
+| Control implementation second compile | Library compiled; unit target E0061 at the two existing publication_identity fixture callers requiring the original request, no tests ran. |
+| Control implementation third compile | Three E0308 Option-membership callback types and two closure lifetime errors; no tests ran. |
+| Control implementation fourth compile | Library compiled; unit target E0308/E0277 because packet recorder returns a Vec of recorded stages, not the SDK whole Work total; no tests ran. Replaced with the SDK's actual whole-request report. |
+| `cargo fmt -p worth-relational` during those four control attempts | Four successes. |
+| `cargo fmt -p worth-relational` before first compiled control courts | Success. |
+| `cargo test -p worth-relational --lib storage::residency::tests::kind_admission_tests:: -- --nocapture`, first compiled courts | 1 passed, 1 failed, 2275 filtered, 0.05s. Custody court passed: SDK whole Work501, retained12864, elapsed350.7 microseconds. New stop court's guessed scratch-only invoice failed: actual PolicyMemoryExhausted requested65984/admitted65551/ancestor0, expected65536/65535/0. |
+| `PYTHONUTF8=1` independent empty-projection digest check | One literal assertion passed: SHA-256 `eca5e71347d5448811e5333ba940265daa5435b573f498127d8c3886a020903c` for the v2 domain separator followed by MessagePack empty-array byte0x90. This literal is also asserted by the Rust custody court. |
+
+The new memory court now expects its reached original-owner invoice exactly:
+the existing measured-stage loan is448 bytes, so adding65536 requests65984;
+the enclosing SDK scope has admitted392 of65943 policy bytes, leaving65551.
+Its Work0 and cancellation expectations are unchanged. No pre-existing semantic
+expectation was weakened. An initial attempt to stop the childless qualification
+waiter conservatively refused because it also had a conhost child; after proving
+that was its only child, only the waiting launcher was stopped. Active Cargo and
+the compiled mutation/restoration sequence were left running. No build was killed.
+
+| Final control and mutation receipts | Exact result |
+| --- | --- |
+| Sixth control formatting | Success. |
+| Sixth control compilation | Two E0599 errors exposed a cfg(test)-only iter_mut fixture caller, no tests ran. The fixture now resets the same keys through get_mut; all original assertions remain. The remaining reset convenience is cfg(test)-only. |
+| Seventh `cargo fmt -p worth-relational` control formatting | Success. |
+| Corrected `cargo test -p worth-relational --lib storage::residency::tests::kind_admission_tests:: -- --nocapture` | 2 passed, 0 failed/ignored/measured, 2275 filtered, 0.04s. Whole Work501, retained12864, measured positive reconstruction297.2 microseconds. These are actual SDK reports, not a public cost signature. |
+| Final mutation installer, invalid attempts | Two attempts stopped before source mutation or Cargo: CRLF anchor mismatch, then a Python source-escaping syntax error. Neither is mutation evidence. The corrected raw-byte-aware installer matched exactly one protection for each compiled mutant below. |
+| Compiled final root-reuse mutant, exact deterministic CDC filter | 0 passed, 1 failed, 2276 filtered, 0.36s; exact CorruptCheckpoint, captured region differs from selected root leaf. |
+| Compiled original-Work mutant, exact literal-stop court filter | 0 passed, 1 failed, 2276 filtered, 0.04s; expected WorkExhausted but got an otherwise successful RelationalRegionKindCommitment. |
+| Compiled retained-custody omission mutant, exact clone/adoption court filter | 0 passed, 1 failed, 2276 filtered, 0.05s; `funded > 0` fails on the independent SDK charge counter. |
+| Each mutant source restore | Three byte-exact restoration assertions passed, modification times refreshed. |
+| Rebuilt `cargo test -p worth-relational --lib storage::residency::tests::kind_admission_tests:: -- --nocapture` | 2 passed, 0 failed/ignored/measured, 2275 filtered, 0.04s. |
+| Rebuilt `cargo test -p worth-relational --lib retained_relation_history_checkpoint_matches_published_leaf_and_recovers -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2276 filtered, 0.58s. |
+| Rebuilt `cargo test -p worth-relational --lib required_content_authority_keeps_exact_shape_and_positional_empty_tails -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2276 filtered, 0.02s. |
+
+The same reviewer independently read the materializer removal and fixture change,
+the per-item admission loops, exact refusal transport, cache-token inventory and
+fresh-ticket lifetime. It found no further source blocker and awaits complete
+full-binary and footer receipts before its final gate. No new AspectShape form
+or Query engine body is added by this Native qualification follow-up.
+
+The final complete Native library run passed: `cargo test -p worth-relational
+--lib`, 2246 passed, 0 failed, 31 ignored, 0 measured/filtered, 282.06s. The
+complete certification run then exposed one positive fixture's bounded grant:
+`cargo test -p worth-court-relational-certification --test
+worth_court_relational_certification`, 213 passed, 1 failed, 1 ignored,
+0 measured/filtered, 60.02s. Its isolated child reported 0 passed, 1 failed,
+214 filtered, 2.28s; that is the same failure, not a second failed court.
+
+`preimage_endpoint_slots` reached exact original PolicyMemoryExhausted
+requested6648/admitted4384/ancestor0 while committing1024 changed records and
+1023 new relations. Its positive grant was32MiB. The existing authority ceiling
+is64MiB, so the fixture now funds that bounded amount for newly admitted scratch
+and retained reconstruction paths. The1million Work ceiling, literal1024/1025
+endpoint boundary, snapshot/source assertions and separate refusal courts stay
+unchanged. This is not a minimal-peak claim. The same reviewer independently
+checked the reached invoice and test-only change and accepted the funding
+choice pending the affected and complete certification reruns. Native production
+remains frozen at the complete passing run above.
+
+The public rebuild's `libworth_query_execution-b7016cf434752ce1.rlib` measures
+319361570 bytes (2026-11-02, local build target). The preceding recorded artifact
+was319365618 bytes, a net decrease of4048 bytes. This is an aggregate measurement
+across the intervening Native/dependency changes, not an isolated monomorphization
+attribution. This qualification slice adds no Query engine code; the earlier
+Query-touching slices' measured rlib changes remain recorded individually above.
+
+The first memory-funded exact rerun compiled and reached the next original
+bound: `cargo test -p worth-court-relational-certification --test
+worth_court_relational_certification preimage_endpoint_slots -- --nocapture`,
+0 passed, 1 failed, 214 filtered, 4.30s (isolated child4.27s), exact WorkExhausted.
+Its preceding `cargo fmt -p worth-court-relational-certification` succeeded.
+Memory admission now clears, but the newly admitted projection traversal,
+retained-path reconstruction and streamed hashing exhaust the old1million Work
+grant. This positive journey now uses the existing lease_request_with_work
+helper with bounded8million Work and64MiB. All semantic assertions and separate
+refusal courts remain intact; neither grant is a minimal-cost claim. This
+supersedes the earlier intent to leave its Work grant unchanged. No production
+source changes between the full Native pass and these test-only corrections.
+
+The complete final public rerun passed: `cargo test --manifest-path
+workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test
+worth_query_court_decl_host`, with the prescribed build ID, 350 passed,
+0 failed, 2 ignored, 0 measured/filtered, 51.84s. Its build completed in6m22s.
+
+The bounded positive fixture now passes: `cargo test -p
+worth-court-relational-certification --test worth_court_relational_certification
+preimage_endpoint_slots -- --nocapture`, 1 passed, 0 failed/ignored/measured,
+214 filtered, 4.07s. Its formatting command succeeded. The subsequent complete
+`cargo test -p worth-court-relational-certification --test
+worth_court_relational_certification` passed214, failed0, ignored1,
+measured/filtered0, 79.03s. The reviewer independently confirmed that the
+separate refusal fixture still uses its original32MiB/default1million Work.
+
+The Native-only footer's `cargo fmt --check -p worth-relational` succeeded.
+`cargo clippy -p worth-relational --all-targets` reported2 errors and8 warnings:
+the existing untouched payload.rs:34 let-and-return, and this slice's new
+allocation.rs:41 collapsible-if. The latter was corrected by the exact
+equivalent if-let/condition chain; `cargo fmt -p worth-relational` succeeded.
+The reviewer confirmed no changed evaluation order, allocation, result or
+refusal behavior. Complete Native/public receipts above precede only that
+mechanical style change; this is not a claim of another complete rerun.
+
+The same footer's boundary command failed with two exact violations:
+BC9002_TEST_TOPOLOGY at storage/residency/kind_admission_tests.rs::file and
+tests/publication/cdc/certification/historical_kind_checkpoint.rs::file,
+both naming ExecutionRequest runtime-root construction in new src test modules.
+This is a hard-rule failure, not repository debt. No source-baseline exemption,
+test relocation into an existing source file, or weakened proof is used to
+silence it. Existing external-facade feasibility is under independent review;
+the complete qualification slice remains uncommitted while this gate is red.
+That footer's context command passed, dirty line caps passed37 Rust files,
+branch and dirty whitespace checks passed, and its Python scope check passed
+four lint-file assertions. The four pre-existing lint files also have no
+branch diff against origin/master; the now-corrected allocation lint was in
+scope and was not claimed as existing debt.
+
+Independent final boundary ruling: BLOCK / required stop. Existing external
+Native doors can support a redesigned checkpoint/recovery integration scenario,
+but cannot preserve this exact private normalization and per-entry/partial
+SparseAdjacencyTable adoption proof. kind_admission::normalize is pub(super),
+PartitionState/SparseAdjacencyTable and custody accessors are crate-private,
+and no existing certification facade lends those owners. The private CDC
+scenario harness is not available externally unchanged. Adding a new access
+door requires a new boundary decision; it is not inferred as an exemption.
+test-convention section1 forbids new src runtime roots, and section7 permits
+private-access tests only within section1. The reviewer expressly refused
+grandfathered-file relocation, baseline widening, suppression or committing
+this slice. The user's hard-rule stop applies. R1–R9 and the earlier regression
+and Native lifecycle commits remain intact; the final qualification repair
+remains uncommitted for a subsequent boundary decision. Full-binary green
+results do not constitute overall certification while this guard is red.
+
+The already-running final two-package footer completed after that stop:
+
+| Exact final footer command | Result |
+| --- | --- |
+| `cargo fmt --check -p worth-relational -p worth-court-relational-certification` | Success, zero formatting differences. |
+| `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | Exit101: one existing payload.rs:34 error, eight warnings; the in-scope allocation style error is gone. |
+| `cargo clippy -p worth-court-relational-certification --all-targets --no-deps` | Exit101: four existing errors, two warnings, in the same three untouched court files identified in R1. |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | Exit1: the same two BC9002 violations; no exemption or suppression. |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | Success; no case count supplied. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | Success,37 Rust files. |
+| `git diff --check origin/master...HEAD` | Success, zero whitespace errors. |
+| `git diff --check` | Success, zero whitespace errors. |
+| `PYTHONUTF8=1` Python lint-scope check | Four assertions passed; no existing lint error file overlaps the dirty set. Separate branch-diff check also empty for all four lint files. |
+
+No Store binary ran. No blocked-slice staging or commit occurred. The same
+reviewer issued BLOCK using qa-loop, qa-tests and code-quality-qa. No extra
+build was started after the hard-rule stop, and all previously running checks
+were allowed to finish. The style-only if-let collapse has no subsequent
+rebuilt control-court receipt, because the required boundary stop superseded
+that proposed focused rerun. Do not infer it was run.
+
+## Resumed split-layer qualification
+
+The user explicitly ruled that private decisions use value-only unit tests,
+while runtime/request/durability facts use existing external Native doors.
+No new access door, root-registry edit, exemption or grandfathered relocation
+is authorized. The same reviewer accepted SerialMemoryBudget/reservation values
+for the actual private custody owner: budgets are explicitly excluded from the
+unchanged root registry. The production driver and private fixtures now call one
+extracted normalize_value engine with the existing erased callbacks. The old
+root-driving src CDC test is replaced by a public Native certification scenario;
+the original behavior name is retained externally. The original stop court's
+runtime facts move externally; literal private claims/refusal and custody
+adoption tests remain value-only. All previous stopped-run receipts remain
+historical evidence, not current boundary qualification.
+
+| Split-layer attempt | Exact result |
+| --- | --- |
+| Fetch and both explicitly messaged sync merges | Three successes; both branches already up to date. |
+| First two-package `cargo fmt` | Success. |
+| First `cargo test -p worth-relational --lib kind_admission_tests -- --nocapture` | E0599, AdjacencyPolicy has no Default; no tests ran. Replaced with explicit policy values. |
+| First external `content::historical_kind::` court filter | Three E0624 errors: snapshot is private; no tests ran. Fixture moved to the existing public observation-based snapshot door. |
+| Second two-package `cargo fmt` | Success. |
+| Second private-unit filter | 3 passed,0 failed/ignored/measured,2274 filtered,0.00s. |
+| Second external filter | One E0308: branch descriptor is not an observation; no tests ran. Use the admitted basis's existing observation method. |
+| Third two-package `cargo fmt` | Success. |
+| Third private-unit filter | 3 passed,0 failed/ignored/measured,2274 filtered,0.00s. |
+| Third external filter | Two E0609 record kind fields and one E0599 text accessor; no tests ran. Complete identity/value observer now uses resolved kind fields and the pinned reader's symbol authority. |
+| Fourth two-package `cargo fmt` and private-unit filter | Formatting passed;3 private tests passed,0 failed/ignored/measured,2274 filtered,0.00s. |
+| Fourth external filter | Two E0599 errors: materialized RelationalReadView does not own a symbols door; no tests ran. Use the existing pinned-read capability's frozen symbols. |
+| Fifth two-package `cargo fmt` | Success. |
+| Fifth external diagnostic filter | 3 passed,0 failed/ignored/measured,215 filtered,0.74s. This establishes candidate invoices, not final assertions. Public original whole SDK Work944, live-commit retained11696, post-runtime successor-basis retained8576. |
+| Unchanged early boundary command | Success: repository boundaries valid; no case count supplied. No root registry/baseline/exemption changes. |
+| Literal two-package `cargo fmt` | Success. |
+| Literal external filter | 3 passed,0 failed/ignored/measured,215 filtered,0.60s. Work943 returns literal WorkExhausted before selected-root change and releases all original memory; Work1024 succeeds with SDK bill944 and retained11696. Actual successor basis retains8576 across physical checkpoint/one-tail reopen and releases at its last drop. |
+
+The external runtime now matches the original regression's explicit
+CertificationCore/MVCC values: explicit snapshot release, auto reclamation,
+batch8 and EpochChunkRetention. It drives the frozen sequence through actual
+public Native operations, using the original read ordering after refresh.
+Its literal oracle records every complete selected identity/generation, kind,
+field text, relation endpoint and label; both live and recovered truth must
+match independently of the writer/recovery output. The selected final relation
+is(31,slot0,generation2), with endpoints(7,1,1) and(29,0,1), label third-edge.
+No cold recapture invents membership. The separate committed lifecycle court
+continues to prove replacement checkpoints with genuine carried membership.
+
+The same reviewer provisionally cleared the final split source and fixture
+honesty. Its attribution correction is retained:943 proves whole-original
+prepublication Work admission, not the exact internal point of exhaustion;
+the Work-to-zero mutation must establish dependence on the root stage. Final
+review still requires all compiled mutants, restored-source reruns, complete
+binaries on final source and scoped footer/staged checks.
+
+| Compiled split mutation or restored command | Exact result |
+| --- | --- |
+| Remove relation journal from root-reuse guard; external retained_relation_history_checkpoint_matches_published_leaf_and_recovers | 0 passed,1 failed,217 filtered,0.48s. Exact CorruptCheckpoint: captured region differs from its selected root leaf. |
+| Byte-exact root restoration, fresh timestamp, rebuilt same court | Restoration passed;1 passed,0 failed/ignored/measured,217 filtered,0.57s. |
+| Charge root checkpoint Work0; external historical_kind_reconstruction_preserves_literal_original_stops_and_releases_scratch | 0 passed,1 failed,217 filtered,0.02s. The943 Work request incorrectly returns Ok(CommitResult), status Published. |
+| Byte-exact Work restoration, fresh timestamp, rebuilt same court | Restoration passed;1 passed,0 failed/ignored/measured,217 filtered,0.04s. |
+| Drop entry custody assignment; private historical_kind_funding_follows_clones_partial_adoption_and_replacement | 0 passed,1 failed,2276 filtered,0.00s. Independent SDK budget counter fails funded>0. |
+| Same compiled custody mutant; external original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen | 0 passed,1 failed,217 filtered,0.11s. Literal retained original charge is0, expected8576. |
+| Byte-exact custody restoration, fresh timestamp, rebuilt private custody court | Restoration passed;1 passed,0 failed/ignored/measured,2276 filtered,0.00s. |
+| `PYTHONUTF8=1` final mutation restoration verification | Three byte-equality assertions passed, with SHA-256 witnesses. Same reviewer independently compared all three current files to backups and confirmed equality. |
+| Rebuilt `cargo test -p worth-relational --lib kind_admission_tests -- --nocapture` | 3 passed,0 failed/ignored/measured,2274 filtered,0.00s. |
+| Rebuilt `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::historical_kind:: -- --nocapture` | 3 passed,0 failed/ignored/measured,215 filtered,0.52s. |
+
+All four compiled negative runs fail on the intended semantic/resource oracle,
+not compilation or an unrelated panic. The same reviewer independently read
+their raw failures and confirmed the root/Work rebuilt passes. The original
+three protection mutations are therefore caught by the split proof: root reuse
+externally, Work externally, and retained custody both privately and externally.
+The complete three-binary qualification is now running on restored final source,
+including the earlier mechanical Clippy correction. No source edit is planned
+while those runs and their footer execute.
+
+The final-source complete Native command, `cargo test -p worth-relational
+--lib`, passed2246, failed0, ignored31, measured/filtered0,272.41s. This run
+includes both the split value engine and the prior Clippy style correction.
+The full external certification and public binaries and scoped footer are
+still running at this evidence cut; no complete-lane green claim is made yet.
+
+The final-source full relational certification command, `cargo test -p
+worth-court-relational-certification --test worth_court_relational_certification`,
+passed217, failed0, ignored1, measured/filtered0,59.90s. This includes the
+three external split courts and the original bounded64MiB/8million endpoint
+fixture, with every unchanged semantic assertion. Public qualification and
+the final scoped footer remain pending.
+
+The final-source full public command, `cargo test --manifest-path
+workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test
+worth_query_court_decl_host`, with the prescribed all-ones build ID, passed350,
+failed0, ignored2, measured/filtered0,54.18s. All three complete binaries now
+pass on the final restored source, including the mechanical style correction.
+The rebuilt Query execution rlib is319361570 bytes, unchanged from the preceding
+measurement (net0). This split adds no Query engine code or public access door.
+Final two-package formatting check passed with zero differences; the rest of
+the scoped footer and staged review are still pending at this evidence cut.
+
+| Final split footer command | Exact result |
+| --- | --- |
+| `cargo fmt --check -p worth-relational -p worth-court-relational-certification` | Success; zero formatting differences. |
+| `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | Exit101: only the untouched payload.rs:34 let-and-return error; eight warnings. No in-scope error. |
+| `cargo clippy -p worth-court-relational-certification --all-targets --no-deps` | Exit101: only the four untouched errors in the three named court files; two warnings. No in-scope error. |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | Success: repository boundaries valid; no case count supplied. The two prior BC9002 failures are resolved through the authorized layer split. |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | Success; no case count supplied. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | Success;41 Rust files. |
+| `git diff --check origin/master...HEAD` | Success; zero whitespace errors. |
+| `git diff --check` | Success; zero whitespace errors. |
+| `PYTHONUTF8=1` Python lint-scope check | Four assertions passed; none of the existing error files is in the dirty set. |
+
+No action was taken on the explicitly excluded Clippy debt, older
+projected_member_domains defaults or merge99b9277d25's missing trailer. Store's
+branch diff remains exactly its two authorized src compile fixes; no Store
+binary ran. No new AspectShape form, consumer capability, public access door,
+root registry entry or exemption is introduced. The value engine is concrete
+and reuses the existing erased callbacks; no Query engine code is added.
+
+Readings chosen: private custody reservations are value facts and remain in
+unit tests under the user's explicit ruling. Actual original-request billing,
+publication, retained-basis lifetime and physical recovery are external Native
+court facts. The literal Work refusal is attributed to whole-original
+prepublication admission; the causal mutation establishes its dependence on
+reconstruction charging. The64MiB/8million fixture grants are sufficient bounded
+positive funding, not measured minima. The earlier hard-rule stop is resolved;
+staged independent review remains the final commit gate.
+
+The same reviewer completed that staged gate with PASS under qa-loop, qa-tests
+and code-quality-qa. It independently confirmed all complete summaries, the
+four intended negative runs, restored hashes/rebuilt courts, clean boundary,
+context/format/caps/whitespace receipts and unchanged debt paths against
+master, dirty and staged sets. The44 staged files comprise41 Rust files,
+two documents and the saved regression seed. No source/evidence blocker remains.
+
+The staged whitespace check passed. An auxiliary Python staged-scope verifier
+initially completed four scope assertions, then raised UnicodeDecodeError while
+incorrectly reading an ASCII exit receipt as UTF-16; no Cargo or source mutation
+occurred. Its BOM-aware correction passed all five assertions with
+PYTHONUTF8=1:44 files,41 Rust, only approved owners, no unstaged changes and the
+successful cached-whitespace receipt. Both attempts are retained in the logs.
+No compiling source changed after the final full binaries.

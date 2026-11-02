@@ -134,6 +134,9 @@ pub(super) fn capture_failure(
     failure: RegionContentFailure,
 ) -> RelationalBranchRootCaptureDenial {
     match failure {
+        RegionContentFailure::Execution(cause) => {
+            RelationalBranchRootCaptureDenial::Execution(cause)
+        }
         RegionContentFailure::Storage(failure) => {
             RelationalBranchRootCaptureDenial::StorageUnavailable(failure)
         }
