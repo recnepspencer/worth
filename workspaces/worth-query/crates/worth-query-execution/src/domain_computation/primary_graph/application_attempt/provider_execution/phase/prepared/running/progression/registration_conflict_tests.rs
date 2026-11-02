@@ -194,11 +194,12 @@ fn while_peer_is_registered(
         idempotency,
         mut running,
         mutation_run,
-        attempt_basis,
+        mut attempt_basis,
         aftermath_causality,
         outcome_identity,
         workflow_settlement_publication: _workflow_settlement_publication,
     } = peer;
+    let original_completion = attempt_basis.take_original_completion();
     let product = attempt_basis.retained_product();
     let admitted = admit_provider_session(
         execution,
@@ -258,6 +259,7 @@ fn while_peer_is_registered(
         idempotency,
         coordination: &coordination,
         product: &product,
+        original_completion: &original_completion,
         aftermath_causality,
     };
     let peer = finish_application_commit(
