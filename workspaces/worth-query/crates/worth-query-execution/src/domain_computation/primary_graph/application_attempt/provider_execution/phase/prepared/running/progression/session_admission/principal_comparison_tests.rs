@@ -86,7 +86,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 let admitted_session = admit_provider_session(
                     phase,
                     &mut running,
-                    &world.application.runtime.primary_graph_authority,
+                    world.application.runtime.primary_graph_authority(),
                     attempt_basis.retained_product(),
                     mutation_run,
                 )

@@ -129,6 +129,8 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
     pub(in crate::domain_computation::primary_graph) publication_fault_control: Arc<publication_fault_control::PublicationFaultControl>,
     world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
+    #[cfg(test)]
+    pub(super) teardown_sentinel: Mutex<Option<Box<dyn std::any::Any + Send + Sync>>>,
 }
 
 pub use branch_commit_coordination::WorthQueryApplicationBranchCommitContentionForTest;

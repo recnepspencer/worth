@@ -202,7 +202,7 @@ where
         WorthQueryProviderProgression {
             application,
             running: &mut running,
-            graph: &application.runtime.primary_graph_authority,
+            graph: application.runtime.primary_graph_authority(),
             provider: &application.runtime.primary_provider,
             admission: &admission,
             prepared: provider_attempt,

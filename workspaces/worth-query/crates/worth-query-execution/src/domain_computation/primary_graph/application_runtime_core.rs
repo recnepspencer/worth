@@ -2,7 +2,7 @@
 use super::*;
 
 pub(in crate::domain_computation) struct WorthQueryApplicationRuntimeCore {
-    pub(in crate::domain_computation) execution: WorthQueryExecutionRuntime,
+    pub(super) execution: Option<WorthQueryExecutionRuntime>,
     pub(in crate::domain_computation::primary_graph) application_readiness_schema_token: String,
     pub(super) publication: WorthQueryPrimaryGraphPublication,
     pub(super) checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
@@ -21,10 +21,10 @@ pub(in crate::domain_computation) struct WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation::primary_graph) granular_invalidation: super::super::WorthQueryGranularInvalidationInstallation,
     pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     pub(in crate::domain_computation::primary_graph) primary_graph_authority:
-        worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+        Option<worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority>,
 
     pub(in crate::domain_computation::primary_graph) source_meanings:
-        super::super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry,
+        Option<super::super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry>,
     pub(in crate::domain_computation::primary_graph) next_external_dispatch_attempt: AtomicU64,
     pub(in crate::domain_computation::primary_graph) external_effect_transport:
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
@@ -56,36 +56,64 @@ pub(in crate::domain_computation) struct WorthQueryApplicationRuntimeCore {
 }
 
 impl WorthQueryApplicationRuntimeCore {
+    pub(in crate::domain_computation::primary_graph) fn primary_graph_authority(
+        &self,
+    ) -> &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority {
+        self.primary_graph_authority
+            .as_ref()
+            .expect("a live application owns its graph authority")
+    }
+    pub(in crate::domain_computation::primary_graph) fn source_meanings(
+        &self,
+    ) -> &super::super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry{
+        self.source_meanings
+            .as_ref()
+            .expect("a live application owns its source meanings")
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation) fn execution_mut(
+        &mut self,
+    ) -> &mut WorthQueryExecutionRuntime {
+        self.execution
+            .as_mut()
+            .expect("a live application owns its execution runtime")
+    }
+    pub(in crate::domain_computation) fn execution(&self) -> &WorthQueryExecutionRuntime {
+        self.execution
+            .as_ref()
+            .expect("a live application owns its execution runtime")
+    }
     pub(in crate::domain_computation) fn authority_identity(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
-        self.execution.authority_identity()
+        self.execution().authority_identity()
     }
     pub(in crate::domain_computation) fn primary_graph(
         &self,
     ) -> Option<&super::super::WorthQueryPrimaryGraph> {
-        self.execution.primary_graph()
+        self.execution().primary_graph()
     }
     pub(in crate::domain_computation) fn installed_packages(
         &self,
     ) -> &worth_query_installation::facade::WorthQueryInstalledPackageIndex {
-        self.execution.installed_packages()
+        self.execution().installed_packages()
     }
     pub(in crate::domain_computation) fn retain_installed_packages(
         &self,
     ) -> Arc<worth_query_installation::facade::WorthQueryInstalledPackageIndex> {
-        self.execution.retain_installed_packages()
+        self.execution().retain_installed_packages()
     }
     pub(in crate::domain_computation) fn retain_primary_graph_integration_handle(
         &self,
     ) -> Option<super::super::WorthQueryPrimaryGraphIntegrationHandle> {
-        self.execution.retain_primary_graph_integration_handle()
+        self.execution().retain_primary_graph_integration_handle()
     }
 
     pub(in crate::domain_computation) fn output_demand_resource_profile(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile {
-        self.execution.output_demand_resource_profile()
+        self.execution().output_demand_resource_profile()
     }
 }
 
@@ -176,7 +204,7 @@ impl WorthQueryApplicationRuntimeCore {
 
 impl WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation) fn graph_work_provider_identity(&self) -> &str {
-        self.primary_graph_authority.provider_identity()
+        self.primary_graph_authority().provider_identity()
     }
 }
 

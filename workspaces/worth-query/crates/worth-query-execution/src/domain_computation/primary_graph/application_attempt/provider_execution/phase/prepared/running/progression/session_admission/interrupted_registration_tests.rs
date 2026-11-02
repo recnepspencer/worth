@@ -60,7 +60,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             let admitted = admit_provider_session(
                 phase,
                 &mut running,
-                &world.application.runtime.primary_graph_authority,
+                world.application.runtime.primary_graph_authority(),
                 attempt_basis.retained_product(),
                 mutation_run,
             )
@@ -109,7 +109,8 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             assert_eq!(
                 world
                     .application
-                    .runtime.primary_provider
+                    .runtime
+                    .primary_provider
                     .application_attempt_resource_count(),
                 0
             );

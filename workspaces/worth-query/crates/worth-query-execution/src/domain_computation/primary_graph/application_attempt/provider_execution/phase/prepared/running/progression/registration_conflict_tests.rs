@@ -106,7 +106,7 @@ fn reject_occupied_registration(
     let admitted_session = admit_provider_session(
         execution,
         &mut running,
-        &world.application.runtime.primary_graph_authority,
+        world.application.runtime.primary_graph_authority(),
         attempt_basis.retained_product(),
         unbound_run,
     )
@@ -117,13 +117,15 @@ fn reject_occupied_registration(
         .expect("the real terminal session must bind its captured attempt basis");
     let reservation = world
         .application
-        .runtime.primary_provider
+        .runtime
+        .primary_provider
         .reserve_application_attempt(&reserved_affinity)
         .expect("the rightful reservation must occupy the actual attempt store");
     assert_eq!(
         world
             .application
-            .runtime.primary_provider
+            .runtime
+            .primary_provider
             .application_attempt_resource_count(),
         2,
         "the peer registration and victim reservation must coexist before cleanup"
@@ -155,7 +157,8 @@ fn reject_occupied_registration(
     assert_eq!(
         world
             .application
-            .runtime.primary_provider
+            .runtime
+            .primary_provider
             .application_attempt_resource_count(),
         1,
         "duplicate-registration cleanup must release only its exact stale reservation"
@@ -203,7 +206,7 @@ fn while_peer_is_registered(
     let admitted = admit_provider_session(
         execution,
         &mut running,
-        &world.application.runtime.primary_graph_authority,
+        world.application.runtime.primary_graph_authority(),
         product.retained_clone(),
         mutation_run,
     )
@@ -229,7 +232,8 @@ fn while_peer_is_registered(
     assert_eq!(
         world
             .application
-            .runtime.primary_provider
+            .runtime
+            .primary_provider
             .application_attempt_resource_count(),
         1,
         "the peer must occupy the actual application-attempt store"
@@ -239,7 +243,8 @@ fn while_peer_is_registered(
     assert_eq!(
         world
             .application
-            .runtime.primary_provider
+            .runtime
+            .primary_provider
             .application_attempt_resource_count(),
         1,
         "victim cleanup must preserve the exact registered peer"
@@ -247,7 +252,8 @@ fn while_peer_is_registered(
 
     let commit_lane = world
         .application
-        .runtime.primary_provider
+        .runtime
+        .primary_provider
         .application_branch_commit_lane(product.observation());
     let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {

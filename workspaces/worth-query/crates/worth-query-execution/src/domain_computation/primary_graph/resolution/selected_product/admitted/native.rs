@@ -37,7 +37,7 @@ impl<'runtime, Schema: ApplicationSchema>
     {
         let binding = installed_binding.binding();
         admit_resolution_request(scope, binding, external.is_expired())?;
-        let runtime = &self.application().runtime.execution;
+        let runtime = self.application().runtime.execution();
         if let Some(validated) = validated {
             if !runtime
                 .installed_packages()

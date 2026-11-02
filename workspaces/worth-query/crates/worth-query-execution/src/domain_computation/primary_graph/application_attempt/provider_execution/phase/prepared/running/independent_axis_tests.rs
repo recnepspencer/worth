@@ -227,7 +227,7 @@ fn real_terminal_session<'run>(
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
     running
-        .admit_provider_execution_plan(&world.application.runtime.primary_graph_authority)
+        .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
         .unwrap()
         .readmit(execution)
         .unwrap()

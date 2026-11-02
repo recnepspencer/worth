@@ -27,6 +27,7 @@ mod conditional_cleanup;
 mod execution_memory;
 mod external_dispatch_attempt;
 mod mutation_partition;
+mod teardown;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 mod inbound_occurrence;
 #[cfg(test)]
@@ -121,14 +122,17 @@ pub(in crate::domain_computation) use external_dispatch_attempt::{
 pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation) installed_schema:
         WorthQueryInstalledApplicationSchema<Schema>,
+    pub(in crate::domain_computation) runtime: WorthQueryApplicationRuntimeCore,
     pub(super) conditional_operations: std::sync::Mutex<
         super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
     >,
+    post_conditional_teardown: teardown::ApplicationPostConditionalTeardown,
     pub(super) mutation_handlers: super::handler::InstalledMutationHandlerRegistry<Schema>,
     pub(super) mutation_projection:
         super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
     pub(super) installed_producers:
         super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
+    output_teardown: teardown::ApplicationOutputTeardown,
     pub(super) program_required_bindings: std::collections::HashSet<TypeId>,
     pub(super) program_required_operations: std::collections::HashSet<TypeId>,
     pub(super) workflow_guarded_operations: std::collections::HashSet<TypeId>,
@@ -140,7 +144,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) installed_resources:
         super::application_resource::installation::InstalledResourceRegistry<Schema>,
     pub(super) managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
-    pub(in crate::domain_computation) runtime: WorthQueryApplicationRuntimeCore,
+    workflow_teardown: teardown::ApplicationWorkflowTeardown,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

@@ -12,10 +12,15 @@ registries/application-type inventories and thirty original fields in
 `WorthQueryApplicationRuntimeCore`. The concrete core also retains the
 installation-issued operation catalog. The existing private field name `runtime`
 is kept for the core, preserving the seven reserved pub-causes files without a
-new public Deref or duplicate runtime state. The core is last, after typed
-registries. Existing explicit bridge close, conditional clear and resource clear
-order is unchanged; field order within each group is preserved. The reviewer
-traced retained backing, grants, weak registry callbacks and teardown custody.
+new public Deref or duplicate runtime state. Certification found that grouping
+fields had changed automatic destruction order. The correction places the core
+before the conditional and typed registries, moves execution into a local drop
+guard, and stages concrete custody in its original positions around typed
+registries before cleanup can unwind. The actual backing order is preserved,
+including the live conditional registry between prefix/bridge and provider
+custody. The original explicit bridge close, conditional clear and resource
+clear sequence remains unchanged. Details and the actual provider/handler
+sentinel court are recorded in mono-runtime-core-corrections.md.
 
 `InstalledQueryView<'a>`, `InstalledOperationView<'a>` and
 `InstalledSchemaView<'a>` are borrowed `#[doc(hidden)]` installation views, with

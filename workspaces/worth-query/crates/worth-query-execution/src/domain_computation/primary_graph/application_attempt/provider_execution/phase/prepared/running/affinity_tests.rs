@@ -289,7 +289,7 @@ fn real_terminal_session<'run>(
     product: crate::basis::WorthQueryProductBranchLease,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
     running
-        .admit_provider_execution_plan(&world.application.runtime.primary_graph_authority)
+        .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
         .expect("real application authorities must admit their provider plan")
         .bind_application_product(product)
         .expect("the exact selected product must bind its provider plan")

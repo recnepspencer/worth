@@ -89,7 +89,7 @@ where
         PrincipalIdentity: 'static,
     {
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
-        let runtime = &self.application().runtime.execution;
+        let runtime = self.application().runtime.execution();
         runtime
             .installed_packages()
             .validate_principal_binding(installed_binding)
@@ -175,7 +175,7 @@ where
         scope: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
         admit_resolution_request(scope, principal.binding(), principal.is_expired())?;
-        let runtime = &self.application().runtime.execution;
+        let runtime = self.application().runtime.execution();
         if principal.runtime_authority() != runtime.authority_identity() {
             return Err(resolution_denial(
                 WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime),

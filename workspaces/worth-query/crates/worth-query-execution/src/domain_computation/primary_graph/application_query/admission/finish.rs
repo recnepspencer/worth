@@ -156,12 +156,12 @@ where
             runtime_authority: self.runtime.authority_identity(),
             graph_authority_identity: self
                 .runtime
-                .primary_graph_authority
+                .primary_graph_authority()
                 .authority_identity()
                 .to_string(),
             provider_identity: self
                 .runtime
-                .primary_graph_authority
+                .primary_graph_authority()
                 .provider_identity()
                 .to_string(),
             query,

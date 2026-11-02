@@ -80,7 +80,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
             let admitted_session = admit_provider_session(
                 execution,
                 &mut running,
-                &world.application.runtime.primary_graph_authority,
+                world.application.runtime.primary_graph_authority(),
                 attempt_basis.retained_product(),
                 mutation_run,
             )

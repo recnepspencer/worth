@@ -90,6 +90,9 @@ where
         mutation_handlers,
         mutation_projection,
         installed_producers: Default::default(),
+        post_conditional_teardown: Default::default(),
+        output_teardown: Default::default(),
+        workflow_teardown: Default::default(),
         program_required_bindings,
         program_required_operations,
         workflow_guarded_operations,
@@ -99,7 +102,7 @@ where
         managed_indexes: Default::default(),
         signing_owners: Default::default(),
         runtime: super::super::WorthQueryApplicationRuntimeCore {
-            execution: graph.runtime,
+            execution: Some(graph.runtime),
             application_readiness_schema_token,
             publication: graph.publication,
             checkpoint_restore_work: graph.checkpoint_restore_work,
@@ -111,11 +114,11 @@ where
             product_runtime,
             granular_invalidation,
             primary_provider: graph.primary_provider,
-            primary_graph_authority: graph.primary_graph_authority,
+            primary_graph_authority: Some(graph.primary_graph_authority),
 
-            source_meanings: crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
+            source_meanings: Some(crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
                 runtime_authority,
-            ),
+            )),
             recovered_program_source_delivery: Default::default(),
             basis_leases: Default::default(),
             next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
