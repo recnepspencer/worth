@@ -48,7 +48,8 @@ pub enum WorthQueryGraphWorkAdmissionDenial {
     InspectionAuthorityMismatch,
     ManagedIndexAuthorityMismatch,
     CapacityUnavailable,
-    IdentityExhausted,
+    PlanIdentityExhausted,
+    CapacityReservationIdentityExhausted,
 }
 
 impl worth_execution::ChargedBytes for WorthQueryGraphObligationSelectionDenial {
@@ -76,7 +77,15 @@ impl worth_execution::ChargedBytes for WorthQueryGraphWorkAdmissionDenial {
             | Self::InspectionAuthorityMismatch
             | Self::ManagedIndexAuthorityMismatch
             | Self::CapacityUnavailable
-            | Self::IdentityExhausted => 0,
+            | Self::PlanIdentityExhausted
+            | Self::CapacityReservationIdentityExhausted => 0,
         }
+    }
+}
+
+use crate::domain_computation::execution_resource_admission::WorthQueryGraphCapacityReservationIdentityExhausted as ReservationIdentityExhausted;
+impl From<ReservationIdentityExhausted> for WorthQueryGraphWorkAdmissionDenial {
+    fn from(ReservationIdentityExhausted: ReservationIdentityExhausted) -> Self {
+        Self::CapacityReservationIdentityExhausted
     }
 }

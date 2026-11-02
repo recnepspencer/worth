@@ -44,9 +44,12 @@ mod tests {
             Ok(WorthQueryGraphCapacityReservationIdentity(u64::MAX - 1))
         );
         for _ in 0..3 {
+            let cause = mint_from(&counter).expect_err("reservation identity is exhausted");
+            assert_eq!(cause, WorthQueryGraphCapacityReservationIdentityExhausted);
+            use crate::graph_obligation::WorthQueryGraphWorkAdmissionDenial as Denial;
             assert_eq!(
-                mint_from(&counter),
-                Err(WorthQueryGraphCapacityReservationIdentityExhausted)
+                Denial::from(cause),
+                Denial::CapacityReservationIdentityExhausted
             );
             assert_eq!(counter.load(Relaxed), u64::MAX);
         }

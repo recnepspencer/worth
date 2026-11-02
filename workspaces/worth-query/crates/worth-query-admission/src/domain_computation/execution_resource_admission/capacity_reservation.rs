@@ -4,6 +4,7 @@ use super::{
 };
 mod graph_identity;
 pub use graph_identity::WorthQueryGraphCapacityReservationIdentity;
+pub(crate) use graph_identity::WorthQueryGraphCapacityReservationIdentityExhausted;
 
 pub struct WorthQueryCapacityReservedExecutionResourcePlan {
     resources: WorthQueryAdmittedExecutionResourcePlan,
@@ -189,14 +190,14 @@ pub(crate) fn reserve_graph_provider_capacity_admitted<Stop>(
     admit(reservation_work, reservation_bytes)
         .map_err(WorthQueryCapacityReservationAdmissionStop::Admission)?;
     reserve_graph_provider_capacity(support)
-        .map_err(|_| WorthQueryCapacityReservationAdmissionStop::IdentityExhausted)
+        .map_err(WorthQueryCapacityReservationAdmissionStop::ReservationIdentityExhausted)
 }
 
 #[derive(Debug)]
 pub(crate) enum WorthQueryCapacityReservationAdmissionStop<Stop> {
     Admission(Stop),
     AccountingOverflow,
-    IdentityExhausted,
+    ReservationIdentityExhausted(WorthQueryGraphCapacityReservationIdentityExhausted),
 }
 
 fn release_reservations(

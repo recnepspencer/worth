@@ -35,6 +35,7 @@ pub enum WorthQueryApplicationInspectionOwnerRefusal<'a> {
     Scope(&'a WorthQueryEntityResolutionDenial),
     Security(&'a crate::basis::WorthQueryProductBranchAdmissionDenial),
     Governance(&'a WorthQueryApplicationQueryGovernanceDenialKind),
+    DiagnosticPreparationGovernance(&'a WorthQueryApplicationQueryGovernanceDenialKind),
     Principal(&'a WorthQueryPrincipalResolutionDenial),
     Installation(
         &'a worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial,
@@ -173,7 +174,9 @@ fn admission(cause: &InspectionAdmissionDenial) -> Option<Refusal<'_>> {
         Cause::Governance(cause) => Some(Refusal::Governance(cause)),
         Cause::DiagnosticPreparation(stop) => {
             capture(Stage::DiagnosticPreparation, stop, |cause| match cause {
-                DiagnosticPreparationDenial::Governance(cause) => Some(Refusal::Governance(cause)),
+                DiagnosticPreparationDenial::Governance(cause) => {
+                    Some(Refusal::DiagnosticPreparationGovernance(cause))
+                }
             })
         }
         Cause::ComparisonParameters(stop) => capture(Stage::ComparisonParameters, stop, |()| {

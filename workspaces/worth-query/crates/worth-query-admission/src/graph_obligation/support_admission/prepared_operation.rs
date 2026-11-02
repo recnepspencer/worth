@@ -91,5 +91,4 @@ pub fn admit_prepared_application_operation_graph_work<Schema, Operation, Input>
             capacity: Some(capacity),
         },
     )
-    .ok_or(WorthQueryGraphWorkAdmissionDenial::IdentityExhausted)
 }

@@ -311,7 +311,7 @@ warnings; that incomplete snapshot was never presented as a final pass.
 | Continuation log stem | Exit | Exact result/failure |
 |---|---:|---|
 | `remaining-first` | 101 | No tests ran; 3 E0277 errors (report resource conversion and two test Debug bounds) |
-| `remaining-second` | 101 | 1/1/0/0/2246; assertion failed: disclosure.is_some(); corrected using genuine foreign disclosure |
+| `remaining-second` | 101 | 1/1/0/0/2246; assertion failed: disclosure.is_some(); replacement compared absent expected disclosure with a genuine present capture, not two present owners; follow-up 1 adds that missing evidence |
 | `remaining-completion` | 0 | 1/0/0/0/2247 |
 | `remaining-watch` | 101 | 0/1/0/0/268; BindingQueryNotInstalled for undeclared alias; corrected using a genuine second world |
 | `remaining-clippy` | 101 | worth-query-admission: 1 error diagnostics; worth-query-execution: 3 error diagnostics; worth-query-execution: 16 warning diagnostics; worth-relational: 7 warning diagnostics |
@@ -941,3 +941,176 @@ stop occurred. Final clearance from the same reviewer follows the ledger.
 The same reviewer independently reconciled all footer logs, zero dirty Clippy
 primary spans, the mutation manifest and the report, and issued final PASS under
 qa-loop, qa-tests and code-quality-qa. This fourth finding is cleared to commit.
+
+### 5. Preserve governance stage and exhausted counter owner
+
+Finding 4 landed in 9714281ea76daac97f28d48e361342154f7a349e. Its commit
+subject acquired a leading UTF-8 BOM from PowerShell's message-file encoding;
+the full sentence and required trailer are intact. It is not amended. Subsequent
+message files use Python's BOM-free UTF-8 writer. Both sync branches were fetched
+and merged before this correction, and both were already current.
+
+Boundary review follows diagnostic preparation and admission separately, then
+both actual graph identity issuers and every raw/admitted reservation caller.
+DiagnosticPreparationGovernance now borrows the preparation cause; Governance
+continues to borrow the admission cause. Their shared coarse Admission kind is
+intentional: the actionable owner reader retains the exact stage and kind.
+
+Plan sealing returns its actual typed mint failure rather than Option with a
+caller-supplied classification. Reservation callers forward the actual private
+exhaustion marker to one conversion owned by the graph denial. The old public
+IdentityExhausted case is deleted, with no alias or fallback. The two public
+cases are PlanIdentityExhausted and CapacityReservationIdentityExhausted,
+nameable through Host's existing admission::graph_obligation facade. No new
+authority door or AspectShape form is added. The identity issuer moves into its
+own child file, separate from admitted-plan custody. The two files have 42 and
+252 lines respectively, both below the 400-line cap.
+
+| Retained fact | Outcome | Real consumer | Court |
+|---|---|---|---|
+| DiagnosticPreparationDenial::Governance | a | DiagnosticPreparationGovernance preserves preparation stage and exact kind | Literal preparation-stage projection for all three governance kinds |
+| InspectionAdmissionDenial::Governance | a | Governance preserves admission stage and exact kind | Literal admission-stage control for the same three kinds |
+| Plan identity counter exhaustion | a | Production plan mint returns PlanIdentityExhausted; seal and all callers propagate it | Actual mint at MAX-1, then three literal typed failures at MAX |
+| Reservation identity counter exhaustion | a | Actual mint marker reaches CapacityReservationIdentityExhausted through the shared mapper | Actual mint at MAX-1, then three literal mapped failures at MAX |
+
+The counter oracle is the independently specified last legal identity MAX-1,
+the unchanged counter at MAX, and a literal denial naming the issuer. It does
+not copy the CAS algorithm or alter the global counters. Repeated attempts prove
+permanent refusal rather than wrap or saturation to a plausible identity. The
+governance oracle explicitly pairs the two source stages with distinct public
+variants; it does not infer an expected stage from the projection.
+
+Production retains checked relaxed compare_exchange_weak loops, constant work
+per uncontended identity, and no new allocation. Tests exercise bounded numeric
+limits rather than timing a shared machine.
+
+Readings I chose: the coarse Admission kind can remain because the owner reader
+now preserves the exact governance stage. The requested counter-name correction
+changes existing graph admission vocabulary; it does not expand the two deferred
+Native/Graph handover consumers or require any pub-mono file change.
+
+The first scoped Admission compile failed with two E0624 diagnostics at existing
+graph_obligation/tests.rs:36 and :37: extracting the mint into a child narrowed
+pub(super). Restoring pub(in crate::graph_obligation) preserves the original
+owner visibility without a new public door. That failed run is retained as
+evidence; it is not a mutation result. The same reviewer passed the corrected
+source and court design under all three QA skills. The ledgers below include
+the initial compile failure, semantic mutations, restored full suites and footer.
+
+
+Exact slice-5-initial commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 13 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --lib -- graph_obligation identity_exhaustion` | 101 | Compilation failed with two E0624 errors; no tests ran. Both cite existing tests.rs calls to the moved mint, fixed by preserving owner visibility. |
+
+
+Exact slice-5-semantic commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 13 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --lib -- graph_obligation identity_exhaustion` | 0 | 7/0/0/0/119 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib governance_cause` | 0 | 2/0/0/0/2322 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --lib -- graph_obligation identity_exhaustion` | 101 | 5/2/0/0/119 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib governance_cause` | 101 | 1/1/0/0/2322 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --lib -- graph_obligation identity_exhaustion` | 0 | 7/0/0/0/119 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib governance_cause` | 0 | 2/0/0/0/2322 (passed/failed/ignored/measured/filtered) |
+
+
+The counter-classification mutant compiles and fails only the two numeric-limit
+courts (five controls pass): the plan court receives
+Err(CapacityReservationIdentityExhausted) instead of its literal
+Err(PlanIdentityExhausted), and the reservation court receives the inverse.
+The stage-merging mutant also compiles: preparation sees
+Some(Governance(Required)) and fails its stage assertion, while admission passes.
+These are assertion failures, not compilation failures. All three production
+changes are restored, and the seven counter/graph courts and two governance
+courts pass again.
+
+The same reviewer independently verified both compiled mutations and restored
+source. It found two documentation mistakes: the governance row named
+InspectionPlanDenial instead of InspectionAdmissionDenial, and a blank line
+detached the initial failed compile row from its table. Both are corrected.
+
+
+Exact slice-5-full-execution commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib` | 0 | 2323/0/1/0/0 (passed/failed/ignored/measured/filtered) |
+
+
+Exact slice-5-full-host commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host` | 0 | 327/0/2/0/0 (passed/failed/ignored/measured/filtered) |
+
+
+Exact slice-5-inspection commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query-decl-host --test worth_query_court_query_decl_host inspection` | 0 | 47/0/0/0/295 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query --test worth_query_court_query inspection` | 0 | 3/0/0/0/61 (passed/failed/ignored/measured/filtered) |
+
+
+Exact slice-5-footer commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission -p worth-query-execution -p worth-query-court-decl-host --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --all-targets --message-format=json` | 101 | 1 error diagnostics from worth-query-admission |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --all-targets --message-format=json` | 101 | 64 error diagnostics from worth-query-court-decl-host; 1 warning diagnostics from worth-query-court-decl-host; 6 warning diagnostics from worth-query-execution; 1 warning diagnostics from worth-query-testkit-document-retention; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 13 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |
+
+All required restored-source tests pass: Execution 2323/0/1/0/0, full Decl/Host
+327/0/2/0/0, Query/Decl/Host inspection 47/0/0/0/295 and Query inspection
+3/0/0/0/61. The three existing ignores are Execution's subprocess probe and
+Decl/Host's two scheduled growth courts; no new test is ignored. The full library
+takes 701.41 seconds, compared with the prior lane run's 700.06 seconds. These
+shared-machine observations are not a benchmark or an asserted timing bound.
+
+Final Execution Clippy exits zero with exactly 13 Execution-labelled and seven
+upstream Relational warnings, zero errors. The ownership inventory above is
+unchanged: six pub-mono methods account for 12 duplicated diagnostics, and the
+remaining label belongs to the physically external mounted consumer-values
+fixture. Execution-owned source outside pub-mono has zero warnings.
+
+Admission and Decl/Host Clippy remain failed checks (exit 101), not green gates.
+Admission output is `error: use of a disallowed method std::thread::spawn` at
+untouched execution_resource_admission/capacity_tests.rs:81. Decl/Host output
+contains 64 errors across 25 untouched files: 58 clippy::disallowed_methods and
+one each of clippy::cloned_ref_to_slice_refs, clippy::err_expect,
+clippy::clone_on_copy, clippy::needless_range_loop,
+clippy::manual_is_multiple_of and clippy::drop_non_drop. Its 15 warning diagnostics
+are seven Relational, six reserved Execution, one document-retention testkit and
+one old court import. The same reviewer independently reconciled all three JSON
+logs against tracked and untracked dirty paths: zero dirty primary-span matches,
+and the inventory matches the previously accepted repository debt. AGENTS.md
+keeps untouched failures outside this task; no suppression or workaround is added.
+
+Formatting, boundary, context, both whitespace checks and the 13-file dirty cap
+pass with zero violations. No native AspectShape form is added. Public shape is
+only the exact diagnostic vocabulary described in findings 3-5; proof issuance
+and custody remain with their existing owners. No consumer requires a pub-mono
+file change, and no scope or hard-rule stop occurred. The two handed-over
+Native/Graph consumers remain deferred as instructed.
+
+The same reviewer has independently verified every final test count and the
+compiled semantic mutations. Final footer/report clearance precedes this fifth
+separate commit.
+
+The same reviewer issued final PASS under qa-loop, qa-tests and code-quality-qa
+after reconciling source, all mutation failures, restored tests, footer logs,
+capability vocabulary, report corrections and untouched debt. All five findings
+are independently cleared, with no remaining in-scope blocker.

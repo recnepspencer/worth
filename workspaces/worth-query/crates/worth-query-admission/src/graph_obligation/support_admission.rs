@@ -93,13 +93,12 @@ pub fn admit_application_query_graph_work(
         .graph_provider("primary")
         .ok_or(WorthQueryGraphWorkAdmissionDenial::ProviderSupportUnavailable)?;
     let capacity = reserve_graph_provider_capacity(provider)
-        .map_err(|_| WorthQueryGraphWorkAdmissionDenial::IdentityExhausted)?
+        .map_err(WorthQueryGraphWorkAdmissionDenial::from)?
         .ok_or(WorthQueryGraphWorkAdmissionDenial::CapacityUnavailable)?;
     WorthQueryAdmittedGraphWorkPlan::seal(
         selected,
         WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { review, capacity },
     )
-    .ok_or(WorthQueryGraphWorkAdmissionDenial::IdentityExhausted)
 }
 
 pub fn admit_application_query_graph_work_admitted<Stop>(
@@ -126,8 +125,8 @@ pub fn admit_application_query_graph_work_admitted<Stop>(
     let capacity = reserve_graph_provider_capacity_admitted(provider, admit)
         .map_err(|stop| match stop {
             WorthQueryCapacityReservationAdmissionStop::Admission(stop) => Refusal::Admission(stop),
-            WorthQueryCapacityReservationAdmissionStop::IdentityExhausted => {
-                Refusal::Denial(WorthQueryGraphWorkAdmissionDenial::IdentityExhausted)
+            WorthQueryCapacityReservationAdmissionStop::ReservationIdentityExhausted(cause) => {
+                Refusal::Denial(WorthQueryGraphWorkAdmissionDenial::from(cause))
             }
             WorthQueryCapacityReservationAdmissionStop::AccountingOverflow => {
                 Refusal::AccountingOverflow
@@ -141,9 +140,7 @@ pub fn admit_application_query_graph_work_admitted<Stop>(
         selected,
         WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { review, capacity },
     )
-    .ok_or(Refusal::Denial(
-        WorthQueryGraphWorkAdmissionDenial::IdentityExhausted,
-    ))
+    .map_err(Refusal::Denial)
 }
 
 pub fn admit_application_operation_graph_work(
@@ -177,7 +174,6 @@ pub fn admit_application_operation_graph_work(
             capacity: Some(capacity),
         },
     )
-    .ok_or(WorthQueryGraphWorkAdmissionDenial::IdentityExhausted)
 }
 
 pub fn admit_application_operation_read_graph_work(
@@ -192,13 +188,12 @@ pub fn admit_application_operation_read_graph_work(
         .graph_provider("primary")
         .ok_or(WorthQueryGraphWorkAdmissionDenial::ProviderSupportUnavailable)?;
     let capacity = reserve_graph_provider_capacity(provider)
-        .map_err(|_| WorthQueryGraphWorkAdmissionDenial::IdentityExhausted)?
+        .map_err(WorthQueryGraphWorkAdmissionDenial::from)?
         .ok_or(WorthQueryGraphWorkAdmissionDenial::CapacityUnavailable)?;
     WorthQueryAdmittedGraphWorkPlan::seal(
         selected,
         WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { capacity },
     )
-    .ok_or(WorthQueryGraphWorkAdmissionDenial::IdentityExhausted)
 }
 
 fn validate_owner_requirements(

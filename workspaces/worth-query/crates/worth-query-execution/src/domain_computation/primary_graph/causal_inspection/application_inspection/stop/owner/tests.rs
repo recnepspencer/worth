@@ -105,9 +105,13 @@ fn governance(diagnostic: bool) {
             InspectionAdmissionDenial::Governance(cause)
         };
         let refusal = denial(original);
-        assert!(
-            matches!(refusal.owner_refusal(), Some(Refusal::Governance(actual)) if *actual == cause)
-        );
+        match (diagnostic, refusal.owner_refusal()) {
+            (false, Some(Refusal::Governance(actual)))
+            | (true, Some(Refusal::DiagnosticPreparationGovernance(actual))) => {
+                assert_eq!(*actual, cause)
+            }
+            other => panic!("governance stage changed: {other:?}"),
+        }
         assert!(refusal.resource_refusal().is_none());
         assert_eq!(
             refusal.kind(),

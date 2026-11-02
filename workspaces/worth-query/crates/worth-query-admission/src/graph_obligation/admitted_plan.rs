@@ -1,5 +1,3 @@
-use std::sync::atomic::{AtomicU64, Ordering};
-
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligation,
     WorthQueryInstalledGraphObligationSetIdentity,
@@ -11,41 +9,13 @@ use crate::domain_computation::execution_resource_admission::{
 };
 use crate::graph_read_access::WorthQueryGraphReadPlanReview;
 
-use super::{WorthQueryGraphWorkIntent, WorthQuerySelectedGraphObligations};
+use super::{
+    WorthQueryGraphWorkAdmissionDenial, WorthQueryGraphWorkIntent,
+    WorthQuerySelectedGraphObligations,
+};
 
-static NEXT_GRAPH_WORK_PLAN_IDENTITY: AtomicU64 = AtomicU64::new(1);
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct WorthQueryGraphWorkPlanIdentity(u64);
-
-impl WorthQueryGraphWorkPlanIdentity {
-    pub(super) fn mint() -> Option<Self> {
-        {
-            let update_counter = &NEXT_GRAPH_WORK_PLAN_IDENTITY;
-            let mut value = update_counter.load(Ordering::Relaxed);
-            loop {
-                let Some(updated_value) = value.checked_add(1) else {
-                    break Err(value);
-                };
-                match update_counter.compare_exchange_weak(
-                    value,
-                    updated_value,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(previous) => break Ok(previous),
-                    Err(reloaded_value) => value = reloaded_value,
-                }
-            }
-        }
-        .ok()
-        .map(Self)
-    }
-
-    pub const fn as_u64(self) -> u64 {
-        self.0
-    }
-}
+mod identity;
+pub use identity::WorthQueryGraphWorkPlanIdentity;
 
 pub(super) enum WorthQueryGraphWorkAdmissionMechanics {
     ApplicationInspectionRead {
@@ -85,8 +55,8 @@ impl WorthQueryAdmittedGraphWorkPlan {
     pub(super) fn seal(
         selected: WorthQuerySelectedGraphObligations,
         mechanics: WorthQueryGraphWorkAdmissionMechanics,
-    ) -> Option<Self> {
-        Some(Self {
+    ) -> Result<Self, WorthQueryGraphWorkAdmissionDenial> {
+        Ok(Self {
             identity: WorthQueryGraphWorkPlanIdentity::mint()?,
             selected,
             mechanics,
