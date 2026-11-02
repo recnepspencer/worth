@@ -52,12 +52,18 @@ fn replay_validation_keeps_normalized_copy_after_inputs_drop() {
     let normalized = {
         let proposal = transaction.validate(&request, &runtime).unwrap();
         assert_eq!(
-            proposal.prepared.merged_plan.plan().merged_intents.len(),
+            proposal
+                .state
+                .prepared
+                .merged_plan
+                .plan()
+                .merged_intents
+                .len(),
             original.intents.len()
         );
         // Move the SAME whole owner. All other proposal/prepared/index owners
         // die at this lexical boundary and cannot mask a missing plan bill.
-        proposal.prepared.merged_plan
+        proposal.state.prepared.merged_plan
     };
     assert!(
         budget.charged_memory_bytes() > 0,
@@ -100,7 +106,7 @@ fn normalized_small_output_does_not_retain_large_input_bill() {
     let input_charge = budget.charged_memory_bytes();
     let proposal = transaction.validate(&request, &runtime).unwrap();
     let MutationIntent::Create(CreateIntent::Entity(entity)) =
-        &proposal.prepared.merged_plan.plan().merged_intents[0]
+        &proposal.state.prepared.merged_plan.plan().merged_intents[0]
     else {
         panic!("accepted create")
     };
