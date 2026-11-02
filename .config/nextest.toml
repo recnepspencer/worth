@@ -20,3 +20,10 @@ max-threads = 1
 [[profile.default.overrides]]
 filter = 'test(/^serial::/)'
 test-group = 'process-global'
+
+# The durable original read checks cancellation at every source/artifact consult.
+# Its complete sweep includes canonical source decoding and hashing; retain all
+# injection points instead of applying the ordinary ten-minute termination.
+[[profile.ci.overrides]]
+filter = 'test(durable_idempotency_door_preserves_stops_at_every_consult)'
+slow-timeout = { period = "60s", terminate-after = 30, grace-period = "0s" }
