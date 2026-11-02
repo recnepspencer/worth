@@ -1,7 +1,8 @@
 //! Return source selection and planning owners before terminal progression.
 use crate::entry::{PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome};
 use crate::progression::{
-    PlannedPhysicalRecovery, ReopenedPhysicalRecovery, SelectedPhysicalRecovery,
+    AdmittedPhysicalRecovery, PlannedPhysicalRecovery, ReopenedPhysicalRecovery,
+    SelectedPhysicalRecovery,
 };
 
 #[inline(never)]
@@ -13,10 +14,20 @@ pub(crate) fn recover(
         Ok(selected) => selected,
         Err(outcome) => return outcome,
     };
+    recover_selected(selected)
+}
+
+#[inline(never)]
+fn recover_selected(selected: SelectedPhysicalRecovery) -> PhysicalRecoveryOutcome {
     let planned = match selected.plan() {
         Ok(planned) => planned,
         Err(outcome) => return outcome,
     };
+    recover_planned(planned)
+}
+
+#[inline(never)]
+fn recover_planned(planned: PlannedPhysicalRecovery) -> PhysicalRecoveryOutcome {
     match progress(planned) {
         Ok(reopened) => reopened.finish(),
         Err(outcome) => outcome,
@@ -35,15 +46,18 @@ fn select_source(
         Ok(admitted) => admitted,
         Err(refusal) => return Err(PhysicalRecoveryOutcome::Refused(Box::new(refusal))),
     };
+    discover_source(admitted)
+}
+
+#[inline(never)]
+fn discover_source(
+    admitted: AdmittedPhysicalRecovery,
+) -> Result<SelectedPhysicalRecovery, PhysicalRecoveryOutcome> {
     let discovered = match admitted.discover() {
         Ok(discovered) => discovered,
         Err(outcome) => return Err(outcome),
     };
-    let selected = match discovered.select() {
-        Ok(selected) => selected,
-        Err(outcome) => return Err(outcome),
-    };
-    Ok(selected)
+    discovered.select()
 }
 
 #[inline(never)]
