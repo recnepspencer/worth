@@ -9,12 +9,9 @@ fn candidate(
     world: &super::super::fixture::AuthorizationWorld,
     lapsed: bool,
 ) -> program_fixture::Program {
+    world.authorization_time.hold(SystemTime::now());
     let request = live_scope();
-    let external = world.authenticate(
-        "alice",
-        Duration::from_secs(if lapsed { 2 } else { 60 }),
-        &request,
-    );
+    let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
         .with_host_advancement(|phase| {
@@ -30,17 +27,18 @@ fn candidate(
                 .unwrap()
         })
         .unwrap();
-    let program = world
+    let mut program = world
         .application
         .with_host_advancement(|phase| {
             let account = resolved_account(&phase.test_host_request(), world, "open", &request);
             admitted_program(&phase, world, &principal, &account, &request, "closed")
         })
         .unwrap();
+    program
+        .validate_current_authority()
+        .expect("the genuine candidate starts fresh");
     if lapsed {
-        if let Ok(delay) = external.expires_at().duration_since(SystemTime::now()) {
-            std::thread::sleep(delay + Duration::from_millis(10));
-        }
+        program.expire_authentication_for_test();
         assert_eq!(
             program.validate_current_authority().unwrap_err().kind(),
             crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(
