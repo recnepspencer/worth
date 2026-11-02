@@ -106,7 +106,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                 let admitted_session = admit_provider_session(
                     phase,
                     &mut running,
-                    &world.application.primary_graph_authority,
+                    &world.application.runtime.primary_graph_authority,
                     attempt_basis.retained_product(),
                     mutation_run,
                 )
@@ -120,7 +120,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                         provider_attempt,
                         attempt_basis,
                         WorthQueryProviderAttemptRegistrationContext::new(
-                            &world.application.primary_provider,
+                            &world.application.runtime.primary_provider,
                             &admission,
                             retained_idempotency,
                             outcome_identity,

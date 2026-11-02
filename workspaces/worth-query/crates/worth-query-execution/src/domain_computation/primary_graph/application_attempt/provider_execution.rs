@@ -8,6 +8,7 @@ mod elevation_refusal;
 mod entry;
 mod external_dispatch;
 mod outcome;
+pub(super) use outcome::commit_outcome_from_authorization_denial;
 mod phase;
 mod program_occurrence_gate;
 pub(super) use program_occurrence_gate::resolve_occurrence_program;

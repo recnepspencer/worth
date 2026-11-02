@@ -63,6 +63,7 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0

@@ -84,14 +84,15 @@ where
         &self,
         transport: Arc<dyn WorthQueryExternalEffectTransport>,
     ) -> Result<(), WorthQueryExternalTransportInstallationDenial> {
-        self.external_effect_transport
+        self.runtime
+            .external_effect_transport
             .set(transport)
             .map_err(|_| WorthQueryExternalTransportInstallationDenial::AlreadyInstalled)
     }
 
     /// True when this runtime can carry a declared effect out to its rail.
     pub fn has_external_effect_transport(&self) -> bool {
-        self.external_effect_transport.get().is_some()
+        self.runtime.external_effect_transport.get().is_some()
     }
 
     /// Re-dispatch the handle binding's co-committed outbox through the transport.
@@ -109,20 +110,21 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
         let request = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryExternalRedispatchDenial::CompletionExecutionRequest(cause.into())
             })?;
         let execution = &request;
 
-        require_fresh_effect_authority(handle, authority)
-            .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
-        if matches!(
-            handle.binding().installed_aftermath().recovery(),
-            InstalledAftermathRecoveryContract::NotAdmitted
+        if !admission.belongs_to(
+            self.runtime.authority_identity(),
+            &self.installed_schema.binding_identity(),
         ) {
-            return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
+            return Err(WorthQueryExternalRedispatchDenial::ForeignAdmission);
         }
+        admission
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .map_err(WorthQueryExternalRedispatchDenial::from_admission_authorization)?;
         if let Some(lapse) = admission.current_authority_lapse() {
             return Err(match lapse {
                 WorthQueryAdmissionLapse::Cancelled => {
@@ -136,11 +138,13 @@ where
                 }
             });
         }
-        if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
+        require_fresh_effect_authority(handle, authority)
+            .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
+        if matches!(
+            handle.binding().installed_aftermath().recovery(),
+            InstalledAftermathRecoveryContract::NotAdmitted
         ) {
-            return Err(WorthQueryExternalRedispatchDenial::ForeignAdmission);
+            return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
         }
         let Some(record) = handle.binding().dispatch_outbox() else {
             return Err(WorthQueryExternalRedispatchDenial::BindingOutboxMissing);
@@ -157,10 +161,11 @@ where
                 }
             })?;
         let committed = self
+            .runtime
             .primary_provider
             .committed_dispatch_outbox_for_binding(execution, handle.binding())
             .map_err(WorthQueryExternalRedispatchDenial::OwnerReadDenied)?;
-        let Some(transport) = self.external_effect_transport.get() else {
+        let Some(transport) = self.runtime.external_effect_transport.get() else {
             return Err(WorthQueryExternalRedispatchDenial::TransportNotInstalled);
         };
         let dispatch = self
@@ -195,7 +200,7 @@ where
         if receipt.dispatch_outbox().is_none() {
             return WorthQueryApplicationCommitOutcome::Committed(receipt);
         }
-        let Some(transport) = self.external_effect_transport.get() else {
+        let Some(transport) = self.runtime.external_effect_transport.get() else {
             return WorthQueryApplicationCommitOutcome::Committed(receipt);
         };
         let committed =
@@ -266,6 +271,7 @@ where
             .admit_external_dispatch_attempt(committed)
             .map_err(denial::from_attempt_admission)?;
         let in_flight = self
+            .runtime
             .primary_provider
             .begin_external_dispatch_in_flight(&completion_owner)
             .map_err(denial::from_in_flight)?;

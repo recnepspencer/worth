@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::output_lineage::own_write_fixture:
 fn a_current_proof_from_another_basis_acknowledges_nothing() {
     with_committed_own_write(|world, _receipt, _recorded, _resources| {
         world.application.with_host_advancement(|phase| {
-        let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
+        let execution = phase.execution_request_for(&world.application.runtime.product_runtime).unwrap();
         let runtime = &world.application;
 
         let (basis_a, _) = super::super::super::selection::select_required_basis(
@@ -106,7 +106,7 @@ impl CurrentProof<()> {
                 .application
                 .with_host_advancement(|phase| {
                     let execution = phase
-                        .execution_request_for(&world.application.product_runtime)
+                        .execution_request_for(&world.application.runtime.product_runtime)
                         .unwrap();
                     let runtime = &world.application;
 
@@ -132,7 +132,7 @@ impl CurrentProof<()> {
 fn a_current_proof_of_record_a_cannot_acknowledge_record_b_at_the_same_basis() {
     with_committed_own_write(|world, _, _, _| {
         world.application.with_host_advancement(|phase| {
-        let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
+        let execution = phase.execution_request_for(&world.application.runtime.product_runtime).unwrap();
         let runtime = &world.application;
 
         let (selected, _) = super::super::super::selection::select_required_basis(

@@ -4,7 +4,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation::primary_graph) fn release_conditional_runtime_resources(
         &mut self,
     ) {
-        self.bridge
+        self.runtime
+            .bridge
             .conditional_lifecycle()
             .close_conditional_resources();
         *self

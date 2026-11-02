@@ -60,7 +60,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryRetainedBatchQueryAdmissionDenial,
     > {
-        let request = match phase.execution_request_for(&self.application().product_runtime) {
+        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorthQueryRetainedBatchQueryAdmissionDenial::Admission(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name()))),
         };
@@ -80,6 +80,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             return Err(Admission(unavailable()));
         }
         let security = application
+            .runtime
             .product_runtime
             .security_observation_for(execution, self.product())
             .map_err(|stop| Admission(super::selection_denial(stop, query.name())))?;

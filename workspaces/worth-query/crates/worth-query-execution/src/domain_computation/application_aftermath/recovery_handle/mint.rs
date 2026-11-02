@@ -54,7 +54,7 @@ where
             self.runtime.authority_identity(),
             receipt.runtime_authority(),
         )?;
-        mint_recovery_handle_in_registry(receipt, Arc::clone(&self.recovery_handles))
+        mint_recovery_handle_in_registry(receipt, Arc::clone(&self.runtime.recovery_handles))
     }
 
     /// Read the exact commit's recovery fate without minting or consuming it.
@@ -66,7 +66,10 @@ where
             self.runtime.authority_identity(),
             receipt.runtime_authority(),
         )?;
-        let (claimed, terminal) = self.recovery_handles.claim_state(&claim_for(receipt));
+        let (claimed, terminal) = self
+            .runtime
+            .recovery_handles
+            .claim_state(&claim_for(receipt));
         Ok(match terminal {
             Some(WorthQueryRecoveryResourceTerminal::Consumed) => {
                 WorthQueryRecoveryClaimStatus::Consumed

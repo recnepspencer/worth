@@ -38,7 +38,7 @@ pub(super) fn publish<Schema: ApplicationSchema>(
     >,
     Denial,
 > {
-    let provider = &runtime.primary_provider;
+    let provider = &runtime.runtime.primary_provider;
     let world_recovery = binding.recovery();
     let disposition = provider.unpublished_idempotency_disposition();
     if guard.attempt_mut().ordinary_adoption_supported() {
@@ -71,6 +71,7 @@ pub(super) fn publish<Schema: ApplicationSchema>(
     // Release the inspection before the native owner takes its exclusive recovery lease.
     drop(unpublished);
     let gate = runtime
+        .runtime
         .product_runtime
         .activations
         .gate(binding.observation().branch_identity())
@@ -78,7 +79,7 @@ pub(super) fn publish<Schema: ApplicationSchema>(
     let _publication = gate
         .begin_publication()
         .map_err(|_| Denial::ProductUnavailable)?;
-    let bridge_root = runtime.bridge.conditional_operations();
+    let bridge_root = runtime.runtime.bridge.conditional_operations();
     let bridge = bridge_root
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);

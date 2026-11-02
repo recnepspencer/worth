@@ -95,7 +95,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(cause) = phase.execution_request_for(&self.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
             return WorkflowDefinitionRetirementOutcome::Application(
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
@@ -109,6 +109,11 @@ where
             definition,
             workflow_intent_identity,
         } = prepared;
+        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
+            return WorkflowDefinitionRetirementOutcome::Application(
+                outcome.landed().expect_err("a refused entry cannot commit"),
+            );
+        }
         let presented = match self
             .installed_program_support()
             .ok_or_else(WorthQueryApplicationCommitDenial::application_program_required)

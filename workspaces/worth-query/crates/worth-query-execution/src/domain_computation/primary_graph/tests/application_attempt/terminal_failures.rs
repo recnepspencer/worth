@@ -98,6 +98,7 @@ fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0,
@@ -204,6 +205,7 @@ fn zero_semantic_invariants_still_require_relational_candidate_validation() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0,

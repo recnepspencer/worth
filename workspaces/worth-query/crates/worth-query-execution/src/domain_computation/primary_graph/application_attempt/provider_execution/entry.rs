@@ -114,6 +114,9 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
+            return outcome;
+        }
         if !self.has_installed_application_program() {
             return self.compare_and_commit_application_in_advancement(
                 phase,
@@ -172,7 +175,11 @@ where
         )
     }
 
-    pub(crate) fn compare_and_commit_application_with_causality<Operation, Input, Scope>(
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_with_causality<
+        Operation,
+        Input,
+        Scope,
+    >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

@@ -81,6 +81,7 @@ fn authorization_posture(kind: AuthorizationKind) -> WorthQueryRequiredOutputRec
         | AuthorizationKind::Refused(AuthorizationRefusal::MutationPreconditionRejected)
         | AuthorizationKind::Refused(AuthorizationRefusal::CanonicalWorkDenied)
         | AuthorizationKind::Refused(AuthorizationRefusal::InvalidOperationInput)
+        | AuthorizationKind::Refused(AuthorizationRefusal::InputNotAdmitted)
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityProjectionRejected)
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityGrantMissing)
         | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
@@ -309,6 +310,19 @@ mod tests {
                 WorthQueryRequiredOutputRecoveryPosture::Terminal
             );
         }
+    }
+
+    #[test]
+    fn an_unadmitted_input_is_terminal_at_both_query_recovery_entries() {
+        let kind = AuthorizationKind::Refused(AuthorizationRefusal::InputNotAdmitted);
+        assert_eq!(
+            admission_posture(AdmissionKind::Authorization(kind)),
+            WorthQueryRequiredOutputRecoveryPosture::Terminal,
+        );
+        assert_eq!(
+            execution_posture(ExecutionKind::Authorization(kind)),
+            WorthQueryRequiredOutputRecoveryPosture::Terminal,
+        );
     }
 
     #[test]

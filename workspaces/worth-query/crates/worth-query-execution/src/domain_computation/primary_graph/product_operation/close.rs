@@ -37,28 +37,32 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
     {
         let mut retirements = OwnerCleanupRetirements::default();
         let execution = phase
-            .execution_request_for(&self.application.product_runtime)
+            .execution_request_for(&self.application.runtime.product_runtime)
             .map_err(|_| WorthQueryApplicationProductBranchCloseDenial::ForeignPhase)?;
         let occurrence = self.branch.occurrence();
         let pending_correction = self
             .application
+            .runtime
             .primary_provider
             .inspect_pending_application_idempotency(occurrence)
             .flatten()
             .filter(|binding| binding.correction_identity().is_some());
         let command_lane = pending_correction.as_ref().and_then(|binding| {
             self.application
+                .runtime
                 .primary_provider
                 .correction_commit_lane(binding)
         });
         let _command = command_lane.as_ref().map(|lane| lane.enter());
         let commit_lane = self
             .application
+            .runtime
             .primary_provider
             .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = commit_lane.enter();
         let current_correction = self
             .application
+            .runtime
             .primary_provider
             .inspect_pending_application_idempotency(occurrence)
             .flatten()
@@ -69,6 +73,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             );
         }
         self.application
+            .runtime
             .primary_provider
             .settle_before_product_retirement(&execution, occurrence)
             .map_err(|_| {
@@ -76,6 +81,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             })?;
         if self
             .application
+            .runtime
             .primary_provider
             .has_outstanding_dispatch_for_branch(occurrence)
         {
@@ -83,13 +89,16 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         }
         let pending = self
             .application
+            .runtime
             .product_runtime
             .begin_product_branch_close(self.branch, WorthQueryProductBranchCloseScope::Application)
             .map_err(WorthQueryApplicationProductBranchCloseDenial::Product)?;
         self.application
+            .runtime
             .output_demands
             .release_product_occurrence(pending.occurrence().incarnation());
         self.application
+            .runtime
             .primary_provider
             .release_product_occurrence_retention(
                 pending.occurrence().branch(),
@@ -98,7 +107,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         let (branch, cleanup) = pending.into_cleanup();
         WorthQueryApplicationProductBranchCleanup::new(
             cleanup,
-            self.application.bridge.conditional_operations(),
+            self.application.runtime.bridge.conditional_operations(),
         )
         .retry_with_retirements(&execution, &mut retirements)
         .map(|receipt| WorthQueryProductBranchCloseReceipt::from_owner_cleanup(branch, receipt))

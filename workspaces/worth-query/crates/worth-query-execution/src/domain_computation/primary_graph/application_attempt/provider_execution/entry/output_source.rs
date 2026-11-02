@@ -20,6 +20,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
+            return outcome;
+        }
         if let Err(outcome) =
             self.require_occurrence_owns_output_source(execution, presented, &program)
         {
@@ -67,6 +70,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
+            return outcome;
+        }
         if !self
             .installed_conditionals
             .contains_operation::<Operation>()
@@ -111,6 +117,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
+            return outcome;
+        }
         if self
             .installed_conditionals
             .contains_operation::<Operation>()

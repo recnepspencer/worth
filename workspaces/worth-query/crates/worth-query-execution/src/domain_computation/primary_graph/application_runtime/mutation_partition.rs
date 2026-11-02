@@ -7,7 +7,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
     ) -> Option<worth_relational::facade::identity::PartitionId> {
         {
-            let update_counter = &self.next_application_mutation_partition;
+            let update_counter = &self.runtime.next_application_mutation_partition;
             let mut current = update_counter.load(Ordering::Relaxed);
             loop {
                 let Some(updated_value) = current.checked_add(1) else {

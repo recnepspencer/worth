@@ -50,7 +50,7 @@ where
         Unit: ApplicationFieldUnit,
     {
         self.with_application_advancement(request, |phase| {
-        let execution = phase.execution_request_for(&self.product_runtime)?;
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let value = Field::Binding::encode(&value).expect("the native field value encodes");
         let entity_id = EntityId::new(
             PartitionId(record.partition_id()),

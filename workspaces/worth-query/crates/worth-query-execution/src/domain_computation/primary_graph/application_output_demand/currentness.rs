@@ -27,7 +27,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
                     cause.into(),
@@ -35,6 +35,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
 
         runtime
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
@@ -52,7 +53,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
                     cause.into(),
@@ -60,6 +61,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
 
         runtime
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
@@ -71,6 +73,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
                     }
                     let lineage = runtime
+                        .runtime
                         .primary_provider
                         .graph
                         .output_lineage
@@ -132,6 +135,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         };
         let owner = &self
             .application()
+            .runtime
             .primary_provider
             .graph
             .source_owner

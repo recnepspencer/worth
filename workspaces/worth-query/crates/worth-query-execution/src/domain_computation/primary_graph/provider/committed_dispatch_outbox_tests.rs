@@ -30,7 +30,7 @@ fn owner_read_denies_missing_foreign_and_every_commit_affinity_substitution() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &world.application.runtime.primary_provider;
     let (binding, commit, runtime_id) = commit_record(execution, provider, 1);
     let record = binding.record().clone();
     assert_eq!(
@@ -130,7 +130,7 @@ fn fresh_later_head_still_reports_the_rows_exact_creation_commit() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &world.application.runtime.primary_provider;
     let (first_binding, first_commit, runtime_id) = commit_record(execution, provider, 3);
     let first = first_binding.record().clone();
     let (_, later_commit, _) = commit_record(execution, provider, 4);
@@ -158,7 +158,7 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
 
     for (field, replacement) in valid_later_field_substitutions() {
         let world = installed_authorization_world(true);
-        let provider = &world.application.primary_provider;
+        let provider = &world.application.runtime.primary_provider;
         let (binding, commit, runtime_id) = commit_record(execution, provider, 31);
         let record = binding.record().clone();
         let observed = provider
@@ -213,7 +213,7 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &world.application.runtime.primary_provider;
     let (binding, commit, runtime_id) = commit_record(execution, provider, 32);
     let record = binding.record().clone();
     let observed = provider

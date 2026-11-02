@@ -116,7 +116,7 @@ where
     )?;
     drop(current);
     let execution = phase
-        .checked_execution_request_for(&application.product_runtime)
+        .checked_execution_request_for(&application.runtime.product_runtime)
         .map_err(Denial::Stopped)?;
     let allocation =
         reserve_arc::<NavigationAttempt<'runtime, S>>(&execution).map_err(|cause| {

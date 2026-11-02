@@ -28,6 +28,7 @@ impl<Schema: ApplicationSchema, Family: WorthQueryProducerOutputFamily<Schema>>
             .as_ref()
             .ok_or_else(|| WorthQueryOutputDemandDenial::new(Kind::Closed, ""))?;
         runtime
+            .runtime
             .output_demands
             .retain_fulfilled_root(execution, prepared, receipt, interest, settlement)
     }

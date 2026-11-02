@@ -67,7 +67,7 @@ mod tests {
             .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
             .expect("the fixture read owns its installed host call");
         let product = selected.product().publication_binding();
-        let graph = world.application.primary_provider.graph.clone();
+        let graph = world.application.runtime.primary_provider.graph.clone();
         let count = || {
             graph.with_runtime(request_execution, |runtime| {
                 runtime.retention().active_snapshot_count()

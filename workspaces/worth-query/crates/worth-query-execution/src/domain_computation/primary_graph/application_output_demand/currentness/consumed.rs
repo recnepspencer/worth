@@ -22,6 +22,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
         let owner = &self
             .application()
+            .runtime
             .primary_provider
             .graph
             .source_owner

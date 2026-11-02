@@ -43,6 +43,7 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
 
             world
                 .application
+                .runtime
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |runtime| {

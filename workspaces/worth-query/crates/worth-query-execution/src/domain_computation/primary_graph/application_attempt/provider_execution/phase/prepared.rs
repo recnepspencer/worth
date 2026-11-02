@@ -194,7 +194,7 @@ where
     };
     let effect_posture = provider.effect_posture;
     let native_reference_invariants = match native_reference_invariants::derive(
-        &application.primary_provider.graph.layout,
+        &application.runtime.primary_provider.graph.layout,
         application.installed_schema.invariants(),
         &provider.effects,
     ) {
@@ -234,7 +234,7 @@ fn take_commit_authorization<Schema, Operation, Input, Scope>(
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
 ) -> Result<WorthQueryProviderCommitAuthorization, WorthQueryApplicationCommitOutcome> {
     admission
-        .take_authorization_dependencies(application.authorization.bridge())
+        .take_authorization_dependencies(application.runtime.authorization.bridge())
         .map_err(|denial| denied_with_detail(DenialStage::DecisionReadSet, denial.to_string()))
 }
 

@@ -46,10 +46,19 @@ fn isolated_brand_check_allocation_probe() {
 
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     for _ in 0..64 {
-        std::hint::black_box(admission.validate_runtime_ownership(runtime, &binding)).unwrap();
+        std::hint::black_box(admission.validate_installed_entry(
+            runtime,
+            &binding,
+            &world.application.runtime.installed_operations,
+        ))
+        .unwrap();
         assert!(std::hint::black_box(
             admission.belongs_to(runtime, &binding)
         ));
+        std::hint::black_box(
+            admission.validate_installed_operation(&world.application.runtime.installed_operations),
+        )
+        .unwrap();
         std::hint::black_box(admission.validate_installed_mutation_binding(descriptor)).unwrap();
         std::hint::black_box(admission.capability_input());
     }

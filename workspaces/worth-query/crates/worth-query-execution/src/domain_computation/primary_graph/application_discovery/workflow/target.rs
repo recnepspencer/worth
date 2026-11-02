@@ -95,7 +95,7 @@ impl WorthQueryWorkflowReadTarget {
             return Err(Denial::PolicyMismatch);
         }
         let execution = phase
-            .execution_request_for(&current.application().product_runtime)
+            .execution_request_for(&current.application().runtime.product_runtime)
             .map_err(Denial::Phase)?;
         let graph = current
             .application()

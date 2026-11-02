@@ -45,6 +45,7 @@ where
             panic!("actual current authenticated disclosure");
         };
         let ready = runtime
+            .runtime
             .output_demands
             .interest_ready_readmission(self.interest.as_ref().unwrap())
             .unwrap()
@@ -53,6 +54,7 @@ where
             .matches_interest(self.interest.as_ref().unwrap())
             .unwrap());
         let claim = runtime
+            .runtime
             .output_demands
             .claim_required_ready_refresh(&ready)
             .unwrap()
@@ -73,6 +75,7 @@ where
             .unwrap();
         slot.bind_admitted(&mut successor);
         runtime
+            .runtime
             .output_demands
             .finish_replaced_interest(
                 slot.claim().interest(),

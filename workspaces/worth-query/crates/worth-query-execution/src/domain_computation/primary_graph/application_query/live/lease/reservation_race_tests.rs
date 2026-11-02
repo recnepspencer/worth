@@ -60,6 +60,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let release_rx = Arc::new(Mutex::new(release_rx));
     world
         .application
+        .runtime
         .primary_provider
         .set_application_commit_causality_reservation_hook(Some(Arc::new(move || {
             parked_tx.send(()).unwrap();
@@ -96,6 +97,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 let committed = committed.join().unwrap();
                 world
                     .application
+                    .runtime
                     .primary_provider
                     .set_application_commit_causality_reservation_hook(None);
 
@@ -193,6 +195,7 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .active_application_commit_causality_partitions(),
         0

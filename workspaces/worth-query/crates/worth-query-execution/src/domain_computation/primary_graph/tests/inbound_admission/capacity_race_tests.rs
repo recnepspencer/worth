@@ -66,6 +66,7 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
             .expect("the fixture read owns its installed host call");
         let in_flight = world
             .application
+            .runtime
             .primary_provider
             .begin_external_dispatch_in_flight(&owner)
             .expect("exact original is committed")
@@ -84,6 +85,7 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
         );
         assert!(world
             .application
+            .runtime
             .primary_provider
             .lookup_completed_inbound(record.correlation())
             .unwrap()
@@ -151,6 +153,7 @@ fn callback_winning_during_physical_send_keeps_capacity_until_completed_custody_
             assert_eq!(first_record.correlation().bytes(), &token);
             assert!(world
                 .application
+                .runtime
                 .primary_provider
                 .lookup_completed_inbound(first_record.correlation())
                 .unwrap()

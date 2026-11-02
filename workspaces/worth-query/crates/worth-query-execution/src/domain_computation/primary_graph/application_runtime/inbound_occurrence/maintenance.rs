@@ -87,7 +87,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.with_application_advancement(request, |phase| {
             let phase = &phase;
             let phase_request = phase
-                .execution_request_for(&self.product_runtime)
+                .execution_request_for(&self.runtime.product_runtime)
                 .map_err(|cause| Denial::advancement(cause.into()))?;
             let execution = &phase_request;
             let installed = self
@@ -98,12 +98,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .unwrap_or(usize::MAX),
             );
             let inbound_available = self
+                .runtime
                 .inbound_custody
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .pending_work_count(handle.operation());
             let transport_available = self.pending_transport_maintenance_count(handle.operation());
             let prefer_transport = self
+                .runtime
                 .inbound_maintenance_turn
                 .fetch_add(1, Ordering::Relaxed)
                 & 1
@@ -123,6 +125,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             inbound_work += (unused - extra_transport).min(inbound_available - inbound_work);
             let inbound_candidates = {
                 let mut custody = self
+                    .runtime
                     .inbound_custody
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -155,6 +158,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     Err(Denial::RecoveryStaleProduct) => {
                         report.blocked += 1;
                         if self
+                            .runtime
                             .inbound_custody
                             .lock()
                             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -237,6 +241,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             let (inbound_remaining, next_expiry) = {
                 let custody = self
+                    .runtime
                     .inbound_custody
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());

@@ -56,6 +56,7 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         .unwrap();
     let owner_probe = world
         .application
+        .runtime
         .primary_provider
         .graph
         .source_owner

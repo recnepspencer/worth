@@ -97,6 +97,7 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
     };
     let facts = world
         .application
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -206,7 +207,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
             })
             .expect("the fixture read owns its installed host call");
         let graph = world.application.runtime.primary_graph().unwrap();
-        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
+        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.runtime.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let observed = crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection(
             runtime,execution,  snapshot, *index_id, *entity_kind, locator.clone(), value.clone(), 100_001,
@@ -280,7 +281,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
                 graph

@@ -57,6 +57,7 @@ fn with_admitted_facts(
     let execution = ExecutionRequest::serial(&serial);
     let outcome = world
         .application
+        .runtime
         .primary_provider
         .graph
         .with_runtime(&execution, |runtime| {

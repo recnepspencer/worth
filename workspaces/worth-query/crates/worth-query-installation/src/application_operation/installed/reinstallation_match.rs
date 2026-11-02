@@ -16,41 +16,41 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
 
     fn recompiled_contracts_match(&self, members: &[ApplicationSchemaMember]) -> bool {
         let Ok(portable_contract) = compile_portable_operation_contract_record(
-            &self.schema_name,
+            &self.core.schema_name,
             members,
-            self.portable_native_contracts.as_ref(),
-            &self.operation,
-            self.portable_contract.input_type().clone(),
+            self.core.portable_native_contracts.as_ref(),
+            &self.core.operation,
+            self.core.portable_contract.input_type().clone(),
         ) else {
             return false;
         };
         let Ok(compilation) = WorthQueryApplicationOperationCompilation::resolve(
-            self.binding_identity.clone(),
+            self.core.binding_identity.clone(),
             members,
             &portable_contract,
-            self.native_contracts.as_ref(),
-            &self.operation,
-            &self.input_type,
+            self.core.native_contracts.as_ref(),
+            &self.core.operation,
+            &self.core.input_type,
         ) else {
             return false;
         };
         let Ok(candidate_contracts) = compilation.compile_contracts(
-            self.contracts.ability_requirements().to_vec(),
-            self.native_contracts.as_ref(),
+            self.core.contracts.ability_requirements().to_vec(),
+            self.core.native_contracts.as_ref(),
         ) else {
             return false;
         };
-        candidate_contracts.eq(self.contracts.as_ref())
+        candidate_contracts.eq(self.core.contracts.as_ref())
     }
 
     pub(crate) fn authority_matches(&self, package: &WorthQueryInstalledPackageAuthority) -> bool {
         authority_transcript(
             &package.authority_key,
-            &self.binding_identity,
-            &self.operation,
-            &self.input_type,
-            self.obligations.identity(),
+            &self.core.binding_identity,
+            &self.core.operation,
+            &self.core.input_type,
+            self.core.obligations.identity(),
         )
-        .verifies(&self.authority_identity)
+        .verifies(&self.core.authority_identity)
     }
 }

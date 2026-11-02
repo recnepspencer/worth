@@ -43,7 +43,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                 original,
                 self.scope.entity_kind(),
                 loan,
-                &self.runtime.primary_provider.graph.layout,
+                &self.runtime.runtime.primary_provider.graph.layout,
                 self.runtime.installed_schema().native_contracts(),
             )?
         } else {
@@ -77,6 +77,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         };
         if prepared {
             self.runtime
+                .runtime
                 .primary_provider
                 .inspection_materialization_prepared();
         }

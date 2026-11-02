@@ -83,6 +83,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let commit_count = || {
         world
             .application
+            .runtime
             .primary_provider
             .graph
             .with_runtime(request_execution, |runtime| {

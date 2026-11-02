@@ -95,7 +95,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(review_denial(mandatory, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -195,6 +195,7 @@ where
     }
     let lifecycle = installed.elevation().as_ref().unwrap();
     let sample = runtime
+        .runtime
         .authorization_clock
         .sample(lifecycle.temporal.timeline)
         .map_err(|_| {

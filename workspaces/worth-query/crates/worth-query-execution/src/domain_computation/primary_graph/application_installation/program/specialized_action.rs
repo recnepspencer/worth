@@ -84,6 +84,15 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let program = match self
+            .runtime
+            .backing
+            .runtime
+            .readmit_elevation_request_installation(None, program)
+        {
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
@@ -91,7 +100,7 @@ where
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -125,6 +134,15 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let program = match self
+            .runtime
+            .backing
+            .runtime
+            .readmit_elevation_approval_installation(None, program)
+        {
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
@@ -132,7 +150,7 @@ where
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -167,6 +185,15 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let program = match self
+            .runtime
+            .backing
+            .runtime
+            .readmit_elevation_close_installation(None, program)
+        {
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
@@ -174,7 +201,7 @@ where
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -209,6 +236,15 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let program = match self
+            .runtime
+            .backing
+            .runtime
+            .readmit_mandatory_review_installation(None, program)
+        {
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
@@ -216,7 +252,7 @@ where
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -251,6 +287,14 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self
+            .runtime
+            .backing
+            .runtime
+            .validate_commit_program(None, program.application_program())
+        {
+            return outcome;
+        }
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
@@ -258,7 +302,7 @@ where
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -285,6 +329,14 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self
+            .runtime
+            .backing
+            .runtime
+            .validate_commit_program(None, program.application_program())
+        {
+            return outcome;
+        }
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
@@ -292,7 +344,7 @@ where
             .runtime
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime.runtime.product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;

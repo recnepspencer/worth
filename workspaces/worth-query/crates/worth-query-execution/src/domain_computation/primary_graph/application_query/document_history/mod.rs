@@ -153,7 +153,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             });
         }
         let expected = pending.identity();
-        let execution = match phase.checked_execution_request_for(&self.product_runtime) {
+        let execution = match phase.checked_execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(WorthQueryDocumentHistoryAttachmentFailure {

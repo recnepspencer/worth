@@ -16,11 +16,14 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    if let Err(cause) = phase.execution_request_for(&application.product_runtime) {
+    if let Err(cause) = phase.execution_request_for(&application.runtime.product_runtime) {
         return terminal(
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
                 .into_commit_outcome(),
         );
+    }
+    if let Err(outcome) = application.validate_commit_program(Some(phase), &request.program) {
+        return terminal(outcome);
     }
     let WorthQueryApplicationCommitPreparationRequest {
         program,
@@ -134,7 +137,7 @@ where
             signed_creation,
             &mut effects,
             phase
-                .execution_for(&application.product_runtime)
+                .execution_for(&application.runtime.product_runtime)
                 .expect("phase readmitted for this runtime"),
             &lease,
             &idempotency,
@@ -144,7 +147,7 @@ where
     }
     let lifecycle = match crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::expand(
         &admission, &lease, &mut effects, read_set.facts,
-        phase.execution_for(&application.product_runtime).expect("phase readmitted for this runtime"),
+        phase.execution_for(&application.runtime.product_runtime).expect("phase readmitted for this runtime"),
         *idempotency.key_identity(),
     ) { Ok(lifecycle) => lifecycle, Err(outcome) => return terminal(outcome) };
     let effect_routes = if read_set.effect_routes.matches_body(&lifecycle.facts) {

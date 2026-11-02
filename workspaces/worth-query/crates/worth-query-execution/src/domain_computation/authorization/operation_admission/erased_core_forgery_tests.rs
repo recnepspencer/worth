@@ -351,3 +351,6 @@ mod allocation;
 mod decision_entry;
 #[path = "erased_core_forgery_tests/precedence.rs"]
 mod precedence;
+
+#[path = "erased_core_forgery_tests/installed_seal.rs"]
+mod installed_seal;

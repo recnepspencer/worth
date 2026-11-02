@@ -164,6 +164,7 @@ fn run(
         assert_eq!(
             world
                 .application
+                .runtime
                 .primary_provider
                 .published_application_commit_count(),
             0

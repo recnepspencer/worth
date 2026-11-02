@@ -182,7 +182,7 @@ fn revoke_account_ownership(
     world: &AuthorizationWorld,
     account: worth_relational::facade::identity::EntityId,
 ) {
-    let graph = world.application.primary_provider.graph.clone();
+    let graph = world.application.runtime.primary_provider.graph.clone();
     let relation_kind = graph
         .layout
         .relation(AccountOwner::reference().name())

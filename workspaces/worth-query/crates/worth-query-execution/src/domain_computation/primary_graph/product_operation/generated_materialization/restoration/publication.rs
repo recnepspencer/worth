@@ -22,7 +22,8 @@ where
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryRestoredGeneratedOutput, WorthQueryGeneratedOutputRestorationFailure>
     {
-        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
+        {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(restoration_failure(

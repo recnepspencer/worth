@@ -16,7 +16,7 @@ pub(super) fn materialize_source_in_phase<Schema: BirthSchema>(
 ) {
     let scope = primary_graph::tests::fixture::live_scope();
     let execution = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for(&runtime.runtime.product_runtime)
         .unwrap();
     let source = runtime
         .on_branch(runtime.current_world())

@@ -7,7 +7,7 @@ fn exact_outbox_owner_read_work_stays_local_across_unrelated_dispatch_history() 
 
     for population in [10_u64, 1_000] {
         let world = installed_authorization_world(true);
-        let provider = &world.application.primary_provider;
+        let provider = &world.application.runtime.primary_provider;
         let mut last = None;
         for identity in 1..=population {
             last = Some(commit_record(execution, provider, identity));

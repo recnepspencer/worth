@@ -17,6 +17,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         for recovered in self
+            .runtime
             .recovered_outputs
             .matching_source_partition(scope, source.partition_identity())
         {
@@ -28,7 +29,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 continue;
             }
             if let (Some(authority), Some(_)) = (
-                self.product_runtime.recovered_root_authority.as_ref(),
+                self.runtime
+                    .product_runtime
+                    .recovered_root_authority
+                    .as_ref(),
                 checkpoint.producer_facts.as_deref(),
             ) {
                 let recovered_observation = authority.product_branch();

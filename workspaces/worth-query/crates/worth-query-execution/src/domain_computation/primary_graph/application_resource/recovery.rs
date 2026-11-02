@@ -60,6 +60,7 @@ pub(super) fn require_unresolved<Schema: ApplicationSchema>(
     // The retained exact-commit read proves original record/correlation/commit
     // provenance only. It does not establish current effect status.
     let original = runtime
+        .runtime
         .primary_provider
         .committed_dispatch_outbox_for_binding(execution, handle.binding())
         .map_err(ResourceCause::EffectOutbox)?;

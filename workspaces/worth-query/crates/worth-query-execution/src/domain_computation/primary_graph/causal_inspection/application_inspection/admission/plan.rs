@@ -41,7 +41,10 @@ pub(super) fn admit<Schema: ApplicationSchema>(
         };
         admit_application_inspection_graph_work(
             contract,
-            runtime.primary_provider.application_resource_support_ref(),
+            runtime
+                .runtime
+                .primary_provider
+                .application_resource_support_ref(),
             &mut admit,
         )
         .map_err(|cause| match cause {

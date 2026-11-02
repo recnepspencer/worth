@@ -15,7 +15,7 @@ fn aftermath_resolution_preserves_stops_at_every_consult() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            let provider = &world.application.primary_provider;
+            let provider = &world.application.runtime.primary_provider;
             let selected = world.selected_product(&phase.test_host_request());
             let basis = selected.product().relational_basis();
             let snapshot = provider.graph.with_runtime_mut(&execution, |runtime| {

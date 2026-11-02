@@ -29,14 +29,14 @@ where
         .mutation_body_for_approval::<Binding>()
         .map_err(WorkflowApprovalBodyDenial::Handler)?;
     let execution = phase
-        .execution_for(&runtime.product_runtime)
+        .execution_for(&runtime.runtime.product_runtime)
         .map_err(|cause| {
             WorkflowApprovalBodyDenial::Handler(
                 MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause),
             )
         })?;
     let request = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for(&runtime.runtime.product_runtime)
         .map_err(|cause| {
             WorkflowApprovalBodyDenial::Handler(
                 MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause),

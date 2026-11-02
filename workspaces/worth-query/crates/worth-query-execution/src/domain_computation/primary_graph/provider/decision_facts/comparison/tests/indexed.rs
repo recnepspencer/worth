@@ -94,14 +94,16 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 1,
                 "all distinct predicates share only the exact index admission"
             );
-            foreign.application.primary_provider.graph.with_runtime(
-                &borrowed_execution,
-                |runtime| {
+            foreign
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(&borrowed_execution, |runtime| {
                     assert!(!selectors
                         .remains_equal(execution, &present, runtime, snapshot, control)
                         .unwrap());
-                },
-            );
+                });
             publish_relational_mutation_on_application(
                 execution,
                 &world.application,

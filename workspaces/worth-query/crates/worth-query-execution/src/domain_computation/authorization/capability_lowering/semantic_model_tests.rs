@@ -22,6 +22,7 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
         .expect("composed capability is installed");
     let plan = world
         .application
+        .runtime
         .authorization
         .capability_plan(&capability)
         .expect("the compiler retained the typed capability plan");

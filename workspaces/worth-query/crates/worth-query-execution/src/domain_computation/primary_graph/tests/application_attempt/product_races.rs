@@ -37,6 +37,7 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     let commit_count = || {
         world
             .application
+            .runtime
             .primary_provider
             .graph
             .with_runtime(request_execution, |runtime| {

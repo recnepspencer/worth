@@ -82,7 +82,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(cause) = phase.execution_request_for(&self.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
             return WorkflowInstanceCancellationOutcome::Application(
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()

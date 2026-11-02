@@ -67,8 +67,15 @@ where
         ));
     }
     if continuation.graph_authority_identity
-        != application.primary_graph_authority.authority_identity()
-        || continuation.provider_identity != application.primary_graph_authority.provider_identity()
+        != application
+            .runtime
+            .primary_graph_authority
+            .authority_identity()
+        || continuation.provider_identity
+            != application
+                .runtime
+                .primary_graph_authority
+                .provider_identity()
         || continuation.index_id != installed_index
     {
         return Err(denial(

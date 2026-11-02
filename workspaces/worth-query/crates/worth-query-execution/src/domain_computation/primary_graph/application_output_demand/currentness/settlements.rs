@@ -39,6 +39,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
             }
             let lineage = runtime
+                .runtime
                 .primary_provider
                 .graph
                 .output_lineage

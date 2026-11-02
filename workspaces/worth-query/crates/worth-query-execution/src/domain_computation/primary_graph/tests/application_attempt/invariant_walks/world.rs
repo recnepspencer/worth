@@ -160,6 +160,7 @@ impl World {
             .with_host_advancement(|phase| {
                 let execution = phase.borrowed_request_for_test();
                 self.application
+                    .runtime
                     .primary_provider
                     .graph
                     .with_runtime(&execution, |runtime| {

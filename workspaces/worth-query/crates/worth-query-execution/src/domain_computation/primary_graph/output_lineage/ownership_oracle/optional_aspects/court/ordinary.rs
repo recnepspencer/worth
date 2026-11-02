@@ -14,7 +14,7 @@ pub(super) fn roles_and_nonownership<Schema: BirthSchema>(
     runtime: &installation::Application<Schema>,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> Vec<RequiredOutputRoleTarget> {
-    let graph = &runtime.primary_provider.graph;
+    let graph = &runtime.runtime.primary_provider.graph;
     let correspondence = receipt.retain_output_correspondence();
     let lineage = graph.output_lineage.lock().unwrap();
     let rows: Vec<_> = lineage

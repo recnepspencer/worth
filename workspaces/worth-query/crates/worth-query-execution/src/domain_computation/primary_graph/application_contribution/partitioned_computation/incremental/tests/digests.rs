@@ -145,7 +145,7 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
                         &admitted,
                         |reader, root| {
                             let execution = phase
-                                .execution_for(&world.application.product_runtime)
+                                .execution_for(&world.application.runtime.product_runtime)
                                 .expect("the installed fixture lends its computation execution");
                             installed
                                 .prepare_through(reader, execution, &Value(root.clone()))?

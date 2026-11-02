@@ -89,7 +89,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                     .unwrap()
             };
             let first = WorthQueryDerivedPairReadPlans::new(admit(), admit());
-            let graph = &world.application.primary_provider.graph;
+            let graph = &world.application.runtime.primary_provider.graph;
             let label = AccountLabel::reference();
             let locator = graph
                 .layout

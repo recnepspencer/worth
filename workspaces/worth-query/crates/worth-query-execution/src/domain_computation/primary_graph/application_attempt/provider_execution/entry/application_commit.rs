@@ -11,6 +11,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.validate_commit_program(None, &program) {
+            return outcome;
+        }
         let request = program.read_set.admission.publication_request().clone();
         self.with_funded_application_advancement(&request, allocation_policy, |phase| {
             self.compare_and_commit_application_in_advancement(
@@ -35,6 +38,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
+            return outcome;
+        }
         self.compare_and_commit_application_in_advancement_with_history(
             phase,
             program,
@@ -60,7 +66,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
+            return outcome;
+        }
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
                 return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

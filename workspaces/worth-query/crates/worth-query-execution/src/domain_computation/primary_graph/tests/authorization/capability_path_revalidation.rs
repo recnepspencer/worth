@@ -41,7 +41,7 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
         })
         .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
-        .take_authorization_dependencies(world.application.authorization.bridge())
+        .take_authorization_dependencies(world.application.runtime.authorization.bridge())
         .unwrap();
 
     world
@@ -59,6 +59,7 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
 
     let commit_lane = world
         .application
+        .runtime
         .primary_provider
         .application_branch_commit_lane(
             admission

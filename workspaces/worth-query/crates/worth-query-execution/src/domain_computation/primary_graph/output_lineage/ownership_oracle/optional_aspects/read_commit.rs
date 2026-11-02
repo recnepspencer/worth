@@ -116,7 +116,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                 )
                 .unwrap();
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             // This is the real installed conditional-program entry, which checks the
             // current occurrence/program and registered operation before fact comparison.

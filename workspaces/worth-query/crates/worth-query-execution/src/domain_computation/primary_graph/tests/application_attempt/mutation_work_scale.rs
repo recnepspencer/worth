@@ -334,7 +334,7 @@ fn grow_unrelated_accounts(
     if count == 0 {
         return;
     }
-    let graph = world.application.primary_provider.graph.clone();
+    let graph = world.application.runtime.primary_provider.graph.clone();
     let kind = graph
         .layout
         .entity_kind(Account::reference().name())

@@ -23,7 +23,8 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
 #[path = "admitted_operation_core.rs"]
 mod admitted_operation_core;
-use admitted_operation_core::WorthQueryAdmittedOperation;
+pub(in crate::domain_computation) use admitted_operation_core::WorthQueryAdmittedOperation;
+pub(in crate::domain_computation) use brand_tag::BrandTag;
 
 #[path = "operation_admission/access.rs"]
 mod access;
@@ -55,6 +56,8 @@ mod graph_work_inspection;
 mod idempotency_binding;
 #[path = "operation_admission/identity_admitted.rs"]
 mod identity_admitted;
+#[path = "operation_admission/installed_reentry.rs"]
+mod installed_reentry;
 #[path = "operation_admission/mandatory_review.rs"]
 mod mandatory_review;
 #[path = "operation_admission/original_input.rs"]

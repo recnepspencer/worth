@@ -25,7 +25,12 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
         93,
     );
     lease.queue.fill(
-        &context.world.application.primary_provider.live_delivery,
+        &context
+            .world
+            .application
+            .runtime
+            .primary_provider
+            .live_delivery,
         lease.basis.as_mut().expect("opening owns its native basis"),
         LiveAccountActivityCause::effect(),
         lease.controls.buffer_capacity(),

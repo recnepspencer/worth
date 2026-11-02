@@ -37,6 +37,7 @@ fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_re
     let field = AccountLabel::reference();
     let locator = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout

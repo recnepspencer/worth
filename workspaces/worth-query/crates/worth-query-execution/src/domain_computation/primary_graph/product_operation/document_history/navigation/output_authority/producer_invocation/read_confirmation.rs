@@ -8,7 +8,7 @@ impl HistoryProducerInvocation<'_> {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         value: T,
     ) -> Result<T, WorthQueryHistoryNavigationDenial> {
-        let execution = phase.execution_request_for(&runtime.product_runtime)
+        let execution = phase.execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|_| WorthQueryHistoryNavigationDenial::Document(
                 crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial::ForeignPhase,
             ))?;

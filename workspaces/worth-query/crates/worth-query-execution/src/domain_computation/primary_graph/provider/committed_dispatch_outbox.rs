@@ -283,7 +283,8 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .committed_dispatch_outbox_for_correlation(execution, correlation)
     }
 
@@ -294,7 +295,7 @@ where
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
         let phase_request = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         self.observe_committed_dispatch_outbox_with_request(&phase_request, receipt)
     }
@@ -304,7 +305,8 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .committed_dispatch_outbox(execution, receipt)
     }
 }

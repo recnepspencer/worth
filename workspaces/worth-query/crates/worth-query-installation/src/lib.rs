@@ -86,12 +86,20 @@ pub mod facade {
         WorthQueryDocumentHistoryInstallationDenial,
         WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryInstalledDocumentHistory,
     };
+    #[doc(hidden)]
+    pub use crate::application_operation::{
+        InstalledOperationCatalog, InstalledOperationSource, InstalledOperationView,
+    };
+    #[doc(hidden)]
+    pub use crate::application_query::InstalledQueryView;
     pub use crate::application_resource::{
         WorthQueryApplicationResourceInstallationDenial,
         WorthQueryApplicationResourceInstallationDenialKind,
         WorthQueryInstalledApplicationResource, WorthQueryInstalledResourceAccessContract,
         WorthQueryResourceAccessPurpose,
     };
+    #[doc(hidden)]
+    pub use crate::application_schema::InstalledSchemaView;
     pub use worth_foundational::facade::{
         AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision, AspectEvolutionPolicy,
         AspectIdentity, AspectKey, AspectMask, AspectValue, AuthoritativeAspectChangeKind,

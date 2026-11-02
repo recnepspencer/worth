@@ -76,6 +76,7 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0

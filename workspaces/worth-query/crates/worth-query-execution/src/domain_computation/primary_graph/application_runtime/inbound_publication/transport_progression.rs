@@ -36,7 +36,8 @@ where
         evidence: Arc<InstalledTransportCompletion>,
         request: &WorthQueryRequestScope,
     ) -> Outcome {
-        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
+        {
             Ok(execution) => execution,
             Err(cause) => return Outcome::Denied(evidence, Denial::ExecutionDenied(cause.into())),
         };
@@ -44,6 +45,7 @@ where
         let original = owner.committed_product_publication();
         let incarnation = original.product_incarnation();
         let runtime_instance = self
+            .runtime
             .product_runtime
             .source
             .authoritative_source_profile()
@@ -51,7 +53,8 @@ where
         if owner.relational_runtime_instance_id() != runtime_instance {
             return Outcome::Denied(evidence, Denial::ForeignRelationalRuntime);
         }
-        if original.product_branch().owner_identity() != self.product_runtime.owner.owner_identity()
+        if original.product_branch().owner_identity()
+            != self.runtime.product_runtime.owner.owner_identity()
         {
             return Outcome::Denied(evidence, Denial::ForeignProductWorld);
         }
@@ -63,11 +66,13 @@ where
             Err(_) => return Outcome::Denied(evidence, Denial::BindingUnavailable),
         };
         let lane = self
+            .runtime
             .primary_provider
             .application_branch_commit_lane_for_occurrence(incarnation);
 
         let _coordination = lane.enter();
         match self
+            .runtime
             .primary_provider
             .lookup_completed_inbound(owner.record().correlation())
         {
@@ -82,13 +87,18 @@ where
             Ok(permit) => permit,
             Err(_) => return Outcome::Denied(evidence, Denial::PublicationPermit),
         };
-        let lease = match self.product_runtime.admit_product_occurrence(incarnation) {
+        let lease = match self
+            .runtime
+            .product_runtime
+            .admit_product_occurrence(incarnation)
+        {
             Ok(lease) => lease,
             Err(_) => return Outcome::Denied(evidence, Denial::ProductAdmission),
         };
         let candidate = match completion_candidate(
             Arc::clone(&evidence),
-            self.primary_provider
+            self.runtime
+                .primary_provider
                 .prepare_installed_transport_completion_candidate(
                     execution,
                     lease.relational_basis(),
@@ -117,7 +127,8 @@ where
             false,
         );
         let correlation = *owner.record().correlation();
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .mark_inbound_completion_publication_pending(&correlation);
         match prepared.execute(publication_execution) {
             Ok(PublicationOutcome::Performed(performed)) => {
@@ -129,12 +140,14 @@ where
                 ))
             }
             Err(PublicationDenial::Stopped(stop)) => {
-                self.primary_provider
+                self.runtime
+                    .primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
                 Outcome::Denied(evidence, Denial::ExecutionDenied(advancement_denial(stop)))
             }
             Err(PublicationDenial::Refused(_)) => {
-                self.primary_provider
+                self.runtime
+                    .primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
                 Outcome::NoEffect(evidence)
             }
@@ -144,7 +157,9 @@ where
                     WorthQueryProductUnpublishedApplication::new(
                         effects,
                         recovery,
-                        self.primary_provider.unpublished_idempotency_disposition(),
+                        self.runtime
+                            .primary_provider
+                            .unpublished_idempotency_disposition(),
                     ),
                 ))
             }

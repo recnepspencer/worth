@@ -15,13 +15,14 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
     ) {
         world
             .application
+            .runtime
             .primary_provider
             .assert_comparison_scope_lifecycle(
                 execution,
                 &self.staged.read_authority(),
                 request,
                 cancellation,
-                &foreign.application.primary_provider,
+                &foreign.application.runtime.primary_provider,
             );
         let _ = self.staged.abort();
         assert_eq!(
@@ -39,6 +40,7 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
     ) {
         world
             .application
+            .runtime
             .primary_provider
             .assert_principal_stale_and_stopped(
                 execution,

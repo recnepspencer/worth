@@ -48,6 +48,7 @@ fn rejection_before_transaction_publishes_no_emit_causality() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0

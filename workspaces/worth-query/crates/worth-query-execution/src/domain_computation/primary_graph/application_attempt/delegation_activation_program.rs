@@ -72,6 +72,13 @@ impl<Schema, Operation, Input, Scope>
         self.program.request_scope()
     }
 
+    #[inline]
+    pub(in crate::domain_computation::primary_graph) fn application_program(
+        &self,
+    ) -> &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+        &self.program
+    }
+
     pub(super) fn into_inner(
         self,
     ) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {

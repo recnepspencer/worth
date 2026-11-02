@@ -7,6 +7,7 @@ mod entity_creation;
 mod entity_retirement;
 mod entity_selection;
 mod field_observation;
+mod installed_reentry;
 mod model;
 mod operation_body;
 mod optional_field_authoring;

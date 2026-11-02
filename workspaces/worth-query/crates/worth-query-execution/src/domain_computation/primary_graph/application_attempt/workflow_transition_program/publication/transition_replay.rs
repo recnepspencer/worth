@@ -143,7 +143,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 WorthQueryApplicationIdempotencyResolution::Unseen => {}
                 WorthQueryApplicationIdempotencyResolution::IntentDrift => drift = true,
                 WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                    return Ok(Some(runtime.primary_provider.graph.with_runtime(
+                    return Ok(Some(runtime.runtime.primary_provider.graph.with_runtime(
                         execution,
                         |relational| {
                             super::project(
@@ -301,6 +301,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             .expect("one operation replay binding returns one resolution");
         let project_original = |receipt| {
             runtime
+                .runtime
                 .primary_provider
                 .graph
                 .with_runtime(execution, |relational| {

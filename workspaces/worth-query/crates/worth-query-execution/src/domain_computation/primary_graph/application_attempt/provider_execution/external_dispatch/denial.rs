@@ -93,6 +93,10 @@ pub enum WorthQueryExternalRedispatchDenial {
     /// Fresh effect authority for the handle failed before transport: the
     /// handle already ended, it expired, or the authority is not its own.
     FreshAuthority(WorthQueryRecoveryHandleDenialKind),
+    /// Exact installed admission refusal before any effect or owner read.
+    AdmissionAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
     /// The admitted request was cancelled before transport.
     AdmissionCancelled,
     /// The admitted request reached its deadline before transport.
@@ -149,6 +153,7 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
                 Kind::CompletionExecutionRequest(cause)
             }
             Redispatch::FreshAuthority(kind) => kind,
+            Redispatch::AdmissionAuthorization(kind) => Kind::AdmissionAuthorization(kind),
             Redispatch::AdmissionCancelled => Kind::AdmissionCancelled,
             Redispatch::AdmissionDeadlineExceeded => Kind::AdmissionDeadlineExceeded,
             Redispatch::AdmissionAuthenticationExpired => Kind::AdmissionAuthenticationExpired,
@@ -361,5 +366,13 @@ impl WorthQueryExternalRedispatchDenial {
             Ok(kind) => Self::CompletionExecutionDenied { stage, kind },
             Err(kind) => Self::CompletionExecutionControlStopped { stage, kind },
         }
+    }
+}
+
+impl WorthQueryExternalRedispatchDenial {
+    pub(super) fn from_admission_authorization(
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self::AdmissionAuthorization(denial.kind())
     }
 }

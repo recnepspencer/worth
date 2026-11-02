@@ -137,6 +137,16 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let application = self.application();
+        admission
+            .validate_installed_entry(
+                application.runtime.authority_identity(),
+                &application.installed_schema.binding_identity(),
+                &application.runtime.installed_operations,
+            )
+            .and_then(|()| admission.validate_current_authority())
+            .map_err(|denial| WorkflowDefinitionPreparationDenial::Projection(denial.into()))?;
+
         let bound = self
             .bind_workflow_definition_contract(contract)
             .map_err(WorkflowDefinitionPreparationDenial::Binding)?;

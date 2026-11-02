@@ -52,7 +52,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         // Ownership is refused before the branch, so neither path does work
         // for a foreign core; the phase check keeps preparation's order.
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
                 return refused(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
@@ -60,11 +60,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 ))
             }
         };
-        if let Err(denial) = admission.validate_runtime_ownership(
+        if let Err(denial) = admission.validate_mutation_entry(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
+            &self.runtime.installed_operations,
         ) {
-            return refused(MutationHandlerExecutionDenial::Projection(denial.into()));
+            return refused(denial);
         }
         if admission
             .allowed_graph_contract()
@@ -85,6 +86,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .installed_mutation_binding_descriptor(B::IDENTITY),
         ) {
             return refused(denial);
+        }
+        if let Err(denial) = admission.validate_current_authority() {
+            return refused(MutationHandlerExecutionDenial::Projection(denial.into()));
         }
         let shared = match self.prepare_decision_query_basis(&execution, admission.graph_work()) {
             Ok(shared) => shared,

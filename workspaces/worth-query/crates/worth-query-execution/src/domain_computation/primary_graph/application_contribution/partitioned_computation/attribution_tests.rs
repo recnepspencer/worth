@@ -250,7 +250,7 @@ fn routed(
                     &admission,
                     |reader, root| {
                         let execution = phase
-                            .execution_for(&world.application.product_runtime)
+                            .execution_for(&world.application.runtime.product_runtime)
                             .expect("the installed fixture lends its computation execution");
                         for _ in 0..runs {
                             if installed.prepare_through(reader, execution, root).is_err() {

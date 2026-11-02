@@ -76,7 +76,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let execution = match phase.execution_for(&self.product_runtime) {
+        let execution = match phase.execution_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -87,12 +87,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
-        if let Err(denial) = admission.validate_runtime_ownership(
+        if let Err(denial) = admission.validate_mutation_entry(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
+            &self.runtime.installed_operations,
         ) {
             return Err(WorthQueryMutationHandlerExecutionReport::new(
-                Err(MutationHandlerExecutionDenial::Projection(denial.into())),
+                Err(denial),
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
@@ -138,7 +139,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         let interruption = std::cell::Cell::new(None);
         let mut handler_contacted = false;
-        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(

@@ -285,6 +285,7 @@ fn commit_own_write(
         .expect("the committed output has a retained cell");
     let completed = world
         .application
+        .runtime
         .primary_provider
         .observe_completed_application(receipt.commit_reference())
         .unwrap();

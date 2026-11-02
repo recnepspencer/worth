@@ -37,7 +37,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -88,6 +88,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         // subsequent Scheduled begin can enter Running. The actual outcome
         // consumes it; dropping an unused token never releases a peer's row.
         let selected_execution_finish = self
+            .runtime
             .output_demands
             .prepare_selected_execution_finish(interest)?;
         let mut selected_published_mode = if schedule_progression.is_selected() {
@@ -101,9 +102,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         };
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
         let (mut admission_phase, mut selected_finish) = if schedule_progression.is_selected() {
-            self.output_demands.begin_admitted(interest)?
+            self.runtime.output_demands.begin_admitted(interest)?
         } else {
-            (self.output_demands.begin(interest), None)
+            (self.runtime.output_demands.begin(interest), None)
         };
         let successor_of = loop {
             match admission_phase {
@@ -132,7 +133,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                             finish.finish(performed_source, &mut result);
                         }
                         _ => {
-                            self.output_demands.finish_scheduling(
+                            self.runtime.output_demands.finish_scheduling(
                                 interest,
                                 performed_source,
                                 &mut result,
@@ -143,10 +144,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     // The scheduled row is this call's to execute.
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled) => {
                         admission_phase = if schedule_progression.is_selected() {
-                            self.output_demands
+                            self.runtime.output_demands
                                 .begin_scheduled_admitted(interest)?
                         } else {
-                            self.output_demands.begin(interest)
+                            self.runtime.output_demands.begin(interest)
                         };
                         continue;
                     }
@@ -233,7 +234,12 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         };
         let mut required_output = match interest.required_context(
             Family::IDENTITY,
-            &self.primary_provider.graph.source_owner.invalidation_owner,
+            &self
+                .runtime
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner,
         ) {
             Ok(context) => context,
             Err(denial) => {

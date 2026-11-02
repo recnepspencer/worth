@@ -66,7 +66,7 @@ where
     let source_epoch = observed_source.idempotency_identity();
     let key = provider.idempotency_key(&source, &source_epoch.bytes());
     let input_execution = phase
-        .checked_execution_request_for(&runtime.product_runtime)
+        .checked_execution_request_for(&runtime.runtime.product_runtime)
         .map_err(|stop| {
             denial(
                 WorthQueryOutputDemandDenialKind::ExecutionRequest(stop),
@@ -200,7 +200,7 @@ where
         return Err(super::super::denial::request_admission_rejected(stop));
     }
     let (requests, completion, inputs) = match prepared {
-        Ok(prepared) => prepared.into_parts(&runtime.output_demands)?,
+        Ok(prepared) => prepared.into_parts(&runtime.runtime.output_demands)?,
         Err(report) => {
             return Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
                 Vec::new(),
@@ -232,19 +232,19 @@ where
             let completed = completed_handler::<_, _, DeclaredDenial<Schema, Binding>>(
                 Binding::IDENTITY,
                 completion
-                    .finish(runtime, &identities, slots, phase.execution_for(&runtime.product_runtime)
+                    .finish(runtime, &identities, slots, phase.execution_for(&runtime.runtime.product_runtime)
                         .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer completion phase"))?)
                     .into_outcome()
                     .map_err(|error| execution_failed(Binding::IDENTITY, error))?,
                 |denial| provider.domain_denial_reason(denial),
             )?;
             let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
-            let identity_execution = phase.execution_request_for(&runtime.product_runtime)
+            let identity_execution = phase.execution_request_for(&runtime.runtime.product_runtime)
                 .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer content phase"))?;
             let (key_identity, dependency_identity) = program
         .producer_idempotency_identities::<Operation<Schema, Binding>>(
             runtime,
-            &phase.checked_execution_request_for(&runtime.product_runtime).map_err(|stop| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(stop), Binding::IDENTITY))?,
+            &phase.checked_execution_request_for(&runtime.runtime.product_runtime).map_err(|stop| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(stop), Binding::IDENTITY))?,
             *identities.key_identity(),
             worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(edition.build_identity(), edition.digest()),
             successor_of,
@@ -278,7 +278,7 @@ where
                     ),
                 WorthQueryProducerCommitAuthority::ProgramOutput => runtime
                     .compare_and_commit_application_for_program_output_producer(
-                        &phase.execution_request_for(&runtime.product_runtime).map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer commit phase"))?,
+                        &phase.execution_request_for(&runtime.runtime.product_runtime).map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer commit phase"))?,
                         phase,
                         program,
                         idempotency,
@@ -287,7 +287,7 @@ where
                     ),
                 WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => {
                     runtime.compare_and_commit_application_for_program_output_producer(
-                        &phase.execution_request_for(&runtime.product_runtime).map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer commit phase"))?,
+                        &phase.execution_request_for(&runtime.runtime.product_runtime).map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer commit phase"))?,
                         phase,
                         program,
                         idempotency,

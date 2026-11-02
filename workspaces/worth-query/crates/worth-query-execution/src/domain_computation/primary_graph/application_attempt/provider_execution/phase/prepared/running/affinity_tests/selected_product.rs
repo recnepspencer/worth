@@ -46,7 +46,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
             drop(sibling_application_basis);
 
             let result = direct_run
-                .admit_provider_execution_plan(&world.application.primary_graph_authority)
+                .admit_provider_execution_plan(&world.application.runtime.primary_graph_authority)
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product(sibling_product);
             assert!(result.is_err());
@@ -93,7 +93,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 workflow_settlement_publication: _workflow_settlement_publication,
             } = running;
             let result = direct_run
-                .admit_provider_execution_plan(&world.application.primary_graph_authority)
+                .admit_provider_execution_plan(&world.application.runtime.primary_graph_authority)
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product(lease.product().retained_clone());
             assert!(result.is_ok());
@@ -156,7 +156,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let before = reads();
                 let plan = brun
                     .running
-                    .admit_provider_execution_plan(&b.application.primary_graph_authority)
+                    .admit_provider_execution_plan(&b.application.runtime.primary_graph_authority)
                     .unwrap()
                     .bind_application_product(brun.lease.product().retained_clone())
                     .unwrap();

@@ -19,6 +19,7 @@ pub(super) fn create(
     let root = world.application.current_world();
     let source = world
         .application
+        .runtime
         .product_runtime
         .admit_product_occurrence(root.occurrence())
         .expect("the root occurrence remains selectable");
@@ -38,6 +39,7 @@ pub(super) fn create(
     let cancellation = RuntimeWorldCancellationSource::new();
     let RuntimeWorldBranchCreationOutcome::Performed(occupied) = world
         .application
+        .runtime
         .product_runtime
         .create_product_branch(execution, &source, None, intent, &cancellation.token())
         .expect("the real Signal destination is occupied through World")

@@ -93,6 +93,7 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .unpublished_idempotency_count(),
         1,
@@ -129,6 +130,7 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .unpublished_idempotency_count(),
         0,

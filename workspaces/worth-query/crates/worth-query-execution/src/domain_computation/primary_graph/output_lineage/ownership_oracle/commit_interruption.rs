@@ -28,7 +28,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
         .with_application_advancement(&scope, |phase| {
             use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let admit = || {
                 runtime
@@ -81,7 +81,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
     runtime
         .with_application_advancement(&fresh, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let advanced = runtime
                 .advance_program_output_demand(

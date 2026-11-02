@@ -14,7 +14,7 @@ use super::WorthQueryAdmittedOperation;
 
 /// Copied at mint from the installed operation; type identities serve
 /// equality only.
-pub(super) struct BrandTag {
+pub(in crate::domain_computation) struct BrandTag {
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     pub(super) operation_authority_identity_bytes: [u8; 32],
     pub(super) operation_definition_identity: [u8; 32],

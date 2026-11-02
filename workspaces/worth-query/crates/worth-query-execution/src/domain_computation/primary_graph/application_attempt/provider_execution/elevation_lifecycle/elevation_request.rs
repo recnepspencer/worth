@@ -13,11 +13,15 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        let program = match self.readmit_elevation_request_installation(None, program) {
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.with_application_advancement(&request, |active_phase| {
             let execution = active_phase
-                .execution_request_for(&self.product_runtime)
+                .execution_request_for(&self.runtime.product_runtime)
                 .map_err(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                 )?;
@@ -53,6 +57,10 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        let program = match self.readmit_elevation_request_installation(Some(phase), program) {
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let mut program = program.into_inner();
         if validate_elevation_request_program(&program).is_err() {
             return WorthQueryElevationRequestOutcome::Denied(

@@ -81,7 +81,7 @@ where
         self.validate_approval_descriptor()
             .map_err(WorkflowApprovalBodyDenial::Authentication)?;
         let request = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorkflowApprovalBodyDenial::Handler(
                     MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause),

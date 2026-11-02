@@ -41,6 +41,7 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
     world
         .application
         .runtime
+        .execution
         .replace_rebuilt_installation(rebuilt)
         .unwrap();
     assert!(world
@@ -58,6 +59,7 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
     world
         .application
         .runtime
+        .execution
         .commit_successor_installation(successor)
         .unwrap();
     assert_eq!(

@@ -34,6 +34,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let commit_count = || {
         world
             .application
+            .runtime
             .primary_provider
             .graph
             .with_runtime(request_execution, |runtime| {
@@ -161,6 +162,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     drop(recovered);
     let occurrence = world
         .application
+        .runtime
         .primary_provider
         .observe_completed_application(&commit)
         .expect("response loss and receipt disposal preserve the performed source");

@@ -83,6 +83,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         let installed = self.installed_inbound_verifier(handle)?;
         let cost = &installed.cost;
         let (accepted_occurrences, accepted_charged_bytes) = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -101,6 +102,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             accepted_occurrences,
             accepted_charged_bytes,
             outstanding_dispatches: self
+                .runtime
                 .primary_provider
                 .outstanding_dispatch_count_for_operation(&installed.contract),
         })
@@ -110,7 +112,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         &self,
         operation: &str,
     ) -> Option<std::sync::Arc<super::WorthQueryInstalledInboundVerifier>> {
-        self.inbound_verifiers
+        self.runtime
+            .inbound_verifiers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .get(operation)

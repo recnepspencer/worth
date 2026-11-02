@@ -186,6 +186,7 @@ impl WorthQueryExecutionInstallationAuthority {
             .map(|checkpoint| checkpoint.recover_publication(&execution, &graph))
             .transpose()?;
         Ok(WorthQueryPrimaryGraphBootstrap {
+            installed_operations: installed_schema.installed_view().retain_operation_catalog(),
             value_bindings: installed_schema.value_bindings().clone(),
             runtime_authority: runtime.authority_identity(),
             installed_packages: runtime.retain_installed_packages(),

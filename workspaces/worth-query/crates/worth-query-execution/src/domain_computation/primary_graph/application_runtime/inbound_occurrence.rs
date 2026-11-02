@@ -129,6 +129,7 @@ where
             return Err(WorthQueryInboundVerifierInstallationDenial::IncompatibleVerifier);
         }
         let mut installed = self
+            .runtime
             .inbound_verifiers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -160,6 +161,7 @@ where
             return None;
         }
         let installed = self
+            .runtime
             .inbound_verifiers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -171,7 +173,8 @@ where
         &self,
         operation: &str,
     ) -> Option<WorthQueryInboundSourcePosture> {
-        self.inbound_verifiers
+        self.runtime
+            .inbound_verifiers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .get(operation)

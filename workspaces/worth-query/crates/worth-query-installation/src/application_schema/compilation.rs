@@ -43,6 +43,7 @@ pub(crate) enum ApplicationSchemaCompilationDenial {
 }
 
 pub(crate) struct ApplicationSchemaCompilationInput<'a, Schema> {
+    pub operation_catalog: Arc<crate::application_operation::InstalledOperationCatalog>,
     pub package_authority: WorthQueryInstalledPackageAuthority,
     pub declaration: &'a ApplicationSchemaDeclaration<Schema>,
     pub schema_identity: CanonicalDigestId,
@@ -54,6 +55,7 @@ pub(crate) struct ApplicationSchemaCompilationInput<'a, Schema> {
 }
 
 pub(crate) struct CompiledApplicationSchema<Schema> {
+    pub operation_catalog: Arc<crate::application_operation::InstalledOperationCatalog>,
     pub package_authority: WorthQueryInstalledPackageAuthority,
     pub schema_name: String,
     pub schema_identity: CanonicalDigestId,
@@ -112,6 +114,7 @@ where
             |work, requirement| work.combine(requirement.canonical_work()),
         );
     Ok(CompiledApplicationSchema {
+        operation_catalog: input.operation_catalog,
         schema_name: input.declaration.erased().name().to_string(),
         schema_identity: input.schema_identity,
         schema: input.declaration.erased().clone(),

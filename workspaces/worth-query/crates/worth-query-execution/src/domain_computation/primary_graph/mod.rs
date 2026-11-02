@@ -29,6 +29,7 @@ mod application_program;
 pub(crate) mod application_query;
 pub(crate) mod application_resource;
 mod application_runtime;
+pub(in crate::domain_computation) use application_runtime::WorthQueryApplicationRuntimeCore;
 pub(crate) mod authenticated_principal;
 mod authentication_clock;
 mod bootstrap;

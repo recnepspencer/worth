@@ -20,11 +20,14 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.validate_commit_program(None, program.application_program()) {
+            return outcome;
+        }
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.with_application_advancement(&request, |active_phase| {
             let execution = active_phase
-                .execution_request_for(&self.product_runtime)
+                .execution_request_for(&self.runtime.product_runtime)
                 .map_err(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                 )?;
@@ -57,6 +60,12 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) =
+            self.validate_commit_program(Some(phase), program.application_program())
+        {
+            return outcome;
+        }
+
         self.compare_and_commit_application_inner(
             execution,
             phase,

@@ -121,6 +121,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
             {
                 // Capture before any Native borrow: registry entry can allocate or wait.
                 let lane = application
+                    .runtime
                     .primary_provider
                     .application_branch_commit_lane_for_occurrence(
                         invocation.current().observation().lifecycle_incarnation(),

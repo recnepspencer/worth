@@ -27,6 +27,7 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
         .unwrap();
     let in_flight = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()

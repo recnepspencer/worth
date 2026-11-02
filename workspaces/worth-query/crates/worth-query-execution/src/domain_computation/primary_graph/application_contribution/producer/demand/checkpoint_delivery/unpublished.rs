@@ -95,13 +95,17 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         returned: &mut Option<Checkpoint>,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputReadCloseDenial> {
         use crate::domain_computation::primary_graph::WorthQueryOutputReadCloseDenial as Denial;
-        let Some((claim, checkpoint)) = self.output_demands.begin_unpublished_close(interest)?
+        let Some((claim, checkpoint)) = self
+            .runtime
+            .output_demands
+            .begin_unpublished_close(interest)?
         else {
             return Ok(());
         };
         let mut loan = PublicationLoan::new(checkpoint, |checkpoint| {
             use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
             match self
+                .runtime
                 .output_demands
                 .finish_checkpoint_owned(interest, claim, checkpoint, None)
             {

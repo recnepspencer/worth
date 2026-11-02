@@ -13,9 +13,9 @@ pub(super) fn refuse_mixed_and_created_subset(
 ) {
     let scope = primary_graph::tests::fixture::live_scope();
     runtime.with_application_advancement(&scope, |phase| {
-        let execution = phase.execution_request_for(&runtime.product_runtime).unwrap();
+        let execution = phase.execution_request_for(&runtime.runtime.product_runtime).unwrap();
         let (_, product, _application_basis) = runtime.on_branch(runtime.current_world()).select(&phase).unwrap().into_parts();
-        let graph = &runtime.primary_provider.graph;
+        let graph = &runtime.runtime.primary_provider.graph;
         let publisher = graph.application_publication.as_ref().expect("actual installed publication owner");
         let roles: Vec<_> = settled.output_correspondence.native_witness_roles().map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
             role: role.to_owned(), entity_name: name.to_owned(), kind: graph.layout.entity_kind(name).unwrap(),

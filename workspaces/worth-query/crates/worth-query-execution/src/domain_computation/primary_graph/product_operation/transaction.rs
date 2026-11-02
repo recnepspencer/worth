@@ -68,6 +68,13 @@ where
     pub fn commit(
         self,
     ) -> Result<WorthQueryApplicationCommitOutcome, WorthQueryProductTransactionCommitError> {
+        if let Err(outcome) = self
+            .entry
+            .application
+            .validate_commit_program(None, &self.change.program)
+        {
+            return Ok(outcome);
+        }
         let request = self.change.program.request_scope().clone();
         let runtime = self.entry.application;
         runtime
@@ -104,6 +111,13 @@ where
             Schema,
         >,
     {
+        if let Err(outcome) = self
+            .entry
+            .application
+            .validate_commit_program(None, &self.change.program)
+        {
+            return Ok(outcome);
+        }
         if let Err(stop) = execution.consult() {
             return Ok(program_request_stop(stop));
         }

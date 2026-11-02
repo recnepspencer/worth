@@ -8,6 +8,7 @@ pub(crate) fn owner_commits(
 ) -> usize {
     world
         .application
+        .runtime
         .primary_provider
         .graph
         .with_runtime(request_execution, |runtime| {
@@ -38,6 +39,7 @@ pub(crate) fn completion_records(
         .unwrap();
     let kind = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -45,6 +47,7 @@ pub(crate) fn completion_records(
         .kind;
     world
         .application
+        .runtime
         .primary_provider
         .graph
         .with_runtime_mut(execution, |runtime| {

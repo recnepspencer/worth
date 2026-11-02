@@ -43,6 +43,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     let lifecycle = runtime
+        .runtime
         .authorization
         .elevation_lifecycle_operation::<Schema, Operation>(
             operation.operation(),

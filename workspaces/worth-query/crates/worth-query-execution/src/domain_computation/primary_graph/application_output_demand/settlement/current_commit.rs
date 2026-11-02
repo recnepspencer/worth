@@ -23,6 +23,7 @@ where
     let original_publication_is_current = committed.is_selected_at(observation);
 
     let retained_output_is_current = runtime
+        .runtime
         .primary_provider
         .graph
         .output_lineage

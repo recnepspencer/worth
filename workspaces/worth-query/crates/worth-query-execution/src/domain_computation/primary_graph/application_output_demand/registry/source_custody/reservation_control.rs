@@ -70,7 +70,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
         WorthQueryDiscoveredRetentionReservationForTest,
         WorthQueryDiscoveredRetentionControlDenial,
     > {
-        self.output_demands.arm_retention_reservation()
+        self.runtime.output_demands.arm_retention_reservation()
     }
 }
 #[cfg(test)]
