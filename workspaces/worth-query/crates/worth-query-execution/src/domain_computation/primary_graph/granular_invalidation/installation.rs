@@ -25,6 +25,12 @@ pub struct WorthQueryGranularInvalidationInstallation {
 }
 
 impl WorthQueryGranularInvalidationInstallation {
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        self.integration.preflight_home_retirement(request)
+    }
     pub(in crate::domain_computation::primary_graph) fn advance_home_retirement(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,

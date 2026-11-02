@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
         CapabilityTouchMutationBinding as Binding, IdentityExecutionSchema as Schema,
     },
 };
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use worth_execution::{CancellationToken, SerialMemoryBudget, SerialRequest};
 type Input = <Binding as ApplicationMutationBinding<Schema>>::Input;
 type Decision = <Binding as ApplicationMutationBinding<Schema>>::Decision;
@@ -17,6 +17,7 @@ struct Probe {
     contacts: Arc<AtomicUsize>,
     drops: Arc<AtomicUsize>,
     refuses: bool,
+    panic_once: Arc<AtomicBool>,
 }
 impl Drop for Probe {
     fn drop(&mut self) {
@@ -37,6 +38,9 @@ impl OperationHandler<Schema, Binding> for Probe {
         _: &ExecutionRequest<'_, '_>,
     ) -> Result<Progress, Denial> {
         self.contacts.fetch_add(1, Ordering::SeqCst);
+        if self.panic_once.swap(false, Ordering::SeqCst) {
+            panic!("supplier retirement advanced then panicked");
+        }
         if self.refuses {
             Err(Denial::Unsupported)
         } else {
@@ -65,6 +69,7 @@ fn entry(contacts: &Arc<AtomicUsize>, drops: &Arc<AtomicUsize>) -> PendingMutati
             contacts: contacts.clone(),
             drops: drops.clone(),
             refuses: false,
+            panic_once: Arc::new(AtomicBool::new(false)),
         },
         HandlerOrigin::Supplier,
     )
@@ -139,8 +144,8 @@ fn ordinary_supplier_retirement_retains_payload_with_an_exhausted_memory_budget(
         _schema: PhantomData,
     };
     registry.preflight_home_retirement(&request).unwrap();
-    let exhausted = request
-        .reserve_retained_memory((1 << 20) - budget.charged_memory_bytes())
+    let exhausted = budget
+        .reserve((1 << 20) - budget.charged_memory_bytes())
         .unwrap();
     assert_eq!(budget.charged_memory_bytes(), 1 << 20);
     let mut cursor = HandlerRetirementCursor::default();
@@ -174,6 +179,7 @@ fn supplier_declared_refusal_preserves_original_handler_and_payload() {
             contacts: contacts.clone(),
             drops: drops.clone(),
             refuses: true,
+            panic_once: Arc::new(AtomicBool::new(false)),
         },
         HandlerOrigin::Supplier,
     );
@@ -326,4 +332,56 @@ fn erased_slot_and_active_handler_aliases_refuse_while_the_same_query_serves() {
         .unwrap();
     let final_observation = resolve(&world);
     assert_eq!(before.entity_id(), final_observation.entity_id());
+}
+
+#[test]
+fn handler_retirement_panic_retains_original_payload_and_unadvanced_cursor_for_retry() {
+    let policy = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationToken::new(),
+        None,
+    );
+    let request = ExecutionRequest::serial(&policy);
+    let contacts = Arc::new(AtomicUsize::new(0));
+    let drops = Arc::new(AtomicUsize::new(0));
+    let entry = PendingMutationHandler::retain_original::<Schema, Binding, Probe>(
+        Probe {
+            contacts: contacts.clone(),
+            drops: drops.clone(),
+            refuses: false,
+            panic_once: Arc::new(AtomicBool::new(true)),
+        },
+        HandlerOrigin::Supplier,
+    );
+    let original = Arc::as_ptr(&entry.value);
+    let mut registry = InstalledMutationHandlerRegistry::<Schema> {
+        entries: BTreeMap::from([(Binding::IDENTITY.to_owned(), entry)]),
+        _schema: PhantomData,
+    };
+    let mut cursor = HandlerRetirementCursor::default();
+    assert!(matches!(
+        registry.advance_home_retirement(&mut cursor, &request),
+        Err(Failure::Handler {
+            binding: Binding::IDENTITY,
+            cause: Denial::Execution(worth_execution::WorkCeilingDenial::Panicked)
+        })
+    ));
+    assert!(cursor.completed.is_none());
+    assert!(std::ptr::addr_eq(
+        original,
+        Arc::as_ptr(&registry.entries[Binding::IDENTITY].value)
+    ));
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    assert!(matches!(
+        registry.advance_home_retirement(&mut cursor, &request),
+        Ok(Progress::Advanced)
+    ));
+    assert!(matches!(
+        registry.advance_home_retirement(&mut cursor, &request),
+        Ok(Progress::Complete)
+    ));
+    assert_eq!(contacts.load(Ordering::SeqCst), 2);
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    drop(registry);
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
 }

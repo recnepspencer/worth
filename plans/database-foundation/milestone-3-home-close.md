@@ -207,3 +207,19 @@ handoff are required; dropping evidence or manufacturing retired identities is
 not an acceptable close implementation. Ownership of the receipt handoff has
 been referred to the coordinator because its files lie outside the listed
 P-B source-owner paths. The current Host mutation-close courts remain red.
+
+The ordinary-stack close correction places each graph's actual source task in
+preflight-funded cold storage and prepays the original whole-Query retirement
+Box. The prepared and refused carriers carry those boxes, instead of embedding
+the future retirement bodies in opening and close results. Completion erases
+that same Box without allocating a replacement. Projection and granular graph
+copies also run their real source preflight before World seal. Payload backing
+is destroyed before its original reservation refunds.
+
+Post-seal Query retirement consults the original request without opening a new
+execution scope per step. A fresh scope itself needs framework memory, which
+cannot be required after a failed checkpoint exhausts that payer. The handler
+owner contains supplier advancement panics while keeping its original payload
+and cursor; `handler_retirement_panic_retains_original_payload_and_unadvanced_cursor_for_retry`
+traces that refusal. The memory court exhausts the same Serial payer only after
+preflight, through its own reservation port, and advances without fresh memory.

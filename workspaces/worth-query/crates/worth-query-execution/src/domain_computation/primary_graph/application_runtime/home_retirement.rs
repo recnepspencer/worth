@@ -82,6 +82,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.primary_graph_authority
             .preflight(&self.primary_provider)?;
         self.primary_provider.preflight(request)?;
+        self.mutation_projection
+            .preflight_home_retirement(request)?;
+        self.granular_invalidation
+            .preflight_home_retirement(request)?;
         if let Some(maintenance) = self.product_runtime.home_maintenance.as_mut() {
             std::sync::Arc::get_mut(maintenance)
                 .ok_or(WorthQueryHomeRetirementDenial::Busy(

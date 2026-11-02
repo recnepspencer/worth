@@ -63,7 +63,15 @@ where
     Binding: ApplicationMutationBinding<Schema>,
 {
     request.consult().map_err(Denial::Execution)?;
-    original_handler::<Schema, Binding>(value)?.advance_home_retirement(request)
+    let original = original_handler::<Schema, Binding>(value)?;
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        original.advance_home_retirement(request)
+    }))
+    .unwrap_or_else(|_| {
+        Err(Denial::Execution(
+            worth_execution::WorkCeilingDenial::Panicked,
+        ))
+    })
 }
 
 impl<Schema: ApplicationSchema> InstalledMutationHandlerRegistry<Schema> {
