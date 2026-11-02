@@ -142,6 +142,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SettlementProvenance(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Closed

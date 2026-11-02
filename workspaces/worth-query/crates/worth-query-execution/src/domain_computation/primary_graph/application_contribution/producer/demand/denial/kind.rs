@@ -98,6 +98,8 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// A dependent output's parent settlement belongs to another program,
     /// feature, or branch position.
     ForeignSettlement,
+    /// The exact retained provenance fact that disagrees with its real owner.
+    SettlementProvenance(super::WorthQueryOutputSettlementProvenanceDenial),
     /// A retained or restored output lacks the dependency facts needed to reuse
     /// it.
     IncompleteDependencyCoverage,

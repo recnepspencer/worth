@@ -17,7 +17,7 @@ pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
     WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
-    WorthQuerySelectedApplicationProducer,
+    WorthQueryOutputSettlementProvenanceDenial, WorthQuerySelectedApplicationProducer,
 };
 pub use denial_value::{
     WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,

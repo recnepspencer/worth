@@ -1,5 +1,6 @@
 //! The retained read must describe the settlement's actual immutable owner.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryOutputSettlementProvenanceDenial as Reason;
 use crate::domain_computation::primary_graph::{
     admitted_capture::checkpoint, output_reuse::read_denial,
 };
@@ -52,7 +53,7 @@ impl OriginalSettledProducerObservation {
                 .matches_observation(settled.observation.product_observation())
             || !Arc::ptr_eq(&self.correspondence, &settled.output_correspondence)
         {
-            return Err(refused(
+            return Err(foreign(
                 "settlement read binding disagrees with its original producer",
             ));
         }
@@ -65,15 +66,20 @@ impl OriginalSettledProducerObservation {
             } => {
                 let receipt = settled
                     .application_commit_receipt()
-                    .ok_or_else(|| refused("committed provenance has no retained receipt"))?;
-                if settled.stable.is_some()
-                    || settled.restored_source.is_some()
-                    || !same_owner(settlement.as_ref(), receipt.exact_output_settlement())
-                {
-                    return Err(refused(
-                        "original committed settlement differs from its receipt",
+                    .ok_or_else(|| foreign("committed provenance has no retained receipt"))?;
+                if settled.stable.is_some() || settled.restored_source.is_some() {
+                    return Err(foreign(
+                        "committed provenance has a foreign settlement posture",
                     ));
                 }
+                require_owner(
+                    settlement.as_ref(),
+                    receipt.exact_output_settlement(),
+                    Reason::OriginalSettlementMissing,
+                    Reason::ReceiptSettlementMissing,
+                    Reason::ForeignSettlementOwner,
+                    "original committed settlement differs from its receipt",
+                )?;
                 let expected_publication = receipt
                     .committed_product_publication()
                     .observed_product_identity();
@@ -82,6 +88,7 @@ impl OriginalSettledProducerObservation {
                 }
                 if *publication != expected_publication {
                     return Err(refused(
+                        Reason::PublicationMismatch,
                         "original producer publication differs from its receipt",
                     ));
                 }
@@ -92,28 +99,36 @@ impl OriginalSettledProducerObservation {
             }
             OriginalSettledProducerSource::StableReused { settlement } => {
                 let stable = settled.stable.as_ref().ok_or_else(|| {
-                    refused("reused provenance has no retained stable publication")
+                    foreign("reused provenance has no retained stable publication")
                 })?;
                 if settled.application_commit_receipt().is_some()
                     || settled.restored_source.is_some()
-                    || !Arc::ptr_eq(settlement, stable.exact_settlement())
                 {
+                    return Err(foreign(
+                        "reused provenance has a foreign settlement posture",
+                    ));
+                }
+                if !Arc::ptr_eq(settlement, stable.exact_settlement()) {
                     return Err(refused(
+                        Reason::ReusedSettlementOwnerMismatch,
                         "original reused settlement differs from its stable publication",
                     ));
                 }
             }
             OriginalSettledProducerSource::Restored { checkpoint } => {
                 let restored = settled.restored_source.as_ref().ok_or_else(|| {
-                    refused("restored provenance has no retained checkpoint owner")
+                    foreign("restored provenance has no retained checkpoint owner")
                 })?;
                 pay_checkpoint(context, checkpoint)?;
                 pay_checkpoint(context, &restored.checkpoint)?;
-                if settled.application_commit_receipt().is_some()
-                    || settled.stable.is_some()
-                    || checkpoint != &restored.checkpoint
-                {
+                if settled.application_commit_receipt().is_some() || settled.stable.is_some() {
+                    return Err(foreign(
+                        "restored provenance has a foreign settlement posture",
+                    ));
+                }
+                if checkpoint != &restored.checkpoint {
                     return Err(refused(
+                        Reason::RestoredCheckpointMismatch,
                         "original restored checkpoint differs from its retained owner",
                     ));
                 }
@@ -156,15 +171,36 @@ fn pay(
     checkpoint(context, work).map_err(|cause| read_denial(WorkCeilingDenial::Stopped(cause).into()))
 }
 
-fn refused(subject: &'static str) -> WorthQueryOutputDemandDenial {
+fn foreign(subject: &'static str) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSettlement, subject)
 }
 
-fn same_owner<T>(left: Option<&Arc<T>>, right: Option<&Arc<T>>) -> bool {
-    match (left, right) {
-        (Some(left), Some(right)) => Arc::ptr_eq(left, right),
-        (None, None) => true,
-        _ => false,
+fn refused(reason: Reason, subject: &'static str) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::SettlementProvenance(reason),
+        subject,
+    )
+}
+
+fn require_owner<T>(
+    original: Option<&Arc<T>>,
+    expected: Option<&Arc<T>>,
+    missing_original: Reason,
+    missing_receipt: Reason,
+    foreign: Reason,
+    subject: &'static str,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    match (original, expected) {
+        (Some(original), Some(expected)) => {
+            if Arc::ptr_eq(original, expected) {
+                Ok(())
+            } else {
+                Err(refused(foreign, subject))
+            }
+        }
+        (None, Some(_)) => Err(refused(missing_original, subject)),
+        (Some(_), None) => Err(refused(missing_receipt, subject)),
+        (None, None) => Ok(()),
     }
 }
 
@@ -172,11 +208,12 @@ pub(super) fn require_disclosure_owner(
     original: Option<&Arc<OriginalSourceInspectionDisclosure>>,
     expected: Option<&Arc<OriginalSourceInspectionDisclosure>>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    if same_owner(original, expected) {
-        Ok(())
-    } else {
-        Err(refused(
-            "original producer disclosure differs from its receipt",
-        ))
-    }
+    require_owner(
+        original,
+        expected,
+        Reason::OriginalDisclosureMissing,
+        Reason::ReceiptDisclosureMissing,
+        Reason::ForeignDisclosureOwner,
+        "original producer disclosure differs from its receipt",
+    )
 }

@@ -269,6 +269,14 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     }
 
     #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn corrupt_original_disclosure(
+        &mut self,
+        disclosure: Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>,
+    ) {
+        self.original_inspection_disclosure = Some(disclosure);
+    }
+
+    #[cfg(test)]
     pub(crate) fn replace_idempotency_binding_for_test(
         &mut self,
         binding: WorthQueryApplicationIdempotencyBinding,

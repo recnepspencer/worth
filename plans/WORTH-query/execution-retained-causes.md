@@ -1197,3 +1197,62 @@ and the dirty cap covers ten Rust files. No scope stop occurred.
 
 The same reviewer issued final PASS under all three QA skills after independently
 reconciling the source, mutation, restored tests, Host result, footer and report.
+
+
+### 2. Pin exact settlement provenance and the receipt reader.
+
+Boundary review: the original-source/receipt comparison owns these facts. The generic `ForeignSettlement` kind remains for structural or posture mismatches with no retained owner fact; a new public descriptive `SettlementProvenance(WorthQueryOutputSettlementProvenanceDenial)` carries the nine precise owner/publication/checkpoint outcomes. No authority, migration, compatibility path or Native shape is added. Host receives the existing primary-graph facade re-export.
+
+The owner compares two present allocations, absence on each side separately, publication equality, reused allocation identity and restored checkpoint equality. The corruption courts assert literal causes, including distinct absent-original and absent-receipt disclosure facts. Two genuine independent disclosure captures feed an explicitly corrupted receipt and retained descriptive source. Matching corrupted descriptions first pass the real currentness entry; changing only the receipt owner must fail at the real provenance reader. These are corrupted descriptions, not issued producer disclosure authority. The old P4 claim did not exercise two present receipt owners; this new real-reader case does.
+
+Performance remains a fixed number of allocation-identity/retained-value comparisons with no added production allocation. The fixture reuses existing capture owners and keeps the genuine committed/reused/restored journey and bounded producer-contact assertions.
+
+
+Reviewer closure in progress: the first independent review found one missing literal oracle for `ReceiptSettlementMissing`. The corrected court clears only the settlement description in a genuine producer receipt, keeps the retained original owner present, and reaches the real currentness callback. The dedicated mutation replaces only the receipt-side settlement absence constant with `OriginalSettlementMissing`.
+
+Readings I chose: a compiler-forced exhaustive forwarding arm in Query Publication is necessary integration for the new public vocabulary and is in scope. It preserves the entire original owned denial in `Demand(denial)`; the user's no-action ruling on caller forwarding excludes a redundant forwarding court. The independent reviewer confirmed that reading. Publication joins the touched-package fmt, Clippy and lib checks. The first Host inspection command exited 101 before running tests: `error[E0004]: non-exhaustive patterns: WorthQueryOutputDemandDenialKind::SettlementProvenance(_) not covered`, at `worth-query-publication/src/application_entry/demand/interest/advance.rs:109`. This was a real integration build failure, not a mutation result; the arm now forwards the original denial unchanged.
+
+
+Exact second correction 2 provenance courts commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 17 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- producer_observation tracked_aspect_absence_survives_query_checkpoint native_serial_capture` | 0 | 5/0/0/0/2319 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- producer_observation tracked_aspect_absence_survives_query_checkpoint native_serial_capture` | 101 | 3/2/0/0/2319 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib native_serial_capture` | 101 | 0/1/0/0/2323 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- producer_observation tracked_aspect_absence_survives_query_checkpoint native_serial_capture` | 0 | 5/0/0/0/2319 (passed/failed/ignored/measured/filtered) |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 18 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- producer_observation tracked_aspect_absence_survives_query_checkpoint native_serial_capture` | 0 | 5/0/0/0/2319 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- producer_observation tracked_aspect_absence_survives_query_checkpoint native_serial_capture` | 101 | 2/3/0/0/2319 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- producer_observation tracked_aspect_absence_survives_query_checkpoint native_serial_capture` | 0 | 5/0/0/0/2319 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/327 (passed/failed/ignored/measured/filtered) |
+
+
+Mutation interpretation: reporting present-foreign as absent compiled, then failed both literal `ForeignSettlementOwner` and real-receipt `ForeignDisclosureOwner` assertions (3 controls passed). Removing only the real receipt disclosure call compiled and failed the new public-reader corruption court with `present foreign receipt disclosure: ()` (0 passed, 1 failed, 2323 filtered). Misclassifying receipt-settlement absence as original-settlement absence compiled and failed three genuine producer journeys at the literal `ReceiptSettlementMissing` oracle (2 controls passed). Every mutation restored the exact production bytes in `finally` and the five positive courts passed after restoration. Independent evidence is the distinct issued allocation/capture owners, the real receipt/currentness entry, genuine committed/reused/restored fixtures and literal expected causes; the oracle does not copy pointer comparison or branch logic.
+
+The initial Host integration failure used exactly `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection`; exit 101, E0004 above, 0 tests executed. The successful final rerun appears in the command ledger.
+
+
+Exact second correction 2 final package and footer gates commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-publication` | 0 | Formatting applied |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-publication --lib` | 0 | 27/0/0/0/0 (passed/failed/ignored/measured/filtered) |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution -p worth-query-publication --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution -p worth-query-publication --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 18 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |
+
+
+Final slice 2 evidence: Publication lib 27/0/0/0/0; Host inspection 6/0/0/0/327; restored Execution provenance 5/0/0/0/2319. All footer commands exited 0 and dirty caps checked 18 Rust files. Combined all-target Clippy reported 13 Execution-labelled warnings and 7 upstream Relational warnings, no errors, no Publication diagnostics and no dirty primary spans. Execution's 12 lib/lib-test method warnings remain pub-mono's six named files/methods listed above; the thirteenth resolves physically to the mounted Certification fixture's `PlanarInteger::MIN`. Zero owned Execution warnings outside the excluded pub-mono files. The seven upstream Relational warnings are unchanged and listed above.
+
+The same independent reviewer passed source/tests after the receipt-settlement gap closed; its scan covered 18 Rust files, 9 non-blocking function advisories and 0 errors. The Publication advisory is the unchanged exhaustive forwarding owner; the corruption court remains one coherent responsibility. Final qa-loop/qa-tests/code-quality-qa commit clearance follows review of these exact logs and ledger. Full Execution lib and full DeclHost remain scheduled for final slice 5, as accepted; these are the actual scoped runs for this slice. No hard-rule or reserved-file stop occurred.
+
+Final independent clearance: qa-loop, qa-tests and code-quality-qa all PASS for second correction 2. The reviewer independently reconciled each semantic mutation, actual restored/public/package counts, warning ownership and all seven footer exits. The missing-receipt finding is closed; no in-scope blocker remains.

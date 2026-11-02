@@ -62,6 +62,9 @@ fn native_serial_capture_uses_effective_ancestor_funding_and_releases_its_last_p
         .unwrap();
     payload
         .clone()
+        .court_public_settlement_rejects_foreign_receipt(foreign.clone());
+    payload
+        .clone()
         .court_rejects_present_foreign_disclosure(foreign);
     assert_eq!(payload.scope().subject(), account.entity_id());
     payload.clone().court_public_settlement_rejects_disclosure();
