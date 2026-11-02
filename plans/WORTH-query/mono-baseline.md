@@ -171,6 +171,7 @@ Instrument tests are measurement tests, not a claim of a symbol-growth guard.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Baseline | 160,719 | 0 | 674,508,286 | 0 | 48,544,077 |
 | Concrete source meanings | 157,807 | -2,912 (-1.81%) | 659,337,342 | -15,170,944 (-2.25%) | 46,914,499 |
+| Concrete completed facts | 156,880 | -3,839 (-2.39%) | 655,841,648 | -18,666,638 (-2.77%) | 46,647,854 |
 
 The source-meaning slice keeps the public generic entry and typed observations,
 but uses the exact existing relational denial and a dynamic comparator inside
@@ -190,3 +191,16 @@ build log and `mono-source-meanings.json` for the measurement output, with the
 same exact build/instrument commands, fixture and existing test profile.
 Source parent is `2fee93f1a8`, plus the four-file source-meaning diff in its
 following commit. Upstream sync fetched before the slice was unchanged.
+
+
+Completed-fact admission saves a further 927 symbols, 3,495,694 archive bytes
+and 266,645 code bytes relative to the preceding slice. Query Execution now
+has 44,094 namespace symbols; primary_graph has 38,330. The 103-copy generic
+entry remains as the ownership shell, but its body falls from 235,333 to
+111,549 code bytes. Concrete begin/append/finish compile in the engine owner.
+Independent totals agree at 156,880 symbols and 46,647,854 code bytes;
+unattributed code is 56,216 and shared-alias code is zero. SHA-256:
+`a413fdc5393aecc0feff84f8e0102b3b612d585526c8a3b37e7f435c99e58440`.
+Reproduce with `completed-facts-court-build.jsonl` and `mono-completed-facts.json`
+in the same commands. Source parent is `e55d089b77`, plus its following
+completed-fact commit; fetched sync branches were unchanged.

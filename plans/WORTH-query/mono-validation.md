@@ -173,3 +173,43 @@ traced the guard/unmatched/retired destruction order, ordinal advancement,
 original grant custody, source comparison state extent and unchanged phase
 positions. Composition scan: 4 Rust files, 7 advisories, 0 scan errors. The reviewer independently checked the final
 measurement and all gates, and approved the slice with no open finding.
+
+
+## Concrete completed-fact admission slice
+
+Shape: the existing generic entry retains its signature and owns both its
+builder and converted iterator. Concrete begin/append/finish functions own the
+existing admission/append/seal work. Append borrows a dynamic iterator and
+callback; it does not acquire authority or change which fact can be expressed.
+The explicit iterator scope preserves conversion after initial admission and
+destruction before final checks (also before builder destruction on refusal).
+
+Commands use the same Query manifest/environment:
+
+| Command | Result |
+| --- | --- |
+| `cargo clippy -p worth-query-execution --all-targets --message-format=json` (first run) | exit 101, one E0423 compile error, 0 tests executed |
+| Same Clippy command after correction | exit 0, 0 errors, 114 warning diagnostics |
+| `cargo fmt --check -p worth-query-execution` | exit 0 |
+| `cargo test -p worth-query-execution --lib read_set::completed_facts::tests` | 3 passed, 0 failed/ignored/measured, 2212 filtered |
+| `cargo test -p worth-query-court-decl-host --test worth_query_court_decl_host --no-run --message-format=json` | exit 0; successful artifact selected |
+| `cargo test -p worth-query-court-decl-host --test worth_query_court_decl_host certification::application_graph::canonical_admission::` | 10 passed, 0 failed/ignored/measured, 317 filtered |
+| `cargo test -p worth-query-court-decl-host --test worth_query_court_decl_host certification::application_graph::source_only::` | 30 passed, 0 failed/ignored/measured, 297 filtered |
+| Boundary-check and agent-context commands above | both exit 0 |
+| `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 2 Rust files pass |
+| Working and origin/master...HEAD diff checks | exit 0 |
+
+The failed run said `error[E0423]: cannot find function denial in this scope`:
+a test imported the denial module. It now uses the existing denial constructor;
+no visibility change or production repair was needed.
+
+The three new owner tests use independently written literal event sequences,
+ordered entity IDs, injected exact denial kind/subject at all four authority
+checks, and original cancellation before iterator conversion. These are
+SystemAllocation builder mechanics, not a synthetic installed admission claim.
+The real installed admission/source-only courts retain their external outcomes,
+read-back/resource/contact assertions described above. They were rerun on this
+slice without changes. Reviewer independently traced all ownership/check phases;
+2 Rust files, 3 advisories, 0 scan errors. It accepted the test-only constructor
+correction, independently matched final measurements and gates, and approved
+the slice with no open finding.
