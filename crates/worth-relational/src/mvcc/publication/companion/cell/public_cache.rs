@@ -80,7 +80,7 @@ impl ManagedSourceRootImage {
             .payload
             .downcast_ref::<ManagedIndexBranchImage>()
             .ok_or(Denial::ForeignSource)?;
-        if cache.0.image.as_ptr() != std::ptr::from_ref(image) {
+        if !std::ptr::eq(cache.0.image.as_ptr(), image) {
             return Err(Denial::RootUnavailable);
         }
         // This is the exact Native-issued slot, not a reconstructed directory key.
@@ -112,7 +112,7 @@ impl ManagedIndexPublicCache {
             .payload
             .downcast_ref::<ManagedIndexBranchImage>()
             .is_some_and(|image| {
-                self.0.image.as_ptr() == std::ptr::from_ref(image)
+                std::ptr::eq(self.0.image.as_ptr(), image)
                     && self
                         .0
                         .entry

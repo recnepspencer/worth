@@ -16,10 +16,10 @@ impl SourceTree {
         // stop this walk before its turn because that turn still closes its
         // parent chain; seed membership alone is not a completed closure.
         for edit in edits {
-            if edit.region.is_some() {
-                if let Some(parent) = self.parent(edit.ordinal, control)? {
-                    self.add_ancestors(parent, &mut affected, execution, control)?;
-                }
+            if edit.region.is_some()
+                && let Some(parent) = self.parent(edit.ordinal, control)?
+            {
+                self.add_ancestors(parent, &mut affected, execution, control)?;
             }
         }
         for change in changes {

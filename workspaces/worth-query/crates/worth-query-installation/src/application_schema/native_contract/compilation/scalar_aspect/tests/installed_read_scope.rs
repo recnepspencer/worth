@@ -1,6 +1,5 @@
 //! Read scopes install each schema's exact owner-declared operation and fields.
 use super::*;
-use worth_query_declaration::facade::application_operation::*;
 
 worth_query_declaration::worth_query_structured_value_binding!(ReadInputBinding for () { identity: "worth.rust.unit" });
 

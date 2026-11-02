@@ -134,6 +134,7 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
                 }
                 Definition::InvalidGraphLaws => Kind::RelationNotInstalled,
                 Definition::InvalidEventChain => Kind::InvalidEventChain,
+                Definition::SourceProgramIdentityExhausted => Kind::SourceProgramIdentityExhausted,
             };
             Denial::new(kind, format!("derived relation read: {cause:?}"))
         }
@@ -153,4 +154,12 @@ fn malformed_event_chain_preserves_its_typed_query_denial() {
         worth_relational::facade::schema::DerivedRelationDenial::InvalidEventChain,
     ));
     assert_eq!(denial.kind(), Kind::InvalidEventChain);
+}
+
+#[test]
+fn source_program_identity_exhaustion_preserves_its_typed_query_denial() {
+    let denial = native_denial(NativeDenial::Definition(
+        worth_relational::facade::schema::DerivedRelationDenial::SourceProgramIdentityExhausted,
+    ));
+    assert_eq!(denial.kind(), Kind::SourceProgramIdentityExhausted);
 }

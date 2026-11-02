@@ -41,10 +41,10 @@ fn build<S: Storage>(
     }
     let left = build(count / 2, sources, previous, storage)?;
     let source = sources.next().ok_or_else(|| storage.invalid())??;
-    if let Some(previous) = *previous {
-        if storage.compare_sources(previous, source)? != Ordering::Less {
-            return Err(storage.invalid());
-        }
+    if let Some(previous) = *previous
+        && storage.compare_sources(previous, source)? != Ordering::Less
+    {
+        return Err(storage.invalid());
     }
     *previous = Some(source);
     let right = build(count - count / 2 - 1, sources, previous, storage)?;

@@ -41,6 +41,10 @@ impl DerivedSourceDependencies {
         let original = prior.map_or(&[][..], |p| p.values());
         let mut tree_memory = None;
         let mut tree_bytes = 0;
+        #[expect(
+            clippy::mutable_key_type,
+            reason = "DerivedSourceKey orders only immutable relation, identity, root and direction; its allocation ticket never participates"
+        )]
         let mut values = BTreeMap::<DerivedSourceKey, Arc<DerivedSourceObservation>>::new();
         let mut added = false;
         for (index, body) in original.iter().chain(bodies).enumerate() {
@@ -89,10 +93,8 @@ impl DerivedSourceDependencies {
             values.insert(key.clone(), Arc::clone(body));
             added |= index >= original.len();
         }
-        if !added {
-            if let Some(prior) = prior {
-                return Ok(Arc::clone(prior));
-            }
+        if !added && let Some(prior) = prior {
+            return Ok(Arc::clone(prior));
         }
         let bytes = values
             .len()

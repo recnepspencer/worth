@@ -35,7 +35,10 @@ impl SourceOriginal {
         let authority = receipt.authority_binding();
         if authority.runtime_authority() != runtime.runtime.authority_identity()
             || authority.original_mutation_binding()
-                != Some(std::any::TypeId::of::<Disclosure::Source>())
+                != Some(
+                    crate::equality_type_id::EqualityTypeId::of::<Disclosure::Source>()
+                        .into_external(),
+                )
         {
             return Err(Denial::ForeignIssuedAccess);
         }
@@ -44,8 +47,8 @@ impl SourceOriginal {
             .ok_or(Denial::MissingInspection)?;
         if disclosure.association().declaration()
             != &DeclaredApplicationSourceDisclosure::of::<Schema, Disclosure>()
-            || disclosure.association().source_type() != std::any::TypeId::of::<Disclosure::Source>()
-            || disclosure.association().query_type() != std::any::TypeId::of::<<Disclosure::Disclosure as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query>()
+            || disclosure.association().source_type() != crate::equality_type_id::EqualityTypeId::of::<Disclosure::Source>().into_external()
+            || disclosure.association().query_type() != crate::equality_type_id::EqualityTypeId::of::<<Disclosure::Disclosure as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query>().into_external()
             || disclosure.schema() != installed.query().binding_identity()
             || disclosure.disclosure().query() != installed.query().identity()
         {

@@ -70,15 +70,15 @@ pub(in crate::domain_computation) fn run_retained_stage<Value, E>(
             kernel(context, None).map_err(|cause| CaptureStop::Kernel(ScopeStop::Failure(cause)))
         });
     });
-    let result = match (handoff, settled) {
+
+    match (handoff, settled) {
         (Ok(_), Some(result)) => result,
         (Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped)), Some(Err(cause))) => {
             Err(cause)
         }
         (Err(cause), _) => Err(CaptureStop::Request(cause)),
         (Ok(_), None) => unreachable!("successful original retention invokes its capture"),
-    };
-    result
+    }
 }
 
 #[cfg(test)]

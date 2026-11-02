@@ -9,6 +9,10 @@ use worth_query_execution::facade::primary_graph::{
 type Row<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 type Query<S, B> = <B as ApplicationQueryBinding<S>>::Query;
+type OpenedWatch<S, B, I> = (
+    WorthQueryPublishedApplicationResult<Query<S, B>, Row<S, B>>,
+    WorthQueryManagedIndexWatch<S, I>,
+);
 
 impl<'application, 'principal, 'scope, Schema, Intent>
     WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, Schema, Intent>
@@ -21,16 +25,7 @@ where
     /// predicate provider. Each subsequent call supplies a fresh bound request.
     pub fn watch_index<I: ApplicationManagedIndexBinding<Schema>>(
         self,
-    ) -> Result<
-        (
-            WorthQueryPublishedApplicationResult<
-                Query<Schema, Intent::Binding>,
-                Row<Schema, Intent::Binding>,
-            >,
-            WorthQueryManagedIndexWatch<Schema, I>,
-        ),
-        WorthQueryApplicationRequestQueryDenial,
-    >
+    ) -> Result<OpenedWatch<Schema, Intent::Binding, I>, WorthQueryApplicationRequestQueryDenial>
     where
         <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
             ApplicationQueryScopeResolution<

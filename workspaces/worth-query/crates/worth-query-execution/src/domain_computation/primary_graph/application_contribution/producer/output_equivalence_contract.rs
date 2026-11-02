@@ -163,9 +163,9 @@ fn seal_contract(
 fn standard_u64_meaning(
     field: &NativeFieldBindingExpectation,
 ) -> Option<impl serde::Serialize + '_> {
-    use std::any::TypeId;
-    (field.binding == TypeId::of::<schema::U64ApplicationValueBinding>()
-        && field.value == TypeId::of::<u64>()
+    use crate::equality_type_id::EqualityTypeId as TypeId;
+    (field.binding == TypeId::of::<schema::U64ApplicationValueBinding>().into_external()
+        && field.value == TypeId::of::<u64>().into_external()
         && field.scalar == worth_foundational::facade::ScalarAspectType::UInt64
         && field.presence == schema::ApplicationFieldPresence::Required
         && field.canonical.is_none())

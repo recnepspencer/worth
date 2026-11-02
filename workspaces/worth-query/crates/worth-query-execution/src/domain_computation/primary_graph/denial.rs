@@ -137,6 +137,8 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvariantFactoryMeaningMismatch,
     UnsupportedInvariantSource,
     UnsupportedManagedSource,
+    /// The Native binding owner exhausted its in-memory Source program identities.
+    SourceProgramIdentityExhausted,
     ManagedSourceInstallationReceiptMismatch,
     /// An invariant factory rejected installation.
     InvariantFactoryRejected,

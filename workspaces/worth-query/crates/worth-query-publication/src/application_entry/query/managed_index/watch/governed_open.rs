@@ -25,16 +25,7 @@ where
         capability: ApplicationCapabilityRef<Schema, Capability>,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
         input: Input,
-    ) -> Result<
-        (
-            WorthQueryPublishedApplicationResult<
-                Query<Schema, Intent::Binding>,
-                Row<Schema, Intent::Binding>,
-            >,
-            WorthQueryManagedIndexWatch<Schema, I>,
-        ),
-        WorthQueryApplicationRequestQueryDenial,
-    >
+    ) -> Result<OpenedWatch<Schema, Intent::Binding, I>, WorthQueryApplicationRequestQueryDenial>
     where
         I: ApplicationManagedIndexBinding<Schema>,
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
@@ -51,16 +42,7 @@ where
         capability: ApplicationCapabilityRef<Schema, Capability>,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
         input: Input,
-    ) -> Result<
-        (
-            WorthQueryPublishedApplicationResult<
-                Query<Schema, Intent::Binding>,
-                Row<Schema, Intent::Binding>,
-            >,
-            WorthQueryManagedIndexWatch<Schema, I>,
-        ),
-        WorthQueryApplicationRequestQueryDenial,
-    >
+    ) -> Result<OpenedWatch<Schema, Intent::Binding, I>, WorthQueryApplicationRequestQueryDenial>
     where
         I: ApplicationManagedIndexBinding<Schema>,
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
@@ -76,16 +58,7 @@ where
         capability: ApplicationCapabilityRef<Schema, Capability>,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
         input: Input,
-    ) -> Result<
-        (
-            WorthQueryPublishedApplicationResult<
-                Query<Schema, Intent::Binding>,
-                Row<Schema, Intent::Binding>,
-            >,
-            WorthQueryManagedIndexWatch<Schema, I>,
-        ),
-        WorthQueryApplicationRequestQueryDenial,
-    >
+    ) -> Result<OpenedWatch<Schema, Intent::Binding, I>, WorthQueryApplicationRequestQueryDenial>
     where
         I: ApplicationManagedIndexBinding<Schema>,
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,

@@ -75,16 +75,16 @@ impl AggregateWork<'_, '_, '_, '_> {
             .ok_or(MapKernelFailure::Domain(PlanDenial::Execution(
                 crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
             )))?;
-        if let Some(memory) = self.memory.as_mut() {
-            if peak > memory.bytes() {
-                memory.resize(peak).map_err(|denial| {
-                    MapKernelFailure::Domain(PlanDenial::Execution(
-                        crate::execution::denial::lease_denial(
-                            worth_execution::LeaseDenial::MemoryExhausted(denial),
-                        ),
-                    ))
-                })?;
-            }
+        if let Some(memory) = self.memory.as_mut()
+            && peak > memory.bytes()
+        {
+            memory.resize(peak).map_err(|denial| {
+                MapKernelFailure::Domain(PlanDenial::Execution(
+                    crate::execution::denial::lease_denial(
+                        worth_execution::LeaseDenial::MemoryExhausted(denial),
+                    ),
+                ))
+            })?;
         }
         Ok(())
     }

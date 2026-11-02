@@ -1,11 +1,14 @@
-pub(crate) use worth_query_testkit_host::facade::host::application_runtime_surface::*;
 use std::time::{Duration, Instant};
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
-    primary_graph::WorthQueryPrincipalResolutionMode,
     application_installation::ApplicationBuildIdentity,
+    primary_graph::WorthQueryPrincipalResolutionMode,
 };
-fn installed_application() -> worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<HostIdentitySchema> {
+pub(crate) use worth_query_testkit_host::facade::host::application_runtime_surface::*;
+fn installed_application(
+) -> worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+    HostIdentitySchema,
+> {
     worth_query_testkit_host::facade::host::application_runtime_surface::installed_application(
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
     )
@@ -50,5 +53,5 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
         application.publication().binding_identity()
     );
 }
-mod inspection;
 mod comparison;
+mod inspection;

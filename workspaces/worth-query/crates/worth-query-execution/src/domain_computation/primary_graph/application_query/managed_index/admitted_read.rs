@@ -48,7 +48,7 @@ where
     })?;
     let adapter = application
         .managed_indexes
-        .executor(execution, &association, &allocation)?
+        .executor(execution, &association, allocation)?
         .ok_or(Denial::ForeignAssociation)?;
     let parameter = &association
         .access_contract()
@@ -79,7 +79,7 @@ where
         probe,
         &plan.parameters,
         &plan.governance,
-        &allocation,
+        allocation,
         native,
     )?;
     let rows = lease
@@ -94,7 +94,7 @@ where
         |runtime, layout, plan| {
             let mut read = ReadPlan::of(plan);
             read.managed_rows = Some(rows);
-            read.material_source = Some(&allocation);
+            read.material_source = Some(allocation);
             read_execution::read_bounded_plan_rows(
                 runtime,
                 execution,
@@ -132,7 +132,7 @@ where
     ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
 {
     let application = access.application;
-    let storage = MaterialCompletion::new(execution, &allocation);
+    let storage = MaterialCompletion::new(execution, allocation);
     let binding = application
         .installed_schema()
         .installed_query_binding::<B>()
@@ -146,7 +146,7 @@ where
     one_shot::plan_admission::validate_one_shot_plan_with_native_access(
         execution,
         application,
-        &plan,
+        plan,
         native,
     )
     .map_err(|cause| {
@@ -159,7 +159,7 @@ where
     execute_selected_authorized_body_with_native_access(
         execution,
         application,
-        &plan,
+        plan,
         native,
         |_, _, _| Ok(()),
     )

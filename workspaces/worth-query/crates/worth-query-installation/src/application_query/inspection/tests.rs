@@ -48,7 +48,7 @@ fn inspection_resolves_every_definition_against_actual_compiled_binding_before_i
     let valid = ApplicationSchemaMember::ApplicationQueryInspection {
         definition: definition.clone(),
     };
-    validate_definitions(&[valid.clone()], &bindings).unwrap();
+    validate_definitions(std::slice::from_ref(&valid), &bindings).unwrap();
     // Compile the actual installed binding's independent cold obligation. Its
     // ordinary query graph remains a different subject and grants no metadata.
     let compiled = bindings.get(name).unwrap();
@@ -100,7 +100,7 @@ fn inspection_resolves_every_definition_against_actual_compiled_binding_before_i
         definition: ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(parts),
     };
     assert_eq!(
-        validate_definitions(&[foreign.clone()], &bindings)
+        validate_definitions(std::slice::from_ref(&foreign), &bindings)
             .unwrap_err()
             .kind(),
         Kind::InspectionBindingMeaningChanged

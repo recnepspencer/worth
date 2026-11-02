@@ -180,7 +180,7 @@ where
                 match Settlement::from_committed_ready(
                     execution,
                     self,
-                    &completion,
+                    completion,
                     &demand.selected.identity,
                     Family::IDENTITY,
                     demand.producer_contacts_in_this_demand,
