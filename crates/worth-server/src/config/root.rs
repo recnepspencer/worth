@@ -111,8 +111,12 @@ impl WorthServerConfigBuilder {
         mut self,
         query_handoff: WorthServerQueryHandoffConfig,
     ) -> Self {
-        self.query_handoff = WorthServerQueryHandoffConfigBuilder::default()
+        let mut builder = WorthServerQueryHandoffConfigBuilder::default()
             .with_workspace_provider_arc(query_handoff.workspace_provider().clone());
+        if let Some(binding) = query_handoff.application_mutation() {
+            builder = builder.with_application_mutation(binding.clone());
+        }
+        self.query_handoff = builder;
         self
     }
 
