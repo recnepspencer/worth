@@ -99,14 +99,29 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
             .expect("recovery executes its reserved successor once");
         let expected = prepared.expected_head().clone();
         let owner = match self.service() {
-            Ok(owner) if expected.owner_identity() == owner.owner_identity() => owner,
-            _ => {
+            Ok(owner) => owner,
+            Err(_) => {
                 return Outcome::NoEffect(NoEffectCompositePublication::new(
                     NoEffectCause::OwnerUnavailable,
                     Some(expected),
                 ))
             }
         };
+        let denial = match owner
+            .owner_identity()
+            .admit_incarnation(expected.owner_identity())
+        {
+            Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => {
+                Some(NoEffectCause::StaleIncarnation)
+            }
+            Err(worth_proof::HomeIncarnationDenial::ForeignHome) => {
+                Some(NoEffectCause::OwnerUnavailable)
+            }
+            Ok(()) => None,
+        };
+        if let Some(cause) = denial {
+            return Outcome::NoEffect(NoEffectCompositePublication::new(cause, Some(expected)));
+        }
         if recovery.custody.admit_bridge(bridge).is_err() {
             return Outcome::NoEffect(NoEffectCompositePublication::new(
                 NoEffectCause::OwnerDeniedBeforeEffect,

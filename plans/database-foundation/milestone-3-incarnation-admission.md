@@ -246,3 +246,28 @@ function moves into `test_budgets.rs`, which constructs no runtime or execution
 request. This preserves one court and the 400-line cap without a baseline or
 boundary-configuration exemption. The test's module-qualified name changes
 only by removing the intermediate foreign_authority_tests module.
+
+
+## Publication receiver review correction
+
+The second fresh review of a2ab9ea645 rejected one additional permitted owner
+path: query_publication_home_binding compared fenced owner equality and returned
+IdentityScope before the later durable preparation guard. The public selector
+now returns Reservation(NoEffectCause::StaleIncarnation) before generic scope /
+process checks. It preserves IdentityScope for foreign ownership.
+
+A bounded audit of owner comparisons in World lifecycle service ports also
+found prepared ordinary/conditional publication consumption and durable
+publication consumption with early generic owner outcomes. They now compare the
+same carried incarnation first, preserving each foreign-owner outcome. The
+World owned-async source receiver similarly checks stale observations before
+its Directory unsupported-operation refusal. Only current/foreign semantics
+continue through their existing paths; this adds no Directory async support.
+This last entry is a narrow P-D World call-admission merge seam. The two Query
+legacy-bridge match arms propagate its new StaleIncarnation variant through
+WorthQueryOwnedAsyncRuntimeDenial::StaleIncarnation. All affected public enum
+variants remain exposed through their existing facades; no new construction
+surface, manifest, boundary configuration or format changes.
+
+The second review also retains the distinct reserved normal-stack and Native
+readmission qualification blocks. No Host opening code is changed.

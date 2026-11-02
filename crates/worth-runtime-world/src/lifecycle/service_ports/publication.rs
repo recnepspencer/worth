@@ -16,6 +16,8 @@ mod bootstrap;
 mod conditional_recovery;
 mod durable;
 mod execution;
+mod incarnation;
+use incarnation::publication_owner_denial;
 mod open_attempt;
 mod owned_async;
 
@@ -108,8 +110,10 @@ where
             Ok(owner) => owner,
             Err(_) => return unavailable(prepared.expected_head().clone()),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return foreign(prepared.expected_head().clone());
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return RuntimeWorldPublicationOutcome::NoEffect(denial);
         }
         let outcome = owner.execute_without_signal(execution, prepared, cancellation);
         owner.finish_publication(outcome, cancellation)
@@ -130,8 +134,10 @@ where
             Ok(owner) => owner,
             Err(_) => return unavailable(prepared.expected_head().clone()),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return foreign(prepared.expected_head().clone());
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return RuntimeWorldPublicationOutcome::NoEffect(denial);
         }
         let outcome = owner.execute_with_signal(execution, prepared, context, cancellation, apply);
         owner.finish_publication(outcome, cancellation)
@@ -167,8 +173,10 @@ where
             Ok(owner) => owner,
             Err(_) => return (unavailable(prepared.expected_head().clone()), custody),
         };
-        if prepared.expected_head().owner_identity() != owner.owner_identity() {
-            return (foreign(prepared.expected_head().clone()), custody);
+        if let Some(denial) =
+            publication_owner_denial(owner.owner_identity(), prepared.expected_head())
+        {
+            return (RuntimeWorldPublicationOutcome::NoEffect(denial), custody);
         }
         let outcome = owner.execute_conditional_definition_with_signal(
             execution,
@@ -240,12 +248,6 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
 fn unavailable(expected: ProductBranchObservation) -> RuntimeWorldPublicationOutcome {
     RuntimeWorldPublicationOutcome::NoEffect(NoEffectCompositePublication::new(
         NoEffectCause::OwnerUnavailable,
-        Some(expected),
-    ))
-}
-fn foreign(expected: ProductBranchObservation) -> RuntimeWorldPublicationOutcome {
-    RuntimeWorldPublicationOutcome::NoEffect(NoEffectCompositePublication::new(
-        NoEffectCause::OwnerDeniedBeforeEffect,
         Some(expected),
     ))
 }

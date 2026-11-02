@@ -53,6 +53,7 @@ impl WorthQueryOwnedAsyncRuntimeServices<'_> {
         self.world
             .revalidate_custodied_owned_async_request(self.bridge, &mut owner.native, selected)
             .map_err(|cause| match cause {
+                WorldDenial::StaleIncarnation => Denial::StaleIncarnation.into(),
                 WorldDenial::OwnerUnavailable => Denial::OwnerUnavailable.into(),
                 WorldDenial::DurablePublicationRequired => {
                     Denial::DurablePublicationRequired.into()
