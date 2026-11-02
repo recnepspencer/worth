@@ -61,10 +61,25 @@ impl CompositePublicationReady {
         port: &RelationalBranchBasisPort,
     ) -> Result<(), Refusal> {
         let envelope = self.custody.publication_envelope();
-        if envelope.has_memory_original() || self.original_relational_parts().is_none() {
+        if envelope.has_memory_original() {
             return Ok(());
         }
+        let Some((native, _, _)) = self.original_relational_parts() else {
+            return Ok(());
+        };
         let expected = self.expected_head();
+        // An adoption of an already selected Native original, like a retained
+        // leg, cannot create a second World origin for the same Native effect.
+        if expected
+            .basis()
+            .relational_basis()
+            .reference()
+            .target()
+            .as_basis()
+            .is_some_and(|prior| prior.selected_commit_id() == native.commit_id().0)
+        {
+            return Ok(());
+        }
         let bytes = std::mem::size_of::<crate::history::MemoryPublicationRecord>()
             + 2 * expected.branch_identity().name().as_str().len()
             + 2 * std::mem::size_of::<usize>();

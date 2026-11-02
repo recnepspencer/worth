@@ -26,21 +26,6 @@ impl ObservedRelationalMemoryCommit {
         &self.digest
     }
 
-    /// An opaque admitted basis must retain the SAME canonical original,
-    /// rather than merely repeating another runtime's scalar coordinates.
-    pub fn matches_original_basis(
-        &self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
-    ) -> bool {
-        basis
-            .inner
-            .root
-            .canonical_envelope()
-            .is_some_and(|original| {
-                std::sync::Arc::ptr_eq(original, self.positioned.canonical_arc())
-            })
-    }
-
     pub(crate) fn matches_original_envelope(
         &self,
         expected: &std::sync::Weak<crate::history::data::CanonicalCommitEnvelope>,

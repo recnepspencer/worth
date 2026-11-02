@@ -20,15 +20,9 @@ pub struct ObservedRelationalMemoryComponent {
 struct MemoryComponentMeaning {
     descriptor: RelationalBranchBasisDescriptor,
     canonical: Option<Weak<CanonicalCommitEnvelope>>,
-    semantic: Option<crate::transactions::data::RecoveredRelationalSemanticResult>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl ObservedRelationalMemoryComponent {
-    pub fn semantic_result(
-        &self,
-    ) -> Option<&crate::transactions::data::RecoveredRelationalSemanticResult> {
-        self.original.semantic.as_ref()
-    }
     pub fn matches_original(
         &self,
         original: &crate::durability::authority::ObservedRelationalMemoryCommit,
@@ -100,11 +94,6 @@ impl RelationalRuntime {
             original: Arc::new(MemoryComponentMeaning {
                 descriptor: descriptor.clone(),
                 canonical: canonical.map(Arc::downgrade),
-                semantic: canonical.map(|envelope| {
-                    crate::transactions::data::RecoveredRelationalSemanticResult {
-                        semantic: envelope.semantic_result_arc(),
-                    }
-                }),
                 _funding: funding,
             }),
         })
