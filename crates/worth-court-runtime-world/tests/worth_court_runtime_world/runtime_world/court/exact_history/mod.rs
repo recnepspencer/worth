@@ -122,6 +122,19 @@ fn exact_product_pages_keep_the_pinned_fork_ancestry_and_stage_owner_positions()
         (0, true, true)
     );
     drop(complete);
+    let retired_child = court
+        .world
+        .branch_port()
+        .retire_product_branch(&child)
+        .unwrap();
+    let retired_sibling = court
+        .world
+        .branch_port()
+        .retire_product_branch(&sibling)
+        .unwrap();
+    assert_eq!(retired_child.owner_retirement_work().len(), 1);
+    assert_eq!(retired_sibling.owner_retirement_work().len(), 1);
+    drop((retired_child, retired_sibling));
     drop((
         cursor,
         root,
