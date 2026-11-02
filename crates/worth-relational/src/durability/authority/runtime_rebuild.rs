@@ -183,8 +183,10 @@ pub(super) fn rebuild_runtime_from_plan(
         )?;
         if let Some(graph) = &original_schemas {
             original_inputs::bind_replayed_schema(&mut restored, graph, &positioned, execution)?;
-            recovered_roots.retain_current(&restored, &positioned.envelope().branch_context)?;
         }
+        // Register only the finalized source/schema-bound owner before another
+        // canonical entry or transition can resolve this commit's root.
+        recovered_roots.retain_current(&restored, &positioned.envelope().branch_context)?;
         finalized_tail.push(positioned);
     }
     for transition in pending_transitions {

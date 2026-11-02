@@ -263,10 +263,16 @@ pub(super) fn bind_replayed_schema(
         .cloned()
         .ok_or_else(|| corrupt("replayed source root descriptor missing"))?;
     let positions = root.output_publication_positions.clone();
+    // Source synchronization already chose this exact canonical owner. Schema
+    // binding must not replace it with an equivalent, separately owned body.
+    let canonical = root
+        .canonical_envelope()
+        .cloned()
+        .ok_or_else(|| corrupt("replayed source root canonical owner missing"))?;
     let replacement = crate::branch::RelationalBranchRoot::readmit_unchanged_for_request(
         &issuer,
         &root,
-        positioned.canonical_arc().clone(),
+        canonical,
         descriptor.clone(),
         schema,
         positions,
