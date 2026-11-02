@@ -77,26 +77,33 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    /// Admit retirement of this original handler's actual operational fields.
-    /// Opaque supplier registrations remain unsupported even if they override
-    /// this method. Only the compiler's audited body origin admits these hooks.
-    /// Preflight must preserve business state.
-    #[doc(hidden)]
+    /// Admit retirement of the Home's invocation capability for this handler.
+    ///
+    /// The Home first establishes unique ownership of its original registry
+    /// entry and handler Arc. Preflight must preserve business state. After
+    /// World seal, that same handler can never be invoked again; its payload
+    /// remains retained until explicit, unbudgeted Home reclamation.
+    /// Supplier-internal shared state is outside Home custody: close neither
+    /// certifies nor destroys it. Override this hook to refuse when the handler
+    /// knows that its operational state cannot retire under that boundary.
     fn preflight_home_retirement(
         &mut self,
-        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), WorthQueryOperationHomeRetirementDenial> {
-        Err(WorthQueryOperationHomeRetirementDenial::Unsupported)
+        request.consult().map_err(WorthQueryOperationHomeRetirementDenial::Execution)
     }
 
-    /// Advance the same sealed handler without destroying inert supplier data.
-    #[doc(hidden)]
+    /// Complete retirement of the same sealed invocation capability.
+    /// The default retains the payload unchanged; it does not certify state
+    /// independently shared by the supplier. Overrides retain their original
+    /// progress through interruption and must not destroy arbitrary payloads.
     fn advance_home_retirement(
         &mut self,
-        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryOperationHomeRetirementProgress, WorthQueryOperationHomeRetirementDenial>
     {
-        Err(WorthQueryOperationHomeRetirementDenial::Unsupported)
+        request.consult().map_err(WorthQueryOperationHomeRetirementDenial::Execution)?;
+        Ok(WorthQueryOperationHomeRetirementProgress::Complete)
     }
 
     /// Immutable capabilities of this installed handler implementation.

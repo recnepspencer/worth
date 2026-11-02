@@ -78,12 +78,6 @@ impl<Schema: ApplicationSchema> InstalledMutationHandlerRegistry<Schema> {
         for entry in self.entries.values_mut() {
             let binding = entry.identity;
             admit_entry_work(request, 1).map_err(|cause| Failure::Handler { binding, cause })?;
-            if entry.origin != HandlerOrigin::CompiledBody {
-                return Err(Failure::Handler {
-                    binding,
-                    cause: Denial::Unsupported,
-                });
-            }
             (entry.preflight_home_retirement)(&mut entry.value, request)
                 .map_err(|cause| Failure::Handler { binding, cause })?;
         }
@@ -112,12 +106,6 @@ impl<Schema: ApplicationSchema> InstalledMutationHandlerRegistry<Schema> {
             return Ok(Progress::Complete);
         };
         let binding = entry.identity;
-        if entry.origin != HandlerOrigin::CompiledBody {
-            return Err(Failure::Handler {
-                binding,
-                cause: Denial::Unsupported,
-            });
-        }
         admit_entry_work(request, 1 + identity.len() as u64)
             .map_err(|cause| Failure::Handler { binding, cause })?;
         // Fund the next cursor before calling a potentially advancing owner.
