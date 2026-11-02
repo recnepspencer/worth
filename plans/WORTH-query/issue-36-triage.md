@@ -1,7 +1,9 @@
 # Issue 36: measured court triage
 
-Status: initial reproduction, not qualification for adoption. The issue's
-reported failure counts are not this branch's measured result.
+Status: triage and named repairs complete. All 19 issue-named courts have passing
+results. Classification: 11 stale fixtures, three production defects, five fixed
+already, no measured load flake. Untouched formatting and Clippy debt remains
+reported below; this is not a claim that every repository check is green.
 
 ## Baseline and scope
 
@@ -77,10 +79,10 @@ fixture/production/flake category without evidence.
 | R | `certification::application_graph::document_retention_model::record_history::court::supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_commits` | 0 passed, 1 failed; `World(History(RetiredHistoryGap))` at `mod.rs:58` | Stale fixture. The fork creation occurrence is not held before its first mutation. Automatic changed-slot retirement in `01a0e3b962` legitimately makes that unprotected raw parent retire. Keep a genuine observation of the fork root; preserve the expected record sequence and the typed-gap negative twin. |
 | R | `certification::native_operation_bodies::document_retention_model::record_history::court::supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_commits` | 0 passed, 1 failed; same typed gap at `mod.rs:58` | Same stale fixture custody; independently executed. |
 | R | `certification::native_workflow_operations::document_retention_model::record_history::court::supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_commits` | 0 passed, 1 failed; same typed gap at `mod.rs:58` | Same stale fixture custody; independently executed. |
-| H | `application_query::tests::canonical_basis_residue::warm_consumers_cannot_hide_hashing_behind_a_helper` | 0 passed, 1 failed; `projected_tree/content.rs` contains `Sha256` | Stale source guard after `10cdd5b0bb`. The metered complete-content hash is a rejection filter followed by exact raw-content comparison, not equality authority. A repair must keep semantic identity helpers forbidden and constrain the content-owner exception. |
+| H | `application_query::tests::canonical_basis_residue::warm_consumers_cannot_hide_hashing_behind_a_helper` | 0 passed, 1 failed; `projected_tree/content.rs` contains `Sha256` | Stale source guard after `10cdd5b0bb` and `6af8ebc1aa`. The first repair exposed a second hit in `authorization/retained_capability_request/material.rs` (0 passed, 1 failed, 360 filtered). Both admitted content/capability-use descriptor writers meter original-caller framing and bytes; retained comparison requires exact raw content or full request meaning. Restrict exceptions to these exact owners and SHA tokens; semantic identity helpers remain forbidden. No claim is made that every admitted capture is a cold rebuild. |
 | E | `domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::unobservable::a_few_adjacency_keys_whose_worst_case_passes_the_request_work_run_in_full` | 0 passed, 1 failed; shared `projected_attempt.rs:215` expected zero-memory exhaustion | Stale fixture after `a2a9ce5d99` replaced a separate declared kernel quota with the original request ceiling. Its copied 4096-unit ceiling now underfunds FirstRun's complete host pipeline. Corrected diagnostic prints `retained prior: false`, `InvariantAdmission(ExecutionRequest(WorkExhausted))`, one field read and zero other projection counters. Preserve full-uncompared fallback, gathered partitions and equal semantic outcome when funding the whole pipeline. |
 | E | `domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::unobservable::more_retained_keys_than_the_request_work_runs_in_full_uncompared` | 0 passed, 1 failed; same shared assertion | Same stale request-funding transition in `a2a9ce5d99`; separately executed and diagnostic-rerun. Corrected `retained prior: false` proves FirstRun fails before the adversarial retained-state attempt. Its retained key bound must still exceed the actual original request ceiling after repair. |
-| E | `domain_computation::primary_graph::provider::application_touch_admission::tests::whole_clear_requires_grants_for_every_removed_prior_field` | 0 passed, 1 failed; `complete actual removal grants: Contract` | Stale fixture after `eea53fe428`: the purported complete operation lacks the separate `RemoveAspect` grant. Field-write grants must remain insufficient. |
+| E | `domain_computation::primary_graph::provider::application_touch_admission::tests::whole_clear_requires_grants_for_every_removed_prior_field` | 0 passed, 1 failed; `complete actual removal grants: Contract` | Stale fixture after `eea53fe428`: the purported complete operation lacks `RemoveAspect`. That commit makes whole removal depend on the explicit parent grant rather than field writes. The repaired court is named `whole_clear_requires_explicit_aspect_removal_grant`; a genuinely installed all-fields-without-removal operation must still refuse. Required aspect removal remains a Native denial. |
 | E | `domain_computation::primary_graph::provider::application_touch_admission::tests::whole_sequence::committed_prior_fields_cannot_be_hidden_by_a_successive_whole_write` | 0 passed, 1 failed; `full installed grants before effects: Contract` | Same stale complete-grant declaration. Keep real committed successive writes and the incomplete-grant refusal. |
 | E | `domain_computation::primary_graph::tests::inbound_admission::cost_tests::post_preparation_cancellation_releases_inbound_dispatch_reservation` | 0 passed, 1 failed; `Denied(ProviderRejected)` at `ProviderCommit`, detail `Relational execution stopped: Cancelled at None`, typed cause `Execution(Err(Cancelled))` | Production defect. Successor-observation reservation can stop after native preparation; normalization of the original caller interruption currently covers only the native-prepare call. Preserve live-caller execution-preparation retry denials while classifying actual caller cancellation correctly. |
 | Q | `domain_installation::operation_execution::workflow_parallel_progression::frontier::tests::dispatch::reversed_completion_still_applies_canonical_effects_and_receipts` | Initially compile-blocked; post-sync 0 passed, 1 failed, 2487 filtered | Stale fixture after `c478117afa` reduced native preparation charges. `dispatch.rs:225` expects the default 1024-unit request to stop, but it completes. Preserve reversed completion, canonical effects and serial/parallel receipt equivalence; test resource refusal separately. |
@@ -168,8 +170,10 @@ filtered). Both post-sync runtime runs have zero ignored and zero measured.
 
 ## Repair and verification status
 
-Initial reproduction is complete. Diagnostic classification and repairs remain
-open. No implementation slice is qualified by this initial table.
+The initial and repair-attempt failures remain recorded rather than overwritten.
+Named repairs are complete; focused court qualification is reported per slice.
+No new `AspectShape`, shape form, authority type or production cost API was added.
+The application cleanup receiver gains one method at its existing owner.
 
 ### Publication custody repair
 
@@ -248,6 +252,149 @@ location names either changed cleanup owner. F Clippy exits zero; its binary
 test target reports 121 warnings, 17 duplicates. Boundary and context checks
 both exit zero, with valid boundaries and no mismatch. The dirty line-cap guard
 passes six Rust files. Both diff checks exit zero with zero whitespace errors.
+
+### Stale fixture qualification
+
+Compact triples in this section mean passed / failed / filtered.
+
+The source guard permits only SHA tokens at the exact complete-content writer
+(`10cdd5b0bb`) and capability-use material owner (`6af8ebc1aa`), with explicit
+framing/checkpoint constraints. Semantic digest helpers remain forbidden.
+Capability-use capture meters original caller work; retained comparison carries
+the descriptor and checks the complete request. The initial content-only repair
+still failed the same court on the second owner: 0 passed, 1 failed, 360 filtered.
+The completed guard passes 1/0/360. Eight existing raw-content courts pass
+8/0/2182, including literal protocol bytes, 14 shallow and 17 descendant
+corruptions, support/order/generation distinctions and bounded refusals. Three
+capability material courts pass 3/0/2187, including 22 independently selected
+request mutations, framing/context backing and original first/final stops.
+
+`eea53fe428` requires the explicit optional-parent removal grant and complete
+parent field reads. The complete fixture now declares those reads and removal.
+A genuinely installed `FieldsOnly` operation keeps all A/B writes without parent
+removal and must refuse. Required parent clear remains a Native refusal. The
+old whole-clear test name is mapped to its corrected removal-grant name above.
+The first repair omitted the complete read closure: the focused family reported
+1 passed, 10 failed, 2179 filtered with `MissingOperationProgramDependency` for
+`Both` / `RemoveAspect(Node, Notes)`. This was a repair-attempt declaration error,
+not a newly attributed production defect; the reads were added at the real
+schema owner rather than bypassing validation.
+
+The two retained-observation fixtures preserve the actual request ceiling
+transition in `a2a9ce5d99`. A first repair at 8192 still failed FirstRun: each
+reported 0 passed, 1 failed, 2189 filtered, `WorkExhausted`, `retained prior: false`
+and three field reads. A deliberately failing tagged calibration ran with a
+finite million-unit grant and stopped before the adversary. It reported two
+accounted setup-through-FirstRun bills: 23,558 work / 23,142 span (peak memory
+23,372 bytes) and 9,540 work / 9,539 span (peak 26,904 bytes), neither refused.
+That diagnostic reports 0 passed, 1 failed, 2189 filtered; it is not a passing
+court or regression. The probe is removed before final qualification.
+The fixed fixture grant is 65,536, with ample headroom. Hostile key count and
+adjacency worst-case work are derived from that same original grant. A batch
+mutation at the existing test-only fact owner rebuilds metadata once, avoiding
+quadratic per-key fixture reconstruction; actual key count is asserted above
+the grant. Both courts retain zero actual retained/native comparison assertions.
+The clean large-key court passes 1/0/2189 in 2.82 seconds after an actual
+`worth-query-execution` rebuild. The reviewer found an unused single-copy
+forwarding method after this batch change; it was removed before that rebuild.
+The clean adjacency court passes 1/0/2189 in 1.68 seconds. The complete installed
+touch-admission family passes 11/0/2179, including both original issue cases,
+the all-fields-without-removal refusal, request/memory stops, omitted prior fields
+and genuine Native required-parent clear refusal.
+
+`c478117afa` reduced Native preparation charges. The reversed-completion court
+now completes at the unchanged default 1024-unit grant at widths 0/1/2/4,
+preserving the literal canonical receipt order, reset serial repeat and genuine
+out-of-order overlap. It passes 1/0/2487. The separate width work-refusal court
+also passes 1/0/2487; no production accounting was changed.
+
+`3dc89054fd` moved the companion invariant check to seed publication. Updating
+only that diagnostic subject passes 1/0/328; typed refusal, unchanged original
+data/checkpoint bytes and zero target decodes remain asserted.
+
+`facc9d1197` expanded the restored-output fixture to 8193 reads. The complete
+journey now has a finite 16-million-unit host request. A separately named court
+keeps the original eight-million-unit grant, proves typed `WorkExhausted` after
+actual partial field/role reads, checks the exact World basis is unchanged and
+requires zero producer contacts. Both pass together: 2 passed, 0 failed,
+309 filtered. The positive court still requires all 8193 reads, zero producer
+warmup, typed stale-source refusal after a real mutation, actual producer refresh
+and fresh output verification. No shape or production cost API was added.
+
+Every fixture test result above has zero ignored and zero measured tests.
+The existing rename-control court also passes 1/0/2189, exercising the original
+single-key rename through the same batch reconstruction owner.
+
+Additional focused selection commands use the same owning manifests and
+`-- --nocapture` as initial reproduction:
+
+| Package and target | Filter | Passed | Failed | Filtered |
+|---|---|---:|---:|---:|
+| E / `--lib` | `application_touch_admission::tests` | 11 | 0 | 2179 |
+| E / `--lib` | `content_comparison::tests::shape` | 8 | 0 | 2182 |
+| E / `--lib` | `authorization::retained_capability_request::material::tests` | 3 | 0 | 2187 |
+| Q / `--lib` | `work_ceiling_settles_the_same_boundary_at_all_widths` | 1 | 0 | 2487 |
+| T / `--lib` | `checkpoint_recovery::current_output::serial` | 2 | 0 | 309 |
+| E / `--lib` | `an_unobservable_key_gathers_its_partition_again_and_denies_nothing` | 1 | 0 | 2189 |
+
+The seven original F selections were rerun individually after the production
+cleanup repair. Each reports one pass, zero failures, 217 filtered and zero
+ignored/measured. Each of the five allocator/lifecycle courts also reports its
+one passing isolated child, with the same counts. This final F batch therefore
+contains twelve passing test executions, zero failures; original predicates and
+populations are unchanged. No load-flake rerun or allocation relaxation was needed.
+
+| Named family (full names in the initial table) | Courts | Latest result and independent evidence |
+|---|---:|---|
+| Exact record history through three public forms | 3 | Pass; authored commit receipts determine expected coordinates, independently of paging. Three genuine retired-gap twins also pass. |
+| Warm-path hashing guard | 1 | Pass; exact-owner source guard, independent literal byte framing and manually corrupted raw/request dimensions. A digest never authorizes equality. |
+| Unobservable retained keys and adjacency bounds | 2 | Pass; literal partition roster, full-run semantic/work oracle and zero actual comparison counters. Hostile bounds exceed the actual finite request. |
+| Whole clear and committed prior fields | 2 | Pass; real installed grants and genuine Native proposals/commits, independently read committed truth and unchanged-basis checks. The whole-clear court has its corrected name. |
+| Post-preparation cancellation | 1 | Pass; external cancellation at a real pause, independent Native commit and inbound-reservation observations. |
+| Reversed completion | 1 | Pass; prescribed receipt order, independent schedule rendezvous and serial/parallel full-result equivalence. Separate budget refusal remains tested. |
+| Companion transition | 1 | Pass; actual target invariant refusal, unchanged literal original data and checkpoint bytes, zero target decodes. |
+| Allocator and cancelled cold-build lifecycle | 5 | Pass in parent and child; independent physical allocator, exact release accounting and fixture full scans for fresh rebuilt results. |
+| Disposal and previous-head cleanup | 2 | Pass; separately held/released real readers, actual owner receipts, kept adoption evidence and unchanged selected head. |
+| Restored current output | 1 | Pass; genuine checkpoint, zero provider contacts, real source mutation with typed stale refusal and literal refreshed value. The original finite grant has a separate no-effects refusal court. |
+
+### Fixture footer checks and untouched debt
+
+Formatting ran with the Query manifest and selected H/E/Q/C packages together:
+exit 1, three formatter diff blocks in the untouched
+`worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_runtime_surface/mod.rs`.
+They contain four formatting changes (import placement/order, function wrapping,
+module order). The file is unchanged from the lane baseline. Formatting the
+selected H/E/Q packages alone exits zero; T with its nested owning manifest
+also exits zero. No changed file has a formatter diff.
+
+All Clippy commands use `cargo clippy --manifest-path <owning manifest>
+-p <package> --all-targets`; Query packages use the Query manifest and T uses
+the consumer-entry manifest. Required build identities use the documented
+`python scripts/application_build.py cargo ...` wrapper.
+
+| Package selection | Exit | Exact target report |
+|---|---:|---|
+| H / `worth-query-installation` | 101 | Two errors and two warnings in lib test. Both errors are untouched `application_query/inspection/tests.rs:51:26` and `:103:30`: `unnecessary use of clone to create a slice from a reference`. The file is unchanged from the lane baseline. |
+| E / `worth-query-execution` | 101 | Same untouched 46-error/49-warning lib and 37-error/48-warning lib-test reports, 40 warning duplicates. No changed fixture or mutation owner is a diagnostic location. |
+| Q / `worth-query` | 101 | Blocked by the same dependency E lib's 46 errors / 49 warnings; no claim that Q's own lint targets completed. |
+| C / `worth-query-court-query-decl-host` | 101 | Same E dependency barrier, 46 errors / 49 warnings; no claim that C's own lint targets completed. |
+| T / `worth-query-topology-entry`, without wrapper | 101 | Two missing `WORTH_IMPLEMENTATION_BUILD_ID` compile-time errors from the shared-execution source, one per test/example target. This is a command input failure. |
+| T, corrected wrapper invocation | 0 | Zero errors. Lib reports one warning, lib test 35; required-feature and invariant-read example/test targets and the shared-execution example each report two warnings. Two reports mark two duplicates each; reports are not summed as unique warnings. |
+
+Boundary-check exits zero with valid boundaries. Agent-context check exits zero
+with no mismatch. The dirty line-cap guard passes nine Rust files, all at or
+below 400 lines. Both branch and working diff checks exit zero with zero
+whitespace errors. No lint or boundary rule was suppressed. Untouched failures
+are reported under AGENTS.md's scoped-debt rule and were not absorbed into this
+lane.
+
+The persistent reviewer independently read every slice's code and tests using
+qa-loop, qa-tests and code-quality-qa. Its corrections closed before commit:
+FirstRun diagnostic ambiguity; whole-removal naming and isolated field-only
+negative control; complete parent read closure; exact capability material
+comparison trace; finite whole-host funding and batch setup; removal of the
+obsolete single-copy method. The final temporary probe is absent, and the
+clean affected artifact was rebuilt and executed successfully.
 
 ### Initial triage slice checks
 
