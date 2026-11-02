@@ -196,3 +196,14 @@ service restoration is refused and the same closing owner retains its original
 cache payloads. A genuine retained Complete capture still vetoes source seal;
 its release permits that same closing owner to finish. The behavior court is
 `owned_visibility_cache_retires_before_external_capture_recheck_and_source_seal`.
+
+Provider completed-commit evidence also owns performed World publication facts.
+`session_commit/evidence.rs::by_commit` retains `WorthQueryPrimaryGraphCommittedApplication`,
+whose `committed_product_publication` reaches `product_world/receipt.rs`'s
+original consumed World delivery. Its before/after World snapshots retain real
+Native admitted bases. Source/runtime alias retirement alone cannot release
+those pins. A consuming World receipt retirement port and its Query receipt
+handoff are required; dropping evidence or manufacturing retired identities is
+not an acceptable close implementation. Ownership of the receipt handoff has
+been referred to the coordinator because its files lie outside the listed
+P-B source-owner paths. The current Host mutation-close courts remain red.

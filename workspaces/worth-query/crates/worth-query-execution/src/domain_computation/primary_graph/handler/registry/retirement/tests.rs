@@ -129,11 +129,8 @@ fn original_erased_slot_and_handler_aliases_preserve_the_same_handler_and_payloa
 
 #[test]
 fn ordinary_supplier_retirement_retains_payload_with_an_exhausted_memory_budget() {
-    let policy = SerialRequest::from_memory(
-        SerialMemoryBudget::new(Some(0)),
-        CancellationToken::new(),
-        None,
-    );
+    let budget = SerialMemoryBudget::new(Some(1 << 20));
+    let policy = SerialRequest::from_memory(budget.clone(), CancellationToken::new(), None);
     let request = ExecutionRequest::serial(&policy);
     let contacts = Arc::new(AtomicUsize::new(0));
     let drops = Arc::new(AtomicUsize::new(0));
@@ -142,6 +139,10 @@ fn ordinary_supplier_retirement_retains_payload_with_an_exhausted_memory_budget(
         _schema: PhantomData,
     };
     registry.preflight_home_retirement(&request).unwrap();
+    let exhausted = request
+        .reserve_retained_memory((1 << 20) - budget.charged_memory_bytes())
+        .unwrap();
+    assert_eq!(budget.charged_memory_bytes(), 1 << 20);
     let mut cursor = HandlerRetirementCursor::default();
     assert!(matches!(
         registry.advance_home_retirement(&mut cursor, &request),
@@ -153,6 +154,7 @@ fn ordinary_supplier_retirement_retains_payload_with_an_exhausted_memory_budget(
     ));
     assert_eq!(contacts.load(Ordering::SeqCst), 2);
     assert_eq!(drops.load(Ordering::SeqCst), 0);
+    drop(exhausted);
     drop(registry);
     assert_eq!(drops.load(Ordering::SeqCst), 1);
 }
