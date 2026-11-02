@@ -29,7 +29,7 @@ lease issuer or a damaged-data recovery requirement.
 | D7/D16 live lease refusal; real Closed then removal; new identity/incarnation; idempotence | `discard_refuses_the_live_lease_and_closed_disposal_reinitializes_with_a_new_identity` |
 | D16 damaged data/identity requires no recovery | `discard_completes_damaged_store_and_namespace_identity_without_store_recovery` |
 | D16 torn intent fences both Store and public Host opening; initializer remains uncalled | `torn_discard_intent_refuses_open_and_explicit_retry_finishes_it` |
-| D16 child killed after intent barriers and during removal; same lease excludes competitors; retry initializes | `killed_discard_retains_the_tombstone_and_retry_finishes_each_durable_removal_boundary` |
+| D16 child killed after intent barriers and during removal; same lease excludes competitors; retry initializes | `killed_discard_retains_the_tombstone_during_removal_and_retry_initializes` |
 
 Courts live under Store Application's existing `process/application/discard/`.
 Use the owned prebuild/nextest runner with the exact package/target and module

@@ -6,7 +6,7 @@ use worth_store::physical_runtime::{
 };
 
 #[test]
-fn killed_discard_retains_the_tombstone_and_retry_finishes_each_durable_removal_boundary() {
+fn killed_discard_retains_the_tombstone_during_removal_and_retry_initializes() {
     for (role, ordinal) in [("intent", 1), ("delete", 1), ("delete", 2)] {
         let directory = tempfile::tempdir().unwrap();
         let location = directory.path().join("home");
