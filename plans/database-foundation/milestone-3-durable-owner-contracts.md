@@ -1731,6 +1731,285 @@ contracts and `docs/capability-index.md` for the real public capability. Example
 must use Decl/Host and the actual mandatory path; selected Native-only evidence
 must not be described as multi-owner checkpoint completion.
 
+## Complete Home original-input persistence and reopen (P-A design)
+
+Status: revised design awaiting scope handoff and fresh independent review;
+not implemented qualification. The
+starting point is `c068abc047`. This section governs only the original Native
+input chronology and its Home source admission; Query source retirement,
+Home transitions/discard and receipt reconstruction retain their other owners.
+
+### Boundary and durable owner
+
+The adversary kills an initialized Home before its first canonical write, or
+after selecting a checkpoint and accepting a later tail. Reopen must retain
+the original birth, installation position, transition schema attribution and
+each canonical mutation policy. It must then produce another Complete capture
+without the original process, covered journals, initializer or current-policy
+substitution. Schema content equality alone does not establish an event role.
+
+Native owns and admits these inputs. Store transports their opaque artifacts
+and authenticates physical selection; World continues to own its image/cut
+and reconciliation. Initial-schema installation must acquire an explicit
+original ExecutionRequest AND an actual fresh-source phase before it can
+publish durable initialization. The present request-free installation API is
+not an I/O seam. Adding a request alone is incorrect: Host opening currently
+calls install_home_native_schema on BOTH fresh and existing raw receivers
+before Home readmission. The receiver's empty history proves no source newness.
+
+Store's existing physical ProvenAbsent custody alone selects a closed Native
+fresh-initialization issuer. Its concrete move-only runtime payload retains
+the SAME exclusive attached runtime/source and original installation subject.
+The permission phase shape belongs in worth-proof; the payload, sources and
+prepared cell replacement belong to Native. Exact factory caller seals admit
+only the owning Section and its Store origin-routing consumer. ExistingArtifacts
+cannot obtain this phase, even for empty coverage. No public generic marker,
+boolean or medium-presence check can enable initialization.
+
+Split Query's installation contract into fresh initialization and existing
+receiver-configuration preparation. The latter is strictly nonpublishing and
+provides only expected configured schema/service meaning to actual recovery;
+it cannot create or replace source input evidence. Store must route these
+before installation, rather than exposing an unqualified runtime whose caller
+chooses publication. Both paths share pure lowering/preparation, not source
+authority. Move the existing source-origin choice earlier in the SAME Host
+recipe with the smallest coordinated opening.rs change; do not run an
+initializer or manufacture a recovered source on either path. Call sites
+must cut over together; no ambient request or default allowance is permitted.
+
+Use a new Native-owned `RelationalSourceInitialInputsArtifact`, protocol
+`worth.relational.source.initial-inputs`, version 1. Store supplies one exact
+new anchor, `relational.initial-inputs`, through the existing Native medium
+binding and protected-source port. This is the real initialization durable
+step, with the existing Committed/ProvenNoEffect/Indeterminate topology and
+subject-bound consumed witness. It is not a Store schema parser or a second
+source-admission authority. The closed registry addition and the exact medium,
+source and Query installation call sites need a narrow integration handoff
+because those files are outside the assigned P-A paths.
+
+The artifact contains a mandatory Birth entry and an explicit installation
+posture: NotInstalled or Installed with the actual before/after Empty axes and
+exact `follows_transition`. It carries the full required schema images using
+the existing DurableBranchRootSchemaImage grammar and content digest. Birth
+also binds the source's actual main-branch name. No generation, version, schema
+role or absent policy is inferred from ordering in a schema-content union.
+The artifact's entry list is declared tagged and length-delimited in version
+1; unknown tags refuse. Its two legal states are BirthOnly and
+BirthAndInstallation, with a required Native input revision and predecessor
+artifact digest. BirthOnly is revision 1 without a predecessor; adding the
+single installation is revision 2 and links the exact original revision-1
+digest. A combined first publication is revision 1 with both entries and no
+predecessor. These are recorded artifact coordinates, not an independent live
+allocator. No other progression is legal. Initial installation preserves the
+original birth. It never consumes a canonical or lifecycle transition
+position, or relabels installation as Archive/Fork/Delete.
+
+Every protected source cut freezes the actual initialization artifact revision,
+payload digest and read custody together with its C/T bounds. Complete capture
+freezes the accepted initialization subject under the SAME configuration and
+publication epochs as its other original inputs; physical protection must
+cover that exact frozen subject. The Complete image records that subject and
+its entire admitted entry prefix. ACK and monotonic selection compare this
+coordinate as well as C/T/catalog coverage. Equal C/T coverage cannot erase an
+accepted installation or acknowledge a different initialization subject.
+
+On reopen, the SAME protected cut supplies the selected Complete prefix and
+the current initialization artifact. Equality means no initialization tail.
+The only unequal admissible case is a BirthOnly selected prefix followed by
+its exact linked BirthAndInstallation successor. Validate unchanged birth,
+predecessor digest, revision, before/after axes and follows_transition; merge
+that one uncovered installation into the original C/T interleaving at its
+recorded insertion point. Admit any newly referenced schema from that genuine
+successor artifact. Installation is before C1 and follows exactly its recorded
+T, including the supported archived-Empty case. A missing, regressed,
+unrelated or ambiguous successor refuses. Never replace the selected prefix
+with a blindly read latest anchor. This also covers C0 checkpoints followed
+by installation with no canonical or transition tail at all.
+
+Birth publication precedes the first durable Native effect or fresh-source
+admission. Initial installation validates and prepares its complete replacement
+before publishing its actual before/after inputs; only Committed permits the
+live schema/cell cutover. If birth has not yet been published, the same initial
+installation step can record birth and installation together. An initialized
+zero-write Home therefore has real durable evidence. A request-free Memory
+construction remains explicitly nondurable; it mints no durable witness.
+
+No-effect preserves the original live cells, input chronology and accepted
+anchor. Indeterminate retains the original subject in the same Native medium
+barrier and blocks subsequent Native publication until recovery. A kill after
+the anchored commit but before cutover admits that recorded installation on
+reopen. A kill before commitment recovers the previous admitted artifact or
+refuses incomplete initialization. Neither case reruns a caller initializer.
+An existing Home with no source artifact never regains a fresh opportunity.
+
+### Wire placement and format decision
+
+The scoped search of canonical_commit_artifact/payload_wire.rs and
+branch_transition_artifact/payload_wire.rs found exact, deny_unknown_fields
+payloads with no declared tagged extension. Canonical v4 also binds its exact
+position/envelope payload digest. Adding fields under those versions would
+reinterpret landed bytes. Cut over canonical **4 to 5** and transition **1 to
+2**, as authorized by the coordinator. Keep their existing positions, source
+affinity, original frames and authoritative-envelope predicates.
+
+Canonical v5 adds required Native-owned input DATA to its digested payload:
+the exact prestate/result full-schema carrier references and the three actual
+MutationConfig policies. It is attached before original frame sizing, digest,
+emission and durable acceptance, not only to the postpublication catalog. A
+schema-changing canonical step also supplies its newly required full carrier
+in that same artifact; unchanged-schema commits carry references only. The
+initial-input artifact supplies the birth/installation carriers. Existing
+immutable schema owners cache their admitted descriptive carrier so ordinary
+unchanged-schema publication does not serialize the entire registry. This
+cache grants no authority and retains only its own actual funded DATA.
+
+Transition v2 adds the required reference to the actual schema used by that
+original transition, inside the same digested payload. It must resolve in the
+already admitted source prefix. A transition grants no new schema meaning.
+The full positioned transition, not its name or sequence alone, binds the
+attribution. Original input DATA moves through replay, catalog replacement,
+coverage compaction and detached/continuing stream lifetimes.
+
+CHK18's CheckpointWire has exactly manifest/members/envelopes; its flat26
+manifest and canonical-member roster have no input-attribution extension.
+Preserve CHK18 and WSRCKPT1 version 3 byte grammars. Add a distinct Native-owned
+Complete source artifact, protocol `worth.relational.complete-source`, version
+1, containing the unchanged CHK18 artifact and a normalized original-input
+image bound to its exact digest, coverage and source/main binding. The image
+contains birth/installation roles, every covered positioned transition plus
+its schema reference, and every covered canonical subject's schema references
+and policies. Canonical subject linkage includes position, commit and original
+payload digest. Schema content resolves against the SAME CHK18 schema union;
+there is no second full registry codec or archive.
+
+The Store Relational owner adds a distinct Complete section artifact that
+carries this Native artifact; ordinary WSRCKPT1 version-3 section production
+keeps its standalone meaning. The Home still has exactly one Relational and
+one World section, one member union and one selection. Do not add another Home
+section tag or change Home manifest v2. A new Complete section cannot be
+constructed from an ordinary section or a serialized Complete flag.
+
+Development Homes that cease opening through the Complete Home route are:
+Homes with canonical v4 or earlier; transition v1; missing initial-input
+artifacts; and selected ordinary WSRCKPT1/CHK18 sections without the new bound
+Complete-source artifact. This includes previously selected Home2/CHK18
+development Homes. Unselected old Homes also require the initialization
+artifact and current journal formats. There is no migration, missing-field
+default, on-open rewrite, automatic discard or reinitialization. Existing
+standalone ordinary Native APIs retain their explicit, weaker contract; they
+cannot issue Complete Home admission.
+
+Unsupported versions use Foundational boundary_protocol identity, version,
+current-only compatibility window and BoundaryProtocolUnsupportedVersion.
+Missing inputs and malformed/mismatched current inputs have distinct typed
+Native refusals. Before descriptor/incarnation PUBLICATION, Store lends an
+actual protected physical cut to a closed Native format-eligibility preflight.
+Native inspects its initialization frame, selected section/Complete wrapper
+and uncovered canonical/transition frame versions. Selected ordinary old
+sections fail here, before member or body reconstruction. Each uncovered
+record is checked; inspecting only the first or last entry is insufficient.
+The source owner provides bounded header streaming from that SAME cut, not a
+Store codec, latest-reader lookup or uncharged full-body retention. Selected
+Complete-member framing must also meet its Native-declared format contract;
+the implementation must not postpone a predecessor-version refusal until
+after incarnation publication. Version eligibility grants no schema, replay,
+recovery, service or fresh-initialization authority. It only permits descriptor
+admission to continue. Existing descriptor/binding checks and full Native
+readmission still run in D8 order. Unsupported-format tests must observe both
+unchanged incarnation/anchor generation and no Native/World publication.
+The preflight/actual readmission must retain the same source cut under the
+continuously held mutation lease; a later unprotected inspection is not enough.
+
+### Admission, funding and destination
+
+The Native Complete-source decoder takes the original request, exact protected
+selected backing/range and SAME selected member/source custody. Validate outer
+version and bounds, CHK18 digest/coverage/member inventory, initial image and
+all source-bound role links before installation. Reuse actual root/schema and
+canonical admission, including semantic result and association checks. Carry
+the admitted schema owners into the existing branch stream and canonical
+catalog; a fresh recovery receiver still discards its own construction seed.
+Uncovered canonical/transition records extend this same chronology in their
+original interleaving. Missing full schema DATA or live typed service issuers
+retain honest refusals; recorded recipe DATA never manufactures an issuer.
+
+Fund artifact sizing/emission, nested schema decode, normalized image storage,
+source metadata and retained input owners before growth under the SAME
+request. Retain actual reservations with their independent escaping owners;
+temporary decode/canonicalization backing dies before its grant. A stopped or
+refused admission retains the original owning Home/source and prior selection.
+There is no replacement request, fresh-source fallback or reconstructed
+performed proof. ACK continues the SAME selected attempt and cursor.
+
+Populated responsibilities stay beneath existing owners:
+
+```text
+worth-relational/src/durability/
+  source_initial_inputs/       artifact frame, codec, owned admission
+  complete_source/             bound CHK18/input-image artifact and admission
+  canonical_commit_artifact/   required v5 original inputs
+  branch_transition_artifact/  required v2 schema attribution
+  authority/runtime_rebuild/   source-bound input installation and tail joins
+  medium/                     original initialization step/fate binding
+worth-relational/src/history/commit/artifact/ original input DATA lifetime
+worth-relational/src/runtime/initial_schema_installation/ prepare/durable/cutover
+worth-relational/src/runtime/state/subsystems/canonical_publication_routes/
+  branch_transition_stream/    actual birth/installation/transition custody
+worth-store-relational/src/section/{readmission,checkpoint}/ Complete section
+worth-query-court-query-decl-host/.../application_home/ real reopen courts
+```
+
+Implementation order is fresh-only initialization phase, format eligibility
+and exact origin/call-site handoff; initialization owner/port and request-bearing
+cutover; v5/v2 producer/owned decode; Complete image emission and source
+admission; recovery/Section integration; then real Host filesystem evidence.
+Do not remove CompleteNativeRequired until the complete admitted graph reaches
+the actual recovered stream/catalog and a second Complete succeeds.
+
+Acceptance maps D12 and Phase 3 open/reopen to real filesystem postcheckpoint
+reopen, process-killed image-plus-nonempty-tail restart, interrupted owner ACK,
+bounded Host tails, damage/foreign/schema/incomplete refusals, and
+same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key.
+Keep the recovered-Empty missing-original negative. Prove covered canonical
+journals unavailable with the existing actual read observer and positive
+damage matches; inspect original values/history/components and produce/select/
+ACK a second Complete. Run only added/changed named cases, never ignored tests
+or the exhaustive Home oracle. Completion also requires touched formatting,
+dirty line caps, boundary-check, agent-context and fresh independent review.
+Exact commands and final counts belong in target/lane-evidence logs.
+
+### Exact scope handoff required before implementation
+
+The user-assigned P-A paths omit the following necessary participants. This
+design does not authorize editing them or widening caller patterns. Request
+the narrow change set from the coordinator/integration owner before coding:
+
+- Store Application registry.rs: the exact relational.initial-inputs anchor,
+  plus the explicit registry-version compatibility decision if required by
+  its physical registry contract. Keep the existing journals and owner tags.
+- Store Application open/mod.rs and descriptor admission: hold the original
+  protected source and complete Native format preflight before incarnation
+  publication; later readmission consumes the same cut.
+- Store Application relational_preparation and Store Relational section/unshared:
+  select fresh-only initialization from actual physical origin before schema
+  installation, retaining the owning refusal on every exit.
+- Store Relational journal_medium and cold_source: initialization publication,
+  original-request-funded opaque reads and exact protected header admission.
+- Query Execution bootstrap/{initial_installation,native_meaning} and
+  application_installation/home_preparation: distinct fresh publishing and
+  existing nonpublishing contracts, using the original bootstrap phase request.
+- Host application_home/opening.rs: the minimum reordered typed handoff needed
+  before its current generic install_home_native_schema call. Coordinate with
+  the integration owner's stack split; do not edit opening/fresh.rs or the
+  reserved pipeline/state files as a workaround.
+- Proof/Native/Store facades and factory configuration: only the concrete phase
+  export and exact Section/Application/Host callers of the final named doors.
+  A generic factory family or broad source-pattern exception is forbidden.
+
+The new original-input artifacts and their codecs alone cannot satisfy the
+task without this handoff. Keep the selected-Home refusal until the integrated
+owner step, early format gate, input coverage and real reopen evidence exist.
+
 ## Recovery and service contract
 
 Store Application consumes named Proof stages in order:
