@@ -70,8 +70,14 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
                                     principal.principal().principal_entity_id(),
                                     scope.scope().entity_id(),
                                     capability,
+                                    |original| {
+                                        original.interruption().map_or(Ok(()), |cause| {
+                                            Err(InspectionAdmissionDenial::RequestControl(cause))
+                                        })
+                                    },
                                     || require_request(&execution, &request),
                                     || InspectionAdmissionDenial::ForeignIssuedAccess,
+                                    InspectionAdmissionDenial::Capability,
                                     &execution,
                                     memory,
                                     InspectionAdmissionDenial::Storage,

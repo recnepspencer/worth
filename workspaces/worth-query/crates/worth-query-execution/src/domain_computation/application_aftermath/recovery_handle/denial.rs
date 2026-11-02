@@ -26,6 +26,7 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     AlreadyTerminal,
     ForeignPrincipal,
     ForeignRuntime,
+    StaleIncarnation,
     ForeignBranchEqualOrdinal,
     /// The effect already reached its one terminal completion. Safe retry
     /// admits no new physical attempt and the live handle is returned.

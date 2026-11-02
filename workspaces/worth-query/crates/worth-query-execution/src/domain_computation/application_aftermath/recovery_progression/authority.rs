@@ -29,6 +29,7 @@ worth_proof::authority_marker!(WorthQueryRecoveryCurrentAuthorityMint);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryRecoveryAuthorityBasis {
+    home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     runtime: WorthQueryRuntimeAuthorityIdentity,
     handle: WorthQueryRecoveryHandleAuthorityIdentity,
 }
@@ -53,12 +54,14 @@ impl WorthQueryRecoveryEffectAuthority {
     pub(crate) fn mint(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         handle_authority: WorthQueryRecoveryHandleAuthorityIdentity,
+        home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Self {
         Self {
             current: Artifact::with_current_basis(
                 (),
                 WorthQueryRecoveryAuthorityBasis {
                     runtime: runtime_authority,
+                    home_owner,
                     handle: handle_authority,
                 },
                 WorthQueryRecoveryCurrentAuthorityMint::witness(),
@@ -70,9 +73,9 @@ impl WorthQueryRecoveryEffectAuthority {
         &self,
         handle: &WorthQueryRecoveryHandle,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {
+        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)?;
         handle.ensure_live()?;
-        deny_if_expired(handle, handle.registry_clock())?;
-        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)
+        deny_if_expired(handle, handle.registry_clock())
     }
 
     /// Finalize an already performed dispatch without resampling expiry after I/O.
@@ -80,8 +83,8 @@ impl WorthQueryRecoveryEffectAuthority {
         &self,
         handle: &WorthQueryRecoveryHandle,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {
-        handle.ensure_live()?;
-        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)
+        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)?;
+        handle.ensure_live()
     }
 }
 
@@ -95,12 +98,14 @@ impl WorthQueryRecoveryInspectAuthority {
     pub(crate) fn mint(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         handle_authority: WorthQueryRecoveryHandleAuthorityIdentity,
+        home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Self {
         Self {
             current: Artifact::with_current_basis(
                 (),
                 WorthQueryRecoveryAuthorityBasis {
                     runtime: runtime_authority,
+                    home_owner,
                     handle: handle_authority,
                 },
                 WorthQueryRecoveryCurrentAuthorityMint::witness(),
@@ -112,9 +117,9 @@ impl WorthQueryRecoveryInspectAuthority {
         &self,
         handle: &WorthQueryRecoveryHandle,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {
+        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)?;
         handle.ensure_live()?;
-        deny_if_expired(handle, handle.registry_clock())?;
-        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)
+        deny_if_expired(handle, handle.registry_clock())
     }
 }
 
@@ -144,6 +149,14 @@ where
         handle: &WorthQueryRecoveryHandle,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryHandleDenial> {
+        handle.admit_home_owner(self.product_runtime.owner.owner_identity())?;
+        admission
+            .refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .map_err(|_| {
+                WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::StaleIncarnation,
+                )
+            })?;
         handle.ensure_live()?;
         let owner = self.runtime.authority_identity();
         ensure_same_runtime(owner, handle.runtime_authority())?;
@@ -153,6 +166,7 @@ where
         Ok(WorthQueryRecoveryEffectAuthority::mint(
             self.runtime.authority_identity(),
             handle.authority_identity(),
+            self.product_runtime.owner.owner_identity(),
         ))
     }
 
@@ -163,9 +177,17 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         disclosure: &WorthQueryRecoveryDisclosureAdmission,
     ) -> Result<WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryHandleDenial> {
+        handle.admit_home_owner(self.product_runtime.owner.owner_identity())?;
+        admission
+            .refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .map_err(|_| {
+                WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::StaleIncarnation,
+                )
+            })?;
         handle.ensure_live()?;
         let owner = self.runtime.authority_identity();
-        disclosure.ensure_for_runtime(owner)?;
+        disclosure.ensure_for_runtime(owner, self.product_runtime.owner.owner_identity())?;
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
         deny_if_expired(handle, &self.authorization_clock)?;
@@ -173,6 +195,7 @@ where
         Ok(WorthQueryRecoveryInspectAuthority::mint(
             self.runtime.authority_identity(),
             handle.authority_identity(),
+            self.product_runtime.owner.owner_identity(),
         ))
     }
 }
@@ -181,6 +204,19 @@ fn ensure_authority_owns_handle(
     basis: WorthQueryRecoveryAuthorityBasis,
     handle: &WorthQueryRecoveryHandle,
 ) -> Result<(), WorthQueryRecoveryHandleDenial> {
+    handle
+        .home_owner()
+        .admit_incarnation(basis.home_owner)
+        .map_err(|cause| {
+            WorthQueryRecoveryHandleDenial::new(match cause {
+                worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+                    WorthQueryRecoveryHandleDenialKind::StaleIncarnation
+                }
+                worth_proof::HomeIncarnationDenial::ForeignHome => {
+                    WorthQueryRecoveryHandleDenialKind::FreshAuthorityDenied
+                }
+            })
+        })?;
     if handle.runtime_authority() != basis.runtime || handle.authority_identity() != basis.handle {
         return Err(WorthQueryRecoveryHandleDenial::new(
             WorthQueryRecoveryHandleDenialKind::FreshAuthorityDenied,

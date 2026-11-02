@@ -160,7 +160,7 @@ Full command headers, source revisions, clean flags, timings, exit codes and
 counts are indexed in `target/lane-evidence/pc-incarnation-lane-index.txt`.
 No ignored test, exhaustive Home oracle or Store scenario lane was run.
 
-## Final source qualification
+## Baseline source qualification at f5d91091b8
 
 - Query Execution and Publication normal owner targets: 2230 passed, 0 failed,
   0 ignored executed (3 skipped).
@@ -281,3 +281,35 @@ ProductSelectionMismatch for foreign ownership. Repository search for
 integration_owns_product_branch found only its definition and this one caller;
 no second caller remains to bypass that receiver. This is the same narrow
 World call-admission seam, not an async-support implementation.
+
+
+## Shared disclosure and recovery-capability correction
+
+The third fresh review of b6792147bd rejected pending disclosure preparation:
+its generic runtime comparison bypassed the capability's Home fence. The
+capability's unchecked runtime-authority getter is removed. Its replacement
+requires the concrete receiving World owner and returns Proof's typed Home
+incarnation result, so existing getter callers must be audited at compile time.
+Shared pending disclosure checks it before original-request validation, then
+preserves original request/foreign-affinity/current-request/capture ordering.
+Governed query, Resource and inspection callers preserve the typed authorization
+cause through their own existing error owners. Resource and inspection public
+stop kinds distinguish StaleIncarnation without exposing protected data.
+Two pure error-projection tests contrast stale and foreign causes; they do not
+fabricate capabilities or claim filesystem N+1 evidence.
+
+The getter audit found recovery-inspection disclosure as a third consumer.
+Its disclosure proof now carries the actual admitted Home owner through its
+later receiver. Recovery handles already carry that owner inside their genuine
+committed-publication binding; no duplicate handle field, counter or registry
+is added. Recovery authority bases retain it at mint, and current runtime,
+Resource recovery and redispatch receivers compare it before acting. Existing
+pure mechanism tests take the additional carriage from their genuine existing
+handles; no expected cause or assertion is weakened. Query's existing
+RecoveryHandleDenialKind adds StaleIncarnation through its existing facade.
+Redispatch and Resource recovery are additional narrow P-D owner-check seams;
+no receipt or idempotency algorithm changes.
+
+The baseline 66-file qualification count is explicitly tied to f5d91091b8.
+Later full-candidate counts are recorded by the range-cap lane in the evidence
+index, rather than presenting that earlier count as the current range.

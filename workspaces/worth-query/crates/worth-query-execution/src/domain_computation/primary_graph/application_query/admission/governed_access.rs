@@ -46,13 +46,13 @@ where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
 {
-    validate_admission_request(capability.request_scope(), query.name())?;
     crate::domain_computation::authorization::application_disclosure::prepare_pending_disclosure(
         runtime,
         query.binding_identity(),
         access.principal().principal_entity_id(),
         access.scope().entity_id(),
         capability,
+        |original| validate_admission_request(original, query.name()),
         || validate_admission_request(request, query.name()),
         || {
             denial(
@@ -60,6 +60,7 @@ where
                 query.name(),
             )
         },
+        WorthQueryApplicationQueryAdmissionDenial::from_authorization,
     )
 }
 

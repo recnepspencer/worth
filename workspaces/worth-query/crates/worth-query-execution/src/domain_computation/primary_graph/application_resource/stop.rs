@@ -9,6 +9,7 @@ use worth_execution::WorkCeilingDenial;
 /// Coarse refusal category without protected occurrence or Native details.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryResourceStopKind {
+    StaleIncarnation,
     Unavailable,
     Request,
     Admission,
@@ -108,6 +109,14 @@ impl WorthQueryResourceActionDenial {
         use ResourceCause as C;
         use WorthQueryResourceStopKind as K;
         match &self.cause {
+            C::Admission(ResourceAdmissionDenial::Authorization(denial) | ResourceAdmissionDenial::DisclosureAuthorization(denial))
+                if denial.kind() == crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation) => K::StaleIncarnation,
+            C::Selection(crate::basis::WorthQueryProductBranchAdmissionDenial::StaleIncarnation)
+            | C::Native(worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial::StaleIncarnation)
+            | C::Revalidation(worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial::StaleIncarnation)
+            | C::ScopeCapture(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::StaleIncarnation)) => K::StaleIncarnation,
+            C::Recovery(denial) if denial.kind() == crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation => K::StaleIncarnation,
+            C::ParameterCapture(denial) if denial.request_authority().map(|cause| cause.kind()) == Some(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)) => K::StaleIncarnation,
             C::Unavailable => K::Unavailable,
             C::Request(_)
             | C::Control(_)
@@ -127,7 +136,9 @@ impl WorthQueryResourceActionDenial {
             C::Provider(_) | C::Ingress(_) => K::Provider,
             C::Completion(_) | C::DeniedCompletion(_) => K::Completion,
             C::Managed(_) => K::Cleanup,
-            _ => K::Admission,
+            C::Selection(_) | C::Principal(_) | C::Scope(_) | C::ScopeCapture(_)
+            | C::ParameterCapture(_) | C::Admission(_) | C::Value(_) | C::Clock(_)
+            | C::Native(_) | C::Revalidation(_) | C::Scratch(_) | C::Attempt(_) => K::Admission,
         }
     }
 
@@ -279,5 +290,37 @@ where
         WorthQueryResourceActionDenial,
     ) {
         (self.handle, self.denial)
+    }
+}
+
+#[cfg(test)]
+mod incarnation_projection_tests {
+    use super::*;
+    use crate::domain_computation::authorization::{
+        WorthQueryOperationAuthorizationDenial as Denial,
+        WorthQueryOperationAuthorizationDenialKind as Kind,
+        WorthQueryOperationAuthorizationRefusalKind as Refusal,
+    };
+    #[test]
+    fn stale_disclosure_is_distinct_from_foreign_runtime_in_public_resource_stop_kind() {
+        // Error metadata only: no capability, runtime or Home is fabricated.
+        for (cause, expected) in [
+            (
+                Refusal::StaleIncarnation,
+                WorthQueryResourceStopKind::StaleIncarnation,
+            ),
+            (
+                Refusal::ForeignRuntime,
+                WorthQueryResourceStopKind::Admission,
+            ),
+        ] {
+            let denied = WorthQueryResourceActionDenial {
+                cause: ResourceCause::Admission(ResourceAdmissionDenial::DisclosureAuthorization(
+                    Denial::new(Kind::Refused(cause), "disclosure"),
+                )),
+                closed: None,
+            };
+            assert_eq!(denied.kind(), expected);
+        }
     }
 }

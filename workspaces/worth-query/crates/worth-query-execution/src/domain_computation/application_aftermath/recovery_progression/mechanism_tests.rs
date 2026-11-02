@@ -20,7 +20,11 @@ fn probe_handle(aftermath: WorthQueryInstalledAftermathContract) -> WorthQueryRe
 }
 
 fn authority(handle: &WorthQueryRecoveryHandle) -> WorthQueryRecoveryEffectAuthority {
-    WorthQueryRecoveryEffectAuthority::mint(handle.runtime_authority(), handle.authority_identity())
+    WorthQueryRecoveryEffectAuthority::mint(
+        handle.runtime_authority(),
+        handle.authority_identity(),
+        handle.home_owner(),
+    )
 }
 
 #[test]

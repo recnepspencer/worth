@@ -61,6 +61,7 @@ fn effect_authority_minted_before_expiry_denies_after_the_deadline() {
     let authority = WorthQueryRecoveryEffectAuthority::mint(
         handle.runtime_authority(),
         handle.authority_identity(),
+        handle.home_owner(),
     );
     let registry = handle.registry_arc();
 
@@ -85,6 +86,7 @@ fn inspect_authority_minted_before_expiry_denies_after_the_deadline() {
     let authority = WorthQueryRecoveryInspectAuthority::mint(
         handle.runtime_authority(),
         handle.authority_identity(),
+        handle.home_owner(),
     );
     let registry = handle.registry_arc();
 
@@ -102,6 +104,7 @@ fn effect_authority_denies_a_different_runtime_with_the_same_registry_slot() {
     let authority_a = WorthQueryRecoveryEffectAuthority::mint(
         handle_a.runtime_authority(),
         handle_a.authority_identity(),
+        handle_a.home_owner(),
     );
     let registry_a = handle_a.registry_arc();
     let registry_b = handle_b.registry_arc();
@@ -126,6 +129,7 @@ fn inspect_authority_denies_a_different_runtime_with_the_same_registry_slot() {
     let authority_a = WorthQueryRecoveryInspectAuthority::mint(
         handle_a.runtime_authority(),
         handle_a.authority_identity(),
+        handle_a.home_owner(),
     );
     let registry_a = handle_a.registry_arc();
     let registry_b = handle_b.registry_arc();
@@ -150,6 +154,7 @@ fn effect_authority_denies_a_different_handle_in_the_same_runtime() {
     let authority_a = WorthQueryRecoveryEffectAuthority::mint(
         handle_a.runtime_authority(),
         handle_a.authority_identity(),
+        handle_a.home_owner(),
     );
     let registry = handle_a.registry_arc();
 
@@ -172,6 +177,7 @@ fn inspect_authority_denies_a_different_handle_in_the_same_runtime() {
     let authority_a = WorthQueryRecoveryInspectAuthority::mint(
         handle_a.runtime_authority(),
         handle_a.authority_identity(),
+        handle_a.home_owner(),
     );
     let registry = handle_a.registry_arc();
 
@@ -212,7 +218,11 @@ fn admission_time_foreignness_and_proof_use_foreignness_are_different_causes() {
         .expect("our own handle admits");
 
     // Proof use: the authority *is* ours, but it is not this handle's.
-    let authority_a = WorthQueryRecoveryEffectAuthority::mint(owner, handle_a.authority_identity());
+    let authority_a = WorthQueryRecoveryEffectAuthority::mint(
+        owner,
+        handle_a.authority_identity(),
+        handle_a.home_owner(),
+    );
     let use_denial = require_fresh_effect_authority(&handle_b, &authority_a)
         .expect_err("our authority does not carry to another handle");
     assert_eq!(

@@ -213,6 +213,7 @@ fn safe_retry_denies_when_the_handle_carries_no_co_committed_outbox() {
     let authority = WorthQueryRecoveryEffectAuthority::mint(
         outboxless.runtime_authority(),
         outboxless.authority_identity(),
+        outboxless.home_owner(),
     );
     let denied = safe_retry_recovery_handle(outboxless, &authority, redispatch)
         .expect_err("no bound outbox means no proof can match");

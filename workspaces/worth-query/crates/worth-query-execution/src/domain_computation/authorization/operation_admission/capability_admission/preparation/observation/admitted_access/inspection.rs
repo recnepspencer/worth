@@ -13,11 +13,6 @@ impl<Schema, Capability, Operation, Input>
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    pub(in crate::domain_computation) fn home_owner(
-        &self,
-    ) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
-        self.home_owner
-    }
     pub(in crate::domain_computation) fn read_product(
         &self,
     ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
@@ -76,10 +71,15 @@ where
         &self.capability_type
     }
 
-    pub(in crate::domain_computation) const fn runtime_authority(
+    pub(in crate::domain_computation) fn runtime_authority_for(
         &self,
-    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
-        self.runtime_authority
+        receiver: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    ) -> Result<
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        worth_proof::HomeIncarnationDenial,
+    > {
+        receiver.admit_incarnation(self.home_owner)?;
+        Ok(self.runtime_authority)
     }
 
     pub(in crate::domain_computation) const fn binding_identity(

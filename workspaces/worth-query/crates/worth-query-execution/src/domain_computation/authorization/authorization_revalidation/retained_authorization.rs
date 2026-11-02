@@ -119,13 +119,15 @@ where
                 Capability,
             >,
     {
-        super::super::refuse_stale_home_authority(
-            self.product_runtime.owner.owner_identity(),
-            access.home_owner(),
-            "capability read access",
-        )?;
+        let authority = access.runtime_authority_for(self.product_runtime.owner.owner_identity())
+            .map_err(|cause| match cause {
+                worth_proof::HomeIncarnationDenial::ForeignHome => inconsistent_authorization(),
+                worth_proof::HomeIncarnationDenial::StaleIncarnation =>
+                    WorthQueryOperationAuthorizationDenial::new(
+                        super::super::WorthQueryOperationAuthorizationDenialKind::Refused(super::super::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation), "capability read access"),
+            })?;
         let authorization = access.read_authorization();
-        if access.runtime_authority() != self.runtime.authority_identity()
+        if authority != self.runtime.authority_identity()
             || access.binding_identity() != &self.installed_schema.binding_identity()
             || !authorization.belongs_to_session(access.graph_work_session_identity())
         {

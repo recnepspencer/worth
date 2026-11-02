@@ -108,6 +108,10 @@ where
         authority: &WorthQueryRecoveryEffectAuthority,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
+        match self.product_runtime.owner.owner_identity().admit_incarnation(handle.home_owner()) {
+            Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => return Err(WorthQueryExternalRedispatchDenial::FreshAuthority(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation)),
+            Err(worth_proof::HomeIncarnationDenial::ForeignHome) | Ok(()) => {}
+        }
         let request = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| {
@@ -123,6 +127,11 @@ where
         ) {
             return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
         }
+        handle
+            .admit_home_owner(self.product_runtime.owner.owner_identity())
+            .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
+        admission.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .map_err(|_| WorthQueryExternalRedispatchDenial::FreshAuthority(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation))?;
         if let Some(lapse) = admission.current_authority_lapse() {
             return Err(match lapse {
                 WorthQueryAdmissionLapse::Cancelled => {
