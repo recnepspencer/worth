@@ -20,8 +20,90 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/acceptance/adoption_stop.rs
 # Phase17 receiving boundary: pause only a genuine SourceOnly completion before its request handoff.
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/attempts/handoff.rs
+# Document recording observes the real selected head before checked delivery returns.
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/handoff.rs
+# Recording parks at actual capture/adoption and bounds real request allocation.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/page_pause.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/budget.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/redo/authority.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/redo/handoff.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/redo_choices.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/retention_frontier.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/custody.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/retention/control.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/retention_frontier.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/retention.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/group.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/group.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/recovery.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/allocation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/edit/capture_pause.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/group/handoff.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/capture_race.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/race.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/race.rs
 # Logical source court observes only real closed-count retention lifecycle.
+# Composed document commands arm only their original registered receiver.
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/selection.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/delivery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/delivery.rs
+# Public history recovery observes the original candidate branch; it issues no authority.
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/producer_admission.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/producer_admission.rs
+# Dropped public navigation handles recover the actual candidate after producer work.
+# Output-enabled interruption schedules arm only the real navigation receivers.
+# History output publication interrupts the actual producer World comparison.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/owner_discovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication/stopped_recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication/recovery_control.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/cutover.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/cutover.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication/recovery_control.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/owner_discovery.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication/stopped_recovery.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/publication/recovery_control.rs
+# Authored clone unwinding is scoped to its demand; only actual D custody is observed.
+workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/panic_disposal.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/panic_disposal.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/interruption.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/branching.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/branching.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/navigation/control.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/cancellation.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/recovery.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/retirement.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/retirement.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/recovery.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/logical/court/mod.rs
+workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/user_tree.rs
+workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/predecessor.rs
+workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal/source.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal/source.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal/producer.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal/producer.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/cancellation.rs
+workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/cancellation.rs
+workspaces/worth-query/crates/worth-query-testkit-document-retention/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/resources.rs
 # Deliberate sort qualification refusal; actual compiler identity cannot be replaced or qualified.
 crates/worth-foundational/ crates/worth-foundational/src/canonicalization/basis/construction/sort_qualification/tests.rs
 crates/worth-foundational/ workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/parameter_canonical_basis.rs
@@ -357,6 +439,10 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/history/custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/construction.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/qualification.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/original_endpoint.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/original_endpoint/memory.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/phase_cleanup.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/selected_meaning.rs
 # 9.17.6.6: exact-observation closed certification courts observe producer contacts.
 # Exact combined-source recovery exercises the installed Signal outcome fault.
@@ -421,6 +507,10 @@ crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_
 crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/reference_context/adversarial/operation_control/ordered_races/declarations.rs
 crates/worth-signal/ crates/worth-court-signal-owner-services/tests/worth_court_signal_owner_services/support/signal_owner_services/reference_context/adversarial/operation_control/snapshot_progress/declarations.rs
 # Original witness payer court reads only the actual SDK scope-frame quote.
+# History context refresh uses its actual owner receiver and final-guard rendezvous.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/history/context/pause.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/governed.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/correction_witness/tests.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/tree_reapplication.rs
@@ -470,6 +560,22 @@ crates/worth-testkit-relational/ crates/worth-court-relational-branch-reference-
 crates/worth-testkit-relational/ crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/relational/relational_certification/production_failures/mod.rs
 crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/observation_contracts/mod.rs
 
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/governed.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/payload.rs
+# Passive document-growth observations remain on the original public receivers.
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/growth/scenario.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/growth/measurement.rs
+# Existing Bridge history control follows its public eviction court.
+crates/worth-runtime-bridge/ crates/worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/history.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/current_read_publication/critical_section.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/current_read_publication/scoped_cutover.rs
+crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/mod.rs
+crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/guarded_cutover.rs
+crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/memory_handoff.rs
+crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/memory_handoff/deadline.rs
+crates/worth-relational/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/memory_handoff/deadline.rs
+crates/worth-relational/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/guarded_cutover.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/current_read_publication/scoped_cutover/deadline.rs
 # 9.19: real generated geometry pending Native/World publication and recovery.
 # 9.19: actual independent Signal winner against generated Source suspension.
 # 9.19: cancellation after real performed Source publication and recovery adoption.
@@ -487,9 +593,6 @@ crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certificat
 # Public cache court parks a real post-Native World compare and observes the active attempt.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/publication.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/publication.rs
-# Existing Bridge history control follows its public eviction court.
-crates/worth-runtime-bridge/ crates/worth-court-runtime-bridge/tests/worth_court_runtime_bridge/runtime_bridge/conditional_evaluations/history.rs
-
 # Read-only original SDK prefix attribution at exact real geometry mutation invoices.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth/work_attribution.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/scope_observation.rs

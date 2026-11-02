@@ -20,6 +20,7 @@ mod checkpoint_delivery;
 mod denial_diagnostic;
 mod denial_posture;
 pub(super) mod disclosure;
+mod fulfillment;
 mod progression;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::DecisionInput;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::PerformedMembers;

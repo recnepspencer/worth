@@ -73,6 +73,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         TypeId,
 }
 
+mod history_group;
 mod operation_binding_uniqueness;
 mod output_family_inventory;
 mod pending;

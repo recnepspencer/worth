@@ -2,13 +2,14 @@ mod authoritative_publication;
 use crate::authority::commit::phases::publication::canonicalize_changed_records;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
 use crate::authority::commit::publication::diagnostics_summary_artifact;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::history::data::RelationalCommitReceipt;
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
 use crate::transactions::data::{
     AspectEvaluationTrace, CommitAspectSummary, CommitChangeSummary, CommitPublicationSummary,
-    MergedCommitPlan, PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
+    PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
 };
 use authoritative_publication::{
     prepare_authoritative_publication, PreparedPublicationAuthority, PublicationAuthorityInput,
@@ -48,7 +49,7 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) version_id: crate::identity::data::VersionId,
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
-    pub(super) merged_plan: &'a MergedCommitPlan,
+    pub(super) merged_plan: RelationalSemanticPlan<'a>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,

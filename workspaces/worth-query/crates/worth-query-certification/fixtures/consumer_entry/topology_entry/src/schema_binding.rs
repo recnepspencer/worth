@@ -10,6 +10,8 @@ use worth_query_host::facade::application_contribution::{
 use super::base_model::TopologyModelBinding;
 
 pub trait TopologySchemaBinding: ApplicationSchema {
+    /// Install the separately declared external producer in this fixture schema.
+    const ESCAPING_PLANAR_OUTPUT: bool = false;
     /// Isolated consumer variants can require the real planar producer binding
     /// to belong to their application program; existing schemas keep their policy.
     const PLANAR_REQUIRES_APPLICATION_PROGRAM: bool = false;

@@ -29,6 +29,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             super::super::super::DemandAdmissionKind::Ordinary,
             restored.clone(),
             &settlement,
+            None,
         )
         .expect("the recovered output admits its first demand");
     let (second, reinserted) = registry
@@ -39,6 +40,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             super::super::super::DemandAdmissionKind::Ordinary,
             restored,
             &settlement,
+            None,
         )
         .expect("a later observation joins the recovered semantic source");
 

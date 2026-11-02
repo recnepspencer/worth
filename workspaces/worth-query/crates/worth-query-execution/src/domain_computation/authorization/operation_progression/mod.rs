@@ -2,7 +2,8 @@
 
 mod authority_validation;
 pub(in crate::domain_computation) use authority_validation::{
-    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+    authorize_current_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    SelectedConventionalAdmissionStop,
 };
 
 pub use authority_validation::WorthQueryAdmittedApplicationCapabilityAccess;

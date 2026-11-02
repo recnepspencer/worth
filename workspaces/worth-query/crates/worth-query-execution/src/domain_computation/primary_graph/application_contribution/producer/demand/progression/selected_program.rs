@@ -103,6 +103,7 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
+                    None,
                 )
                 .map(Some)
             },
@@ -183,7 +184,7 @@ where
                 request_scope,
                 delivery_branch,
                 disclosure,
-                WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision },
+                WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision }.into(),
                 performed,
             )
         })

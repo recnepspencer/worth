@@ -7,8 +7,8 @@
 //! whose chain consumed it.
 
 use std::ops::Deref;
-use std::sync::Arc;
 use std::sync::OnceLock;
+use std::sync::{Arc, Weak};
 
 use super::WorthQueryCompletedOutputDemand;
 
@@ -20,6 +20,15 @@ struct ReadyCell {
     output_evaluation: OnceLock<Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
     producer_mode: OnceLock<ProducerMode>,
     original_publication: OnceLock<Arc<super::super::OriginalProducingPublication>>,
+}
+
+/// Identity of the actual prepaid cell, retained without retaining its answer.
+/// Its weak control block prevents address reuse while an old row exists.
+pub(super) struct OutputCheckpointGeneration(Weak<ReadyCell>);
+impl OutputCheckpointGeneration {
+    pub(super) fn same(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.0, &other.0)
+    }
 }
 
 /// Prepared before an output effect. It cannot be read as a Ready completion.
@@ -52,6 +61,10 @@ impl<Schema>
 }
 
 impl PreparedReadyBacking {
+    pub(super) fn generation(&self) -> OutputCheckpointGeneration {
+        OutputCheckpointGeneration(Arc::downgrade(&self.cell))
+    }
+
     pub(super) fn new() -> Self {
         Self {
             cell: Arc::new(ReadyCell {
@@ -122,6 +135,10 @@ impl Deref for ReadyCompletion {
 }
 
 impl ReadyCompletion {
+    pub(super) fn generation(&self) -> OutputCheckpointGeneration {
+        OutputCheckpointGeneration(Arc::downgrade(&self.0))
+    }
+
     pub(in crate::domain_computation::primary_graph) fn original_producing_publication(
         &self,
     ) -> Option<&Arc<super::super::OriginalProducingPublication>> {

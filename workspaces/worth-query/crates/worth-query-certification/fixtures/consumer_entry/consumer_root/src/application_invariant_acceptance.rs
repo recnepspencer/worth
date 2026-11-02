@@ -1,6 +1,7 @@
 mod authentication;
 mod contribution_denials;
 mod discovery;
+pub(crate) mod document_history;
 mod installation;
 mod proof;
 mod resources;

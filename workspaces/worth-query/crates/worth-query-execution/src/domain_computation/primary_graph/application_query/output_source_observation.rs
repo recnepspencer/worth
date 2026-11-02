@@ -1,22 +1,25 @@
 //! Governed source read inside the original producer reader and native borrow.
-
 use super::*;
-use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::primary_graph::{
+    SharedSelectedProductOperation, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrincipalResolutionMode,
+};
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
-use worth_query_declaration::facade::application_query::ApplicationQueryIntent;
-use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
-use worth_query_declaration::facade::application_query::ApplicationQueryScopeResolution;
-use worth_query_declaration::facade::application_schema::ApplicationSchema;
-use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
+};
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeBinding,
+    ApplicationQueryScopeResolution,
+};
+use worth_query_declaration::facade::application_schema::{
+    ApplicationSchema, ApplicationStructuredValueBinding,
+};
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
+mod current_control;
 mod permission;
 mod read_closure;
 mod same_scope;
@@ -25,7 +28,6 @@ pub(in crate::domain_computation::primary_graph) use read_closure::SourceQueryRe
 
 type SourceValue<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-
 pub(in crate::domain_computation::primary_graph) type SourceReadPlan<'a, S, B> = WorthQueryAdmittedApplicationQueryPlan<
     'a, S, <B as ApplicationQueryBinding<S>>::Query,
     <<B as ApplicationQueryBinding<S>>::ParameterBinding as ApplicationStructuredValueBinding>::Value,
@@ -34,8 +36,8 @@ pub(in crate::domain_computation::primary_graph) type SourceReadPlan<'a, S, B> =
     <<B as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope,
 >;
 
-/// Borrowed from the real producer execution entry. It carries no cached
-/// permission: each call freshly resolves the installed query's own access.
+/// Borrowed from the real producer execution entry. Each call freshly admits
+/// its installed query; historical truth carries no current permission.
 pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<'a, Schema> {
     pub(in crate::domain_computation::primary_graph) application:
         &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -44,19 +46,19 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
     pub(in crate::domain_computation::primary_graph) principal:
         &'a WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(in crate::domain_computation::primary_graph) request: &'a WorthQueryRequestScope,
+    history: Option<current_control::HistorySourceQueryControl<'a, Schema>>,
+    refused: std::cell::RefCell<Option<SourceQueryObservationStop>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum SourceQueryObservationStop {
+    CurrentControl(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
     ManagedIndex(Arc<super::managed_index::WorthQueryManagedIndexDenial>),
     Installation(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
     Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
     Admission(WorthQueryApplicationQueryAdmissionDenial),
-    Preparation {
-        phase: SourceQueryPreparationPhase,
-        cause: WorthQueryApplicationQueryAdmissionDenial,
-    },
+    Preparation { phase: SourceQueryPreparationPhase, cause: WorthQueryApplicationQueryAdmissionDenial },
     Read(WorthQueryAdmittedOneShotStop),
     Basis(crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop),
     Missing,
@@ -100,10 +102,52 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         SourceValue<Schema, Binding>: WorthQueryApplicationProjection<Schema, Binding::Query>,
         E: From<SourceQueryObservationStop>,
     {
+        if let Some(stop) = self.refused.borrow().as_ref() {
+            return Err(stop.clone().into());
+        }
+        let result = self.with_plan_in_control::<Binding, R, E>(
+            execution,
+            intent,
+            context_use,
+            native,
+            consume,
+        );
+        // Confirm even a consumer error: current control loss cannot become an
+        // authored data outcome merely because the consumer returned a denial.
+        self.confirm_control(execution, native, result)
+            .map_err(|stop| E::from(self.record_history_refusal(stop)))?
+    }
+
+    fn with_plan_in_control<Binding, R, E>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        intent: Binding::Input,
+        context_use: &std::cell::Cell<
+            crate::domain_computation::primary_graph::handler::DecisionContextUse,
+        >,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+        consume: impl for<'plan> FnOnce(
+            SourceReadPlan<'plan, Schema, Binding>,
+            &mut ApplicationQueryNativeAccess<'_>,
+        ) -> Result<R, E>,
+    ) -> Result<R, E>
+    where
+        Binding: ApplicationQueryBinding<Schema>,
+        Binding::Input: ApplicationQueryIntent<Schema, Binding = Binding>,
+        Binding::ScopeBinding: ApplicationQueryScopeResolution<Schema, Binding::PrincipalIdentity>,
+        SourceValue<Schema, Binding>: WorthQueryApplicationProjection<Schema, Binding::Query>,
+        E: From<SourceQueryObservationStop>,
+    {
         use SourceQueryObservationStop as Stop;
         context_use.set(context_use.get().source_query_permission());
         let application = self.application;
-        let selected = self.shared.selected();
+        self.confirm_control(execution, native, ())
+            .map_err(|stop| self.record_history_refusal(stop))?;
+        let selected = self
+            .history
+            .as_ref()
+            .map_or(self.shared, |history| history.current)
+            .selected();
         if !std::ptr::eq(application, selected.application()) {
             return Err(Stop::ForeignClosure.into());
         }
@@ -123,7 +167,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 None,
                 native,
             )
-            .map_err(Stop::Principal)?;
+            .map_err(|stop| self.record_history_refusal(Stop::Principal(stop)))?;
         let (field, value) = selector.into_field_parts(principal.principal().principal_identity());
         let scope = selected
             .resolve_query_scope_issued_with_native_access(
@@ -133,7 +177,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 self.request,
                 native,
             )
-            .map_err(Stop::Scope)?;
+            .map_err(|stop| self.record_history_refusal(Stop::Scope(stop)))?;
         self.with_resolved_plan::<Binding, _, _>(
             execution, &installed, parameters, &principal, &scope, native, consume,
         )

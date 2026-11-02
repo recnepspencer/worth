@@ -41,7 +41,7 @@ fn with_session<'application, Schema, History, Output>(
     ) -> Result<PendingDecisions, Denial>,
     operation: impl for<'fresh> FnOnce(
         SubjectPlan<'fresh, Schema, History>,
-        HistoryMetadataAdmission<History>,
+        HistoryMetadataAdmission,
     ) -> Result<Output, Denial>,
 ) -> Result<Output, Denial>
 where

@@ -1,6 +1,6 @@
 # Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
 
-**Status:** specified; all seven phases below remain open.
+**Status:** implemented and verified; Phases 1–7 complete.
 **Public boundary:** process-local Decl/Host consumers.
 **Prerequisites:** qualified branch/correction owners from
 [9.18](./milestone-9.18.md) and retained-read, guarded adoption and history
@@ -16,6 +16,7 @@ phase. New API names describe the required implementation, not existing APIs.
 
 ## Phase 1: Install Document History And Record An Ordinary Edit
 
+**Status:** implemented and verified.
 **Depends on:** the named 9.18/9.18.1 public contracts.
 **Outcome:** a consumer declares document history, attaches its actual model
 head, executes one ordinary domain edit and receives one exact history step.
@@ -114,6 +115,7 @@ historical navigation already exists.
 
 ## Phase 2: Read The Tree And Preview A Historical Step
 
+**Status:** implemented and verified.
 **Depends on:** completed Phase 1.
 **Outcome:** consumers can page history and query an old endpoint without
 changing the active model or executing historical commands.
@@ -193,6 +195,7 @@ permission or a current-source proof.
 
 ## Phase 3: Checkout A Historical State And Preserve Both Futures
 
+**Status:** implemented and verified.
 **Depends on:** completed Phases 1-2.
 **Outcome:** one click can prepare and select an exact old model state, then an
 ordinary edit creates a new future while the original future remains available.
@@ -313,6 +316,7 @@ missing security or recovery proof.
 
 ## Phase 4: Parent Undo And Explicit Child Redo
 
+**Status:** implemented and verified.
 **Depends on:** completed Phase 3.
 **Outcome:** consumer undo/redo buttons use the existing checkout progression
 and preserve every qualified alternative.
@@ -373,6 +377,7 @@ and scoped review of actual command routing and history preservation.
 
 ## Phase 5: Group A Gesture Into One History Step
 
+**Status:** implemented and verified.
 **Depends on:** completed Phases 1, 3 and 4.
 **Outcome:** several ordinary edits form one visible history edge without
 exposing a partly applied group as the active document.
@@ -446,6 +451,7 @@ cases, actual lifecycle evidence, affected gates and scoped review.
 
 ## Phase 6: Configure A Navigation Window And Bookmarks
 
+**Status:** implemented and verified.
 **Depends on:** completed Phases 2-5.
 **Outcome:** consumers choose how many unpinned user steps this feature keeps
 navigable, across all futures, with honest ownership and no storage-cap claim.
@@ -530,9 +536,16 @@ not an omitted test obligation; it is expressly deferred until Store integration
 
 ## Phase 7: Deliver The Plug-In Consumer And Qualify The Composed Feature
 
+**Status:** implemented and verified.
 **Depends on:** completed Phases 1-6.
 **Outcome:** a normal consumer can install, render and operate the whole history
 feature without implementing its authority, ancestry or lifecycle machinery.
+
+**Qualification scope:** the executable consumer entry is `--document-history`.
+The separate default advanced-output recovery program has a preserved unresolved
+`ForeignSource` failure in `proof/application_program/required_basis.rs`; no fresh
+default-run result is claimed. That audience is unqualified by this milestone's
+document-mode evidence.
 
 ### Required behavior and implementation boundary
 

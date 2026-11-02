@@ -4,12 +4,14 @@ use worth_foundational::FoundationalBranchReferenceGeneration;
 use crate::branch::{RelationalBranchTarget, RelationalBranchVersion};
 use crate::history::data::{BranchId, CommitId};
 
-/// One branch lifecycle transition as durable history records it.
+/// One canonical branch lifecycle transition.
+/// Ordinary transitions may be durable; retained forks require live custody
+/// and explicitly refuse historical tail reconstruction.
 ///
 /// It is runtime-neutral (D11): branches are named, never identified by a
 /// process-local runtime, and a fork's source head is a branch target in the
 /// canonical runtime frame. Two runtimes performing the same transition on
-/// the same durable history record the same value.
+/// the same canonical history record the same value.
 ///
 /// Every variant names the exact prior state it was performed against, so
 /// recovery can refuse a transition that does not apply to the branch it
@@ -19,6 +21,15 @@ use crate::history::data::{BranchId, CommitId};
 pub enum RelationalBranchTransition {
     /// `target` came into existence as a fork of `source` at `source_head`.
     Fork {
+        target: BranchId,
+        source: BranchId,
+        source_generation: FoundationalBranchReferenceGeneration,
+        source_truth_version: RelationalBranchVersion,
+        source_head: RelationalBranchTarget,
+    },
+    /// A process-local fork selected an actually retained immutable source,
+    /// without asserting that the source reference was still current.
+    RetainedFork {
         target: BranchId,
         source: BranchId,
         source_generation: FoundationalBranchReferenceGeneration,
@@ -53,7 +64,7 @@ impl RelationalBranchTransition {
     /// archived or deleted branch.
     pub fn branch(&self) -> &BranchId {
         match self {
-            Self::Fork { target, .. } => target,
+            Self::Fork { target, .. } | Self::RetainedFork { target, .. } => target,
             Self::Archive { branch, .. }
             | Self::DeletionRequested { branch, .. }
             | Self::Delete { branch, .. } => branch,

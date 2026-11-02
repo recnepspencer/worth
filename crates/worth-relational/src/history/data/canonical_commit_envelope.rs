@@ -21,14 +21,17 @@ use crate::transactions::data::{
 };
 
 mod authored_index_writes;
+mod construction;
 mod live_managed_source_history;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
 mod payload_digest;
+mod retained_entity_selection;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
+pub use retained_entity_selection::CanonicalRetainedEntitySelection;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
 mod required_output_codec_retirement;
@@ -99,13 +102,31 @@ pub struct CanonicalCommitEnvelope {
     pub descriptor_semantics_version: DescriptorSemanticsVersion,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CanonicalCommitAuthorityKind {
     VersionedTransaction,
     /// A canonical branch-reference movement that carries no new relational
     /// version. Recovery may readmit legacy metadata publications here after
     /// translating their obsolete lineage vocabulary.
     BranchReferenceMovement,
+    /// A fresh version selecting one retained authoritative entity payload.
+    RetainedEntitySelection(std::sync::Arc<CanonicalRetainedEntitySelection>),
+}
+
+impl CanonicalCommitAuthorityKind {
+    pub fn advances_version(&self) -> bool {
+        match self {
+            Self::VersionedTransaction | Self::RetainedEntitySelection(_) => true,
+            Self::BranchReferenceMovement => false,
+        }
+    }
+
+    pub fn retained_entity_selection(&self) -> Option<&CanonicalRetainedEntitySelection> {
+        match self {
+            Self::RetainedEntitySelection(selection) => Some(selection),
+            Self::VersionedTransaction | Self::BranchReferenceMovement => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -115,62 +136,6 @@ pub(crate) struct CommittedRecordChange<'a> {
 }
 
 impl CanonicalCommitEnvelope {
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
-        content: crate::content::ContentPublication,
-        commit: RelationalCommitReceipt,
-        branch_context: BranchId,
-        authority_kind: CanonicalCommitAuthorityKind,
-        strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
-        merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
-        merge_parent_branches: Vec<BranchId>,
-        merge_base_commits: Vec<CommitId>,
-        schema_version: SchemaVersionId,
-        schema_authority: SchemaAuthoritySnapshot,
-        merged_plan: MergedCommitPlan,
-        patch: CanonicalAuthoritativePatch,
-        descriptive_touches: RelationalDescriptiveTouchGraph,
-        diagnostics_summary: RelationalDiagnosticArtifact,
-        lineage: PublishedLineageArtifact,
-        derived_index_artifacts: DerivedIndexArtifacts,
-        schema_transition: Option<SchemaTransitionArtifact>,
-        schema_continuation_descriptor: Option<SchemaContinuationDescriptor>,
-        schema_reconciliation_descriptor: Option<SchemaReconciliationDescriptor>,
-        descriptor_semantics_version: DescriptorSemanticsVersion,
-    ) -> Self {
-        Self {
-            content,
-            authored_index_writes: CanonicalAuthoredIndexWrites::default(),
-            live_managed_source_history: LiveManagedSourceHistory::default(),
-            required_output_codec_retirements: Vec::new(),
-            required_output_origin: None,
-            required_output_materialization: None,
-            commit,
-            branch_context,
-            branch_cell_checkpoint: None,
-            authority_kind,
-            strategy_artifacts,
-            merge_execution_authority,
-            merge_parent_branches,
-            merge_base_commits,
-            schema_version,
-            schema_authority,
-            merged_plan,
-            record_allocations: Vec::new(),
-            symbol_texts: Default::default(),
-            revision_symbol_references: Vec::new(),
-            patch,
-            descriptive_touches,
-            diagnostics_summary,
-            lineage,
-            derived_index_artifacts,
-            schema_transition,
-            schema_continuation_descriptor,
-            schema_reconciliation_descriptor,
-            descriptor_semantics_version,
-        }
-    }
-
     pub fn lineage_event_ids(&self) -> &[u64] {
         self.lineage.lineage_event_ids()
     }
@@ -219,7 +184,7 @@ impl CanonicalCommitEnvelope {
     }
 
     pub fn authority_kind(&self) -> CanonicalCommitAuthorityKind {
-        self.authority_kind
+        self.authority_kind.clone()
     }
 
     pub(crate) fn published_lineage(&self) -> &PublishedLineageArtifact {
@@ -242,7 +207,25 @@ impl CanonicalCommitEnvelope {
                 touched.insert(target);
             }
         }
+        if let Some(selection) = self.authority_kind.retained_entity_selection() {
+            touched.insert(RecordRef::Entity(selection.entity()));
+        }
         touched
+    }
+
+    /// Borrow authored targets too: an equal-valued authored update can have
+    /// no surviving field patch and still be a distinct record occurrence.
+    pub(crate) fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_ {
+        self.authority_kind
+            .retained_entity_selection()
+            .map(|selection| Some(RecordRef::Entity(selection.entity())))
+            .into_iter()
+            .chain(
+                self.merged_plan
+                    .merged_intents
+                    .iter()
+                    .map(intent_record_ref),
+            )
     }
 
     /// Canonical bytes for owner truth only. Diagnostics and optional derived
@@ -360,7 +343,6 @@ pub struct RelationalReplayRecord {
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]
 mod tests;
-
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
 pub(crate) use text_wire::CanonicalEnvelopeWire;

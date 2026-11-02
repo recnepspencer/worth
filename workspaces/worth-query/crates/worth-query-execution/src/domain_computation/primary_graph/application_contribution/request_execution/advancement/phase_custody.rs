@@ -187,6 +187,18 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         self.execution_request_for(runtime).map_err(Into::into)
     }
 
+    /// Checks the receiving runtime and this phase's current interruption state.
+    pub fn check_live_for(
+        &self,
+        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+    ) -> Result<(), super::WorthQueryAdvancementDenial> {
+        self.checked_execution_request_for(runtime)?
+            .check_live()
+            .map_err(|stop| {
+                super::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(stop))
+            })
+    }
+
     pub(crate) fn request_for_owner(
         &self,
         owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,

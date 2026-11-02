@@ -90,6 +90,7 @@ fn sealed_absent_parent_initialization_stales_before_any_native_effect() {
                     runtime.installed_program().identity(),
                     runtime.installed_program().revision(),
                 )),
+                None,
             );
             let WorthQueryApplicationCommitOutcome::Stale(stale) = outcome else {
                 panic!("competing parent materialization must stale before effects: {outcome:?}");

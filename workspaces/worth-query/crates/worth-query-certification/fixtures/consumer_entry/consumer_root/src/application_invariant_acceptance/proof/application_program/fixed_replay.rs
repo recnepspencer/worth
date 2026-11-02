@@ -1,4 +1,5 @@
 //! Ordinary fixed replay rejoins real registered output custody after reply loss.
+mod restored_fulfillment;
 use super::*;
 use crate::application_program::ConsumerFixedAction;
 use worth_query_host::facade::application_entry::{
@@ -61,6 +62,8 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         _ => panic!("first source publication performs"),
     };
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
+    let original_source_receipt = first.prepared_source_receipt().unwrap().clone();
+    let original_source_binding = original_source_receipt.idempotency_binding();
     let original_commit = world
         .application
         .with_host_advancement(|phase| {
@@ -180,6 +183,28 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
         })
         .expect("authored output graph settles");
     assert!(settled.handler_result().is_none());
+    let carried_source = settled.settlement().performed_source().unwrap().receipt();
+    let fulfillment = settled
+        .settlement()
+        .performed_source()
+        .unwrap()
+        .root_fulfillment();
+    assert!(fulfillment.matches_source(&original_source_receipt));
+    assert!(!fulfillment.matches_source(settled.settlement().root_receipt().unwrap()));
+    assert_eq!(
+        fulfillment.output_commit(),
+        settled.settlement().root_observation().selected_commit()
+    );
+    assert!(carried_source.is_same_authoritative_commit(&original_source_receipt));
+    assert_eq!(
+        carried_source.idempotency_binding(),
+        original_source_binding
+    );
+    assert!(
+        !carried_source.is_same_authoritative_commit(settled.settlement().root_receipt().unwrap()),
+        "source A must not become producer B"
+    );
+    let carried_source = carried_source.clone();
     assert_eq!(settled.settlement().output_count(), 4);
     assert_eq!(
         settled.settlement().root_producer_contacts_in_this_demand(),
@@ -202,6 +227,11 @@ fn fixed_registered_reply_loss_resumes_without_handler_rerun() {
     settled
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("native cleanup: {cause:?}"));
+    assert!(carried_source.is_same_authoritative_commit(&original_source_receipt));
+    assert_eq!(
+        carried_source.idempotency_binding(),
+        original_source_binding
+    );
     let historical = request
         .mutate(input.clone())
         .expect_source(source)

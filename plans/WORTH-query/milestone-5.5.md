@@ -1284,7 +1284,7 @@ The required rule is:
 - the bridge owns writeback protocol meaning and execution
 
 If query code starts deciding idempotence, causality equivalence, or
-loop-prevention semantics locally, Milestone 5.5 has stolen Milestone 12
+loop-prevention semantics locally, Milestone 5.5 has stolen Bridge Milestone 12
 bridge authority instead of composing with it.
 
 ### This Milestone Must Not Steal 5.6

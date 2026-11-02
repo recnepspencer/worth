@@ -3,7 +3,8 @@ use super::PreconditionBoundCapabilityOperation;
 #[path = "../../../operation_admission.rs"]
 mod admitted_operation;
 pub(in crate::domain_computation) use admitted_operation::{
-    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+    authorize_current_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    SelectedConventionalAdmissionStop,
 };
 
 pub(in crate::domain_computation::authorization::operation_progression) use admitted_operation::transition_conventional_operation;

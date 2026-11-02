@@ -24,13 +24,18 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
             controls(),
         )
         .expect("the initial output demand starts");
-    crate::application_invariant_acceptance::proof::settle(|| {
+    let initial_settlement = crate::application_invariant_acceptance::proof::settle(|| {
         crate::application_invariant_acceptance::proof::settled(
             initial
                 .advance(&world.application, &request)
                 .expect("the initial output settles"),
         )
     });
+    assert!(
+        initial_settlement.performed_source().is_none(),
+        "a read-origin tree has no performed source action"
+    );
+    drop(initial_settlement);
     drop(initial);
 
     request
@@ -79,6 +84,10 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     let delivery = settlement
         .root_readiness_delivery()
         .expect("the republished output carries delivery evidence");
+    assert!(
+        settlement.performed_source().is_none(),
+        "read-origin republication cannot invent a performed source receipt"
+    );
     assert!(
         !delivery.has_conditional_successor(),
         "an equal republication schedules no Signal successor"

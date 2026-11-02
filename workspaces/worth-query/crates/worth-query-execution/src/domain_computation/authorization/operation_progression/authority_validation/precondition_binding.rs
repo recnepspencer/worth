@@ -20,7 +20,8 @@ pub(in crate::domain_computation) use transition::{
     admit_capability_access, admit_encoded_capability_access,
 };
 pub(in crate::domain_computation) use transition::{
-    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+    authorize_current_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    SelectedConventionalAdmissionStop,
 };
 pub(in crate::domain_computation::authorization::operation_progression) use transition::{
     transition_capability_operation, transition_conventional_operation,

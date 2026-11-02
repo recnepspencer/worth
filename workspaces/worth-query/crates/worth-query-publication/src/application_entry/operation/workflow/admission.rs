@@ -101,13 +101,15 @@ where
         let (selected, _) = self.select(phase, request)?;
         let staged = native.stage()?;
         let identities = native.identities()?;
-        <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission::prepare_selected(
-            phase,
-            native,
-            &identities,
-            staged,
-            &selected,
-        )
-        .map_err(Into::into)
+        let prepared =
+            <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission::prepare_selected(
+                phase,
+                native,
+                &identities,
+                staged,
+                &selected,
+            )
+            .map_err(WorthQueryApplicationRecoveryRequestDenial::from)?;
+        Ok(prepared)
     }
 }

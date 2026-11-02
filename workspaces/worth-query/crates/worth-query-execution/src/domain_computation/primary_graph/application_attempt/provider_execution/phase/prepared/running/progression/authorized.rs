@@ -178,7 +178,19 @@ where
                 authority.admission().publication_request(), allocation_policy,
             );
             finish_authorized_compare(execution,
-            candidate.compare_and_commit_with(control.policy(), |read_authority, fresh| {
+            candidate.compare_and_commit_with(|prepared| {
+                match authority.history {
+                    Some(history) => {
+                        let request = authority.admission().retain_admitted_request();
+                        prepared.commit_using(|_provider, session| {
+                            authority.provider().commit_prepared_application_in_history(
+                                session, history.bind_producer_request(&request), control.policy(),
+                            )
+                        })
+                    }
+                    None => prepared.commit(control.policy()),
+                }
+            }, |read_authority, fresh| {
                 authority.provider().recompare_application_read_set(execution,
                     read_authority, fresh,
                     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(

@@ -1,7 +1,7 @@
-//! Assemble the canonical authority and lineage for the already checked state.
+//! Assemble canonical authority for the checked complete semantic plan.
 use super::{
-    CanonicalAuthoritativePatch, MergedCommitPlan, PublishedMergeExecutionAuthority, RecordRef,
-    RelationalCommitReceipt, SchemaContinuityPlan, TransactionCommitError,
+    CanonicalAuthoritativePatch, PublishedMergeExecutionAuthority, RecordRef,
+    RelationalCommitReceipt, RelationalSemanticPlan, SchemaContinuityPlan, TransactionCommitError,
 };
 use crate::authority::commit::phases::publication::canonical_commit_envelope;
 use crate::publication::{bundle::PublicationStage, data::PublicationError};
@@ -14,7 +14,7 @@ pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) version_id: crate::identity::data::VersionId,
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
-    pub(super) merged_plan: &'a MergedCommitPlan,
+    pub(super) merged_plan: RelationalSemanticPlan<'a>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
@@ -52,7 +52,7 @@ pub(super) fn prepare_authoritative_publication(
         .ensure_lineage_for_commit(
             input.working_state,
             input.commit_reference,
-            &input.merged_plan.merged_intents,
+            &input.merged_plan.commands().merged_intents,
             input.changed_records,
         )
         .map_err(|detail| {
@@ -72,12 +72,12 @@ pub(super) fn prepare_authoritative_publication(
         input.working_state.content.clone(),
         input.commit_reference,
         input.branch_id,
-        crate::history::data::CanonicalCommitAuthorityKind::VersionedTransaction,
+        input.merged_plan.canonical_authority_kind(),
         input.strategy_artifacts,
         input.merge_execution_authority,
         input.merge_parent_branches,
         input.merge_base_commits,
-        input.merged_plan,
+        input.merged_plan.commands(),
         input.patch.clone(),
         input.descriptive_touches,
         input.diagnostics_summary.clone(),

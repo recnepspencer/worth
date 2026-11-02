@@ -983,7 +983,7 @@ Milestone 6 owns basis variation and diff-context honesty.
 - Milestone 7 owns richer lineage and correspondence query surfaces
 - Milestone 8 owns branch-comparison view semantics and broader presentation
   shaping
-- Milestone 10 owns store-backed execution parity and durable historical/store
+- Store execution/historical integration owns store-backed execution parity and durable historical/store
   completion
 
 Milestone 6 must therefore stop at:

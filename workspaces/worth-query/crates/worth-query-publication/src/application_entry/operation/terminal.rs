@@ -2,6 +2,8 @@
 use super::fixed::FixedState;
 mod unavailable;
 use super::*;
+mod closed;
+pub use closed::WorthQueryClosedFixedTerminal;
 use unavailable::TerminalOutputCompletion;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationUncommitted, WorthQueryManagedApplicationRecoveryPerformed,
@@ -61,6 +63,7 @@ where
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
     output_completion: Option<TerminalOutputCompletion<Schema, Program, Root>>,
+    pub(super) advance_denial: Option<WorthQueryOperationAdvanceDenial>,
     pub(super) operation: WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>,
 }
 impl<Schema, Intent, Program, Root, Action>
@@ -89,12 +92,19 @@ where
         Self {
             operation,
             output_completion: None,
+            advance_denial: None,
         }
     }
 
     /// Original output-producer evidence is not replaced by its cleanup receipt.
     pub fn producer_native_outcome(&self) -> Option<&WorthQueryApplicationUncommitted> {
         self.operation.cleanup.producer_native_outcome()
+    }
+
+    /// The original advancement refusal, when transferred into this owner by
+    /// an enclosing history edit. Retaining it does not authorize a retry.
+    pub fn advance_denial(&self) -> Option<&WorthQueryOperationAdvanceDenial> {
+        self.advance_denial.as_ref()
     }
     /// Exact managed-run cleanup custody retained independently of business evidence.
     pub fn managed_cleanup_failure(
@@ -150,13 +160,34 @@ where
     /// Eligible fixed-leaf domain refusal completes as unavailable through its original
     /// native owner before cleanup. All other unresolved output custody still refuses.
     pub fn close(
-        mut self,
+        self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        self.close_with_evidence(request)
+            .map(WorthQueryClosedFixedTerminal::into_close_evidence)
+    }
+
+    /// Complete the original native close before moving its genuine diagnostic
+    /// evidence into a readonly result. Refusal retains this actual owner.
+    pub fn close_with_evidence(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<WorthQueryClosedFixedTerminal<Schema, Intent>, (Self, WorthQueryOperationCloseDenial)>
+    {
+        match self.close_native(request) {
+            Ok(closed) => Ok(WorthQueryClosedFixedTerminal::from_terminal(self, closed)),
+            Err(denial) => Err((self, denial)),
+        }
+    }
+
+    fn close_native(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
         if !std::ptr::eq(self.operation.runtime.runtime(), request.application)
             || self.operation.description.branch != request.branch
         {
-            return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
+            return Err(WorthQueryOperationCloseDenial::FreshRequestMismatch);
         }
         let closable = match &self.operation.state {
             FixedState::Initial => true,
@@ -194,8 +225,8 @@ where
             });
         match result {
             Ok(Ok(closed)) => Ok(closed.with_output_unavailable(self.take_output_unavailable())),
-            Ok(Err(denial)) => Err((self, denial)),
-            Err(denial) => Err((self, WorthQueryOperationCloseDenial::Execution(denial))),
+            Ok(Err(denial)) => Err(denial),
+            Err(denial) => Err(WorthQueryOperationCloseDenial::Execution(denial)),
         }
     }
 }

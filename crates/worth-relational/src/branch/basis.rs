@@ -165,6 +165,14 @@ pub(crate) struct AdmittedRelationalBranchBasisInner {
 }
 
 impl AdmittedRelationalBranchBasis {
+    /// Observe only the exact original cell's lock posture. This grants no
+    /// currentness or publication authority and never waits for that cell.
+    #[doc(hidden)]
+    pub fn publication_state_locked_for_test(&self) -> bool {
+        self.inner
+            .publication_cell
+            .publication_state_locked_for_test()
+    }
     pub fn materialization_is_complete(&self) -> bool {
         !self.inner.root.has_materialization_unavailable()
     }

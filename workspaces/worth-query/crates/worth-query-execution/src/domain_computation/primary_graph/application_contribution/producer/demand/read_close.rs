@@ -38,7 +38,7 @@ impl WorthQueryOutputReadCleanup {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     ) -> Result<(), WorthQueryOutputReadCloseDenial> {
         self.custody.close_read(phase, &mut |recovery| {
-            runtime.close_read_product_publication_recovery_in_advancement(phase, recovery)
+            runtime.close_product_publication_recovery_in_advancement(phase, recovery)
         })
     }
     pub fn retired_component_count(&mut self) -> usize {
@@ -74,10 +74,21 @@ impl<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>
         if let Some(denial) = self.terminal_caller_denial.as_mut() {
             denial.close_read_cleanup(phase, runtime)?;
         }
+        if let Some(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) =
+            self.unpublished_selected_checkpoint.as_mut()
+        {
+            owner.close(phase, runtime)?;
+            self.unpublished_selected_checkpoint = None;
+        }
         if self.unpublished_selected_checkpoint.is_some() {
             return Err(WorthQueryOutputReadCloseDenial::NativePublicationRetained);
         }
         if let Some(interest) = self.interest.as_ref() {
+            runtime.close_unpublished_checkpoint(
+                phase,
+                interest,
+                &mut self.unpublished_selected_checkpoint,
+            )?;
             interest.require_read_closeable()?;
         }
         self.required_continuations

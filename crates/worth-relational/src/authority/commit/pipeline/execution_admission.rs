@@ -1,6 +1,7 @@
 use super::authority_context::AuthoritativeCommitContext;
 use super::bulk_mutation_telemetry::record_bulk_mutation_telemetry;
 use super::rejection::stale_strategy_validation_basis;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::{
@@ -57,16 +58,17 @@ impl<'a> AdmittedCommitPhaseView<'a> {
     ) -> (
         TransactionId,
         &'a RelationalTransactionValidationInput,
-        &'a MergedCommitPlan,
+        RelationalSemanticPlan<'a>,
         Option<&'a crate::transactions::data::MergeCommitMutationPlan>,
         &'a mut CommitLog,
         &'a mut CommitPhaseTiming,
     ) {
         let (merged_plan, merge_history_plan) = match self.authority_input {
-            super::authority_context::CommitAuthorityInput::Mutation(plan) => (plan, None),
-            super::authority_context::CommitAuthorityInput::Merge(plan) => {
-                (&plan.merged_plan, Some(plan))
-            }
+            super::authority_context::CommitAuthorityInput::Mutation(plan) => (plan.view(), None),
+            super::authority_context::CommitAuthorityInput::Merge(plan) => (
+                RelationalSemanticPlan::Mutation(&plan.merged_plan),
+                Some(plan),
+            ),
         };
         (
             self.transaction_id,
@@ -84,10 +86,22 @@ impl AdmittedCommitState {
         self.transaction_id
     }
 
-    pub(super) fn merged_plan(&self) -> &MergedCommitPlan {
+    /// Authored/consequence commands only. Complete scope uses semantic_plan.
+    pub(super) fn command_plan(&self) -> &MergedCommitPlan {
         match &self.authority_input {
-            super::authority_context::CommitAuthorityInput::Mutation(plan) => plan,
+            super::authority_context::CommitAuthorityInput::Mutation(plan) => {
+                plan.view().commands()
+            }
             super::authority_context::CommitAuthorityInput::Merge(plan) => &plan.merged_plan,
+        }
+    }
+
+    pub(super) fn semantic_plan(&self) -> RelationalSemanticPlan<'_> {
+        match &self.authority_input {
+            super::authority_context::CommitAuthorityInput::Mutation(plan) => plan.view(),
+            super::authority_context::CommitAuthorityInput::Merge(plan) => {
+                RelationalSemanticPlan::Mutation(&plan.merged_plan)
+            }
         }
     }
 

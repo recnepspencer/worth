@@ -6,6 +6,7 @@ use crate::identity::data::{KindId, PartitionId};
 use crate::transactions::data::{CreatedEntityRef, CreatedRelationRef, RecordRef};
 
 mod client_keys;
+mod retained_selection;
 mod validation_dependencies;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

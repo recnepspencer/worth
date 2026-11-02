@@ -24,7 +24,8 @@ impl CandidateTouchedKinds {
         request: &InvariantExecutionRequest<'_>,
         budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
     ) -> Option<Self> {
-        let plan = request.merged_plan()?;
+        let semantic = request.semantic_plan()?;
+        let plan = semantic.commands();
         let observation = request.observation();
         let proposed = InvariantStateView::new(
             observation.enforcement_partition_access(),
@@ -45,6 +46,10 @@ impl CandidateTouchedKinds {
             relation_endpoints: BTreeSet::new(),
             relations: BTreeSet::new(),
         };
+        if let Some(selection) = semantic.selection() {
+            pay_visit(budget)?;
+            kinds.entities.insert(selection.kind());
+        }
         for partition in partitions {
             proposed.state().get_current_partition(partition)?;
             for slot in proposed.state().touched_entity_slots(partition)? {

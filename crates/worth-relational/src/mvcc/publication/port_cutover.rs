@@ -8,13 +8,29 @@ use super::{
 
 impl PreparedBranchPublicationPreflight {
     pub(super) fn perform_cutover(
-        mut self,
+        &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        deadline: Option<std::time::Instant>,
     ) -> RelationalPublicationOutcome {
         let _publication_lifecycle = self
             .movement
             .canonical_publication_route
             .enter_publication();
+        if let Some(deadline) = deadline {
+            if let Err(stop) = crate::authority::commit::pipeline::consult_stage(
+                execution,
+                crate::authority::commit::pipeline::CommitStage::PublicationCutover,
+            ) {
+                return RelationalPublicationOutcome::RequestStopped(stop);
+            }
+            if std::time::Instant::now() >= deadline.min(self.expires_at) {
+                return narrowed_deadline_elapsed(
+                    Some(deadline),
+                    self.expires_at,
+                    self.maximum_lifetime_millis,
+                );
+            }
+        }
         if std::time::Instant::now() >= self.expires_at {
             return RelationalPublicationOutcome::deferred(
                 RelationalPublicationDeferred::CandidateLifetimeExpired {
@@ -45,7 +61,11 @@ impl PreparedBranchPublicationPreflight {
             }
             None => {}
         }
-        let _critical_section = self.publication_cell.coordination().enter();
+        let _critical_section =
+            crate::mvcc::publication::current_read::PublicationReadCoordination::enter(
+                &self.publication_cell,
+                self.current_read.as_ref(),
+            );
         if std::time::Instant::now() >= self.expires_at {
             return RelationalPublicationOutcome::deferred(
                 RelationalPublicationDeferred::CandidateLifetimeExpired {
@@ -64,7 +84,14 @@ impl PreparedBranchPublicationPreflight {
             return RelationalPublicationOutcome::interrupted(event);
         }
         self.control.pause_inside_critical_section_for_test();
-        let mut publication_state = self.publication_cell.enter_state();
+        let (mut publication_state, read_state) = match _critical_section.enter_states() {
+            Ok(states) => states,
+            Err(denial) => {
+                return RelationalPublicationOutcome::denied(
+                    RelationalPublicationDenial::CurrentReadDependency(denial),
+                )
+            }
+        };
         match publication_state.lifecycle_posture() {
             crate::branch::RelationalBranchLifecyclePosture::Live => {}
             crate::branch::RelationalBranchLifecyclePosture::Archived => {
@@ -92,7 +119,7 @@ impl PreparedBranchPublicationPreflight {
         };
         if observed != self.expected {
             return RelationalPublicationOutcome::stale(StaleRelationalBranchObservation::new(
-                self.expected,
+                self.expected.clone(),
                 observed,
             ));
         }
@@ -100,7 +127,12 @@ impl PreparedBranchPublicationPreflight {
         // Capacity was reserved before head comparison so stale attempts still
         // release their exact preflight reservation. Only this coordinated,
         // unchanged head can turn capacity into a transfer witness.
-        let head_retirement = match self.head_retirement.bind_current_head() {
+        let head_retirement = match self
+            .head_retirement
+            .take()
+            .expect("the owner issues one retirement reservation to one consuming cutover token")
+            .bind_current_head()
+        {
             Ok(reservation) => reservation,
             Err(denial) => {
                 return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
@@ -148,13 +180,16 @@ impl PreparedBranchPublicationPreflight {
             Some(_) => crate::runtime::PatchPositionReservationAdmission::WaitWithin(execution),
             None => crate::runtime::PatchPositionReservationAdmission::DeferBehindCommit(execution),
         };
-        let symbol_meanings = self.movement.symbol_meanings;
+        let symbol_meanings = self.movement.symbol_meanings.take().expect(
+            "the owner issues one prepared symbol publication to one consuming cutover token",
+        );
         let (positioned_commit, head_retirement) = match self
             .movement
             .canonical_publication_route
             .record_performed_with_cutover(
                 self.publication_cell.clone(),
                 admission,
+                deadline.map(|deadline| deadline.min(self.expires_at)),
                 |positioned, roots| match &medium {
                     Some(medium) => medium.publish(positioned, roots, durable_policy).map(Some),
                     None => Ok(None),
@@ -167,7 +202,9 @@ impl PreparedBranchPublicationPreflight {
                     // global patch-position reservation is held, so this is where a
                     // concurrent publisher can be made to meet it.
                     reservation_pause.pause_holding_patch_position_reservation_for_test();
-                    let previous_root = publication_state.replace_with(self.next_state);
+                    let previous_root = publication_state.replace_with(self.next_state.take().expect(
+                        "preflight prepares the one target state before the consuming cutover token",
+                    ));
                     if let Some(companion) = &mut companion_cutover {
                         companion.install_at(position);
                     }
@@ -188,6 +225,9 @@ impl PreparedBranchPublicationPreflight {
             Err(crate::runtime::CanonicalPublicationRecordError::ReservationWaitStopped(stop)) => {
                 return RelationalPublicationOutcome::RequestStopped(stop);
             }
+            Err(crate::runtime::CanonicalPublicationRecordError::CutoverDeadlineElapsed) => {
+                return narrowed_deadline_elapsed(deadline, self.expires_at, self.maximum_lifetime_millis);
+            }
             Err(crate::runtime::CanonicalPublicationRecordError::PositionCapacityExhausted) => {
                 return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
                     RelationalPublicationFailureKind::PatchPositionCapacityExhausted,
@@ -199,14 +239,22 @@ impl PreparedBranchPublicationPreflight {
             }
         };
         drop(companion_cutover);
+        drop(read_state);
+        let _critical_section = _critical_section.into_target_guard();
         self.control.pause_after_linearization_for_test();
         drop(_critical_section);
         let settlement_retention = head_retirement.replace_head_for_publication(
-            self.candidate_retention,
+            self.candidate_retention
+                .take()
+                .expect("the consuming cutover owns candidate retention"),
             Arc::clone(&self.movement.root),
         );
         drop(_publication_lifecycle);
-        self.movement.record_allocations.commit();
+        self.movement
+            .record_allocations
+            .take()
+            .expect("the consuming cutover owns prepared record allocations")
+            .commit();
         let late_interruption = self
             .control
             .observe(crate::runtime::RelationalInterruptionBoundary::AfterLinearization);
@@ -219,17 +267,37 @@ impl PreparedBranchPublicationPreflight {
         // Authorizing the already-installed record is what disarms pre-effect
         // cleanup. From here the commit is recoverable by identity alone, and
         // the returned witness is only a witness.
-        let record = self.settlement_reservation.authorize(
-            Arc::clone(&positioned_commit),
-            settlement_retention,
-            late_interruption,
-        );
+        let record = self
+            .settlement_reservation
+            .take()
+            .expect("one actual cutover authorizes its original settlement reservation")
+            .authorize(
+                Arc::clone(&positioned_commit),
+                settlement_retention,
+                late_interruption,
+            );
         RelationalPublicationOutcome::performed(PerformedRelationalCommit::record(
             positioned_commit,
-            self.next_basis,
+            self.next_basis.clone(),
             record,
             late_interruption,
         ))
+    }
+}
+
+fn narrowed_deadline_elapsed(
+    additional: Option<std::time::Instant>,
+    candidate_expiry: std::time::Instant,
+    maximum_lifetime_millis: u64,
+) -> RelationalPublicationOutcome {
+    if additional.is_some_and(|deadline| deadline <= candidate_expiry) {
+        RelationalPublicationOutcome::denied(RelationalPublicationDenial::CutoverDeadlineElapsed)
+    } else {
+        RelationalPublicationOutcome::deferred(
+            RelationalPublicationDeferred::CandidateLifetimeExpired {
+                maximum_lifetime_millis,
+            },
+        )
     }
 }
 

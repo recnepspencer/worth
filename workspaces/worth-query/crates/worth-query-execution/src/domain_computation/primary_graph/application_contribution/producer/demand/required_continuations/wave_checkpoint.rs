@@ -45,9 +45,11 @@ impl<Schema: ApplicationSchema + 'static> CheckpointStage<'_, Schema> {
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        invocation: &ProducerInvocationAuthority<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         self.progress
             .successor
-            .advance_checkpoint(phase, runtime, request)
+            .advance_checkpoint(phase, runtime, request, principal, invocation)
     }
 }

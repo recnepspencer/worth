@@ -21,15 +21,49 @@ pub(in crate::domain_computation) fn compile_history_disclosure_contract<
     let parts = definition.parts();
     definition.validate().map_err(|_| denial(&parts.name))?;
     let contract = history.metadata_disclosure();
+    compile_metadata(&parts.history_type, contract, &parts.name)
+}
+
+pub(in crate::domain_computation) fn compile_document_history_disclosure_contract<S, H>(
+    history: &worth_query_installation::facade::WorthQueryInstalledDocumentHistory<S, H>,
+) -> Result<
+    WorthQueryAdmittedApplicationDisclosureContract,
+    WorthQueryApplicationDisclosureContractDenial,
+>
+where
+    S: ApplicationSchema,
+    H: worth_query_declaration::facade::application_history::ApplicationHistoryBinding<S>,
+{
+    let definition = history.definition();
+    let parts = definition.parts();
+    definition.validate().map_err(|_| denial(&parts.identity))?;
+    compile_metadata(
+        &parts.history_type,
+        &parts.metadata_disclosure,
+        &parts.identity,
+    )
+}
+
+fn compile_metadata(
+    history_type: &worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity,
+    contract: &worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract,
+    name: &str,
+) -> Result<
+    WorthQueryAdmittedApplicationDisclosureContract,
+    WorthQueryApplicationDisclosureContractDenial,
+> {
+    contract
+        .validate_history_metadata(history_type)
+        .map_err(|_| denial(name))?;
     if contract.posture() == ApplicationQueryDisclosurePosture::Public {
         return Ok(WorthQueryAdmittedApplicationDisclosureContract::Public);
     }
     let mut result_rules = BTreeMap::new();
     for rule in contract.rules() {
         let ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) = rule.selector() else {
-            return Err(denial(&parts.name));
+            return Err(denial(name));
         };
-        if metadata.history_identity() != parts.history_type
+        if metadata.history_identity() != *history_type
             || !rule.influence().permits(metadata.facet().influence())
         {
             return Err(denial(metadata.slot_type()));
@@ -49,24 +83,24 @@ pub(in crate::domain_computation) fn compile_history_disclosure_contract<
             .all(|facet| {
                 result_rules.contains_key(
                     &ApplicationHistoryMetadataMeaning::from_untrusted_fields(
-                        parts.history_type.clone(),
+                        history_type.clone(),
                         facet,
                     )
                     .slot_key(),
                 )
             })
     {
-        return Err(denial(&parts.name));
+        return Err(denial(name));
     }
     Ok(WorthQueryAdmittedApplicationDisclosureContract::Governed {
         classification: contract.classification().to_owned(),
         capability_name: contract
             .capability_name()
-            .ok_or_else(|| denial(&parts.name))?
+            .ok_or_else(|| denial(name))?
             .to_owned(),
         capability_type: contract
             .capability_type()
-            .ok_or_else(|| denial(&parts.name))?
+            .ok_or_else(|| denial(name))?
             .to_owned(),
         result_rules,
         internal_rules: Vec::new(),

@@ -90,6 +90,7 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
         SourcePreparation,
     >,
     pub(in crate::application_entry) compiled_action: Option<&'scope worth_query_declaration::facade::application_program::ApplicationActionDeclaration>,
+    pub(in crate::application_entry) history_constraint: Option<&'scope worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint>,
     pub(in crate::application_entry) borrowed_preconditions: Option<&'scope TypedMutationPreconditions<
         Schema,
         <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
@@ -295,6 +296,7 @@ where
             request: self,
             key,
             compiled_action: None,
+            history_constraint: None,
             borrowed_preconditions: None,
             operation_input: None,
             unstaged: Some(super::staged::UnstagedMutation),

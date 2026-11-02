@@ -4,6 +4,7 @@
 mod certification;
 mod committed_changes;
 mod construction;
+mod description;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
 #[cfg(doctest)]
 mod disclosure_fences;

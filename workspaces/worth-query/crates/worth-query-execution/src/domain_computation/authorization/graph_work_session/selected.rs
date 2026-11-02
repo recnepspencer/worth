@@ -29,6 +29,7 @@ pub(in crate::domain_computation) enum SelectedOperationGraphWorkStop {
 pub(in crate::domain_computation) fn start_selected_operation_graph_work_admitted<Schema, Binding>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &SharedSelectedProductOperation<'_, Schema>,
+    control: Option<crate::basis::WorthQueryProductObservationLease>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
     prepared: &WorthQueryPreparedApplicationOperationGraphWork,
     resource_binding_identity: &str,
@@ -65,7 +66,7 @@ where
     )
     .map_err(|_| SelectedOperationGraphWorkStop::Capacity)?;
     check_request(request)?;
-    let session = WorthQueryManagedGraphWorkSession::start_mutation(
+    let session = WorthQueryManagedGraphWorkSession::start_mutation_with_control(
         plan,
         runtime.runtime.authority_identity(),
         operation.binding_identity(),
@@ -74,6 +75,7 @@ where
         principal,
         access,
         lease,
+        control,
         runtime.graph_work_provider_identity(),
     )
     .map_err(|_| SelectedOperationGraphWorkStop::Session)?;

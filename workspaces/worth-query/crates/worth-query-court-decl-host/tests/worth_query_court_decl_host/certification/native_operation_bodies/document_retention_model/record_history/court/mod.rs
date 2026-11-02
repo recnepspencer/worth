@@ -23,8 +23,10 @@ fn supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_
         .unwrap();
     let initial = read_retention(runtime, branch);
     let equal = stimuli::retention(&application, branch, initial, 94_001, true);
+    let equal_source = observe_on(&application, branch);
     assert_eq!(read_retention(runtime, branch), initial);
     let changed = stimuli::retention(&application, branch, 8, 94_002, false);
+    let changed_source = observe_on(&application, branch);
     assert_eq!(read_retention(runtime, branch), 8);
     let fork = application
         .with_host_advancement(|phase| {
@@ -48,6 +50,7 @@ fn supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_
                 .unwrap()
         })
         .unwrap();
+    let fork_source = observe_on(&application, fork);
     let forked = stimuli::retention(&application, fork, 9, 94_003, false);
     let root = observe_on(&application, fork);
     let unrelated = stimuli::retention(&application, sibling, 10, 94_004, false);
@@ -111,6 +114,7 @@ fn supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_
             receipt.branch_id.clone()
         ))
     );
+    drop((equal_source, changed_source, fork_source));
 }
 
 #[test]

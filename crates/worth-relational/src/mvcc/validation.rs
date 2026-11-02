@@ -14,10 +14,12 @@ mod proposal_invariants;
 #[path = "validation/proposal_revalidation.rs"]
 mod proposal_revalidation;
 mod proposal_round;
+mod proposal_source;
 #[path = "validation/proposal_touches.rs"]
 mod proposal_touches;
 #[path = "validation/proposal_validation.rs"]
 mod proposal_validation;
+pub(in crate::mvcc) use proposal_validation::require_not_interrupted;
 #[path = "validation/validated_proposal.rs"]
 mod validated_proposal;
 

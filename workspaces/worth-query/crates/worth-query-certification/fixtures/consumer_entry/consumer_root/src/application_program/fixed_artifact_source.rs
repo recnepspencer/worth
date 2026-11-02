@@ -43,6 +43,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for MissingLocalityProgram {
         specs[1] = ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>()
             .derived_artifact::<GovernedPlanarArtifact>()
             .conditional_operation::<MutatePlanar>()
+            .conditional_operation::<worth_query_topology_entry::EscapePlanar>()
             .finish();
         specs
     }

@@ -10,6 +10,14 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    if matches!(&context.authority_input,
+        super::authority_context::CommitAuthorityInput::Mutation(plan) if plan.retained().is_some())
+        && runtime.durability_admission.has_attached_medium()
+    {
+        return Err(TransactionCommitError::publication_denied(
+            crate::mvcc::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported,
+        ));
+    }
     let required_output_publication = context.required_output_publication.take();
     let required_output_materialization = context.required_output_materialization.take();
     let allocation_policy = execution.allocation_policy();

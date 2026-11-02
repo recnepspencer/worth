@@ -1,6 +1,6 @@
 # Milestone 9.13: Declarative Query Experience And Phase-Surface Cutover
 
-> **Status:** Completed. Store-backed execution parity and durable restore belong to Milestones 10 and 11. Closeout: [milestone-9.13-closeout.md](./milestone-9.13-closeout.md).
+> **Status:** Completed. Store-backed execution parity and durable restore belong to Store execution and durable-artifact integration. Closeout: [milestone-9.13-closeout.md](./milestone-9.13-closeout.md).
 
 ## Goal
 
@@ -28,7 +28,7 @@ finishes the operation.
 
 That ceremony creates two risks. Consumers rebuild local orchestration above
 Query, and later store-backed work duplicates the same public journey for a
-second substrate. This milestone closes both risks before Milestone 10.
+second substrate. This milestone closes both risks before Store execution/historical integration.
 
 Phases 1-12 closed the ordinary capability journeys but left the domain-
 extension story split across application-facade configured handles, raw-string
@@ -44,7 +44,7 @@ However, the ordinary surface still narrows mutation authoring to a few scalar
 constructors, models predicate operands and schema fields through coarse Query-
 owned enums, rejects complete struct values on a materialized bridge path, and
 names a marker type as though it were a native row. Phases 21-30 close that
-consumer-boundary fork before Milestone 10 duplicates it across another
+consumer-boundary fork before Store execution/historical integration duplicates it across another
 execution substrate.
 
 ## Governing Summaries
@@ -449,7 +449,7 @@ routes, or assemble result bundles.
 - The admitted query is the only ordinary input to execution.
 - Planning reports, route posture, fallbacks, and counters are derived evidence
   attached to outcomes or inspection, not prerequisites callers assemble.
-- Internal execution remains phase-typed and backend-extensible so Milestone 10
+- Internal execution remains phase-typed and backend-extensible so Store execution/historical integration
   can add store-backed implementations without changing the ordinary journey.
 
 **Open questions**
@@ -556,7 +556,7 @@ distinct basis, ambiguity, materialization, and cost semantics.
   materialization path, correspondence posture, and typed outcome remain
   capability-specific.
 - Query owns historical planning and comparison assembly.
-- Durable restore remains Milestone 10/11 scope, but it must implement the same
+- Durable restore remains Store execution/durability integration scope, but it must implement the same
   admitted historical capability rather than add a new public journey.
 
 **Open questions**
@@ -1353,7 +1353,7 @@ domain setup to execution and diagnostics.
   runtime-backed boundary. Add-on closure requires a new evidence section or
   closeout amendment with exact claims.
 - Store durability, restart survival, and cross-process installed-domain reload
-  remain Milestones 10 and 11 unless explicitly pulled forward with their full
+  remain Store execution and durable-artifact integration unless explicitly pulled forward with their full
   substrate.
 
 **Test requirements**
@@ -2054,7 +2054,7 @@ structs survive every supported runtime-backed Query journey.
 - Phases 21-30 close as one add-on program after installed-domain authority;
   no consumer cutover may declare success while authoring, predicates, structs,
   rows, identity, or refinement remains on a competing value model.
-- Milestone 10 consumes these exact canonical native predicate, mutation,
+- Store execution/historical integration consumes these exact canonical native predicate, mutation,
   result, row, and projection contracts for store-backed parity.
 
 **Open questions**
@@ -2131,7 +2131,7 @@ structs survive every supported runtime-backed Query journey.
 - operator, result, and refinement ergonomics do not coerce, stringify,
   reconstruct, or silently narrow native value meaning
 - store-backed execution, durable installed-domain reload, and cross-process
-  continuation remain owned by Milestones 10 and 11
+  continuation remain owned by Store execution and durable-artifact integration
 
 ## Acceptance Evidence
 
@@ -2179,13 +2179,13 @@ structs survive every supported runtime-backed Query journey.
 
 This milestone belongs after 9.12 because authority must be sealed before the
 ordinary experience can safely hide internal phase transitions. It belongs
-before Milestone 10 because store-backed execution must implement an existing
+before Store execution/historical integration because store-backed execution must implement an existing
 admitted capability contract, not create a second set of consumer-visible
 planning and execution journeys.
 
 Phases 13-20 follow the completed Phases 1-12 because the ordinary capability
 grammar must exist before domain extension can be installed into it. They still
-belong before Milestone 10: runtime installation authority, canonical domain
+belong before Store execution/historical integration: runtime installation authority, canonical domain
 identity, operation-registry ownership, and contribution binding are runtime-
 semantic foundations. Deferring them would force store-backed execution to
 inherit and multiply today's competing domain entry paths.
@@ -2193,7 +2193,7 @@ inherit and multiply today's competing domain entry paths.
 Phases 21-30 follow installed-domain closure because the final consumer-native
 value grammar must cover domain-installed authoring, execution, projection,
 and inspection rather than certify only pre-installation examples. They still
-precede Milestone 10 because store-backed predicate pushdown and result
+precede Store execution/historical integration because store-backed predicate pushdown and result
 materialization must inherit one exact native value contract.
 
 The add-on phases are strictly ordered. Phases 13-20 freeze the domain authority
@@ -2204,7 +2204,7 @@ complete write authoring, derive schema and predicate capability, preserve
 native result/struct consumption, centralize canonical value identity and
 contract the facade, and close with hostile consumer certification.
 
-Milestone 10 may add backend-specific internal plans, pushdown evidence, and
+Store execution/historical integration may add backend-specific internal plans, pushdown evidence, and
 fallback diagnostics. It may not change the declaration grammar, context
 handoff, managed lifecycle, or outcome contract frozen here.
 
@@ -2213,7 +2213,7 @@ handoff, managed lifecycle, or outcome contract frozen here.
 This milestone is not blocked on `worth-store`. Runtime-backed execution is
 sufficient to freeze and certify the product boundary. Store-backed parity,
 durable restore, saved artifact survival, and durable continuations remain
-Milestones 10 and 11, but they must enter through the contracts established
+Store execution and durable-artifact integration, but they must enter through the contracts established
 here.
 
 Runtime-installed domain packages are likewise not blocked on `worth-store`.
@@ -2225,5 +2225,5 @@ implemented later without changing the installed-domain grammar.
 Native value closure is not blocked on `worth-store`. Phases 21-30 operate over
 Foundational contracts and the existing runtime-backed Query substrate. Any
 missing Foundational canonical identity front door is in-scope substrate work.
-Milestone 10 must reuse the resulting predicate, mutation, row, result, and
+Store execution/historical integration must reuse the resulting predicate, mutation, row, result, and
 projection contracts unchanged for store-backed execution and pushdown parity.

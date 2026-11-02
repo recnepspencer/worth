@@ -90,6 +90,23 @@ where
         std::mem::take(&mut self.prior_cleanup)
     }
 
+    /// Transfers cleanup of the original partial without promoting its source
+    /// or running its required outputs. The closing group keeps this owner.
+    pub(in crate::application_entry) fn retain_group_disposal_cleanup(
+        &mut self,
+        cleanup: &mut crate::application_entry::WorthQueryOperationCleanup,
+    ) -> Result<(), crate::application_entry::WorthQueryOperationCloseDenial> {
+        match &mut self.phase {
+            ProgramSourceRecoveryPhase::Unpublished(original) => {
+                cleanup.retain_original_recovery(original.clone())?
+            }
+            ProgramSourceRecoveryPhase::Performed { outcome, .. } => {
+                cleanup.absorb_recovered(outcome)?
+            }
+        }
+        Ok(())
+    }
+
     pub fn initial_cause(&self) -> ProductUnpublishedCause {
         self.initial_cause
     }

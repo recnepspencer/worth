@@ -1,5 +1,6 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod admission;
+pub(in crate::domain_computation) mod admitted_request;
 mod application_commit_authorization;
 pub(in crate::domain_computation) mod application_disclosure;
 mod authorization_revalidation;
@@ -89,6 +90,7 @@ pub(in crate::domain_computation) use elevation_progression::WorthQueryMandatory
 pub(in crate::domain_computation) use installed_policy::WorthQueryInstalledAuthorizationRegistry;
 pub(in crate::domain_computation) use operation_progression::admit_capability_access;
 pub(in crate::domain_computation) use operation_progression::admit_encoded_capability_access;
+pub(in crate::domain_computation) use operation_progression::authorize_current_control_mutation_on_selected;
 pub(in crate::domain_computation) use operation_progression::authorize_public_mutation_on_selected;
 pub(in crate::domain_computation) use operation_progression::progress_conventional_operation;
 pub(in crate::domain_computation) use operation_progression::SelectedConventionalAdmissionStop;

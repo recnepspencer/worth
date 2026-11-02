@@ -81,7 +81,17 @@ fn run<'p>(
             checkpoint,
         };
         let mut work = ValidatedMutationTouchProjectionWork::default();
-        for intent in &proposal.prepared.merged_plan.merged_intents {
+        let plan = proposal.prepared.plan.view();
+        if let Some(selection) = plan.selection() {
+            (sink.checkpoint)(1)?;
+            sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation {
+                kind: selection.kind(),
+            });
+            if let Some(failure) = sink.failure.take() {
+                return Err(failure);
+            }
+        }
+        for intent in &plan.commands().merged_intents {
             (sink.checkpoint)(1)?;
             work.validated_intents_examined += 1;
             match intent {

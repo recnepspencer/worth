@@ -9,7 +9,7 @@
 > **Purpose:** decompose the Query runtime into authority-typed subsystems so
 > committed-snapshot reads scale concurrently across consumers while truth
 > mutation and derived maintenance remain single-owner and deterministic —
-> before Milestone `10` freezes store-backed shapes around the current
+> before Store execution/historical integration freezes store-backed shapes around the current
 > single-borrow topology.
 
 ## Goal
@@ -38,7 +38,7 @@ Without this milestone:
   transport problem, subscription sharing defeated, abandoned forks to
   collect) — both are exactly the consumer-invented runtime folklore the
   Query hard prohibitions exist to prevent
-- Milestone `10` freezes store-backed adapter and execution shapes around the
+- Store execution/historical integration freezes store-backed adapter and execution shapes around the
   single-borrow topology, making the `Send` boundary retrofit dramatically
   more expensive than the decomposition costs now
 - determinism remains an accident of single-threadedness instead of a stated
@@ -421,7 +421,7 @@ assert!(receipt.journal_position().is_committed());
 **Engineering decisions**
 - The journal is the submission stream itself; checkpoint-plus-journal
   reconstruction per arch law 36 is certified here at runtime-backed scope,
-  while durable journal persistence remains Milestone `10`/`11` scope.
+  while durable journal persistence remains Store execution/durability integration scope.
 - Journal position identity lowers through the `9.6` evidence primitive.
 
 **Open questions**
@@ -1282,11 +1282,11 @@ This milestone is complete only when `worth-query` can prove:
 - This milestone belongs after [milestone-9.6.md](./milestone-9.6.md) because
   journal identity, submission receipts, and published-artifact digests must
   be born on the canonical evidence-identity scheme.
-- It belongs before Milestone `10` as a hard gate: store-backed execution
+- It belongs before Store execution/historical integration as a hard gate: store-backed execution
   must inherit lane-correct adapter contracts and the concurrency topology,
   not retrofit `Send` boundaries through frozen store-backed shapes.
 - Durable journal persistence, store-backed replay reconstruction, and
-  restart-stable published-artifact reload remain Milestone `10`/`11` scope.
+  restart-stable published-artifact reload remain Store execution/durability integration scope.
 - Phases 1–10 may land incrementally and may keep prototype debt explicit.
   Phases 11–18 are strictly sequential at the honesty layer:
   **11 → 12 → 13** (pinning substrate and proof close together; Phase 13 is

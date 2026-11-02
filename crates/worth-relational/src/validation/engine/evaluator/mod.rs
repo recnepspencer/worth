@@ -35,8 +35,8 @@ pub(crate) fn evaluate_rule(
         }
         InvariantRule::MaxMergedIntents(limit) => {
             let merged_len = context
-                .merged_plan()
-                .map(|plan| plan.merged_intents.len())
+                .semantic_plan()
+                .map(|plan| plan.operation_count())
                 .unwrap_or(0);
             if merged_len > *limit {
                 vec![InvariantViolation {

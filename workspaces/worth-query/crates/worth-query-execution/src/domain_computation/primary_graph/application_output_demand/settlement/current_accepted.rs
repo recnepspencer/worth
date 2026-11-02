@@ -37,7 +37,7 @@ impl WorthQueryOutputDemandSettlement {
                     None,
                     None,
                     Arc::clone(&restored.correspondence),
-                    Some(WorthQueryRestoredOutputSource::from(restored)),
+                    Some(restored.clone()),
                 ),
             };
         let readiness_delivery = restored_source

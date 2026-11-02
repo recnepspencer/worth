@@ -40,6 +40,12 @@ pub(super) fn replay_branch_transition(
         ReplayedBranchTransitionStep::transition_only(recorded)
     };
     match recorded.transition() {
+        RelationalBranchTransition::RetainedFork { .. } => {
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::UnsupportedRetainedForkReplay,
+                "retained-source forks require original live root custody; historical tail reconstruction is unsupported",
+            ).into());
+        }
         RelationalBranchTransition::Fork { target, source, .. } => {
             restored
                 .fork_port()

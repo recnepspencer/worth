@@ -182,7 +182,7 @@ impl WorthQueryApplicationOutputLineage {
         let source = SemanticSource {
             runtime_authority,
             schema: schema.clone(),
-            scope: restored.scope,
+            scope: restored.source_scope,
             output_binding,
         };
         if !self.by_source.contains_key(&source) {
@@ -196,11 +196,11 @@ impl WorthQueryApplicationOutputLineage {
             let (recorded, _) = self.matching_output_in_partition_budgeted(
                 &source,
                 coordinate,
-                restored.partition,
+                restored.checkpoint.source_partition,
                 execution,
                 |recorded| {
                     recorded.source_identity
-                        == Some(RecordedSourceIdentity::Checkpoint(restored.identity))
+                        == Some(RecordedSourceIdentity::Checkpoint(restored.source_identity))
                         && std::ptr::eq(
                             recorded.correspondence.as_ref(),
                             settlement.output_correspondence.as_ref(),

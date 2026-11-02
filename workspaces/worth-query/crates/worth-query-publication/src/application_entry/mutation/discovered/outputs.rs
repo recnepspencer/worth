@@ -11,9 +11,7 @@ use worth_query_execution::facade::application_contribution::WorthQueryAdvanceme
 use worth_query_execution::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
 };
-use worth_query_execution::facade::application_installation::{
-    WorthQueryProgramApplicationRuntime, WorthQuerySettledProgramOutput,
-};
+use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationProjection,
 };
@@ -25,6 +23,7 @@ use crate::application_entry::demand::{
 };
 use crate::application_entry::mutation::program_output_continuation::{
     ProgramOutputContinuation, ProgramOutputContinuationFactory, ProgramOutputContinuationProgress,
+    ProgramOutputParentAuthority,
 };
 use crate::application_entry::mutation::program_output_settlement::ProgramOutputRecord;
 use crate::application_entry::mutation::program_output_work::ProgramOutputTraversalWork;
@@ -64,7 +63,7 @@ where
     handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand<Schema, Root>>>,
     settlement: Option<WorthQueryApplicationOutputDemandSettlement<Query<Schema, Root>>>,
     pending_authority: Option<
-        std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, Demand<Schema, Root>>>,
+        ProgramOutputParentAuthority<Schema, Program, Demand<Schema, Root>>,
     >,
     continuation: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
     outputs: Vec<ProgramOutputRecord>,
@@ -313,7 +312,7 @@ where
                         authority,
                     }) => {
                         root.settlement = Some(settlement);
-                        root.pending_authority = Some(std::sync::Arc::new(authority));
+                        root.pending_authority = Some(authority);
                         // Keep the original posting interest across the public
                         // handoff and every descendant's consumed-output claim.
                         return Ok(WorthQueryDiscoveredProgramOutputProgress::Progressed);
@@ -341,7 +340,7 @@ where
                 .continuation
                 .as_mut()
                 .expect("a settled root installs its typed continuation");
-            match continuation.advance(phase, application, request)? {
+            match continuation.advance(phase, application, request, None)? {
                 ProgramOutputContinuationProgress::Progressed => {
                     return Ok(WorthQueryDiscoveredProgramOutputProgress::Progressed);
                 }

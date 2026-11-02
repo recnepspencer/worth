@@ -167,7 +167,7 @@ impl ReducedInvariantPrefix {
             request.max_cost(),
             InvariantExecutionDisposition::Executed,
             request.plan_contract(),
-            request.merged_plan().is_some(),
+            request.semantic_plan().is_some(),
             strategy,
             failures,
             Some(proof),

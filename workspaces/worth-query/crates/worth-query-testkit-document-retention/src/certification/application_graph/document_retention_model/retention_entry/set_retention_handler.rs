@@ -1,7 +1,31 @@
 //! Native decision and candidate authoring for the declared retention mutation.
 pub use super::*;
 
-pub struct SetRetentionHandler;
+#[path = "set_retention_handler/observation.rs"]
+mod observation;
+pub use observation::RetentionHandlerObservationForTest;
+
+pub struct SetRetentionHandler {
+    contacts: Option<std::sync::Arc<observation::Contacts>>,
+}
+
+impl Default for SetRetentionHandler {
+    fn default() -> Self {
+        Self {
+            contacts: observation::capture(),
+        }
+    }
+}
+
+impl SetRetentionHandler {
+    /// Place a readonly observer during the ordinary synchronous installation.
+    /// It is captured once by this receiver, never consulted for runtime decisions.
+    pub fn observe_installation_for_test<T>(
+        build: impl FnOnce() -> T,
+    ) -> (T, RetentionHandlerObservationForTest) {
+        observation::install(build)
+    }
+}
 
 impl OperationHandler<DocumentRetentionSchema, SetRetentionBinding> for SetRetentionHandler {
     fn decide(
@@ -13,6 +37,9 @@ impl OperationHandler<DocumentRetentionSchema, SetRetentionBinding> for SetReten
         SetRetentionDenial,
     > {
         candidate_tracking::record_decision(input.retention_days);
+        if let Some(contacts) = &self.contacts {
+            contacts.decision();
+        }
         let document = match reader
             .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
         {
@@ -39,6 +66,9 @@ impl OperationHandler<DocumentRetentionSchema, SetRetentionBinding> for SetReten
         writer: &mut CandidateWriter<'_, DocumentRetentionSchema, SetRetentionBinding>,
     ) -> HandlerResult<DocumentRetentionWritten, SetRetentionDenial> {
         candidate_tracking::record_candidate(input.retention_days);
+        if let Some(contacts) = &self.contacts {
+            contacts.candidate();
+        }
         let document = match writer.projected_entity(&target) {
             Ok(document) => document,
             Err(error) => {

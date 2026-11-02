@@ -84,7 +84,7 @@ excluded. It answers:
   discard, and residue checks without hiding broad refreshes
 
 It intentionally stops before 9.3 diagnostics/certification expansion and
-before Milestone 10/11 store-backed durability. Runtime-backed active
+before Store execution/durability integration store-backed durability. Runtime-backed active
 subscription behavior can ship now; durable restart/replay cannot.
 
 ## Governing Summaries
@@ -183,7 +183,7 @@ If any supported path:
 - remaps identity or membership without typed continuation evidence
 - allows discarded preview subscription state to influence authoritative
   subscriptions
-- implies durable checkpoint or restart parity before Milestones 10 and 11
+- implies durable checkpoint or restart parity before Store execution and durable-artifact integration
   close
 
 then Milestone 9.2 has failed.
@@ -295,7 +295,7 @@ then Milestone 9.2 has failed.
   `BoundedMaterializationPatch`, `DeniedRawCdcFallback`, or `DebtExplicit`.
 - Durable continuation checkpoints, restart-stable active handles,
   store-backed subscription replay, and snapshot-plus-tail subscription
-  continuation remain Milestone 10/11 scope.
+  continuation remain Store execution/durability integration scope.
 
 Normative consequence:
 
@@ -910,10 +910,10 @@ consumes `SubscriptionActivationInput` and owns only lifecycle after admission.
   delivery windows, continuation/remap evidence, and preview isolation are not
   blocked on `worth-store`.
 - Store-backed restart and snapshot-plus-tail subscription continuation remain
-  Milestone 10 scope.
+  Store execution/historical integration scope.
 - Durable subscription checkpoints, durable delivery cursors, durable active
   handle reload, restart-stable metadata, and portable subscription artifacts
-  remain Milestone 11 scope.
+  remain Store Milestone 11 scope.
 - Milestone 9.2 may emit explicit durable-debt postures, but it may not claim
   durable restart, durable replay, or store-backed parity.
 
@@ -1011,7 +1011,7 @@ infer subscription meaning from runtime state.
 It belongs before 9.3 because diagnostic sufficiency and bridge parity need
 real active lifecycle behavior to inspect.
 
-It belongs before Milestone 10 because store-backed parity should extend one
+It belongs before Store execution/historical integration because store-backed parity should extend one
 already query-shaped runtime-backed active subscription model rather than
 inventing a backend-specific active lifecycle.
 

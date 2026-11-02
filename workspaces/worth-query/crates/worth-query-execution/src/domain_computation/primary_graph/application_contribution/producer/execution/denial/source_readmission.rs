@@ -84,6 +84,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         SourceQueryObservationStop as Stop, WorthQueryAdmittedOneShotStop as Read,
     };
     match stop {
+        Stop::CurrentControl(stop) => request_admission_rejected(stop),
         Stop::Read(Read::Admission(stop)) => {
             super::super::source_readmission::ready_resource_denial(subject, stop)
         }
@@ -110,6 +111,23 @@ fn managed_authority_rejection(
 ) -> bool {
     use crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenialCause as Cause;
     match cause {
+        Cause::CurrentControl(_) => true,
+        Cause::SourceVerification {
+            kind,
+            authorization,
+            execution,
+        } => {
+            use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Attempt;
+            authorization.is_some()
+                || execution.is_some()
+                || matches!(
+                    kind,
+                    Attempt::Cancelled
+                        | Attempt::DeadlineExceeded
+                        | Attempt::DecisionFactBudgetExceeded
+                        | Attempt::ExecutionRequest(_)
+                )
+        }
         Cause::Principal(_) | Cause::Scope(_) => true,
         Cause::QueryAdmission(stop) => admission_authority_rejection(stop.kind()),
         Cause::QueryRead(stop) => execution_authority_rejection(stop.kind()),
@@ -138,6 +156,72 @@ fn execution_authority_rejection(kind: ExecutionKind) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn source_verification_rejects_only_the_original_caller_for_request_stops() {
+        use crate::domain_computation::{
+            authorization::{
+                WorthQueryOperationAuthorizationDenialKind as Authorization,
+                WorthQueryOperationAuthorizationRefusalKind as Refusal,
+            },
+            primary_graph::{
+                WorthQueryApplicationAttemptDenialKind as Attempt,
+                WorthQueryManagedIndexDenialCause as Cause,
+            },
+        };
+        for kind in [
+            Attempt::Cancelled,
+            Attempt::DeadlineExceeded,
+            Attempt::DecisionFactBudgetExceeded,
+        ] {
+            assert!(managed_authority_rejection(Cause::SourceVerification {
+                kind,
+                authorization: None,
+                execution: None
+            }));
+        }
+        assert!(managed_authority_rejection(Cause::SourceVerification {
+            kind: Attempt::CurrentAuthorityDenied,
+            authorization: Some(Authorization::Refused(Refusal::CapabilityGrantMissing)),
+            execution: None,
+        }));
+        assert!(managed_authority_rejection(Cause::SourceVerification {
+            kind: Attempt::DecisionFactBudgetExceeded, authorization: None,
+            execution: Some(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted),
+        }));
+        for kind in [Attempt::SourceChanged, Attempt::MissingAuthoritativeFact] {
+            assert!(!managed_authority_rejection(Cause::SourceVerification {
+                kind,
+                authorization: None,
+                execution: None
+            }));
+        }
+    }
+    #[test]
+    fn current_control_stays_caller_local_while_intrinsic_managed_refusals_do_not() {
+        use crate::domain_computation::primary_graph::{
+            application_query::{
+                SourceQueryObservationStop as Stop, WorthQueryManagedIndexDenialCause as Cause,
+                WorthQueryManagedIndexRefusal as Refusal,
+            },
+            WorthQueryOutputDemandDenial, WorthQueryOutputDemandRecoveryPosture as Posture,
+        };
+        let original =
+            WorthQueryOutputDemandDenial::new(DemandKind::CurrentControlBusy, "current control");
+        assert!(managed_authority_rejection(Cause::CurrentControl(
+            &original
+        )));
+        assert!(!managed_authority_rejection(Cause::Refused(
+            Refusal::ForeignContext
+        )));
+        let ProducerExecutionStop::RequestAdmissionDenied(rejected) =
+            selected_source_read_denied("producer", Stop::CurrentControl(original))
+        else {
+            panic!("current control must not fail a shared output");
+        };
+        let denial = rejected.into_denial();
+        assert_eq!(denial.kind(), DemandKind::CurrentControlBusy);
+        assert_eq!(denial.recovery_posture(), Posture::Retryable);
+    }
     use crate::domain_computation::primary_graph::{
         MutationHandlerExecutionDenial, WorthQueryAdvancementDenial as Stop,
         WorthQueryApplicationAttemptDenial, WorthQueryInvariantProjectionDenialKind as Invariant,

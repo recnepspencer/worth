@@ -41,6 +41,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             idempotency,
             true,
             causality,
+            None,
             allocation_policy,
         )
     }
@@ -60,6 +61,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
             &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         )>,
+        history: Option<HistoryProducerInvocation<'_>>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,
@@ -85,6 +87,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             program,
             idempotency,
             true,
+            history,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
@@ -147,6 +150,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             idempotency,
             false,
             causality,
+            None,
             allocation_policy,
         )
     }

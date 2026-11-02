@@ -63,6 +63,7 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                     phase,
                     &world.application,
                     victim,
+                    None,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 ),
             );

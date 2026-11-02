@@ -143,6 +143,7 @@ fn assert_interleaved_terminal(
                     phase,
                     &world.application,
                     victim,
+                    None,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 ),
             );
@@ -210,6 +211,7 @@ fn finish_peer(
             phase,
             &world.application,
             peer,
+            None,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         ),
     );

@@ -19,6 +19,9 @@ impl LocalCredential {
     pub(super) fn issued_for_model_owner() -> Self {
         Self("model-owner")
     }
+    pub(super) fn issued_for_sibling_owner() -> Self {
+        Self("sibling-owner")
+    }
 }
 
 impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
@@ -34,12 +37,16 @@ impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
         _scope: &'a authentication::WorthQueryRequestScope,
     ) -> authentication::WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            if credential.0 != "model-owner" {
+            if !matches!(credential.0, "model-owner" | "sibling-owner") {
                 return Err(protocol_failure());
             }
             let now = SystemTime::now();
             authentication::WorthQueryValidatedExternalPrincipal::new(
-                external_identity(),
+                WorthQueryExternalPrincipalIdentity::new(
+                    "https://consumer.invalid/local",
+                    credential.0,
+                )
+                .map_err(|_| protocol_failure())?,
                 authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
                 authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
                 now,

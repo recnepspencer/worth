@@ -10,7 +10,7 @@ use worth_query_declaration::facade::{
 fn identity(name: &str) -> WorthQueryPortableTypeIdentity {
     WorthQueryPortableTypeIdentity::from_untrusted(format!("worth.archive.history.{name}.v1"))
 }
-fn history() -> ErasedApplicationHistoryQueryDefinition {
+pub(super) fn history() -> ErasedApplicationHistoryQueryDefinition {
     let history_type = identity("history");
     let disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
         WorthQueryPortableApplicationQueryDisclosureParts {

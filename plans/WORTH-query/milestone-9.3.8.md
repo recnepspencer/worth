@@ -4861,10 +4861,10 @@ lower-authority truths, not a second authority owner.
   discard / commit coordination and zero-residue preview behavior
 - `worth-runtime-bridge` `Milestone 12` and `12b` remain authoritative for
   bridge-mediated writeback and extensible writeback-family recovery posture
-- `Milestone 11` remains authoritative for durable continuation / saved
+- `Store Milestone 11` remains authoritative for durable continuation / saved
   artifact / restart-stable recovery stories
-- `Milestone 13` remains authoritative for later certification breadth over
-  collaborative and merge-aware scenarios
+- collaborative and merge-aware qualification remains part of the affected
+  capabilities' own acceptance cases
 - local Query substrate docs that this phase must extend honestly:
   - `crates/worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md`
   - `workspaces/worth-query/crates/worth-query/docs/domain-capabilities/runtime-installed-domains.md`

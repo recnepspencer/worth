@@ -27,7 +27,7 @@ impl MutatedCommitExecution {
                 Some(source) => source.take_for_commit(
                     execution,
                     runtime.commit_work_budget.as_ref(),
-                    business,
+                    business.commands(),
                     occurrence,
                 )?,
                 None => (

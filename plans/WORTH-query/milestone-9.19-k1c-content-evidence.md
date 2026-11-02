@@ -151,7 +151,7 @@ in addition to the required unmodified commands, never a substitute gate.
 | `diff-master2` | `git diff --check origin/master...HEAD` | 0 | Completed successfully (no test count). |
 | `diff-cached1` | `git diff --cached --check` | 0 | Completed successfully (no test count). |
 | Earlier manual line-cap check | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 95 Rust files. |
-| `line-caps2` (manual) | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 1 | Two failures: preparation.rs and root_schema.rs each403lines/cap400. Both responsibilities split; final scope passes. |
+| `line-caps2` (manual) | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 1 | Two failures: preparation.rs and root_schema.rs each 403 lines / cap 400. Both responsibilities split; final scope passes. |
 
 ### Failure disposition
 
@@ -174,7 +174,7 @@ family-count, header/import and boundary-layout failures were corrected and reru
 
 `fmt-root3` reported an inner module doc comment after a module declaration;
 `fmt-root5` could not resolve the newly split registry_rebinding module path.
-Both were corrected; final root format check4 exits0.
+Both were corrected; final root format check4 exits 0.
 
 `boundary2` emitted BC9002_TEST_TOPOLOGY for nested content/cost.rs and
 runtime-root source tests in root_content_readmission_tests.rs and
@@ -183,7 +183,7 @@ private collision and schema-fence tests now construct no runtime roots.
 Final boundary runs report `boundary-check: repository boundaries are valid`.
 
 `query-identity2` emitted `left: 24; right: 25` after Bytes retirement;
-the three family counts now correctly expect24 and the rerun passes3/3.
+the three family counts now correctly expect 24 and the rerun passes 3/3.
 `fmt-root-check3` showed one line-wrap diff after the needless-borrow fix;
 the line was formatted and `fmt-root-check4` passed on the final tree.
 
@@ -192,3 +192,52 @@ charged 7,337,824 Work; 512 charged 14,724,704 Work. Counts include paid directo
 and format lookup bounds. Wall time is telemetry only. No new generic engine
 was added to worth-query-execution in slice 1; that crate only retires the unused
 arm and updates descriptive scalar samples. No rlib growth measurement is claimed.
+
+## Sync before slice 2
+
+Fetched both named sync branches. Incoming master is
+`9d3e872a301acf6877fcd19f60bb8953a11fdef8` (60 commits since the prior
+sync); the provider branch has no commits beyond that master. Three Native
+conflicts required integration. The complete semantic plan and original Source
+interpretation checks remain upstream-owned; both ordinary and retained-selection
+application now reach the same content closure and temporary durability guard.
+The publication helper keeps the incoming semantic authority kind and command
+projection. A verbatim envelope-constructor extraction keeps its combined file
+under 400 lines. No generic engine was added.
+
+These checks cover the conflict-resolution owners, plus their focused Native
+courts; incoming unchanged owners are not claimed as newly certified by this lane.
+
+| Log | Exact command | Exit | Result |
+|---|---|---:|---|
+| `sync2-fmt` | `cargo fmt -p worth-relational` | 1 | error: expected one of `:` or `\|`, found `runtime`; error: expected identifier, found keyword `pub`; error: expected one of `:` or `\|`, found `input` |
+| `sync2-linecap` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 1 | FAIL: crates/worth-relational/src/history/data/canonical_commit_envelope.rs is 403 lines (cap 400) |
+| `sync2-check` | `cargo check -p worth-relational` | 101 | error: expected identifier, found keyword `pub`; error: expected one of `:` or `\|`, found `runtime`; error: expected identifier, found keyword `pub`; error: expected one of `:` or `\|`, found `input`; error[E0425]: cannot find value `runtime` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `runtime` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `runtime` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error: could not compile `worth-relational` (lib) due to 31 previous errors |
+| `sync2-content` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content -- --nocapture` | 101 | error: expected identifier, found keyword `pub`; error: expected one of `:` or `\|`, found `runtime`; error: expected identifier, found keyword `pub`; error: expected one of `:` or `\|`, found `input`; error[E0425]: cannot find value `runtime` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `runtime` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `runtime` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error[E0425]: cannot find value `input` in this scope; error: could not compile `worth-relational` (lib) due to 31 previous errors |
+| `sync2-selection` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification retained_entity_selection` | 0 | test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out; finished in 0.10s |
+| `sync2-clippy` | `cargo clippy -p worth-relational --all-targets` | 101 | error: this `if` statement can be collapsed; error: could not compile `worth-proof` (lib) due to 1 previous error |
+| `sync2-linecap2` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 892 Rust files |
+| `sync2-fmt-check` | `cargo fmt --check -p worth-relational` | 1 | See correction below. |
+| `sync2-boundary` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | Completed successfully (no test count). |
+| `sync2-context` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `sync2-fmt2` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `sync2-check2` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `sync2-content2` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content -- --nocapture` | 0 | test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.06s |
+| `sync2-fmt-check2` | `cargo fmt --check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `sync2-clippy2` | `cargo clippy -p worth-relational --all-targets` | 101 | error: this `if` statement can be collapsed; error: could not compile `worth-proof` (lib) due to 1 previous error |
+| `sync2-boundary2` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | Completed successfully (no test count). |
+| `sync2-context2` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `sync2-diff-master` | `git diff --check origin/master...HEAD` | 0 | Completed successfully (no test count). |
+| `sync2-diff-cached` | `git diff --cached --check` | 2 | See correction below. |
+| `sync2-diff-cached2` | `git diff --cached --check` | 0 | Completed successfully (no test count). |
+
+The first extraction incorrectly applied visibility to two function parameters;
+the formatter reported parse errors and compilation emitted 31 diagnostics from
+that cause. Corrected parameters compile and both court filters pass. Initial
+line-cap failure: `canonical_commit_envelope.rs is 403 lines (cap 400)`; moving its
+constructor verbatim fixes it. The first format check and cached diff caught
+unfinished formatting / a trailing blank line; final reruns pass. Required clippy
+still fails untouched Proof coverage.rs:84 (`collapsible_if`). No lint or
+enforcement suppression was added. The same reviewer approved this merge
+integration under all three review skills and the AGENTS untouched-debt
+exception; it is not slice 2 completion.

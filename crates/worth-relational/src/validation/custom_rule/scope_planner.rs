@@ -1,4 +1,6 @@
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::identity::data::VersionId;
+#[cfg(test)]
 use crate::transactions::data::MergedCommitPlan;
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::InvariantRuntimeView;
@@ -43,13 +45,20 @@ impl PreparedCustomInvariantScope {
         access: &crate::validation::data::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
     ) -> Self {
-        Self::capture_with_shared_inputs(observation, version_id, merged_plan, access, work, None)
+        Self::capture_with_shared_inputs(
+            observation,
+            version_id,
+            merged_plan.map(RelationalSemanticPlan::Mutation),
+            access,
+            work,
+            None,
+        )
     }
 
     pub(crate) fn capture_with_shared_inputs<'state>(
         observation: &'state InvariantObservation<'state>,
         version_id: VersionId,
-        merged_plan: Option<&MergedCommitPlan>,
+        semantic_plan: Option<RelationalSemanticPlan<'_>>,
         access: &crate::validation::data::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
         inputs: Option<Arc<crate::validation::engine::input_preparation::SharedCandidateInputs>>,
@@ -71,7 +80,7 @@ impl PreparedCustomInvariantScope {
             touched: Arc::new(collect_touched_structural_set(
                 &state_view,
                 before_image_view.as_ref(),
-                merged_plan,
+                semantic_plan,
                 access,
                 work,
             )),

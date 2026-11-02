@@ -1,5 +1,6 @@
 pub(super) mod cleanup_custody;
 mod diagnostic_copy;
+mod history_source;
 mod invariant_refusal;
 mod kind;
 mod output_comparison;
@@ -101,7 +102,7 @@ impl WorthQueryOutputDemandDenial {
     ) -> Result<(), super::WorthQueryOutputReadCloseDenial> {
         if let Some(cleanup) = self.cleanup.as_mut() {
             cleanup.close_read(phase, &mut |recovery| {
-                runtime.close_read_product_publication_recovery_in_advancement(phase, recovery)
+                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
             })?;
         }
         Ok(())

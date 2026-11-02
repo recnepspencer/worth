@@ -57,6 +57,7 @@ pub enum WorthQueryManagedIndexRefusal {
 /// The actual original cause, borrowed from the owned operation denial.
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexDenialCause<'a> {
+    CurrentControl(&'a crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
     SourceVerification {
         kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
         authorization: Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
@@ -101,6 +102,7 @@ pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
         ProviderExecutionDenial::SourceRead(cause) => {
             use application_query::output_source_observation::SourceQueryObservationStop as Stop;
             match cause {
+                Stop::CurrentControl(cause) => Cause::CurrentControl(cause),
                 Stop::ManagedIndex(cause) => cause.cause(),
                 Stop::Installation(cause) => Cause::Installation(cause),
                 Stop::Principal(cause) => Cause::Principal(cause),

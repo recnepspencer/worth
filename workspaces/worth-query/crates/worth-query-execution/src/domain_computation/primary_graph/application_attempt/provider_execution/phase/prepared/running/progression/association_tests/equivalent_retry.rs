@@ -27,6 +27,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     phase,
                     &world.application,
                     left,
+                    None,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
                 let right = progress_application_commit(
@@ -34,6 +35,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     phase,
                     &world.application,
                     right,
+                    None,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
                 assert_eq!(

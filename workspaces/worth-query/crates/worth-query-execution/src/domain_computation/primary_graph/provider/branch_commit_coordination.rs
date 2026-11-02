@@ -77,6 +77,21 @@ impl WorthQueryApplicationBranchCommitCoordinator {
     }
 }
 impl WorthQueryApplicationBranchCommitLane {
+    /// A reader already borrowing Native must never wait for an earlier lane.
+    pub(crate) fn try_enter(&self) -> Option<WorthQueryApplicationBranchCommitCoordination<'_>> {
+        let guard = match self.transition.try_lock() {
+            Ok(guard) => guard,
+            Err(TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(TryLockError::WouldBlock) => {
+                return None;
+            }
+        };
+        Some(WorthQueryApplicationBranchCommitCoordination {
+            occurrence: self.occurrence,
+            _guard: guard,
+        })
+    }
+
     pub(crate) fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
         // Ordinary entry is the same blocking mutex. The receiver's armed
         // certification recorder only reports an actual native contention.

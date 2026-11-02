@@ -125,7 +125,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_s
         .admit_matching_head_query_prepared_read_security_basis_with_native_access(
             execution,
             &plan.security_product,
-            &plan.basis,
+            plan.security_basis.as_ref().unwrap_or(&plan.basis),
             prepared,
             native,
         )

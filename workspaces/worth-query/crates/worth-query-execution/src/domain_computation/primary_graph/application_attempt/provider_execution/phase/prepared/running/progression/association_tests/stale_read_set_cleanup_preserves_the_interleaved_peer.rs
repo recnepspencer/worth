@@ -31,7 +31,7 @@ let host_custody = active_phase.test_host_request();
         let victim = finish_application_commit(&phase.borrowed_request_for_test(),
             phase,
             &world.application,
-            progress_application_commit(&phase.borrowed_request_for_test(), phase, &world.application, victim, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
+            progress_application_commit(&phase.borrowed_request_for_test(), phase, &world.application, victim, None, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
         );
         crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
         victim,

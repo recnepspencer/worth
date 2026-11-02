@@ -19,6 +19,11 @@ pub(super) fn validate_current_read_at_basis<S: ApplicationSchema, Q, P, R, A, I
         plan,
     )?
     .with_execution_security_product_resolution();
+    if let Some(metadata) = &plan.history_metadata {
+        metadata
+            .validate(execution, application, runtime, current, plan)
+            .map_err(WorthQueryAuthorizedApplicationReadDenial::from)?;
+    }
     entity_resolution
         .at_snapshot(
             runtime,

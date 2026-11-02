@@ -61,7 +61,7 @@ where Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition
             &self.source_observation.retained, request.principal, request.scope, request.branch)
             .map_err(|d| Denial::Demand(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(d)))?;
         // Prepare the descriptive receipt before the native terminal transition.
-        let receipt = receipt.clone();
+        let receipt = receipt.descriptive_copy();
         let denial = root.finish_unavailable::<Root>(phase, application, request, prepared).map_err(Denial::Demand)?;
         self.complete = true;
         self.root = None;

@@ -24,12 +24,14 @@ pub use crate::mvcc::{
     RelationalPublicationDeferred, RelationalPublicationDenial,
     RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
     RelationalPublicationFailureKind, RelationalPublicationOutcome, RelationalPublicationPort,
-    RelationalPublicationProjectionPosture, RelationalTransactionEntityRead,
-    RelationalTransactionFootprint, RelationalTransactionIntent, RelationalTransactionReadDenial,
-    RelationalTransactionReadLocus, RelationalTransactionRelationRead,
-    RelationalTransactionRelationValue, RelationalTransactionStagingDenial,
-    RelationalTransactionWriteLocus, ReservedCompanionBranchCell, StaleRelationalBranchObservation,
-    ValidatedEntityStructTouch, ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
+    RelationalPublicationProjectionPosture, RelationalRetainedEntitySelection,
+    RelationalRetainedEntitySelectionDenial, RelationalRetainedEntitySelectionPreparationError,
+    RelationalTransactionEntityRead, RelationalTransactionFootprint, RelationalTransactionIntent,
+    RelationalTransactionReadDenial, RelationalTransactionReadLocus,
+    RelationalTransactionRelationRead, RelationalTransactionRelationValue,
+    RelationalTransactionStagingDenial, RelationalTransactionWriteLocus,
+    ReservedCompanionBranchCell, StaleRelationalBranchObservation, ValidatedEntityStructTouch,
+    ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
     ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
     ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,
     ValidatedMutationTouches, ValidatedRelationalProposal,
@@ -44,4 +46,6 @@ pub use crate::transactions::data::{
     CommitConflict, CommitResult, ConflictClass, TransactionCommitError, WorkerIntentBatch,
 };
 
+pub use crate::mvcc::RelationalPublicationReadDependencyDenial;
+pub use crate::mvcc::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
 pub use crate::runtime::RelationalPatchPositionReservationGateForTest;

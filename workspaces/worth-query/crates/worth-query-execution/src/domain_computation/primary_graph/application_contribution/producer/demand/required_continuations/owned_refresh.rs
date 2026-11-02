@@ -28,6 +28,7 @@ pub(in super::super) fn resume_owned_refresh<Schema: ApplicationSchema + 'static
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
+    invocation: &ProducerInvocationAuthority<'_>,
     custody: held::ContinuationCustody<'_, Schema>,
     selected: &SelectedReadyReadmission,
 
@@ -56,7 +57,7 @@ pub(in super::super) fn resume_owned_refresh<Schema: ApplicationSchema + 'static
         return Ok(Some(held::HeldUpstream::GaveBack));
     };
     held::resume_local(
-        phase, runtime, principal, request, branch, custody, contacts, index, performed,
+        phase, runtime, principal, request, branch, custody, contacts, index, invocation, performed,
     )
     .map(Some)
     .map_err(|stop| {

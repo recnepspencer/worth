@@ -48,6 +48,33 @@ For integration or controlled publication work, split the same path at
 outcome through its owner. Prepared, stale, denied, interrupted, deferred, and
 failed work is not a commit.
 
+When another owner must guard the actual memory publication, call
+`publication_port().with_prepared_memory_cutover(&request, candidate, |cutover| { ... })`.
+Native prepares companions before entering the callback. Acquire the other
+owner's guard inside that callback, call `cutover.perform()` once while the
+guard is held, and release the guard before returning. The borrowed token
+cannot leave the callback. Returning without using it performs nothing.
+Native destroys prepared and retired companion payloads after the callback,
+including refusal and unwinding. A configured durable medium refuses this
+entrance with `ScopedCutoverDurabilityUnsupported`; use ordinary publication
+for durable commits.
+
+After the callback, call `.into_parts()` on the returned
+`ScopedRelationalPublication` to obtain the caller's result and the optional
+actual Native outcome separately. Always handle the actual outcome: a caller
+error does not undo a performed publication. Settle a `Performed` outcome
+through its original owner after releasing the guard. `None` means the token
+was unused; an outer `Err` is a refusal before the callback.
+
+Use `cutover.perform_before(deadline)` when the enclosing operation has an
+additional admitted deadline, such as authentication expiry. This only narrows
+the original request and candidate lifetime. Native rechecks the original
+request and the effective cutoff after reservation waits, before assigning a
+canonical position. An elapsed additional cutoff returns
+`RelationalPublicationDenial::CutoverDeadlineElapsed`; an earlier candidate
+expiry retains `CandidateLifetimeExpired`. The cutoff does not replace the
+original request's cancellation or waiting policy.
+
 ## Read truth
 
 Use:

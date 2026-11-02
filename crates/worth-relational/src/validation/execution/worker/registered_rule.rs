@@ -81,12 +81,12 @@ fn evaluate_native_registration<'state>(
     registration: &crate::validation::data::InvariantRegistration,
     budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
-    let mut context = InvariantExecutionContext::new(
+    let mut context = InvariantExecutionContext::from_semantic_plan(
         runtime,
         packet.observation.clone(),
         packet.version_id,
         packet.current_version_id,
-        packet.merged_plan,
+        packet.semantic_plan,
         packet.relation_integrity_scopes.clone(),
         std::sync::Arc::clone(&packet.current_version_minimum_index),
     );

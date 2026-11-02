@@ -5,6 +5,7 @@ use super::preparation::{
 use crate::authority::commit::phases::publication::enforce_patch_budget;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
 use crate::authority::commit::publication::assemble_patch;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::authority::mutation::MutationEffect;
 use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
@@ -12,7 +13,7 @@ use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::{
-    CommitLog, CommitPatchBudgetSummary, CommitPhase, CommitPhaseTiming, MergedCommitPlan,
+    CommitLog, CommitPatchBudgetSummary, CommitPhase, CommitPhaseTiming,
     PublishedMergeExecutionAuthority, TransactionCommitError,
 };
 
@@ -25,7 +26,7 @@ pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) version_id: VersionId,
     pub(super) merge_parent_branches: &'a [BranchId],
     pub(super) merge_base_commits: &'a [CommitId],
-    pub(super) merged_plan: &'a MergedCommitPlan,
+    pub(super) merged_plan: RelationalSemanticPlan<'a>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
     pub(super) merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
