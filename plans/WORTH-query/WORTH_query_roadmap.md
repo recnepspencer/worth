@@ -6017,6 +6017,9 @@ records, sketches/routes, the bounded canonical remainder and final integrated
 adoption. Preserve numerical admission, exactness and names; version changed
 storage bytes. Completed public phases remain closed. Mac-owned booleans/U5/U6/
 Studio work remains separate, and the final pin is coordinated through the user.
+The kernel cutover is mandatory 9.19 completion scope: all K0–K6 deliverables
+and acceptance gates must close. The separate private document does not make it
+an optional successor; managed-index/SDK adoption alone cannot complete 9.19.
 
 ### Specification
 

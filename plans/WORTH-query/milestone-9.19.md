@@ -1,6 +1,9 @@
 # Milestone 9.19: Managed Advanced Access And Verified Footprints
 
 > **Status:** In progress. Phases 1–5 complete; Phase 6 unfinished.
+> **Required for 9.19 closure:** the aspect-native CAD kernel cutover, including
+> every K0–K6 deliverable and acceptance gate in the private cutover plan, is
+> mandatory Phase 6 scope. SDK/index adoption alone cannot complete 9.19.
 > **Scope revised 2026-10-27:** the general managed derived-index extension owns
 > the spatial-index finding formerly assigned to 9.18.1 Phase 12 and the dependent
 > CAD locality qualification from Phase 15. Proprietary cutover is the final phase.
@@ -2180,8 +2183,11 @@ defect is fixed at its responsible owner and the affected public evidence rerun.
 Acceptance 8 with the actual pin, supported lifecycle, measured locality and
 remaining explicit limits. Confirm production imports use only the allowed
 facades and displaced-path inventory is empty. Close only when both the integrated
-public candidate and its real private adoption pass; this is also the milestone's
-final acceptance gate.
+public candidate and its real private adoption pass, and all K0–K6 kernel
+cutover deliverables and acceptance gates are complete. The aspect-native kernel
+cutover cannot be deferred to a successor milestone or treated as optional
+follow-up. Index/SDK adoption on the old blob representation is insufficient.
+This combined gate is also the milestone's final acceptance gate.
 
 ### Prefix text reuse slice (partial Phase 3)
 
@@ -2256,6 +2262,14 @@ runtime worlds. These rules apply Testing Laws 2–3, 6–10, 15, 18–20 and 24
 they introduce no evidence ledger or required test count.
 
 ### Milestone Closure
+
+The aspect-native CAD kernel cutover is a required part of 9.19. Completion
+requires all K0–K6 deliverables and acceptance gates in the private
+`cad/docs/plans/aspect-native-kernel.md`, including native geometry and reference
+structure, document/naming records, sketch/route entities, the bounded canonical
+remainder and removal of displaced ordinary blob paths. Separate documents do
+not create separate or optional milestones. Passing the managed-index, SDK
+adoption or locality courts alone cannot close 9.19 while this cutover is open.
 
 All six phases must close. Bank and the existing box/prefix contract fixtures use
 the real facade; the actual Proprietary CAD app adopts that integrated public
