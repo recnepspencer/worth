@@ -1,6 +1,6 @@
 # Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
 
-**Status:** in progress; Phases 1–6 implemented and verified; Phase 7 remains open.
+**Status:** implemented and verified; Phases 1–7 complete.
 **Public boundary:** process-local Decl/Host consumers.
 **Prerequisites:** qualified branch/correction owners from
 [9.18](./milestone-9.18.md) and retained-read, guarded adoption and history
@@ -536,9 +536,16 @@ not an omitted test obligation; it is expressly deferred until Store integration
 
 ## Phase 7: Deliver The Plug-In Consumer And Qualify The Composed Feature
 
+**Status:** implemented and verified.
 **Depends on:** completed Phases 1-6.
 **Outcome:** a normal consumer can install, render and operate the whole history
 feature without implementing its authority, ancestry or lifecycle machinery.
+
+**Qualification scope:** the executable consumer entry is `--document-history`.
+The separate default advanced-output recovery program has a preserved unresolved
+`ForeignSource` failure in `proof/application_program/required_basis.rs`; no fresh
+default-run result is claimed. That audience is unqualified by this milestone's
+document-mode evidence.
 
 ### Required behavior and implementation boundary
 

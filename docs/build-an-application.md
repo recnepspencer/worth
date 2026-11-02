@@ -1946,7 +1946,8 @@ fn dispose_document<'runtime>(
 ```
 
 The executable [document consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history.rs)
-uses bounded pages as a disposable view. Each page and redo child page carries
+uses [the ordinary installation and document setup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/setup.rs)
+and bounded pages as a disposable view. Each page and redo child page carries
 `context()`: a format version, the actual installed schema binding and an opaque
 process-local document identity. `document.commands(&context)` rejects unsupported
 formats, foreign bindings and foreign documents before dispatch. Its borrowed
@@ -1962,6 +1963,24 @@ This consumer's `Command` does that. On advancement refusal, `advance` returns
 the original typed denial and posture. Between requests it drops only the frontend handle:
 the same document retains the real Native attempt and SDK output custody.
 Reusing the command never refreshes its expectation to a later selection.
+Inspect the cause as well as the posture before retrying. A retryable refusal
+before adoption can continue the same command with fresh admission. To abandon
+an unselected attempt, retain the owner returned by `prepare` and call its
+`discard`, preserving any refused cleanup owner. If only the command was kept,
+fresh admitted preparation recovers that same registered attempt; consuming
+the owning document for close also preserves its actual pending cleanup.
+
+A refusal with `posture: WorthQueryHistoryNavigationPosture::Selected` means
+adoption already occurred. A freshly admitted retry of the same command returns
+the original completion, including when another command has since selected a
+different node. It does not reset that later selection. Read
+`document.selection(&fresh_request)` to display the current head.
+
+Executable handling examples show [restoring current authority](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/authority.rs),
+[competing gestures and original disposal](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/selection.rs),
+[recovering lost delivery](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/delivery.rs)
+and [aborting a partially completed group](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/group.rs).
+
 The `Failure` and `Progress` variants below are defined beside the
 [compiled adapter](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/navigation.rs).
 
