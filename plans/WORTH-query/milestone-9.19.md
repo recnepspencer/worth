@@ -17,6 +17,11 @@
 > fields, entities and relations. Preserve completed Phases 1–5. The private
 > `cad/docs/plans/aspect-native-kernel.md` governs K0–K6 below; numerical domain
 > APIs remain Query-independent and the final CAD locality acceptance remains required.
+> **Sequence revised 2026-11-01:** an independent review added per-field seams,
+> realization-stamp cutoff, a separate content lane and a split K6. The user also
+> approved inline domain values, so applications can store their own value types
+> without text. Storage slices land on private main at the current pin; the one
+> repin follows public qualification and precedes the installed vertical slice.
 
 ## Goal
 
@@ -2067,66 +2072,81 @@ mandatory after the representation change.
 
 | Subphase | Result and predecessor | Required distinguishing evidence |
 |---|---|---|
-| K0 | Reconcile actual current owners, profile real Session Apply cabinet2–3-shelf/member edits, inventory mappings and compatibility; no speculative repin | Separate realization breadth, parsing, numerical work and publication; verify reported SDK failures and saved-data commitments |
-| K1 | After K0, prove generic optional-aspect variants, positioned relations and actual typed-content admission; implement mapping-driven codemods | Installed one-of/order corruption, correction/retirement/recovery and original controls; dry-run, unsupported-syntax refusal and idempotent transformation |
-| K2 | After K1, cut over cell geometry/certification to native scalar/class aspects and actual definition relations | Bounded rational admission parity, full curved/affine/certified semantics and indirect dependency changes through actual CAD; remove switched JSON paths |
-| K3 | After shared contracts, native scalar/document/alias/lineage records at current owners | Origin/generation/frontier and naming through correction/reconstruction; explicit storage-version refusal or required migration |
-| K4 | After K1 and identity contracts, sketch/route objects become named entities with typed reference/order relations | Local middle-object edit, insertion/deletion/reorder, inverse and reconstruction retain names and solver/refusal meaning |
-| K5 | After K2–K4, bound the canonical remainder and delete displaced ordinary blob adapters | Every exception has an owner, shape, bounds and original charged decode; no hidden references or unclassified structured JSON authority |
-| K6 | After K2–K5 and public qualification, one integrated SDK adoption and managed CAD cutover | Existing actual1000/2000/+50000, Acceptance8 features1/100/10000, lifecycle/oracle and complete private gate acceptance |
+| K0 | Rebase on current main, profile real Session Apply cabinet2–3-shelf/member edits, write the type mapping, and decide stamps, list classes, number mappings and references held in values; no speculative repin | Separate realization breadth, reran versus changed features, parsing, numerical work and publication; verify reported SDK failures; prove the CAD-owned delegate bridge on one Radical value |
+| K1a | After K0, one accessor per cell field, grant groups and one class inventory on today's storage, on private main at the current pin | Scoped guard, unchanged bytes and stamps, a new class touching one declaration, recorded rebuild time |
+| K1b | After K0, prove generic class-scalar one-of, positioned order only if K0 found a true sequence, and a source-subgraph contract; teach them in public docs | Installed one-of/order corruption, correction/retirement/recovery and original controls at both pin and candidate; absence cost against class count; partial source edit and generated-subgraph witness |
+| K1c | After K0, a separate public controlled typed content door; only spline cutover waits for it | Valid, missing, wrong-version and corrupt content before publication; retention, reconstruction and original cancellation |
+| K1d | After the K0 decision and U6b agreement, stamps gain output cutoff; read narrowing follows at K6b | Full rebuild oracle agrees across changed direct, indirect and negative inputs; an unchanged output stops propagation and downstream relations stay live |
+| K1e | After K0 measures its reach, a public inline bytes scalar, a binary value-binding arm and frame: on both value arms, so an application's own value type is a named, versioned, framed, owner-admitted atom | Non-canonical and wrong-version bytes refuse; write, correction, recovery and history return exact bytes; original Work and cancellation at the bound; a Query-free pure type adopts it through an entry-band delegate; a reference inside a value fails its binding's guard |
+| K2 | After K1a and the one-of result, cut over one cell class at a time to native scalar/class aspects and actual definition relations, domain-valued classes after K1e, splines last | Bounded rational admission parity, full curved/affine/certified/radical semantics, corruption refusal; remove each switched JSON path |
+| K3 | After K2's number bridge, native scalar/document/alias/lineage records at current owners | Origin/generation/frontier and naming through correction/reconstruction; old storage versions refuse before effects |
+| K4 | After K1b's source-subgraph contract, K1d cutoff and identity contracts, sketch/route objects become named entities with typed relations | Local middle-object edit, insertion/deletion/reorder, inverse and reconstruction retain names and solver/refusal meaning |
+| K5 | After K1e and K2–K4, classify the canonical remainder and delete displaced ordinary blob adapters | Every exception and domain value has an owner, shape, bounds, reason and original charged decode; no hidden references or unclassified structured JSON authority |
+| K6a | After the one repin and K2's first classes, an installed vertical slice through real Native Source and the managed index | Indirect dependency changes through actual CAD; 1000/2000 middle-vertex edit agrees with an independent full scan |
+| K6b | After K5 and K6a, stamp read narrowing and complete managed CAD cutover | Reran features follow true dependents at shelves 2/4/8/16 and thread length 10/100/1000; existing actual1000/2000/+50000, Acceptance8 features1/100/10000, lifecycle/oracle and complete private gate acceptance |
+
+The repin is a named step between these, not a subphase: it requires K1b, K1c, K1e,
+#36 triage and the candidate on the public origin. K1a, K1d, K2, K3, K4 and K5 land
+on private main at whichever pin is current, using only APIs that pin has. K6 here
+means K6a and K6b together.
 
 **Representation and numerical authority.** Referenceable objects are entities;
 links are actual typed relations. Flat facts use native scalars, with Rational
-for genuinely rational coefficients. Geometry alternatives use one optional
-aspect per class and an installed exactly-one rule. Ordered lists use a real
+for genuinely rational coefficients. Geometry alternatives use a required class
+scalar plus one optional aspect per class, with an installed rule that the scalar
+names the only aspect present; K1b measures whether the scalar earns its place.
+Lists are first classified as keyed sets, graphs, fixed tuples, cycles or true
+sequences; keyed sets and graphs need no position, fixed tuples use named relations,
+and existing Native cycle semantics stay. Only a true sequence uses a
 membership-occurrence entity with a native position field and typed parent/target
-relations, or a directly fielded relation only after its SDK carrier is qualified.
-Neither representation erases existing Native cycle semantics.
+relations, or a directly fielded relation after its SDK carrier is qualified.
 Large identity-free numeric arrays require controlled typed content references;
 a ContentRef id alone proves neither available bytes nor admitted geometry.
-Small identity-free or compiled pack-owned canonical values are explicit
-exceptions, not containers for independently mutable objects or graph links.
-JSON remains at named terminal projection boundaries.
+Identity-free, reference-free leaf values with no platform scalar, such as radical
+coefficients, are domain values: named, versioned, framed atoms with owner-supplied
+canonical bytes and admission. Derived, certificate and placed records split their
+references into relations first. Compiled pack-owned parameters and anything awaiting
+that carrier are explicit bounded canonical exceptions with a recorded reason.
+Neither is a container for independently mutable objects or graph links, and a
+per-binding guard proves it. JSON remains at named terminal projection boundaries.
 
 Math retains exact parsing/admission, normalization, bit capacity and numerical
 work; native Rational validity alone is insufficient. Preserve symbolic and
 certified representations, tolerance, units, frame and provenance. New storage
 revisions intentionally change internal bytes/digests; preserve domain meaning,
-names and explicitly committed terminal/export bytes. Verify the actual CAD
-compatibility commitment before choosing current-format-only rejection versus
-migration; never reinterpret or erase unsupported historical bytes.
+names and explicitly committed terminal/export bytes. CAD stays current-format-only
+with no supported saved data, so unsupported bytes refuse without reinterpretation
+or erasure; a supported saved format landing first returns this to the user.
 
-**Mechanical work and coordination.** Use syntax-aware, mapping-driven codemods
-for reviewed declarations, gather/write call sites and fixtures. Iterate using
-read-only dry-run diffs and explicit residual-site reports until common rules
-cover most mechanical work. Apply the reviewed batch, then finish the small
-remainder and last compile/behavior failures by hand. Stop extending the script
-when another condition costs more than those hand edits; full script coverage
-or zero compiler errors from the generated patch is not a requirement.
-Unsupported sites remain untouched and reported for manual work, without
-blocking independent supported edits. Ambiguous matches or failed source
-preconditions block unsafe apply. Apply is scoped and idempotent and edits
-generated artifacts only through their real generators. Every required cutover
-and acceptance gate still applies to the combined scripted/manual result.
-Codemods do not
-decide schema ownership, references, order, provenance, inverses or recovery.
+**Mechanical work and coordination.** Reads and writes move behind one accessor per
+cell field first, so storage changes behind it stay local. Codemods for those call
+sites are disposable, syntax-aware one-offs; git is their atomicity and rollback.
+Iterate on the dry-run diff until common cases are covered, apply, then finish the
+remainder by hand. Stop extending the script when another condition costs more than
+those hand edits; full script coverage or zero compiler errors from the generated
+patch is not a requirement, and the script has no acceptance gate. Generated
+artifacts change only through their real generators. Every required cutover and
+acceptance gate applies to the combined result. Codemods do not decide schema
+ownership, references, order, provenance, inverses or recovery.
 Keep tests in existing owner/leaf targets, with source/configuration checks
 before compilation. No new list/variant/nested AspectShape forms are authorized
-without returning to the user. Public representation guidance and Store's actual
-sub-field granularity contract are K1 documentation deliverables.
+without returning to the user; K1e's scalar carrier is approved and adds none.
+Public representation guidance and Store's actual sub-field granularity contract
+are K1b documentation deliverables, and K1e documents domain values in the same place.
 
 The Mac retains booleans/arrangement, DP-3, U5, U6a/U6b and Studio work; U6b owns
 the generated realization-record split. Consume the whole-entity source/output
-witness contract without editing those worktrees or duplicating those lanes.
-Coordinate the final SDK pin through the user after reported public regressions
-are understood. Finish representation before PS-4 or the first T2 handoff if
-earlier. Private landing additionally requires independent Claude certification.
-These coordination constraints do not replace each slice's independent review.
+witness contract without editing those worktrees or duplicating those lanes, and
+agree stamp and source-witness changes with U6b through the user. Coordinate the
+one SDK pin through the user after reported public regressions are understood.
+Finish representation before PS-4 or the first T2 handoff if earlier. Private
+landing additionally requires independent Claude certification. These coordination
+constraints do not replace each slice's independent review.
 
-**Integration checkout.** Fetch the current Proprietary `main` and create a new
-worktree from that updated branch for this integration. Record the selected
-revision and resolve the real owners there; preserve other private worktrees and
-their in-progress work. The public candidate is integrated into the real CAD app
+**Integration checkout.** Fetch the current Proprietary `main` and base this
+integration on that updated branch, refreshing before each slice. Record the
+selected revision and resolve the real owners there; preserve other private
+worktrees and their in-progress work. The public candidate is integrated into the real CAD app
 in this worktree, rather than extending a public substitute for that app.
 
 **Private implementation anchors.** Paths here are relative to the Proprietary
@@ -2158,7 +2178,9 @@ court; private adoption must not fork the generic lifecycle or publication engin
 
 **Requirements.** Perform one integrated SDK pin/adoption sequence after public
 qualification, then replace CAD's warm full-sweep discovery and contact-check
-paths with an installed provider through Decl/Host. CAD retains its numerical
+paths with an installed provider through Decl/Host, starting with K6a's vertical
+slice. Native storage slices that need only the current pin land before or after
+that repin; they do not wait for it. CAD retains its numerical
 bounds, topology and exact-contact owners; the framework owns index state and
 freshness. Preparation reads the committed index; candidate validation reads the
 staged candidate index. Remove the displaced executable path/private cache rather
@@ -2275,8 +2297,9 @@ they introduce no evidence ledger or required test count.
 The aspect-native CAD kernel cutover is a required part of 9.19. Completion
 requires all K0–K6 deliverables and acceptance gates in the private
 `cad/docs/plans/aspect-native-kernel.md`, including native geometry and reference
-structure, document/naming records, sketch/route entities, the bounded canonical
-remainder and removal of displaced ordinary blob paths. Separate documents do
+structure, realization stamps with output cutoff, the content door, domain values,
+document/naming records, sketch/route entities, the classified canonical remainder and removal of
+displaced ordinary blob paths. Separate documents do
 not create separate or optional milestones. Passing the managed-index, SDK
 adoption or locality courts alone cannot close 9.19 while this cutover is open.
 
