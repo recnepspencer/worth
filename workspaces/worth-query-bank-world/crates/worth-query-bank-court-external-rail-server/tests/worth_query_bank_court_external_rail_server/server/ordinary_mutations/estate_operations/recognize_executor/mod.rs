@@ -7,7 +7,7 @@ fn public_query_observes_the_exact_recognized_executor() {
     let fixture = exact_recognition_world("recognize-executor-commit");
     let specialist = fixture.authenticate_specialist();
     let key = BankIdempotencyKey::new("recognize-estate-executor-program-entry").unwrap();
-    let outcome = {
+    let outcome_closed = {
         let source_actor = &specialist;
         let source_scope = &request_scope();
         let source_key = &key;
@@ -42,8 +42,11 @@ fn public_query_observes_the_exact_recognized_executor() {
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
 
     let receipt = outcome;
     assert_eq!(receipt.emitted_effect_count(), 0);
@@ -83,16 +86,16 @@ fn public_query_observes_the_exact_recognized_executor() {
         };
         assert!(matches!(
             source_completed.evidence(),
-            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded { .. }
         ));
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
     let recovered = retry;
-    assert_eq!(receipt.aftermath(), recovered.aftermath());
-    assert_admission_derives_the_request_identities_once(recovered.canonical_work());
+    worth_query_bank_testkit_server::facade::estate_operations::external_effect_dispatch::publication_assertions::assert_recovered_commit_axes(&outcome_closed, &recovered);
+    assert_admission_derives_the_request_identities_once(receipt.canonical_work());
 }
 
 #[test]

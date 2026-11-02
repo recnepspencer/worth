@@ -86,7 +86,6 @@ fn idempotency_denial(denial: BankEstateIdempotencyResolutionDenial) -> BankHttp
         }
         Idempotency::Authorization(denial) => return authorization_denial(denial.kind()),
         // The key's earlier commit took effect; reading current state shows it.
-        Idempotency::CommittedReceiptNotRetained => (Denial::Stale, Next::Refresh),
         // Capacity in use frees as other reads settle.
         Idempotency::ActiveSnapshotCapacityExhausted { .. }
         | Idempotency::RetentionCapacityExhausted

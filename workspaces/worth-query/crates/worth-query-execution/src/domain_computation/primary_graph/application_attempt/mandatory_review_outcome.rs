@@ -116,7 +116,11 @@ impl WorthQueryReviewedElevation {
 /// can be committed again.
 #[derive(Debug)]
 pub enum WorthQueryMandatoryReviewOutcome {
-    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
+    /// Immutable original meaning plus the exact predecessor supplied by this call.
+    RecoveredCommitted {
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+        mandatory: WorthQueryMandatoryReview,
+    },
     CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
@@ -157,7 +161,10 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
 ) -> WorthQueryMandatoryReviewOutcome {
     match outcome {
         WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
-            WorthQueryMandatoryReviewOutcome::RecoveredCommitted(receipt)
+            WorthQueryMandatoryReviewOutcome::RecoveredCommitted {
+                receipt,
+                mandatory: binding.into_mandatory(),
+            }
         }
         WorthQueryApplicationCommitOutcome::Committed(commit) => {
             WorthQueryMandatoryReviewOutcome::Reviewed(reviewed(binding, commit))

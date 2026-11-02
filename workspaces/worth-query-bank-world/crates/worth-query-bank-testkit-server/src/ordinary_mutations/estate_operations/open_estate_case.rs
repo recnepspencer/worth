@@ -17,7 +17,7 @@ pub fn assert_equivalent_retry(
     fixture: &CaseOpeningFixture,
     specialist: &BankAuthenticatedPrincipal,
     key: &BankIdempotencyKey,
-    committed: &BankCommitReceipt,
+    committed: &bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult>,
 ) {
     let retry = {
         let source_actor = specialist;
@@ -46,16 +46,23 @@ pub fn assert_equivalent_retry(
         };
         assert!(matches!(
             source_completed.evidence(),
-            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded { .. }
         ));
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
     let recovered = retry;
-    assert_eq!(committed.aftermath(), recovered.aftermath());
-    assert_admission_derives_the_request_identities_once(recovered.canonical_work());
+    super::external_effect_dispatch::publication_assertions::assert_recovered_commit_axes(
+        committed, &recovered,
+    );
+    assert_admission_derives_the_request_identities_once(
+        committed
+            .live_receipt()
+            .expect("original live evidence")
+            .canonical_work(),
+    );
 }
 
 pub fn assert_intent_drift(

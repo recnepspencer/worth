@@ -191,8 +191,11 @@ async fn exercise_completion(
     tokio::task::block_in_place(|| {
         transport.under(FaultScript::CommitThenLoseResponse, Duration::from_secs(5));
     });
-    let receipt =
+    let closed =
         tokio::task::block_in_place(|| notification_source::issue(runtime, specialist, action))?;
+    let receipt = closed
+        .live_receipt()
+        .expect("fresh source retains its complete native owner");
     assert!(receipt.co_committed_dispatch_outbox());
     assert_eq!(receipt.emitted_effect_count(), 1);
     // This is only a selector copied from the actual Query-issued request.

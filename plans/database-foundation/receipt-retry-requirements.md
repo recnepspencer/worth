@@ -34,7 +34,7 @@ commit b84a8953d0; the postcommit trim still needs qualification.
 
 | Specification field | Owner source / public recovered projection | Evidence |
 |---|---|---|
-| Commit receipt/id, version, journal position, artifact digest | Exact Native original artifact; `relational_receipt`, `native_version`, `native_journal_position`, `native_artifact_digest` | `receipt_fields::projection`, exact World source court |
+| Commit receipt/id, version, journal position, artifact digest | Exact Native original artifact; `commit_reference()` (commit/version), `native_journal_position()`, `native_artifact_digest()` | `receipt_fields::projection`, exact World source court |
 | Create correspondences, changed records, structural/schema/history/change/aspect/validation semantics | `relational_semantic_result` from original Native artifact | Full serialized semantic projection and live/reference comparison |
 | Changed record count | Original ordered changed records, validated change summary | Projection and `assert_live_agrees` |
 | Live CommitResult, transaction/proposal identity, snapshots, timings/complexity, late interruption | Unavailable on recovered data | Recovered receipt rustdoc type fences; no live constructor |
@@ -51,8 +51,9 @@ commit b84a8953d0; the postcommit trim still needs qualification.
 `receipt_fields::projection` is captured before real process death and compared
 byte for byte after actual reopen; its live overlap assertions independently
 check the supported original fields. A blocked reopen does not qualify that
-comparison. Memory-only projections explicitly have no Home identity, journal
-position or publishing Home incarnation.
+comparison. Memory-only projections explicitly have no Home identity, World journal
+position or publishing Home incarnation. Their Native positions describe actual
+resident frames and do not claim persistent backing.
 
 D9 explicitly retires synthetic process-cache retry authority and historical-only
 receipt fallback. The old Server mock-workspace cache assertions are replaced by
@@ -70,13 +71,15 @@ audit, invocation, revision and no-resurrection assertions remain intact.
 
 ## Response-loss migration and exact resource courts
 
-D9's live-only row retires the response-loss first response's reconstructed
-terminal, timing, precondition-observation and preimage receipt claims. Those
-courts now require `RecoveredCommitted` on the first internally resolved lost
-response as well as later retries, and compare the complete recorded value.
-Actual preimage/dispatch custody is still checked independently through its
-own already-held owner observations; receipt data never mints a live receipt.
-The terminal/session/snapshot cleanup counts remain real owner observations.
+The active performing attempt receives its actual original completion through a
+funded, session-bound one-shot slot, including an internally recovered lost
+provider response. Its real preimage, dispatch and native cleanup owners remain
+available. A later keyed call receives only durable original receipt data and
+cannot manufacture those live owners. The response-loss courts retain the actual
+first completion and compare later recorded meaning against it. The slot and
+cleanup envelope are reserved before effects; cleanup failure moves the genuine
+pending original into that same funded storage. Rejoining refused cleanup reuses
+the envelope retained by its unique native owner.
 
 The interleaved snapshot court measures both started attempts and checks exactly
 one peer remains AFTER `finish_application_commit`, where progressed.rs releases
@@ -101,3 +104,41 @@ Traversing every later full commit did not strengthen the authority claim and
 timed out at the committed 600-second test limit during the first normal run.
 The original positive whole-commit control remains, and an observed post-Native
 stop still asserts its exact retained-effect fate.
+
+Concurrent unseen mutation requests may prepare pure candidates before the branch
+commit lane (Milestone 3 D9 and Phase 4 concurrent retry requirement; declaration
+`WorthQueryPreparedProgramMutation`). The earlier court's handler-count-equals-one
+assertion incorrectly treated speculative `decide` calls as committed effects.
+The corrected courts demand exactly one fresh completion, equal original receipts,
+one actual additional World history entry, and no handler entry on subsequent
+sequential replay. Lost-response/reopen/restart courts keep unchanged-handler checks.
+
+## Closed consumers and lifecycle observations
+
+D9/D17 and commit `98b39a07bd` retire retry assertions that synthesize new live
+phase/session owners. Bank lifecycle retries now compare complete original data
+through fresh authorized lifecycle observation; each actual fresh predecessor
+moves once into its next phase. Approval, close and review outcomes retain the
+actual supplied predecessor on recorded completion. Their previous success
+getters and fictitious replay work counters are replaced by original data and
+unchanged World publication assertions; fresh canonical work ceilings remain.
+The former CommittedReceiptNotRetained HTTP recovery instruction is deliberately
+retired by D9; unverifiable persisted intent still requires operator action.
+
+Bank closed source and capability values retain the entire native close tuple.
+HTTP collection release retains its actual receipt; descriptive wire replies do
+not discharge its original dispatch/recovery obligation. Closed native evidence
+whose dispatch posture is Pending, AttemptedUnresolved or Observed stays owned.
+Its authenticated local handoff transfers the complete carrier and original
+runtime, restores exact custody and capacity on lost delivery, and releases the
+worker slot after confirmed transfer. No pending owner is reconstructed from
+recorded data. Native NotDeclared/TerminalObserved and absent-owner closes may
+release ordinary transport records.
+
+The unit test `a_key_committed_before_a_restore_asks_for_a_refresh_not_a_retry`
+is deliberately removed: it asserted the retired `CommittedReceiptNotRetained`
+request denial. D9 and commit `98b39a07bd` delete that historical-only outcome;
+there is no equivalent replacement request-denial variant. It must not be
+renamed to foreign affinity or weakened to another cause. Real foreign-affinity
+and restore/reopen courts remain separate; their blocked entries above are not
+qualification claims.

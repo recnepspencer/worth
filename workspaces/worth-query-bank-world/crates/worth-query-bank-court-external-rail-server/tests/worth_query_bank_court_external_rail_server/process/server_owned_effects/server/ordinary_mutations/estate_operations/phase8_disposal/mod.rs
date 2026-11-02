@@ -6,7 +6,10 @@ fn disposal_returns_original_handle_on_refusal_then_native_receipt() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_notification(131);
+    let receipt_closed = world.commit_notification(131);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let runtime = &world.fixture.world.runtime;
     let handle = world.open_recovery(&receipt);
     let revision = world.estate_account_revision();

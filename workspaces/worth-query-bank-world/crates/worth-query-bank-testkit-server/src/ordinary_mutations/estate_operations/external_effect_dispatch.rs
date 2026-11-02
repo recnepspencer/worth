@@ -85,17 +85,26 @@ pub fn assert_dispatch_scenario(
 }
 
 impl DispatchWorld {
-    pub fn commit_notification(&self, identity: u8) -> BankCommitReceipt {
+    pub fn commit_notification(
+        &self,
+        identity: u8,
+    ) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
         self.commit_with(idempotency(identity))
     }
 
-    pub fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
-        let (receipt, fresh) = self.notify(binding);
-        assert!(fresh, "native fresh completion");
-        receipt
+    pub fn commit_with(
+        &self,
+        binding: BankIdempotencyKey,
+    ) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
+        let closed = self.notify(binding);
+        assert!(closed.fresh_result().is_some(), "native fresh completion");
+        closed
     }
 
-    pub fn notify(&self, binding: BankIdempotencyKey) -> (BankCommitReceipt, bool) {
+    pub fn notify(
+        &self,
+        binding: BankIdempotencyKey,
+    ) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
         {
             let source_actor = &self.fixture.authenticate_specialist();
             let source_scope = &request_scope();
@@ -128,17 +137,10 @@ impl DispatchWorld {
             else {
                 panic!("native source completion required")
             };
-            let fresh = matches!(
-                source_completed.evidence(),
-                worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
-            );
             let closed_source = source_completed
                 .close_with_evidence(&source_request)
                 .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-            (
-                bank_server::BankCommitReceipt::from_closed_source(closed_source),
-                fresh,
-            )
+            bank_server::BankClosedSourceCompletion::from_query(closed_source)
         }
     }
 

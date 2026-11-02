@@ -6,7 +6,10 @@ fn cloned_receipt_cannot_mint_a_second_recovery_handle() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_notification(120);
+    let receipt_closed = world.commit_notification(120);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let copied_receipt = receipt.clone();
     let handle = world.open_recovery(&receipt);
     let denied = world
@@ -26,7 +29,10 @@ fn a_receipt_committed_by_another_runtime_cannot_mint_a_handle_here() {
     committing
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = committing.commit_notification(127);
+    let receipt_closed = committing.commit_notification(127);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let denied = bystander
         .fixture
         .world
@@ -43,7 +49,10 @@ fn a_completed_bank_transition_spends_the_recovery_permanently() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_notification(130);
+    let receipt_closed = world.commit_notification(130);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let handle = world.open_recovery(&receipt);
     let specialist = world.fixture.authenticate_specialist();
     world
@@ -76,7 +85,10 @@ fn expiry_decision_is_consumed_only_by_the_bank_transition() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_notification(125);
+    let receipt_closed = world.commit_notification(125);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let handle = world.open_recovery(&receipt);
     authorization_time.advance_to_epoch_seconds(5_601);
     let evaluation = world

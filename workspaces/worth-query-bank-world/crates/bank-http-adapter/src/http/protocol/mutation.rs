@@ -126,9 +126,23 @@ pub struct BankHttpCommitDescription {
     pub provider_work_units: Option<usize>,
     pub invariant_work_units: Option<usize>,
 }
+/// Immutable original meaning; it grants no current read, publication or rail authority.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct BankHttpRecordedCommitDescription {
+    pub native_commit: String,
+    pub outcome_identity: u64,
+    pub changed_record_count: usize,
+    pub emitted_effect_count: usize,
+}
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpMutationOutcome {
+    Recorded {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        commit: BankHttpRecordedCommitDescription,
+    },
     Rejected {
         request_id: Option<String>,
         denial: BankHttpDenial,

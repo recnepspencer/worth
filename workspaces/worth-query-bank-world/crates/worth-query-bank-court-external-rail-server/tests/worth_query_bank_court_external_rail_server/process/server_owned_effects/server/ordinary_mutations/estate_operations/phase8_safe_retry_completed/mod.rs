@@ -10,9 +10,12 @@ fn safe_retry_of_already_completed_effect_adds_no_contact_and_no_physical_conseq
         .install_estate_rail_completion_verifier(Arc::new(EstateRailSource))
         .expect("the estate rail source installs once");
     world.transport.under(FaultScript::Succeed, world::PATIENT);
-    let (receipt, source) = world.commit_with_source(
+    let (receipt_closed, source) = world.commit_with_source(
         bank_domain::proposals::BankIdempotencyKey::new("completed-notice-correction").unwrap(),
     );
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     assert_eq!(
         receipt
             .external_dispatch_posture()

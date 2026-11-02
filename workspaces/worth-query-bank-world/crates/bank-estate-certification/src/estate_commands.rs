@@ -39,7 +39,6 @@ pub struct EstateLifecycleInputs {
 #[derive(Debug)]
 pub enum EstateLifecycleProgressionOutcome {
     Reviewed(Box<BankReviewedEstateElevation>),
-    AlreadyReviewed(Box<BankReviewedEstateElevation>),
     RequestStopped(Box<BankEstateElevationRequestOutcome>),
     ApprovalStopped(Box<BankEstateElevationApprovalOutcome>),
     CloseStopped(Box<BankEstateElevationCloseOutcome>),
@@ -199,8 +198,7 @@ fn certified_elevation_request(
     outcome: BankEstateElevationRequestOutcome,
 ) -> Result<(), EstateCommandCertificationDenial> {
     match outcome {
-        BankEstateElevationRequestOutcome::Requested(_)
-        | BankEstateElevationRequestOutcome::AlreadyRequested(_) => Ok(()),
+        BankEstateElevationRequestOutcome::Requested(_) => Ok(()),
         stopped => Err(EstateCommandCertificationDenial::Stopped(Box::new(
             EstateCommandStoppedOutcome::ElevationRequest(stopped),
         ))),
@@ -268,8 +266,7 @@ fn requested_receipt(
     outcome: BankEstateElevationRequestOutcome,
 ) -> Result<BankRequestedEstateElevation, Box<BankEstateElevationRequestOutcome>> {
     match outcome {
-        BankEstateElevationRequestOutcome::Requested(receipt)
-        | BankEstateElevationRequestOutcome::AlreadyRequested(receipt) => Ok(receipt),
+        BankEstateElevationRequestOutcome::Requested(receipt) => Ok(receipt),
         stopped => Err(Box::new(stopped)),
     }
 }
@@ -278,8 +275,7 @@ fn approved_receipt(
     outcome: BankEstateElevationApprovalOutcome,
 ) -> Result<BankApprovedEstateElevation, Box<BankEstateElevationApprovalOutcome>> {
     match outcome {
-        BankEstateElevationApprovalOutcome::Approved(receipt)
-        | BankEstateElevationApprovalOutcome::AlreadyApproved(receipt) => Ok(receipt),
+        BankEstateElevationApprovalOutcome::Approved(receipt) => Ok(receipt),
         stopped => Err(Box::new(stopped)),
     }
 }
@@ -288,8 +284,7 @@ fn mandatory_review_receipt(
     outcome: BankEstateElevationCloseOutcome,
 ) -> Result<BankEstateMandatoryReview, Box<BankEstateElevationCloseOutcome>> {
     match outcome {
-        BankEstateElevationCloseOutcome::Closed(receipt)
-        | BankEstateElevationCloseOutcome::AlreadyClosed(receipt) => Ok(receipt),
+        BankEstateElevationCloseOutcome::Closed(receipt) => Ok(receipt),
         stopped => Err(Box::new(stopped)),
     }
 }
@@ -300,9 +295,6 @@ fn reviewed_outcome(
     match outcome {
         BankEstateMandatoryReviewOutcome::Reviewed(receipt) => {
             EstateLifecycleProgressionOutcome::Reviewed(Box::new(receipt))
-        }
-        BankEstateMandatoryReviewOutcome::AlreadyReviewed(receipt) => {
-            EstateLifecycleProgressionOutcome::AlreadyReviewed(Box::new(receipt))
         }
         stopped => EstateLifecycleProgressionOutcome::ReviewStopped(Box::new(stopped)),
     }

@@ -4,7 +4,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDeferred, WorthQueryElevationApprovalOutcome,
     WorthQueryElevationCloseOutcome, WorthQueryElevationRequestOutcome,
     WorthQueryMandatoryReviewOutcome, WorthQueryProductStaleApplication,
-    WorthQueryProductUnpublishedApplication,
+    WorthQueryProductUnpublishedApplication, WorthQueryRecoveredApplicationCommitReceipt,
 };
 use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
@@ -28,7 +28,7 @@ pub enum BankEstateElevationRequestOutcome {
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
     NoEffect(WorthQueryApplicationNoEffectCause),
     Requested(BankRequestedEstateElevation),
-    AlreadyRequested(BankRequestedEstateElevation),
+    RecoveredCommitted(WorthQueryRecoveredApplicationCommitReceipt),
     Stale {
         stale_fact_count: usize,
     },
@@ -62,7 +62,10 @@ pub enum BankEstateElevationApprovalOutcome {
         BankRequestedEstateElevation,
     ),
     Approved(BankApprovedEstateElevation),
-    AlreadyApproved(BankApprovedEstateElevation),
+    RecoveredCommitted {
+        receipt: WorthQueryRecoveredApplicationCommitReceipt,
+        requested: BankRequestedEstateElevation,
+    },
     Stale {
         stale_fact_count: usize,
         requested: BankRequestedEstateElevation,
@@ -98,7 +101,10 @@ pub enum BankEstateElevationCloseOutcome {
         BankApprovedEstateElevation,
     ),
     Closed(BankEstateMandatoryReview),
-    AlreadyClosed(BankEstateMandatoryReview),
+    RecoveredCommitted {
+        receipt: WorthQueryRecoveredApplicationCommitReceipt,
+        approved: BankApprovedEstateElevation,
+    },
     Stale {
         stale_fact_count: usize,
         approved: BankApprovedEstateElevation,
@@ -131,7 +137,10 @@ pub enum BankEstateMandatoryReviewOutcome {
         BankEstateMandatoryReview,
     ),
     Reviewed(BankReviewedEstateElevation),
-    AlreadyReviewed(BankReviewedEstateElevation),
+    RecoveredCommitted {
+        receipt: WorthQueryRecoveredApplicationCommitReceipt,
+        mandatory: BankEstateMandatoryReview,
+    },
     Stale {
         stale_fact_count: usize,
         mandatory: BankEstateMandatoryReview,
@@ -170,8 +179,8 @@ impl BankEstateElevationRequestOutcome {
             WorthQueryElevationRequestOutcome::Requested(value) => {
                 Self::Requested(BankRequestedEstateElevation::from_query(value))
             }
-            WorthQueryElevationRequestOutcome::AlreadyRequested(value) => {
-                Self::AlreadyRequested(BankRequestedEstateElevation::from_query(value))
+            WorthQueryElevationRequestOutcome::RecoveredCommitted(value) => {
+                Self::RecoveredCommitted(value)
             }
             WorthQueryElevationRequestOutcome::Stale(stale) => Self::Stale {
                 stale_fact_count: stale.stale_fact_count(),
@@ -214,8 +223,11 @@ impl BankEstateElevationApprovalOutcome {
             WorthQueryElevationApprovalOutcome::Approved(value) => {
                 Self::Approved(BankApprovedEstateElevation::from_query(value))
             }
-            WorthQueryElevationApprovalOutcome::AlreadyApproved(value) => {
-                Self::AlreadyApproved(BankApprovedEstateElevation::from_query(value))
+            WorthQueryElevationApprovalOutcome::RecoveredCommitted { receipt, requested } => {
+                Self::RecoveredCommitted {
+                    receipt,
+                    requested: BankRequestedEstateElevation::from_query(requested),
+                }
             }
             WorthQueryElevationApprovalOutcome::Stale(stale, requested) => Self::Stale {
                 stale_fact_count: stale.stale_fact_count(),
@@ -264,8 +276,11 @@ impl BankEstateElevationCloseOutcome {
             WorthQueryElevationCloseOutcome::Closed(value) => {
                 Self::Closed(BankEstateMandatoryReview::from_query(value))
             }
-            WorthQueryElevationCloseOutcome::AlreadyClosed(value) => {
-                Self::AlreadyClosed(BankEstateMandatoryReview::from_query(value))
+            WorthQueryElevationCloseOutcome::RecoveredCommitted { receipt, approved } => {
+                Self::RecoveredCommitted {
+                    receipt,
+                    approved: BankApprovedEstateElevation::from_query(approved),
+                }
             }
             WorthQueryElevationCloseOutcome::Stale(stale, approved) => Self::Stale {
                 stale_fact_count: stale.stale_fact_count(),
@@ -314,8 +329,11 @@ impl BankEstateMandatoryReviewOutcome {
             WorthQueryMandatoryReviewOutcome::Reviewed(value) => {
                 Self::Reviewed(BankReviewedEstateElevation::from_query(value))
             }
-            WorthQueryMandatoryReviewOutcome::AlreadyReviewed(value) => {
-                Self::AlreadyReviewed(BankReviewedEstateElevation::from_query(value))
+            WorthQueryMandatoryReviewOutcome::RecoveredCommitted { receipt, mandatory } => {
+                Self::RecoveredCommitted {
+                    receipt,
+                    mandatory: BankEstateMandatoryReview::from_query(mandatory),
+                }
             }
             WorthQueryMandatoryReviewOutcome::Stale(stale, mandatory) => Self::Stale {
                 stale_fact_count: stale.stale_fact_count(),

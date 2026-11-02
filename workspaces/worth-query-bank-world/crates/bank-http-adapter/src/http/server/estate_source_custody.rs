@@ -6,7 +6,8 @@
 use super::super::protocol::{BankHttpDenial, BankHttpMutationOutcome};
 use bank_domain::schema::{BankSchema, DisburseEstate, NotifyEstateDeath};
 use bank_server::{
-    BankApplication, BankCommitReceipt, DeathNotificationAction, EstateDisbursementAction,
+    BankApplication, BankClosedSourceCompletion, BankCommitReceipt, DeathNotificationAction,
+    EstateDisbursementAction,
 };
 use worth_query_host::facade::{
     application_entry::*, declaration::application_program::ApplicationSourceCompletion,
@@ -41,7 +42,8 @@ macro_rules! custody {
                     ApplicationSourceCompletion,
                 >,
             ),
-            Closed(BankCommitReceipt),
+            Closed(BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult>),
+            ClosedWithoutCompletion(WorthQueryClosedOperation),
         }
         impl $name {
             fn advance(
@@ -83,40 +85,78 @@ macro_rules! custody {
             fn close(
                 self,
                 request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
-            ) -> Result<Option<BankCommitReceipt>, (Self, BankHttpDenial)> {
+            ) -> Result<Self, (Self, BankHttpDenial)> {
                 match self {
                     Self::Completed(owner) => owner
                         .close_with_evidence(request)
-                        .map(|evidence| Some(BankCommitReceipt::from_closed_source(evidence)))
+                        .map(|closed| Self::Closed(BankClosedSourceCompletion::from_query(closed)))
                         .map_err(|(owner, denial)| {
                             (
                                 Self::Completed(owner),
                                 super::mutation_refusal::close_denial(denial),
                             )
                         }),
-                    Self::Active(owner) => {
-                        owner
-                            .close(request)
-                            .map(|_| None)
-                            .map_err(|(owner, denial)| {
-                                (
-                                    Self::Active(owner),
-                                    super::mutation_refusal::close_denial(denial),
-                                )
-                            })
+                    Self::Active(owner) => owner
+                        .close(request)
+                        .map(Self::ClosedWithoutCompletion)
+                        .map_err(|(owner, denial)| {
+                            (
+                                Self::Active(owner),
+                                super::mutation_refusal::close_denial(denial),
+                            )
+                        }),
+                    Self::Terminal(owner) => owner
+                        .close(request)
+                        .map(Self::ClosedWithoutCompletion)
+                        .map_err(|(owner, denial)| {
+                            (
+                                Self::Terminal(owner),
+                                super::mutation_refusal::close_denial(denial),
+                            )
+                        }),
+                    closed @ (Self::Closed(_) | Self::ClosedWithoutCompletion(_)) => Ok(closed),
+                }
+            }
+            fn take_closed(
+                self,
+            ) -> Result<
+                super::closed_source_evidence::ClosedSourceEvidence<
+                    super::closed_source_evidence::SourceResult<$input>,
+                >,
+                Self,
+            > {
+                match self {
+                    Self::Closed(owner) => {
+                        Ok(super::closed_source_evidence::ClosedSourceEvidence::Completion(owner))
                     }
-                    Self::Terminal(owner) => {
-                        owner
-                            .close(request)
-                            .map(|_| None)
-                            .map_err(|(owner, denial)| {
-                                (
-                                    Self::Terminal(owner),
-                                    super::mutation_refusal::close_denial(denial),
-                                )
-                            })
+                    Self::ClosedWithoutCompletion(owner) => Ok(
+                        super::closed_source_evidence::ClosedSourceEvidence::WithoutCompletion(
+                            owner,
+                        ),
+                    ),
+                    owner @ (Self::Active(_) | Self::Completed(_) | Self::Terminal(_)) => {
+                        Err(owner)
                     }
-                    Self::Closed(receipt) => Ok(Some(receipt)),
+                }
+            }
+            fn close_evidence(&self) -> Option<&WorthQueryClosedOperation> {
+                match self {
+                    Self::Closed(owner) => Some(owner.closed()),
+                    Self::ClosedWithoutCompletion(owner) => Some(owner),
+                    Self::Active(_) | Self::Completed(_) | Self::Terminal(_) => None,
+                }
+            }
+            fn close_evidence_mut(&mut self) -> Option<&mut WorthQueryClosedOperation> {
+                match self {
+                    Self::Closed(owner) => Some(owner.closed_mut()),
+                    Self::ClosedWithoutCompletion(owner) => Some(owner),
+                    Self::Active(_) | Self::Completed(_) | Self::Terminal(_) => None,
+                }
+            }
+            fn live_receipt(&self) -> Option<&BankCommitReceipt> {
+                match self {
+                    Self::Closed(closed) => closed.live_receipt(),
+                    _ => None,
                 }
             }
             fn cleanup_failure(
@@ -154,6 +194,14 @@ macro_rules! custody {
                     },
                     Self::Completed(owner) => {
                         let (receipt, recovered) = match owner.evidence() {
+                            WorthQuerySourceCompletion::Recorded { receipt, .. } => {
+                                return BankHttpMutationOutcome::Recorded {
+                                    request_id,
+                                    custody_id,
+                                    sequence,
+                                    commit: super::mutation_custody::describe_recorded(receipt),
+                                }
+                            }
                             WorthQuerySourceCompletion::Fresh { receipt, .. } => (receipt, false),
                             WorthQuerySourceCompletion::Recovered { receipt, .. } => {
                                 (receipt, true)
@@ -168,11 +216,28 @@ macro_rules! custody {
                             source: receipt.correction_source().coordinates().into(),
                         }
                     }
-                    Self::Closed(receipt) => BankHttpMutationOutcome::AwaitingRailHandoff {
+                    Self::Closed(closed) => match closed.live_receipt() {
+                        Some(receipt) => BankHttpMutationOutcome::AwaitingRailHandoff {
+                            request_id,
+                            custody_id,
+                            sequence,
+                            commit: super::recovery_executor::outcome::commit_description(receipt),
+                        },
+                        None => BankHttpMutationOutcome::Recorded {
+                            request_id,
+                            custody_id,
+                            sequence,
+                            commit: super::mutation_custody::describe_recorded(
+                                closed
+                                    .recorded_receipt()
+                                    .expect("closed completion retains live or recorded evidence"),
+                            ),
+                        },
+                    },
+                    Self::ClosedWithoutCompletion(_) => BankHttpMutationOutcome::Closed {
                         request_id,
                         custody_id,
                         sequence,
-                        commit: super::recovery_executor::outcome::commit_description(receipt),
                     },
                 }
             }
@@ -194,6 +259,35 @@ pub(super) enum EstateSourceCustody {
     Disbursement(DisbursementCustody),
 }
 impl EstateSourceCustody {
+    pub(super) fn take_closed(
+        self,
+    ) -> Result<super::closed_mutation_estate::ClosedMutationEstate, Self> {
+        use super::closed_mutation_estate::ClosedMutationEstate;
+        match self {
+            Self::Notification(owner) => owner
+                .take_closed()
+                .map(ClosedMutationEstate::Notification)
+                .map_err(Self::Notification),
+            Self::Disbursement(owner) => owner
+                .take_closed()
+                .map(ClosedMutationEstate::Disbursement)
+                .map_err(Self::Disbursement),
+        }
+    }
+
+    pub(super) fn close_evidence(&self) -> Option<&WorthQueryClosedOperation> {
+        match self {
+            Self::Notification(owner) => owner.close_evidence(),
+            Self::Disbursement(owner) => owner.close_evidence(),
+        }
+    }
+    pub(super) fn close_evidence_mut(&mut self) -> Option<&mut WorthQueryClosedOperation> {
+        match self {
+            Self::Notification(owner) => owner.close_evidence_mut(),
+            Self::Disbursement(owner) => owner.close_evidence_mut(),
+        }
+    }
+
     pub(super) fn advance(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
@@ -221,28 +315,22 @@ impl EstateSourceCustody {
     pub(super) fn close(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
-    ) -> Result<Option<BankCommitReceipt>, (Self, BankHttpDenial)> {
+    ) -> Result<Self, (Self, BankHttpDenial)> {
         match self {
             Self::Notification(owner) => owner
                 .close(request)
+                .map(Self::Notification)
                 .map_err(|(owner, denial)| (Self::Notification(owner), denial)),
             Self::Disbursement(owner) => owner
                 .close(request)
+                .map(Self::Disbursement)
                 .map_err(|(owner, denial)| (Self::Disbursement(owner), denial)),
         }
     }
-    pub(super) fn retain_closed(
-        receipt: BankCommitReceipt,
-        action: bank_domain::estate::EstateAction,
-    ) -> Self {
-        match action {
-            bank_domain::estate::EstateAction::NotifyDeath { .. } => {
-                Self::Notification(NotificationCustody::Closed(receipt))
-            }
-            bank_domain::estate::EstateAction::DisburseEstate(_) => {
-                Self::Disbursement(DisbursementCustody::Closed(receipt))
-            }
-            _ => unreachable!("estate source binding"),
+    pub(super) fn live_receipt(&self) -> Option<&BankCommitReceipt> {
+        match self {
+            Self::Notification(owner) => owner.live_receipt(),
+            Self::Disbursement(owner) => owner.live_receipt(),
         }
     }
     pub(super) fn describe(
@@ -261,6 +349,7 @@ pub(super) struct EstateSourceRecord {
     pub(super) owner: super::authenticated_owner::BankHttpAuthenticatedOwner,
     pub(super) sequence: u64,
     pub(super) custody: EstateSourceCustody,
+    pub(super) released_cleanup: Option<WorthQueryOperationCleanupReceipt>,
     pub(super) key: bank_domain::proposals::BankIdempotencyKey,
     pub(super) action: bank_domain::estate::EstateAction,
     pub(super) registry:

@@ -7,7 +7,10 @@ fn a_duplicate_acknowledgement_never_advances_the_posture_twice() {
         .transport
         .under(FaultScript::DuplicateAcknowledgement, PATIENT);
     let binding = idempotency(45);
-    let receipt = world.commit_with(binding.clone());
+    let receipt_closed = world.commit_with(binding.clone());
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let posture = receipt
         .external_dispatch_posture()
         .expect("the declared effect must be dispatched");
@@ -16,14 +19,14 @@ fn a_duplicate_acknowledgement_never_advances_the_posture_twice() {
         Some(WorthQueryPublishedExternalEffectFailure::DuplicatedAcknowledgement)
     );
 
-    let (recovered, fresh) = world.notify(binding);
+    let recovered = world.notify(binding);
     assert!(
-        !fresh,
+        recovered.recorded_receipt().is_some(),
         "native recovered evidence, no original handler result"
     );
-    publication_assertions::assert_recovered_commit_axes(&receipt, &recovered);
+    publication_assertions::assert_recovered_commit_axes(&receipt_closed, &recovered);
     assert!(
-        recovered.external_dispatch_posture().is_none(),
+        recovered.live_receipt().is_none(),
         "a recovered commit re-runs no dispatch and invents no posture"
     );
     assert_eq!(

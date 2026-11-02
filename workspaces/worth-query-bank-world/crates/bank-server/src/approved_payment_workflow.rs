@@ -66,8 +66,8 @@ pub struct BankApprovedPaymentPerformedOperation {
 #[derive(Debug)]
 pub enum BankApprovedPaymentApplyOutcome {
     Performed(BankApprovedPaymentPerformedOperation),
-    PreviouslyCommitted(
-        worth_query_host::facade::primary_graph::WorthQueryHistoricalApplicationCommit,
+    RecoveredCommitted(
+        worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
     ),
     IdempotencyIntentDrift,
     DomainDenied(BankProposalDenial),

@@ -47,7 +47,7 @@ World occurrence; process evidence supplies no receipt fields. The receipt
 preserves Native meaning, old/new product references, original publication
 attempt, intent, outcome, emissions, output settlement, outbox and causality.
 It contains no live output capability or reconstructed Rust handler result.
-Use `recovered_receipt()` for that data and a fresh query for current state.
+Use `recovered_receipt()` for that data and a fresh query for current state. Memory-only receipt heads remain explicitly memory scoped; their Native frame coordinates do not prove durable backing.
 A changed intent or foreign product affinity refuses before handler execution.
 Durable binding rows restore the outcome identity frontier before a new key can
 commit. Malformed or duplicate bindings return owning opening refusal.

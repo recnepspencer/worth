@@ -55,3 +55,41 @@ impl CapabilityFixture {
             .collect()
     }
 }
+
+impl CapabilityFixture {
+    pub(in crate::estate_capability_admission) fn lifecycle_original(
+        &self,
+        principal: &BankAuthenticatedPrincipal,
+        action: bank_domain::estate::EstateAction,
+        key: &bank_domain::proposals::BankIdempotencyKey,
+        scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+    ) -> worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt {
+        use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution as Resolution;
+        match self
+            .runtime
+            .observe_estate_lifecycle_idempotency(principal, action, key, scope)
+            .unwrap()
+        {
+            Resolution::RecoveredCommitted(receipt) => receipt,
+            other @ (Resolution::Unseen
+            | Resolution::IntentDrift
+            | Resolution::ProductPreparationPending(_)) => {
+                panic!("the original lifecycle key must resolve to data only: {other:?}")
+            }
+        }
+    }
+    pub(in crate::estate_capability_admission) fn lifecycle_head(
+        &self,
+        principal: &BankAuthenticatedPrincipal,
+        scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+    ) -> u64 {
+        self.runtime
+            .with_application_advancement(scope, |phase| {
+                self.runtime.request(principal, scope).retain_read(&phase)
+            })
+            .unwrap()
+            .unwrap()
+            .selected_commit()
+            .ordinal()
+    }
+}

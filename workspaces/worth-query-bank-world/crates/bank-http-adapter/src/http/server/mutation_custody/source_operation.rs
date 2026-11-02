@@ -36,6 +36,10 @@ macro_rules! custody {
                     $mode,
                 >,
             ),
+            Closed(bank_server::BankClosedSourceCompletion<
+                <<$input as worth_query_host::facade::declaration::application_operation::ApplicationMutationIntent<BankSchema>>::Binding as worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding<BankSchema>>::Result
+            >),
+            ClosedWithoutCompletion(WorthQueryClosedOperation),
         }
         impl $state {
             fn advance(
@@ -64,12 +68,12 @@ macro_rules! custody {
             fn close(
                 self,
                 request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
-            ) -> Result<(), (Self, BankHttpDenial)> {
+            ) -> Result<Self, (Self, BankHttpDenial)> {
                 match self {
                     Self::Active(operation) => {
                         operation
                             .close(request)
-                            .map(|_| ())
+                            .map(Self::ClosedWithoutCompletion)
                             .map_err(|(owner, denial)| {
                                 (
                                     Self::Active(owner),
@@ -79,8 +83,8 @@ macro_rules! custody {
                     }
                     Self::Completed(operation) => {
                         operation
-                            .close(request)
-                            .map(|_| ())
+                            .close_with_evidence(request)
+                            .map(|closed| Self::Closed(bank_server::BankClosedSourceCompletion::from_query(closed)))
                             .map_err(|(owner, denial)| {
                                 (
                                     Self::Completed(owner),
@@ -91,7 +95,7 @@ macro_rules! custody {
                     Self::Terminal(operation) => {
                         operation
                             .close(request)
-                            .map(|_| ())
+                            .map(Self::ClosedWithoutCompletion)
                             .map_err(|(owner, denial)| {
                                 (
                                     Self::Terminal(owner),
@@ -99,6 +103,7 @@ macro_rules! custody {
                                 )
                             })
                     }
+                    closed @ (Self::Closed(_) | Self::ClosedWithoutCompletion(_)) => Ok(closed),
                 }
             }
             fn release_cleanup(
@@ -108,7 +113,7 @@ macro_rules! custody {
                 match self {
                     Self::Active(operation) => operation.release_cleanup(request),
                     Self::Terminal(operation) => operation.release_cleanup(request),
-                    Self::Completed(_) => {
+                    Self::Completed(_) | Self::Closed(_) | Self::ClosedWithoutCompletion(_) => {
                         return Err(super::mutation_refusal::denial(
                             super::super::protocol::BankHttpDenialKind::Stale,
                         ))
@@ -116,11 +121,33 @@ macro_rules! custody {
                 }
                 .map_err(super::mutation_refusal::close_denial)
             }
+            fn take_closed(self) -> Result<super::closed_source_evidence::ClosedSourceEvidence<<<$input as worth_query_host::facade::declaration::application_operation::ApplicationMutationIntent<BankSchema>>::Binding as worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding<BankSchema>>::Result>, Self> {
+                match self {
+                    Self::Closed(owner) => Ok(super::closed_source_evidence::ClosedSourceEvidence::Completion(owner)),
+                    Self::ClosedWithoutCompletion(owner) => Ok(super::closed_source_evidence::ClosedSourceEvidence::WithoutCompletion(owner)),
+                    owner @ (Self::Active(_) | Self::Completed(_) | Self::Terminal(_)) => Err(owner),
+                }
+            }
+            fn close_evidence(&self) -> Option<&WorthQueryClosedOperation> {
+                match self {
+                    Self::Closed(owner) => Some(owner.closed()),
+                    Self::ClosedWithoutCompletion(owner) => Some(owner),
+                    Self::Active(_) | Self::Completed(_) | Self::Terminal(_) => None,
+                }
+            }
+            fn close_evidence_mut(&mut self) -> Option<&mut WorthQueryClosedOperation> {
+                match self {
+                    Self::Closed(owner) => Some(owner.closed_mut()),
+                    Self::ClosedWithoutCompletion(owner) => Some(owner),
+                    Self::Active(_) | Self::Completed(_) | Self::Terminal(_) => None,
+                }
+            }
             fn observation(&self) -> Option<&WorthQueryApplicationReadObservation> {
                 match self {
                     Self::Completed(operation) => match operation.evidence() {
                         WorthQuerySourceCompletion::Fresh { retained, .. }
-                        | WorthQuerySourceCompletion::Recovered { retained, .. } => {
+                        | WorthQuerySourceCompletion::Recovered { retained, .. }
+                        | WorthQuerySourceCompletion::Recorded { retained, .. } => {
                             retained.as_ref()
                         }
                     },
@@ -136,8 +163,10 @@ macro_rules! custody {
                             .map(super::cleanup_description::failure),
                     ),
                     Self::Terminal(_) => CustodyDescription::Terminal,
+                    Self::Closed(_) | Self::ClosedWithoutCompletion(_) => CustodyDescription::Closed,
                     Self::Completed(operation) => {
                         let (receipt, recovered) = match operation.evidence() {
+                            WorthQuerySourceCompletion::Recorded { receipt, .. } => return CustodyDescription::Recorded(super::mutation_custody::describe_recorded(receipt)),
                             WorthQuerySourceCompletion::Fresh { receipt, .. } => (receipt, false),
                             WorthQuerySourceCompletion::Recovered { receipt, .. } => {
                                 (receipt, true)

@@ -9,7 +9,7 @@ fn public_progression_disburses_through_a_distinct_authoritative_journal() {
     let fixture = disbursement_world("estate-disbursement-commit", 1_000);
     let specialist = fixture.authenticate_actor();
     let key = idempotency(11);
-    let outcome = {
+    let outcome_closed = {
         let closing_actor = &specialist;
         let closing_scope = worth_query_bank_testkit_server::facade::support::request_scope();
         let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
@@ -23,11 +23,14 @@ fn public_progression_disburses_through_a_distinct_authoritative_journal() {
             done.evidence(),
             worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
         ));
-        bank_server::BankCommitReceipt::from_closed_source(
+        bank_server::BankClosedSourceCompletion::from_query(
             done.close_with_evidence(&closing_request)
                 .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
         )
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
     let receipt = outcome;
 
     assert_eq!(receipt.emitted_effect_count(), 2);
@@ -38,7 +41,7 @@ fn public_progression_disburses_through_a_distinct_authoritative_journal() {
     );
     assert_admission_derives_the_request_identities_once(&receipt);
     assert_authoritative_activity(&fixture);
-    assert_equivalent_retry(&fixture, &specialist, &key, &receipt);
+    assert_equivalent_retry(&fixture, &specialist, &key, &outcome_closed);
 }
 
 #[test]
@@ -47,7 +50,7 @@ fn idempotency_rejects_a_different_authorized_disbursement_input() {
     let specialist = fixture.authenticate_actor();
     let key = idempotency(31);
     let action = fixture.action(250);
-    let committed = {
+    let committed_closed = {
         let closing_actor = &specialist;
         let closing_scope = worth_query_bank_testkit_server::facade::support::request_scope();
         let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
@@ -61,11 +64,14 @@ fn idempotency_rejects_a_different_authorized_disbursement_input() {
             done.evidence(),
             worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
         ));
-        bank_server::BankCommitReceipt::from_closed_source(
+        bank_server::BankClosedSourceCompletion::from_query(
             done.close_with_evidence(&closing_request)
                 .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
         )
     };
+    let committed = committed_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
     assert!(committed.changed_record_count() > 0);
 
     let _drift = {

@@ -1,3 +1,4 @@
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 use std::{cell::Cell, time::Duration};
 
 use bank_domain::proposals::BankIdempotencyKey;
@@ -22,7 +23,7 @@ use super::{
 };
 use crate::{
     queries, BankApplicationQueryDenial, BankApprovedEstateElevation, BankAuthenticatedPrincipal,
-    BankMutationCommitOutcome, BankReadControls,
+    BankReadControls,
 };
 
 type GovernanceResult =
@@ -310,7 +311,7 @@ fn revoke_exact_support(
                         &request_scope(),
                     )
                     .expect("the exact support revocation should execute after query admission");
-                assert!(matches!(outcome, BankMutationCommitOutcome::Committed(_)));
+                assert!(matches!(outcome, CommandCourtOutcome::Committed(_)));
             })
             .join()
             .expect("the concurrent revocation caller completes");

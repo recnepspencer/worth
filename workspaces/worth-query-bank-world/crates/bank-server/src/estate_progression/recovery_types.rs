@@ -108,7 +108,9 @@ pub enum BankRecoveryIdempotencyResolution {
         worth_query_host::facade::primary_graph::WorthQueryProductPreparationPending,
     ),
     Unseen,
-    AlreadyCommitted,
+    RecoveredCommitted(
+        worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    ),
     IntentDrift,
 }
 
@@ -235,8 +237,8 @@ pub(super) fn map_idempotency(
         WorthQueryApplicationIdempotencyResolution::Unseen => {
             BankRecoveryIdempotencyResolution::Unseen
         }
-        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_) => {
-            BankRecoveryIdempotencyResolution::AlreadyCommitted
+        WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+            BankRecoveryIdempotencyResolution::RecoveredCommitted(receipt)
         }
         WorthQueryApplicationIdempotencyResolution::IntentDrift => {
             BankRecoveryIdempotencyResolution::IntentDrift

@@ -1,5 +1,5 @@
 //! Certification-only fault and occupancy controls over the installed Bank
-//! runtime. Each control is a verb or a count: none returns a Query runtime,
+//! runtime. Controls expose counts, faults or their owned scheduling guard; none returns a Query runtime,
 //! so no caller can redeem a commit receipt through them.
 
 // Certification-only faults/backstops: only the sealed *_for_test doors arm
@@ -62,5 +62,21 @@ impl BankIdentityRuntime {
     #[doc(hidden)]
     pub fn account_index_work_for_test(&self) -> (usize, usize, usize) {
         self.account_index_work.snapshot()
+    }
+}
+
+impl BankIdentityRuntime {
+    /// Schedules the actual receiver's next managed cleanup on a foreign worker.
+    /// The guard grants no business result or substitute cleanup owner.
+    #[doc(hidden)]
+    pub fn schedule_next_managed_cleanup_on_worker_for_test(
+        &self,
+    ) -> Result<
+        worth_query_host::facade::primary_graph::WorthQueryManagedCleanupScheduleForTest,
+        worth_query_host::facade::primary_graph::WorthQueryManagedCleanupRegistrationDenial,
+    > {
+        self.application_program()
+            .runtime()
+            .schedule_next_managed_cleanup_on_worker_for_test()
     }
 }

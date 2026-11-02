@@ -222,7 +222,11 @@ impl WorthQueryApprovedElevation {
 /// can be committed again.
 #[derive(Debug)]
 pub enum WorthQueryElevationApprovalOutcome {
-    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
+    /// Immutable original meaning plus the exact predecessor supplied by this call.
+    RecoveredCommitted {
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+        requested: WorthQueryRequestedElevation,
+    },
     CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
@@ -269,7 +273,10 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
 ) -> WorthQueryElevationApprovalOutcome {
     match outcome {
         WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
-            WorthQueryElevationApprovalOutcome::RecoveredCommitted(receipt)
+            WorthQueryElevationApprovalOutcome::RecoveredCommitted {
+                receipt,
+                requested: binding.into_requested(),
+            }
         }
         WorthQueryApplicationCommitOutcome::Committed(commit) => {
             WorthQueryElevationApprovalOutcome::Approved(approved(binding, commit))

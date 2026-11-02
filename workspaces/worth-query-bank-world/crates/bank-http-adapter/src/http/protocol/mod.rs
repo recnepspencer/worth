@@ -44,6 +44,7 @@ pub use mutation::{
     BankHttpMutationControls, BankHttpMutationOperation, BankHttpMutationOutcome,
     BankHttpMutationPosture, BankHttpMutationReadControls, BankHttpMutationRequest,
     BankHttpNativeCleanupDescription, BankHttpNativeCleanupFailureDescription,
+    BankHttpRecordedCommitDescription,
 };
 pub use query_publication::{
     BankHttpQueryBasis, BankHttpQueryBasisPosture, BankHttpQueryCapabilityPurpose,

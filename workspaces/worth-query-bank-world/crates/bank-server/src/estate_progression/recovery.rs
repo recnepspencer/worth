@@ -18,6 +18,7 @@ use super::{
 };
 use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 
+mod cleanup_dispatch;
 mod handle_lifecycle;
 
 impl BankIdentityRuntime {
