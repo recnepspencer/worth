@@ -279,6 +279,24 @@ includes a passing capability example and an undeclared-member compile refusal.
 ---
 
 
+### Inline opaque values
+
+`ScalarAspectType::InlineBytes` carries one opaque inline atom. Its immutable
+`InlineBytes` carrier admits at most **4,294,967,290 payload bytes**
+(`u32::MAX - 5`). The existing native scalar frame uses a 32-bit body length;
+one tag byte and four payload-length bytes occupy the remaining five bytes.
+This is a framing limit, not a recommended allocation or an execution grant.
+`InlineBytes::admit_length` and `try_new` return `InlineBytesLengthDenial`
+above that limit, before the value can enter a mutation. Wire readers check
+the declared length before copying its payload, and serde preserves the same
+invariant. Binding-specific representation bounds and the original request's
+work, cancellation and memory limits still apply.
+
+The scalar carries no domain ordering, comparison or indexing hooks. Byte
+identity serves digests and change detection. The owner remains responsible
+for canonical encoding, domain admission, and terminal rendering. Independently
+editable objects and graph references belong in entities and relations.
+
 ### Canonical nested values and derived readiness
 
 A pure value owner can derive `worth_foundational::facade::WorthValue` to emit

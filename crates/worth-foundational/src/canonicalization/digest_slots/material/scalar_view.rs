@@ -56,6 +56,7 @@ pub(super) enum CanonicalScalarView<'a> {
     },
     UuidBytes(&'a [u8; 16]),
     NestedSequence(u32),
+    InlineBytes(&'a [u8]),
 }
 
 impl<'a> From<&'a CanonicalBasisValue> for CanonicalScalarView<'a> {
@@ -109,6 +110,7 @@ impl<'a> From<&'a CanonicalBasisValue> for CanonicalScalarView<'a> {
             },
             CanonicalBasisValue::UuidBytes(value) => Self::UuidBytes(value),
             CanonicalBasisValue::NestedSequence(value) => Self::NestedSequence(*value),
+            CanonicalBasisValue::InlineBytes(value) => Self::InlineBytes(value.as_bytes()),
         }
     }
 }
@@ -183,6 +185,7 @@ impl<'a> From<&'a AspectValue> for CanonicalScalarView<'a> {
                 generation: value.generation.0,
             },
             AspectValue::ContentRef(value) => Self::ContentRefId(value.0),
+            AspectValue::InlineBytes(value) => Self::InlineBytes(value.as_bytes()),
         }
     }
 }

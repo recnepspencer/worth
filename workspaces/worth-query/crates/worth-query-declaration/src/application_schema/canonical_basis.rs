@@ -211,6 +211,7 @@ impl ApplicationSchemaCanonicalBasis {
 fn canonical_value_source_bytes(value: &CanonicalBasisValue) -> u64 {
     use CanonicalBasisValue as Value;
     match value {
+        Value::InlineBytes(value) => u64::from(value.wire_length()),
         Value::Null | Value::Bool(_) => 1,
         Value::SignedInteger { .. }
         | Value::UnsignedInteger { .. }

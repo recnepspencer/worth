@@ -44,6 +44,7 @@ pub(super) enum NativeValue {
     },
     UuidBytes([u8; 16]),
     NestedSequence(u32),
+    InlineBytes(worth_foundational::InlineBytes),
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
@@ -66,6 +67,7 @@ impl TryFrom<&CanonicalBasisValue> for NativeValue {
 
     fn try_from(value: &CanonicalBasisValue) -> Result<Self, Self::Error> {
         Ok(match value {
+            CanonicalBasisValue::InlineBytes(value) => Self::InlineBytes(value.clone()),
             CanonicalBasisValue::Null => Self::Null,
             CanonicalBasisValue::Bool(value) => Self::Bool(*value),
             CanonicalBasisValue::SignedInteger { width, value } => Self::SignedInteger {
@@ -123,6 +125,7 @@ impl TryFrom<NativeValue> for CanonicalBasisValue {
 
     fn try_from(value: NativeValue) -> Result<Self, Self::Error> {
         Ok(match value {
+            NativeValue::InlineBytes(value) => Self::InlineBytes(value),
             NativeValue::Null => Self::Null,
             NativeValue::Bool(value) => Self::Bool(value),
             NativeValue::SignedInteger { width, value } => Self::SignedInteger {

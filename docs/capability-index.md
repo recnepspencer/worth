@@ -208,6 +208,12 @@ propagate stopped-prefix or missing-qualification refusals. Accounted reuse foll
 the original receipt at its work boundary. See
 [persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
 
+Platform scalar owners can carry opaque atoms using `ScalarAspectType::InlineBytes`
+and the immutable `InlineBytes` carrier. Its native framing ceiling is
+4,294,967,290 payload bytes; oversized lengths return `InlineBytesLengthDenial`
+before admission. The carrier supplies no domain comparison or index hooks.
+See [inline opaque values](build-an-application.md#inline-opaque-values).
+
 For nested persisted values, use the existing value-binding macro's
 `scalar: String, canonical,` arm with Query-free
 `WorthValue` derivation. The installed value-binding catalog retains the derived

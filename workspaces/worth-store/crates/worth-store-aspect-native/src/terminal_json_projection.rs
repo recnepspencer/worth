@@ -121,6 +121,11 @@ fn aspect_value_to_terminal_json(
     value: &AspectValue,
 ) -> Result<Value, StoreTerminalProjectionDenial> {
     match value {
+        AspectValue::InlineBytes(_) => Err(
+            StoreTerminalProjectionDenial::UnsupportedTerminalProjectionValue(
+                "inline domain bytes require the owner's terminal projection",
+            ),
+        ),
         AspectValue::Null => Ok(Value::Null),
         AspectValue::Bool(value) => Ok(Value::Bool(*value)),
         AspectValue::Int8(value) => Ok(Number::from(*value).into()),

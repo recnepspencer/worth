@@ -141,6 +141,9 @@ fn canonical_basis_value_text(
     value: &CanonicalBasisValue,
 ) -> Result<String, BridgeCanonicalBasisTextError> {
     Ok(match value {
+        CanonicalBasisValue::InlineBytes(value) => {
+            format!("inline-bytes:{}", hex_octets(value.as_bytes()))
+        }
         CanonicalBasisValue::Null => "null".to_string(),
         CanonicalBasisValue::Bool(value) => format!("bool:{value}"),
         CanonicalBasisValue::SignedInteger { width, value } => {

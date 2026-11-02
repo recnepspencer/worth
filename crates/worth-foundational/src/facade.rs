@@ -693,7 +693,8 @@ pub use crate::values::{
     AggregateIdentity, AggregateLineageKind, AspectValue, CanonicalBigInt, CanonicalDate,
     CanonicalDecimal, CanonicalF32, CanonicalF64, CanonicalRational, CanonicalString,
     CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, ContentRefId, EntityId, Generation,
-    InternedString, LocalSlot, PartitionId, ScalarAspectType, Symbol,
+    InlineBytes, InlineBytesLengthDenial, InternedString, LocalSlot, PartitionId, ScalarAspectType,
+    Symbol,
 };
 
 pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};

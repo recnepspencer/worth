@@ -49,6 +49,7 @@ pub(super) fn scalar_aspect_type_name(value: ScalarAspectType) -> &'static str {
         ScalarAspectType::TimestampTz => "timestamp_tz",
         ScalarAspectType::EntityRef => "entity_ref",
         ScalarAspectType::ContentRef => "content_ref",
+        ScalarAspectType::InlineBytes => "inline_bytes",
     }
 }
 
