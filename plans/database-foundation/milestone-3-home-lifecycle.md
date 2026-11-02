@@ -1987,3 +1987,12 @@ The builder now selects the exact packages and binaries from its existing
 REQUESTS contract. The retained executable and library-signature checks are
 unchanged. The regression verifies that those exact requests, rather than an
 unbounded workspace binary set, determine the independent command.
+
+The scoped prerequisite command projects native feature facts only onto the
+actual normal/build dependency closure of those four executable packages,
+derived from the SAME captured Cargo metadata (with its digest checked before
+use). Native-only application/Relational package feature names are not valid
+Cargo flags for unrelated executable roots. No dev-only or unrelated root is
+added to make a product graph pass. The original shared-library signature guard
+still validates every common observed library; regression controls cover
+unrelated roots, immutable metadata and cached graph drift.

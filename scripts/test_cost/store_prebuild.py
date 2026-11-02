@@ -68,6 +68,31 @@ def require_native(repository, directory):
     return native
 
 
+def executable_features(native, requests=REQUESTS):
+    records = [row for row in native.inputs if Path(row['path']).name == 'cargo-metadata.json']
+    if len(records) != 1:
+        raise NativeFeatureRefusal('one original native Cargo metadata input is required')
+    record = records[0]
+    payload = Path(record['path']).read_bytes()
+    if hashlib.sha256(payload).hexdigest() != record['sha256']:
+        raise NativeFeatureRefusal('native Cargo metadata changed after capture')
+    metadata = json.loads(payload)
+    packages = {row['id']: row for row in metadata['packages']}
+    by_name = {row['name']: row['id'] for row in metadata['packages']}
+    nodes = {row['id']: row for row in metadata['resolve']['nodes']}
+    pending = [by_name[request['package']] for request in requests]
+    reached = set()
+    while pending:
+        identity = pending.pop()
+        if identity in reached:
+            continue
+        reached.add(identity)
+        pending.extend(dep['pkg'] for dep in nodes[identity]['deps']
+                       if any(kind['kind'] != 'dev' for kind in dep['dep_kinds']))
+    names = {packages[identity]['name'] for identity in reached}
+    return tuple(feature for feature in native.features if feature.split('/', 1)[0] in names)
+
+
 def prepare(repository, output_directory, cargo_runner, profile='dev', *, native):
     workspace = Path(repository) / 'workspaces/worth-store'
     output = Path(output_directory)
@@ -82,7 +107,7 @@ def prepare(repository, output_directory, cargo_runner, profile='dev', *, native
                  for argument in ('--bin', binary)]
     result = cargo_runner(['cargo', 'build', *selected, '--locked',
                            '--profile', profile, '--features',
-                           ','.join(native.features),
+                           ','.join(executable_features(native)),
                            '--manifest-path', str(workspace / 'Cargo.toml')],
                           workspace, output / 'executables-build.log')
     if result.returncode:
