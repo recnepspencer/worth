@@ -1,0 +1,46 @@
+//! Public Host admission reaches the actual filesystem mutation lease.
+mod changed_build;
+mod ownership;
+use std::{
+    path::Path,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+};
+use worth_query_host::facade::{
+    application_contribution::with_bootstrap_advancement_from_request,
+    application_installation::ApplicationBuildIdentity, WorthQueryApplicationHome,
+    WorthQueryApplicationHomeOpenRefused,
+};
+use worth_query_testkit_host::facade::host::{application_home as fixture, checkpoint_capture};
+
+type Home = WorthQueryApplicationHome<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>;
+type Refused =
+    WorthQueryApplicationHomeOpenRefused<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>;
+
+fn with_open<R>(
+    path: &Path,
+    build: ApplicationBuildIdentity,
+    initialized: Arc<AtomicUsize>,
+    observe: impl FnOnce(&Result<Home, Refused>) -> R,
+) -> R {
+    let input = fixture::request(
+        path.to_owned(),
+        build,
+        initialized,
+        Arc::new(AtomicUsize::new(0)),
+    );
+    let lease = checkpoint_capture::lease(128 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    with_bootstrap_advancement_from_request(execution, |phase| {
+        // Observe the original result in its opening frame, without moving the
+        // large, concrete refusal custody through additional caller frames.
+        observe(&input.open_in_advancement(&phase))
+    })
+    .unwrap()
+}
+
+fn build() -> ApplicationBuildIdentity {
+    ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap()
+}
