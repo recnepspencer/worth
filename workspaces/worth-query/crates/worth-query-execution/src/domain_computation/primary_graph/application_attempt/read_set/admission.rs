@@ -47,7 +47,7 @@ where
             SourceFacts::Admitted(validate_source_facts(execution, &mut admission, &lease)?);
         Ok(WorthQueryApplicationReadAttempt {
             execution: *execution,
-            value_decode: super::super::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
+            value_decode: crate::domain_computation::primary_graph::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
             admission,
             lease,
             layout: Arc::clone(&graph.layout),
@@ -193,7 +193,7 @@ where
             admitted_source_facts,
             dependent_source_facts,
             admission.operation(),
-            super::retained_decision_facts::StorageControl::new(
+            super::super::retained_decision_facts::StorageControl::new(
                 allocation_policy,
                 Some(admission.publication_request()),
             )
@@ -202,9 +202,10 @@ where
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {
             execution: *execution,
-            value_decode: super::super::value_decode::ValueDecodeState::new(
-                self.installed_schema.value_bindings().clone(),
-            ),
+            value_decode:
+                crate::domain_computation::primary_graph::value_decode::ValueDecodeState::new(
+                    self.installed_schema.value_bindings().clone(),
+                ),
             admission,
             lease,
             layout,
