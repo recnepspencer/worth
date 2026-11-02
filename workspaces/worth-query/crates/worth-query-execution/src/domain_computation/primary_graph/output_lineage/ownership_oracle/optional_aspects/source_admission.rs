@@ -20,7 +20,13 @@ enum Fault {
     Cancelled,
     Input,
 }
-fn check(fault: Fault, pending_entry: bool) {
+#[derive(Clone, Copy)]
+enum Entry {
+    Bind,
+    Prepare,
+    Pending,
+}
+fn check(fault: Fault, entry: Entry) {
     let source = &installation::install::<installation::OptionalSchema>(false);
     type Schema = installation::OptionalSchema;
     let cancellation =
@@ -103,7 +109,7 @@ fn check(fault: Fault, pending_entry: bool) {
                 .into_output_demand_source()
                 .into_single_source()
                 .unwrap();
-            let pending = if pending_entry {
+            let pending = if matches!(entry, Entry::Pending) {
                 Some(
                     source
                         .bind_application_source_expectation::<OrdinaryBinding<Schema>, _>(
@@ -133,16 +139,24 @@ fn check(fault: Fault, pending_entry: bool) {
             let _observation = WorthQueryExecutionObservation::install_on_this_thread();
             fact_work();
             let consults = observe_consults_for_test(|_| {});
-            let outcome = match pending {
-                Some(pending) => pending.consume_into(source, &phase, &mut admission),
-                None => source
-                    .bind_application_source_expectation::<OrdinaryBinding<Schema>, _>(
-                        &phase,
-                        &mut admission,
-                        observed,
-                        &input,
+            let outcome = if matches!(entry, Entry::Prepare) {
+                source
+                    .prepare_application_source_expectation::<OrdinaryBinding<Schema>, _>(
+                        &phase, &admission, observed, &input,
                     )
-                    .map(drop),
+                    .map(drop)
+            } else {
+                match pending {
+                    Some(pending) => pending.consume_into(source, &phase, &mut admission),
+                    None => source
+                        .bind_application_source_expectation::<OrdinaryBinding<Schema>, _>(
+                            &phase,
+                            &mut admission,
+                            observed,
+                            &input,
+                        )
+                        .map(drop),
+                }
             };
             let expected = match fault {
                 Fault::None => {
@@ -167,22 +181,38 @@ fn check(fault: Fault, pending_entry: bool) {
 }
 #[test]
 fn fresh_source_admission_reaches_binding_and_pending_consumption() {
-    for pending in [false, true] {
-        check(Fault::None, pending);
+    for entry in [Entry::Bind, Entry::Prepare, Entry::Pending] {
+        check(Fault::None, entry);
     }
 }
 #[test]
 fn foreign_installed_seal_is_stale_at_source_binding_before_work() {
-    check(Fault::Seal, false);
+    check(Fault::Seal, Entry::Bind);
 }
 #[test]
 fn foreign_installed_seal_is_stale_at_pending_source_consumption_before_work() {
-    check(Fault::Seal, true);
+    check(Fault::Seal, Entry::Pending);
 }
 #[test]
-fn source_binding_checks_type_and_lapse_before_work() {
-    for pending in [false, true] {
-        check(Fault::Input, pending);
-        check(Fault::Cancelled, pending);
+fn source_binding_checks_type_before_work() {
+    for entry in [Entry::Bind, Entry::Prepare, Entry::Pending] {
+        check(Fault::Input, entry);
     }
+}
+
+#[test]
+fn entry_custody_foreign_seal_is_refused_at_source_preparation() {
+    check(Fault::Seal, Entry::Prepare);
+}
+#[test]
+fn entry_custody_lapsed_source_bind_is_refused_before_work() {
+    check(Fault::Cancelled, Entry::Bind);
+}
+#[test]
+fn entry_custody_lapsed_source_prepare_is_refused_before_work() {
+    check(Fault::Cancelled, Entry::Prepare);
+}
+#[test]
+fn entry_custody_lapsed_pending_consume_is_refused_before_work() {
+    check(Fault::Cancelled, Entry::Pending);
 }

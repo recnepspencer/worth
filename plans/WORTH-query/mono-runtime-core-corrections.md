@@ -12,8 +12,11 @@ positions around typed registries; they do not recreate state or authority.
 Exclusive graph authority and source meanings move once from live Option slots;
 shared single-Arc owners retain their existing backing until the correct position.
 Empty BTreeMap/route defaults allocate nothing. All ordinary getters remain loans
-from the same concrete core. Caller input and public Decl/Host signatures stay typed
-and unchanged. No public `'static`, `Send` or `Sync` bound is added.
+from the same concrete core. Caller input and existing typed function parameters
+stay unchanged. The added source authorization refusal is a public API change
+through Decl/Host reexports, even though those facade source files did not change.
+The follow-up makes its kind unit-only and adds the concrete cause reader described
+in the capability index. No public `'static`, `Send` or `Sync` bound is added.
 
 An immutable comparison such as validate_history_execution_predecessor is not a
 live re-entry: it compares carried predecessor proof only, performs no read or
