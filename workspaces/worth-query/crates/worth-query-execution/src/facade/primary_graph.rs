@@ -14,6 +14,7 @@ pub use crate::domain_computation::primary_graph::application_resource::{
 };
 pub use crate::domain_computation::primary_graph::{
     AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
+    RelationalContentRejection,
 };
 pub use managed_index::*;
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.

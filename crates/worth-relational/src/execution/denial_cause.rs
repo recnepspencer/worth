@@ -44,6 +44,8 @@ pub enum RelationalExecutionDenialCause {
     MemoryOverflow,
     /// Independently checked retained content disagrees with its identity.
     ContentInconsistency,
+    /// The exact semantic refusal from Native content readmission.
+    Content(crate::content::RelationalContentRejection),
 }
 
 impl RelationalExecutionDenialCause {

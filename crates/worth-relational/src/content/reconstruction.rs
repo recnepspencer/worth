@@ -16,10 +16,14 @@ pub(super) fn visit_records(
     super::control::run(execution, |control| {
         for partition_id in state.partition_ids_iter() {
             control.checkpoint(1)?;
-            state.demand_head_partition(execution, partition_id).map_err(|cause| ContentDenial::Execution(match cause {
-                crate::storage::residency::RelationalResidencyDemandFailure::Request(cause) => cause,
-                crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(cause) => crate::execution::RelationalExecutionDenialCause::StorageUnavailable(cause),
-            }))?;
+            state
+                .demand_head_partition(execution, partition_id)
+                .map_err(|cause| match cause {
+                    crate::storage::residency::RelationalResidencyDemandFailure::Content(cause) => {
+                        cause
+                    }
+                    cause => ContentDenial::Execution(cause.into()),
+                })?;
             let partition = state
                 .get_current_partition(partition_id)
                 .ok_or(ContentDenial::EncodingInconsistency)?;

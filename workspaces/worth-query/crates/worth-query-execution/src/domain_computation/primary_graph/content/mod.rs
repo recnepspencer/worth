@@ -4,7 +4,7 @@ mod denial;
 pub(in crate::domain_computation::primary_graph) use admitted::read_selected;
 pub use admitted::AdmittedContent;
 pub use denial::{ContentReadDenial, ContentWriteDenial};
-pub use worth_relational::facade::content::RelationalContentDenial;
+pub use worth_relational::facade::content::{RelationalContentDenial, RelationalContentRejection};
 
 mod staging;
 pub(in crate::domain_computation::primary_graph) use staging::{require_contract, ContentStaging};

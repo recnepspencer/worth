@@ -26,6 +26,7 @@ impl From<RelationalExecutionDenialCause> for RelationalRecoveryStop {
     fn from(cause: RelationalExecutionDenialCause) -> Self {
         match cause {
             RelationalExecutionDenialCause::StorageUnavailable(failure) => failure.into(),
+            RelationalExecutionDenialCause::Content(cause) => Self::Content(cause.into()),
             cause => Self::Request(cause),
         }
     }

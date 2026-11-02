@@ -2,6 +2,7 @@ mod content;
 pub(in crate::domain_computation) use content::retention_checkpoint;
 pub use content::{
     AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
+    RelationalContentRejection,
 };
 mod access_strategy;
 mod facade;

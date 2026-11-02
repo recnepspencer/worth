@@ -20,6 +20,9 @@ impl crate::branch::AdmittedRelationalBranchBasis {
         selected
             .demand_full_partition(execution, row.partition_id)
             .map_err(|cause| match cause {
+                crate::storage::residency::RelationalResidencyDemandFailure::Content(cause) => {
+                    cause
+                }
                 crate::storage::residency::RelationalResidencyDemandFailure::Request(cause) => {
                     Denial::Execution(cause)
                 }

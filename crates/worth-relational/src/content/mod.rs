@@ -30,7 +30,7 @@ pub(crate) use source::NativeContentSourceView;
 pub use attachments::RelationalContentAttachments;
 pub use codec::{RelationalContentCodec, RelationalContentSink};
 pub use control::RelationalContentControl;
-pub use denial::RelationalContentDenial;
+pub use denial::{RelationalContentDenial, RelationalContentRejection};
 pub(crate) use directory::ContentDirectory;
 pub use frame::{RelationalContentFrame, RelationalContentRecord};
 pub use registry::{RelationalContentFormat, RelationalContentFormatRegistry};

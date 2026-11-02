@@ -23,6 +23,8 @@ pub enum WorthQueryProviderSessionProtocolStage {
 pub enum WorthQueryProviderSessionDenialKind {
     /// Retained content disagreed with its certified identity.
     ContentInconsistency,
+    /// Exact Native content refusal, distinct from request/resource stops.
+    Content(worth_relational::facade::content::RelationalContentRejection),
     /// The selected root refused the requested projection contract.
     ProjectionContract {
         denial: worth_relational::facade::runtime::RelationalProjectionContractDenial,

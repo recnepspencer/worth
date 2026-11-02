@@ -14,6 +14,20 @@ use worth_relational::facade::{
 fn content_read_keeps_original_execution_stops_out_of_semantic_content_refusal() {
     use WorthQueryApplicationReadExecutionDenialKind as Kind;
     for (cause, expected) in [
+        (
+            Native::Content(
+                worth_relational::facade::content::RelationalContentRejection::SizeLimit {
+                    observed: 103,
+                    maximum: 29,
+                },
+            ),
+            WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(Session::Content(
+                worth_relational::facade::content::RelationalContentRejection::SizeLimit {
+                    observed: 103,
+                    maximum: 29,
+                },
+            )),
+        ),
         (Native::Cancelled, Kind::Cancelled),
         (Native::DeadlineElapsed, Kind::DeadlineExceeded),
         (

@@ -87,6 +87,7 @@ impl From<crate::storage::residency::RelationalResidencyDemandFailure>
     fn from(failure: crate::storage::residency::RelationalResidencyDemandFailure) -> Self {
         use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
         match failure {
+            Failure::Content(cause) => cause.into(),
             Failure::StorageUnavailable(failure) => failure.into(),
             Failure::Request(cause) => Self::Request(cause),
         }

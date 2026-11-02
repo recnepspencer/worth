@@ -248,11 +248,7 @@ impl RelationalCommitEnvelopeResidency {
                         cause: Cause::MemoryExhausted,
                     }
                     .into(),
-                    RelationalRecoveryStop::Content(_) => RelationalStorageUnavailable {
-                        subject: RelationalStorageSubject::Envelope(entry.position),
-                        cause: Cause::Damaged,
-                    }
-                    .into(),
+                    RelationalRecoveryStop::Content(cause) => Failure::Content(cause),
                     RelationalRecoveryStop::Durability(error) => error
                         .storage_unavailable
                         .unwrap_or(RelationalStorageUnavailable {

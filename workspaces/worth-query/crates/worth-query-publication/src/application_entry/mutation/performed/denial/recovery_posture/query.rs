@@ -192,7 +192,7 @@ fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
 fn admission_posture(kind: AdmissionKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
-        AdmissionKind::ExecutionRequest(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency) => Terminal,
+        AdmissionKind::ExecutionRequest(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency | worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(_)) => Terminal,
         AdmissionKind::ExecutionRequest(_) => Retryable,
         AdmissionKind::Cancelled
         | AdmissionKind::DeadlineExceeded
@@ -257,7 +257,7 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::ProjectionInspectionIncomplete
         | ExecutionKind::PredicateIndexUnavailable
         | ExecutionKind::TraversalUnavailable => Retryable,
-        ExecutionKind::ExecutionRequest(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency) => Terminal,
+        ExecutionKind::ExecutionRequest(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency | worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(_)) => Terminal,
         ExecutionKind::ExecutionRequest(_) => Retryable,
         ExecutionKind::Authorization(kind) => authorization_posture(kind),
         ExecutionKind::Content(_)

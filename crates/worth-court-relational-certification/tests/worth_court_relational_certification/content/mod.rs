@@ -5,6 +5,7 @@ mod carried_export;
 mod checkpoint_capture_controls;
 mod checkpoint_controls;
 mod checkpoint_corruption;
+mod cold_envelope;
 mod durable_publication;
 pub(crate) mod expected;
 pub(crate) mod fixture;

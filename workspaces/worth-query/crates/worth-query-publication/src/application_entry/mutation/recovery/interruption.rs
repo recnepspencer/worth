@@ -141,7 +141,8 @@ fn execution_stop(cause: Result<Execution, Control>) -> Option<Denial> {
         Ok(Execution::ExecutionResource { denial, .. }) => Some(Denial::Resource(denial)),
         Ok(Execution::ExecutionNestedPatternStopped { .. }) => Some(Denial::NestedStopped),
         Ok(Execution::ExecutionWorkerPanicked { .. }) => Some(Denial::Panicked),
-        Ok(Execution::ContentInconsistency)
+        Ok(Execution::Content(_))
+        | Ok(Execution::ContentInconsistency)
         | Ok(Execution::ProjectionContract { .. })
         | Ok(Execution::HistoricalVisibility { .. })
         | Ok(Execution::StorageUnavailable(_))
