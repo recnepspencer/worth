@@ -211,43 +211,47 @@ it was refused. The entry now runs checks in this order:
 
 Preparation still repeats both checks. They are pure and do not allocate.
 
-Court: `erased_core_forgery::decision_entry::the_decision_read_entry_refuses_a_foreign_core_before_any_work`.
+Court: `erased_core_forgery::decision_entry`. It runs in its own world,
+`decision_read_world`, in the execution crate's test fixtures. That world has
+one principal, one Source query, one Parent query read through one managed
+index, one candidate provider for that index, and one decision-read operation
+with its principal-scoped mutation binding. `IdentityExecutionSchema` is
+unchanged. Only this court installs the new world, so no other test pays for
+it.
 
-- A control admission reaches its handler and consults its request.
+The world is a source fixture because minting an admission is crate-private.
+It names the application runtime, so `src-court-baseline.json` gains one entry
+for `decision_read_world.rs`, beside the other fixture worlds.
+
+- Control: an owned admission declares a managed-index read, takes the
+  decision-read branch, reaches its handler and consults its request.
 - Each of three foreign cases is refused as `Projection(Refused(ForeignRuntime))`,
   with `NotStarted` work and zero source reads, fact admissions, request
   consults and request charges. The three cases are:
   - a plain foreign admission;
   - the target's brand around a foreign core;
   - a foreign brand around the target's core.
+- Forged tag type: an owned admission whose tag input type is forged is
+  refused as `InputNotAdmitted`, also with no work.
 
-Limit: this court does not discriminate the decision-read branch. Its fixture
-operation declares no managed-index reads, so it takes the ordinary branch. In
-a sabotage run with the hoisted ownership check disabled, it still passed,
-because preparation refuses first on that branch. No reachable fixture declares
-managed-index decision reads:
+Each case is its own test, so a mutation reports every case it breaks.
 
-- `consumer_root`, under certification, declares them. But it reaches this
-  entry only through publication, which refuses a foreign core earlier with
-  `ForeignAdmission` at idempotency. It also cannot mint an admission, because
-  minting is crate-private.
-- The installation court installs a schema but runs no runtime.
-- No court-query-decl-host, court-decl-host or testkit fixture declares them.
-- A variant declaration of the execution fixture schema is refused with
-  `SchemaMeaningChanged`.
+Mutation results, each run on the court and then reverted:
 
-A discriminating court therefore needs a managed index, its source and Parent
-queries, a provider, and a decision-read operation in `IdentityExecutionSchema`.
-That would add a maintained managed source to every world in the 2229-test lib.
-That fixture is still owed.
+- Hoisted ownership check disabled: all three foreign cases fail. The plain
+  foreign case and the foreign core are refused late, as
+  `Handler(Product(Refused(ForeignOwner)))`. The foreign brand does work
+  before it is refused. The control and the forged-type case still pass.
+- `validate_installed_mutation_binding` moved after basis preparation: the
+  forged-type case fails because work is done. The other four still pass.
 
 Owed to slice 3: on re-entry, compare the core's seal with the installed one.
 Today's code does not do this either.
 
 Runs (all exit 0):
 
-- Forgery court: **9 passed**.
-- `-p worth-query-execution --lib`: **2230 passed, 0 failed, 1 ignored**.
+- Forgery court: **13 passed**.
+- `-p worth-query-execution --lib`: **2234 passed, 0 failed, 1 ignored**.
 - No court crate was touched.
 
 Clippy totals are unchanged (lib 54, lib test 53). The one warning in

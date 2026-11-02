@@ -1,24 +1,23 @@
-//! The decision-read entry refuses a foreign core with no request, product or
-//! graph work. The fixture operation declares no managed-index reads, so this
-//! courts the entry, not its decision-read branch.
+//! The decision-read entry refuses a foreign core or a forged tag type with no
+//! request, product or graph work. Its world declares one managed-index
+//! decision read, so every case reaches the entry's own decision-read branch.
 
 use super::*;
+use crate::domain_computation::primary_graph::tests::fixture::decision_read_world::{
+    installed_decision_read_world, DecisionReadAdmission, DecisionReadBinding, DecisionReadSchema,
+    DecisionReadWorld, PRINCIPAL,
+};
 
 /// One run of the decision-read entry, counted as `execute` counts.
-fn execute_with_query_reads(
-    world: &AuthorizationWorld,
-    principal: u64,
+fn execute_decision(
+    world: &DecisionReadWorld,
     request: &WorthQueryRequestScope,
-    admission: Admission,
+    admission: DecisionReadAdmission,
 ) -> Execution {
-    let external = world.authenticate("alice", Duration::from_secs(60), request);
-    let key = "forgery".to_owned();
-    let input = ProgramRequiredInput::new("open");
-    let identities = ApplicationMutationIdentities::<
-        IdentityExecutionSchema,
-        ProgramRequiredMutationBinding,
-    >::encode(&key, &input)
-    .expect("the request encodes");
+    let external = world.authenticate(request);
+    let identities =
+        ApplicationMutationIdentities::<DecisionReadSchema, DecisionReadBinding>::encode(&1, &())
+            .expect("the request encodes");
     world
         .application
         .with_host_advancement(|phase| {
@@ -29,10 +28,10 @@ fn execute_with_query_reads(
             let consults = observe_consults_for_test(|_| {});
             let (outcome, work) = world
                 .application
-                .execute_mutation_handler_report_with_query_reads::<ProgramRequiredMutationBinding>(
+                .execute_mutation_handler_report_with_query_reads::<DecisionReadBinding>(
                     &phase,
                     &identities,
-                    &principal,
+                    &PRINCIPAL,
                     &external,
                     admission,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -51,33 +50,18 @@ fn execute_with_query_reads(
 }
 
 #[test]
-fn the_decision_read_entry_refuses_a_foreign_core_before_any_work() {
-    let source = installed_authorization_world(true);
-    let target = installed_authorization_world(true);
+fn an_owned_decision_read_reaches_its_handler_on_the_decision_branch() {
+    let world = installed_decision_read_world();
     let request = live_scope();
-    let (source_principal, source_account) = party(&source, &request);
-    let (target_principal, target_account) = party(&target, &request);
-    let identity = *target_principal.principal_identity();
-    let source_admission = || {
-        admit!(
-            source,
-            &source_principal,
-            &source_account,
-            ProgramRequiredOperation,
-            &request
-        )
-    };
-    let target_admission = || {
-        admit!(
-            target,
-            &target_principal,
-            &target_account,
-            ProgramRequiredOperation,
-            &request
-        )
-    };
-
-    let control = execute_with_query_reads(&target, identity, &request, target_admission());
+    let owned = world.admit(&request);
+    assert!(
+        !owned
+            .allowed_graph_contract()
+            .managed_index_reads()
+            .is_empty(),
+        "the fixture operation takes the decision-read branch"
+    );
+    let control = execute_decision(&world, &request, owned);
     assert!(
         matches!(
             control.work,
@@ -90,18 +74,58 @@ fn the_decision_read_entry_refuses_a_foreign_core_before_any_work() {
         control.request_consults > 0,
         "the same entry consults its request"
     );
+}
 
-    let foreign = execute_with_query_reads(&target, identity, &request, source_admission());
-    assert!(foreign.did_nothing());
-    assert_projection_refused(foreign.denial, AuthorizationRefusal::ForeignRuntime);
-
-    let foreign_core = target_admission().forge_with_core_of_for_test(source_admission());
-    let execution = execute_with_query_reads(&target, identity, &request, foreign_core);
+/// Runs one foreign admission against `target` and expects the ownership refusal.
+fn assert_foreign_refused(
+    forge: impl FnOnce(
+        &DecisionReadWorld,
+        &DecisionReadWorld,
+        &WorthQueryRequestScope,
+    ) -> DecisionReadAdmission,
+) {
+    let source = installed_decision_read_world();
+    let target = installed_decision_read_world();
+    let request = live_scope();
+    let admission = forge(&source, &target, &request);
+    let execution = execute_decision(&target, &request, admission);
     assert!(execution.did_nothing());
     assert_projection_refused(execution.denial, AuthorizationRefusal::ForeignRuntime);
+}
 
-    let foreign_brand = source_admission().forge_with_core_of_for_test(target_admission());
-    let execution = execute_with_query_reads(&target, identity, &request, foreign_brand);
+#[test]
+fn a_plain_foreign_admission_is_refused_before_any_work() {
+    assert_foreign_refused(|source, _, request| source.admit(request));
+}
+
+#[test]
+fn a_foreign_core_under_the_owned_brand_is_refused_before_any_work() {
+    assert_foreign_refused(|source, target, request| {
+        target
+            .admit(request)
+            .forge_with_core_of_for_test(source.admit(request))
+    });
+}
+
+#[test]
+fn an_owned_core_under_a_foreign_brand_is_refused_before_any_work() {
+    assert_foreign_refused(|source, target, request| {
+        source
+            .admit(request)
+            .forge_with_core_of_for_test(target.admit(request))
+    });
+}
+
+#[test]
+fn the_decision_read_entry_refuses_a_forged_tag_type_before_basis_preparation() {
+    let world = installed_decision_read_world();
+    let request = live_scope();
+    let mut forged = world.admit(&request);
+    forged.forge_tag_input_type_for_test::<u8>();
+    let execution = execute_decision(&world, &request, forged);
     assert!(execution.did_nothing());
-    assert_projection_refused(execution.denial, AuthorizationRefusal::ForeignRuntime);
+    assert!(matches!(
+        execution.denial,
+        Some(MutationHandlerExecutionDenial::InputNotAdmitted)
+    ));
 }

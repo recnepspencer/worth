@@ -6,6 +6,8 @@ use std::time::{Duration, Instant};
 
 #[path = "fixture/authentication.rs"]
 mod authentication;
+#[path = "fixture/decision_read_world.rs"]
+pub(in crate::domain_computation) mod decision_read_world;
 pub(in crate::domain_computation::primary_graph) use authentication::authenticate_external;
 #[path = "fixture/account_seed.rs"]
 mod account_seed;
