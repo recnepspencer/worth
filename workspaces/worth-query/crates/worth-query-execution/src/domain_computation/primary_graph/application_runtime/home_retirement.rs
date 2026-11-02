@@ -57,6 +57,7 @@ enum QueryRetirementStage {
     Handlers,
     Participation,
     Provider,
+    Projection,
     Granular,
     ProductSource,
     ServingGraph,
@@ -172,6 +173,10 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
             QueryRetirementStage::Provider => {
                 self.runtime.primary_provider.advance(request, native)?
             }
+            QueryRetirementStage::Projection => self
+                .runtime
+                .mutation_projection
+                .advance_home_retirement(request, native)?,
             QueryRetirementStage::Granular => self
                 .runtime
                 .granular_invalidation
@@ -212,7 +217,8 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
             self.stage = match self.stage {
                 QueryRetirementStage::Handlers => QueryRetirementStage::Participation,
                 QueryRetirementStage::Participation => QueryRetirementStage::Provider,
-                QueryRetirementStage::Provider => QueryRetirementStage::Granular,
+                QueryRetirementStage::Provider => QueryRetirementStage::Projection,
+                QueryRetirementStage::Projection => QueryRetirementStage::Granular,
                 QueryRetirementStage::Granular => QueryRetirementStage::ProductSource,
                 QueryRetirementStage::ProductSource => QueryRetirementStage::ServingGraph,
                 QueryRetirementStage::ServingGraph => QueryRetirementStage::Bridge,

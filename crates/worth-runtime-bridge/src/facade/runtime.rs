@@ -1,8 +1,7 @@
 use super::*;
 
 mod closeout;
-mod home_retirement;
-pub use home_retirement::{
+pub use crate::home_retirement::{
     BridgeHomeRetirementDenial, BridgeHomeRetirementProgress, RetiredRuntimeBridge,
     RetiringRuntimeBridge,
 };

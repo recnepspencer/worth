@@ -1,5 +1,16 @@
 //! Retain configuration while consuming each authentic Native source alias.
-use super::*;
+use crate::{
+    adapter::InvalidationSink,
+    diagnostics::{BridgeDiagnosticsFacade, DiagnosticSink},
+    facade::RuntimeBridge,
+    mapping::{FrozenAspectMappingRegistry, FrozenMappingRegistry},
+    merge::AdmittedMergeRegistry,
+    policy::BridgeRuntimePolicy,
+    relational_source::{RetiredRuntimeBridgeRelationalSource, RuntimeBridgeRelationalSource},
+    source::AdmittedSourceRegistry,
+    structural::AdmittedStructuralRegistry,
+    subscription::FrozenSubscriptionFamilyRegistry,
+};
 use std::{any::Any, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{

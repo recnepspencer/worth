@@ -1,5 +1,6 @@
 //! Slot handoff evidence; physical Home completion is qualified by Store courts.
 use super::*;
+use crate::durability::medium::RelationalDurableMemberLocator;
 use std::{
     any::Any,
     sync::{

@@ -114,7 +114,7 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
         ));
     }
     assert_eq!(balance(home.runtime()), 8);
-    let bounded = serial(Some(16 * 1024), None);
+    let bounded = serial(Some(64 * 1024), None);
     let closed = home
         .close(&ExecutionRequest::serial(&bounded))
         .unwrap_or_else(|refused| {
@@ -125,15 +125,7 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
             checkpoint: Err(cause),
             ..
         } => {
-            assert!(
-                matches!(
-                    cause,
-                    ApplicationHomeCheckpointDenial::Native(_)
-                        | ApplicationHomeCheckpointDenial::Payload(_)
-                        | ApplicationHomeCheckpointDenial::Execution(_)
-                ),
-                "actual bounded capture refusal: {cause:?}"
-            );
+            assert_checkpoint_memory_failure(cause);
         }
         ApplicationHomeCloseOutcome::Closed {
             checkpoint: Ok(_), ..
@@ -144,4 +136,41 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
     }
     assert_physical_lease_released(path.path(), &execution);
     closed.reclaim();
+}
+
+fn assert_checkpoint_memory_failure(cause: &ApplicationHomeCheckpointDenial) {
+    use worth_execution::{
+        ExecutionAllocationDenialClass as Allocation, ExecutionRequestArrayDenial as Array,
+        LeaseDenial, WorkCeilingDenial,
+    };
+    use worth_relational::facade::{
+        durability::RelationalNativeCheckpointCaptureDenial as Capture,
+        transactions::RelationalExecutionDenialCause as Request,
+    };
+    use worth_store_relational::RelationalSectionCheckpointDenial as Section;
+    use ApplicationHomeCheckpointDenial::{Execution, Native, Payload};
+    let memory = |work: &WorkCeilingDenial| {
+        matches!(
+            work,
+            WorkCeilingDenial::Admission(LeaseDenial::MemoryExhausted(_))
+        )
+    };
+    let matched = matches!(
+        cause,
+        Native(Section::Capture(Capture::Request(
+            Request::PolicyMemoryExhausted { .. }
+                | Request::ProcessMemoryExhausted { .. }
+                | Request::DeclaredMemoryExhausted { .. }
+        )))
+    ) || matches!(cause,
+        Execution(work) | Native(Section::Execution(work)) | Payload(Array::Request(work))
+            if memory(work)
+    ) || matches!(cause,
+        Native(Section::Capture(Capture::Allocation(denial))) | Payload(Array::Allocation(denial))
+            if matches!(denial.classify(), Allocation::Request(work) if memory(&work))
+    );
+    assert!(
+        matched,
+        "expected the actual memory ceiling refusal: {cause:?}"
+    );
 }
