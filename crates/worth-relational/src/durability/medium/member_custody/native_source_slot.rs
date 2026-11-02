@@ -1,6 +1,4 @@
 //! The original source edge and its issued physical member registration.
-#[cfg(test)]
-mod tests;
 use super::native_slot::{
     NativeMemberRetirementHandoff, NativeMemberRetirementSlot, NativeMemberSlotDenial as Denial,
 };

@@ -33,7 +33,6 @@ impl RelationalRuntime {
         }
         if !self.visibility.try_memory_read_registrations_empty()?
             || !self.history.try_memory_targets_empty()?
-            || self.history.has_detached_retention_obligations()
         {
             return Ok(Some(RelationalRuntimeCloseDenial::ReadCustodyRetained));
         }

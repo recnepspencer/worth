@@ -3,8 +3,8 @@ use crate::branch::AdmittedRelationalBranchBasis;
 use crate::symbols::data::{RelationalFieldText, RelationalFieldTextAdmissionDenial as Denial};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 impl super::RelationalRuntime {
-    /// Adopts admitted backing or imports through the ORIGINAL selected policy.
-    /// Serial/System custody is immutable but explicitly carries no lease charge.
+    /// Adopts admitted backing or imports through the ORIGINAL request.
+    /// An accounted serial request retains its own payload grant.
     /// The interner retains text until its last actual table/snapshot owner drops;
     /// a later transaction refusal does not roll back text admission.
     pub fn admit_field_text(

@@ -29,6 +29,11 @@ impl RelationalSourceClose {
                     Some(cause) => return Err(Denial::Native(cause)),
                     None => {}
                 }
+                if state.runtime.history.has_detached_retention_obligations() {
+                    return Err(Denial::Native(
+                        RelationalRuntimeCloseDenial::ReadCustodyRetained,
+                    ));
+                }
                 state
                     .runtime
                     .durability

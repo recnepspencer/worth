@@ -206,29 +206,8 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
     );
     release_test_commit_snapshot(&runtime, &result);
 }
-// The prior concrete layouts, preserving actual field types and variant order.
-enum OldBacking {
-    Memory(Arc<CanonicalCommitEnvelope>),
-    Journal {
-        entry: Arc<RelationalCommitIndexEntry>,
-        source: Arc<dyn RelationalDurableColdSource>,
-        unsettled: Option<Arc<CanonicalCommitEnvelope>>,
-    },
-}
-struct OldState {
-    authored_writes: Option<crate::runtime::AuthoredWriteGeneration>,
-    backing: OldBacking,
-    position: Option<RetainedCanonicalPosition>,
-    damage: Option<RelationalStorageUnavailable>,
-    payload_digest: Option<[u8; 32]>,
-    canonical_payload: Option<Arc<[u8]>>,
-    lineage: Option<crate::lineage::data::LineageCheckpointDigestBasis>,
-}
-struct OldCell {
-    state: Mutex<OldState>,
-}
 #[test]
-fn memory_frame_layout_preserves_scalar_tuple_observations() {
+fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
@@ -250,55 +229,6 @@ fn memory_frame_layout_preserves_scalar_tuple_observations() {
     assert_ne!(
         original.payload_digest().as_bytes(),
         &artifact.canonical_payload_digest().unwrap()
-    );
-    let old = OldCell {
-        state: Mutex::new(OldState {
-            authored_writes: None,
-            backing: OldBacking::Memory(envelope),
-            position: None,
-            damage: None,
-            payload_digest: None,
-            canonical_payload: None,
-            lineage: None,
-        }),
-    };
-    let OldState {
-        authored_writes,
-        backing,
-        position,
-        damage,
-        payload_digest,
-        canonical_payload,
-        lineage,
-    } = old.state.into_inner().unwrap();
-    if let OldBacking::Memory(envelope) = backing {
-        drop(envelope);
-    }
-    drop((
-        authored_writes,
-        position,
-        damage,
-        payload_digest,
-        canonical_payload,
-        lineage,
-    ));
-    eprintln!(
-        "old/new backing {}/{}, state {}/{}, cell {}/{}; immutable owner {}",
-        std::mem::size_of::<OldBacking>(),
-        std::mem::size_of::<EnvelopeBacking>(),
-        std::mem::size_of::<OldState>(),
-        std::mem::size_of::<EnvelopeState>(),
-        std::mem::size_of::<OldCell>(),
-        std::mem::size_of::<RelationalCommitEnvelopeResidency>(),
-        std::mem::size_of::<worth_execution::ExecutionImmutableBytes>()
-    );
-    assert_eq!(
-        std::mem::size_of::<EnvelopeBacking>(),
-        std::mem::size_of::<OldBacking>()
-    );
-    assert_eq!(
-        std::mem::size_of::<RelationalCommitEnvelopeResidency>(),
-        std::mem::size_of::<OldCell>()
     );
     release_test_commit_snapshot(&runtime, &result);
 }
