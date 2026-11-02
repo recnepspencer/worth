@@ -61,10 +61,47 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
         .unwrap();
     let next = capture(&recovered, &request);
     let observed = generations(&next);
+    for original in &original {
+        assert!(
+            observed.contains(original),
+            "original covered index generation lost: {original:?}"
+        );
+    }
+    // A canonical tail does not journal derived cache generations. Preserve the
+    // cold recapture proof above before the real build warms the deferred image.
+    let (descriptor, basis) = recovered
+        .observe_branch(&recovered.main_branch_identity())
+        .unwrap();
+    let worth_foundational::FoundationalBranchTarget::Basis(target) =
+        descriptor.reference().target()
+    else {
+        panic!("the replayed tail selects a real commit");
+    };
+    assert_eq!(target.selected_commit_id(), tail_commit);
+    let built = recovered.index_authority().build_for_basis(
+        &request,
+        DerivedIndexBuildRequest {
+            source_commit_id: later.commit.commit_id,
+            branch_id: descriptor.branch_id().clone(),
+            index_ids: vec![definition.index_id],
+        },
+        &basis,
+    );
+    assert!(built.failed_indexes.is_empty(), "{built:?}");
+    assert!(built.basis_denial.is_none(), "{built:?}");
+    assert!(built.execution_denial.is_none(), "{built:?}");
+    assert!(!built.generations.is_empty());
+    assert!(built
+        .generations
+        .iter()
+        .all(|generation| generation.source_commit_id.0 == tail_commit));
+    drop(basis);
+    let next = capture(&recovered, &request);
+    let observed = generations(&next);
     for original in original {
         assert!(
             observed.contains(&original),
-            "original covered index generation lost: {original:?}"
+            "original generation lost after live owner build"
         );
     }
     assert!(observed
