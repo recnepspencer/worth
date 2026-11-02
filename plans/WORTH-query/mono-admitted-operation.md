@@ -194,3 +194,65 @@ Installation's single `TypeId::of` carries an `expect` with its reason.
 
 These also pass: `cargo fmt --check`, boundary-check, agent-context check,
 dirty line caps (33 Rust files) and `git diff --check`.
+
+## Decision-read entry ownership
+
+`execute_mutation_handler_report_with_query_reads` used to prepare the shared
+decision-read basis, which means product branch admission and the native
+companion preflight, before preparation checked ownership. A forged or foreign
+core with managed-index decision reads therefore caused product work before
+it was refused. The entry now runs checks in this order:
+
+1. The phase check, as preparation does.
+2. `validate_runtime_ownership`, before the branch on the admission's
+   managed-index reads. Neither branch can do work for a foreign core.
+3. On the decision-read branch only, `validate_installed_mutation_binding`,
+   before the shared basis is prepared.
+
+Preparation still repeats both checks. They are pure and do not allocate.
+
+Court: `erased_core_forgery::decision_entry::the_decision_read_entry_refuses_a_foreign_core_before_any_work`.
+
+- A control admission reaches its handler and consults its request.
+- Each of three foreign cases is refused as `Projection(Refused(ForeignRuntime))`,
+  with `NotStarted` work and zero source reads, fact admissions, request
+  consults and request charges. The three cases are:
+  - a plain foreign admission;
+  - the target's brand around a foreign core;
+  - a foreign brand around the target's core.
+
+Limit: this court does not discriminate the decision-read branch. Its fixture
+operation declares no managed-index reads, so it takes the ordinary branch. In
+a sabotage run with the hoisted ownership check disabled, it still passed,
+because preparation refuses first on that branch. No reachable fixture declares
+managed-index decision reads:
+
+- `consumer_root`, under certification, declares them. But it reaches this
+  entry only through publication, which refuses a foreign core earlier with
+  `ForeignAdmission` at idempotency. It also cannot mint an admission, because
+  minting is crate-private.
+- The installation court installs a schema but runs no runtime.
+- No court-query-decl-host, court-decl-host or testkit fixture declares them.
+- A variant declaration of the execution fixture schema is refused with
+  `SchemaMeaningChanged`.
+
+A discriminating court therefore needs a managed index, its source and Parent
+queries, a provider, and a decision-read operation in `IdentityExecutionSchema`.
+That would add a maintained managed source to every world in the 2229-test lib.
+That fixture is still owed.
+
+Owed to slice 3: on re-entry, compare the core's seal with the installed one.
+Today's code does not do this either.
+
+Runs (all exit 0):
+
+- Forgery court: **9 passed**.
+- `-p worth-query-execution --lib`: **2230 passed, 0 failed, 1 ignored**.
+- No court crate was touched.
+
+Clippy totals are unchanged (lib 54, lib test 53). The one warning in
+`decision_query.rs` predates this change: the `Native` stop's field is never
+read.
+
+These also pass: fmt, boundary-check, agent-context, dirty line caps and
+`git diff --check`.

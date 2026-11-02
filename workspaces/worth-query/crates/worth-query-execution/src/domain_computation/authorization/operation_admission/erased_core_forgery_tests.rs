@@ -347,5 +347,7 @@ fn a_brand_the_installed_binding_does_not_name_never_reaches_its_handler() {
 
 #[path = "erased_core_forgery_tests/allocation.rs"]
 mod allocation;
+#[path = "erased_core_forgery_tests/decision_entry.rs"]
+mod decision_entry;
 #[path = "erased_core_forgery_tests/precedence.rs"]
 mod precedence;
