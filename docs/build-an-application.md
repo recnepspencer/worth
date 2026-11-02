@@ -1954,6 +1954,10 @@ adapter grants no permission; preview, navigation and bookmark/window commands
 still freshly enter their existing READ, metadata and role admission.
 
 Keep a queued navigation's original intent, expected selection and key together.
+`prepare` returns the genuine navigation owner with its original document borrow;
+retain it when directly advancing or discarding an attempt. The borrowed command
+adapter transfers that borrow into the navigation builder. `advance` uses the
+same preparation path for one transient request.
 This consumer's `Command` does that. On advancement refusal, `advance` returns
 the original typed denial and posture. Between requests it drops only the frontend handle:
 the same document retains the real Native attempt and SDK output custody.
@@ -1963,21 +1967,33 @@ The `Failure` and `Progress` variants below are defined beside the
 
 <!-- compiled: document_history_commands.rs -->
 ```rust
-    let commands = document
+pub(super) fn prepare<'d, 'r>(
+    document: &'d mut Configured<'r>,
+    request: &Request<'_, '_, '_>,
+    command: &Command,
+) -> Result<Navigation<'d, 'r>, Failure> {
+    let navigation = document
         .commands(&command.context)
-        .map_err(Failure::Context)?;
-    let navigation = commands.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+        .map_err(Failure::Context)?
+        .navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
     let target = match command.intent {
         WorthQueryHistoryNavigationIntent::Checkout(node) => navigation.checkout(node),
         WorthQueryHistoryNavigationIntent::UndoStep => navigation.undo_step(),
         WorthQueryHistoryNavigationIntent::RedoTo(child) => navigation.redo_to(child),
     };
-    let owner = target
+    target
         .expected_selection(command.expected.clone())
         .idempotency(command.key)
         .prepare(request)
-        .map_err(Failure::Preparation)?;
-    match owner.advance(request) {
+        .map_err(Failure::Preparation)
+}
+
+pub(super) fn advance(
+    document: &mut Configured<'_>,
+    request: &Request<'_, '_, '_>,
+    command: &Command,
+) -> Result<Progress, Failure> {
+    match prepare(document, request, command)?.advance(request) {
         WorthQueryHistoryNavigationAdvance::Selected(done) => Ok(Progress::Selected(done)),
         WorthQueryHistoryNavigationAdvance::Pending(owner) => {
             Ok(Progress::Pending(owner.posture()))
@@ -1987,6 +2003,7 @@ The `Failure` and `Progress` variants below are defined beside the
             posture: owner.posture(),
         }),
     }
+}
 ```
 
 For consuming edits and groups, check the same context with

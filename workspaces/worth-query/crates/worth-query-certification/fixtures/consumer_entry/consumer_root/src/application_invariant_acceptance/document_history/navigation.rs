@@ -55,27 +55,44 @@ pub(super) fn capture(
     })
 }
 
-pub(super) fn advance(
-    document: &mut Configured<'_>,
+type Navigation<'d, 'r> = WorthQueryHistoryNavigation<
+    'd,
+    'r,
+    ConsumerSchema,
+    History,
+    PlanarHistoryNavigation<ConsumerSchema>,
+    OrdinaryHistoryPayload,
+    Outputs,
+>;
+
+// compiled-example: begin
+pub(super) fn prepare<'d, 'r>(
+    document: &'d mut Configured<'r>,
     request: &Request<'_, '_, '_>,
     command: &Command,
-) -> Result<Progress, Failure> {
-    // compiled-example: begin
-    let commands = document
+) -> Result<Navigation<'d, 'r>, Failure> {
+    let navigation = document
         .commands(&command.context)
-        .map_err(Failure::Context)?;
-    let navigation = commands.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+        .map_err(Failure::Context)?
+        .navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
     let target = match command.intent {
         WorthQueryHistoryNavigationIntent::Checkout(node) => navigation.checkout(node),
         WorthQueryHistoryNavigationIntent::UndoStep => navigation.undo_step(),
         WorthQueryHistoryNavigationIntent::RedoTo(child) => navigation.redo_to(child),
     };
-    let owner = target
+    target
         .expected_selection(command.expected.clone())
         .idempotency(command.key)
         .prepare(request)
-        .map_err(Failure::Preparation)?;
-    match owner.advance(request) {
+        .map_err(Failure::Preparation)
+}
+
+pub(super) fn advance(
+    document: &mut Configured<'_>,
+    request: &Request<'_, '_, '_>,
+    command: &Command,
+) -> Result<Progress, Failure> {
+    match prepare(document, request, command)?.advance(request) {
         WorthQueryHistoryNavigationAdvance::Selected(done) => Ok(Progress::Selected(done)),
         WorthQueryHistoryNavigationAdvance::Pending(owner) => {
             Ok(Progress::Pending(owner.posture()))
@@ -85,8 +102,8 @@ pub(super) fn advance(
             posture: owner.posture(),
         }),
     }
-    // compiled-example: end
 }
+// compiled-example: end
 
 pub(super) fn complete(
     document: &mut Configured<'_>,

@@ -64,7 +64,10 @@ macro_rules! historical_program {
                 specs.retain(|spec| !(spec.feature().composition_instance()==InitialDiscoveredPlanarRoot::PATH
                     && spec.feature().identity()==<PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY));
                 specs.push(ApplicationFeatureSpec::at::<ConsumerSchema,InitialDiscoveredPlanarRoot,PlanarSourceFeature>()
-                    .provides::<PlanarBodyOutput>().action::<Binding, $delivery>().finish_action().finish());
+                    .provides::<PlanarBodyOutput>().action::<Binding, $delivery>().finish_action()
+                    .action::<worth_query_topology_entry::SetPlanarHistoryStatusBinding<ConsumerSchema>,
+                        crate::application_program::source_completion::ConsumerSourceCompletion>()
+                    .finish_action().finish());
                 specs.extend($additional);
                 specs
             }

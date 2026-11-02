@@ -42,17 +42,24 @@ where
     }
 }
 
-impl<'runtime, S, H, Payload, Outputs>
-    WorthQueryHistoryCommands<'_, 'runtime, S, H, Payload, Outputs>
+impl<'document, 'runtime, S, H, Payload, Outputs>
+    WorthQueryHistoryCommands<'document, 'runtime, S, H, Payload, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
     Payload: WorthQueryHistoryPayloadMode<S, H>,
 {
     pub fn navigate<N: ApplicationHistoryNavigationBinding<S, H>>(
-        &self,
-    ) -> WorthQueryHistoryNavigationBuilder<'_, 'runtime, S, H, N, Payload, Outputs> {
-        self.document.navigate::<N>()
+        self,
+    ) -> WorthQueryHistoryNavigationBuilder<'document, 'runtime, S, H, N, Payload, Outputs> {
+        let document: &'document WorthQueryApplicationHistoryDocument<
+            'runtime,
+            S,
+            H,
+            Payload,
+            Outputs,
+        > = self.document;
+        document.navigate::<N>()
     }
 
     pub fn window(

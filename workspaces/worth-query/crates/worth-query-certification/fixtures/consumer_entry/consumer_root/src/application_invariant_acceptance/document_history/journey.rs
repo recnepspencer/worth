@@ -21,7 +21,7 @@ fn navigate(
     navigation::complete(document, app, &command)
 }
 
-fn values(document: &Configured<'_>, app: &Runtime, y: u64, child: &str, child_y: u64) {
+pub(super) fn values(document: &Configured<'_>, app: &Runtime, y: u64, child: &str, child_y: u64) {
     let selection = with_request(app, |request| {
         let rows = document.read(request).unwrap();
         assert_eq!(rows.rows()[0].value, length(y + 1));
@@ -233,7 +233,29 @@ pub(super) fn run(app: &Runtime) {
     );
     values(&document, app, 5, "sibling-c", 32);
     let group = with_request(app, |request| {
-        authoring::group(document, app, request, &context, 0x9182_7260)
+        authoring::group(
+            document,
+            app,
+            request,
+            &context,
+            0x9182_7260,
+            [
+                (
+                    Original(PlanarInitialAdjustment {
+                        scope_key: "anchor-a".into(),
+                        replacement_y: length(2),
+                    }),
+                    0x9182_7261,
+                ),
+                (
+                    Original(PlanarInitialAdjustment {
+                        scope_key: "anchor-a".into(),
+                        replacement_y: length(3),
+                    }),
+                    0x9182_7262,
+                ),
+            ],
+        )
     })
     .unwrap_or_else(|(_, cause)| panic!("normal grouped gesture: {cause:?}"));
     let (next, grouped) = authoring::complete_group(group, app);

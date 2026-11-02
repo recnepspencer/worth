@@ -18,6 +18,8 @@ use worth_query_topology_entry::{
 };
 
 mod authoring;
+#[cfg(test)]
+mod failures;
 mod journey;
 pub(crate) mod model;
 mod navigation;

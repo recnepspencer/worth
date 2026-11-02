@@ -115,32 +115,13 @@ pub(super) fn group<'r>(
     request: &Request<'_, '_, '_>,
     context: &WorthQueryHistoryDescriptionContext,
     key: u128,
+    members: [(Original, u64); 2],
 ) -> Result<Group<'r>, (Configured<'r>, GroupStartDenial)> {
     if let Err(cause) = document.check_history_command_context(context) {
         return Err((document, GroupStartDenial::Context(cause)));
     }
     document
-        .group_edits::<Original, FixedProgram, FixedAction, 2>(
-            app,
-            request,
-            key,
-            [
-                (
-                    Original(PlanarInitialAdjustment {
-                        scope_key: "anchor-a".into(),
-                        replacement_y: length(2),
-                    }),
-                    0x9182_7261,
-                ),
-                (
-                    Original(PlanarInitialAdjustment {
-                        scope_key: "anchor-a".into(),
-                        replacement_y: length(3),
-                    }),
-                    0x9182_7262,
-                ),
-            ],
-        )
+        .group_edits::<Original, FixedProgram, FixedAction, 2>(app, request, key, members)
         .map_err(|(document, cause)| (document, GroupStartDenial::Group(cause)))
 }
 
