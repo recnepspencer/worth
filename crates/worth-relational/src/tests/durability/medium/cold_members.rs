@@ -62,6 +62,7 @@ mod cold_read_door;
 mod cold_read_matrix;
 #[path = "cold_reserved_checkpoint.rs"]
 mod cold_reserved_checkpoint;
+mod cold_selected_subject;
 #[path = "cold_symbols.rs"]
 mod cold_symbols;
 #[path = "cold_tail_matrix.rs"]

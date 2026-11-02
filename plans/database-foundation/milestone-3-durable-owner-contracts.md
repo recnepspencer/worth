@@ -2748,3 +2748,14 @@ The deferred index frame uses its existing aggregate Index(0) subject. Source-
 wide/Birth/selection doors retain their explicit existing source-level Envelope(0)
 context. One exhaustive mapping still preserves every request, allocation,
 provider and frame refusal. There is no implicit default or parallel classifier.
+
+
+The unchanged envelope failure matrix then exposed a separate product defect:
+selected retained export wrapped actual storage refusals as Readmission and
+bypassed its cell's proven-damage state. Selected export now returns the same
+StorageUnavailable variant as journal export. Strict original capture checks
+and records the same cell damage. Only existing is_proven_damage causes stick;
+request, allocation and retryable storage failures retain their prior topology.
+Both selected and strict journal original reads invoke the existing scalar
+index/frame subject checker before returning original bytes. Locator integrity
+alone never establishes indexed position, commit or canonical payload binding.

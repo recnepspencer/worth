@@ -163,6 +163,7 @@ impl RelationalCommitEnvelopeResidency {
                     cause: Cause::Damaged,
                 }
             })?;
+        Self::check_frame(entry, &artifact)?;
         Ok(artifact)
     }
 }

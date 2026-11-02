@@ -36,7 +36,7 @@ impl RelationalCommitEnvelopeResidency {
         })?.into_positioned();
         Self::check_positioned(entry, admitted, execution)
     }
-    fn check_frame(
+    pub(super) fn check_frame(
         entry: &RelationalCommitIndexEntry,
         artifact: &RelationalCanonicalCommitArtifact,
     ) -> Result<(), RelationalRecoveryStop> {
