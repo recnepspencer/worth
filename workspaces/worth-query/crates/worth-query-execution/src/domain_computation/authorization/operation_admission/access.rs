@@ -55,6 +55,17 @@ impl<Schema, Operation, Input, Scope>
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        self.validate_runtime_ownership(runtime_authority, binding_identity)?;
+        self.validate_current_authority()
+    }
+
+    /// Ownership precedes lapse and every read: nothing about a foreign
+    /// admission is judged before it is known to be this runtime's.
+    pub(in crate::domain_computation) fn validate_runtime_ownership(
+        &self,
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: &ApplicationSchemaBindingIdentity,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         if self.runtime_authority != runtime_authority {
             return Err(WorthQueryOperationAuthorizationDenial::new(
                 WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -71,7 +82,7 @@ impl<Schema, Operation, Input, Scope>
                 &self.operation,
             ));
         }
-        self.validate_current_authority()
+        Ok(())
     }
 
     pub(in crate::domain_computation) const fn runtime_authority(

@@ -1,5 +1,5 @@
-//! Pins which refusal each typed admission re-entry reports first when one
-//! admission is both foreign to the receiving runtime and expired.
+//! Pins one authority order at every typed admission re-entry: runtime
+//! ownership is refused before authentication lapse and before any read.
 
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::{Duration, SystemTime};
@@ -120,15 +120,9 @@ fn refused(kind: AuthorizationRefusal) -> WorthQueryOperationAuthorizationDenial
     WorthQueryOperationAuthorizationDenialKind::Refused(kind)
 }
 
-#[test]
-fn a_live_foreign_admission_is_refused_as_foreign_at_mutation_execution() {
-    let source_world = installed_authorization_world(true);
-    let target_world = installed_authorization_world(true);
-    let request = live_scope();
-    let (mut admissions, _, principal_identity) = expiring_admissions(&source_world, &request, 1);
-    let denial = execute_on(&target_world, principal_identity, admissions.remove(0));
+fn assert_refused_as_foreign_runtime(denial: MutationHandlerExecutionDenial) {
     let MutationHandlerExecutionDenial::Projection(projection) = denial else {
-        panic!("a live foreign admission is refused by the projection: {denial:?}");
+        panic!("a foreign admission is refused as foreign: {denial:?}");
     };
     assert_eq!(
         projection.kind(),
@@ -139,7 +133,20 @@ fn a_live_foreign_admission_is_refused_as_foreign_at_mutation_execution() {
 }
 
 #[test]
-fn a_foreign_and_expired_admission_keeps_each_entry_precedence() {
+fn a_live_foreign_admission_is_refused_as_foreign_at_mutation_execution() {
+    let source_world = installed_authorization_world(true);
+    let target_world = installed_authorization_world(true);
+    let request = live_scope();
+    let (mut admissions, _, principal_identity) = expiring_admissions(&source_world, &request, 1);
+    assert_refused_as_foreign_runtime(execute_on(
+        &target_world,
+        principal_identity,
+        admissions.remove(0),
+    ));
+}
+
+#[test]
+fn a_foreign_and_expired_admission_is_refused_as_foreign_at_every_entry() {
     let source_world = installed_authorization_world(true);
     let target_world = installed_authorization_world(true);
     let request = live_scope();
@@ -160,7 +167,6 @@ fn a_foreign_and_expired_admission_keeps_each_entry_precedence() {
         refused(AuthorizationRefusal::ExpiredAuthentication)
     );
 
-    // Projection checks runtime ownership before authentication lapse.
     let projection = target_world
         .application
         .with_host_advancement(|phase| {
@@ -183,7 +189,6 @@ fn a_foreign_and_expired_admission_keeps_each_entry_precedence() {
         ))
     );
 
-    // Idempotency resolution checks authentication lapse before ownership.
     let resolution = target_world
         .application
         .with_host_advancement(|phase| {
@@ -199,12 +204,9 @@ fn a_foreign_and_expired_admission_keeps_each_entry_precedence() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         resolution.kind(),
-        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(refused(
-            AuthorizationRefusal::ExpiredAuthentication
-        ))
+        WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission
     );
 
-    // A read attempt checks application ownership before authentication lapse.
     let read = target_world
         .application
         .with_host_advancement(|phase| {
@@ -224,18 +226,9 @@ fn a_foreign_and_expired_admission_keeps_each_entry_precedence() {
         WorthQueryApplicationAttemptDenialKind::ForeignApplication
     );
 
-    // Mutation execution checks authentication lapse before the projection's
-    // runtime-ownership check.
-    let execution = execute_on(&target_world, principal_identity, admissions.remove(0));
-    let MutationHandlerExecutionDenial::Attempt(attempt) = execution else {
-        panic!("an expired admission is refused before projection: {execution:?}");
-    };
-    assert_eq!(
-        attempt.kind(),
-        WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied
-    );
-    assert_eq!(
-        attempt.request_authority().map(|denial| denial.kind()),
-        Some(refused(AuthorizationRefusal::ExpiredAuthentication))
-    );
+    assert_refused_as_foreign_runtime(execute_on(
+        &target_world,
+        principal_identity,
+        admissions.remove(0),
+    ));
 }

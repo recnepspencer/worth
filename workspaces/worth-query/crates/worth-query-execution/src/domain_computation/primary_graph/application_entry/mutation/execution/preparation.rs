@@ -87,6 +87,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
+        if let Err(denial) = admission.validate_runtime_ownership(
+            self.runtime.authority_identity(),
+            &self.installed_schema.binding_identity(),
+        ) {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Err(MutationHandlerExecutionDenial::Projection(denial.into())),
+                WorthQueryMutationHandlerWork::NotStarted,
+            ));
+        }
         if admission
             .governed_input_identity()
             .is_some_and(|admitted| admitted != identities.input_identity())
