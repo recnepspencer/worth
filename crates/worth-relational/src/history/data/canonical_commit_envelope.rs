@@ -345,4 +345,4 @@ pub struct RelationalReplayRecord {
 mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
-pub(crate) use text_wire::CanonicalEnvelopeWire;
+pub(crate) use text_wire::{CanonicalEnvelopeWire, PositionedEnvelopeSeed};

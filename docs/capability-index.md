@@ -728,8 +728,9 @@ explicit bootstrap request and capture policy. See [original-request transitions
 ## Known gaps
 
 The K1c Native content owner admits immutable typed frames and closes Native
-transaction references before publication. The controlled Decl/Host content door
-and durable reconstruction are still being cut over; applications must not
+transaction references before publication. Native checkpoint and journal recovery
+reconstruct their retained closure through the existing physical member boundary.
+The controlled Decl/Host content door is still being cut over; applications must not
 introduce a separate byte store while that work is incomplete. See the
 [content boundary and slice order](../plans/WORTH-query/milestone-9.19-k1c-content-boundary.md).
 

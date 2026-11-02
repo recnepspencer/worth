@@ -55,7 +55,7 @@ pub(crate) use identity::RelationalBranchRootIdentityIssuer;
 pub(crate) use schema::RelationalBranchRootSchemaAuthority;
 pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum RelationalBranchRootCaptureDenial {
     PublishedPartitionMissing(PartitionId),
     DuplicateRegion(PartitionId),
@@ -67,6 +67,7 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     SlotCountOverflow,
     CanonicalEnvelopeMismatch,
     UnadmittedContent,
+    Content(crate::content::RelationalContentDenial),
     StorageContentMismatch {
         descriptor_root: [u8; 32],
         reconstructed_root: [u8; 32],

@@ -59,13 +59,16 @@ impl CapturedCheckpointBasis {
         // memory checkpoint door alone materializes its selected substrate.
         let journal_index = std::mem::take(&mut self.journal_index);
         let envelope_cells = std::mem::take(&mut self.envelope_cells);
-        let metadata = self.build_checkpoint_image()?;
+        let metadata = self.build_checkpoint_image(execution)?;
         let mut captured = CapturedManifest::capture_metadata(
             &metadata,
             policy,
             prior.as_ref().map(|prior| &prior.manifest),
             placement,
             journal_index,
+            crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl::Original(
+                *execution,
+            ),
         )?;
         captured.append_lineage_events(event_rows, policy)?;
         captured.envelope_cells = envelope_cells
@@ -149,6 +152,12 @@ impl CapturedCheckpointBasis {
                 commit_id: root.commit_id(),
                 schema_carrier_digest: schema_digest,
                 regions: leaves,
+                content: crate::durability::checkpoints::content::capture(
+                    execution,
+                    root.content(),
+                    &mut captured.members,
+                    current_members.as_ref(),
+                )?,
             });
         }
         if let Some(schema) = mirror_schema {

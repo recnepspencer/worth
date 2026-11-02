@@ -1,10 +1,18 @@
 //! Generic ordered exact samples exercise Native's actual frame and request owners.
 mod admission;
-mod durability_refusal;
+mod backing_refusal;
+mod carried_export;
+mod checkpoint_capture_controls;
+mod checkpoint_controls;
+mod checkpoint_corruption;
+mod durable_publication;
 mod expected;
 pub(crate) mod fixture;
+mod journal_recovery;
 mod raw_write;
+mod recovery;
 mod retained;
+mod selected_value;
 pub(crate) mod transaction;
 use fixture::*;
 use sha2::{Digest, Sha256};
@@ -156,3 +164,5 @@ fn content_identifiers_have_one_ascii_spelling() {
     assert!(ContentRefId::from_hex(&"A1".repeat(32)).is_none());
     assert!(ContentRefId::from_hex("42").is_none());
 }
+
+mod schema_transition;

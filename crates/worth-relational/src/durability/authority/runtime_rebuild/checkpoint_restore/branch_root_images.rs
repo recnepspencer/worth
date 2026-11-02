@@ -20,7 +20,7 @@ pub(super) fn restore_branch_root_images(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
-) -> Result<RestoredBranchRootImages, DurabilityError> {
+) -> Result<RestoredBranchRootImages, crate::durability::data::RelationalRecoveryStop> {
     let mut schema_catalog = RootSchemaReadmissionCatalog::readmit(checkpoint)?;
     let mut partitions = BTreeMap::new();
     let mut schema_authorities = BTreeMap::new();
@@ -31,7 +31,8 @@ pub(super) fn restore_branch_root_images(
             return Err(corrupt_checkpoint(format!(
                 "duplicate checkpoint commit envelope `{}`",
                 commit_id.0
-            )));
+            ))
+            .into());
         }
     }
     for image in &checkpoint.branch_roots {
@@ -55,7 +56,8 @@ pub(super) fn restore_branch_root_images(
             return Err(corrupt_checkpoint(format!(
                 "branch-root image `{}` partition integrity mismatch",
                 image.commit_id.0
-            )));
+            ))
+            .into());
         }
         work.root_images_verified += 1;
         let schema_authority = schema_catalog.readmit_root(restored, image, envelope)?;
@@ -82,7 +84,8 @@ pub(super) fn restore_branch_root_images(
             return Err(corrupt_checkpoint(format!(
                 "duplicate branch-root image `{}`",
                 image.commit_id.0
-            )));
+            ))
+            .into());
         }
         schema_authorities.insert(image.commit_id, schema_authority);
     }

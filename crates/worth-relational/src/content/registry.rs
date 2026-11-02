@@ -1,4 +1,5 @@
 //! Format admission and field-binding aliases are separate schema coordinates.
+mod readmission;
 use super::{RelationalContentCodec as Codec, RelationalContentDenial as Denial};
 use std::{collections::BTreeMap, sync::Arc};
 use worth_foundational::facade::{CanonicalDigestId, ContentFormat};
@@ -12,6 +13,9 @@ struct InstalledFormat {
     codec: Arc<dyn Codec>,
 }
 impl RelationalContentFormat {
+    pub(super) fn same_installation(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
     pub fn descriptor(&self) -> &ContentFormat {
         &self.0.descriptor
     }
@@ -32,7 +36,8 @@ pub struct RelationalContentFormatRegistry {
 }
 impl PartialEq for RelationalContentFormatRegistry {
     fn eq(&self, other: &Self) -> bool {
-        self.names == other.names
+        self.snapshot == other.snapshot
+            && self.names == other.names
             && self.bindings == other.bindings
             && self.formats.len() == other.formats.len()
             && self.formats.iter().all(|(key, format)| {

@@ -1,80 +1,201 @@
-//! Root-owned immutable reachability, with a separately funded persistent directory.
+//! Actual record/content associations own byte custody; identity alone does not.
+mod reconstruction;
 use super::{
-    control, frame::layout, RelationalContentAttachments, RelationalContentDenial as Denial,
-    RelationalContentFormatRegistry, RelationalContentFrame,
+    control, field_references, frame_admission::ContentFrameAdmission,
+    resolution::ContentResolution, RelationalContentAttachments, RelationalContentDenial as Denial,
+    RelationalContentFrame,
+};
+use crate::{
+    schema::data::RelationalSchemaRegistry, transactions::data::RecordRef,
+    validation::engine::state_view::InvariantStateView,
 };
 use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionRequest};
 use worth_foundational::facade::{ContentFormat, ContentRefId};
 
+type Occurrence = (ContentRefId, Option<RecordRef>);
+type Identities = ExecutionOrderedMap<ContentRefId, ()>;
 #[derive(Clone, Debug, Default)]
 pub(crate) struct ContentDirectory {
-    frames: ExecutionOrderedMap<ContentRefId, RelationalContentFrame>,
+    occurrences: ExecutionOrderedMap<Occurrence, RelationalContentFrame>,
+    records: ExecutionOrderedMap<RecordRef, Identities>,
 }
-
 impl ContentDirectory {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.frames.is_empty()
-    }
-    pub(crate) fn prepare(
+    pub(super) fn find(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        formats: &RelationalContentFormatRegistry,
-        attachments: &RelationalContentAttachments,
-    ) -> Result<Self, Denial> {
-        if attachments.is_empty() {
-            return Ok(self.clone());
+        identity: ContentRefId,
+    ) -> Result<Option<RelationalContentFrame>, Denial> {
+        visit_directory(execution, self.occurrences.len())?;
+        match self.occurrences.first_at_or_after(&(identity, None)) {
+            Some(((found, Some(_)), frame)) if *found == identity => Ok(Some(frame.clone())),
+            Some(((found, None), _)) if *found == identity => Err(Denial::EncodingInconsistency),
+            _ => Ok(None),
         }
-        control::run(execution, |control| {
-            let mut frames = self.frames.clone();
-            let mut total = 0_usize;
-            for record in attachments.records() {
-                total = total
-                    .checked_add(record.bytes().len())
-                    .ok_or(Denial::ArithmeticOverflow)?;
-                if total > super::MAXIMUM_STAGED_CONTENT_BYTES {
-                    return Err(Denial::SizeLimit {
-                        observed: total,
-                        maximum: super::MAXIMUM_STAGED_CONTENT_BYTES,
-                    });
-                }
-                let (name, version, _) = layout::inspect_paid(record.bytes(), control)?;
-                control.checkpoint(formats.lookup_bound())?;
-                let codec = formats.format_codec(name, version)?;
-                let frame = RelationalContentFrame::readmit_record(execution, codec, record)?;
-                visit_directory(execution, frames.len())?;
-                if let Some(prior) = frames.get(&frame.identity()) {
-                    prior.same_content(execution, &frame)?;
-                }
-                frames
-                    .insert_cloned_native_for_request(&frame.identity(), &frame, *execution)
-                    .map_err(map_denial)?;
-            }
-            Ok(Self { frames })
-        })
     }
-
     pub(crate) fn read(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         identity: ContentRefId,
         expected: &ContentFormat,
     ) -> Result<RelationalContentFrame, Denial> {
-        visit_directory(execution, self.frames.len())?;
-        let frame = self.frames.get(&identity).ok_or(Denial::MissingContent)?;
-        if frame.format().name() != expected.name() {
-            return Err(Denial::FormatMismatch);
+        let frame = self
+            .find(execution, identity)?
+            .ok_or(Denial::MissingContent)?;
+        require_format(&frame, expected)?;
+        Ok(frame)
+    }
+    pub(crate) fn prepare(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        schema: &RelationalSchemaRegistry,
+        attachments: &RelationalContentAttachments,
+        state: &dyn crate::storage::overlay::CurrentPartitionAccess,
+        changed: &[RecordRef],
+        version: crate::identity::data::VersionId,
+        source: Option<&Self>,
+        complete: bool,
+    ) -> Result<Self, Denial> {
+        let staged = ContentFrameAdmission::admit(execution, &schema.content_formats, attachments)?;
+        let mut next = if complete {
+            Self::default()
+        } else {
+            self.clone()
+        };
+        let view = InvariantStateView::new(state, version);
+        let mut resolution = ContentResolution::new(&schema.content_formats, &staged, self, source);
+        if complete {
+            super::reconstruction::visit_records(execution, state, &mut |record| {
+                next.replace_record(execution, schema, &view, record, &mut resolution)
+            })?;
+        } else {
+            for record in changed {
+                next.replace_record(execution, schema, &view, record, &mut resolution)?;
+            }
         }
-        if frame.format().version() != expected.version() {
-            return Err(Denial::UnsupportedVersion);
+        Ok(next)
+    }
+    fn replace_record(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        schema: &RelationalSchemaRegistry,
+        view: &InvariantStateView<'_>,
+        record: &RecordRef,
+        resolution: &mut ContentResolution<'_>,
+    ) -> Result<(), Denial> {
+        self.remove_record(execution, record)?;
+        let mut identities = Identities::default();
+        field_references::visit(execution, schema, view, record, &mut |identity, format| {
+            let frame = resolution.resolve(execution, identity)?;
+            require_format(&frame, format.descriptor())?;
+            visit_directory(execution, identities.len())?;
+            if !identities.contains_key(&identity) {
+                identities
+                    .insert_cloned_native_for_request(&identity, &(), *execution)
+                    .map_err(map_denial)?;
+                visit_directory(execution, self.occurrences.len())?;
+                self.occurrences
+                    .insert_cloned_native_for_request(
+                        &(identity, Some(record.clone())),
+                        &frame,
+                        *execution,
+                    )
+                    .map_err(map_denial)?;
+            }
+            Ok(())
+        })?;
+        if !identities.is_empty() {
+            visit_directory(execution, self.records.len())?;
+            self.records
+                .insert_cloned_native_for_request(record, &identities, *execution)
+                .map_err(map_denial)?;
         }
-        Ok(frame.clone())
+        Ok(())
+    }
+    fn remove_record(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        record: &RecordRef,
+    ) -> Result<(), Denial> {
+        visit_directory(execution, self.records.len())?;
+        let Some(prior) = self.records.get(record).cloned() else {
+            return Ok(());
+        };
+        for identity in prior.keys() {
+            visit_directory(execution, self.occurrences.len())?;
+            if !self
+                .occurrences
+                .remove_for_request(&(*identity, Some(record.clone())), *execution)
+                .map_err(map_denial)?
+            {
+                return Err(Denial::EncodingInconsistency);
+            }
+        }
+        visit_directory(execution, self.records.len())?;
+        if !self
+            .records
+            .remove_for_request(record, *execution)
+            .map_err(map_denial)?
+        {
+            return Err(Denial::EncodingInconsistency);
+        }
+        Ok(())
+    }
+    pub(super) fn publication_records(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        prior: &Self,
+        changed: &[RecordRef],
+    ) -> Result<RelationalContentAttachments, Denial> {
+        let mut selected =
+            ExecutionOrderedMap::<ContentRefId, super::RelationalContentRecord>::default();
+        for record in changed {
+            visit_directory(execution, self.records.len())?;
+            let Some(identities) = self.records.get(record) else {
+                continue;
+            };
+            for identity in identities.keys() {
+                if prior.find(execution, *identity)?.is_some() {
+                    continue;
+                }
+                visit_directory(execution, selected.len())?;
+                if !selected.contains_key(identity) {
+                    // This includes genuine historical custody restored through Source,
+                    // even when the transaction did not encode a new attachment.
+                    let frame = self
+                        .find(execution, *identity)?
+                        .ok_or(Denial::EncodingInconsistency)?;
+                    selected
+                        .insert_cloned_native_for_request(identity, &frame.record(), *execution)
+                        .map_err(map_denial)?;
+                }
+            }
+        }
+        let mut records = RelationalContentAttachments::default();
+        for record in selected.values() {
+            records.append_record(execution, record)?;
+        }
+        Ok(records)
     }
 }
+fn require_format(frame: &RelationalContentFrame, expected: &ContentFormat) -> Result<(), Denial> {
+    if frame.format().name() != expected.name() {
+        return Err(Denial::FormatMismatch);
+    }
+    if frame.format().version() != expected.version() {
+        return Err(Denial::UnsupportedVersion);
+    }
+    Ok(())
+}
 
-fn visit_directory(execution: &ExecutionRequest<'_, '_>, count: usize) -> Result<(), Denial> {
+pub(super) fn visit_directory(
+    execution: &ExecutionRequest<'_, '_>,
+    count: usize,
+) -> Result<(), Denial> {
     let height = 2 * (usize::BITS - count.leading_zeros()) as u64 + 2;
     control::run(execution, |control| {
-        control.checkpoint(height * size_of::<ContentRefId>() as u64)
+        control.checkpoint(
+            height * (size_of::<Occurrence>() + size_of::<RelationalContentFrame>()) as u64,
+        )
     })
 }
 

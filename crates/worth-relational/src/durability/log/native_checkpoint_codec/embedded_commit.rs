@@ -1,6 +1,8 @@
 //! Inline artifacts preserve the runtime-affine envelope projection required by
 //! application checkpoint reconstruction. Its canonical payload digest remains
 //! the journal artifact's digest; index caches are separate members.
+mod seed;
+use seed::EmbeddedCommitSeed;
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::{
@@ -79,4 +81,21 @@ impl EmbeddedCommitWire<'_> {
                 .map_err(super::cold_checkpoint::artifact_stop),
         }
     }
+}
+
+pub(super) fn decode_embedded<'de>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    bytes: &'de [u8],
+) -> Result<EmbeddedCommitWire<'de>, crate::durability::data::RelationalRecoveryStop> {
+    use serde::de::DeserializeSeed;
+    let context = crate::content::decoding::ContentDecodeContext::new(execution);
+    let mut decoder = rmp_serde::Deserializer::from_read_ref(bytes);
+    let result = EmbeddedCommitSeed(&context).deserialize(&mut decoder);
+    if let Some(cause) = context.take_stop() {
+        return Err(crate::durability::data::RelationalRecoveryStop::from(cause));
+    }
+    let wire = result.map_err(|error| {
+        super::manifest_capture::corrupt(format!("inline checkpoint envelope: {error}"))
+    })?;
+    Ok(wire)
 }

@@ -1,5 +1,11 @@
 //! Current native canonical envelope input: managed text remains borrowed until admission.
+#[path = "text_wire/positioned_seed.rs"]
+mod positioned_seed;
+#[path = "text_wire/seed.rs"]
+mod seed;
 use super::{CanonicalCommitAuthorityKind, RelationalDescriptiveTouchGraph};
+pub(crate) use positioned_seed::PositionedEnvelopeSeed;
+pub(crate) use seed::CanonicalEnvelopeSeed;
 use serde::Deserialize;
 
 use crate::diagnostics::data::RelationalDiagnosticArtifact;

@@ -96,16 +96,29 @@ fn content_schema_descriptor_ceiling_and_alias_cannot_rebind_old_authority() {
 }
 
 #[test]
-fn content_readmission_refuses_registered_formats_without_reference_fields() {
+fn content_recorded_declarations_cannot_resolve_a_handle_until_exact_installed_binding() {
     let available = registry(1, 4096, 2);
-    assert!(available.authority_snapshot().entity_kinds.is_empty());
+    let recorded =
+        RelationalContentFormatRegistry::from_recorded(available.content_formats.snapshot())
+            .unwrap();
+    let id = CanonicalDigestId::new([1; 32]);
     assert!(matches!(
-        crate::content::require_content_free_readmission(&available),
-        Err(crate::branch::RelationalBranchRootCaptureDenial::UnadmittedContent)
+        recorded.get(id),
+        Err(RelationalContentDenial::FormatMismatch)
     ));
-    assert!(
-        crate::content::require_content_free_readmission(&RelationalSchemaRegistry::new()).is_ok()
-    );
+    assert!(recorded
+        .bind_recorded(&available.content_formats)
+        .unwrap()
+        .get(id)
+        .is_ok());
+    assert!(matches!(
+        recorded.bind_recorded(&registry(2, 4096, 2).content_formats),
+        Err(RelationalContentDenial::UnsupportedVersion)
+    ));
+    assert!(matches!(
+        recorded.bind_recorded(&registry(1, 2048, 2).content_formats),
+        Err(RelationalContentDenial::FormatMismatch)
+    ));
 }
 
 #[test]
@@ -121,5 +134,30 @@ fn content_schema_compact_roundtrip_preserves_empty_and_nonempty_optional_tails(
             crate::schema::data::schema_authority_snapshot_digest_bytes(&decoded),
             crate::schema::data::schema_authority_snapshot_digest_bytes(&snapshot)
         );
+    }
+}
+
+#[test]
+fn content_schema_carrier_named_and_compact_preserve_every_optional_tail_position() {
+    use crate::durability::data::DurableBranchRootSchemaImage;
+    for registry in [RelationalSchemaRegistry::new(), registry(1, 4096, 2)] {
+        let authority = RelationalBranchRootSchemaAuthority::capture(
+            1,
+            &registry,
+            &registry.authority_snapshot(),
+            crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
+            None,
+        )
+        .unwrap();
+        let image = DurableBranchRootSchemaImage::capture(&authority).unwrap();
+        for bytes in [
+            rmp_serde::to_vec(&image).unwrap(),
+            rmp_serde::to_vec_named(&image).unwrap(),
+        ] {
+            let decoded: DurableBranchRootSchemaImage = rmp_serde::from_slice(&bytes).unwrap();
+            assert_eq!(decoded, image);
+            let (restored, _) = decoded.readmit_registry().unwrap();
+            assert_eq!(restored.authority_snapshot(), registry.authority_snapshot());
+        }
     }
 }

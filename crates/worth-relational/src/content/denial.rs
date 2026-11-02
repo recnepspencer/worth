@@ -3,9 +3,11 @@ use crate::execution::RelationalExecutionDenialCause;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalContentDenial {
     MissingContent,
+    BackingUnavailable {
+        identity: worth_foundational::facade::ContentRefId,
+        cause: crate::storage::data::RelationalStorageUnavailableCause,
+    },
     FormatBindingMissing,
-    DurabilityNotReady,
-    SchemaTransitionRequiresReconstruction,
     FormatMismatch,
     UnsupportedVersion,
     InvalidFormat,
@@ -15,7 +17,10 @@ pub enum RelationalContentDenial {
     EncodingInconsistency,
     InputTypeMismatch,
     DuplicateContentFormat,
-    SizeLimit { observed: usize, maximum: usize },
+    SizeLimit {
+        observed: usize,
+        maximum: usize,
+    },
     ArithmeticOverflow,
     Execution(RelationalExecutionDenialCause),
 }

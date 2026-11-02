@@ -62,7 +62,9 @@ impl CapturedManifest {
                         page.member,
                         RelationalCheckpointMember::New {
                             locator: page.member,
-                            bytes: encoded.1.into(),
+                            bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(
+                                std::sync::Arc::new(encoded.1.into_boxed_slice()),
+                            ),
                         },
                     );
                     continue;
@@ -115,7 +117,9 @@ impl CapturedManifest {
             .entry(member)
             .or_insert(RelationalCheckpointMember::New {
                 locator: member,
-                bytes: bytes.into(),
+                bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(
+                    std::sync::Arc::new(bytes.into_boxed_slice()),
+                ),
             });
         self.manifest.lineage_events.push(descriptor);
         Ok(())

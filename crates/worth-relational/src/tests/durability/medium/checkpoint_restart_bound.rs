@@ -148,7 +148,9 @@ fn place(native: &RelationalNativeCheckpoint, prior: &MemberSource) -> Arc<Membe
             .members()
             .iter()
             .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                RelationalCheckpointMember::New { locator, bytes } => {
+                    (*locator, std::sync::Arc::<[u8]>::from(bytes.bytes()))
+                }
                 RelationalCheckpointMember::Carried { locator } => {
                     (*locator, prior.members[locator].clone())
                 }

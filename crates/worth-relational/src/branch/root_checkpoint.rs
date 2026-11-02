@@ -29,6 +29,9 @@ impl RelationalBranchRootCheckpoint {
     pub(crate) fn new(commit_id: CommitId, root: Arc<super::RelationalBranchRoot>) -> Self {
         Self { root, commit_id }
     }
+    pub(crate) fn content(&self) -> &crate::content::ContentDirectory {
+        self.root.retained_content()
+    }
     pub(crate) fn commit_id(&self) -> CommitId {
         self.commit_id
     }

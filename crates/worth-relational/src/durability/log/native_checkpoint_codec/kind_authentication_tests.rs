@@ -59,11 +59,6 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
                 _ => panic!("first capture owns its members"),
             })
             .collect(),
-        envelopes: attached_test_medium(&runtime)
-            .offered()
-            .iter()
-            .map(|commit| (commit.position(), Arc::<[u8]>::from(commit.as_bytes())))
-            .collect::<BTreeMap<_, _>>(),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(

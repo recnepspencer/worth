@@ -1816,6 +1816,7 @@ dependencies = [
  "worth-store-relational",
  "worth-store-testkit-executables",
  "worth-store-testkit-sweep",
+ "worth-testkit-relational",
 ]
 
 [[package]]
@@ -2461,6 +2462,16 @@ version = "0.1.0"
 dependencies = [
  "glob",
  "serde_json",
+]
+
+[[package]]
+name = "worth-testkit-relational"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational",
 ]
 
 [[package]]

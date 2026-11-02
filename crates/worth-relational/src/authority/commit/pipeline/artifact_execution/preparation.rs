@@ -97,10 +97,11 @@ pub(super) fn prepare_publication_artifacts(
             .retained_schema_authority()
             .registry_arc(),
     };
-    working_state
+    working_state.content = working_state
         .content
-        .validate_final_fields(
+        .prepare_final_fields(
             execution,
+            selected_branch_state.state().root(),
             &content_schema,
             working_state,
             &publication.changed_records,

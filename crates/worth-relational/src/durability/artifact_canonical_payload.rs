@@ -15,28 +15,62 @@ pub(crate) fn is_canonical_payload(canonical: &impl Serialize, payload: &[u8]) -
     let mut comparison = PayloadComparison {
         remaining: payload,
         diverged: false,
+        context: None,
+        stop: None,
     };
     let compared = rmp_serde::encode::write_named(&mut comparison, canonical);
     compared.is_ok() && !comparison.diverged && comparison.remaining.is_empty()
 }
 
-struct PayloadComparison<'a> {
-    remaining: &'a [u8],
-    diverged: bool,
+pub(crate) fn is_canonical_payload_with_original_context(
+    canonical: &impl Serialize,
+    payload: &[u8],
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
+    let mut comparison = PayloadComparison {
+        remaining: payload,
+        diverged: false,
+        context: Some(context),
+        stop: None,
+    };
+    let compared = rmp_serde::encode::write_named(&mut comparison, canonical);
+    if let Some(stop) = comparison.stop {
+        return Err(stop);
+    }
+    Ok(compared.is_ok() && !comparison.diverged && comparison.remaining.is_empty())
 }
 
-impl Write for PayloadComparison<'_> {
+struct PayloadComparison<'a, 'context, 'scope, 'lease> {
+    remaining: &'a [u8],
+    diverged: bool,
+    context: Option<&'context mut worth_execution::MapKernelContext<'scope, 'lease>>,
+    stop: Option<crate::execution::RelationalExecutionDenialCause>,
+}
+
+impl Write for PayloadComparison<'_, '_, '_, '_> {
     fn write(&mut self, input: &[u8]) -> io::Result<usize> {
-        match self.remaining.strip_prefix(input) {
-            Some(rest) if !self.diverged => {
-                self.remaining = rest;
-                Ok(input.len())
+        if self.stop.is_some() {
+            return Err(io::Error::other("original canonical comparison stopped"));
+        }
+        for chunk in input.chunks(4096) {
+            if let Some(context) = &mut self.context
+                && let Err(cause) =
+                    crate::execution::request_stage::checkpoint(context, 2 * chunk.len() as u64)
+            {
+                self.stop = Some(cause.into());
+                return Err(io::Error::other("original canonical comparison stopped"));
             }
-            _ => {
-                self.diverged = true;
-                Err(io::Error::other("payload diverges from canonical encoding"))
+            match self.remaining.strip_prefix(chunk) {
+                Some(rest) if !self.diverged => {
+                    self.remaining = rest;
+                }
+                _ => {
+                    self.diverged = true;
+                    return Err(io::Error::other("payload diverges from canonical encoding"));
+                }
             }
         }
+        Ok(input.len())
     }
 
     fn flush(&mut self) -> io::Result<()> {

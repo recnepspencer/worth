@@ -14,6 +14,23 @@ const LEFT: CanonicalDigestId = CanonicalDigestId::new([12; 32]);
 const RIGHT: CanonicalDigestId = CanonicalDigestId::new([13; 32]);
 
 pub(super) fn fixture_builder() -> (RelationalRuntimeBuilder, AspectContract) {
+    let (registry, contract) = fixture_registry(
+        Arc::new(Codec {
+            descriptor: ContentFormat::new("sample-grid", 1).unwrap(),
+            alter: false,
+        }),
+        SchemaVersionId(1),
+    );
+    (
+        RelationalRuntimeApi::builder().schema_registry(registry),
+        contract,
+    )
+}
+
+pub(super) fn fixture_registry(
+    codec: Arc<dyn worth_relational::facade::content::RelationalContentCodec>,
+    schema_version_id: SchemaVersionId,
+) -> (RelationalSchemaRegistry, AspectContract) {
     let fields = [("left", LEFT), ("right", RIGHT)].map(|(name, binding)| {
         FieldDeclaration::new(
             FieldKey::new(name).unwrap(),
@@ -32,6 +49,7 @@ pub(super) fn fixture_builder() -> (RelationalRuntimeBuilder, AspectContract) {
         StructAspectShape::new(fields).unwrap(),
     );
     let fixture = worth_testkit_relational::aspect_storage::AspectSchemaFixture {
+        schema_version_id,
         entity_aspects: vec![DeclaredAspectContractBinding {
             binding: AspectBinding::EntityField {
                 field: FieldKey::new("samples").unwrap(),
@@ -42,13 +60,7 @@ pub(super) fn fixture_builder() -> (RelationalRuntimeBuilder, AspectContract) {
     };
     let registry = fixture
         .build_registry()
-        .register_content_format(
-            FORMAT,
-            Arc::new(Codec {
-                descriptor: ContentFormat::new("sample-grid", 1).unwrap(),
-                alter: false,
-            }),
-        )
+        .register_content_format(FORMAT, codec)
         .unwrap()
         .bind_content_field(LEFT, FORMAT)
         .unwrap()
@@ -71,10 +83,7 @@ pub(super) fn fixture_builder() -> (RelationalRuntimeBuilder, AspectContract) {
             }),
         )
         .unwrap();
-    (
-        RelationalRuntimeApi::builder().schema_registry(registry),
-        contract,
-    )
+    (registry, contract)
 }
 
 pub(crate) fn fixture() -> (RelationalRuntime, AspectContract) {

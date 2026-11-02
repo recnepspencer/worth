@@ -8,6 +8,7 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+worth-testkit-relational = { path = "../../../../crates/worth-testkit-relational" }
 worth-store-testkit-sweep = { path = "../worth-store-testkit-sweep" }
 "sha2" = { "version" = "^0.10" }
 "tempfile" = { "version" = "^3" }

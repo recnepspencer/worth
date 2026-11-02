@@ -107,6 +107,13 @@ impl RelationalTransactionValidationInput {
         }
     }
 
+    pub(crate) fn with_recovered_content(
+        mut self,
+        content: crate::content::RelationalContentAttachments,
+    ) -> Self {
+        self.content = content;
+        self
+    }
     pub(crate) fn content(&self) -> &crate::content::RelationalContentAttachments {
         &self.content
     }

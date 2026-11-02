@@ -13,6 +13,8 @@ use super::HistorySubsystem;
 impl HistorySubsystem {
     pub(crate) fn readmit_branch_region_directory(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        content_records: &crate::content::RelationalContentAttachments,
         regions: Vec<crate::branch::RelationalRootRegionCheckpoint>,
         envelope: Arc<CanonicalCommitEnvelope>,
         descriptor: crate::branch::RelationalBranchRootDescriptor,
@@ -20,6 +22,8 @@ impl HistorySubsystem {
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
         RelationalBranchRoot::readmit_region_directory(
             &self.root_identity_issuer,
+            execution,
+            content_records,
             regions,
             envelope,
             descriptor,
@@ -59,6 +63,8 @@ impl HistorySubsystem {
 
     pub(crate) fn readmit_branch_root(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        content_records: &crate::content::RelationalContentAttachments,
         partitions: BTreeMap<
             crate::identity::data::PartitionId,
             crate::storage::overlay::PartitionState,
@@ -70,6 +76,8 @@ impl HistorySubsystem {
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
         RelationalBranchRoot::readmit(
             &self.root_identity_issuer,
+            execution,
+            content_records,
             partitions,
             envelope,
             descriptor,

@@ -239,7 +239,9 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
             .members()
             .iter()
             .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                RelationalCheckpointMember::New { locator, bytes } => {
+                    (*locator, std::sync::Arc::<[u8]>::from(bytes.bytes()))
+                }
                 _ => panic!("first capture owns all members"),
             })
             .collect(),

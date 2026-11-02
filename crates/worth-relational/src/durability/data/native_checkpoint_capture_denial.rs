@@ -5,7 +5,11 @@ use super::DurabilityError;
 /// Runtime capture refusal. Allocation custody is not a durable recovery record.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RelationalNativeCheckpointCaptureDenial {
+    ArtifactFrame(
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal,
+    ),
     Durability(DurabilityError),
+    Content(crate::content::RelationalContentDenial),
     Allocation(ExecutionAllocationDenial),
     Request(crate::execution::RelationalExecutionDenialCause),
 }
@@ -25,6 +29,11 @@ impl From<ExecutionAllocationDenial> for RelationalNativeCheckpointCaptureDenial
 impl std::fmt::Display for RelationalNativeCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ArtifactFrame(cause) => write!(
+                formatter,
+                "native checkpoint source artifact frame: {cause:?}"
+            ),
+            Self::Content(cause) => write!(formatter, "native checkpoint content: {cause:?}"),
             Self::Durability(error) => write!(formatter, "native checkpoint durability: {error:?}"),
             Self::Request(cause) => write!(formatter, "native checkpoint request: {cause:?}"),
             Self::Allocation(error) => write!(formatter, "native checkpoint allocation: {error}"),
@@ -35,8 +44,9 @@ impl std::fmt::Display for RelationalNativeCheckpointCaptureDenial {
 impl std::error::Error for RelationalNativeCheckpointCaptureDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
+            Self::ArtifactFrame(cause) => Some(cause),
             Self::Allocation(error) => Some(error),
-            Self::Durability(_) | Self::Request(_) => None,
+            Self::Durability(_) | Self::Request(_) | Self::Content(_) => None,
         }
     }
 }
@@ -51,6 +61,8 @@ impl
     ) -> Self {
         use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial as Encode;
         match error {
+            Encode::Frame(cause) => Self::ArtifactFrame(cause),
+            Encode::Request(cause) => Self::Request(cause),
             Encode::Allocation(error) => Self::Allocation(error),
             Encode::StorageUnavailable(failure) => Self::Durability(failure.into()),
             error => Self::Durability(super::DurabilityError::new(
@@ -77,6 +89,25 @@ impl From<crate::storage::residency::RelationalResidencyDemandFailure>
         match failure {
             Failure::StorageUnavailable(failure) => failure.into(),
             Failure::Request(cause) => Self::Request(cause),
+        }
+    }
+}
+
+impl From<crate::content::RelationalContentDenial> for RelationalNativeCheckpointCaptureDenial {
+    fn from(cause: crate::content::RelationalContentDenial) -> Self {
+        match cause {
+            crate::content::RelationalContentDenial::Execution(cause) => Self::Request(cause),
+            cause => Self::Content(cause),
+        }
+    }
+}
+impl From<super::RelationalRecoveryStop> for RelationalNativeCheckpointCaptureDenial {
+    fn from(cause: super::RelationalRecoveryStop) -> Self {
+        match cause {
+            super::RelationalRecoveryStop::Request(cause) => Self::Request(cause),
+            super::RelationalRecoveryStop::Allocation(cause) => Self::Allocation(cause),
+            super::RelationalRecoveryStop::Durability(cause) => Self::Durability(cause),
+            super::RelationalRecoveryStop::Content(cause) => Self::Content(cause),
         }
     }
 }

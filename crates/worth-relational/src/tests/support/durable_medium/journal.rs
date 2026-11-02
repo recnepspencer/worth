@@ -23,7 +23,8 @@ impl TestDurableJournal {
             if let crate::durability::data::RelationalCheckpointMember::New { locator, bytes } =
                 member
             {
-                self.checkpoint_members.insert(*locator, bytes.clone());
+                self.checkpoint_members
+                    .insert(*locator, std::sync::Arc::<[u8]>::from(bytes.bytes()));
             }
         }
         self.checkpoint = Some(checkpoint);

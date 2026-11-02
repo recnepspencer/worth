@@ -6,7 +6,7 @@ use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use worth_execution::ExecutionRequest;
+use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
 
 pub(crate) fn decode_checkpoint(
     execution: &ExecutionRequest<'_, '_>,
@@ -43,36 +43,41 @@ pub(crate) fn decode_checkpoint_from_source(
     } else {
         let mut members = BTreeMap::new();
         for (locator, bytes) in wire.members {
-            if super::member_frame::locator(bytes.0) != locator
-                || members
-                    .insert(locator, Arc::<[u8]>::from(bytes.0))
-                    .is_some()
+            if super::member_frame::locator_for_request(execution, bytes.0)
+                .map_err(RelationalRecoveryStop::Request)?
+                != locator
+                || members.contains_key(&locator)
             {
                 return Err(
                     corrupt("inline checkpoint member digest or uniqueness mismatch").into(),
                 );
             }
+            let mut owned = ExecutionRequestArrayBuilder::<u8>::allocate(*execution, bytes.0.len())
+                .map_err(inline_allocation)?;
+            for chunk in bytes.0.chunks(4096) {
+                crate::content::charge_bytes(execution, chunk.len())?;
+                owned.extend_from_slice(chunk).map_err(inline_allocation)?;
+            }
+            members.insert(
+                locator,
+                owned
+                    .seal()
+                    .map_err(inline_allocation)?
+                    .into_immutable_bytes(),
+            );
         }
-        let mut envelopes = BTreeMap::new();
         let mut admitted = BTreeMap::new();
         for bytes in wire.envelopes {
-            let wire: super::embedded_commit::EmbeddedCommitWire<'_> =
-                rmp_serde::from_slice(bytes.0)
-                    .map_err(|error| corrupt(format!("inline checkpoint envelope: {error}")))?;
+            let wire = super::embedded_commit::decode_embedded(execution, bytes.0)?;
             let commit = wire.readmit(execution)?;
-            let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_positioned(
-                &commit, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-                .map_err(|error| corrupt(format!("inline checkpoint journal projection: {error:?}")))?;
-            if envelopes
-                .insert(commit.position(), Arc::<[u8]>::from(artifact.as_bytes()))
-                .is_some()
-                || admitted.insert(commit.position(), commit).is_some()
-            {
+            // expand consumes the admitted commits directly. Projecting another
+            // journal byte copy here creates no authority and retains no useful data.
+            if admitted.insert(commit.position(), commit).is_some() {
                 return Err(corrupt("duplicate inline checkpoint envelope position").into());
             }
         }
         inline = Some(admitted);
-        Arc::new(InlineCheckpointSource { members, envelopes })
+        Arc::new(InlineCheckpointSource { members })
     };
     let checkpoint = match inline {
         Some(envelopes) => super::expanded_checkpoint::expand(
@@ -85,4 +90,19 @@ pub(crate) fn decode_checkpoint_from_source(
         None => super::cold_checkpoint::readmit(execution, wire.manifest, source, facts)?,
     };
     Ok(DecodedNativeCheckpoint { checkpoint })
+}
+
+fn inline_allocation(
+    cause: worth_execution::ExecutionRequestArrayDenial,
+) -> RelationalRecoveryStop {
+    use worth_execution::ExecutionRequestArrayDenial as Denial;
+    match cause {
+        Denial::Request(cause) => RelationalRecoveryStop::Request(cause.into()),
+        Denial::Allocation(cause) => RelationalRecoveryStop::Request(match cause.classify() {
+            worth_execution::ExecutionAllocationDenialClass::Request(cause) => cause.into(),
+            worth_execution::ExecutionAllocationDenialClass::Physical(_) => {
+                crate::execution::RelationalExecutionDenialCause::AllocationFailed
+            }
+        }),
+    }
 }

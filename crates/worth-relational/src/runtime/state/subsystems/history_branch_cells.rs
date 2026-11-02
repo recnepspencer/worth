@@ -101,13 +101,14 @@ impl HistorySubsystem {
 
     pub(crate) fn admit_recovered_branch_cell(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: RelationalBranchCellCheckpoint,
         expected_branch_id: &BranchId,
         recovered_root: Option<Arc<crate::branch::RelationalBranchRoot>>,
         recovered_provenance_root: Option<Arc<crate::branch::RelationalBranchRoot>>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::symbols::data::StringInterner,
-    ) -> Result<(), String> {
+    ) -> Result<(), super::history_catalog_recovery::RelationalHistoryRecoveryDenial> {
         // A replayed commit's prior cell state that equals a cell recovery
         // already admitted (from the checkpoint or an earlier tail commit),
         // once rebound to this runtime, was validated then, including its fork
@@ -139,6 +140,7 @@ impl HistorySubsystem {
         {
             let commit_id = CommitId(target.selected_commit_id());
             self.readmit_replayed_root_descriptor(
+                execution,
                 commit_id,
                 target.roots().clone(),
                 recovered_provenance_root.ok_or_else(|| {
@@ -156,19 +158,14 @@ impl HistorySubsystem {
                 let commit_id = CommitId(target.selected_commit_id());
                 Some(
                     self.readmit_replayed_root_descriptor(
+                        execution,
                         commit_id,
                         target.roots().clone(),
                         recovered_root.ok_or_else(|| {
                             format!("recovery root `{}` is unavailable", commit_id.0)
                         })?,
                         symbols,
-                    )
-                    .map_err(|detail| {
-                        format!(
-                            "tail branch cell references unavailable branch root `{}`: {detail}",
-                            commit_id.0
-                        )
-                    })?,
+                    )?,
                 )
             }
         };
@@ -200,7 +197,8 @@ impl HistorySubsystem {
             return Err(format!(
                 "recovery branch-cell `{}` does not match envelope branch `{}`",
                 branch_id.0, expected_branch_id.0
-            ));
+            )
+            .into());
         }
         history_recovery_validation::validate_recovered_branch_cell(self, &cell)?;
         if let Some(existing) = self.branch_cell(&branch_id) {
@@ -228,10 +226,9 @@ impl HistorySubsystem {
                 return Ok(());
             }
             if !history_recovery_validation::branch_cell_truth_matches(&existing, &incoming) {
-                return Err(format!(
-                    "recovery branch-cell state conflicts for `{}`",
-                    branch_id.0
-                ));
+                return Err(
+                    format!("recovery branch-cell state conflicts for `{}`", branch_id.0).into(),
+                );
             }
             return Ok(());
         }

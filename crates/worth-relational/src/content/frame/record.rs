@@ -48,7 +48,13 @@ impl Eq for RelationalContentRecord {}
 
 impl Serialize for RelationalContentRecord {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        (&self.identity, self.bytes()).serialize(serializer)
+        struct Binary<'a>(&'a [u8]);
+        impl Serialize for Binary<'_> {
+            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                serializer.serialize_bytes(self.0)
+            }
+        }
+        (&self.identity, Binary(self.bytes())).serialize(serializer)
     }
 }
 
@@ -65,6 +71,17 @@ impl<'de> Deserialize<'de> for RelationalContentRecord {
                         formatter: &mut std::fmt::Formatter<'_>,
                     ) -> std::fmt::Result {
                         formatter.write_str("a Native content frame within its fixed size ceiling")
+                    }
+                    fn visit_bytes<E: serde::de::Error>(
+                        self,
+                        input: &[u8],
+                    ) -> Result<Self::Value, E> {
+                        super::layout::admit_length(input.len(), MAXIMUM_CONTENT_FRAME_BYTES)
+                            .map_err(E::custom)?;
+                        let mut bytes = Vec::new();
+                        bytes.try_reserve_exact(input.len()).map_err(E::custom)?;
+                        bytes.extend_from_slice(input);
+                        Ok(BoundedBytes(bytes))
                     }
                     fn visit_seq<A: serde::de::SeqAccess<'de>>(
                         self,
@@ -88,7 +105,7 @@ impl<'de> Deserialize<'de> for RelationalContentRecord {
                         Ok(BoundedBytes(bytes))
                     }
                 }
-                deserializer.deserialize_seq(Visitor)
+                deserializer.deserialize_bytes(Visitor)
             }
         }
         let (identity, bytes) = <(ContentRefId, BoundedBytes)>::deserialize(deserializer)?;

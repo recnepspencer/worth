@@ -86,7 +86,6 @@ pub(crate) fn apply_mutation_draft(
     content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
     require_original_source_interpretation(identity, &source_interpretation)?;
-    require_content_durability(runtime, content)?;
     let materialization = source_interpretation.materialization_mode();
     let version_id = identity.proposed_version_id();
     let apply_plan = AuthoritativeApplyPlan {
@@ -133,6 +132,7 @@ pub(crate) fn apply_mutation_draft(
         &state,
         &outcome.effect.publication.changed_records,
         version_id,
+        None,
     )
     .map_err(crate::content::commit_denial)?;
     crate::authority::mutation::apply_adjacency_deltas(
@@ -171,7 +171,6 @@ pub(crate) fn apply_retained_entity_selection_draft(
     content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
     require_original_source_interpretation(identity, &source_interpretation)?;
-    require_content_durability(runtime, content)?;
     crate::aggregate_identity::guard::retained_entity_selection(
         execution,
         runtime.commit_work_budget.as_ref(),
@@ -204,6 +203,7 @@ pub(crate) fn apply_retained_entity_selection_draft(
         &state,
         &outcome.effect.publication.changed_records,
         identity.proposed_version_id(),
+        Some(retained._source.inner.root.retained_content()),
     )
     .map_err(crate::content::commit_denial)?;
     let aggregate = crate::aggregate_identity::AggregateProposal::capture(
@@ -240,17 +240,4 @@ fn require_original_source_interpretation(
         ),
     )
     .into())
-}
-
-fn require_content_durability(
-    runtime: &RelationalPreparationRuntime,
-    content: &crate::content::RelationalContentAttachments,
-) -> Result<(), MutationApplyDenial> {
-    if runtime.durability_admission.has_medium() && !content.is_empty() {
-        return Err(crate::content::commit_denial(
-            crate::content::RelationalContentDenial::DurabilityNotReady,
-        )
-        .into());
-    }
-    Ok(())
 }

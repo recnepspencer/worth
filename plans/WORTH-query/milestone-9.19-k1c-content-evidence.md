@@ -241,3 +241,636 @@ still fails untouched Proof coverage.rs:84 (`collapsible_if`). No lint or
 enforcement suppression was added. The same reviewer approved this merge
 integration under all three review skills and the AGENTS untouched-debt
 exception; it is not slice 2 completion.
+
+## Slice 2 durable content evidence ledger
+
+The original build identity was `11111111-1111-1111-1111-111111111111`.
+Commands ran as hidden background processes with output retained under
+`target/k1c-logs`; each process wrote its exit before the log was inspected.
+No workspace-wide build or test ran. Rows include unsuccessful development
+runs, not only final gates. Filtered counts describe the actual executed binary.
+The affected packages are Native, its certification court, shared Native testkit,
+and the Store relational court. No Query execution generic engine changed.
+
+| Log | Exact command | Exit | Result |
+|---|---|---:|---|
+| `slice2-fmt1` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check1` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-fmt2` | `cargo fmt -p worth-relational` | 1 | See failure excerpts and correction notes below. |
+| `slice2-check2` | `cargo check -p worth-relational` | 101 | error[E0583]: file not found for module `seed`; error[E0583]: file not found for module `positioned_seed`; error[E0432]: unresolved import `crate::history::data::PositionedEnvelopeSeed`; error[E0599]: no method named `position` found for struct `rmp_serde::Deserializer<ReadRefReader<'_, [u8]>>` in the ; error[E0004]: non-exhaustive patterns: `Err(recovery_stop::RelationalRecoveryStop::Content(_))` not covered; error[E0004]: non-exhaustive patterns: `recovery_stop::RelationalRecoveryStop::Content(_)` not covered; error: could not compile `worth-relational` (lib) due to 11 previous errors; 1 warning emitted |
+| `slice2-fmt3` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check3` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-fmt4` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check4` | `cargo check -p worth-relational` | 101 | error[E0624]: associated function `capture` is private; error[E0624]: method `readmit` is private; error: could not compile `worth-relational` (lib) due to 2 previous errors |
+| `slice2-fmt5` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check5` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-fmt6` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check6` | `cargo check -p worth-relational` | 101 | error[E0599]: no method named `version_id` found for struct `root::RelationalBranchRoot` in the current scope; error: could not compile `worth-relational` (lib) due to 1 previous error |
+| `slice2-fmt7` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check7` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content1` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content -- --nocapture` | 0 | test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.06s |
+| `slice2-fmt8` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check8` | `cargo check -p worth-relational` | 101 | error[E0425]: cannot find type `RelationalPersistentRegionSet` in module `super`; error[E0425]: cannot find type `RelationalBranchRootPublicationCost` in module `super`; error[E0425]: cannot find type `RelationalBranchRootSchemaAuthority` in module `super`; error[E0433]: cannot find `root_checkpoint` in `super`; error[E0433]: cannot find `RelationalRootRegion` in `super`; error[E0433]: cannot find `RelationalPersistentRegionSet` in `super`; error[E0433]: cannot find type `ExecutionByteBuffer` in this scope; error[E0599]: no method named `bytes` found for struct `worth_foundational::ContentRefId` in the current scope; error: could not compile `worth-relational` (lib) due to 10 previous errors; 1 warning emitted |
+| `slice2-fmt9` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check9` | `cargo check -p worth-relational` | 101 | error[E0425]: cannot find type `RelationalBranchRootPublicationCost` in module `super`; error[E0433]: cannot find `RelationalRootRegion` in `branch`; error: could not compile `worth-relational` (lib) due to 2 previous errors |
+| `slice2-fmt10` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice2-recovery1` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::recovery -- --nocapture` | 0 | test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 171 filtered out; finished in 0.03s |
+| `slice2-fmt11` | `cargo fmt -p worth-relational` | 1 | See failure excerpts and correction notes below. |
+| `slice2-check11` | `cargo check -p worth-relational` | 101 | error[E0583]: file not found for module `denial`; error[E0308]: `?` operator has incompatible types; error[E0599]: `!` is not an iterator; error: could not compile `worth-relational` (lib) due to 3 previous errors; 3 warnings emitted |
+| `slice2-fmt12` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-check12` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-fmt13` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice2-recovery2` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::recovery -- --nocapture` | 101 | test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 171 filtered out; finished in 0.05s; error: test failed, to rerun pass `-p worth-court-relational-certification --test worth_court_relational_certification` |
+| `slice2-native1` | `cargo test -p worth-relational --lib content -- --nocapture` | 101 | error[E0061]: this method takes 3 arguments but 2 arguments were supplied; error[E0061]: this method takes 2 arguments but 1 argument was supplied; error[E0277]: a value of type `BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>` cannot be built from an iterator ; error[E0277]: the trait bound `ExecutionImmutableBytes: From<Vec<u8>>` is not satisfied; error[E0308]: mismatched types; error[E0308]: `match` arms have incompatible types; error[E0004]: non-exhaustive patterns: `recovery_stop::RelationalRecoveryStop::Content(_)` not covered; error: could not compile `worth-relational` (lib test) due to 18 previous errors; 2 warnings emitted |
+| `slice2-fmt14` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice2-recovery3` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::recovery -- --nocapture` | 101 | test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 171 filtered out; finished in 0.04s; error: test failed, to rerun pass `-p worth-court-relational-certification --test worth_court_relational_certification` |
+| `slice2-native2` | `cargo test -p worth-relational --lib content -- --nocapture` | 101 | error[E0277]: a value of type `BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>` cannot be built from an iterator ; error: could not compile `worth-relational` (lib test) due to 1 previous error; 2 warnings emitted |
+| `slice2-fmt15` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice2-recovery4` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.08s |
+| `slice2-native3` | `cargo test -p worth-relational --lib content -- --nocapture` | 0 | test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 2235 filtered out; finished in 1.44s |
+| `slice2-fmt16` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice2-content2` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.09s |
+| `slice2-artifact1` | `cargo test -p worth-relational --lib canonical_commit_artifact -- --nocapture` | 0 | test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 2262 filtered out; finished in 0.04s |
+| `slice2-fmt17` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt1` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-store1` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 101 | error[E0277]: the trait bound `RelationalExecutionDenialCause: From<ExecutionAllocationDenial>` is not satisfied; error: could not compile `worth-relational` (lib) due to 1 previous error |
+| `slice2-fmt18` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt2` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-store2` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 101 | error[E0659]: `EntityId` is ambiguous; error[E0659]: `PartitionId` is ambiguous; error[E0308]: mismatched types; error: could not compile `worth-store-court-relational` (test "worth_store_court_relational") due to 6 previous errors |
+| `slice2-fmt19` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt3` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-store3` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 101 | test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 58 filtered out; finished in 2.66s; error: test failed, to rerun pass `-p worth-store-court-relational --test worth_store_court_relational` |
+| `slice2-fmt20` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content3` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.53s |
+| `slice2-native4` | `cargo test -p worth-relational --lib content -- --nocapture` | 101 | error[E0433]: cannot find `RelationalRuntimeApi` in `runtime`; error: could not compile `worth-relational` (lib test) due to 1 previous error; 3 warnings emitted |
+| `slice2-fmt21` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt4` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-store4` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 101 | test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 58 filtered out; finished in 2.18s; error: test failed, to rerun pass `-p worth-store-court-relational --test worth_store_court_relational` |
+| `slice2-fmt22` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content4` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.56s |
+| `slice2-native5` | `cargo test -p worth-relational --lib content -- --nocapture` | 0 | test result: ok. 38 passed; 0 failed; 0 ignored; 0 measured; 2235 filtered out; finished in 1.22s |
+| `slice2-fmt23` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt5` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-store5` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 101 | test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 58 filtered out; finished in 2.10s; error: test failed, to rerun pass `-p worth-store-court-relational --test worth_store_court_relational` |
+| `slice2-fmt-check1` | `cargo fmt --check -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt-check1` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml --check -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-clippy1` | `cargo clippy -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational --all-targets` | 101 | error: this `if` statement can be collapsed; error: could not compile `worth-proof` (lib) due to 1 previous error |
+| `slice2-storeclippy1` | `cargo clippy --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --all-targets` | 101 | error: using `chunks_exact` with a constant chunk size; error: could not compile `worth-store-court-relational` (test "worth_store_court_relational") due to 1 previous error |
+| `slice2-boundary1` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 1 | error: process didn't exit successfully: `C:/worth-build-cache/target-cut-k1c-content\debug\boundary-check.exe --root ; BC9002_TEST_TOPOLOGY crates/worth-relational/src/durability/checkpoints/content/tests.rs::file: {"source":"crates/worth; BC9002_TEST_TOPOLOGY crates/worth-relational/src/history/data/canonical_commit_envelope/tests.rs::file: {"source":"crat |
+| `slice2-context1` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `slice2-caps1` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 122 Rust files |
+| `slice2-diff-head1` | `git diff --check origin/master...HEAD` | 0 | Completed successfully (no test count). |
+| `slice2-diff-dirty1` | `git diff --check` | 0 | Completed successfully (no test count). |
+| `slice2-fmt24` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content5` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 101 | error[E0277]: `?` couldn't convert the error to `RelationalContentDenial`; error: could not compile `worth-relational` (lib) due to 1 previous error |
+| `slice2-native6` | `cargo test -p worth-relational --lib content -- --nocapture` | 101 | error[E0277]: `?` couldn't convert the error to `RelationalContentDenial`; error: could not compile `worth-relational` (lib) due to 1 previous error |
+| `slice2-fmt25` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content6` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 101 | error[E0624]: method `publish_prepared_candidate` is private; error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 2  |
+| `slice2-native7` | `cargo test -p worth-relational --lib content -- --nocapture` | 101 | error[E0308]: mismatched types; error: could not compile `worth-relational` (lib test) due to 1 previous error; 3 warnings emitted |
+| `slice2-fmt26` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content7` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 101 | test result: FAILED. 37 passed; 1 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.62s; error: test failed, to rerun pass `-p worth-court-relational-certification --test worth_court_relational_certification` |
+| `slice2-native8` | `cargo test -p worth-relational --lib content -- --nocapture` | 0 | test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 2235 filtered out; finished in 1.18s |
+| `slice2-fmt27` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content8` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 101 | test result: FAILED. 38 passed; 1 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.57s; error: test failed, to rerun pass `-p worth-court-relational-certification --test worth_court_relational_certification` |
+| `slice2-native9` | `cargo test -p worth-relational --lib content -- --nocapture` | 0 | test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 2235 filtered out; finished in 2.88s |
+| `slice2-fmt28` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt6` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-store6` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 101 | error[E0277]: the trait bound `[u8; 8]: TryFrom<&[u8; 8]>` is not satisfied; error: could not compile `worth-store-court-relational` (test "worth_store_court_relational") due to 1 previous error |
+| `slice2-fmt29` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-work1` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content_durable_artifact_original_work_exhaustion_is_exact_and_pre_effect -- --nocapture` | 0 | test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 187 filtered out; finished in 0.07s |
+| `slice2-boundary2` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | boundary-check: repository boundaries are valid |
+| `slice2-context2` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `slice2-caps2` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 128 Rust files |
+| `slice2-fmt30` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-capture-check1` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-fmt31` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content9` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 101 | test result: FAILED. 41 passed; 1 failed; 0 ignored; 0 measured; 149 filtered out; finished in 1.73s; error: test failed, to rerun pass `-p worth-court-relational-certification --test worth_court_relational_certification` |
+| `slice2-fmt32` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content10` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 1.00s |
+| `slice2-fmt33` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-capture-check2` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content11` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 1.03s |
+| `slice2-native10` | `cargo test -p worth-relational --lib content -- --nocapture` | 0 | test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 2235 filtered out; finished in 1.15s |
+| `slice2-store7` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 0 | test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 9.14s |
+| `slice2-fmt34` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt7` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-store8` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 0 | test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 5.99s |
+| `slice2-store-cold1` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational residency_capture -- --nocapture` | 0 | test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 23.13s |
+| `slice2-fmt-check2` | `cargo fmt --check -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storefmt-check2` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml --check -p worth-store-court-relational` | 1 | See failure excerpts and correction notes below. |
+| `slice2-clippy2` | `cargo clippy -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational --all-targets` | 101 | error: this `if` statement can be collapsed; error: could not compile `worth-proof` (lib) due to 1 previous error |
+| `slice2-storeclippy2` | `cargo clippy --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --all-targets` | 0 | Completed successfully (no test count). |
+| `slice2-boundary3` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | boundary-check: repository boundaries are valid |
+| `slice2-context3` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `slice2-caps3` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 135 Rust files |
+| `slice2-diff-head2` | `git diff --check origin/master...HEAD` | 0 | Completed successfully (no test count). |
+| `slice2-diff-dirty2` | `git diff --check` | 2 | 353 whitespace diagnostics: plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:1: trailing whitespace.; plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:2: trailing whitespace.; plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:3: trailing whitespace.. Quoted historical ledger outcomes are not new test runs. |
+| `slice2-storefmt8` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-store9` | `cargo test --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --test worth_store_court_relational content:: -- --nocapture` | 0 | test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 6.00s |
+| `slice2-storefmt-check3` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml --check -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storeclippy3` | `cargo clippy --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --all-targets` | 0 | Completed successfully (no test count). |
+| `slice2-clippy-own1` | `cargo clippy -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational --all-targets --no-deps` | 101 | error: this `if` statement can be collapsed; error: this expression creates a reference which is immediately dereferenced by the compiler; error: unnecessary `if let` since only the `Some` variant of the iterator element is used; error: mutable key type; error: useless conversion to the same type: `durability::data::recovery_stop::RelationalRecoveryStop`; error: usage of `contains_key` followed by `insert` on a `BTreeMap`; error: the following explicit lifetimes could be elided: 'a; error: match can be simplified with `.unwrap_or_default()`; error: use of a disallowed method `std::ptr::from_ref`; error: returning the result of a `let` binding from a block; error: useless conversion to the same type: ; error: use of a disallowed method `std::sync::Arc::as_ptr`; error: could not compile `worth-relational` (lib) due to 18 previous errors; 8 warnings emitted |
+| `slice2-boundary4` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | boundary-check: repository boundaries are valid |
+| `slice2-context4` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `slice2-caps4` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 136 Rust files |
+| `slice2-fmt35` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-content12` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.98s |
+| `slice2-fmt-check3` | `cargo fmt --check -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-fmt36` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-clippy-own2` | `cargo clippy -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational --all-targets --no-deps` | 101 | error[E0308]: mismatched types; error: could not compile `worth-relational` (lib) due to 2 previous errors |
+| `slice2-content13` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 101 | error[E0308]: mismatched types; error: could not compile `worth-relational` (lib) due to 2 previous errors |
+| `slice2-fmt37` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-clippy-native-own3` | `cargo clippy -p worth-relational --all-targets --no-deps` | 101 | error: this `if` statement can be collapsed; error: this expression creates a reference which is immediately dereferenced by the compiler; error: mutable key type; error: the following explicit lifetimes could be elided: 'a; error: unused "map closure" when calling `Option::map_or_else` value; error: use of a disallowed method `std::ptr::from_ref`; error: returning the result of a `let` binding from a block; error: use of a disallowed method `std::sync::Arc::as_ptr`; error: could not compile `worth-relational` (lib) due to 11 previous errors; 8 warnings emitted |
+| `slice2-clippy-court-own1` | `cargo clippy -p worth-court-relational-certification -p worth-testkit-relational --all-targets --no-deps` | 101 | error: unnecessary `>= y + 1` or `x - 1 >=`; error: unnecessary closure used with `bool::then`; error: called `.err().expect()` on a `Result` value; error: this `if` statement can be collapsed; error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 6  |
+| `slice2-content14` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 0.99s |
+| `slice2-fmt-check4` | `cargo fmt --check -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-clippy3` | `cargo clippy -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational --all-targets` | 101 | error: this `if` statement can be collapsed; error: could not compile `worth-proof` (lib) due to 1 previous error |
+| `slice2-storefmt-check4` | `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml --check -p worth-store-court-relational` | 0 | Completed successfully (no test count). |
+| `slice2-storeclippy4` | `cargo clippy --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --all-targets` | 0 | Completed successfully (no test count). |
+| `slice2-boundary5` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | boundary-check: repository boundaries are valid |
+| `slice2-context5` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `slice2-caps5` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 137 Rust files |
+| `slice2-diff-head3` | `git diff --check origin/master...HEAD` | 0 | Completed successfully (no test count). |
+| `slice2-diff-dirty3` | `git diff --check` | 2 | 353 whitespace diagnostics: plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:1: trailing whitespace.; plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:2: trailing whitespace.; plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:3: trailing whitespace.. Quoted historical ledger outcomes are not new test runs. |
+| `slice2-fmt38` | `cargo fmt -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-clippy-native-own4` | `cargo clippy -p worth-relational --all-targets --no-deps` | 101 | error: this `if` statement can be collapsed; error: this expression creates a reference which is immediately dereferenced by the compiler; error: mutable key type; error: the following explicit lifetimes could be elided: 'a; error: use of a disallowed method `std::ptr::from_ref`; error: returning the result of a `let` binding from a block; error: use of a disallowed method `std::sync::Arc::as_ptr`; error: could not compile `worth-relational` (lib) due to 10 previous errors; 8 warnings emitted |
+| `slice2-history-tail1` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content_controlled_journal_seed -- --nocapture` | 0 | test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 194 filtered out; finished in 0.02s |
+| `slice2-fmt-check5` | `cargo fmt --check -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational` | 0 | Completed successfully (no test count). |
+| `slice2-clippy4` | `cargo clippy -p worth-relational -p worth-court-relational-certification -p worth-testkit-relational --all-targets` | 101 | error: this `if` statement can be collapsed; error: could not compile `worth-proof` (lib) due to 1 previous error |
+| `slice2-diff-dirty4` | `git diff --check` | 0 | Completed successfully (no test count). |
+| `slice2-boundary6` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | boundary-check: repository boundaries are valid |
+| `slice2-context6` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `slice2-caps6` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 137 Rust files |
+| `slice2-diff-dirty5` | `git diff --check` | 0 | Completed successfully (no test count). |
+| `slice2-diff-dirty6` | `git diff --check` | 2 | 28 whitespace diagnostics: plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:506: trailing whitespace.; plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:513: trailing whitespace.; plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:514: trailing whitespace.. Quoted historical ledger outcomes are not new test runs. |
+| `slice2-diff-dirty7` | `git diff --check` | 2 | 1 whitespace diagnostics: plans/WORTH-query/milestone-9.19-k1c-content-evidence.md:875: new blank line at EOF.. Quoted historical ledger outcomes are not new test runs. |
+| `slice2-diff-dirty8` | `git diff --check` | 0 | Completed successfully (no test count). |
+
+### Slice 2 result and independent courts
+
+Native owns the complete actual reference closure through ordinary edits,
+post-consequence publication, current schema replacement, checkpoint ingress,
+journal recovery, retained selection and canonical relinking. Changed records use
+paid ordered associations; reconstruction is an explicit whole-root traversal.
+No Store dependency, independent byte store, untracked cache, new AspectShape form,
+or generic Query execution engine was added. Original SDK backing now also funds
+canonical artifact construction, captured envelopes, whole embedded checkpoints,
+and controlled cold-head/carried-journal reads. The cold journal port exposes no
+length quotation, so it reserves min(caller limit, 256 MiB) before the physical
+read; the sealed actual copy then retains independent funding. This temporary is
+released before canonical decoding. Physical members use their certified exact
+locator length. The tiny cold-ingress fixture uses a 512 MiB receiving budget;
+that is not a universal bound on simultaneous artifact, frame and decoded state.
+
+- Native literal-frame and independently repaired-outer-digest courts prove actual
+  content integrity, not merely outer checksum rejection. The grid oracle uses
+  explicit dimensions, signed integer positions, literal frame bytes and a pinned
+  independently computed digest; it does not call the production encoder/parser.
+- Journal and Native checkpoint positives read the intended selected entity's
+  left/right fields before checking the admitted literal bytes. Checkpoint
+  omission and decoded-journal omission preserve actual references while removing
+  their retained content; both refuse MissingContent before selected state changes.
+- The genuine historical basis supplies retained selection; its restored reference
+  carries exactly the historical bytes and removes unreachable current bytes.
+  The restored checkpoint repeats the selected-field and byte checks. Raw retained
+  selection journal replay retains its explicit unsupported profile and target.
+- Rebinding a smaller frozen ceiling refuses, and a replaced rejecting validator
+  is actually executed despite equal portable metadata. Current and historical
+  schema contracts both participate in the root absence proof.
+- Original-memory alias courts distinguish actual member and whole-checkpoint
+  custody. Last aliases release their precise backing. Real publication/capture
+  cancellation after funded allocation releases the original request's custody;
+  memory/work refusal occurs before medium invocation and leaves selected state.
+- Real Store homes prove content-bearing tail recovery, checkpoint replacement
+  while an old frame reader retains custody, exact selected-field/numeric values,
+  missing physical-member refusal and physical checksum corruption before service.
+  A page-level corruption can reach Store's journal checksum first; the court
+  asserts that precise earlier typed refusal rather than claiming Native parsed it.
+- Store proven-no-effect matches its exact fate, preserves the selected descriptor,
+  old field and bytes, and leaves new content absent. A calibrated real positioned
+  write loses its answer after effect: the old selected field remains live, later
+  writes fence, and compatible reopen reconstructs the actual new field/value.
+  Wrong installed version refuses explicitly; a subsequent compatible reopen
+  proves the refusal did not erase content. The independent literal integer oracle
+  supplies the result, rather than directory reconstruction checking itself.
+- Genuine cold carried export preserves unsupported-version and size refusals
+  across retries; proven digest damage becomes sticky. The 256 MiB temporary must
+  be funded before the physical port is invoked. Valid cold export reconstructs
+  through the same existing checkpoint grammar. The focused pre-existing Store
+  residency-capture court remains a separate regression on the same boundary.
+
+### Review closure and readings chosen
+
+The same independent reviewer read production and courts using qa-loop, qa-tests
+and code-quality-qa. It found: loss of original funding in whole artifact and
+checkpoint encoding; cold physical-read allocation before funding; temporary
+physical bytes surviving decoding unnecessarily; codec-handle/ceiling changes
+bypassing revalidation; historical contracts missing from the absence shortcut;
+Store fate/unsupported-format evidence missing; selected-field result oracles
+missing from directory-only recovery assertions; and non-content scalar aspects
+and empty kinds traversed without charging. Each path was corrected in its owner.
+The review did not authorize widening a source-court baseline or bypassing limits.
+
+Canonical omitted authored_index_writes is exactly Unavailable in the current
+producer grammar. It is descriptive absence, not complete-empty history or a new
+Source issuance. The seed names that case through the existing canonical history
+owner's unavailable constructor. The independently edited public artifact court
+proves canonical admission of that exact omission. No unwrap_or guess decides it.
+
+The existing raw retained-selection journal profile cannot reconstruct live
+historical custody; it remains a precise unsupported refusal. The positive path
+uses actual retained Native selection and Native checkpoint reconstruction. Cold
+physical read limits are conservative certified bounds, never inferred from the
+current field's small value. No new generic Query engine was introduced, so no
+rlib growth measurement is claimed for this slice.
+
+### Failed-run output and corrections
+
+All unsuccessful runs remain in the ledger. Mechanical compiler failures included
+controlled-seed module paths and visibility, new original-request parameters,
+immutable SDK byte types, typed recovery exhaustiveness, and two necessary String
+conversions accidentally removed during a scoped lint fix. The compiler refused
+these; the final focused content court runs use the corrected code.
+
+The two added private source-court profiles tripped BC9002_TEST_TOPOLOGY. They were
+removed and their assertions moved to genuine public certification boundaries;
+no baseline or caller permission was expanded. Store's chunks_exact_to_as_chunks
+lint was corrected, including the subsequently exposed fixed-array conversion.
+The scoped no-deps lint pass exposed eight own findings; chained conditions,
+Option iteration, map entry, redundant conversions and the canonical omission
+constructor closed them. Existing untouched lint failures are reported as debt
+under AGENTS.md; this lane does not suppress or expand into them.
+
+#### Recorded failure excerpts
+
+`slice2-recovery2`:
+
+```text
+(66316) panicked at
+crates\worth-court-relational-certification\tests\worth_court_relational_certification\content\recovery.rs:282:5:
+assertion failed: !artifact.as_bytes().windows(b"authored_index_writes".len()).any(|bytes|
+            bytes == b"authored_index_writes")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test content::recovery::content_retained_selection_persists_restored_historical_bytes_and_unavailable_history_metadata ... FAILED
+
+thread 'content::recovery::content_checkpoint_member_payload_keeps_original_serial_custody_until_last_clone' (31476)
+panicked at
+
+panicked at
+crates\worth-court-relational-certification\tests\worth_court_relational_certification\content\recovery.rs:172:5:
+assertion failed: matches!(runtime.durability_authority().native_checkpoint(&denied,
+    denied.allocation_policy()),
+    Err(RelationalNativeCheckpointCaptureDenial::Request(worth_relational::facade::transactions::RelationalExecutionDen
+ialCause::PolicyMemoryExhausted
+    { requested: 75, admitted: 74, .. })))
+test content::recovery::content_checkpoint_member_payload_keeps_original_serial_custody_until_last_clone ... FAILED
+test content::recovery::content_native_checkpoint_reconstructs_bytes_under_installed_format_authority ... ok
+```
+
+`slice2-recovery3`:
+
+```text
+panicked at
+crates\worth-court-relational-certification\tests\worth_court_relational_certification\content\recovery.rs:176:5:
+Request(PolicyMemoryExhausted { requested: 392, admitted: 74, ancestor: 0 })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test content::recovery::content_checkpoint_member_payload_keeps_original_serial_custody_until_last_clone ... FAILED
+test content::recovery::content_native_checkpoint_reconstructs_bytes_under_installed_format_authority ... ok
+test content::recovery::content_retained_selection_persists_restored_historical_bytes ... ok
+
+failures:
+```
+
+`slice2-store3`:
+
+```text
+sible_value' (56856) panicked at crates\worth-store-court-relational\tests\worth_store_court_relational\process\relatio
+nal\relational_home\content\corruption.rs:100:5:
+Descriptor(Read(Open(RecordReadError { denial: ArtifactDamaged, observation: RecordReadObservation { touched_segments:
+0, touched_pages: 0, touched_extents: 0, payload_bytes: 0, requested_bytes: 173, transfer_count: 1,
+peak_transfer_width: 16384, explicit_copy_count: 0, copied_bytes: 0, generation_checks: 2, generation_rejections: 0,
+peak_scratch_bytes: 0, manifest_blocks: 2, manifest_comparisons: 6, manifest_bytes: 1360, physical_work_count: 2,
+first_physical_work: Some(PhysicalWorkIdentity { store: StableStoreIdentity([171, 236, 177, 85, 59, 199, 245, 48, 119,
+215, 222, 238, 71, 78, 68, 148]), runtime: RuntimeIdentity(11658261541699245542), generation:
+PhysicalWorkGeneration(LifecycleGeneration(3)), operation: PhysicalOperationIdentity(1) }), last_physical_work:
+
+ve_exact_values' (50056) panicked at crates\worth-store-court-relational\tests\worth_store_court_relational\process\rel
+ational\relational_home\content\mod.rs:30:44:
+called `Result::unwrap()` on an `Err` value: Physical(RelationalStorePhysicalRefusal { stage: RecoveryAdmission,
+detail: "BackendQualification(OwnershipContended)", kind: MutationOwnerContended, recovery_effects: None })
+test process::relational::relational_home::content::content_store_reopen_tail_replacement_and_retained_reader_preserve_exact_values ... FAILED
+
+failures:
+
+failures:
+```
+
+`slice2-store4`:
+
+```text
+sible_value' (56372) panicked at crates\worth-store-court-relational\tests\worth_store_court_relational\process\relatio
+nal\relational_home\content\corruption.rs:113:5:
+assertion failed: flipped > 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test process::relational::relational_home::content::corruption::content_damaged_store_member_never_reopens_as_a_plausible_value ... FAILED
+test process::relational::relational_home::content::corruption::content_missing_physical_member_refuses_reopen_before_service ... ok
+test process::relational::relational_home::content::content_store_reopen_tail_replacement_and_retained_reader_preserve_exact_values ... ok
+
+failures:
+```
+
+`slice2-store5`:
+
+```text
+sible_value' (30232) panicked at crates\worth-store-court-relational\tests\worth_store_court_relational\process\relatio
+nal\relational_home\content\corruption.rs:118:5:
+Journal(Unreadable { position: None, failure: Stream(RecordStreamFailure { kind: SelectedDataFrameChecksumDamaged,
+completed: 0..0, pressure: None }) })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test process::relational::relational_home::content::corruption::content_damaged_store_member_never_reopens_as_a_plausible_value ... FAILED
+test process::relational::relational_home::content::corruption::content_missing_physical_member_refuses_reopen_before_service ... ok
+test process::relational::relational_home::content::content_store_reopen_tail_replacement_and_retained_reader_preserve_exact_values ... ok
+
+```
+
+`slice2-content7`:
+
+```text
+(41040) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\content\back
+ing_refusal.rs:143:14:
+test content::recovery::content_current_artifact_roundtrip_preserves_the_literal_frame ... ok
+test content::journal_recovery::content_controlled_journal_seed_admits_the_canonical_omitted_history_tail ... ok
+test content::journal_recovery::content_decoded_journal_omission_refuses_before_selecting_a_root ... ok
+called `Result::unwrap_err()` on an `Ok` value: RecoveryPlan { config: RelationalRuntimeConfig { profile:
+CertificationCore, execution: ExecutionConfig { runtime_name: "worth-relational", compiled_lane_policy: Disabled },
+diagnostics: DiagnosticsConfig { profile: RelationalDiagnosticsProfile { capture_failures: true, capture_rollbacks:
+true, capture_comparisons: true, detailed_traces_enabled: true, collect_all_invariant_failures: false,
+```
+
+`slice2-content8`:
+
+```text
+(17092) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\content\dura
+ble_publication.rs:286:5:
+assertion failed: stopped.is_err()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test content::durable_publication::content_durable_artifact_original_work_exhaustion_is_exact_and_pre_effect ... FAILED
+test content::recovery::content_retained_selection_persists_restored_historical_bytes ... ok
+test content::recovery::content_checkpoint_member_payload_keeps_original_serial_custody_until_last_clone ... ok
+test content::checkpoint_controls::content_inline_checkpoint_insufficient_original_memory_never_selects_a_root ... ok
+content staging charged Work: 256=7337824, 512=14724704
+```
+
+`slice2-content9`:
+
+```text
+panicked at
+crates\worth-court-relational-certification\tests\worth_court_relational_certification\content\recovery.rs:183:5:
+Request(PolicyMemoryExhausted { requested: 528834, admitted: 523938, ancestor: 0 })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test content::recovery::content_checkpoint_member_payload_keeps_original_serial_custody_until_last_clone ... FAILED
+content staging charged Work: 256=7337824, 512=14724704
+test cost::content::content_staging_growth_is_bounded_by_persistent_paths_and_cancellation_polls_first ... ok
+test content::checkpoint_capture_controls::content_whole_checkpoint_peak_budget_refuses_before_allocating_the_outer_frame ... ok
+test content::durable_publication::content_durable_artifact_cancellation_after_original_allocation_never_calls_medium ... ok
+```
+
+`slice2-clippy4`:
+
+```text
+error: this `if` statement can be collapsed
+  --> crates\worth-proof\src\managed_access\coverage.rs:84:9
+   |
+84 | /         if let Some(root) = frontier.root {
+85 | |             if (frontier.disposition)(root).is_none() {
+86 | |                 return Err(D::MissingRoot);
+87 | |             }
+88 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+   = note: `-D clippy::collapsible-if` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::collapsible_if)]`
+
+error: could not compile `worth-proof` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+
+```
+
+`slice2-clippy-native-own4`:
+
+```text
+error: this `if` statement can be collapsed
+  --> crates\worth-relational\src\aggregate_identity\funding.rs:78:9
+   |
+78 | /         if let Some(memory) = self.memory.as_mut() {
+79 | |             if peak > memory.bytes() {
+80 | |                 memory.resize(peak).map_err(|denial| {
+81 | |                     MapKernelFailure::Domain(PlanDenial::Execution(
+...  |
+88 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+   = note: `-D clippy::collapsible-if` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::collapsible_if)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-relational\src\authority\commit\pipeline\publication_execution\preparation.rs:204:45
+    |
+204 |         .freeze_with_managed_source_history(&source_interpretation, *execution)?;
+    |                                             ^^^^^^^^^^^^^^^^^^^^^^ help: change this to: `source_interpretation`
+    |
+    = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+    = note: `-D clippy::needless-borrow` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::needless_borrow)]`
+
+error: mutable key type
+  --> crates\worth-relational\src\derived_relation\affected\expression.rs:69:5
+   |
+69 |     let mut values = BTreeMap::<Position, BTreeSet<Member>>::new();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: ... because it contains `Position`, which has interior mutability
+   = note: ... because it contains `DerivedRelationHandle`, which has interior mutability
+   = note: ... because it contains `Arc<RegisteredDerivedRelation>`, which has interior mutability
+   = note: ... because it contains `RegisteredDerivedRelation`, which has interior mutability
+   = note: ... because it contains `SourceBindingCache`, which has interior mutability
+   = note: ... because it contains `Mutex<Weak<SourceProgram>>`, which has interior mutability
+   = note: ... because it contains `Mutex`, which has interior mutability
+   = note: ... because it contains `Atomic<u8>`, which has interior mutability
+   = note: ... because it contains `UnsafeCell<<u8 as AtomicPrimitive>::Storage>`, which has interior mutability
+   = help: for further informatio
+
+error: this `if` statement can be collapsed
+  --> crates\worth-relational\src\derived_relation\pinned.rs:81:9
+   |
+81 | /         if let Some(memory) = &mut self.memory {
+82 | |             if peak > memory.bytes() {
+83 | |                 memory.resize(peak).map_err(|cause| {
+84 | |                     Denial::Request(crate::execution::denial::lease_denial(
+...  |
+89 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+
+error: the following explicit lifetimes could be elided: 'a
+  --> crates\worth-relational\src\history\data\canonical_commit_envelope\live_managed_source_history.rs:40:28
+   |
+40 |     pub(crate) fn verified<'a>(
+   |                            ^^
+41 |         envelope: &'a Arc<CanonicalCommitEnvelope>,
+   |                    ^^
+42 |     ) -> Option<&'a PreparedSourceImpactHistory> {
+   |                  ^^
+   |
+   = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_lifetimes
+   = note: `-D clippy::needless-lifetimes` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::needless_lifetimes)]`
+
+error: the following explicit lifetimes could be elided: 'a
+  --> crates\worth-relational\src\history\data\canonical_commit_envelope\live_managed_source_history.rs:45:37
+   |
+45 |     pub(crate) fn verified_material<'a>(
+   |                                     ^^
+46 |         envelope: &'a Arc<CanonicalCommitEnvelope>,
+   |                    ^^
+47 |     ) -> Option<&'a RetainedSourceHistoryMaterial> {
+   |                  ^^
+   |
+   = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_lifetimes
+
+error: use of a disallowed method `std::ptr::from_ref`
+  --> crates\worth-relational\src\mvcc\publication\companion\cell\public_cache.rs:83:38
+   |
+83 |         if cache.0.image.as_ptr() != std::ptr::from_ref(image) {
+   |                                      ^^^^^^^^^^^^^^^^^^
+   |
+   = note: Addresses are for allocation lookup and custody; canonical order uses declared identity
+   = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+   = note: `-D clippy::disallowed-methods` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::disallowed_methods)]`
+
+error: use of a disallowed method `std::ptr::from_ref`
+   --> crates\worth-relational\src\mvcc\publication\companion\cell\public_cache.rs:115:42
+    |
+115 |                 self.0.image.as_ptr() == std::ptr::from_ref(image)
+    |                                          ^^^^^^^^^^^^^^^^^^
+    |
+    = note: Addresses are for allocation lookup and custody; canonical order uses declared identity
+    = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+
+error: returning the result of a `let` binding from a block
+  --> crates\worth-relational\src\mvcc\retained_entity_selection\payload.rs:34:5
+   |
+20 | /     let source = crate::storage::residency::probe_head(
+21 | |         execution,
+22 | |         &historical.with_symbol_admission(&runtime.services.symbols),
+23 | |         |source| {
+...  |
+33 | |     .map_err(|failure| storage(&input.historical, failure))?;
+   | |_____________________________________________________________- unnecessary `let` binding
+34 |       source
+   |       ^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#let_and_return
+   = note: `-D clippy::let-and-return` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::let_and_return)]`
+
+error: use of a disallowed method `std::sync::Arc::as_ptr`
+  --> crates\worth-relational\src\validation\candidate_source\program.rs:44:24
+   |
+44 |         std::ptr::hash(Arc::as_ptr(&self.0), state);
+   |                        ^^^^^^^^^^^
+   |
+   = note: Addresses are for allocation lookup and custody; canonical order uses declared identity
+   = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+
+error: could not compile `worth-relational` (lib) due to 10 previous errors; 8 warnings emitted
+
+```
+
+`slice2-clippy-court-own1`:
+
+```text
+error: unnecessary `>= y + 1` or `x - 1 >=`
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\process\serial\relational\
+managed_source_work_account\public_only.rs:38:17
+   |
+38 |         assert!(stopped.work <= EXTRA - 1);
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ help: change it to: `stopped.work < EXTRA`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#int_plus_one
+   = note: `-D clippy::int-plus-one` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::int_plus_one)]`
+
+error: unnecessary `>= y + 1` or `x - 1 >=`
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\process\serial\relational
+\managed_source_work_account.rs:292:21
+    |
+292 |             assert!(stopped.work <= EXTRA - 1);
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^ help: change it to: `stopped.work < EXTRA`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#int_plus_one
+
+error: unnecessary closure used with `bool::then`
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\process\serial\relational
+\managed_source_work_account.rs:104:27
+    |
+104 |             maximum_work: scenario.rule_limit.then(|| std::num::NonZeroU64::MIN),
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#unnecessary_lazy_evaluations
+    = note: `-D clippy::unnecessary-lazy-evaluations` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::unnecessary_lazy_evaluations)]`
+
+error: called `.err().expect()` on a `Result` value
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\managed_source
+\nested.rs:110:40
+    |
+110 |                     return Err(stopped.err().expect("original nested request is cancelled"));
+    |                                        ^^^^^^^^^^^^ help: try: `expect_err`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect
+    = note: `-D clippy::err-expect` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::err_expect)]`
+
+error: called `.err().expect()` on a `Result` value
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\managed_source\
+row_read.rs:48:22
+   |
+48 |                       .err()
+   |  ______________________^
+49 | |                     .expect("original ticket cannot outlive cancellation")
+   | |___________________________^ help: try: `expect_err`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect
+
+error: this `if` statement can be collapsed
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\managed_source
+\owner.rs:267:16
+    |
+267 |           } else if previous
+    |  ________________^
+268 | |             .as_ref()
+269 | |             .is_some_and(|old| old.scope() == scope.scope())
+...   |
+284 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::collapsible_if)]`
+
+error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 6
+previous errors; 2 warnings emitted
+
+```

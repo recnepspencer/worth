@@ -18,13 +18,16 @@ pub(crate) fn replay_commit_stop(
                 crate::mvcc::RelationalOperationInterruption::TimedOut => Cause::DeadlineElapsed,
             })
         }
-        TransactionCommitError::Conflict { error, .. } => match error.allocation_denial() {
+        TransactionCommitError::Conflict { error, .. } => match &error.class {
+            crate::transactions::data::ConflictClass::ContentAdmission { denial } => denial.clone().into(),
+            _ => match error.allocation_denial() {
             Some(denial) => crate::symbols::data::field_text_recovery_stop(
                 crate::symbols::data::RelationalFieldTextAdmissionDenial::Allocation(
                     denial.clone(),
                 ),
             ),
             None => DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into(),
+            },
         },
         TransactionCommitError::Preparation { error, .. } => match error.reason() {
             crate::transactions::data::CommitPreparationReason::StorageUnavailable(failure) => failure.into(),

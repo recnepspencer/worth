@@ -28,7 +28,7 @@ fn completing_an_older_capture_cannot_replace_the_compacted_transition_basis() {
     assert_eq!(new.coverage.up_to_branch_transition.0, 1);
     runtime
         .durability_authority()
-        .finalize_captured_checkpoint(old)
+        .finalize_captured_checkpoint(old, execution)
         .unwrap();
     let selected = runtime.durability.latest_checkpoint().unwrap();
     assert_eq!(selected.coverage.up_to_branch_transition.0, 1);
@@ -60,6 +60,7 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     let (captured_tx, captured_rx) = sync_channel(0);
     let (resume_tx, resume_rx) = sync_channel(0);
 
+    let checkpoint_request = std::sync::Arc::clone(&host_request);
     let checkpoint_thread = std::thread::spawn(move || {
         let captured = runtime
             .durability_authority()
@@ -71,9 +72,10 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
         resume_rx
             .recv_timeout(Duration::from_secs(2))
             .expect("test releases checkpoint reconstruction");
-        let checkpoint = runtime
-            .durability_authority()
-            .finalize_captured_checkpoint(captured);
+        let checkpoint = runtime.durability_authority().finalize_captured_checkpoint(
+            captured,
+            &worth_execution::ExecutionRequest::serial(&checkpoint_request),
+        );
         (runtime, checkpoint)
     });
 

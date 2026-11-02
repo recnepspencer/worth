@@ -3,6 +3,7 @@ mod collision_tests;
 mod integrity;
 pub(super) mod layout;
 mod record;
+mod transport;
 use record::FrameBacking;
 pub use record::RelationalContentRecord;
 
@@ -22,12 +23,24 @@ pub struct RelationalContentFrame(Arc<AdmittedFrame>);
 #[derive(Debug)]
 struct AdmittedFrame {
     record: RelationalContentRecord,
-    format: ContentFormat,
+    format: Format,
     payload_offset: usize,
     _metadata: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl RelationalContentFrame {
+    pub(super) fn certify_format(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        format: &Format,
+    ) -> Result<Self, Denial> {
+        if self.0.format.same_installation(format) {
+            Ok(self.clone())
+        } else {
+            Self::readmit_record(execution, format, &self.0.record)
+        }
+    }
+
     /// Revalidate a canonical record. Existing immutable bytes keep their actual
     /// original grant; each new descriptor wrapper funds its own retained owner.
     pub fn readmit_record(
@@ -58,7 +71,7 @@ impl RelationalContentFrame {
                 .map_err(|cause| Denial::Execution(cause.into()))?;
             Ok(Self(Arc::new(AdmittedFrame {
                 record: record.clone(),
-                format: format.descriptor().clone(),
+                format: format.clone(),
                 payload_offset: offset,
                 _metadata: metadata,
             })))
@@ -116,7 +129,7 @@ impl RelationalContentFrame {
                     identity,
                     backing: Arc::new(FrameBacking { bytes, memory }),
                 },
-                format: format.descriptor().clone(),
+                format: format.clone(),
                 payload_offset: offset,
                 _metadata: None,
             })))
@@ -165,7 +178,7 @@ impl RelationalContentFrame {
                     identity: expected,
                     backing: Arc::new(FrameBacking { bytes, memory }),
                 },
-                format: format.descriptor().clone(),
+                format: format.clone(),
                 payload_offset: offset,
                 _metadata: None,
             })))
@@ -176,7 +189,7 @@ impl RelationalContentFrame {
         self.0.record.identity
     }
     pub fn format(&self) -> &ContentFormat {
-        &self.0.format
+        self.0.format.descriptor()
     }
     pub fn bytes(&self) -> &[u8] {
         self.0.record.bytes()

@@ -50,17 +50,41 @@ impl RelationalContentAttachments {
         execution: &ExecutionRequest<'_, '_>,
         frame: &RelationalContentFrame,
     ) -> Result<(), Denial> {
+        self.append_record(execution, &frame.record())
+    }
+    pub(crate) fn append_record(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        record: &RelationalContentRecord,
+    ) -> Result<(), Denial> {
+        self.append_bounded(execution, record, Some(MAXIMUM_STAGED_CONTENT_BYTES))
+    }
+    pub(crate) fn append_retained_record(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        record: &RelationalContentRecord,
+    ) -> Result<(), Denial> {
+        self.append_bounded(execution, record, None)
+    }
+    fn append_bounded(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        record: &RelationalContentRecord,
+        maximum: Option<usize>,
+    ) -> Result<(), Denial> {
         if self.transport.is_some() {
             return Err(Denial::IntegrityMismatch);
         }
         let prior = self.live.as_ref().map_or(0, |stage| stage.bytes);
         let bytes = prior
-            .checked_add(frame.bytes().len())
+            .checked_add(record.bytes().len())
             .ok_or(Denial::ArithmeticOverflow)?;
-        if bytes > MAXIMUM_STAGED_CONTENT_BYTES {
+        if let Some(maximum) = maximum
+            && bytes > maximum
+        {
             return Err(Denial::SizeLimit {
                 observed: bytes,
-                maximum: MAXIMUM_STAGED_CONTENT_BYTES,
+                maximum,
             });
         }
         let memory = execution
@@ -78,7 +102,7 @@ impl RelationalContentAttachments {
             )
         })?;
         records
-            .insert_cloned_native_for_request(&index, &frame.record(), *execution)
+            .insert_cloned_native_for_request(&index, record, *execution)
             .map_err(super::directory::map_denial)?;
         self.live = Some(Arc::new(Staged {
             records,
