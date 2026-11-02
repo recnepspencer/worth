@@ -1,5 +1,7 @@
 //! Admitted metadata pages carry descriptions, not historical payload custody.
-use super::{step::DocumentIncarnation, WorthQueryHistoryNodeId};
+use super::{
+    step::DocumentIncarnation, WorthQueryHistoryDescriptionContext, WorthQueryHistoryNodeId,
+};
 use std::num::NonZeroUsize;
 use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
 
@@ -86,6 +88,7 @@ pub enum WorthQueryHistoryPageDenial {
 /// Owned metadata backing is released on drop; copied rows convey no source custody.
 #[derive(Debug)]
 pub struct WorthQueryHistoryPage {
+    pub(super) context: WorthQueryHistoryDescriptionContext,
     pub(super) rows: Vec<WorthQueryHistoryPageRow>,
     pub(super) current: WorthQueryHistoryNodeId,
     pub(super) next: Option<WorthQueryHistoryPageCursor>,
@@ -94,6 +97,9 @@ pub struct WorthQueryHistoryPage {
     pub(super) _backing: Option<ExecutionMemoryReservation>,
 }
 impl WorthQueryHistoryPage {
+    pub fn context(&self) -> &WorthQueryHistoryDescriptionContext {
+        &self.context
+    }
     pub fn rows(&self) -> &[WorthQueryHistoryPageRow] {
         &self.rows
     }

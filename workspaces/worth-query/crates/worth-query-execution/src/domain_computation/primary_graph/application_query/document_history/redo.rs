@@ -22,12 +22,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let execution = phase
             .checked_execution_request_for(&self.product_runtime)
             .map_err(Denial::Stopped)?;
+        let context = document.history_description_context(access);
         let (choices, generation) = {
             let selected = document.selection.lock();
             (
                 selected
                     .journal
-                    .redo_choices(execution, limits, after)
+                    .redo_choices(context, execution, limits, after)
                     .map_err(Denial::Paging)?,
                 selected.journal.view_generation(),
             )

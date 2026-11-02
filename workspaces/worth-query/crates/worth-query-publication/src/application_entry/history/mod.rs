@@ -74,6 +74,8 @@
 mod assessment;
 mod attachment;
 mod close;
+mod commands;
+pub use commands::WorthQueryHistoryCommands;
 mod context;
 mod denial;
 mod edit;
@@ -143,11 +145,12 @@ pub use worth_query_execution::publication_boundary::document_history::WorthQuer
 pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryDocumentHistoryCandidateDenial, WorthQueryDocumentHistoryCloseReceipt,
     WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
+    WorthQueryDocumentHistoryIdentity, WorthQueryHistoryCommandContextDenial,
     WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
-    WorthQueryHistoryNodeId, WorthQueryHistoryPage, WorthQueryHistoryPageCursor,
-    WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
-    WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryReleaseOutcome,
-    WorthQueryHistoryRetentionStatus, WorthQueryHistoryStep,
+    WorthQueryHistoryDescriptionContext, WorthQueryHistoryNodeId, WorthQueryHistoryPage,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry,
+    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary,
+    WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus, WorthQueryHistoryStep,
 };
 pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,

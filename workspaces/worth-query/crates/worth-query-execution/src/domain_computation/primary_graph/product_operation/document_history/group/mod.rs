@@ -19,8 +19,6 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
 mod admission;
-mod document_identity;
-pub use document_identity::WorthQueryDocumentHistoryIdentity;
 mod member;
 mod sealing;
 

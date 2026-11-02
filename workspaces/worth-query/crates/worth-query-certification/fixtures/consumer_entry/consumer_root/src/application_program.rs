@@ -42,7 +42,6 @@ mod fixed_delivery;
 pub(crate) mod fixed_source_receipts;
 #[cfg(test)]
 pub(crate) mod fixed_successors;
-#[cfg(test)]
 pub(crate) mod historical;
 #[cfg(test)]
 pub(crate) mod no_projection;

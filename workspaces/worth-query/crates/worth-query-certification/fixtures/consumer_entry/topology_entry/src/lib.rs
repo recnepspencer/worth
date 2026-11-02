@@ -22,7 +22,7 @@ mod initial_adjustment;
 pub use document_history::{
     bind_navigation_grant, bind_retention_grants, PlanarDocumentHistory, PlanarHistoryBookmark,
     PlanarHistoryNavigation, PlanarHistoryWindow, PlanarSourceDocumentHistory,
-    SetPlanarHistoryStatus, SetPlanarHistoryStatusBinding,
+    SetPlanarHistoryStatus, SetPlanarHistoryStatusBinding, SetPlanarHistoryStatusHandler,
 };
 pub mod optional_aspects;
 pub use alternate_output::*;

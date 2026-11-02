@@ -12,14 +12,18 @@ pub use context::{WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContex
 #[doc(hidden)]
 pub use context_pause::WorthQueryHistoryContextRefreshPauseForTest;
 mod denial;
+mod description;
+pub use description::{
+    WorthQueryDocumentHistoryIdentity, WorthQueryHistoryCommandContextDenial,
+    WorthQueryHistoryDescriptionContext,
+};
 mod disposal;
 mod group;
 mod head_custody;
 pub use group::{
     WorthQueryDocumentHistoryGroupAborting, WorthQueryDocumentHistoryGroupAdoptionFailure,
     WorthQueryDocumentHistoryGroupPreparation, WorthQueryDocumentHistoryGroupReservation,
-    WorthQueryDocumentHistoryIdentity, WorthQueryHistoryGroupCandidateCreation,
-    WorthQueryHistoryGroupMemberAdmission,
+    WorthQueryHistoryGroupCandidateCreation, WorthQueryHistoryGroupMemberAdmission,
 };
 mod journal;
 mod model;

@@ -12,6 +12,7 @@ pub(crate) type FixedAction = ApplicationActionReference<
     Binding,
     FixedDelivery,
 >;
+#[cfg(test)]
 pub(crate) type DiscoveredAction = ApplicationActionReference<
     ConsumerSchema,
     InitialDiscoveredPlanarRoot,
@@ -20,6 +21,7 @@ pub(crate) type DiscoveredAction = ApplicationActionReference<
     DiscoveredDelivery,
 >;
 pub(crate) struct FixedDelivery;
+#[cfg(test)]
 pub(crate) struct DiscoveredDelivery;
 impl ApplicationActionDelivery<ConsumerSchema, Binding> for FixedDelivery {
     type Mode =
@@ -30,6 +32,7 @@ impl ApplicationFixedActionDelivery<ConsumerSchema, Binding> for FixedDelivery {
     type Root = ConsumerInitialFixedProgramRoot;
     type Projection = ApplicationNoProjection;
 }
+#[cfg(test)]
 impl ApplicationActionDelivery<ConsumerSchema, Binding> for DiscoveredDelivery {
     type Mode = ApplicationDiscoveredDeliveryMode<
         ConsumerInitialDiscoveredProgramRoot,
@@ -37,11 +40,13 @@ impl ApplicationActionDelivery<ConsumerSchema, Binding> for DiscoveredDelivery {
     >;
     const IDENTITY: &'static str = "consumer.historical-discovered.v1";
 }
+#[cfg(test)]
 impl ApplicationDiscoveredActionDelivery<ConsumerSchema, Binding> for DiscoveredDelivery {
     type Root = ConsumerInitialDiscoveredProgramRoot;
     type Projection = ApplicationNoProjection;
 }
 pub(crate) struct FixedProgram;
+#[cfg(test)]
 pub(crate) struct DiscoveredProgram;
 macro_rules! historical_program {
     ($program:ty,$delivery:ty,$root:ty,$identity:literal,$additional:expr) => {
@@ -73,6 +78,7 @@ historical_program!(
     "consumer.historical-fixed-program.v1",
     Vec::<ApplicationFeatureSpec>::new()
 );
+#[cfg(test)]
 historical_program!(
     DiscoveredProgram,
     DiscoveredDelivery,
@@ -81,8 +87,11 @@ historical_program!(
     Vec::<ApplicationFeatureSpec>::new()
 );
 
+#[cfg(test)]
 pub(crate) mod branching;
+#[cfg(test)]
 pub(crate) mod eligibility;
+#[cfg(test)]
 pub(crate) mod owner_discovery;
 
 // Initiation/replay can move this intent; no runtime source observation enters its durable identity.

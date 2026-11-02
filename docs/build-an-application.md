@@ -1945,6 +1945,58 @@ fn dispose_document<'runtime>(
 }
 ```
 
+The executable [document consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history.rs)
+uses bounded pages as a disposable view. Each page and redo child page carries
+`context()`: a format version, the actual installed schema binding and an opaque
+process-local document identity. `document.commands(&context)` rejects unsupported
+formats, foreign bindings and foreign documents before dispatch. Its borrowed
+adapter grants no permission; preview, navigation and bookmark/window commands
+still freshly enter their existing READ, metadata and role admission.
+
+Keep a queued navigation's original intent, expected selection and key together.
+This consumer's `Command` does that. On advancement refusal, `advance` returns
+the original typed denial and posture. Between requests it drops only the frontend handle:
+the same document retains the real Native attempt and SDK output custody.
+Reusing the command never refreshes its expectation to a later selection.
+The `Failure` and `Progress` variants below are defined beside the
+[compiled adapter](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/navigation.rs).
+
+<!-- compiled: document_history_commands.rs -->
+```rust
+    let commands = document
+        .commands(&command.context)
+        .map_err(Failure::Context)?;
+    let navigation = commands.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+    let target = match command.intent {
+        WorthQueryHistoryNavigationIntent::Checkout(node) => navigation.checkout(node),
+        WorthQueryHistoryNavigationIntent::UndoStep => navigation.undo_step(),
+        WorthQueryHistoryNavigationIntent::RedoTo(child) => navigation.redo_to(child),
+    };
+    let owner = target
+        .expected_selection(command.expected.clone())
+        .idempotency(command.key)
+        .prepare(request)
+        .map_err(Failure::Preparation)?;
+    match owner.advance(request) {
+        WorthQueryHistoryNavigationAdvance::Selected(done) => Ok(Progress::Selected(done)),
+        WorthQueryHistoryNavigationAdvance::Pending(owner) => {
+            Ok(Progress::Pending(owner.posture()))
+        }
+        WorthQueryHistoryNavigationAdvance::Refused { cause, owner } => Err(Failure::Advancement {
+            cause,
+            posture: owner.posture(),
+        }),
+    }
+```
+
+For consuming edits and groups, check the same context with
+`check_history_command_context`, then transfer the original document into the
+ordinary typed builder or group. Preserve the returned owner on refusal. Run
+the complete example with
+`cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root -- --document-history`.
+Its renderer descriptions carry no historical payload lease and cannot reopen a
+document after process loss.
+
 To record an isolated edit, consume the attached document with
 `document.edit(intent).idempotency_owned(&request, key)?`, then
 `retain_in_program::<Program, Action>(host)`. Repeatedly call `advance(&request)`

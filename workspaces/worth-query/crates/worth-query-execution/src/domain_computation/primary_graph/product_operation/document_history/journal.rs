@@ -137,6 +137,10 @@ pub(super) struct ReservedHistoryRecord {
 }
 
 impl<'runtime, S> HistoryJournal<'runtime, S> {
+    pub(super) fn document_identity(&self) -> super::WorthQueryDocumentHistoryIdentity {
+        super::WorthQueryDocumentHistoryIdentity(self.incarnation)
+    }
+
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn attach(
         execution: &ExecutionRequest<'_, '_>,
         runtime: u64,

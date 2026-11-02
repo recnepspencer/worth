@@ -1,6 +1,7 @@
 //! Public model attachment uses declared READ, actual heads and full native identity.
 mod assessment;
 mod attachment;
+mod commands;
 mod context;
 mod group;
 mod membership;

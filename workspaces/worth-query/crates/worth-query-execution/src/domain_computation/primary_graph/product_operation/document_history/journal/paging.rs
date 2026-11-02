@@ -19,11 +19,13 @@ mod entries;
 impl<S> HistoryJournal<'_, S> {
     pub(in crate::domain_computation::primary_graph) fn page(
         &self,
+        context: super::super::WorthQueryHistoryDescriptionContext,
         execution: ExecutionRequest<'_, '_>,
         limits: Limits,
         after: Option<&Cursor>,
     ) -> Result<Page, Failure> {
         PageSource {
+            context,
             incarnation: self.incarnation,
             current: self.current,
             view_generation: self.view_generation,
@@ -40,11 +42,13 @@ impl<S> HistoryJournal<'_, S> {
 
     pub(in crate::domain_computation::primary_graph) fn redo_choices(
         &self,
+        context: super::super::WorthQueryHistoryDescriptionContext,
         execution: ExecutionRequest<'_, '_>,
         limits: Limits,
         after: Option<&Cursor>,
     ) -> Result<Choices, Failure> {
         let (children, choice) = PageSource {
+            context,
             incarnation: self.incarnation,
             current: self.current,
             view_generation: self.view_generation,
@@ -64,6 +68,7 @@ impl<S> HistoryJournal<'_, S> {
 }
 
 struct PageSource<'a> {
+    context: super::super::WorthQueryHistoryDescriptionContext,
     incarnation: DocumentIncarnation,
     current: WorthQueryHistoryNodeId,
     view_generation: u64,
@@ -224,6 +229,7 @@ impl PageSource<'_> {
             });
         Ok((
             Page {
+                context: self.context.clone(),
                 rows,
                 current: self.current,
                 next,

@@ -289,6 +289,15 @@ input, limits, after.as_ref())` supplies the separate metadata purpose. These
 calls execute the original model READ and current metadata policy before
 checking cursors, storage limits or journal entries.
 
+`page.context()` describes the format version, actual installed schema binding
+and opaque process-local document incarnation. Redo child pages carry the same
+context. Pass it to `document.commands(&context)` to translate renderer commands
+through the original document. Unsupported formats and foreign schema/document
+contexts refuse before dispatch; successful correspondence grants no permission.
+Every command still uses fresh ordinary READ, metadata and role admission.
+Keep a navigation gesture's original expected selection and key across retries.
+See the [executable consumer and compiled command adapter](../../../../../../docs/build-an-application.md#43-what-the-runtime-gives-you).
+
 Rows arrive in creation order. `row.step()` is an admitted page description,
 with `parent()` equal to `Root`, `Retained(parent_id)` or `Truncated`.
 Draw a truncated boundary when the original parent is excluded. Do not connect

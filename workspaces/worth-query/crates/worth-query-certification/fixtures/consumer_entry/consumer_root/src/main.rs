@@ -120,10 +120,20 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
 }
 
 fn run() {
+    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    let document_history = match arguments.as_slice() {
+        [] => false,
+        [argument] if argument == "--document-history" => true,
+        _ => panic!("usage: worth-query-consumer-root [--document-history]"),
+    };
     let installed = installed_schema();
 
     hostile_binding_identity_and_unit_cannot_preserve_schema_identity();
-    application_invariant_acceptance::run(&installed);
+    if document_history {
+        application_invariant_acceptance::document_history::run(&installed);
+    } else {
+        application_invariant_acceptance::run(&installed);
+    }
 }
 
 fn hostile_binding_identity_and_unit_cannot_preserve_schema_identity() {

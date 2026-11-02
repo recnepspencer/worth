@@ -76,7 +76,7 @@ pub(crate) fn declare<S: TopologySchemaBinding>(
         .application_mutation_binding::<SetPlanarHistoryStatusBinding<S>>()
 }
 
-pub(crate) struct SetPlanarHistoryStatusHandler;
+pub struct SetPlanarHistoryStatusHandler;
 impl<S: TopologySchemaBinding> OperationHandler<S, SetPlanarHistoryStatusBinding<S>>
     for SetPlanarHistoryStatusHandler
 {
