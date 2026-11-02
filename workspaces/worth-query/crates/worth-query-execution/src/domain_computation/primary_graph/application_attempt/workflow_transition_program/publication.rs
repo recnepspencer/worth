@@ -371,8 +371,8 @@ pub enum WorkflowProgressOutcome {
     AwaitingEvidence(RequiredWorkflowEvidence),
     AwaitingApproval(RequiredWorkflowApproval),
     Completed(PerformedWorkflowTransition),
-    /// The commit did not land. A landed commit, first or replayed, is the
-    /// performed variant.
+    /// The commit did not land. Fresh completion retains its actual performed
+    /// transition; a later keyed call exposes only `RecoveredCommitted` data.
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
     /// A landed receipt is retained when its required projection read stops.

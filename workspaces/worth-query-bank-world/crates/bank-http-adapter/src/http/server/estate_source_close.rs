@@ -37,7 +37,7 @@ pub(super) async fn describe<A: super::authentication::BankHttpApplicationAuthen
         accepted_sequence: Some(command.sequence),
     };
     if let Err(cause) =
-        runtime.observe_estate_recovery_claim_status(principal, record.action, &record.key, scope)
+        runtime.authorize_estate_recovery_disclosure(principal, record.action, scope)
     {
         return BankHttpMutationOutcome::Refused {
             request_id: command.request_id.clone(),
