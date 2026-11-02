@@ -42,6 +42,7 @@ fn build_bridge(
 pub(crate) struct ApplicationHomeBridgeComposition {
     pub(super) source: worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
     pub(super) ordinary: worth_runtime_bridge::facade::RuntimeBridge,
+    pub(super) retirement: std::sync::Mutex<Option<super::close::PreparedHomeBridgeRetirement>>,
     pub(super) conditional:
         Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>,
 }
@@ -63,6 +64,7 @@ pub(super) fn attach_query_bridge(
         source,
         ordinary,
         conditional: Arc::new(std::sync::RwLock::new(conditional)),
+        retirement: std::sync::Mutex::new(None),
     })
 }
 /// Actual admitted Home custody. No Clone, raw identity constructor or second

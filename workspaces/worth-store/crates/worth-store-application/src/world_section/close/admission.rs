@@ -20,12 +20,7 @@ where
             return Ok(());
         };
         // Funding and source validation finish before the actual final gates.
-        composition
-            .conditional
-            .try_write()
-            .map_err(|_| Denial::WorldCompositionRetained)?
-            .preflight_home_retirement(request, self.home.relational().runtime())
-            .map_err(Denial::Bridge)?;
+        composition.preflight_home_retirement(request, self.home.relational().runtime())?;
         let admission = match self.world.try_prepare_close_admission(request) {
             Ok(admission) => admission,
             Err(RuntimeWorldCloseDenial::AlreadyClosing) => return Ok(()),

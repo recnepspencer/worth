@@ -6,7 +6,9 @@ use worth_runtime_world::facade::RuntimeWorldOwnerLifecycleObservation;
 mod admission;
 mod bridge_retirement;
 mod checkpoint;
-pub(crate) use bridge_retirement::{HomeBridgeCloseCustody, RetiredHomeBridgeComposition};
+pub(crate) use bridge_retirement::{
+    HomeBridgeCloseCustody, PreparedHomeBridgeRetirement, RetiredHomeBridgeComposition,
+};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum WorldHomeClosePosture {

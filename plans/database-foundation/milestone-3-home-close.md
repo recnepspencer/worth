@@ -223,3 +223,15 @@ owner contains supplier advancement panics while keeping its original payload
 and cursor; `handler_retirement_panic_retains_original_payload_and_unadvanced_cursor_for_retry`
 traces that refusal. The memory court exhausts the same Serial payer only after
 preflight, through its own reservation port, and advances without fresh memory.
+
+Store's retiring Bridge composition also uses a Box funded and allocated by its
+original owner before World seal. The same Box crosses Serving, Retiring and
+Retired custody. This keeps the complete Bridge body out of public close
+results and the opening failures that retain them; it introduces no post-seal
+allocation or payload destruction.
+
+`fresh_read_host_physically_closes_with_original_retired_allocations_alive`
+separately qualifies D11's actual physical lease release while the original
+retired Query, handler, Native and Bridge allocations remain alive. It preserves
+all mutation-close and recovery controls; it does not certify their blocked
+receipt or reopen successors.

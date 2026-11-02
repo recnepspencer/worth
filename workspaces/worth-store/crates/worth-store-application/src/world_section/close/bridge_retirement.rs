@@ -3,7 +3,7 @@ use crate::{
     world_section::ApplicationHomeBridgeComposition, ApplicationHomeCloseDenial as Denial,
 };
 use std::sync::{Arc, RwLock};
-use worth_execution::ExecutionRequest;
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::{
     BridgeHomeRetirementProgress as Progress, BridgeSealedRuntimeAssembly, RetiredRuntimeBridge,
@@ -13,11 +13,18 @@ use worth_runtime_bridge::facade::{
 
 pub(crate) enum HomeBridgeCloseCustody {
     Serving(ApplicationHomeBridgeComposition),
-    Retiring(RetiringHomeBridgeComposition),
+    Retiring(PreparedHomeBridgeRetirement),
     Retired(RetiredHomeBridgeComposition),
 }
 pub(crate) struct RetiredHomeBridgeComposition {
-    _allocation: RetiringHomeBridgeComposition,
+    _allocation: PreparedHomeBridgeRetirement,
+}
+pub(crate) struct PreparedHomeBridgeRetirement {
+    backing: Box<HomeBridgeRetirementBacking>,
+    _funding: Option<ExecutionMemoryReservation>,
+}
+struct HomeBridgeRetirementBacking {
+    original: Option<RetiringHomeBridgeComposition>,
 }
 pub(crate) struct RetiringHomeBridgeComposition {
     source: Option<RuntimeBridgeRelationalSource>,
@@ -35,6 +42,44 @@ enum CompositionRetirementStage {
     Source,
 }
 
+impl ApplicationHomeBridgeComposition {
+    pub(super) fn preflight_home_retirement(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        native: &RelationalRuntime,
+    ) -> Result<(), Denial> {
+        self.ordinary
+            .preflight_home_retirement(native, request)
+            .map_err(Denial::Bridge)?;
+        self.source
+            .preflight_alias_retirement(native)
+            .map_err(|cause| {
+                Denial::Bridge(
+                    worth_runtime_bridge::facade::BridgeHomeRetirementDenial::NativeAlias(cause),
+                )
+            })?;
+        self.conditional
+            .try_write()
+            .map_err(|_| Denial::WorldCompositionRetained)?
+            .preflight_home_retirement(request, native)
+            .map_err(Denial::Bridge)?;
+        let mut storage = self
+            .retirement
+            .try_lock()
+            .map_err(|_| Denial::WorldCompositionRetained)?;
+        if storage.is_none() {
+            let funding = request
+                .reserve_retained_memory(std::mem::size_of::<HomeBridgeRetirementBacking>() as u64)
+                .map_err(Denial::Execution)?;
+            *storage = Some(PreparedHomeBridgeRetirement {
+                backing: Box::new(HomeBridgeRetirementBacking { original: None }),
+                _funding: funding,
+            });
+        }
+        Ok(())
+    }
+}
+
 impl HomeBridgeCloseCustody {
     pub(crate) fn advance(
         self,
@@ -47,22 +92,31 @@ impl HomeBridgeCloseCustody {
                     source,
                     ordinary,
                     conditional,
+                    retirement,
                 } = original;
-                Ok((
-                    Self::Retiring(RetiringHomeBridgeComposition {
-                        source: Some(source),
-                        ordinary: Some(ordinary),
-                        conditional_share: Some(conditional),
-                        conditional: None,
-                        ordinary_task: None,
-                        _retired_ordinary: None,
-                        _retired_source: None,
-                        stage: CompositionRetirementStage::Assembly,
-                    }),
-                    Progress::Advanced,
-                ))
+                let mut storage = retirement
+                    .into_inner()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .expect("original Bridge composition storage was prepaid before World seal");
+                storage.backing.original = Some(RetiringHomeBridgeComposition {
+                    source: Some(source),
+                    ordinary: Some(ordinary),
+                    conditional_share: Some(conditional),
+                    conditional: None,
+                    ordinary_task: None,
+                    _retired_ordinary: None,
+                    _retired_source: None,
+                    stage: CompositionRetirementStage::Assembly,
+                });
+                Ok((Self::Retiring(storage), Progress::Advanced))
             }
-            Self::Retiring(mut task) => match task.advance(request, native) {
+            Self::Retiring(mut task) => match task
+                .backing
+                .original
+                .as_mut()
+                .expect("same original Bridge composition")
+                .advance(request, native)
+            {
                 Ok(Progress::Advanced) => Ok((Self::Retiring(task), Progress::Advanced)),
                 Ok(Progress::Complete) => Ok((
                     Self::Retired(RetiredHomeBridgeComposition { _allocation: task }),

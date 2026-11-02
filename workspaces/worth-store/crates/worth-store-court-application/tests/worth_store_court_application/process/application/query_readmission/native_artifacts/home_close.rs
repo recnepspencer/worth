@@ -12,10 +12,15 @@ fn open(
     initialized: Arc<AtomicUsize>,
     contacts: Arc<AtomicUsize>,
 ) -> HostHome {
+    eprintln!("Host close court: entering original opening");
     let request = fixture::request(path.to_path_buf(), build(), initialized, contacts);
-    with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
-        .unwrap()
-        .unwrap_or_else(|refused| panic!("actual Host admission: {refused:?}"))
+    let home = with_bootstrap_advancement_from_request(execution, |phase| {
+        request.open_in_advancement(&phase)
+    })
+    .unwrap()
+    .unwrap_or_else(|refused| panic!("actual Host admission: {refused:?}"));
+    eprintln!("Host close court: opening returned");
+    home
 }
 fn serial(bytes: Option<u64>, deadline: Option<std::time::Instant>) -> SerialRequest {
     SerialRequest::from_memory(
@@ -41,7 +46,45 @@ fn assert_physical_lease_released(path: &std::path::Path, execution: &ExecutionR
     drop(recovered); // Explicit unbudgeted destruction of the independent probe.
 }
 #[test]
+fn fresh_read_host_physically_closes_with_original_retired_allocations_alive() {
+    let path = tempfile::tempdir().unwrap();
+    let live = serial(None, None);
+    let execution = ExecutionRequest::serial(&live);
+    let initialized = Arc::new(AtomicUsize::new(0));
+    let contacts = Arc::new(AtomicUsize::new(0));
+    let home = open(
+        path.path(),
+        execution,
+        initialized.clone(),
+        contacts.clone(),
+    );
+    assert_eq!(balance(home.runtime()), 7);
+    assert_eq!(initialized.load(Ordering::SeqCst), 1);
+    let closed = home
+        .close(&execution)
+        .unwrap_or_else(|refused| panic!("same read Home must physically close: {refused:?}"));
+    assert!(matches!(
+        closed.outcome(),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Ok(_),
+            ..
+        }
+    ));
+    assert_eq!(
+        contacts.load(Ordering::SeqCst),
+        0,
+        "closing never invokes business"
+    );
+    assert_physical_lease_released(path.path(), &execution);
+    assert!(closed.is_closed());
+    closed.reclaim();
+}
+#[test]
 fn expired_host_close_preserves_the_same_serving_home_and_a_live_retry_physically_closes() {
+    eprintln!(
+        "Host close court entered; close outcome bytes={}",
+        std::mem::size_of::<ApplicationHomeCloseOutcome>()
+    );
     let path = tempfile::tempdir().unwrap();
     let initialized = Arc::new(AtomicUsize::new(0));
     let contacts = Arc::new(AtomicUsize::new(0));
@@ -97,6 +140,10 @@ fn expired_host_close_preserves_the_same_serving_home_and_a_live_retry_physicall
 #[test]
 fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_remain_physically_closed(
 ) {
+    eprintln!(
+        "Host close court entered; close outcome bytes={}",
+        std::mem::size_of::<ApplicationHomeCloseOutcome>()
+    );
     let path = tempfile::tempdir().unwrap();
     let live = serial(None, None);
     let execution = ExecutionRequest::serial(&live);
