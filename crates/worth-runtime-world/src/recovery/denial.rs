@@ -5,6 +5,7 @@ pub enum RuntimeWorldRecoveryDenial {
     ReopenRequired,
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     ForeignHandle,
+    StaleIncarnation,
     MissingRecord,
     Busy,
     TooYoung,

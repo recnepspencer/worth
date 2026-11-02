@@ -42,6 +42,9 @@ where
         deadline: Option<RuntimeWorldInstant>,
     ) -> Result<WorldPendingOpenAttempt, WorldOpenAttemptRefusal> {
         use WorldOpenAttemptRefusal as Refusal;
+        let current = self
+            .admit_publication_source(&expected)
+            .map_err(Refusal::Reservation)?;
         let binding = self
             .state
             .durable
@@ -60,9 +63,6 @@ where
         if owner != binding.binding().owner() {
             return Err(Refusal::IdentityScope);
         }
-        let current = self
-            .admit_publication_source(&expected)
-            .map_err(Refusal::Reservation)?;
         let resolved = ResolvedExpectedProductHead::from_current(
             crate::publication::CompositeComponentIntent::relational_only(change),
             expected.clone(),

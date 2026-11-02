@@ -35,6 +35,7 @@ pub enum WorthQueryProviderSessionDenialKind {
     ForeignOperationAttempt,
     ForeignExecutionBasis,
     ForeignGraphAuthority,
+    StaleIncarnation,
     UndeclaredOperationScope,
     ResourceEnvelopeMismatch,
     /// An execution refusal retains Query's shared resource vocabulary.

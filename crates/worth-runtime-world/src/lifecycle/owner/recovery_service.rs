@@ -141,6 +141,9 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn owner_identity(&self) -> crate::identity::RuntimeWorldOwnerIdentity {
+        self.owner_identity()
+    }
     fn retained_commits(
         &self,
         candidates: &[crate::identity::CompositeCommitIdentity],

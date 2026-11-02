@@ -4,6 +4,7 @@ use super::WorthQueryApplicationCommitDeferred;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationNoEffectCause {
+    StaleIncarnation,
     DurableOpenRequired,
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     OwnerDeniedBeforeEffect,

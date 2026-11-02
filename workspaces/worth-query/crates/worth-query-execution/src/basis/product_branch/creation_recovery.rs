@@ -67,6 +67,7 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
+    StaleIncarnation,
     ReopenRequired,
     RecoveredCustodyRequired,
     OwnerUnavailable,
@@ -319,6 +320,7 @@ pub(crate) fn map_recovery_denial(
         Denial::ReopenRequired => WorthQueryProductBranchRecoveryDenial::ReopenRequired,
         Denial::OwnerUnavailable(_) => WorthQueryProductBranchRecoveryDenial::OwnerUnavailable,
         Denial::ForeignHandle => WorthQueryProductBranchRecoveryDenial::ForeignRecovery,
+        Denial::StaleIncarnation => WorthQueryProductBranchRecoveryDenial::StaleIncarnation,
         Denial::MissingRecord => WorthQueryProductBranchRecoveryDenial::Missing,
         Denial::Busy => WorthQueryProductBranchRecoveryDenial::Busy,
         Denial::TooYoung => WorthQueryProductBranchRecoveryDenial::TooYoung,

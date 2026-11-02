@@ -125,6 +125,13 @@ fn map_retirement_denial(
     denial: RuntimeWorldServiceDenial<RuntimeWorldBranchRetirementDenial>,
 ) -> WorthQueryProductBranchCloseDenial {
     match denial {
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchRetirementDenial::StaleIncarnation) => {
+            WorthQueryProductBranchCloseDenial::Selection(
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    crate::basis::WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation,
+                ),
+            )
+        }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchRetirementDenial::DurableBranchPublicationRequired,
         ) => WorthQueryProductBranchCloseDenial::DurableBranchPublicationRequired,

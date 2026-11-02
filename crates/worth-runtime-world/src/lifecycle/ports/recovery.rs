@@ -5,6 +5,7 @@ use super::*;
 pub(crate) trait RuntimeWorldRecoveryService:
     crate::lifecycle::availability::RuntimeWorldAvailability
 {
+    fn owner_identity(&self) -> crate::identity::RuntimeWorldOwnerIdentity;
     fn retained_commits(
         &self,
         candidates: &[crate::identity::CompositeCommitIdentity],

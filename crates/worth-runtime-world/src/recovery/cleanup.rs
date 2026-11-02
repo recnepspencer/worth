@@ -48,6 +48,7 @@ pub(crate) enum RecoveryCleanupDenial {
     Missing,
     Busy,
     ForeignCatalog,
+    StaleIncarnation,
     CallerCapabilityLive,
     SettlementRequired,
     TooYoung,
@@ -85,6 +86,16 @@ impl super::catalog::ProductUnpublishedRecoveryCatalog {
         handle: &super::ProductUnpublishedRecoveryHandle,
         age: Option<(crate::lifecycle::RuntimeWorldInstant, u64)>,
     ) -> Result<RecoveryCleanupOutcome, RecoveryCleanupDenial> {
+        if let Err(cause) = self.admit_handle_incarnation(handle) {
+            return Err(match cause {
+                worth_proof::HomeIncarnationDenial::ForeignHome => {
+                    RecoveryCleanupDenial::ForeignCatalog
+                }
+                worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+                    RecoveryCleanupDenial::StaleIncarnation
+                }
+            });
+        }
         if handle.catalog_affinity() != self.affinity() {
             return Err(RecoveryCleanupDenial::ForeignCatalog);
         }
@@ -137,6 +148,7 @@ impl From<RecoveryCleanupDenial> for super::RuntimeWorldRecoveryDenial {
             RecoveryCleanupDenial::Missing => Self::MissingRecord,
             RecoveryCleanupDenial::Busy => Self::Busy,
             RecoveryCleanupDenial::ForeignCatalog => Self::ForeignHandle,
+            RecoveryCleanupDenial::StaleIncarnation => Self::StaleIncarnation,
             RecoveryCleanupDenial::CallerCapabilityLive => Self::CallerCapabilityLive,
             RecoveryCleanupDenial::TooYoung => Self::TooYoung,
             RecoveryCleanupDenial::ClockRegressed => Self::ClockRegressed,

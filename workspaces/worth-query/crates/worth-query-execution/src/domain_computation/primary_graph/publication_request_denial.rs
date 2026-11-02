@@ -11,6 +11,7 @@ pub(crate) fn publication(
         ordinary @ (NoEffectCause::DurableOpenRequired
         | NoEffectCause::StaleExpectedProductHead
         | NoEffectCause::OwnerDeniedBeforeEffect
+        | NoEffectCause::StaleIncarnation
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted

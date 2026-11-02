@@ -74,6 +74,8 @@ where
         &self,
         expected: &ProductBranchObservation,
     ) -> Result<(), RuntimeWorldBranchAdmissionDenial> {
+        self.owner_identity()
+            .admit_branch_authority(expected.owner_identity())?;
         let cell = self
             .state
             .branches
@@ -212,10 +214,12 @@ where
         &self,
         request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
     ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial> {
+        let (execution, source, intent, cancellation) = request.into_parts();
+        self.owner_identity()
+            .admit_branch_authority(source.owner_identity())?;
         if self.state.durable.is_some() {
             return Err(RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired);
         }
-        let (execution, source, intent, cancellation) = request.into_parts();
         if source.owner_identity() != self.owner_identity()
             || source.branch_identity().owner_identity() != self.owner_identity()
         {

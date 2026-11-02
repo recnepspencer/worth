@@ -8,16 +8,22 @@ use super::{
 };
 
 static NEXT_PROTOCOL_SESSION: AtomicU64 = AtomicU64::new(1);
+mod incarnation;
 
 pub struct WorthQueryProviderSessionTokenAdmission {
+    home_owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     plan_identity: Arc<str>,
     provider_identity: Arc<str>,
     provider_generation: u64,
 }
 
 impl WorthQueryProviderSessionTokenAdmission {
-    pub(super) fn new(plan: &WorthQueryProviderExecutionPlanContract) -> Self {
+    pub(super) fn new(
+        plan: &WorthQueryProviderExecutionPlanContract,
+        home_owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+    ) -> Self {
         Self {
+            home_owner,
             plan_identity: plan.identity().into(),
             provider_identity: plan.provider_identity().into(),
             provider_generation: plan.provider_generation(),
@@ -49,6 +55,7 @@ impl WorthQueryProviderSessionTokenAdmission {
                 )
             })?;
         Ok(WorthQueryProviderSessionToken {
+            home_owner: self.home_owner,
             identity: Arc::from(format!("provider-session:{generation}")),
             plan_identity: self.plan_identity,
             provider_identity: self.provider_identity,
@@ -100,6 +107,7 @@ mod tests {
 }
 
 pub struct WorthQueryProviderSessionToken {
+    home_owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     identity: Arc<str>,
     plan_identity: Arc<str>,
     provider_identity: Arc<str>,

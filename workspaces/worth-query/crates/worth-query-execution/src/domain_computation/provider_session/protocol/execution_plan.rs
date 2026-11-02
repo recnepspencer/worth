@@ -302,7 +302,13 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
             )
         })?;
         self.counters.called_provider();
-        let admission = WorthQueryProviderSessionTokenAdmission::new(&self.contract);
+        let home_owner = match &self.product {
+            WorthQueryProviderProductAffinity::Standalone => None,
+            WorthQueryProviderProductAffinity::Application(product) => {
+                Some(product.observation().owner_identity())
+            }
+        };
+        let admission = WorthQueryProviderSessionTokenAdmission::new(&self.contract, home_owner);
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             self.provider.readmit_session(
                 &WorthQueryProviderExecutionPlanView::new(request, &self.contract),

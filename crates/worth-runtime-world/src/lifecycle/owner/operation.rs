@@ -22,6 +22,7 @@ mod preparation_tests;
 mod product_head;
 mod publication_capacity;
 mod reservation_steps;
+mod source_admission;
 
 pub(crate) use attempt::{
     RuntimeWorldOperationLedger, RuntimeWorldOperationLedgerState,
@@ -354,37 +355,6 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    /// The shared pre-lowering admission: this owner, an open world, and a
-    /// branch cell that still exists. It returns the exact current snapshot
-    /// the caller must compare its expected observation against.
-    fn admit_publication_source(
-        &self,
-        expected: &ProductBranchObservation,
-    ) -> Result<crate::branch::ProductBranchReferenceSnapshot, NoEffectCompositePublication> {
-        if expected.owner_identity() != self.owner_identity() {
-            return Err(NoEffectCompositePublication::new(
-                NoEffectCause::OwnerDeniedBeforeEffect,
-                Some(expected.clone()),
-            ));
-        }
-        if !self.is_open_and_bootstrapped() {
-            return Err(NoEffectCompositePublication::new(
-                NoEffectCause::OwnerUnavailable,
-                Some(expected.clone()),
-            ));
-        }
-        self.state
-            .branches
-            .branch_cell(expected.branch_identity())
-            .map(|cell| cell.atomic_snapshot())
-            .ok_or_else(|| {
-                NoEffectCompositePublication::new(
-                    NoEffectCause::OwnerUnavailable,
-                    Some(expected.clone()),
-                )
-            })
-    }
-
     pub(super) fn is_open_and_bootstrapped_for_creation(&self) -> bool {
         self.is_open_and_bootstrapped()
     }

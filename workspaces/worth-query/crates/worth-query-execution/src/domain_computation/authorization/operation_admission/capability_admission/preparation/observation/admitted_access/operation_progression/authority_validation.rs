@@ -26,6 +26,24 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
+    runtime
+        .product_runtime
+        .owner
+        .owner_identity()
+        .admit_incarnation(access.home_owner)
+        .map_err(|cause| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::Refused(match cause {
+                    worth_proof::HomeIncarnationDenial::ForeignHome => {
+                        AuthorizationRefusal::ForeignRuntime
+                    }
+                    worth_proof::HomeIncarnationDenial::StaleIncarnation => {
+                        AuthorizationRefusal::StaleIncarnation
+                    }
+                }),
+                access.operation.as_ref(),
+            )
+        })?;
     validate_access_lifecycle(access)?;
     validate_installed_operation_identity(runtime, access, operation, progression)?;
     validate_capability_graph_work_authority(access, operation)

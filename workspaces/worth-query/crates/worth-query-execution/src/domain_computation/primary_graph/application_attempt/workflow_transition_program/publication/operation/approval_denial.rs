@@ -44,6 +44,9 @@ pub(super) fn denial(
             AuthorizationRefusal::ForeignRuntime,
         )
         | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleIncarnation,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::StaleInstalledSchema,
         )
         | WorthQueryOperationAuthorizationDenialKind::Refused(

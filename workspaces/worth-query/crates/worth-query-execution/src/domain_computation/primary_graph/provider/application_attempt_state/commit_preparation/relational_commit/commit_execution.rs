@@ -138,6 +138,7 @@ fn world_no_effect(
         NoEffectCause::DurableOpenRequired
         | NoEffectCause::ExecutionRequest(_)
         | NoEffectCause::OwnerDeniedBeforeEffect
+        | NoEffectCause::StaleIncarnation
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted

@@ -10,6 +10,7 @@ pub enum NoEffectCause {
     CancelledBeforeEffect,
     DeadlineBeforeEffect,
     OwnerDeniedBeforeEffect,
+    StaleIncarnation,
     CorrespondenceRebindRequired,
     ReferenceGenerationExhausted,
     CapacityExhausted,

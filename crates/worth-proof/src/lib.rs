@@ -13,6 +13,8 @@ mod durable_publication;
 mod dx;
 mod effect;
 mod home_binding;
+mod home_incarnation;
+pub use home_incarnation::{HomeIncarnationDenial, HomeIncarnationFence};
 mod home_recovery;
 mod linear;
 mod managed_access;

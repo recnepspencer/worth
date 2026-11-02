@@ -10,7 +10,10 @@ impl RuntimeWorldIdentityIssuer {
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
         let _ = capability;
         Ok(Self {
-            owner: RuntimeWorldOwnerIdentity::for_admitted_home(binding.owner())?,
+            owner: RuntimeWorldOwnerIdentity::for_admitted_home(
+                binding.owner(),
+                binding.incarnation(),
+            )?,
             next_branch_incarnation: frontiers.branch,
             next_composite_commit: frontiers.commit,
             next_bootstrap_attempt: frontiers.bootstrap,

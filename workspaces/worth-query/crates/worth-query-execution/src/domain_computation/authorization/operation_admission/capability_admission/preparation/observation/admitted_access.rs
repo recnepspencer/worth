@@ -158,6 +158,7 @@ where
 {
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
     capability: Arc<str>,
     capability_type: Arc<str>,
@@ -222,6 +223,7 @@ where
         ));
     WorthQueryAdmittedApplicationCapabilityAccess {
         runtime_authority: prepared.runtime.runtime.authority_identity(),
+        home_owner: prepared.runtime.product_runtime.owner.owner_identity(),
         binding_identity: prepared.capability.binding_identity().clone(),
         capability: prepared.capability.contract().name().into(),
         capability_type: prepared.capability.contract().capability_type().into(),

@@ -23,6 +23,7 @@ pub(super) fn classify(terminal: NoEffectCompositePublication) -> Outcome {
         )) => return Outcome::TimedOut,
         Cause::ExecutionRequest(cause) => QueryCause::ExecutionRequest(cause),
         Cause::OwnerDeniedBeforeEffect => QueryCause::OwnerDeniedBeforeEffect,
+        Cause::StaleIncarnation => QueryCause::StaleIncarnation,
         Cause::CorrespondenceRebindRequired => QueryCause::CorrespondenceRebindRequired,
         Cause::ReferenceGenerationExhausted => QueryCause::ReferenceGenerationExhausted,
         Cause::CapacityExhausted => QueryCause::CapacityExhausted,

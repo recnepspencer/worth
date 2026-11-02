@@ -105,7 +105,7 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         Kind::ForeignExecutionBasis => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
-        Kind::ForeignGraphAuthority => {
+        Kind::ForeignGraphAuthority | Kind::StaleIncarnation => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
         Kind::UndeclaredOperationScope => {

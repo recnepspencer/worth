@@ -95,6 +95,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                     | Session::ForeignOperationAttempt
                     | Session::ForeignExecutionBasis
                     | Session::ForeignGraphAuthority
+                    | Session::StaleIncarnation
                     | Session::UndeclaredOperationScope
                     | Session::ResourceEnvelopeMismatch
                     | Session::ExecutionNestedPatternStopped { .. }

@@ -11,6 +11,7 @@ use super::product_unpublished::{
 mod active;
 mod slots;
 use slots::{RecoveryEntry, RecoveryRecordSlots};
+mod incarnation;
 mod initialization;
 mod page;
 mod recovered_publication;
@@ -190,9 +191,7 @@ impl ProductUnpublishedRecoveryCatalog {
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<Arc<ProductUnpublishedOwnerEffectsRecord>, super::RuntimeWorldRecoveryDenial> {
         use super::RuntimeWorldRecoveryDenial;
-        if handle.catalog_affinity() != self.affinity() {
-            return Err(RuntimeWorldRecoveryDenial::ForeignHandle);
-        }
+        self.admit_handle(handle)?;
         self.materialize_abandoned(handle.identity());
         let state = self.locked_state();
         if matches!(
@@ -214,9 +213,7 @@ impl ProductUnpublishedRecoveryCatalog {
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<ReservedProductUnpublishedRecordUpdate, super::RuntimeWorldRecoveryDenial> {
-        if handle.catalog_affinity() != self.affinity() {
-            return Err(super::RuntimeWorldRecoveryDenial::ForeignHandle);
-        }
+        self.admit_handle(handle)?;
         self.materialize_abandoned(handle.identity());
         let mut state = self.locked_state();
         if matches!(
