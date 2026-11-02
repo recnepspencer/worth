@@ -383,3 +383,42 @@ Unclaimed history and successor observations are one-shot delivery obligations,
 not disposable caches: evidence.rs::claim_fresh_history and the live/output/client
 observation take ports complete them on the resumed Home. The preflight preserves
 those obligations and refuses pending work rather than silently dropping it.
+
+## Receipt retirement qualification and remaining reopening boundary
+
+The receipt-owner ruling is implemented by the consuming World/Native and Query
+ports above. The original registered source, graph, provider, handlers and
+completed publications remain in the same retired Home allocation until reclaim.
+The actual media admission port acquires the physical mutation lease while that
+retired allocation is still alive. These direct controls pass with
+RUST_MIN_STACK absent: ordinary_mutation_host_physically_closes_with_original_retired_allocations_alive,
+held_original_publication_receipt_refuses_close_and_same_home_resumes,
+expired_host_close_preserves_the_same_serving_home_and_a_live_retry_physically_closes,
+and host_checkpoint_memory_failure_is_reported_while_original_retired_owners_remain_physically_closed.
+Their logs are target/lane-evidence/receipt-store-direct-final/*.log. This
+supersedes the historical mutation ReadCustodyRetained blocker above.
+
+All six unchanged acceptance courts now reach actual Native readmission and
+refuse Relational(CompleteNativeRequired). The kill-without-close court first
+records HOST_ACKNOWLEDGED_COMMIT=4, then Host admission refuses
+CorruptCheckpoint: recovered source synchronization denied: RootLinkage. Logs:
+receipt-store-controls/store-close-acceptance.log (0/6/0),
+receipt-store-controls/host-kill-reopen.log (0/1/0), and
+receipt-store-controls/native-cold-close.log (0/2/0, CompleteNativeRequired).
+These reopening paths remain P-A's scope; their failures are not acceptance
+success. No opening or Native durable-format implementation is changed here.
+
+Native's new original-basis behavior court passes (1/0/0); World normal owners
+pass (305/0/0), followed by the three affected publication-custody cases after
+the consuming-refusal correction (3/0/0). Retired Native basis and consumed World
+publication each pass their compile-fail read-access court (1/0/0 each).
+The new World behavior reuses the existing close publication-custody court and
+its real fixture, rather than adding a source-court baseline exemption.
+
+Narrow new facade entries are Native's RelationalBranchBasisRetirement,
+RelationalBranchBasisRetirementDenial, RelationalBranchBasisRetirementProgress,
+RetiredRelationalBranchBasis, and World's PreparedConsumedPublicationRetirement,
+ConsumedPublicationRetirement, ConsumedPublicationRetirementDenial,
+ConsumedPublicationRetirementProgress and RetiredConsumedPublication. This
+receipt slice adds no boundary configuration entry or application_home/mod.rs
+entry. The earlier exact query-home-retirement caller seal remains unchanged.
