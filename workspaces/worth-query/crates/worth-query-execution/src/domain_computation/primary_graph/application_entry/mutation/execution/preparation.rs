@@ -23,10 +23,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
     ) -> Result<
         PreparedMutationHandler<'advance, 'authority, Schema, Binding>,
-        WorthQueryMutationHandlerExecutionReport<
-            WorthQueryCompletedMutationCandidate<Schema, Binding>,
-            Binding::Denial,
-        >,
+        WorthQueryMutationHandlerExecutionReport<std::convert::Infallible, Binding::Denial>,
     >
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -68,10 +65,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
     ) -> Result<
         PreparedMutationHandler<'advance, 'authority, Schema, Binding>,
-        WorthQueryMutationHandlerExecutionReport<
-            WorthQueryCompletedMutationCandidate<Schema, Binding>,
-            Binding::Denial,
-        >,
+        WorthQueryMutationHandlerExecutionReport<std::convert::Infallible, Binding::Denial>,
     >
     where
         Binding: ApplicationMutationBinding<Schema>,

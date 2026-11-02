@@ -53,21 +53,22 @@ impl crate::mvcc::ValidatedRelationalProposal {
         installed: &RelationalInstalledApplicationPublicationAuthority,
         publication: RequiredOutputPublication,
     ) -> Result<Self, TransactionCommitError> {
-        if self.required_output_publication.is_some()
+        if self.state.required_output_publication.is_some()
             || !publication.admitted_by(installed)
             || self
+                .state
                 .validation_input
                 .basis()
                 .descriptor()
                 .runtime_instance_id()
                 != installed.runtime_instance_id
-            || self.custom_invariant_generation != installed.custom_invariant_generation
+            || self.state.custom_invariant_generation != installed.custom_invariant_generation
         {
             return Err(origin_denial(
                 "required-output publication has a foreign or repeated installed owner",
             ));
         }
-        self.required_output_publication = Some(RequiredOutputPublicationAdmission {
+        self.state.required_output_publication = Some(RequiredOutputPublicationAdmission {
             installed: installed.clone(),
             publication,
         });

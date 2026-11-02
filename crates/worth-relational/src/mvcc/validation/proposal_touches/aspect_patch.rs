@@ -18,6 +18,7 @@ pub(super) fn project<'p>(
     };
     work.owner_state_lookups += 1;
     let kind = proposal
+        .state
         .prepared
         .working_state
         .get_current_partition(spec.entity_id.partition_id)
@@ -43,10 +44,16 @@ pub(super) fn project<'p>(
             continue;
         }
         let basis = operation.basis();
-        if let Some(plan) = proposal.prepared.schema_authority.entity_aspect_plan(kind) {
+        if let Some(plan) = proposal
+            .state
+            .prepared
+            .schema_authority
+            .entity_aspect_plan(kind)
+        {
             (sink.checkpoint)(plan.executable_bindings.len() as u64)?;
         }
         let binding = proposal
+            .state
             .prepared
             .schema_authority
             .entity_aspect_plan(kind)
@@ -91,8 +98,16 @@ pub(super) fn project<'p>(
             continue;
         }
         work.owner_state_lookups += 2;
-        let before = aspect(&proposal.prepared.working_state, spec.entity_id, contract);
-        let after = aspect(proposal.proposed_mutation.state(), spec.entity_id, contract);
+        let before = aspect(
+            &proposal.state.prepared.working_state,
+            spec.entity_id,
+            contract,
+        );
+        let after = aspect(
+            proposal.state.proposed_mutation.state(),
+            spec.entity_id,
+            contract,
+        );
         let (Ok(before), Ok(after)) = (before, after) else {
             sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
             continue;

@@ -195,7 +195,7 @@ where
                         result,
                         |denial| provider.domain_denial_reason(denial),
                     )
-                    .map(|_| unreachable!("a refused preparation cannot produce a candidate"))
+                    .map(|impossible| match impossible {})
                     .map_err(ProducerExecutionStop::ExecutionStopped)
                 },
             ))

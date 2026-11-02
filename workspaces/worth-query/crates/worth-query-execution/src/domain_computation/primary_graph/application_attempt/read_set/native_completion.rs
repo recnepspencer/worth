@@ -163,9 +163,17 @@ impl<Schema, Operation, Input, Scope, Phase>
             )
             .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?,
         };
+        let admission_memory = self
+            .execution
+            .reserve_retained_memory(std::mem::size_of_val(&self.admission) as u64)
+            .map_err(|cause| {
+                super::super::retained_decision_facts::StoreDenial::ExecutionRequest(cause)
+                    .into_attempt_denial(self.admission.operation())
+            })?;
         Ok(WorthQueryCompleteApplicationReadSet {
             postcondition_carry,
-            admission: self.admission,
+            admission: Box::new(self.admission),
+            _admission_memory: admission_memory,
             lease,
             application_projection: Some(application_projection),
             original_read,

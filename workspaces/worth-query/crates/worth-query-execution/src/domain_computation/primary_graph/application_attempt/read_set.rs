@@ -129,7 +129,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
     Scope,
     Phase = WorthQueryOrdinaryApplicationRead,
 > {
-    pub(super) admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    pub(super) admission:
+        Box<WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>>,
     pub(super) lease: WorthQueryApplicationSnapshotLease,
     pub(super) application_projection: Option<Arc<CompletedFactProjection>>,
     pub(super) original_read: Option<Arc<CompletedOriginalRead>>,
@@ -166,6 +167,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
     /// A refusal for a new commit only: a retry of a recorded outcome replays.
     pub(super) new_commit_refusal: Option<WorthQueryApplicationAttemptDenial>,
     pub(super) _phase: PhantomData<fn() -> Phase>,
+    // Completed admission backing drops before its original-request charge.
+    pub(super) _admission_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

@@ -81,7 +81,7 @@ fn run<'p>(
             checkpoint,
         };
         let mut work = ValidatedMutationTouchProjectionWork::default();
-        for intent in &proposal.prepared.merged_plan.plan().merged_intents {
+        for intent in &proposal.state.prepared.merged_plan.plan().merged_intents {
             (sink.checkpoint)(1)?;
             work.validated_intents_examined += 1;
             match intent {
@@ -90,7 +90,7 @@ fn run<'p>(
                 }
                 _ => super::intent_projection::project_intent(
                     intent,
-                    &proposal.prepared.working_state,
+                    &proposal.state.prepared.working_state,
                     &mut sink,
                     &mut work,
                 )?,
@@ -111,7 +111,7 @@ fn metered<T>(
         .in_scope(|lease| match lease {
             Some(lease) => crate::execution::prepare_borrowed_artifact(
                 lease,
-                proposal.commit_work_budget.as_ref(),
+                proposal.state.commit_work_budget.as_ref(),
                 0,
                 |budget| {
                     Ok((

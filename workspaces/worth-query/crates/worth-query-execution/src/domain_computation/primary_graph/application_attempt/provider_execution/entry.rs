@@ -299,3 +299,5 @@ mod application_commit;
 mod commit_progression;
 
 mod output_source;
+
+mod managed_start;

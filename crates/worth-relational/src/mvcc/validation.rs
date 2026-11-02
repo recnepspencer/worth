@@ -32,8 +32,8 @@ pub use proposal_touches::{
     ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,
 };
-pub(crate) use validated_proposal::StrategyProposalDecoration;
 pub use validated_proposal::{RelationalMutationInvariantEvidence, ValidatedRelationalProposal};
+pub(crate) use validated_proposal::{StrategyProposalDecoration, ValidatedProposalState};
 
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
 use crate::history::data::BranchId;

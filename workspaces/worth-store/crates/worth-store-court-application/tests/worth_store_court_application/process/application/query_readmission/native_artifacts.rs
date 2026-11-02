@@ -31,6 +31,7 @@ impl WorthQueryHomeMaintenance for ObservationMaintenanceMustRemainUnentered {
         panic!("the observational attachment must never advance or schedule maintenance");
     }
 }
+
 type Existing = PreparedExistingHomeQueryRuntime<HomeIdentitySchema, HomeProgram>;
 type NativePreparation = PreparedHomeNativeMeaning<HomeIdentitySchema, HomeProgram>;
 type NativeMeaning = ReadmittedExistingHomeNativeMeaning<HomeIdentitySchema, HomeProgram>;

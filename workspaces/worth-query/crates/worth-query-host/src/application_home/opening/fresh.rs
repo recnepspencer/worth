@@ -2,7 +2,7 @@
 use super::*;
 pub(super) fn finish_new_home<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-    mut home: UnsharedReadmittedApplicationHome,
+    home: UnsharedReadmittedApplicationHome,
     query: PreparedHomeNativeMeaning<Schema, Program>,
     initial_state: impl FnOnce(
         &WorthQueryBootstrapAdvancementPhase<'_>,
@@ -15,6 +15,33 @@ pub(super) fn finish_new_home<Schema, Program>(
     checkpoint_limits: ApplicationHomeCheckpointLimits,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>,
+>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema> + 'static,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
+    use WorthQueryApplicationHomeOpenRefused as Refused;
+    let (mut query, home) = prepare_source(phase, home, query)?;
+    // Only the user initializer is caught by this borrowed Query operation;
+    // the actual Home and Query bootstrap remain outside its unwind boundary.
+    if let Err(cause) = query.initialize_home_query_state(phase, initial_state) {
+        return Err(Refused::InitialState { query, home, cause });
+    }
+    if let Err(cause) = query.publish_home_query_seed(phase) {
+        return Err(Refused::SeedPublication { query, home, cause });
+    }
+    finish_world(phase, query, home, checkpoint_limits)
+}
+
+fn prepare_source<Schema, Program>(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    mut home: UnsharedReadmittedApplicationHome,
+    query: PreparedHomeNativeMeaning<Schema, Program>,
+) -> Result<
+    (PreparedHomeQueryRuntime<Schema, Program>, DirectoryHome),
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
 >
 where
@@ -61,19 +88,30 @@ where
         Ok(parts) => parts,
         Err(cause) => return Err(Refused::Composition { query, home, cause }),
     };
-    let mut query = match query.attach_home_registered_source(phase, source, bridge, conditional) {
+    let query = match query.attach_home_registered_source(phase, source, bridge, conditional) {
         Ok(query) => query,
         Err(query) => return Err(Refused::SourceAttachment { query, home }),
     };
-    // Only the user initializer is caught by this borrowed Query operation;
-    // the actual Home and Query bootstrap remain outside its unwind boundary.
-    if let Err(cause) = query.initialize_home_query_state(phase, initial_state) {
-        return Err(Refused::InitialState { query, home, cause });
-    }
-    if let Err(cause) = query.publish_home_query_seed(phase) {
-        return Err(Refused::SeedPublication { query, home, cause });
-    }
-    let mut home = home;
+    Ok((query, home))
+}
+
+fn finish_world<Schema, Program>(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    query: PreparedHomeQueryRuntime<Schema, Program>,
+    mut home: DirectoryHome,
+    checkpoint_limits: ApplicationHomeCheckpointLimits,
+) -> Result<
+    WorthQueryApplicationHome<Schema, Program>,
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>,
+>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema> + 'static,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
+    use WorthQueryApplicationHomeOpenRefused as Refused;
+    let request = phase.execution_request();
     let maintenance = match super::super::maintenance::prepare(&home, checkpoint_limits, &request) {
         Ok(operation) => operation,
         Err(cause) => return Err(Refused::CheckpointMaintenance { query, home, cause }),

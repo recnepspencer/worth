@@ -1620,6 +1620,24 @@ successful terminal fact. This compiler-enforced cutover removes a 9,856-byte
 success-capable payload from ordinary Home failures without allocating error
 storage, changing persisted formats, or weakening physical preparation itself.
 
+Host opening likewise keeps the actual initialized result beside Store's
+callback, which carries completion only. Fresh opening returns from actual
+source preparation before invoking initialization, and completes World/service
+attachment after initialization. These steps consume the existing concrete
+Query stages; they introduce no initializer opportunity or substitute owner.
+
+Boundary ruling for the existing Store Query courts: migrate the exact
+`query_readmission/bootstrap_publication.rs` caller from its former generic
+source-finalization getter to `application-home-fresh-finalization`, and the
+exact `query_readmission/native_artifacts.rs` caller to
+`application-home-recovered-finalization`. Both files already belong to the
+closed Native/Home Query preparation audience. This preserves those same
+callers with narrower source provenance; it admits no new file, family or raw
+source constructor. Their actual Home still supplies the sealed fresh receipt
+or recovered authority. Observational existing-World attachment receives the
+same Home's real funded checkpoint operation through Query's maintenance port;
+it does not gain a no-op advancement path or qualify checkpoint reopen/close.
+
 World receives a distinct closed `admit_fresh_world_home` entry with the actual
 Native runtime and its fresh receipt. It validates that affinity before any
 World construction, reads the real protected World source and requires no
@@ -1730,6 +1748,30 @@ selected Complete Home reconstruction, original serving graph retirement,
 callback/provider release, D11, the joint landing oracle or the milestone.
 
 
+### Default-stack qualification and selected-source stop
+
+Fresh-Home admission qualification includes running the existing filesystem C0
+and authored Host checkpoint/automatic-maintenance controls directly on the
+normal libtest thread stack, in addition to the owned nextest lane. The
+configured nextest stack alone concealed an overflow. Native candidate
+preparation transfers its existing history proof and the same diagnostic,
+request-control and retention custody into a distinct registration frame.
+Early admission/draft frames return before later publication locals exist;
+this requires no new allocation, authority or memory allowance.
+
+Selected Complete reopening remains refused by `CompleteNativeRequired`.
+The selected-source boundary reviews in
+`target/complete-home-selected-source-boundary/{brief,original-input-refinement}.json`
+identify the missing persisted original-input chronology: zero-write
+birth/installation, transition schema attribution and per-canonical original
+mutation configuration. CHK18's full schema union does not establish those
+roles. Canonical format 4 and transition format 1 also lack these original
+inputs. Removing the gate requires an explicit durable-owner and versioned
+wire-placement ruling. Fresh authority cannot substitute for reconstructed
+original evidence. This is a stop on reopening, not acceptance of Phase 3;
+registered-source retirement and the remaining audited lifecycle obligations
+are still outstanding.
+
 ### Phase 3 master integration boundary ruling (2026-11-02)
 
 The existing Store application courts retain their exact construction authority
@@ -1753,3 +1795,231 @@ preparation on every stack frame. The existing recorded-correction consumer's
 explicit 8 MiB thread is the reproducer; its stack size and the repository's
 configured stack size are unchanged. Guard handback, recovery and destructor
 ordering retain their existing semantics.
+
+### Merged default-stack candidate execution boundary
+
+On merged source `224c00ae83`, raw libtest with `RUST_MIN_STACK` absent
+completes fresh initialization and the first authored checkpoint, then overflows
+on the ordinary business mutation. Windows x64 unwind metadata at the actual
+overflow attributes 1,596,504 bytes to Publication's `prepare_staged_candidate`
+and 273,480 bytes to its `prepare_in_program_using` caller. The captured stack
+and complete symbol names are in
+`target/lane-evidence/integration-baseline-stack.log`.
+
+Candidate preparation separates actual handler execution from completed-program
+binding. `preparation/handler_execution.rs` owns authorization, idempotency,
+pending-source consumption and the handler. Its move-only execution result
+carries the actual completed program, original identities, extension, work and
+workflow authority. `preparation/completion.rs` consumes those exact values for
+original-input retention, workflow binding and signed creation. Handler and
+Native preparation frames return before completion's program-move temporaries
+exist. The phase split adds no allocation, authority, execution allowance, alternate
+preparation algorithm or changed publication order. Keep all existing terminal
+outcomes and validate ordinary and external custody through the production
+courts. Raw default-stack qualification covers fresh Host startup, the authored
+Host checkpoint/business/automatic-maintenance journey and Store's C0/manual/
+automatic checkpoint control. This integration does not qualify Complete
+reopening, retirement, transitions, discard, receipts or the joint landing.
+
+The retained-payload measurement identifies the owning cause behind ordinary
+carriage: a complete read set is 30,288 bytes, including a 25,416-byte operation
+admission. Its authorization-basis enumeration embeds capability lifecycle
+predecessors even for Conventional operations. Approval, close and mandatory
+review bindings occupy 7,032, 12,776 and 18,416 bytes respectively. Compiler
+layout diagnostics are retained in
+`target/lane-evidence/integration-{carriage,admission}-layout.json`; the compile-only
+probes were removed and produced no runnable artifact.
+
+Only these three large lifecycle variants retain their original binding in
+unique backing. Admission reserves that backing against the original request
+before allocation and retains the same grant beside it until consumption or
+drop. The binding allocation drops before its grant. An unfunded or stopped
+admission returns the original requested/approved/mandatory custody with the
+actual typed stop; replay preserves that stop as well. Conventional operations
+allocate nothing for this lifecycle. This is a runtime-custody representation
+change, not a receipt-format, replay-authority or capability-lifecycle cutover.
+Handler-plan preparation also uses an Infallible completed value on its stop
+report, making a completed candidate impossible before the handler runs.
+
+The WIP Store observation-only attachments keep the merged candidate's
+`ObservationMaintenanceMustRemainUnentered` sentinel: unexpectedly scheduling
+maintenance must fail these courts. The duplicate WIP maintenance adapter is
+removed; no test or assertion is retired. Actual Host and Store checkpoint
+controls continue to use their genuine same-Home maintenance operations.
+
+Qualification mapping for this integration slice:
+
+- Phase 3 / D12 ordinary default-stack opening and mutation:
+  `host::application_home::fresh_directory_home_journey`.
+- Phase 3 / D12 authored checkpoint and automatic maintenance preserve the
+  original business result:
+  `host::application_home::fresh_source::authored_fresh_home_postbootstrap_complete_and_automatic_maintenance_preserve_business_value`.
+- D12 C0, manual and automatic complete capture:
+  `world_section::readmission::tests::composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt`.
+- D17 preparation cannot report a completed candidate: the Infallible report
+  type and exhaustive consuming conversion; existing mutation, producer and
+  capability-elevation courts cover the actual success and stopped routes.
+- Charged capability-lifecycle custody: the original request issues the retained
+  reservation before allocation; the same enum variant owns binding and grant,
+  and consuming extraction ends the backing scope before releasing its grant.
+  Existing capability-elevation approval/close/review, adversarial and replay
+  courts remain the semantic controls, alongside external custody controls.
+
+At the next actual commit checkout, the same raw journey exposed B-tree
+remove/reinsert carriage of the large registered Native candidate: insertion
+frames allocate 104,184 and 190,824 bytes in
+`target/lane-evidence/integration-backed-stack.log`. Checkout now replaces the
+Registered value with its Committing marker in the existing reserved slot,
+under the same owner lock. The original identity, actual attempt/candidate and
+completion owner are unchanged. This removes a tree mutation and allocation
+opportunity rather than adding another backing owner. Existing attempt-store
+phase, cleanup and provider commit courts cover this handoff.
+
+Durable orchestration itself retained 641,144 bytes across owner progression
+(`target/lane-evidence/integration-checkout-stack.log`); its progression frame
+is independently 183,880 bytes (`integration-durable-frame-study.log`). The
+same original guard now crosses separate `durable/opening.rs`, progression,
+and `durable/completion.rs` calls. Opening temporaries return before progression;
+terminal handback locals exist only after it returns. All actual terminal
+custody still wins over a late framework stop. No owner, grant or World phase
+is replaced, and no allocation is introduced by this split.
+
+
+The remaining reservation overflow exposed repeated by-value carriage of the
+original Native proposal through Query and World phases. The compile-only
+layout probe measures `ValidatedRelationalProposal` at 10,240 bytes
+(`target/lane-evidence/integration-native-layout-diagnostic-cargo.log`). Native
+now owns its exact accepted proposal state in unique retained backing from
+successful validation until Native commit preparation consumes it. The public
+move-only proposal and its original identities, invariant results and mutation
+authority remain unchanged. The original execution request admits the actual
+backing before allocation; the backing is released before its charge. This is
+not a second proposal, a reconstructed state or an uncharged result allocation.
+The runtime-private state does not introduce another public authority type.
+`validated_proposal_backing_charges_original_request_until_native_consumption`
+and `unfunded_validated_proposal_backing_refuses_and_releases_original_custody`
+cover retained accounting and refusal, alongside the actual sibling, stale and
+canonical proposal controls in the same court.
+
+The Native custody change reduces durable progression from 183,880 to 82,920
+bytes, reaching actual Native history preparation before the next overflow
+(`target/lane-evidence/integration-native-custody-stack.log`). That trace shows
+the outer Query entry retaining 229,448 bytes across provider I/O. Admission
+and managed-start temporaries now return through `entry/managed_start.rs`
+before progression enters. The original Running phase remains the sole input
+to the same progression and completion functions; no owner is cloned and no
+new allocation is introduced by this phase cut.
+
+The managed-start cut reduces the Query entry frame from 229,448 to 137,656
+bytes (`target/lane-evidence/integration-managed-start-stack.log`). The same
+trace reaches Native draft preparation (105,240 bytes) inside history
+preparation (267,464 bytes). Completed decision sets now retain their exact
+move-only admission in original-request-funded backing from seal through commit
+preparation. This is the completed read set's custody, released when the same
+admission transfers to the Running phase; ordinary program carriage no longer
+embeds the full inline admission at every entry frame. Both full and native
+completion reserve before allocating and preserve the typed execution refusal.
+The new Native retention test initially supplied only the backing bytes as a
+finite ceiling, overlooking the execution framework's temporary 392-byte charge.
+Its retention oracle now uses an unbounded accounting budget and still checks
+the exact retained byte count; the separate finite refusal control checks the
+actual requested size and typed policy-memory denial.
+
+
+Fresh-journey assertion migration: ancestor `aac750b1ca` introduced original
+Query `prepare_home_retirement` admission before World seal. Its actual
+`Arc::get_mut` admission returns `Busy(ProgramRuntime)` for a retained Query
+clone; after uniqueness, this fixture's opaque BalanceHandler returns its
+exact `Handler { binding: SetBalanceBinding::IDENTITY, cause: Unsupported }`.
+The old fresh-journey claims that this alias first seals World, makes weak reads
+inert, then completes full close were superseded by that explicit pre-seal
+contract. This change retires those stale assertions only, with this written
+justification naming the governing commit. No test is removed or ignored: the
+journey now asserts both exact refusals, continued original balance 8 before
+seal, its same lifecycle-owned conditional-runtime refusal, and the original
+resumed directory. Successful post-seal/full retirement belongs to the
+separately owned D11 qualification; this integration introduces no retirement,
+reopen or discard implementation.
+
+The expanded fresh-journey close assertions themselves increased its debug
+caller frame to 261,592 bytes, compared with 155,936 in the authored Host
+control (`target/lane-evidence/integration-fresh-control-complete-stack.log`).
+Its exact post-mutation alias/supplier assertions now consume the original
+Home in `host/application_home/fresh_close.rs` after the business assertions
+finish. No assertion or resource handoff is removed; the close-result
+construction frames do not overlap business mutation. This repairs the court
+expansion introduced by the assertion migration, with no new product backing,
+thread, stack setting or retry authority.
+
+The same still-aliased runtime's legacy conditional close first returns exact
+`RuntimeKeepaliveRetained`, as the existing program-runtime custody court
+asserts (`program/speculation/counted_read_stops/custody.rs`). Its old
+`ApplicationHomeOwnsLifecycle` expectation also assumed the retired World-first
+ordering. The fresh control now checks that actual earlier ownership refusal;
+it does not weaken the assertion to any conditional-close error.
+
+
+The core focused packet exposed a stale normalization-bill oracle in
+`normalized_small_output_does_not_retain_large_input_bill`: it retained the
+entire proposal while comparing the normalized plan's bill against input.
+The new fixed 10,240-byte proposal backing made that proxy invalid. As in the
+adjacent `replay_validation_keeps_normalized_copy_after_inputs_drop` control,
+the test now isolates the SAME actual normalized-plan owner before measuring.
+Its actual-symbol assertion, strict smaller-than-input comparison and final
+zero-charge assertion remain unchanged. The separate retained-proposal test
+continues to require the exact fixed backing charge while that owner is live.
+This is an oracle-scope correction; production accounting is unchanged.
+
+The scoped Store native prebuild initially omitted the existing forwarded
+`worth-store/volatile-sync-for-tests` feature required by the owned independent
+writer prerequisites. Both Store and backend declarations remain present;
+no feature or prerequisite requirement is removed or added. Qualification
+selects that existing feature before the native graph is compiled, and the
+unchanged owned adapter carries and validates the same observed graph for
+independent executables. A cheap manifest-backed regression verifies each
+prerequisite feature against its actual declaring package.
+
+The selected Store Home controls use ordinary library operations and, in
+`native_artifacts/idempotency.rs`, one child invocation of the SAME harness.
+The source search for `std::process`, `Command::`, `prebuilt_`,
+`physical_store_recover` and `physical_store_c8_writer` in the selected test
+families finds only that same-harness child. They do not request independent
+product executables. Their qualification therefore uses the existing owned
+prebuild/nextest runner and records no independent-product graph claim.
+The original Store process prebuild implementation and its strict feature and
+shared-library drift guards are retained unchanged. The prerequisite-scoping
+experiments from `7c9bb29029` and `306b782554` are retired as outside this
+selected qualification: the new unrelated-root/metadata-projection tests and
+new exact-four-command assertions described that abandoned algorithm, so they
+are removed with it. Existing tests and drift assertions remain intact. The
+manifest-backed prerequisite-declaration regression remains.
+
+
+Accounting evidence placement: BC9002 refused the new SerialRequest root in
+source canonical-proposal tests. The two named controls move to the existing
+relational certification court; no baseline or enforcement rule is changed.
+They now use actual public transaction validation and consuming Native
+admission rather than directly calling the private retain/into_state methods.
+A finite 8 KiB original budget refuses the actual larger state admission with
+its exact typed policy-memory cause; the unbounded control retains the real
+bill until the same cancelled request consumes the proposal. Both require
+zero remaining charge and an unchanged actual branch after refusal. The three
+existing source custody controls retain their private pending-slot/identity
+assertions. The two migrated test names are unchanged; module paths change.
+
+The court's first 4 KiB fixture refused an earlier 368-byte preparation copy
+with only 290 bytes available. Its 8 KiB ceiling remains below the measured
+10,240-byte accepted-state backing, while allowing the ordinary preparation
+prefix to reach that backing admission. The strict requested-greater-than-total-
+ceiling assertion remains; no arbitrary error or earlier stop is accepted.
+
+The 8 KiB created-record fixture still stopped at an earlier 624-byte copy with
+386 bytes available. The final controls use a genuine zero-input public Native
+transaction to isolate the fixed accepted-state backing from input-copy cost.
+This preserves the strict requested-greater-than-total-ceiling assertion,
+actual original-request accounting, typed cancellation/refusal, zero-charge
+release and unchanged branch. Both unchanged test names pass on the normal
+libtest stack in `integration-accounting-empty-owner-qualified.log`.
+The same-harness fixture boundary correction is committed in `a6fbfc05a8`;
+it retires the prerequisite-projection claims/tests of the two named abandoned
+commits, with the original independent process guards restored.

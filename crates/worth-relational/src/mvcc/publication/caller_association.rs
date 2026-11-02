@@ -5,10 +5,10 @@ impl crate::mvcc::ValidatedRelationalProposal {
         mut self,
         association: crate::mvcc::RelationalCallerAssociation,
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
-        if self.caller_association.is_some() {
+        if self.state.caller_association.is_some() {
             return Err(super::origin_denial("caller association is already bound"));
         }
-        self.caller_association = Some(association);
+        self.state.caller_association = Some(association);
         Ok(self)
     }
 }

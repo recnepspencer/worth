@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
+import tomllib
 import unittest
 
 from store_prebuild import ExecutablePrebuildFailure, REQUESTS, prepare, retain
@@ -10,6 +11,17 @@ from native_features import NativeFeatureGraph, NativeFeatureRefusal, library_id
 
 
 class StoreExecutablePrebuildTests(unittest.TestCase):
+    def test_executable_prerequisite_features_belong_to_actual_declaring_packages(self):
+        workspace = Path(__file__).resolve().parents[2] / 'workspaces/worth-store/crates'
+        for request in REQUESTS:
+            for qualified in request['features']:
+                package, feature = qualified.split('/', 1)
+                manifest = workspace / package / 'Cargo.toml'
+                with self.subTest(binary=request['binary'], feature=qualified):
+                    declared = tomllib.loads(manifest.read_text(encoding='utf-8'))
+                    self.assertEqual(declared['package']['name'], package)
+                    self.assertIn(feature, declared.get('features', {}))
+
     def fixture(self, root):
         events = []
         for request in REQUESTS:

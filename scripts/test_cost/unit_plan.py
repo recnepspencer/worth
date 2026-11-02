@@ -126,7 +126,13 @@ def inputs(command, cwd, environment, manifests=()):
 def declare(command, cwd, environment, observed):
     try:
         graph = json.loads(observed)
-        units = declarations(graph)
+        # Cargo's check graph reports both the library dependency and its checked
+        # unit-test harness as mode=check/kind=lib. The explicit --tests selection
+        # makes its roots test stages; dependency units remain ordinary checks.
+        test_roots = (graph['roots'] if command[1] in ('check', 'clippy') and '--tests' in command
+                      and not any(flag in command for flag in
+                                  ('--all-targets', '--lib', '--bins', '--examples', '--benches')) else ())
+        units = declarations(graph, checked_test_roots=test_roots)
     except (KeyError, TypeError, ValueError) as error:
         raise CompilerUnitRefusal(f'could not declare required compiler units: {error}') from error
     contract = inputs(command, cwd, environment, manifest_paths(command, cwd, graph))

@@ -22,21 +22,14 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let prepared = match prepare_application_commit(
+        let running = match self.prepare_managed_application_commit(
             execution,
             phase,
-            self,
-            WorthQueryApplicationCommitPreparationRequest::new(
-                program,
-                idempotency,
-                elevation_currentness,
-                aftermath_causality,
-            ),
+            program,
+            idempotency,
+            elevation_currentness,
+            aftermath_causality,
         ) {
-            WorthQueryApplicationCommitPreparation::Ready(prepared) => prepared,
-            WorthQueryApplicationCommitPreparation::Terminal(outcome) => return outcome,
-        };
-        let running = match start_managed_application_commit(phase, self, prepared) {
             Ok(running) => running,
             Err(outcome) => return outcome,
         };

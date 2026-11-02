@@ -236,20 +236,26 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         {
             return None;
         }
-        let WorthQueryApplicationAttemptEntry::Registered { identity, state } = self
+        // The reserved index slot survives checkout. Replacing its phase value
+        // avoids removing/reinserting the large Native candidate through B-tree
+        // mutation frames and retains the same registration and completion key.
+        let entry = self
             .attempts
-            .remove(&key)
-            .expect("commit-ready state exists")
-        else {
+            .get_mut(&key)
+            .expect("commit-ready state exists");
+        let WorthQueryApplicationAttemptEntry::Registered { identity, .. } = entry else {
             unreachable!("commit readiness excludes reservation entries")
+        };
+        let identity = *identity;
+        let WorthQueryApplicationAttemptEntry::Registered { state, .. } = std::mem::replace(
+            entry,
+            WorthQueryApplicationAttemptEntry::Committing { identity },
+        ) else {
+            unreachable!("commit readiness retains its registered state")
         };
         let (attempt, approved) = state
             .take_commit_parts()
             .expect("commit-ready state retains its prepared parts");
-        self.attempts.insert(
-            key,
-            WorthQueryApplicationAttemptEntry::Committing { identity },
-        );
         Some(WorthQueryPreparedProviderApplicationAttempt::new(
             attempt, approved, attempts, key, identity,
         ))

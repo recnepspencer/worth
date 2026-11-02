@@ -83,7 +83,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             allocation,
         ) {
             Ok(prepared) => prepared.run(self, identities),
-            Err(report) => report,
+            Err(report) => report.into_uncompleted_report(),
         }
     }
     fn prepare_decision_query_basis(

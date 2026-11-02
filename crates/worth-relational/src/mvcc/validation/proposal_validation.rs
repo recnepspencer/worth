@@ -5,7 +5,8 @@ use crate::transactions::data::{
 
 use super::proposal_invariants::stale_validated_proposal;
 use super::validated_proposal::{
-    RelationalMutationInvariantEvidence, StrategyProposalDecoration, ValidatedRelationalProposal,
+    RelationalMutationInvariantEvidence, StrategyProposalDecoration, ValidatedProposalState,
+    ValidatedRelationalProposal,
 };
 
 impl RelationalPreparationRuntime {
@@ -166,36 +167,41 @@ impl RelationalPreparationRuntime {
             &transaction.basis.inner.retention_binding,
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )?;
-        Ok(ValidatedRelationalProposal {
-            caller_association: None,
-            required_output_publication: None,
-            required_output_materialization: None,
-            commit_work_budget: self.commit_work_budget.clone(),
-            mutation_authority: transaction.mutation_authority,
-            transaction_id,
-            validation_input,
-            prepared,
-            proposed_mutation,
-            commit_boundary,
-            mutation_sensitive,
-            snapshot_publication: publication,
-            evidence: RelationalMutationInvariantEvidence {
-                branch,
-                proposed_version,
-                proposal_identity: proposal_identity.clone(),
-                summary,
-                custom_invariant_execution_receipts,
+        ValidatedRelationalProposal::retain(
+            execution,
+            ValidatedProposalState {
+                caller_association: None,
+                required_output_publication: None,
+                required_output_materialization: None,
+                commit_work_budget: self.commit_work_budget.clone(),
+                mutation_authority: transaction.mutation_authority,
+                transaction_id,
+                validation_input,
+                prepared,
+                proposed_mutation,
+                commit_boundary,
+                mutation_sensitive,
+                snapshot_publication: publication,
+                evidence: RelationalMutationInvariantEvidence {
+                    branch,
+                    proposed_version,
+                    proposal_identity: proposal_identity.clone(),
+                    summary,
+                    custom_invariant_execution_receipts,
+                },
+                proposal_identity,
+                validated_against_commit,
+                validated_against_version,
+                validated_against_branch_version: basis.descriptor().truth_version(),
+                custom_invariant_generation: self
+                    .schema_contract_runtime
+                    .custom_invariant_generation,
+                batch_count,
+                strategy_commit_artifacts,
+                strategy_bulk_mutation_batch,
+                validation_complexity_delta,
             },
-            proposal_identity,
-            validated_against_commit,
-            validated_against_version,
-            validated_against_branch_version: basis.descriptor().truth_version(),
-            custom_invariant_generation: self.schema_contract_runtime.custom_invariant_generation,
-            batch_count,
-            strategy_commit_artifacts,
-            strategy_bulk_mutation_batch,
-            validation_complexity_delta,
-        })
+        )
     }
 }
 

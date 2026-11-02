@@ -10,6 +10,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub(in crate::domain_computation) fn bind_elevation_approval(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryElevationApprovalBinding,
     ) -> Result<
         Self,
@@ -33,8 +34,26 @@ impl<Schema, Operation, Input, Scope>
                 binding,
             ));
         };
-        self.authorization_basis =
-            WorthQueryOperationAuthorizationBasis::ElevationApproval { input, binding };
+        let memory = match execution.reserve_retained_memory(std::mem::size_of::<
+            WorthQueryElevationApprovalBinding,
+        >() as u64)
+        {
+            Ok(memory) => memory,
+            Err(stop) => {
+                return Err((
+                    crate::domain_computation::authorization::denial::relational_read_denial(
+                        stop.into(),
+                        &self.operation,
+                    ),
+                    binding,
+                ))
+            }
+        };
+        self.authorization_basis = WorthQueryOperationAuthorizationBasis::ElevationApproval {
+            input,
+            binding: Box::new(binding),
+            _binding_memory: memory,
+        };
         Ok(self)
     }
 
@@ -57,9 +76,18 @@ impl<Schema, Operation, Input, Scope>
             WorthQueryOperationAuthorizationBasis::Conventional,
         );
         match basis {
-            WorthQueryOperationAuthorizationBasis::ElevationApproval { input, binding } => {
+            WorthQueryOperationAuthorizationBasis::ElevationApproval {
+                input,
+                binding,
+                _binding_memory: memory,
+            } => {
                 self.authorization_basis =
                     WorthQueryOperationAuthorizationBasis::Capability { input };
+                let binding = {
+                    let backing = binding;
+                    *backing
+                };
+                drop(memory);
                 Some(binding)
             }
             other => {

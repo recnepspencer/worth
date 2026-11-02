@@ -66,7 +66,7 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
             assert_eq!(hooks.observed(), (0, 0));
         } else {
             let candidate = outcome.unwrap();
-            let result = &candidate.snapshot_publication;
+            let result = &candidate.state.snapshot_publication;
             assert_eq!(result.results().len(), 3);
             assert_eq!(
                 result.results()[0].execution_point,
