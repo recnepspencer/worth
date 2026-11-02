@@ -5,6 +5,53 @@ use crate::domain_computation::primary_graph::{
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
 
+/// The original cleanup owner drops first, with all of its dependent registries
+/// and the rest of the Query runtime still alive. Directory leaves owner None.
+pub(in crate::domain_computation::primary_graph) struct ConditionalRuntimeCleanup<Schema> {
+    owner: Option<OwnedConditionalCleanup>,
+    pub(in crate::domain_computation::primary_graph) operations: std::sync::Mutex<
+        super::super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
+    >,
+    pub(in crate::domain_computation::primary_graph) resources:
+        super::super::application_resource::installation::InstalledResourceRegistry<Schema>,
+}
+
+impl<Schema> ConditionalRuntimeCleanup<Schema> {
+    pub(super) fn preflight_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::WorthQueryHomeRetirementDenial> {
+        use super::{
+            WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
+        };
+        request.consult().map_err(Denial::Execution)?;
+        if self.owner.is_some()
+            || self
+                .operations
+                .get_mut()
+                .map_err(|_| Denial::Busy(Owner::ConditionalRuntime))?
+                .len()
+                != 0
+        {
+            return Err(Denial::Unsupported(Owner::ConditionalRuntime));
+        }
+        self.resources.preflight_home_retirement()
+    }
+
+    pub(super) fn new(
+        owner: Option<OwnedConditionalCleanup>,
+        operations: super::super::conditional_operation::WorthQueryConditionalOperationRegistry<
+            Schema,
+        >,
+    ) -> Self {
+        Self {
+            owner,
+            operations: std::sync::Mutex::new(operations),
+            resources: Default::default(),
+        }
+    }
+}
+
 /// Actual cleanup custody for an assembly constructed by Query. Adopting a
 /// Home's operational Bridge references leaves this custody with Store.
 pub(super) struct OwnedConditionalCleanup {
@@ -30,22 +77,20 @@ impl OwnedConditionalCleanup {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    fn release_query_conditional_bindings(&mut self) {
-        *self
-            .conditional_operations
-            .get_mut()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
-        self.installed_resources.clear();
+impl Drop for OwnedConditionalCleanup {
+    fn drop(&mut self) {
+        self.close();
     }
 }
 
-impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    fn drop(&mut self) {
-        if let Some(mut owner) = self.conditional_cleanup_owner.take() {
-            owner.close();
-            self.release_query_conditional_bindings();
-        }
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn release_query_conditional_bindings(&mut self) {
+        *self
+            .conditional_cleanup
+            .operations
+            .get_mut()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
+        self.conditional_cleanup.resources.clear();
     }
 }
 
@@ -58,20 +103,21 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         WorthQueryConditionalRuntimeInspection,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        if self.conditional_cleanup_owner.is_none() {
+        if self.conditional_cleanup.owner.is_none() {
             return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
                 WorthQueryConditionalRuntimeInstallationDenialKind::ApplicationHomeOwnsLifecycle,
                 "the application Home retains conditional lifecycle custody",
             ));
         }
-        if self.installed_resources.cleanup_retained() {
+        if self.conditional_cleanup.resources.cleanup_retained() {
             return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
                 WorthQueryConditionalRuntimeInstallationDenialKind::ResourceCleanupRetained,
                 "installed resources still own process-local cleanup or recovery custody",
             ));
         }
         let pending = self
-            .conditional_operations
+            .conditional_cleanup
+            .operations
             .get_mut()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot()
@@ -83,7 +129,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             ));
         }
         let before = self.inspect_conditional_runtime();
-        self.conditional_cleanup_owner
+        self.conditional_cleanup
+            .owner
             .as_mut()
             .expect("cleanup custody was admitted before inspection")
             .close();

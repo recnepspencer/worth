@@ -6,6 +6,10 @@ pub(super) enum WorldQueryPreparation<Schema: ApplicationSchemaComposition, Prog
         _cause: ApplicationHomeQueryCompositionDenial,
     },
     ExistingSource(QueryExistingHomeSourceAttachmentRefused<Schema, Program>),
+    ExistingMaintenance {
+        _query: PreparedExistingHomeQueryRuntime<Schema, Program>,
+        _cause: ApplicationHomeCheckpointDenial,
+    },
     ExistingRoot {
         _query: PreparedExistingHomeQueryRuntime<Schema, Program>,
         _cause: ApplicationHomeQueryRootDenial,
@@ -34,6 +38,7 @@ pub(super) enum BootstrapFailure {
     InitialState(QueryHomeInitialStateDenial),
     Seed(WorthQueryPrimaryGraphInstallationDenial),
     Root(ApplicationHomeQueryRootDenial),
+    Maintenance(ApplicationHomeCheckpointDenial),
 }
 impl BootstrapFailure {
     pub(super) fn detail(&self) -> String {
@@ -41,6 +46,7 @@ impl BootstrapFailure {
             Self::InitialState(cause) => format!("{cause:?}"),
             Self::Seed(cause) => cause.to_string(),
             Self::Root(cause) => format!("{cause:?}"),
+            Self::Maintenance(cause) => format!("{cause:?}"),
         }
     }
 }
@@ -49,6 +55,7 @@ impl<Schema: ApplicationSchemaComposition, Program> WorldQueryPreparation<Schema
         match self {
             Self::ExistingComposition { _cause, .. } => format!("{_cause:?}"),
             Self::ExistingSource(query) => query.reason().to_string(),
+            Self::ExistingMaintenance { _cause, .. } => format!("{_cause:?}"),
             Self::ExistingRoot { _cause, .. } => format!("{_cause:?}"),
             Self::ExistingAttachment(query) => query.detail(),
             Self::Composition { _cause, .. } => format!("{_cause:?}"),

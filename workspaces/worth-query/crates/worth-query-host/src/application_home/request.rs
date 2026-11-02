@@ -33,6 +33,7 @@ where
         <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     pub(super) build: worth_foundational::facade::ApplicationBuildIdentity,
     pub(super) limits: WorthQueryInMemoryApplicationLimits,
+    pub(super) checkpoint_limits: worth_store_application::ApplicationHomeCheckpointLimits,
     pub(super) initial_state: Box<
         dyn FnOnce(
                 &WorthQueryBootstrapAdvancementPhase<'_>,
@@ -71,7 +72,18 @@ where
             configuration,
             build,
             limits,
+            checkpoint_limits: Default::default(),
             initial_state: Box::new(initial_state),
         }
+    }
+    /// Count or payload bytes in any one Native/World journal make a checkpoint
+    /// due. Both thresholds are finite and nonzero; the original request still
+    /// controls all work and memory. Defaults are 4096 entries or 64 MiB.
+    pub fn with_checkpoint_limits(
+        mut self,
+        limits: worth_store_application::ApplicationHomeCheckpointLimits,
+    ) -> Self {
+        self.checkpoint_limits = limits;
+        self
     }
 }

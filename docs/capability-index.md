@@ -1311,6 +1311,15 @@ certify Bridge/Native/Store or full Host close. See the
 [Signal owner workflow](../crates/worth-signal/README.md#retain-an-initial-empty-owner-during-composite-close)
 and [World lifecycle](../crates/worth-runtime-world/README.md).
 
+Before supplier preflight, World owners can use
+`try_preflight_close_admission(original_request)` for a task-free observation of
+the same actual admission gates. It releases every guard before returning;
+final preparation reacquires the gates and validates the history frontier.
+The actual close task retains its original-request metadata funding, and an
+allocation refusal preserves `RuntimeWorldCloseDenial::Execution` rather than
+being collapsed into cancellation. These are owner-component guarantees, not
+qualification of consuming Query, Directory Native or full Host retirement.
+
 
 ### Read original Native bytes from a protected source cut
 

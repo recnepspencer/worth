@@ -22,7 +22,8 @@ where
     > {
         let runtime = self.application();
         let operation = runtime
-            .conditional_operations
+            .conditional_cleanup
+            .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .admit_clock(handle.binding_identity(), handle.lease())

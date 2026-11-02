@@ -54,6 +54,16 @@ returns any owner-created component retirement work. Drop caller observations an
 results, then the closed World state before checking final component lease release.
 World close does not close component owners.
 
+Composite owners can first call
+`owner.try_preflight_close_admission(original_request)` to observe those same
+bootstrap, operation, close, custody and durable-medium gates without allocating
+a close task or traversing history. All guards release before it returns;
+supplier preflight belongs after that return. Final preparation reacquires the
+same gates and validates its actual history frontier. It funds the original
+close-task allocation before construction, with the grant retained by that task.
+Task allocation refusal is `RuntimeWorldCloseDenial::Execution`; existing
+`Stopped` observations retain their original meaning.
+
 For a short composite-owner preparation cut,
 `owner.try_prepare_close_admission(original_request)` returns a borrowed
 `RuntimeWorldPreCloseAdmission`. It performs the same final checks used by

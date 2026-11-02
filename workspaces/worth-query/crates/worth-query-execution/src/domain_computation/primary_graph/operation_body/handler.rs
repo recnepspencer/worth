@@ -7,6 +7,7 @@ use super::{WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
 mod candidate;
 #[path = "handler/creation_initializers.rs"]
 mod creation_initializers;
+mod retirement;
 #[path = "handler/scope_expectations.rs"]
 mod scope_expectations;
 use std::marker::PhantomData;
@@ -54,6 +55,23 @@ where
         Decision = WorthQueryOperationBodyDecision<Schema, Scope<Schema, Binding>>,
     >,
 {
+    fn preflight_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::super::WorthQueryOperationHomeRetirementDenial> {
+        self.preflight_inert_body_retirement(request)
+    }
+
+    fn advance_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::super::WorthQueryOperationHomeRetirementProgress,
+        super::super::WorthQueryOperationHomeRetirementDenial,
+    > {
+        self.complete_inert_body_retirement(request)
+    }
+
     fn decide(
         &self,
         input: &Binding::Input,

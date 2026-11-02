@@ -31,6 +31,7 @@ pub enum RuntimeWorldCloseDenial {
     OwnerUnavailable,
     Busy,
     Stopped(worth_execution::MapKernelStop),
+    Execution(worth_execution::WorkCeilingDenial),
     PublicationFrontierChanged,
     UnresolvedBusinessCustody,
     CleanupRequired,

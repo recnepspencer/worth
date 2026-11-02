@@ -61,7 +61,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
         &self,
     ) -> Result<Arc<InstalledResourceBinding<Schema, Binding>>, ResourceCause> {
         self.runtime
-            .installed_resources
+            .conditional_cleanup
+            .resources
             .binding::<Binding>()
             .ok_or(ResourceCause::Unavailable)
     }

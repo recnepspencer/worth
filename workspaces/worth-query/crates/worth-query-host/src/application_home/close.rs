@@ -1,21 +1,44 @@
-//! World sealing precedes release of Query's actual Native/Bridge keepalives.
+//! Original Query custody is admitted before World seal and retained afterward.
 use super::runtime::*;
 use worth_execution::ExecutionRequest;
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution::facade::{
+    application_installation::{
+        WorthQueryPreparedHomeQuery, WorthQueryProgramApplicationRuntime,
+        WorthQueryRetiredHomeQuery, WorthQueryRetiringHomeQuery,
+    },
+    primary_graph::WorthQueryHomeRetirementDenial,
+};
 use worth_store_application::*;
+mod retirement;
+mod retry;
 
 pub struct WorthQueryApplicationHomeClosed {
     outcome: ApplicationHomeCloseOutcome,
+    retired_query: Option<WorthQueryRetiredHomeQuery>,
 }
 impl WorthQueryApplicationHomeClosed {
     pub fn is_closed(&self) -> bool {
         matches!(self.outcome, ApplicationHomeCloseOutcome::Closed { .. })
     }
-    pub(super) fn into_outcome(self) -> ApplicationHomeCloseOutcome {
-        self.outcome
+    pub(super) fn into_parts(
+        self,
+    ) -> (
+        ApplicationHomeCloseOutcome,
+        Option<WorthQueryRetiredHomeQuery>,
+    ) {
+        (self.outcome, self.retired_query)
     }
     pub fn outcome(&self) -> &ApplicationHomeCloseOutcome {
         &self.outcome
+    }
+    /// Arbitrary inert supplier destruction runs only outside budgeted close.
+    pub fn reclaim(self) {
+        let (outcome, retired_query) = self.into_parts();
+        drop(outcome);
+        if let Some(retired_query) = retired_query {
+            retired_query.reclaim();
+        }
     }
 }
 
@@ -24,13 +47,32 @@ pub struct WorthQueryApplicationHomeCloseRefused<Schema, Program> {
 }
 enum CloseCustody<Schema, Program> {
     MemoryLifecycleRequired(WorthQueryApplicationHome<Schema, Program>),
-    World {
+    WorldAdmission {
         query: WorthQueryProgramApplicationRuntime<Schema, Program>,
+        home: DirectoryHome,
+        checkpoint_limits: ApplicationHomeCheckpointLimits,
+        cause: ApplicationHomeCloseDenial,
+    },
+    QueryAdmission {
+        query: WorthQueryProgramApplicationRuntime<Schema, Program>,
+        home: DirectoryHome,
+        checkpoint_limits: ApplicationHomeCheckpointLimits,
+        cause: WorthQueryHomeRetirementDenial,
+    },
+    World {
+        query: WorthQueryPreparedHomeQuery<Schema, Program>,
         home: WorldHomeCloseRefused<(), (), (), (), ()>,
+        checkpoint_limits: ApplicationHomeCheckpointLimits,
+    },
+    QueryRetirement {
+        query: WorthQueryRetiringHomeQuery<Schema, Program>,
+        home: WorldSealedApplicationHome,
+        cause: WorthQueryHomeRetirementDenial,
     },
     QueryReleased {
         cause: ApplicationHomeCloseDenial,
         posture: ApplicationHomeClosePosture,
+        retired_query: Option<WorthQueryRetiredHomeQuery>,
     },
 }
 impl<Schema, Program> std::fmt::Debug for WorthQueryApplicationHomeCloseRefused<Schema, Program> {
@@ -40,7 +82,7 @@ impl<Schema, Program> std::fmt::Debug for WorthQueryApplicationHomeCloseRefused<
             .finish()
     }
 }
-impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
+impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Schema, Program> {
     pub fn close(
         self,
         request: &ExecutionRequest<'_, '_>,
@@ -48,21 +90,52 @@ impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
         WorthQueryApplicationHomeClosed,
         WorthQueryApplicationHomeCloseRefused<Schema, Program>,
     > {
-        let Self { query, directory } = self;
+        let Self {
+            query,
+            directory,
+            checkpoint_limits,
+        } = self;
         let Some(home) = directory else {
-            // Conditional-runtime close is not a World/Home close. Preserve the
-            // actual memory owner until its lifecycle admission is implemented.
             return Err(WorthQueryApplicationHomeCloseRefused {
                 custody: CloseCustody::MemoryLifecycleRequired(Self {
                     query,
                     directory: None,
+                    checkpoint_limits,
                 }),
             });
         };
+        if let Err(cause) = home.preflight_world_close(request) {
+            return Err(WorthQueryApplicationHomeCloseRefused {
+                custody: CloseCustody::WorldAdmission {
+                    query,
+                    home,
+                    checkpoint_limits,
+                    cause,
+                },
+            });
+        }
+        let query = match query.prepare_home_retirement(request) {
+            Ok(query) => query,
+            Err((query, cause)) => {
+                return Err(WorthQueryApplicationHomeCloseRefused {
+                    custody: CloseCustody::QueryAdmission {
+                        query,
+                        home,
+                        checkpoint_limits,
+                        cause,
+                    },
+                })
+            }
+        };
+        // No supplier callback occurs under World's final logical admission gates.
         match home.seal_world(request) {
-            Ok(sealed) => finish_after_world(query, sealed, request),
+            Ok(home) => retirement::finish_after_world(query, home, request),
             Err(home) => Err(WorthQueryApplicationHomeCloseRefused {
-                custody: CloseCustody::World { query, home },
+                custody: CloseCustody::World {
+                    query,
+                    home,
+                    checkpoint_limits,
+                },
             }),
         }
     }
@@ -70,87 +143,98 @@ impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
 impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
     pub fn directory_denial(&self) -> Option<&ApplicationHomeCloseDenial> {
         match &self.custody {
-            CloseCustody::MemoryLifecycleRequired(_) => None,
             CloseCustody::World { home, .. } => Some(home.reason()),
+            CloseCustody::WorldAdmission { cause, .. } => Some(cause),
             CloseCustody::QueryReleased { cause, .. } => Some(cause),
+            _ => None,
         }
     }
-
+    pub fn query_denial(&self) -> Option<&WorthQueryHomeRetirementDenial> {
+        match &self.custody {
+            CloseCustody::QueryAdmission { cause, .. }
+            | CloseCustody::QueryRetirement { cause, .. } => Some(cause),
+            _ => None,
+        }
+    }
     pub fn detail(&self) -> String {
         match &self.custody {
             CloseCustody::MemoryLifecycleRequired(_) => {
                 "memory Home World lifecycle has not been readmitted".to_owned()
             }
             CloseCustody::World { home, .. } => format!("{:?}", home.reason()),
+            CloseCustody::WorldAdmission { cause, .. } => format!("{cause:?}"),
+            CloseCustody::QueryAdmission { cause, .. }
+            | CloseCustody::QueryRetirement { cause, .. } => format!("{cause:?}"),
             CloseCustody::QueryReleased { cause, .. } => format!("{cause:?}"),
         }
     }
-    /// Only the actual pre-seal World posture may restore this Query service.
+}
+impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
+    /// Only actual pre-seal custody may restore the original Query service.
     pub fn resume(self) -> Result<WorthQueryApplicationHome<Schema, Program>, Self> {
         match self.custody {
             CloseCustody::MemoryLifecycleRequired(home) => Ok(home),
-            CloseCustody::World { query, home } => match home.resume() {
+            CloseCustody::WorldAdmission {
+                query,
+                home,
+                checkpoint_limits,
+                cause: _,
+            } => Ok(WorthQueryApplicationHome {
+                query,
+                directory: Some(home),
+                checkpoint_limits,
+            }),
+            CloseCustody::QueryAdmission {
+                query,
+                home,
+                checkpoint_limits,
+                cause: _,
+            } => Ok(WorthQueryApplicationHome {
+                query,
+                directory: Some(home),
+                checkpoint_limits,
+            }),
+            CloseCustody::World {
+                query,
+                home,
+                checkpoint_limits,
+            } => match home.resume() {
                 Ok(home) => Ok(WorthQueryApplicationHome {
-                    query,
+                    query: query.resume(),
                     directory: Some(home),
+                    checkpoint_limits,
                 }),
                 Err(home) => Err(Self {
-                    custody: CloseCustody::World { query, home },
+                    custody: CloseCustody::World {
+                        query,
+                        home,
+                        checkpoint_limits,
+                    },
                 }),
             },
-            custody @ CloseCustody::QueryReleased { .. } => Err(Self { custody }),
-        }
-    }
-    pub fn try_close(
-        self,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<WorthQueryApplicationHomeClosed, Self> {
-        match self.custody {
-            CloseCustody::MemoryLifecycleRequired(home) => home.close(request),
-            CloseCustody::World { query, home } => match home.try_seal_world(request) {
-                Ok(sealed) => finish_after_world(query, sealed, request),
-                Err(home) => Err(Self {
-                    custody: CloseCustody::World { query, home },
-                }),
-            },
-            CloseCustody::QueryReleased { cause: _, posture } => {
-                let outcome = match posture {
-                    ApplicationHomeClosePosture::RecoveryRequired(home) => {
-                        home.try_release(request)
-                    }
-                    // Preserve even an advanced Native-serving payload as
-                    // recovery-only; it never recreates a World or Query service.
-                    ApplicationHomeClosePosture::Serving(home) => home.close(request),
-                };
-                classify_released_query(outcome)
-            }
+            custody => Err(Self { custody }),
         }
     }
 }
-fn finish_after_world<Schema, Program>(
-    query: WorthQueryProgramApplicationRuntime<Schema, Program>,
-    home: WorldSealedApplicationHome,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<WorthQueryApplicationHomeClosed, WorthQueryApplicationHomeCloseRefused<Schema, Program>>
-{
-    // seal_world completed the SAME actual World report's snapshot cleanup.
-    // Drop internal Query/source/assembly clones before Native close admission.
-    drop(query);
-    classify_released_query(home.finish_close(request))
-}
+
 pub(super) fn classify_released_query<Schema, Program>(
     outcome: ApplicationHomeCloseOutcome,
+    retired_query: Option<WorthQueryRetiredHomeQuery>,
 ) -> Result<WorthQueryApplicationHomeClosed, WorthQueryApplicationHomeCloseRefused<Schema, Program>>
 {
     match outcome {
         outcome @ ApplicationHomeCloseOutcome::Closed { .. } => {
-            Ok(WorthQueryApplicationHomeClosed { outcome })
+            Ok(WorthQueryApplicationHomeClosed {
+                outcome,
+                retired_query,
+            })
         }
         ApplicationHomeCloseOutcome::CloseRefused { reason, posture } => {
             Err(WorthQueryApplicationHomeCloseRefused {
                 custody: CloseCustody::QueryReleased {
                     cause: reason,
                     posture,
+                    retired_query,
                 },
             })
         }

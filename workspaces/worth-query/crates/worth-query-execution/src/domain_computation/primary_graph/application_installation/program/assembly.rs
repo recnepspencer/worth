@@ -163,7 +163,7 @@ where
         );
     Ok(WorthQueryProgramApplicationRuntime {
         backing: std::sync::Arc::new(super::program_runtime::WorthQueryProgramRuntimeBacking {
-            runtime,
+            runtime: Some(runtime),
             program: installed,
             connection_types: Program::Outputs::connection_types()
                 .into_iter()

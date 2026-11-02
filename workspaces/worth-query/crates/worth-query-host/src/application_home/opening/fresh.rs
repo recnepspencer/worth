@@ -12,6 +12,7 @@ pub(super) fn finish_new_home<Schema, Program>(
         (),
         worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
     >,
+    checkpoint_limits: ApplicationHomeCheckpointLimits,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
@@ -65,6 +66,10 @@ where
         return Err(Refused::SeedPublication { query, home, cause });
     }
     let mut home = home;
+    let maintenance = match super::super::maintenance::prepare(&home, checkpoint_limits, &request) {
+        Ok(operation) => operation,
+        Err(cause) => return Err(Refused::CheckpointMaintenance { query, home, cause }),
+    };
     let root = match home.select_query_root(&request) {
         Ok(root) => root,
         Err(cause) => return Err(Refused::WorldRoot { query, home, cause }),
@@ -79,9 +84,10 @@ where
         ports.recovery_port(),
         root,
         directory_requirement_refusal,
+        maintenance,
     ) {
         Ok(query) => query.consume(|query| query),
         Err(query) => return Err(Refused::QueryAttachment { query, home }),
     };
-    super::service::finish_service(phase, query, home)
+    super::service::finish_service(phase, query, home, checkpoint_limits)
 }

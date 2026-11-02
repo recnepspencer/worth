@@ -56,14 +56,15 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
         let execution = &phase_request;
 
         self.require_discovered_root::<Root>()?;
-        if prepared.runtime_authority != self.backing.runtime.runtime.authority_identity().as_u64()
+        if prepared.runtime_authority
+            != self.backing.runtime().runtime.authority_identity().as_u64()
             || &prepared.source_commit != receipt.committed_product_publication().composite_commit()
             || &prepared.source_commit != observation.selected_commit()
             || prepared.product_occurrence != observation.branch_incarnation()
@@ -74,12 +75,12 @@ where
                 "discovered continuation differs from its original runtime or publication",
             ));
         }
-        self.backing.runtime.output_demands.validate_recovery_root_kind(
+        self.backing.runtime().output_demands.validate_recovery_root_kind(
             receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )?;
         self.backing
-            .runtime
+            .runtime()
             .select_application_read_observation_with_request(execution, observation)
             .map_err(|denial| {
                 WorthQueryOutputDemandDenial::product_selection(
@@ -97,7 +98,7 @@ where
             }
             None if self
                 .backing
-                .runtime
+                .runtime()
                 .authentication_is_expired(principal.valid_until()) =>
             {
                 Some(WorthQueryOutputDemandDenialKind::SourcePrincipal(
@@ -126,14 +127,15 @@ where
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
         self.require_discovered_root::<Root>()?;
-        if prepared.runtime_authority != self.backing.runtime.runtime.authority_identity().as_u64()
+        if prepared.runtime_authority
+            != self.backing.runtime().runtime.authority_identity().as_u64()
         {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
                 "the program source belongs to another runtime",
             ));
         }
-        self.backing.runtime.output_demands.retain_program_source(
+        self.backing.runtime().output_demands.retain_program_source(
             prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )
@@ -159,7 +161,7 @@ where
     {
         self.require_discovered_root::<Root>()?;
         self.backing
-            .runtime
+            .runtime()
             .validate_recovered_output_source_currentness(prepared, retained, current)
     }
 
@@ -179,7 +181,7 @@ where
     {
         self.require_discovered_root::<Root>()?;
         self.backing
-            .runtime
+            .runtime()
             .bind_prepared_output_sources(prepared, sources)
     }
 
@@ -206,7 +208,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -219,10 +221,10 @@ where
         >()?;
         let limits = self
             .backing
-            .runtime
+            .runtime()
             .output_demand_resource_profile()
             .constrain(limits);
-        self.backing.runtime
+        self.backing.runtime()
             .admit_performed_output_demand::<Family<Schema, Root>>(execution,
                 source,
                 limits,
@@ -263,7 +265,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -276,14 +278,14 @@ where
         >()?;
         let limits = self
             .backing
-            .runtime
+            .runtime()
             .output_demand_resource_profile()
             .constrain(limits);
-        self.backing.runtime.validate_recovered_output_root_kind(
+        self.backing.runtime().validate_recovered_output_root_kind(
             source_receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )?;
-        self.backing.runtime
+        self.backing.runtime()
             .admit_recovered_output_demand::<Family<Schema, Root>>(execution,
                 source,
                 current,

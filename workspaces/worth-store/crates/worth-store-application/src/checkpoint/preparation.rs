@@ -2,10 +2,12 @@
 use super::ApplicationHomeCheckpointDenial;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_store::physical_runtime::{AnchoredRecordMember, ServingPhysicalRuntime};
-use worth_store_relational::{PreparedRelationalSection, RelationalSectionCheckpointDenial};
+use worth_store_relational::{
+    PreparedCompleteRelationalSection, RelationalSectionCheckpointDenial,
+};
 
 pub(super) struct PreparedHomeCheckpoint {
-    pub(super) native: PreparedRelationalSection,
+    pub(super) native: PreparedCompleteRelationalSection,
     pub(super) world: worth_runtime_world::facade::PreparedWorldCheckpoint,
     pub(super) payload: crate::frame_encoding::EncodedHomeFrame,
     pub(super) members: Vec<AnchoredRecordMember>,
@@ -26,7 +28,7 @@ impl PreparedHomeCheckpoint {
     pub(super) fn into_parts(
         self,
     ) -> (
-        PreparedRelationalSection,
+        PreparedCompleteRelationalSection,
         worth_runtime_world::facade::PreparedWorldCheckpoint,
         PreparedHomeInput,
     ) {
@@ -48,7 +50,8 @@ pub(super) fn capture(
     serving: &ServingPhysicalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     world: &worth_runtime_world::facade::WorldCheckpointPort,
-    native: impl FnOnce() -> Result<PreparedRelationalSection, RelationalSectionCheckpointDenial>,
+    native: impl FnOnce()
+        -> Result<PreparedCompleteRelationalSection, RelationalSectionCheckpointDenial>,
 ) -> Result<PreparedHomeCheckpoint, ApplicationHomeCheckpointDenial> {
     use ApplicationHomeCheckpointDenial as Denial;
     crate::request_stage::prepare(

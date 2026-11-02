@@ -4,6 +4,7 @@ pub(super) fn finish_existing_home<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     mut home: UnsharedReadmittedApplicationHome,
     query: PreparedHomeNativeMeaning<Schema, Program>,
+    checkpoint_limits: ApplicationHomeCheckpointLimits,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
@@ -50,6 +51,10 @@ where
             Err(query) => return Err(Refused::ExistingSourceAttachment { query, home }),
         };
     let mut home = home;
+    let maintenance = match super::super::maintenance::prepare(&home, checkpoint_limits, &request) {
+        Ok(operation) => operation,
+        Err(cause) => return Err(Refused::ExistingCheckpointMaintenance { query, home, cause }),
+    };
     let root = match home.select_query_root(&request) {
         Ok(root) => root,
         Err(cause) => return Err(Refused::ExistingWorldRoot { query, home, cause }),
@@ -64,9 +69,10 @@ where
         ports.recovery_port(),
         root,
         directory_requirement_refusal,
+        maintenance,
     ) {
         Ok(query) => query.consume(|query| query),
         Err(query) => return Err(Refused::ExistingQueryAttachment { query, home }),
     };
-    super::service::finish_service(phase, query, home)
+    super::service::finish_service(phase, query, home, checkpoint_limits)
 }

@@ -1,30 +1,37 @@
 //! The sole final World close-admission cut, borrowed by composite owners.
-use super::{
-    drain::CloseProgress, RuntimeWorldCloseContract, RuntimeWorldCloseDenial as Denial,
-    RuntimeWorldCloseState,
-};
-use crate::lifecycle::owner::{
-    RuntimeWorldBootstrapState, RuntimeWorldOperationLedgerState, RuntimeWorldOwnerState,
-};
-use std::sync::{Arc, Mutex, MutexGuard};
+use super::{drain::CloseProgress, RuntimeWorldCloseDenial as Denial};
+use crate::lifecycle::owner::RuntimeWorldOwnerState;
+use std::sync::{Arc, Mutex};
 use worth_execution::ExecutionRequest;
+mod gates;
+#[cfg(test)]
+mod tests;
 
 /// Holds the actual final admission gates without changing World state.
-/// Drop leaves Open. Only `begin` seals the same owner and installs its task.
-/// No supplier callbacks, I/O or other fallible work belongs inside this cut.
+/// Drop leaves Open. No supplier callback or I/O belongs inside this cut.
 #[must_use]
 pub struct RuntimeWorldPreCloseAdmission<'owner> {
-    _bootstrap: MutexGuard<'owner, RuntimeWorldBootstrapState>,
-    _operation: MutexGuard<'owner, RuntimeWorldOperationLedgerState>,
-    close: MutexGuard<'owner, RuntimeWorldCloseContract>,
+    gates: gates::CloseAdmissionGates<'owner>,
     pub(super) task: Arc<Mutex<CloseProgress>>,
 }
 impl RuntimeWorldPreCloseAdmission<'_> {
-    /// Infallible handoff after every admission check. Releases all gates before
-    /// the existing close driver performs retirement or component work.
+    /// Infallible handoff releases all gates before owner retirement runs.
     pub fn begin(mut self) {
-        self.close.begin_admitted(self.task);
+        self.gates.close.begin_admitted(self.task);
     }
+}
+
+fn observe<D, I, E, Ctx, T>(
+    state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<(), Denial>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    drop(gates::borrow(state, request)?);
+    Ok(())
 }
 
 pub(super) fn prepare<'owner, D, I, E, Ctx, T>(
@@ -36,70 +43,14 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    request.check_live().map_err(Denial::Stopped)?;
-    {
-        let operation = state.operation.state.try_lock().map_err(|_| Denial::Busy)?;
-        if operation.active != 0 || operation.recovery_active != 0 {
-            return Err(Denial::InFlightCriticalSection);
-        }
-    }
-    // Cheap actual-custody rejection precedes a history pass. Neither this
-    // observation nor a frontier replaces the final same-gate recheck below.
-    if state
-        .recovery
-        .try_has_close_custody()
-        .map_err(|_| Denial::Busy)?
-        || state
-            .custody
-            .try_has_close_custody()
-            .map_err(|_| Denial::Busy)?
-    {
-        return Err(Denial::UnresolvedBusinessCustody);
-    }
+    observe(state, request)?;
     let frontier = state.history.close_frontier(request)?;
-    let task = std::sync::Arc::new(std::sync::Mutex::new(CloseProgress::default()));
-    let bootstrap = state.bootstrap.try_lock().map_err(|_| Denial::Busy)?;
-    match &*bootstrap {
-        RuntimeWorldBootstrapState::InProgress => return Err(Denial::AlreadyClosing),
-        RuntimeWorldBootstrapState::Pending(_) => return Err(Denial::UnresolvedBusinessCustody),
-        _ => {}
-    }
-    let operation = state.operation.state.try_lock().map_err(|_| Denial::Busy)?;
-    if operation.active != 0 || operation.recovery_active != 0 {
-        return Err(Denial::InFlightCriticalSection);
-    }
-    let close = state.close.try_lock().map_err(|_| Denial::Busy)?;
-    if close.state() != RuntimeWorldCloseState::Open {
-        return Err(Denial::AlreadyClosing);
-    }
-    if !state
-        .owner_present
-        .load(std::sync::atomic::Ordering::Acquire)
-    {
-        return Err(Denial::OwnerUnavailable);
-    }
+    // Original-request funding and task allocation happen outside owner gates.
+    let task = CloseProgress::prepare_task(request)?;
+    let gates = gates::borrow(state, request)?;
     state.history.try_validate_close_frontier(&frontier)?;
-    if state
-        .recovery
-        .try_has_close_custody()
-        .map_err(|_| Denial::Busy)?
-        || state
-            .custody
-            .try_has_close_custody()
-            .map_err(|_| Denial::Busy)?
-    {
-        return Err(Denial::UnresolvedBusinessCustody);
-    }
-    if let Some(binding) = &state.durable {
-        binding.try_admit_close()?;
-    }
     request.check_live().map_err(Denial::Stopped)?;
-    Ok(RuntimeWorldPreCloseAdmission {
-        _bootstrap: bootstrap,
-        _operation: operation,
-        close,
-        task,
-    })
+    Ok(RuntimeWorldPreCloseAdmission { gates, task })
 }
 
 impl<D, I, E, Ctx, T> crate::lifecycle::RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -108,7 +59,14 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    /// Borrow the final admission gates for a short owner-only composite cut.
+    /// Observe the same admission gates without constructing a close task.
+    /// Every guard is released before returning; final prepare rechecks them.
+    pub fn try_preflight_close_admission(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        observe(&self.state, request)
+    }
     pub fn try_prepare_close_admission(
         &self,
         request: &ExecutionRequest<'_, '_>,
@@ -124,6 +82,12 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub fn try_preflight_close_admission(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        self.root.try_preflight_close_admission(request)
+    }
     pub fn try_prepare_close_admission(
         &self,
         request: &ExecutionRequest<'_, '_>,

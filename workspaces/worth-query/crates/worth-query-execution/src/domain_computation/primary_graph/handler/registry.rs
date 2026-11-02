@@ -5,7 +5,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 mod operation_body;
 mod registration;
+mod retirement;
 use registration::HandlerOrigin;
+pub(in crate::domain_computation::primary_graph) use retirement::HandlerRetirementCursor;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
@@ -31,11 +33,13 @@ use super::super::{
 struct PendingMutationHandler {
     origin: HandlerOrigin,
     durable_capabilities: Option<&'static [super::super::application_entry::mutation::WorthQueryOperationDurableCapability]>,
-    identity: String,
+    identity: &'static str,
     handler_identity: String,
     decision_type: TypeId,
     denial_type: TypeId,
     value: Arc<dyn Any + Send + Sync>,
+    preflight_home_retirement: retirement::PreflightHandlerRetirement,
+    advance_home_retirement: retirement::AdvanceHandlerRetirement,
 }
 
 struct TypedHandlerSlot<Schema, Binding>

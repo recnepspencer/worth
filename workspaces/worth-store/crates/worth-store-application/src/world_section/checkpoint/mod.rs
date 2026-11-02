@@ -1,5 +1,6 @@
 //! The actual protected W reader and original Home selection stay together.
 mod inspection;
+mod operation;
 mod read;
 mod selection;
 use std::sync::{Arc, Weak};

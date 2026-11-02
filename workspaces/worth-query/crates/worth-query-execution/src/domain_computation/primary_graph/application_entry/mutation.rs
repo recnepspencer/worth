@@ -6,6 +6,10 @@ mod decision_plan;
 mod durable_capability;
 pub use decision_plan::WorthQueryDecisionPlan;
 pub use durable_capability::WorthQueryOperationDurableCapability;
+mod home_retirement;
+pub use home_retirement::{
+    WorthQueryOperationHomeRetirementDenial, WorthQueryOperationHomeRetirementProgress,
+};
 mod completed_candidate;
 mod execution;
 mod execution_report;
@@ -73,6 +77,28 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    /// Admit retirement of this original handler's actual operational fields.
+    /// Opaque supplier registrations remain unsupported even if they override
+    /// this method. Only the compiler's audited body origin admits these hooks.
+    /// Preflight must preserve business state.
+    #[doc(hidden)]
+    fn preflight_home_retirement(
+        &mut self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorthQueryOperationHomeRetirementDenial> {
+        Err(WorthQueryOperationHomeRetirementDenial::Unsupported)
+    }
+
+    /// Advance the same sealed handler without destroying inert supplier data.
+    #[doc(hidden)]
+    fn advance_home_retirement(
+        &mut self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryOperationHomeRetirementProgress, WorthQueryOperationHomeRetirementDenial>
+    {
+        Err(WorthQueryOperationHomeRetirementDenial::Unsupported)
+    }
+
     /// Immutable capabilities of this installed handler implementation.
     /// Omission leaves an opaque supplier unknown to directory admission.
     /// Memory-only execution does not impose a durability contract.

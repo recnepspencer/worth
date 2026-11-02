@@ -13,7 +13,7 @@ pub(crate) fn checkpoint(
     world: Option<&worth_runtime_world::facade::WorldCheckpointPort>,
     execution: &ExecutionRequest<'_, '_>,
     capture: impl FnOnce() -> Result<
-        worth_store_relational::PreparedRelationalSection,
+        worth_store_relational::PreparedCompleteRelationalSection,
         worth_store_relational::RelationalSectionCheckpointDenial,
     >,
     observer: Option<&super::step_custody::StepObserver<'_>>,

@@ -77,6 +77,37 @@ refusal and use its consuming `close` route; it retains the same Home lease
 until actual close completes. Program activation equality alone does not
 establish that a pending transition has settled.
 
+Configure Directory checkpoint cadence with
+`WorthQueryApplicationHomeRequest::with_checkpoint_limits`. The default is
+4,096 uncovered entries or 64 MiB of uncovered payload in any one of the two
+Native and three World journals. Limits are finite, nonzero values. Counts are
+checked first; below the default entry threshold, byte inspection examines at
+most 4,095 actual suffix headers per journal. These headers schedule work;
+they do not establish payload integrity or checkpoint coverage.
+
+`home.inspect_checkpoint(original_request)` reports the acknowledged prefixes,
+observed heads, due status and actual pending attempt. `home.checkpoint` requests
+manual capture; `home.recover_checkpoint` advances only the retained attempt.
+Both use the same Directory checkpoint owner as automatic maintenance. Memory
+Homes return `MemoryLifecycleRequired` through these Directory lifecycle doors.
+Inspection derives its state from owner observations rather than a separate
+counter or last-error ledger.
+
+Directory program runtimes carry the same mandatory maintenance callback when
+cloned, including runtimes borrowed through `home.runtime()`. Maintenance runs
+after the business callback using its remaining original meter and controls.
+It preserves the exact business result or error, even when maintenance stops;
+preexisting own or joined stops prevent entering maintenance. It does not mint
+a fresh allowance. A pending checkpoint is recovered before a new due capture.
+
+The coupled checkpoint selects both actual owner sections with one Home
+publication. World is captured first and Native later; Native may therefore be
+ahead of the World cut. Unknown selection or interrupted acknowledgement keeps
+the same sections, bytes, grants and attempt. Owning close requests this same
+operation while the stopped World and Serving Native remain owned. Unresolved
+custody refuses teardown; a settled checkpoint failure remains visible in the
+otherwise lawful close outcome.
+
 `ProductPreparationRefused` is different: it retains unprepared Query input and
 the actual terminal cause, with no publication or retry door. Its business entry
 is released, but it may retain partial successor reservations. Discard the

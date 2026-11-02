@@ -8,6 +8,26 @@ pub(super) struct CloseProgress {
     pending: Option<crate::branch::registry::PendingProductHeadClose>,
     released_heads: usize,
     report: Option<RuntimeWorldCloseReport>,
+    _metadata_funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+impl CloseProgress {
+    pub(super) fn prepare_task(
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<std::sync::Arc<std::sync::Mutex<Self>>, Denial> {
+        let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+            .extend(std::alloc::Layout::new::<std::sync::Mutex<Self>>())
+            .expect("fixed World close task layout fits");
+        let funding = request
+            .reserve_retained_memory(layout.pad_to_align().size() as u64)
+            .map_err(Denial::Execution)?;
+        Ok(std::sync::Arc::new(std::sync::Mutex::new(Self {
+            pending: None,
+            released_heads: 0,
+            report: None,
+            _metadata_funding: funding,
+        })))
+    }
 }
 
 pub(super) fn close_owner<D, I, E, Ctx, T>(

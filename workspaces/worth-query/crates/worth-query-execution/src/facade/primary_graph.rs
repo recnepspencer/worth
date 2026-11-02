@@ -1,4 +1,5 @@
 //! Primary Graph application contracts.
+mod mutation_handler;
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryApplicationResource, WorthQueryApplicationResourceProvider,
@@ -11,6 +12,7 @@ pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryResourceStartStop, WorthQueryResourceState, WorthQueryResourceStopKind,
     WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame,
 };
+pub use mutation_handler::*;
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;
 /// Original Native commit occurrence; lineage diagnostics grant no authority.
@@ -71,10 +73,8 @@ pub use worth_relational::facade::{
 };
 
 pub use crate::domain_computation::primary_graph::{
-    CandidateWriter, CheckpointAllocatorInspection, CheckpointRecordFrontier,
-    CheckpointRecordIdentity, CheckpointReservationAdvanceDenial, DecisionReader, ExecutionRequest,
-    HandlerExecutionDenial, HandlerFailure, HandlerInterruption, HandlerResult,
-    MutationHandlerExecutionDenial, OperationHandler, VerificationCapacityStop,
+    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
+    CheckpointReservationAdvanceDenial, ExecutionRequest, VerificationCapacityStop,
     WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryAdmittedApplicationHistoryCapture, WorthQueryAdmittedApplicationOperation,
@@ -166,8 +166,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
     WorthQueryCommittedDispatchOutboxReadWork, WorthQueryCommittedProductPublication,
     WorthQueryCompleteApplicationReadSet, WorthQueryCompletedGeneratedOutputReconstruction,
-    WorthQueryCompletedInvariantProjection, WorthQueryCompletedMutationCandidate,
-    WorthQueryCompletedOperationInvariantProjection,
+    WorthQueryCompletedInvariantProjection, WorthQueryCompletedOperationInvariantProjection,
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalAuthoritativeDeliveryFailure, WorthQueryConditionalClockHandle,
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,
@@ -186,7 +185,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCorrectionRestoredSupportDenial, WorthQueryCorrectionSelectionDenial,
     WorthQueryCorrelatedInboundOccurrence, WorthQueryCurrentBodyRequirementAssessment,
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
-    WorthQueryCurrentOutputSelection, WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan,
+    WorthQueryCurrentOutputSelection, WorthQueryCustomInvariantDenial,
     WorthQueryDelegationActivationProgram, WorthQueryDependentPairReadContext,
     WorthQueryDerivedPairReadPlans, WorthQueryDiscoveredRetentionControlDenial,
     WorthQueryDiscoveredRetentionReservationForTest,
@@ -251,15 +250,13 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop, WorthQueryManagedIndexWorkDenial,
     WorthQueryMandatoryReview, WorthQueryMandatoryReviewAuthorizationDenial,
     WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
-    WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
-    WorthQueryMutationHandlerWork, WorthQueryMutationPreconditionComparisonEvidence,
-    WorthQueryObservedApplicationRelation, WorthQueryObservedOutputAvailability,
-    WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationAuthorizationRefusalKind, WorthQueryOperationBodyAssessmentDenial,
-    WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
-    WorthQueryOperationBodyRequirementFinding, WorthQueryOperationBodyRequirementStatus,
-    WorthQueryOperationBodyRequirementTarget, WorthQueryOperationDurableCapability,
+    WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
+    WorthQueryObservedOutputAvailability, WorthQueryObservedResultSet, WorthQueryObservedSource,
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialIdentity,
+    WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationAuthorizationRefusalKind,
+    WorthQueryOperationBodyAssessmentDenial, WorthQueryOperationBodyDecision,
+    WorthQueryOperationBodyDenial, WorthQueryOperationBodyRequirementFinding,
+    WorthQueryOperationBodyRequirementStatus, WorthQueryOperationBodyRequirementTarget,
     WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
     WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryOrdinaryApplicationRead,

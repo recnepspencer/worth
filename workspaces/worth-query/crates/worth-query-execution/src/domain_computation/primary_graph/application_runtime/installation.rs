@@ -99,7 +99,7 @@ where
         Default::default(),
         Default::default(),
     )?;
-    application.installed_resources = resources;
+    application.conditional_cleanup.resources = resources;
     application.managed_indexes = managed_indexes;
     Ok(application)
 }
@@ -225,12 +225,13 @@ where
         output_readiness_routes,
     )
     .map_err(super::super::conditional_operation::publication_denial)?;
-    application.installed_resources = resources;
+    application.conditional_cleanup.resources = resources;
     application.managed_indexes = managed_indexes;
     conditional_operations.reconstruct_all(&application)?;
     conditional_operations.reconcile_all(&mut application.bridge.conditional_lifecycle())?;
     *application
-        .conditional_operations
+        .conditional_cleanup
+        .operations
         .get_mut()
         .unwrap_or_else(std::sync::PoisonError::into_inner) = conditional_operations;
     Ok(application)

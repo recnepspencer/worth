@@ -1,4 +1,5 @@
 pub(super) mod application_publication;
+mod home_retirement;
 mod runtime_access;
 mod snapshot_release;
 

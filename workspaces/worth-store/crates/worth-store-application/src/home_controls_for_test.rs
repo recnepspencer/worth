@@ -83,7 +83,7 @@ impl crate::ReadmittedApplicationHome {
             &self.context.checkpoint,
             None,
             execution,
-            || self.relational.prepare_checkpoint(execution),
+            || self.relational.prepare_complete_checkpoint(execution),
             Some(&observer),
             None,
         )
@@ -99,7 +99,7 @@ impl crate::ReadmittedApplicationHome {
             &self.context.checkpoint,
             None,
             execution,
-            || self.relational.prepare_checkpoint(execution),
+            || self.relational.prepare_complete_checkpoint(execution),
             None,
             Some(&observer),
         )
@@ -125,18 +125,10 @@ impl crate::ReadmittedApplicationHome {
 
     pub fn publish_captured_relational_checkpoint_for_test(
         &self,
-        checkpoint: worth_relational::facade::durability::RelationalNativeCheckpoint,
+        _checkpoint: worth_relational::facade::durability::RelationalNativeCheckpoint,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
-        crate::checkpoint::publication::checkpoint(
-            &self.context.serving,
-            &self.context.checkpoint,
-            execution,
-            || {
-                self.relational
-                    .prepare_captured_checkpoint_for_test(checkpoint, execution)
-            },
-        )
+        crate::checkpoint::publication::worldless_checkpoint(&self.context.checkpoint, execution)
     }
 
     pub fn abort_for_test(self) {

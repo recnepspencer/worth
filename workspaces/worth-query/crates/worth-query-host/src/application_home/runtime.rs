@@ -7,6 +7,7 @@ pub(super) type DirectoryHome =
 pub struct WorthQueryApplicationHome<Schema, Program> {
     pub(super) query: WorthQueryProgramApplicationRuntime<Schema, Program>,
     pub(super) directory: Option<DirectoryHome>,
+    pub(super) checkpoint_limits: worth_store_application::ApplicationHomeCheckpointLimits,
 }
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
     pub fn runtime(&self) -> &WorthQueryProgramApplicationRuntime<Schema, Program> {

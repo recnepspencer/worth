@@ -9,10 +9,29 @@ use worth_store_application::*;
 
 pub struct WorthQueryApplicationHomeOpeningClosed {
     outcome: Option<ApplicationHomeCloseOutcome>,
+    retired_query:
+        Option<worth_query_execution::facade::application_installation::WorthQueryRetiredHomeQuery>,
 }
 impl WorthQueryApplicationHomeOpeningClosed {
     pub fn directory_outcome(&self) -> Option<&ApplicationHomeCloseOutcome> {
         self.outcome.as_ref()
+    }
+    fn from_query_closed(closed: WorthQueryApplicationHomeClosed) -> Self {
+        let (outcome, retired_query) = closed.into_parts();
+        Self {
+            outcome: Some(outcome),
+            retired_query,
+        }
+    }
+    pub fn reclaim(self) {
+        let Self {
+            outcome,
+            retired_query,
+        } = self;
+        drop(outcome);
+        if let Some(retired_query) = retired_query {
+            retired_query.reclaim();
+        }
     }
 }
 pub struct WorthQueryApplicationHomeOpeningCloseRefused<
@@ -32,7 +51,7 @@ enum OpeningCloseCustody<Schema: ApplicationSchemaComposition, Program> {
 }
 mod preparation;
 use preparation::*;
-impl<Schema: ApplicationSchemaComposition, Program>
+impl<Schema: ApplicationSchemaComposition, Program: 'static>
     WorthQueryApplicationHomeOpenRefused<Schema, Program>
 {
     pub fn close(
@@ -44,10 +63,16 @@ impl<Schema: ApplicationSchemaComposition, Program>
     > {
         use WorthQueryApplicationHomeOpenRefused::*;
         match self {
-            Preparation(_) => Ok(WorthQueryApplicationHomeOpeningClosed { outcome: None }),
+            Preparation(_) => Ok(WorthQueryApplicationHomeOpeningClosed {
+                outcome: None,
+                retired_query: None,
+            }),
             Binding { query, cause: _ } | Physical { query, cause: _ } => {
                 drop(query);
-                Ok(WorthQueryApplicationHomeOpeningClosed { outcome: None })
+                Ok(WorthQueryApplicationHomeOpeningClosed {
+                    outcome: None,
+                    retired_query: None,
+                })
             }
             RelationalAttachment { query, home } => {
                 drop(query);
@@ -100,6 +125,14 @@ impl<Schema: ApplicationSchemaComposition, Program>
             ExistingSourceAttachment { query, home } => {
                 close_world_preparation(WorldQueryPreparation::ExistingSource(query), home, request)
             }
+            ExistingCheckpointMaintenance { query, home, cause } => close_world_preparation(
+                WorldQueryPreparation::ExistingMaintenance {
+                    _query: query,
+                    _cause: cause,
+                },
+                home,
+                request,
+            ),
             ExistingWorldRoot { query, home, cause } => close_world_preparation(
                 WorldQueryPreparation::ExistingRoot {
                     _query: query,
@@ -154,6 +187,14 @@ impl<Schema: ApplicationSchemaComposition, Program>
                 WorldQueryPreparation::Bootstrap {
                     _query: query,
                     _cause: BootstrapFailure::Seed(cause),
+                },
+                home,
+                request,
+            ),
+            CheckpointMaintenance { query, home, cause } => close_world_preparation(
+                WorldQueryPreparation::Bootstrap {
+                    _query: query,
+                    _cause: BootstrapFailure::Maintenance(cause),
                 },
                 home,
                 request,
@@ -243,10 +284,8 @@ fn classify_released<Schema: ApplicationSchemaComposition, Program>(
     WorthQueryApplicationHomeOpeningClosed,
     WorthQueryApplicationHomeOpeningCloseRefused<Schema, Program>,
 > {
-    super::close::classify_released_query(outcome)
-        .map(|closed| WorthQueryApplicationHomeOpeningClosed {
-            outcome: Some(closed.into_outcome()),
-        })
+    super::close::classify_released_query(outcome, None)
+        .map(WorthQueryApplicationHomeOpeningClosed::from_query_closed)
         .map_err(|home| WorthQueryApplicationHomeOpeningCloseRefused {
             custody: OpeningCloseCustody::ReleasedQuery(home),
         })
@@ -271,7 +310,7 @@ impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Debug
         }
     }
 }
-impl<Schema: ApplicationSchemaComposition, Program>
+impl<Schema: ApplicationSchemaComposition, Program: 'static>
     WorthQueryApplicationHomeOpeningCloseRefused<Schema, Program>
 {
     pub fn try_close(
@@ -302,9 +341,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             },
             OpeningCloseCustody::ReleasedQuery(home) => home
                 .try_close(request)
-                .map(|closed| WorthQueryApplicationHomeOpeningClosed {
-                    outcome: Some(closed.into_outcome()),
-                })
+                .map(WorthQueryApplicationHomeOpeningClosed::from_query_closed)
                 .map_err(|home| Self {
                     custody: OpeningCloseCustody::ReleasedQuery(home),
                 }),

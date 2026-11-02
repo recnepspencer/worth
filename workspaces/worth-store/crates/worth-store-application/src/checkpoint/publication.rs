@@ -92,14 +92,19 @@ impl crate::ReadmittedApplicationHome {
     }
 }
 
-pub(crate) fn checkpoint(
-    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+/// Preserve the original pre-effect worldless refusal order without admitting
+/// an ordinary Native capture or fabricating a missing World capability.
+pub(crate) fn worldless_checkpoint(
     owner: &super::owner::HomeCheckpointOwner,
     execution: &ExecutionRequest<'_, '_>,
-    capture: impl FnOnce() -> Result<
-        worth_store_relational::PreparedRelationalSection,
-        worth_store_relational::RelationalSectionCheckpointDenial,
-    >,
 ) -> Result<ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial> {
-    super::journey::checkpoint(serving, owner, None, execution, capture, None, None)
+    if let Some(attempt) = owner.pending() {
+        return Err(ApplicationHomeCheckpointDenial::RecoveryRequired(
+            attempt.observation(),
+        ));
+    }
+    execution
+        .consult()
+        .map_err(ApplicationHomeCheckpointDenial::Execution)?;
+    Err(ApplicationHomeCheckpointDenial::WorldSectionRequired)
 }

@@ -46,7 +46,7 @@ where
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) {
         self.backing
-            .runtime
+            .runtime()
             .complete_prepared_output_source(receipt);
     }
 
@@ -77,7 +77,7 @@ where
                 "discovered output root is not installed for this program",
             ));
         }
-        self.backing.runtime.recover_discovered_output_source::<
+        self.backing.runtime().recover_discovered_output_source::<
             <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
         >(receipt, TypeId::of::<Root>())
     }
@@ -122,7 +122,7 @@ where
         };
         let source_preparation = self
             .backing
-            .runtime
+            .runtime()
             .output_demands
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();
@@ -136,7 +136,7 @@ where
             .map_or(idempotency, |command| command.bind(idempotency));
         let pending = WorthQueryUnpublishedProgramOutputSource {
             correction,
-            runtime_authority: self.backing.runtime.runtime.authority_identity().as_u64(),
+            runtime_authority: self.backing.runtime().runtime.authority_identity().as_u64(),
             program: selected_program,
             binding: TypeId::of::<Source>(),
             idempotency,
@@ -144,7 +144,7 @@ where
             payload,
             preparation: source_preparation,
         };
-        match self.backing.runtime
+        match self.backing.runtime()
             .compare_and_commit_application_for_required_output_source(execution, phase,
                 &presented,
                 program,

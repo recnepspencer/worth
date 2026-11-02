@@ -39,7 +39,7 @@ where
         // distinguish an ordinary sibling from a guarded one at commit time.
         if self
             .backing
-            .runtime
+            .runtime()
             .operation_requires_workflow_authority::<Operation>()
         {
             return Err(WorthQueryApplicationCommitDenial::workflow_authority_required());
@@ -58,7 +58,7 @@ where
             || required_output_source
             || self
                 .backing
-                .runtime
+                .runtime()
                 .installed_conditionals
                 .contains_operation::<Operation>()
         {
@@ -88,17 +88,17 @@ where
         let mut candidate = Some(program);
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime().product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .compare_and_commit_elevation_request_for_program(
                         &execution,
                         &active_phase,
@@ -111,7 +111,7 @@ where
                 Some(candidate) => self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .refuse_elevation_request(candidate, denial),
                 None => WorthQueryElevationRequestOutcome::Indeterminate,
             })
@@ -129,17 +129,17 @@ where
         let mut candidate = Some(program);
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime().product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .compare_and_commit_elevation_approval_for_program(
                         &execution,
                         &active_phase,
@@ -153,7 +153,7 @@ where
                 Some(candidate) => self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .refuse_elevation_approval(candidate, denial),
                 None => WorthQueryElevationApprovalOutcome::Indeterminate,
             })
@@ -171,17 +171,17 @@ where
         let mut candidate = Some(program);
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime().product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .compare_and_commit_elevation_close_for_program(
                         &execution,
                         &active_phase,
@@ -195,7 +195,7 @@ where
                 Some(candidate) => self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .refuse_elevation_close(candidate, denial),
                 None => WorthQueryElevationCloseOutcome::Indeterminate,
             })
@@ -213,17 +213,17 @@ where
         let mut candidate = Some(program);
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime().product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .compare_and_commit_mandatory_review_for_program(
                         &execution,
                         &active_phase,
@@ -237,7 +237,7 @@ where
                 Some(candidate) => self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .refuse_mandatory_review(candidate, denial),
                 None => WorthQueryMandatoryReviewOutcome::Indeterminate,
             })
@@ -255,17 +255,17 @@ where
         let mut candidate = Some(program);
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime().product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .compare_and_commit_capability_delegation_for_program(
                         &execution,
                         &active_phase,
@@ -289,17 +289,17 @@ where
         let mut candidate = Some(program);
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+                    .execution_request_for(&self.runtime.backing.runtime().product_runtime)
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
                 Ok(self
                     .runtime
                     .backing
-                    .runtime
+                    .runtime()
                     .compare_and_commit_capability_revocation_for_program(
                         &execution,
                         &active_phase,

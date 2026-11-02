@@ -10,7 +10,7 @@ use worth_relational::facade::{
     transactions::{CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch},
 };
 
-pub(super) fn definition() -> RelationalRuntimeDefinition {
+pub(crate) fn definition() -> RelationalRuntimeDefinition {
     let registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -27,7 +27,7 @@ pub(super) fn definition() -> RelationalRuntimeDefinition {
         .resolve()
 }
 
-pub(super) fn commit(
+pub(crate) fn commit(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     key: &str,

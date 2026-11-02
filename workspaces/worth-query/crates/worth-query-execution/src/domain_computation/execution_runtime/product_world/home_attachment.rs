@@ -14,6 +14,7 @@ impl WorthQueryProductRuntime {
         recovery: RuntimeWorldRecoveryPort,
         root: ProductBranchObservation,
         directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
+        maintenance: std::sync::Arc<dyn super::WorthQueryHomeMaintenance>,
     ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
         let WorthQueryProductRelationalInstallation {
             services,
@@ -78,6 +79,7 @@ impl WorthQueryProductRuntime {
             None,
         );
         product.directory_support = Some(directory_support);
+        product.home_maintenance = Some(maintenance);
         Ok(product)
     }
 }

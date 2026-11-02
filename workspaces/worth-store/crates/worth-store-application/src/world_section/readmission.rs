@@ -167,15 +167,17 @@ where
     }
     pub fn checkpoint(
         &self,
-        _request: &ExecutionRequest<'_, '_>,
+        request: &ExecutionRequest<'_, '_>,
     ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
-        Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired)
+        self.checkpoint_operation(Default::default())?
+            .checkpoint(request)
     }
     pub fn recover_checkpoint(
         &self,
-        _request: &ExecutionRequest<'_, '_>,
+        request: &ExecutionRequest<'_, '_>,
     ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
-        Err(crate::ApplicationHomeCheckpointDenial::WorldSectionRequired)
+        self.checkpoint_operation(Default::default())?
+            .recover_checkpoint(request)
     }
 }
 

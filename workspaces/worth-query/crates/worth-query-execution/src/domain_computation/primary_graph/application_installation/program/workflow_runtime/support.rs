@@ -57,7 +57,7 @@ where
             let present = self
                 .runtime
                 .backing
-                .runtime
+                .runtime()
                 .installed_program_support()
                 .and_then(|support| support.present(revision))
                 .is_some();

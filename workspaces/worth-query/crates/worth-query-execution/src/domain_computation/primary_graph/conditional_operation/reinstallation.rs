@@ -144,7 +144,8 @@ where
                 )
             })?;
         let mut registry = self
-            .conditional_operations
+            .conditional_cleanup
+            .operations
             .get_mut()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();

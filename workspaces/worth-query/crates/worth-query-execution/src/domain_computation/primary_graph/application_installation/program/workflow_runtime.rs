@@ -52,7 +52,7 @@ where
     {
         let binding = (|| {
             if workflow.schema_binding()
-                != &self.backing.runtime.installed_schema().binding_identity()
+                != &self.backing.runtime().installed_schema().binding_identity()
             {
                 return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
             }
@@ -103,7 +103,7 @@ where
     /// the one installed for the program its branch runs.
     pub fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec> {
         WorthQueryWorkflowVocabulary::new(
-            &self.runtime.backing.runtime,
+            &self.runtime.backing.runtime(),
             &self.workflow,
             &self.supported,
             &self.authentication,

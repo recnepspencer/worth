@@ -55,6 +55,11 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         query: QueryExistingHomeSourceAttachmentRefused<Schema, Program>,
         home: DirectoryHome,
     },
+    ExistingCheckpointMaintenance {
+        query: PreparedExistingHomeQueryRuntime<Schema, Program>,
+        home: DirectoryHome,
+        cause: ApplicationHomeCheckpointDenial,
+    },
     ExistingWorldRoot {
         query: PreparedExistingHomeQueryRuntime<Schema, Program>,
         home: DirectoryHome,
@@ -95,6 +100,11 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         query: PreparedHomeQueryRuntime<Schema, Program>,
         home: DirectoryHome,
         cause: WorthQueryPrimaryGraphInstallationDenial,
+    },
+    CheckpointMaintenance {
+        query: PreparedHomeQueryRuntime<Schema, Program>,
+        home: DirectoryHome,
+        cause: ApplicationHomeCheckpointDenial,
     },
     WorldRoot {
         query: PreparedHomeQueryRuntime<Schema, Program>,
@@ -156,6 +166,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::ExistingWorldReadmission { home, .. } => format!("{:?}", home.reason()),
             Self::ExistingComposition { cause, .. } => format!("{cause:?}"),
             Self::ExistingSourceAttachment { query, .. } => query.reason().to_string(),
+            Self::ExistingCheckpointMaintenance { cause, .. } => format!("{cause:?}"),
             Self::ExistingWorldRoot { cause, .. } => format!("{cause:?}"),
             Self::ExistingQueryAttachment { query, .. } => query.detail(),
             Self::NativeFinalization { query, .. } => query.reason().to_string(),
@@ -165,6 +176,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::SourceAttachment { query, .. } => query.reason().to_string(),
             Self::InitialState { cause, .. } => format!("{cause:?}"),
             Self::SeedPublication { cause, .. } => cause.to_string(),
+            Self::CheckpointMaintenance { cause, .. } => format!("{cause:?}"),
             Self::WorldRoot { cause, .. } => format!("{cause:?}"),
             Self::QueryAttachment { query, .. } => query.detail(),
             Self::CustodyReadmission { cause, .. } => format!("{cause:?}"),

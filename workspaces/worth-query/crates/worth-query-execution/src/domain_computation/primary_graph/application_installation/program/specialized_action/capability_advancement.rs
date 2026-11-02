@@ -18,13 +18,13 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution =
-            match phase.execution_request_for(&self.runtime.backing.runtime.product_runtime) {
+            match phase.execution_request_for(&self.runtime.backing.runtime().product_runtime) {
                 Ok(execution) => execution,
                 Err(cause) => {
                     return self
                         .runtime
                         .backing
-                        .runtime
+                        .runtime()
                         .refuse_mandatory_review(program, cause.into())
                 }
             };
@@ -51,7 +51,7 @@ where
     {
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .compare_and_commit_mandatory_review_for_program(
                 execution,
                 phase,
@@ -72,7 +72,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -105,7 +105,7 @@ where
     {
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .compare_and_commit_capability_delegation_for_program(
                 execution,
                 phase,
@@ -125,7 +125,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime.product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -158,7 +158,7 @@ where
     {
         self.runtime
             .backing
-            .runtime
+            .runtime()
             .compare_and_commit_capability_revocation_for_program(
                 execution,
                 phase,

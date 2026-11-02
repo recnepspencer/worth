@@ -116,12 +116,7 @@ impl crate::ReadmittedApplicationHome {
         let checkpoint = if let Some(result) = prior_checkpoint {
             result
         } else {
-            crate::checkpoint::publication::checkpoint(
-                &context.serving,
-                &context.checkpoint,
-                execution,
-                || closing.prepare_checkpoint(execution),
-            )
+            crate::checkpoint::publication::worldless_checkpoint(&context.checkpoint, execution)
         };
         // Checkpoint failure never refuses close. Accepted native work was
         // classified by its real owner before teardown; physical completion

@@ -1,5 +1,5 @@
 mod descriptor_accounting;
 mod descriptor_admission;
 mod lifecycle;
-mod native_schema;
+pub(crate) mod native_schema;
 mod program;

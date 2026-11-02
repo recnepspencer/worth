@@ -10,6 +10,8 @@ mod conditional_recovery;
 mod creation;
 mod history;
 mod home_attachment;
+mod maintenance;
+pub use maintenance::WorthQueryHomeMaintenance;
 mod installation_denial;
 mod owned_async;
 mod owner_cleanup;

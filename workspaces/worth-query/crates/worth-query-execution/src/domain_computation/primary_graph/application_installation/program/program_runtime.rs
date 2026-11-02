@@ -44,7 +44,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramRuntime
     Program,
 > {
     pub(in crate::domain_computation::primary_graph) runtime:
-        WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        Option<WorthQueryPrimaryGraphApplicationRuntime<Schema>>,
     pub(in crate::domain_computation::primary_graph) program:
         std::sync::Arc<WorthQueryInstalledApplicationProgram<Schema, Program>>,
     pub(in crate::domain_computation::primary_graph) connection_types: Box<[TypeId]>,
@@ -54,9 +54,27 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramRuntime
         Box<[std::sync::Arc<WorthQuerySupportedProgramRecord>]>,
 }
 
+impl<Schema, Program> WorthQueryProgramRuntimeBacking<Schema, Program> {
+    pub(in crate::domain_computation::primary_graph) fn runtime(
+        &self,
+    ) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.runtime
+            .as_ref()
+            .expect("only the live Query owns runtime access")
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn runtime_mut(
+        &mut self,
+    ) -> &mut WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.runtime
+            .as_mut()
+            .expect("only the live Query owns runtime access")
+    }
+}
+
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
     pub fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        &self.backing.runtime
+        self.backing.runtime()
     }
 
     pub fn installed_program(&self) -> &WorthQueryInstalledApplicationProgram<Schema, Program> {
@@ -117,7 +135,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         &self,
     ) -> Option<WorthQueryPresentedProgram<'_>> {
         self.backing
-            .runtime
+            .runtime()
             .installed_program_support()?
             .present(self.backing.program.revision())
     }
@@ -139,10 +157,10 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             .iter()
             .find(|record| record.answers_to(TypeId::of::<Supported>()))?;
         self.backing
-            .runtime
+            .runtime()
             .installed_program_support()?
             .present(record.revision())?;
-        WorthQuerySupportedProgramHandle::rostered(&self.backing.runtime, record)
+        WorthQuerySupportedProgramHandle::rostered(&self.backing.runtime(), record)
     }
 
     /// Removes one rostered program from ordinary host service only after
@@ -159,13 +177,11 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         use crate::basis::WorthQueryProductBranchAdmissionDenial as BranchDenial;
         use worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial as Denial;
 
-        let support =
-            self.backing
-                .runtime
-                .installed_program_support()
-                .ok_or(Denial::UnrosteredProgram {
-                    revision: *revision,
-                })?;
+        let support = self.backing.runtime().installed_program_support().ok_or(
+            Denial::UnrosteredProgram {
+                revision: *revision,
+            },
+        )?;
         let entry = support
             .rostered_for_recovery(revision)
             .ok_or(Denial::UnrosteredProgram {
@@ -175,7 +191,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         let retirement = support.lifecycle().begin_retirement(revision)?;
         let barrier = match self
             .backing
-            .runtime
+            .runtime()
             .product_runtime
             .activations
             .begin_program_retirement(revision)
@@ -189,7 +205,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         };
         let occurrences = match self
             .backing
-            .runtime
+            .runtime()
             .product_runtime
             .activations
             .live_occurrences()
@@ -205,7 +221,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         for occurrence in occurrences.iter().copied() {
             let selected = match self
                 .backing
-                .runtime
+                .runtime()
                 .product_runtime
                 .admit_product_occurrence(occurrence)
             {
@@ -252,7 +268,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 }
             };
             let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
-                    &self.backing.runtime,
+                    &self.backing.runtime(),
                     selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,
@@ -283,7 +299,7 @@ impl<Schema, Program> std::ops::Deref for WorthQueryProgramApplicationRuntime<Sc
     type Target = WorthQueryPrimaryGraphApplicationRuntime<Schema>;
 
     fn deref(&self) -> &Self::Target {
-        &self.backing.runtime
+        self.backing.runtime()
     }
 }
 
@@ -304,7 +320,7 @@ where
                 "installed program runtime remains retained by another handle",
             )
         })?;
-        backing.runtime.close_conditional_runtime()
+        backing.runtime_mut().close_conditional_runtime()
     }
 }
 

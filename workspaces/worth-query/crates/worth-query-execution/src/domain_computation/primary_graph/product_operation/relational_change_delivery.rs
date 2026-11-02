@@ -63,7 +63,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         };
         let operation = self
             .application()
-            .conditional_operations
+            .conditional_cleanup
+            .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .admit_clock(handle.binding_identity(), handle.lease());

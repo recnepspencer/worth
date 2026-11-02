@@ -47,22 +47,41 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
         }
         self.entries.insert(
             Binding::IDENTITY.to_owned(),
-            PendingMutationHandler {
-                identity: Binding::IDENTITY.to_owned(),
-                handler_identity: Binding::HANDLER_IDENTITY.to_owned(),
-                decision_type: TypeId::of::<Binding::Decision>(),
-                denial_type: TypeId::of::<Binding::Denial>(),
-                value: Arc::new(TypedHandlerSlot::<Schema, Binding> {
-                    handler: Arc::new(handler),
-                }),
-                durable_capabilities: if origin == HandlerOrigin::CompiledBody {
-                    Some(&[])
-                } else {
-                    Handler::declared_durable_capabilities()
-                },
-                origin,
-            },
+            PendingMutationHandler::retain_original::<Schema, Binding, Handler>(handler, origin),
         );
         Ok(())
+    }
+}
+
+impl PendingMutationHandler {
+    pub(super) fn retain_original<Schema, Binding, Handler>(
+        handler: Handler,
+        origin: HandlerOrigin,
+    ) -> Self
+    where
+        Schema: ApplicationSchema,
+        Binding: ApplicationMutationBinding<Schema>,
+        Handler: OperationHandler<Schema, Binding>,
+    {
+        Self {
+            identity: Binding::IDENTITY,
+            handler_identity: Binding::HANDLER_IDENTITY.to_owned(),
+            decision_type: TypeId::of::<Binding::Decision>(),
+            denial_type: TypeId::of::<Binding::Denial>(),
+            value: Arc::new(TypedHandlerSlot::<Schema, Binding> {
+                handler: Arc::new(handler),
+            }),
+            preflight_home_retirement: super::retirement::preflight_original_handler::<
+                Schema,
+                Binding,
+            >,
+            advance_home_retirement: super::retirement::advance_original_handler::<Schema, Binding>,
+            durable_capabilities: if origin == HandlerOrigin::CompiledBody {
+                Some(&[])
+            } else {
+                Handler::declared_durable_capabilities()
+            },
+            origin,
+        }
     }
 }

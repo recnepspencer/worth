@@ -9,6 +9,15 @@ use worth_query_declaration::facade::application_program::*;
 #[path = "fixture.rs"]
 mod fixture;
 use fixture::{Catalog, Program, Provider};
+#[derive(Debug)]
+struct MaintenanceMustRemainUnentered;
+impl crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance
+    for MaintenanceMustRemainUnentered
+{
+    fn after_advancement(&self, _: &worth_execution::ExecutionRequest<'_, '_>) {
+        panic!("the refused Memory-root attachment must never enter Directory maintenance");
+    }
+}
 
 #[test]
 fn refused_home_world_attachment_retains_nonempty_provider_instances() {
@@ -116,6 +125,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
                 world.owner.recovery_port(),
                 root,
                 |_, _| None,
+                Arc::new(MaintenanceMustRemainUnentered),
             )
             .err()
             .expect("a memory root cannot issue QueryReadmitted for a Home");

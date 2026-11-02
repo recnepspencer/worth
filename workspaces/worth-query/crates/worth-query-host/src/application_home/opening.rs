@@ -42,6 +42,7 @@ where
                 .map(|query| WorthQueryApplicationHome {
                     query,
                     directory: None,
+                    checkpoint_limits: self.checkpoint_limits,
                 })
                 .map_err(Refused::Preparation);
             }
@@ -96,6 +97,7 @@ where
                     .take()
                     .expect("the one admitted recipe consumes Query once"),
                 self.initial_state,
+                self.checkpoint_limits,
             )
         });
         match opened {
@@ -106,6 +108,7 @@ where
                         phase,
                         home.into_home(),
                         query.take().expect("existing origin retained Query"),
+                        self.checkpoint_limits,
                     )
                 }
                 ApplicationHomeInitializationDenial::Execution(_)

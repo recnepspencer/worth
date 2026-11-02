@@ -23,6 +23,7 @@ pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'sta
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     query: ReadmittedHomeQueryService<Schema, Program>,
     home: DirectoryHome,
+    checkpoint_limits: ApplicationHomeCheckpointLimits,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
@@ -72,6 +73,7 @@ pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'sta
         |SettledHomeService { query, home }| WorthQueryApplicationHome {
             query: query.into_home_program_runtime(),
             directory: Some(home.into_no_pending_home()),
+            checkpoint_limits,
         },
     ))
 }

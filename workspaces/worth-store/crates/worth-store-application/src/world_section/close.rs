@@ -3,6 +3,7 @@
 use super::WorldReadmittedApplicationHome;
 use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::RuntimeWorldOwnerLifecycleObservation;
+mod admission;
 mod checkpoint;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

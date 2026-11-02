@@ -8,6 +8,8 @@ pub use inspection::ApplicationHomeCheckpointInspection;
 pub use limits::ApplicationHomeCheckpointLimits;
 pub(crate) mod journey;
 mod manifest;
+mod operation;
+pub use operation::ApplicationHomeCheckpointOperation;
 pub(crate) mod owner;
 mod physical_checkpoint;
 mod physical_publication;

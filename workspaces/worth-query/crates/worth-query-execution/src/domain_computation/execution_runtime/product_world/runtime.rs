@@ -20,6 +20,7 @@ pub(crate) struct WorthQueryProductRootIdentity {
 /// default branch is a caller convenience; World alone resolves its current head.
 #[derive(Clone)]
 pub struct WorthQueryProductRuntime {
+    pub(super) home_maintenance: Option<Arc<dyn super::WorthQueryHomeMaintenance>>,
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     pub(in crate::domain_computation) directory_support:
@@ -70,6 +71,7 @@ impl WorthQueryProductRuntime {
         #[cfg(not(test))]
         let _ = default_branch;
         Self {
+            home_maintenance: None,
             owner,
             directory_support: None,
             adoption_preparation: Arc::default(),

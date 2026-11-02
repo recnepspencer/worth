@@ -118,6 +118,10 @@ where
         ),
     );
     WorthQueryPrimaryGraphApplicationRuntime {
+        conditional_cleanup: super::super::conditional_cleanup::ConditionalRuntimeCleanup::new(
+            conditional_cleanup_owner,
+            conditional_operations,
+        ),
         runtime: graph.runtime,
         installed_schema,
         application_readiness_schema_token,
@@ -128,10 +132,8 @@ where
         authentication_clock: WorthQueryAuthenticationClock::system(),
         relational_branch_identity: graph.relational_branch_identity,
         bridge: graph.bridge,
-        conditional_cleanup_owner,
         product_runtime,
         granular_invalidation,
-        conditional_operations: std::sync::Mutex::new(conditional_operations),
         primary_provider: graph.primary_provider,
         primary_graph_authority: graph.primary_graph_authority,
 
@@ -161,7 +163,6 @@ where
         workflow_guarded_operations,
         program_support: None,
         installed_conditionals: Default::default(),
-        installed_resources: Default::default(),
         managed_indexes: Default::default(),
             workflow_coverage: Default::default(),
             signing_owners: Default::default(),

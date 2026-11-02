@@ -162,7 +162,7 @@ pub(in crate::domain_computation::primary_graph) use optional_output_binding::{
 };
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;
-pub(super) use capability_touch_binding::CapabilityTouchMutationBinding;
+pub(in crate::domain_computation::primary_graph) use capability_touch_binding::CapabilityTouchMutationBinding;
 pub(in crate::domain_computation::primary_graph) use program_required_binding::{
     ProgramRequiredInput, ProgramRequiredMutationBinding,
 };

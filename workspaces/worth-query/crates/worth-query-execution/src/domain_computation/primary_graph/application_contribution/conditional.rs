@@ -90,6 +90,21 @@ impl<Schema> Default for WorthQueryInstalledApplicationConditionalRegistry<Schem
     }
 }
 
+impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
+        &self,
+    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        use super::super::{
+            WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
+        };
+        if self.entries.is_empty() {
+            Ok(())
+        } else {
+            Err(Denial::Unsupported(Owner::InstalledConditionals))
+        }
+    }
+}
+
 impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema>
 where
     Schema: ApplicationSchema + 'static,

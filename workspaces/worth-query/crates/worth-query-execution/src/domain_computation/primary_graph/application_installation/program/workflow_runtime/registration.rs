@@ -12,9 +12,9 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         workflow: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         authentication: &WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<(), WorthQueryWorkflowRuntimeBindingDenial> {
-        let runtime = &mut std::sync::Arc::get_mut(&mut self.backing)
+        let runtime = std::sync::Arc::get_mut(&mut self.backing)
             .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
-            .runtime;
+            .runtime_mut();
         let revision = *workflow.program_revision();
         signing::validate(runtime, &revision, authentication)
             .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;

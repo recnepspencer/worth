@@ -20,6 +20,9 @@ use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRe
 mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
+mod home_retirement;
+pub(in crate::domain_computation::primary_graph) use home_retirement::RetiringPrimaryGraphRuntime;
+pub use home_retirement::{WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner};
 mod durable_admission;
 mod execution_memory;
 mod external_dispatch_attempt;
@@ -116,6 +119,8 @@ pub(in crate::domain_computation) use external_dispatch_attempt::{
 /// }
 /// ```
 pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    // Its own owner closes before these registries and every other runtime field.
+    pub(super) conditional_cleanup: conditional_cleanup::ConditionalRuntimeCleanup<Schema>,
     pub(in crate::domain_computation) runtime: WorthQueryExecutionRuntime,
     pub(in crate::domain_computation) installed_schema:
         WorthQueryInstalledApplicationSchema<Schema>,
@@ -128,7 +133,6 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
     pub(crate) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
-    conditional_cleanup_owner: Option<conditional_cleanup::OwnedConditionalCleanup>,
     pub(crate) product_runtime:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     pub(super) recovered_program_source_delivery:
@@ -136,9 +140,6 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) basis_leases:
         super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
     pub(super) granular_invalidation: super::WorthQueryGranularInvalidationInstallation,
-    pub(super) conditional_operations: std::sync::Mutex<
-        super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
-    >,
     pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     pub(super) primary_graph_authority:
         worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -184,8 +185,6 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) signing_owners: std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
-    pub(super) installed_resources:
-        super::application_resource::installation::InstalledResourceRegistry<Schema>,
     pub(super) managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:
         super::workflow::adoption::WorkflowVocabularyCoverageRegistry,

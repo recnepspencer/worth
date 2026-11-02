@@ -5,7 +5,9 @@ use worth_runtime_world::facade::{
     PreparedWorldCheckpoint, WorldCheckpointSubject, WorldDurableMediumDenial,
 };
 use worth_store::physical_runtime::AnchoredRecordMembership;
-use worth_store_relational::{PreparedRelationalSection, RelationalCheckpointSelectionSource};
+use worth_store_relational::{
+    PreparedCompleteRelationalSection, RelationalCheckpointSelectionSource,
+};
 
 #[derive(Default)]
 pub(crate) struct HomeCheckpointOwner {
@@ -17,7 +19,7 @@ pub(crate) struct HomeCheckpointAttempt {
     pub(super) world: Mutex<Option<Arc<PreparedWorldCheckpoint>>>,
     world_subject: WorldCheckpointSubject,
     manifest: Mutex<Option<HomeManifestPublication>>,
-    pub(super) native: Mutex<Option<Arc<PreparedRelationalSection>>>,
+    pub(super) native: Mutex<Option<Arc<PreparedCompleteRelationalSection>>>,
     subject: Option<OpaqueCapturedCheckpointSubject>,
     receipt: Mutex<Option<AnchoredRecordMembership>>,
     pub(super) completed: Mutex<Option<super::ApplicationHomeCheckpoint>>,
@@ -103,7 +105,7 @@ impl HomeCheckpointOwner {
     }
     pub(super) fn install(
         &self,
-        native: PreparedRelationalSection,
+        native: PreparedCompleteRelationalSection,
         world: PreparedWorldCheckpoint,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
@@ -114,7 +116,7 @@ impl HomeCheckpointOwner {
         super::ApplicationHomeCheckpointDenial,
     > {
         let quote = std::mem::size_of::<HomeCheckpointAttempt>()
-            .checked_add(std::mem::size_of::<PreparedRelationalSection>())
+            .checked_add(std::mem::size_of::<PreparedCompleteRelationalSection>())
             .and_then(|bytes| bytes.checked_add(std::mem::size_of::<PreparedWorldCheckpoint>()))
             .and_then(|bytes| bytes.checked_add(6 * std::mem::size_of::<usize>()))
             .ok_or(super::ApplicationHomeCheckpointDenial::SizeLimit)?;
@@ -233,7 +235,7 @@ impl HomeCheckpointAttempt {
             .lock()
             .unwrap_or_else(|error| error.into_inner()) = Some(receipt);
     }
-    pub(super) fn native(&self) -> Option<Arc<PreparedRelationalSection>> {
+    pub(super) fn native(&self) -> Option<Arc<PreparedCompleteRelationalSection>> {
         self.native
             .lock()
             .unwrap_or_else(|error| error.into_inner())
@@ -331,8 +333,13 @@ impl RelationalCheckpointSelectionSource for HomeCheckpointSelectionSource {
         Option<worth_store::physical_runtime::AnchoredRecordVersion>,
         worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
     > {
-        use worth_relational::facade::durability::RelationalDurableOwnedReadRefusal as Refusal;
-        let owner = self.owner.upgrade().ok_or(Refusal::ForeignSource)?;
+        use worth_relational::facade::{
+            durability::RelationalDurableOwnedReadRefusal as Refusal,
+            storage::RelationalStorageUnavailableCause,
+        };
+        let owner = self.owner.upgrade().ok_or(Refusal::Storage(
+            RelationalStorageUnavailableCause::SourceUnavailable,
+        ))?;
         let attempt = owner.pending.try_lock().map_err(|_| Refusal::Busy)?.clone();
         let Some(attempt) = attempt else {
             return Ok(None);
@@ -342,13 +349,10 @@ impl RelationalCheckpointSelectionSource for HomeCheckpointSelectionSource {
             .as_ref()
             .is_some_and(|original| original.same_capture(subject))
         {
-            return Err(Refusal::ForeignSource);
+            return Err(Refusal::ForeignProtection);
         }
         let receipt = attempt.receipt.try_lock().map_err(|_| Refusal::Busy)?;
-        let Some(receipt) = receipt.as_ref() else {
-            return Ok(None);
-        };
-        Ok(Some(receipt.version()))
+        Ok(receipt.as_ref().map(|receipt| receipt.version()))
     }
     fn selected_membership(
         &self,

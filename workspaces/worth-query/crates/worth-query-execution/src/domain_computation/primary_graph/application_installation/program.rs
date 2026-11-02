@@ -16,8 +16,13 @@ mod output_source;
 pub use output_source::{
     WorthQueryRecoveredProgramOutputSource, WorthQueryUnpublishedProgramOutputSource,
 };
+mod home_retirement;
 mod program_owner;
 mod program_runtime;
+pub use home_retirement::{
+    WorthQueryHomeRetirementAdvance, WorthQueryPreparedHomeQuery, WorthQueryRetiredHomeQuery,
+    WorthQueryRetiringHomeQuery,
+};
 mod roster_authoring;
 mod signing;
 mod specialized_action;

@@ -385,3 +385,4 @@ fn effect_bearing_native_nine_world_eight_reopens_only_into_owned_custody_refusa
 }
 
 mod close_admission;
+mod handler_retirement;

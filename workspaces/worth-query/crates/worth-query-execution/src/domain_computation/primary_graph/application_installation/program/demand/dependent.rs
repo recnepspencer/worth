@@ -28,7 +28,7 @@ where
         ConnectionBinding<Schema, Connection>:
             WorthQueryApplicationDependentOutputConnection<Schema, RootDemand = ParentDemand>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -46,7 +46,7 @@ where
                 "dependent output edge does not leave this settled program feature",
             ));
         }
-        if !parent.retained.belongs_to(&self.backing.runtime) {
+        if !parent.retained.belongs_to(&self.backing.runtime()) {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "dependent output parent belongs to another installed application",
@@ -57,7 +57,7 @@ where
             )?;
         let limits = self
             .backing
-            .runtime
+            .runtime()
             .output_demand_resource_profile()
             .constrain(limits);
         if let (Some(child), Some(parent_artifact)) = (artifact, parent.artifact) {
@@ -82,7 +82,7 @@ where
         let parent_branch = parent_observation.branch_identity();
         let retained_basis = self
             .backing
-            .runtime
+            .runtime()
             .select_application_read_observation_with_request(execution, basis);
         if let Err(cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_)) =
             retained_basis
@@ -95,7 +95,7 @@ where
         let minimum_basis = if retained_basis.is_ok() {
             Some(
                 self.backing
-                    .runtime
+                    .runtime()
                     .select_application_read_observation_with_request(
                         execution,
                         minimum_observation,
@@ -134,7 +134,7 @@ where
             ));
         }
         self.backing
-            .runtime
+            .runtime()
             .admit_dependent_output_demand::<Family<Schema, ConnectionDemand<Schema, Connection>>>(
                 execution,
                 source,

@@ -115,6 +115,21 @@ impl<Schema> Default for WorthQueryInstalledApplicationProducerRegistry<Schema> 
     }
 }
 
+impl<Schema> WorthQueryInstalledApplicationProducerRegistry<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
+        &self,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
+        };
+        if self.entries.is_empty() {
+            Ok(())
+        } else {
+            Err(Denial::Unsupported(Owner::InstalledProducers))
+        }
+    }
+}
+
 impl<Schema> WorthQueryInstalledApplicationProducerRegistry<Schema>
 where
     Schema: ApplicationSchema,

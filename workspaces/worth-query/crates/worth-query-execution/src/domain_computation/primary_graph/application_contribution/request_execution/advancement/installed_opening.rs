@@ -13,16 +13,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 worth_execution::CancellationToken::new(),
                 None,
             );
-            execution.run_advancement(
-                Some(self.product_runtime.owner.owner_identity()),
-                Some(
-                    self.product_runtime
-                        .source
-                        .authoritative_source_profile()
-                        .runtime_instance_id(),
-                ),
-                body,
-            )
+            execution.run_product_advancement(&self.product_runtime, body)
         })?
     }
 
@@ -84,16 +75,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     QueryRequestExecution::under_lease(lease, cancellation, deadline)
                 }
             };
-            execution.run_advancement(
-                Some(self.product_runtime.owner.owner_identity()),
-                Some(
-                    self.product_runtime
-                        .source
-                        .authoritative_source_profile()
-                        .runtime_instance_id(),
-                ),
-                body,
-            )
+            execution.run_product_advancement(&self.product_runtime, body)
         })?
     }
 
@@ -119,16 +101,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let _custody = OpeningCustody::enter()?;
         self.product_runtime.with_execution_placement(|placement| {
             let execution = QueryRequestExecution::open(placement, request);
-            execution.run_advancement(
-                Some(self.product_runtime.owner.owner_identity()),
-                Some(
-                    self.product_runtime
-                        .source
-                        .authoritative_source_profile()
-                        .runtime_instance_id(),
-                ),
-                body,
-            )
+            execution.run_product_advancement(&self.product_runtime, body)
         })?
     }
 }
@@ -167,15 +140,8 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
         self.with_execution_placement(|placement| {
-            QueryRequestExecution::open_control(placement, cancellation, deadline).run_advancement(
-                Some(self.owner.owner_identity()),
-                Some(
-                    self.source
-                        .authoritative_source_profile()
-                        .runtime_instance_id(),
-                ),
-                body,
-            )
+            QueryRequestExecution::open_control(placement, cancellation, deadline)
+                .run_product_advancement(self, body)
         })?
     }
 }
