@@ -116,6 +116,14 @@ where
             })?;
         let execution = &request;
 
+        require_fresh_effect_authority(handle, authority)
+            .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
+        if matches!(
+            handle.binding().installed_aftermath().recovery(),
+            InstalledAftermathRecoveryContract::NotAdmitted
+        ) {
+            return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
+        }
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -137,14 +145,6 @@ where
                     WorthQueryExternalRedispatchDenial::AdmissionAuthenticationExpired
                 }
             });
-        }
-        require_fresh_effect_authority(handle, authority)
-            .map_err(|denial| WorthQueryExternalRedispatchDenial::FreshAuthority(denial.kind()))?;
-        if matches!(
-            handle.binding().installed_aftermath().recovery(),
-            InstalledAftermathRecoveryContract::NotAdmitted
-        ) {
-            return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
         }
         let Some(record) = handle.binding().dispatch_outbox() else {
             return Err(WorthQueryExternalRedispatchDenial::BindingOutboxMissing);
