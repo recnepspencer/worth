@@ -138,31 +138,6 @@ impl SourceMutationCustody {
         }
     }
 
-    pub(super) fn close_evidence(&self) -> Option<&WorthQueryClosedOperation> {
-        match self {
-            Self::CapabilityRevocation(owner) => owner.close_evidence(),
-            Self::EstateFreeze(owner) => owner.close_evidence(),
-            Self::EstateCorrection(owner) => owner.close_evidence(),
-            Self::Deposit(owner) => owner.close_evidence(),
-            Self::Withdraw(owner) => owner.close_evidence(),
-            Self::SendMoney(owner) => owner.close_evidence(),
-            Self::Correction(owner) => owner.close_evidence(),
-            Self::Reapplication(owner) => owner.close_evidence(),
-        }
-    }
-    pub(super) fn close_evidence_mut(&mut self) -> Option<&mut WorthQueryClosedOperation> {
-        match self {
-            Self::CapabilityRevocation(owner) => owner.close_evidence_mut(),
-            Self::EstateFreeze(owner) => owner.close_evidence_mut(),
-            Self::EstateCorrection(owner) => owner.close_evidence_mut(),
-            Self::Deposit(owner) => owner.close_evidence_mut(),
-            Self::Withdraw(owner) => owner.close_evidence_mut(),
-            Self::SendMoney(owner) => owner.close_evidence_mut(),
-            Self::Correction(owner) => owner.close_evidence_mut(),
-            Self::Reapplication(owner) => owner.close_evidence_mut(),
-        }
-    }
-
     pub(super) fn advance(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
@@ -341,7 +316,17 @@ pub(super) fn describe_recorded(
     receipt: &worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
 ) -> super::super::protocol::BankHttpRecordedCommitDescription {
     super::super::protocol::BankHttpRecordedCommitDescription {
-        native_commit: format!("{:?}", receipt.commit_reference()),
+        native_commit: super::super::protocol::BankHttpCorrectionCommit {
+            commit_id: receipt.commit_reference().commit_id.0,
+            version_id: receipt.commit_reference().version_id.0,
+            branch_id: receipt.commit_reference().branch_id.0.clone(),
+            parents: receipt
+                .commit_reference()
+                .parents
+                .iter()
+                .map(|id| id.0)
+                .collect(),
+        },
         outcome_identity: receipt.outcome_identity().get(),
         changed_record_count: receipt.changed_record_count(),
         emitted_effect_count: receipt.emitted_effect_count(),

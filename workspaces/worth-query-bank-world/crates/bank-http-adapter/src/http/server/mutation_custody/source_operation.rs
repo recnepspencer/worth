@@ -128,20 +128,6 @@ macro_rules! custody {
                     owner @ (Self::Active(_) | Self::Completed(_) | Self::Terminal(_)) => Err(owner),
                 }
             }
-            fn close_evidence(&self) -> Option<&WorthQueryClosedOperation> {
-                match self {
-                    Self::Closed(owner) => Some(owner.closed()),
-                    Self::ClosedWithoutCompletion(owner) => Some(owner),
-                    Self::Active(_) | Self::Completed(_) | Self::Terminal(_) => None,
-                }
-            }
-            fn close_evidence_mut(&mut self) -> Option<&mut WorthQueryClosedOperation> {
-                match self {
-                    Self::Closed(owner) => Some(owner.closed_mut()),
-                    Self::ClosedWithoutCompletion(owner) => Some(owner),
-                    Self::Active(_) | Self::Completed(_) | Self::Terminal(_) => None,
-                }
-            }
             fn observation(&self) -> Option<&WorthQueryApplicationReadObservation> {
                 match self {
                     Self::Completed(operation) => match operation.evidence() {

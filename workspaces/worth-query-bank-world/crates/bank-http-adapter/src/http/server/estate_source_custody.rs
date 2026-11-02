@@ -139,20 +139,6 @@ macro_rules! custody {
                     }
                 }
             }
-            fn close_evidence(&self) -> Option<&WorthQueryClosedOperation> {
-                match self {
-                    Self::Closed(owner) => Some(owner.closed()),
-                    Self::ClosedWithoutCompletion(owner) => Some(owner),
-                    Self::Active(_) | Self::Completed(_) | Self::Terminal(_) => None,
-                }
-            }
-            fn close_evidence_mut(&mut self) -> Option<&mut WorthQueryClosedOperation> {
-                match self {
-                    Self::Closed(owner) => Some(owner.closed_mut()),
-                    Self::ClosedWithoutCompletion(owner) => Some(owner),
-                    Self::Active(_) | Self::Completed(_) | Self::Terminal(_) => None,
-                }
-            }
             fn live_receipt(&self) -> Option<&BankCommitReceipt> {
                 match self {
                     Self::Closed(closed) => closed.live_receipt(),
@@ -272,19 +258,6 @@ impl EstateSourceCustody {
                 .take_closed()
                 .map(ClosedMutationEstate::Disbursement)
                 .map_err(Self::Disbursement),
-        }
-    }
-
-    pub(super) fn close_evidence(&self) -> Option<&WorthQueryClosedOperation> {
-        match self {
-            Self::Notification(owner) => owner.close_evidence(),
-            Self::Disbursement(owner) => owner.close_evidence(),
-        }
-    }
-    pub(super) fn close_evidence_mut(&mut self) -> Option<&mut WorthQueryClosedOperation> {
-        match self {
-            Self::Notification(owner) => owner.close_evidence_mut(),
-            Self::Disbursement(owner) => owner.close_evidence_mut(),
         }
     }
 

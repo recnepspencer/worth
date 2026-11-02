@@ -45,10 +45,6 @@ async fn lost_closed_source_handoff_restores_the_actual_owner_and_its_capacity()
     let closed = source
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("actual source closes: {cause:?}"));
-    let retired = closed
-        .close_evidence()
-        .expect("real native close")
-        .retired_component_count();
     let permits = Arc::new(Semaphore::new(1));
     let record = super::super::closed_mutation_custody::ClosedMutationRecord::from_source(
         SourceMutationRecord {
@@ -60,6 +56,7 @@ async fn lost_closed_source_handoff_restores_the_actual_owner_and_its_capacity()
         },
     )
     .unwrap_or_else(|_| panic!("the actual source is physically closed"));
+    let retired = record.evidence.closed().retired_component_count();
     let mut records =
         HashMap::from([("closed-handoff".to_owned(), MutationRecord::Closed(record))]);
     let (returns, mut returned) = mpsc::channel(4);

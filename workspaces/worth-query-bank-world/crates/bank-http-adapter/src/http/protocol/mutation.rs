@@ -129,7 +129,7 @@ pub struct BankHttpCommitDescription {
 /// Immutable original meaning; it grants no current read, publication or rail authority.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BankHttpRecordedCommitDescription {
-    pub native_commit: String,
+    pub native_commit: super::BankHttpCorrectionCommit,
     pub outcome_identity: u64,
     pub changed_record_count: usize,
     pub emitted_effect_count: usize,
