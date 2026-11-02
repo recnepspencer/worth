@@ -271,3 +271,13 @@ surface, manifest, boundary configuration or format changes.
 
 The second review also retains the distinct reserved normal-stack and Native
 readmission qualification blocks. No Host opening code is changed.
+
+
+The publication-selector correction passes 19 World owner/public-port controls.
+The Query caller trace also found legacy_bridge/services.rs require_selected
+calling a boolean product-ownership predicate before World admission. It now
+compares the selected lease's actual owner incarnation first, preserving
+ProductSelectionMismatch for foreign ownership. Repository search for
+integration_owns_product_branch found only its definition and this one caller;
+no second caller remains to bypass that receiver. This is the same narrow
+World call-admission seam, not an async-support implementation.
