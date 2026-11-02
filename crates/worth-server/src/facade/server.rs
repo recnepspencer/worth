@@ -233,11 +233,6 @@ impl WorthServer {
                 query_handoff: self.query_handoff(),
                 responses: self.responses(),
                 operator_evidence: self.operator_evidence(),
-                idempotency_store: self
-                    .runtime
-                    .assembly()
-                    .compat_http_mutation_retry_store()
-                    .clone(),
                 product_operation_retry_store: self
                     .runtime
                     .assembly()

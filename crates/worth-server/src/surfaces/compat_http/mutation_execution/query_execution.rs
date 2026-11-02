@@ -4,10 +4,10 @@ use crate::{
     WorthServerOperationInputEnvelope, WorthServerOperationPlanner,
     WorthServerOperationPlannerInput, WorthServerOperationPreconditionPosture,
     WorthServerOperationReadinessFacade, WorthServerOperationRequestFacade,
-    WorthServerPipelineInput, WorthServerPipelineIntent, WorthServerQueryHandoffDenial,
-    WorthServerQueryHandoffDenialCode, WorthServerQueryHandoffDenialFacts,
-    WorthServerQueryHandoffFailure, WorthServerQueryHandoffOperation,
-    WorthServerQueryWorkspaceBindingRequest, WorthServerScheduledMutationResult,
+    WorthServerQueryHandoffDenial, WorthServerQueryHandoffDenialCode,
+    WorthServerQueryHandoffDenialFacts, WorthServerQueryHandoffFailure,
+    WorthServerQueryHandoffOperation, WorthServerQueryWorkspaceBindingRequest,
+    WorthServerScheduledMutationResult,
 };
 use worth_proof::TransitionOutcome;
 use worth_query::facade::runtime::WorthQueryRuntimeFacadeFamily;
@@ -17,20 +17,18 @@ use super::{
     execution::{
         WorthServerCompatibilityMutationExecutionInput, WorthServerCompatibilityMutationOutcome,
     },
-    idempotency::{WorthServerIdempotencyKey, WorthServerIdempotentRetryReceipt},
-    query_execution_support::{
-        canonical_mutation_request_digest, map_operation_request_denial, map_readiness_denial,
-    },
+    idempotency::WorthServerIdempotencyKey,
+    query_execution_support::{map_operation_request_denial, map_readiness_denial},
     request::WorthServerCompatibilityMutationRequest,
     response::{WorthServerCompatibilityMutation, WorthServerCompatibilityMutationResult},
-    retry_cache::{record_retry_completion, try_resolve_retry},
     schema::lower_query_operation,
 };
 impl WorthServerCompatibilityFacade {
     pub fn mutate(
         &self,
         input: WorthServerCompatibilityMutationExecutionInput,
-    ) -> WorthServerCompatibilityMutationOutcome<WorthServerCompatibilityMutation> {
+    ) -> WorthServerCompatibilityMutationOutcome<super::WorthServerCompatibilityMutationExecution>
+    {
         let (prepared_request, operation_name, body) = input.into_parts();
         let operation_request =
             match WorthServerOperationRequestFacade::new(self.operation_registry.clone())
@@ -57,12 +55,26 @@ impl WorthServerCompatibilityFacade {
                 Ok(value) => value,
                 Err(denial) => return TransitionOutcome::Denied(denial),
             };
-        execute_compatibility_mutation_request(
-            self,
-            prepared_request,
-            operation_request,
-            mutation_request,
-        )
+        let key = match WorthServerIdempotencyKey::from_prepared_request(&prepared_request) {
+            Ok(key) => key,
+            Err(denial) => return TransitionOutcome::Denied(denial),
+        };
+        match key {
+            Some(key) => super::application_execution::execute(
+                self,
+                prepared_request,
+                operation_request,
+                mutation_request,
+                key,
+            ),
+            None => execute_compatibility_mutation_request(
+                self,
+                prepared_request,
+                operation_request,
+                mutation_request,
+            )
+            .map_success(super::WorthServerCompatibilityMutationExecution::Direct),
+        }
     }
 }
 pub(crate) fn execute_compatibility_mutation_request(
@@ -71,58 +83,49 @@ pub(crate) fn execute_compatibility_mutation_request(
     operation_request: crate::WorthServerOperationRequest,
     mutation_request: WorthServerCompatibilityMutationRequest,
 ) -> WorthServerCompatibilityMutationOutcome<WorthServerCompatibilityMutation> {
+    match WorthServerIdempotencyKey::from_prepared_request(&prepared_request) {
+        Ok(None) => {}
+        Ok(Some(_)) => {
+            return TransitionOutcome::Denied(WorthServerQueryHandoffDenial::new(
+                WorthServerQueryHandoffDenialCode::CompatibilityMutationRequestInvalid,
+                prepared_request
+                    .admission()
+                    .request_context()
+                    .diagnostics_profile(),
+                "keyed mutations require the installed Query application handoff",
+            ))
+        }
+        Err(denial) => return TransitionOutcome::Denied(denial),
+    }
+    worth_proof::compose_transition_outcome(
+        super::operation_admission::admit(facade, &prepared_request, &operation_request),
+        |operation_admission| {
+            execute_unkeyed_after_admission(
+                facade,
+                prepared_request,
+                operation_request,
+                mutation_request,
+                operation_admission,
+            )
+        },
+    )
+}
+fn execute_unkeyed_after_admission(
+    facade: &WorthServerCompatibilityFacade,
+    prepared_request: crate::WorthServerCompatibilityPreparedRequest,
+    operation_request: crate::WorthServerOperationRequest,
+    mutation_request: WorthServerCompatibilityMutationRequest,
+    operation_admission: crate::WorthServerOperationAdmissionPosture,
+) -> WorthServerCompatibilityMutationOutcome<WorthServerCompatibilityMutation> {
     let diagnostics_profile = operation_request
         .resolved_request_context()
         .request_context()
         .diagnostics_profile();
     let operation_name = operation_request.identity().operation_name().to_string();
-    if let Err(denial) = facade.admit_operation_family_for_query(
-        diagnostics_profile,
-        WorthServerOperationFamily::QueryDirectSubmission,
-    ) {
-        return TransitionOutcome::Denied(denial);
-    }
     let operation =
         match lower_query_operation(&operation_name, &mutation_request, diagnostics_profile) {
-            Ok(value) => value,
+            Ok(operation) => operation,
             Err(denial) => return TransitionOutcome::Denied(denial),
-        };
-    let admission = match facade.middleware.admit(WorthServerPipelineInput::new(
-        prepared_request
-            .admission()
-            .resolved_request_context()
-            .clone(),
-        WorthServerPipelineIntent::query_mutation(&operation_name),
-    )) {
-        TransitionOutcome::Success(value) => value,
-        TransitionOutcome::Denied(value) => {
-            return TransitionOutcome::Denied(WorthServerQueryHandoffDenial::new(
-                WorthServerQueryHandoffDenialCode::PreparedIntentMismatch,
-                diagnostics_profile,
-                value.detail(),
-            ));
-        }
-        TransitionOutcome::Deferred(_)
-        | TransitionOutcome::Stale(_)
-        | TransitionOutcome::RebindRequired(_)
-        | TransitionOutcome::Failed(_) => {
-            return TransitionOutcome::Failed(WorthServerQueryHandoffFailure::new(
-                "compatibility_mutation_middleware_readmission_failed",
-            ));
-        }
-    };
-    let operation_admission =
-        match crate::WorthServerOperationAdmissionFacade::with_operation_registry(
-            facade.operation_registry.clone(),
-        )
-        .admit_declared(&admission, &operation_request)
-        {
-            Ok(value) => value,
-            Err(denial) => {
-                return TransitionOutcome::Denied(
-                    crate::surfaces::compat_http::map_operation_admission_denial(denial),
-                );
-            }
         };
     let binding_request = WorthServerQueryWorkspaceBindingRequest::for_query_handoff(
         operation_admission
@@ -214,30 +217,6 @@ pub(crate) fn execute_compatibility_mutation_request(
     let support_posture = query_handoff.support_posture().clone();
     let workspace_name = query_handoff.workspace().name().to_string();
     let handoff_digest = query_handoff.canonical_digest().to_string();
-    let idempotency_key = match WorthServerIdempotencyKey::from_prepared_request(&prepared_request)
-    {
-        Ok(value) => value,
-        Err(denial) => return TransitionOutcome::Denied(denial),
-    };
-    let request_digest = canonical_mutation_request_digest(
-        &prepared_request,
-        &operation_name,
-        &mutation_request,
-        &precondition,
-    );
-    match try_resolve_retry(
-        &facade.idempotency_store,
-        &prepared_request,
-        &idempotency_key,
-        &request_digest,
-    ) {
-        Ok(Some(previously_completed)) => {
-            return TransitionOutcome::Success(previously_completed);
-        }
-        Ok(None) => {}
-        Err(denial) => return TransitionOutcome::Denied(denial),
-    }
-
     let executed = match crate::WorthServerOperationScheduler::new(facade.responses.clone())
         .schedule_batch([plan])
     {
@@ -320,24 +299,12 @@ pub(crate) fn execute_compatibility_mutation_request(
         Some(&observed_basis_digest),
         WorthServerDirectRemaskPosture::visible(),
     );
-    let retry_receipt = idempotency_key
-        .as_ref()
-        .map(|key| WorthServerIdempotentRetryReceipt::authoritative(key, &request_digest))
-        .unwrap_or_else(|| WorthServerIdempotentRetryReceipt::Authoritative {
-            idempotency_key: "none".to_string(),
-            request_digest: request_digest.clone(),
-            canonical_digest: format!(
-                "compat-http-idempotent-retry-v1|class=executed|key:none|request:{}",
-                request_digest
-            ),
-        });
     let envelope = WorthServerCompatibilityMutationEnvelope::new(
         support_posture,
         workspace_name,
         handoff_digest,
         direct_context,
         response_envelope,
-        retry_receipt,
     );
     let mutation = WorthServerCompatibilityMutation::new(
         operation_request,
@@ -346,13 +313,6 @@ pub(crate) fn execute_compatibility_mutation_request(
         precondition,
         mutation_result,
         envelope,
-    );
-    record_retry_completion(
-        &facade.idempotency_store,
-        &prepared_request,
-        idempotency_key,
-        request_digest,
-        mutation.clone(),
     );
     TransitionOutcome::Success(mutation)
 }

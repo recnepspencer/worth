@@ -2,32 +2,31 @@ use {
     crate::shared_support_compat_http_phase_thirteen_assertions::assert_denial_contains,
     crate::shared_support_compat_http_phase_thirteen_runtime::canonical_download_success,
     crate::shared_support_compat_http_phase_thirteen_runtime::compat_read_with_diagnostics,
-    crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation,
-    crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation_conflict,
     crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_counting_server,
     crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
     crate::shared_support_compat_http_phase_thirteen_runtime::resumed_download_success,
+    crate::shared_support_compat_http_phase_thirteen_runtime::unconfigured_keyed_mutation_refusal,
 };
 
 #[test]
 fn compat_http_retry_and_precondition_matrix_keeps_authority_and_resume_honest() {
     let (server, attempted_writes) = phase_thirteen_counting_server();
-    let first = idempotent_mutation(&server, "phase-thirteen-idem", "idem-phase-13");
-    let retry = idempotent_mutation(&server, "phase-thirteen-idem", "idem-phase-13");
+    let first =
+        unconfigured_keyed_mutation_refusal(&server, "phase-thirteen-idem", "idem-phase-13");
+    let retry =
+        unconfigured_keyed_mutation_refusal(&server, "phase-thirteen-idem", "idem-phase-13");
     let conflict =
-        idempotent_mutation_conflict(&server, "phase-thirteen-conflict", "idem-phase-13");
+        unconfigured_keyed_mutation_refusal(&server, "phase-thirteen-conflict", "idem-phase-13");
 
-    assert!(!first.envelope().retry_receipt().is_previously_completed());
-    assert!(retry.envelope().retry_receipt().is_previously_completed());
-    assert_eq!(
-        first.mutation_result().result_digest(),
-        retry.mutation_result().result_digest(),
-    );
-    assert_denial_contains(
-        &conflict,
-        worth_server::WorthServerQueryHandoffDenialCode::CompatibilityIdempotencyConflict,
-        "cannot be reused",
-    );
+    // D9 retires this process-memory backend's receipt authority. The real
+    // filesystem Server courts separately require original receipt equality.
+    for refusal in [&first, &retry, &conflict] {
+        assert_denial_contains(
+            refusal,
+            worth_server::WorthServerQueryHandoffDenialCode::WorkspaceBindingFailed,
+            "no Query application mutation binding is installed",
+        );
+    }
 
     let read_server = phase_thirteen_server();
     let baseline = compat_read_with_diagnostics(
@@ -77,7 +76,7 @@ fn compat_http_retry_and_precondition_matrix_keeps_authority_and_resume_honest()
 
     assert_eq!(
         attempted_writes.load(std::sync::atomic::Ordering::Relaxed),
-        1,
-        "idempotent retry must not create duplicate authority effects",
+        0,
+        "a missing Query owner cannot fall back to raw mutation effects",
     );
 }

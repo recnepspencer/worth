@@ -69,13 +69,15 @@ pub(crate) use file_linkage::{
     WorthServerBinaryPolicyDecisionParts, WorthServerFileMetadataReceiptParts,
     WorthServerFileTransferProvenanceParts,
 };
-pub(crate) use mutation_execution::WorthServerStoredCompatibilityMutation;
 pub use mutation_execution::{
-    WorthServerCompatibilityMutation, WorthServerCompatibilityMutationCommand,
-    WorthServerCompatibilityMutationEnvelope, WorthServerCompatibilityMutationExecutionInput,
+    WorthServerAdmittedQueryMutation, WorthServerCompatibilityMutation,
+    WorthServerCompatibilityMutationCommand, WorthServerCompatibilityMutationEnvelope,
+    WorthServerCompatibilityMutationExecution, WorthServerCompatibilityMutationExecutionInput,
     WorthServerCompatibilityMutationOutcome, WorthServerCompatibilityMutationRequest,
     WorthServerCompatibilityMutationResult, WorthServerIdempotencyKey,
-    WorthServerIdempotentRetryReceipt, WorthServerMutationPrecondition,
+    WorthServerMutationPrecondition, WorthServerQueryApplicationMutationBinding,
+    WorthServerQueryMutationAnswer, WorthServerQueryMutationPayload,
+    WorthServerQueryMutationSelection,
 };
 pub use product_continuation::{
     WorthServerCompatibilityOpenedProductSession,

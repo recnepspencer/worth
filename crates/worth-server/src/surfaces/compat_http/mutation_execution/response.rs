@@ -49,28 +49,6 @@ impl WorthServerCompatibilityMutation {
         }
     }
 
-    pub(crate) fn as_previously_completed(
-        &self,
-        retry_receipt: super::idempotency::WorthServerIdempotentRetryReceipt,
-    ) -> Self {
-        let envelope = WorthServerCompatibilityMutationEnvelope::new(
-            self.envelope.support_posture().clone(),
-            self.envelope.workspace_name().to_string(),
-            self.envelope.handoff_digest().to_string(),
-            self.envelope.direct_context().clone(),
-            self.envelope.response_envelope().clone(),
-            retry_receipt,
-        );
-        Self::new(
-            self.operation_request.clone(),
-            self.plan_proof.clone(),
-            self.mutation_request.clone(),
-            self.precondition.clone(),
-            self.mutation_result.clone(),
-            envelope,
-        )
-    }
-
     pub fn operation_request(&self) -> &crate::WorthServerOperationRequest {
         &self.operation_request
     }

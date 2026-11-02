@@ -40,3 +40,11 @@ impl WorthServerCompatibilityMutationExecutionInput {
         (self.prepared_request, self.operation_name, self.body)
     }
 }
+
+/// Keyed application results preserve every actual Query terminal, including
+/// unpublished and unresolved custody. The direct lane is explicitly unkeyed.
+#[derive(Debug)]
+pub enum WorthServerCompatibilityMutationExecution {
+    Direct(super::WorthServerCompatibilityMutation),
+    Application(super::WorthServerQueryMutationAnswer),
+}
