@@ -17,9 +17,7 @@ use crate::domain_computation::primary_graph::tests::fixture::live_scope;
 #[test]
 fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {

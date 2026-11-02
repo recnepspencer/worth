@@ -8,7 +8,7 @@ pub(super) fn suspension(
     scopes: [((u32, u64, u32), &str); 2],
 ) {
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let reached = Arc::new(AtomicBool::new(false));
     let observed = reached.clone();
     rules.records.lock().unwrap().clear();

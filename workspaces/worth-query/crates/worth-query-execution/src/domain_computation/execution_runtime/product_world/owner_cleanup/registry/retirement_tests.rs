@@ -44,9 +44,7 @@ fn with_cleanup(
     body: impl FnOnce(WorthQueryProductRuntime, WorthQueryProductBranchOwnerCleanup, Arc<Probe>),
 ) {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let branch = world
         .application
         .with_host_advancement(|phase| {

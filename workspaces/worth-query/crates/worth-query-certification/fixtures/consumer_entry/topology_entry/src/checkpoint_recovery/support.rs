@@ -321,7 +321,7 @@ pub(super) fn limits_with_history_and_policy(
                     owner_created_component_custody_records: 16,
                 },
             },
-            WorthQueryProductWorldClock::start(),
+            WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
             invalidation,
             policy,
         )

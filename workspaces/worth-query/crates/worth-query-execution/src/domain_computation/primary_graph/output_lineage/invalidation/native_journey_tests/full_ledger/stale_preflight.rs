@@ -8,7 +8,10 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let entity = world
         .application
         .with_host_advancement(|phase| {

@@ -102,7 +102,7 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
     if cancel {
         let cancellation = authentication::WorthQueryCancellationSource::new();
         let stopped_scope =
-            authentication::WorthQueryRequestScope::new(scope.deadline(), cancellation.token());
+            authentication::WorthQueryRequestScope::new(scope.deadline(), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let stopped_request = application.request(&principal, &stopped_scope);
         cancellation.cancel();
         let stopped = owner

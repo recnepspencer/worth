@@ -123,7 +123,7 @@ fn unfinished_capacity_survives_dropped_handles_and_stopped_disposal_until_origi
     assert_eq!(document.selection(&request).unwrap(), before);
     assert_eq!(document.read(&request).unwrap().rows()[0].retention_days, 7);
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_principal = authenticate_operator(host.installed_schema(), &stopped);
     cancellation.cancel();
     let (owner, cause) = owner

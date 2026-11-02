@@ -18,7 +18,7 @@ fn stopped_adoption_guard_wait_preserves_the_same_candidate_for_a_fresh_request(
     let author =
         authentication::authenticate(host.installed_schema(), Actor::Author, &scope).unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let original =
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &original_scope)
             .unwrap();

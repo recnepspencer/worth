@@ -89,8 +89,7 @@ pub fn authenticate<P>(
         host.application.installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("capability-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(),
-        ),
+            WorthQueryAuthenticationMethod::new("certification").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         Adapter,
     )
     .unwrap();

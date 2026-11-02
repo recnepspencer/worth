@@ -8,20 +8,21 @@ use crate::domain_computation::primary_graph::{
     },
     tests::fixture::{installed_authorization_world, TestAccountSourceBinding},
 };
-use std::{
-    num::NonZeroUsize,
-    time::{Duration, Instant},
-};
+use std::{num::NonZeroUsize, time::Duration};
 use worth_execution::{ExecutionAllocationPolicy, ExecutionAuthority, LeaseRequest};
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 
 #[test]
 fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let original = observe(&world, &external, &request, false);

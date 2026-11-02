@@ -22,7 +22,10 @@ fn assert_live_reservation_denial(
     identity: u8,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

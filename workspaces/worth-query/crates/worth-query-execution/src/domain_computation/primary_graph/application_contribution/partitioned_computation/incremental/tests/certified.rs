@@ -24,7 +24,10 @@ fn counting_sum(left: &u64, right: &u64) -> u64 {
 fn every_placement_agrees_and_only_a_certified_one_reduces_again() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed_over(4, StatusRead::Gather(1), counting_sum);
     let placed = |placement| {
         let before = place(placement);

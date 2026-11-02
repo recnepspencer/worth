@@ -152,7 +152,7 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
 
 /// Publishes a host whose first occurrence runs P0, with P1 rostered beside it.
 pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0> {
-    publish_on_first_program_with_limits(host_limits())
+    publish_on_first_program_with_limits(host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()))
 }
 
 /// Scale publication lane with WorkflowScale's Relational publication and
@@ -242,7 +242,7 @@ where
                 DocumentRetentionSchema,
             >,
 {
-    publish_with_limits(initial, roster, host_limits())
+    publish_with_limits(initial, roster, host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()))
 }
 
 pub fn publish_with_limits<Initial>(

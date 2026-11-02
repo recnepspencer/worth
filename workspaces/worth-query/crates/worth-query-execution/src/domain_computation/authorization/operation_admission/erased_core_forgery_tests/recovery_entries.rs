@@ -6,7 +6,10 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn foreign_installed_seal_is_stale_at_redispatch_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (handle, mut admission, _) = super::super::recovery_custody::committed_handle(&world);
     let authority = world
         .application
@@ -35,7 +38,10 @@ fn foreign_installed_seal_is_stale_at_redispatch_before_work() {
 
 #[test]
 fn foreign_installed_seal_is_stale_at_managed_recovery_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account) = party(&world, &request);
     let program = world

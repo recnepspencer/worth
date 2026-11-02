@@ -14,8 +14,7 @@ pub(super) fn authenticate(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("inbound-test").unwrap(),
-            WorthQueryAuthenticationMethod::new("test-identity").unwrap(),
-        ),
+            WorthQueryAuthenticationMethod::new("test-identity").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         TestIdentityAdapter,
     )
     .unwrap();

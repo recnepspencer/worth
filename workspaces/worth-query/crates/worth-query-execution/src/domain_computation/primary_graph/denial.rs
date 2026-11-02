@@ -7,6 +7,7 @@
 /// conditional bindings, and managed computation owners.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
+    AdmissionClockMismatch,
     /// Typed readiness declaration or installed field meaning was refused.
     ReadinessContractRejected,
     /// A binding or input belongs to a different runtime.

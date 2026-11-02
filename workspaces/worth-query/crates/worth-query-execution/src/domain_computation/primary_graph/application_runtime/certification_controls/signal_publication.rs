@@ -24,7 +24,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .admit_product_occurrence(branch.occurrence())
             .expect("the contender starts from a genuinely admitted product");
         let binding = selected.publication_binding();
-        let control = binding.request_control(request);
+        let control = binding
+            .request_control(request)
+            .expect("the contender uses its installed clock");
         let publication = self.runtime.product_runtime.owner.publication_port();
         let prepared = publication
             .prepare_with_signal(

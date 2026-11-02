@@ -102,7 +102,7 @@ fn install_with_visibility<const O: bool>(
                 worth_relational::facade::runtime::RelationalRuntimeApi::builder()
                     .build()
                     .expect("valid native fixture configuration"),
-                product_world::test_product_world_resources(),
+                product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
                 factories,
             )
             .unwrap();

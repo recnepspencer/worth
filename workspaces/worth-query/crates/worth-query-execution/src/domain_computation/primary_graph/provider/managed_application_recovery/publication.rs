@@ -136,7 +136,8 @@ fn adoption_denial(
     >,
 ) -> Denial {
     match denial {
-        PublicationDenial::Stopped(stop) => Denial::ExecutionDenied(advancement_denial(stop)),
+        PublicationDenial::ClockMismatch => Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+PublicationDenial::Stopped(stop) => Denial::ExecutionDenied(advancement_denial(stop)),
         PublicationDenial::Refused(denial) => Denial::Adoption(Box::new(denial)),
     }
 }

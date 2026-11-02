@@ -1,6 +1,5 @@
 //! Cancellation and deadline preparation retain the production control cause.
 use super::*;
-use std::time::Instant;
 use worth_execution::CancellationSource;
 
 #[test]
@@ -28,7 +27,7 @@ fn deadline_through_both_public_doors() {
         concat!(module_path!(), "::deadline_through_both_public_doors"),
         || {
             let mut request = request(32 * 1024 * 1024, 1_000_000);
-            request.deadline = Some(Instant::now());
+            request.deadline = Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now());
             check_requests(request, |stop| {
                 let Outcome::Denied(denial) = stop else {
                     panic!("lost deadline cause");

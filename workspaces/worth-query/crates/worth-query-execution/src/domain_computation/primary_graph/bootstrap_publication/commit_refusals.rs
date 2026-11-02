@@ -175,7 +175,7 @@ fn bootstrap_commit_preserves_real_control_stops() {
             let mut canceled = request();
             canceled.cancellation = cancellation.token();
             let mut expired = request();
-            expired.deadline = Some(Instant::now());
+            expired.deadline = Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now());
             for (request, expected) in
                 [(canceled, Control::Cancelled), (expired, Control::TimedOut)]
             {

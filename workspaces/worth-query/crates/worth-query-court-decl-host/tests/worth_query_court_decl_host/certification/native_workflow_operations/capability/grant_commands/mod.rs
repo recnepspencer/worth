@@ -104,7 +104,7 @@ fn product_stale_command_releases_each_managed_owner_before_native_progression()
     };
     let cancelled = WorthQueryCancellationSource::new();
     cancelled.cancel();
-    let stopped = WorthQueryRequestScope::new(None, cancelled.token());
+    let stopped = WorthQueryRequestScope::new(None, cancelled.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     assert!(
         matches!(
             command.release_cleanup(&runtime.request(&issuer, &stopped)),

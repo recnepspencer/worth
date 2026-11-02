@@ -111,7 +111,10 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
 
 #[test]
 fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     {
         let mut facts = committed_indexed_facts(&world);
         let mut ordinal = facts
@@ -171,7 +174,10 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
 
 #[test]
 fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     {
         let committed = committed_indexed_facts(&world);
         let selected_value =

@@ -67,8 +67,9 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
 fn cancellation_and_deadline_terminalize_all_live_resources() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let context = LiveContext::new(request);
     let mut lease = context
@@ -151,7 +152,7 @@ fn cancellation_and_deadline_terminalize_all_live_resources() {
 fn read_stops_survive_a_failed_live_lease_termination() {
     for mode in 0..3 {
         let cancellation = WorthQueryCancellationSource::new();
-        let context = LiveContext::new(WorthQueryRequestScope::new(None, cancellation.token()));
+        let context = LiveContext::new(WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()));
         let mut lease = context
             .world
             .application

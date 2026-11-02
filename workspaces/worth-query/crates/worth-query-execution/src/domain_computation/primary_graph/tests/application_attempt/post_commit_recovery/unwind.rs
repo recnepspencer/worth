@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))

@@ -1,7 +1,10 @@
 use super::*;
 #[test]
 fn post_effect_rebase_door_preserves_stops_at_every_consult() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
         let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
@@ -18,7 +21,10 @@ fn post_effect_rebase_door_preserves_stops_at_every_consult() {
 fn selected_native_rebase_preserves_stops_at_every_consult() {
     use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
     use crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder;
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
         let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();

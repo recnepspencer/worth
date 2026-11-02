@@ -11,9 +11,7 @@ fn patch_read_failure_preserves_storage_cause_and_observed_committed_context() {
     let host = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let graph = &world.application.runtime.primary_provider.graph;
     let (commit, position) = graph.with_runtime(execution, |runtime| {
         (

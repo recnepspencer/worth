@@ -12,8 +12,7 @@ fn approval_owner_rejects_authentication_from_another_principal() {
             runtime.installed_schema(),
             WorthQueryAuthenticationAdapterAdmission::new(
                 WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-                WorthQueryAuthenticationMethod::new("certification").unwrap(),
-            ),
+                WorthQueryAuthenticationMethod::new("certification").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             SecondarySigner,
         )
         .unwrap()

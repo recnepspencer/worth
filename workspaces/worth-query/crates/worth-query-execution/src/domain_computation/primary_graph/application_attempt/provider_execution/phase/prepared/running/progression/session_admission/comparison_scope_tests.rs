@@ -16,15 +16,20 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 
 #[test]
 fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retry() {
-    let world = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation =
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
     let request =
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = world
         .application
         .with_host_advancement(|phase| {

@@ -9,7 +9,7 @@ fn ordinary_resolution_keeps_lookup_cancellation_and_deadline() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for deadline_stop in [false, true] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let selected = world
             .application
             .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
@@ -17,7 +17,7 @@ fn ordinary_resolution_keeps_lookup_cancellation_and_deadline() {
         let cancellation = WorthQueryCancellationSource::new();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
         let request =
-            WorthQueryRequestScope::new(deadline_stop.then_some(deadline), cancellation.token());
+            WorthQueryRequestScope::new(deadline_stop.then_some(deadline), cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         world
             .application
             .with_application_advancement(&request, |phase| {

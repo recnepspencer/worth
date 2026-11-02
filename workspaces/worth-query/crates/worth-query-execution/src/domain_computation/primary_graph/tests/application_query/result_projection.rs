@@ -114,7 +114,10 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
 
 #[test]
 fn invented_selector_contract_denies_domain_projection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

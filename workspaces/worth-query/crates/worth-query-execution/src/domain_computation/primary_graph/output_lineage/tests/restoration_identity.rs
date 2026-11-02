@@ -10,9 +10,7 @@ use crate::domain_computation::primary_graph::output_lineage::{
 #[should_panic(expected = "one restored output partition keeps one exact identity")]
 fn restoration_rejects_conflicting_identity_for_the_same_partition() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let product = world
         .application
         .product_runtime()

@@ -16,7 +16,10 @@ use worth_relational::facade::symbols::ClientKey;
 
 #[test]
 fn birth_subject_provenance_and_start_actor_remain_readable() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (support, revision, _) = installed_provenance_support(world.application.installed_schema());
     let payer = payer();
     let execution = ExecutionRequest::leased(&payer);

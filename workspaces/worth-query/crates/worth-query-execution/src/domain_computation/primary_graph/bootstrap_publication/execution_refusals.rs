@@ -161,7 +161,7 @@ fn cancellation_and_deadline_are_control_stops() {
             let mut cancelled = request();
             cancelled.cancellation = cancellation.token();
             let mut timed_out = request();
-            timed_out.deadline = Some(Instant::now());
+            timed_out.deadline = Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now());
             for (request, expected) in [
                 (cancelled, Control::Cancelled),
                 (timed_out, Control::TimedOut),

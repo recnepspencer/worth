@@ -14,7 +14,7 @@ fn original_query_cancellation_and_deadline_survive_native_orbit_entry() {
             } else {
                 Duration::from_secs(60)
             };
-        let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token());
+        let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let visits = Rc::new(Cell::new(0));
         let observed = Rc::clone(&visits);
         CHECKPOINT.with(|slot| {

@@ -36,7 +36,7 @@ fn consultation_reads_both_backings() {
         .request_lease(LeaseRequest {
             policy,
             cancellation: CancellationToken::new(),
-            deadline: Some(expired),
+            deadline: Some(crate::MonotonicClock::system().deadline_at(expired)),
         })
         .unwrap();
     for execution in [
@@ -127,7 +127,9 @@ fn consultation_reads_inherited_cancellation_before_a_backing_deadline() {
     let child = parent
         .clone()
         .with_cancellation(CancellationToken::new())
-        .with_deadline(Some(Instant::now() - Duration::from_secs(1)));
+        .with_deadline(Some(
+            crate::MonotonicClock::system().deadline_at(Instant::now() - Duration::from_secs(1)),
+        ));
     let outcome = crate::backend::run_scope_within::<(), (), _>(
         None,
         0,

@@ -59,7 +59,7 @@ pub fn try_build_primary_query_world_with_dimensions(
         IntentSourceProjection::new(record, Arc::clone(&observations)),
     );
     let builder = runtime::WorthQueryRuntime::builder(
-        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
     )
     .primary_runtime_granular_invalidations(installation.clone())
     .domain_package(domain::package(profile))

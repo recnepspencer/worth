@@ -8,7 +8,7 @@
 pub use std::future::Future;
 pub use std::pin::pin;
 pub use std::task::{Context, Poll, Waker};
-pub use std::time::{Duration, Instant, SystemTime};
+pub use std::time::{Duration, SystemTime};
 
 pub use worth_query_host::facade::admission::authenticated_principal::{
     admit_authentication_adapter, WorthQueryAdmittedAuthenticationAdapter,
@@ -71,10 +71,11 @@ pub fn secondary_signer_identity() -> WorthQueryExternalPrincipalIdentity {
 
 pub fn admit_operator_adapter<S: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<S>,
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 ) -> WorthQueryAdmittedAuthenticationAdapter<S, OperatorAdapter> {
     admit_authentication_adapter(
         schema,
-        WorthQueryAuthenticationAdapterAdmission::new(audience(), method()),
+        WorthQueryAuthenticationAdapterAdmission::new(audience(), method(), clock),
         OperatorAdapter,
     )
     .expect("the operator adapter must be admitted")
@@ -84,7 +85,7 @@ pub fn authenticate_operator<S: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<S>,
     scope: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedExternalPrincipal<S> {
-    block_on(admit_operator_adapter(schema).authenticate((), scope))
+    block_on(admit_operator_adapter(schema, scope.clock().clone()).authenticate((), scope))
         .expect("the operator must authenticate")
 }
 
@@ -93,9 +94,8 @@ pub fn authenticate_operator<S: ApplicationSchema>(
 pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(30)),
-        cancellation.token(),
-    )
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(30)),
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 
 pub fn audience() -> WorthQueryAuthenticationAudience {

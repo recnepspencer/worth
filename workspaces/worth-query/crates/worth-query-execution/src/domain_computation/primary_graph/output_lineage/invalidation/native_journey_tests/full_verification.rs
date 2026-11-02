@@ -11,7 +11,10 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
 
     let _oracle =
         crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))

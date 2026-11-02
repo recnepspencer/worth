@@ -6,7 +6,10 @@ use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequest
 
 #[test]
 fn native_serial_capture_uses_effective_ancestor_funding_and_releases_its_last_payload() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let original = OptionalOutputInput {
         status: "open".to_owned(),

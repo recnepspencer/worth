@@ -23,11 +23,11 @@ fn native_capture_allocation_preserves_actual_cancellation_and_deadline_stops() 
     let expired = WorthQueryCancellationSource::new();
     let stopped = [
         (
-            WorthQueryRequestScope::new(None, cancellation.token()),
+            WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             Stop::Cancelled,
         ),
         (
-            WorthQueryRequestScope::new(Some(std::time::Instant::now()), expired.token()),
+            WorthQueryRequestScope::new(Some(std::time::Instant::now()), expired.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             Stop::DeadlineExceeded,
         ),
     ];

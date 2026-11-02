@@ -16,9 +16,8 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
         for width in [None, Some(1), Some(2), Some(4)] {
             let cancellation = WorthQueryCancellationSource::new();
             let scope = WorthQueryRequestScope::new(
-                Some(Instant::now() + Duration::from_secs(60)),
-                cancellation.token(),
-            );
+                Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+                cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let policy = test_policy(
                 std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
                 None,
@@ -85,9 +84,8 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
     for width in [None, Some(1), Some(2), Some(4)] {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let policy = test_policy(
             std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
             None,

@@ -55,8 +55,8 @@ impl WorthQueryProductPublicationBinding {
 
     pub(crate) fn deadline(
         &self,
-        deadline: std::time::Instant,
-    ) -> worth_runtime_world::facade::RuntimeWorldInstant {
+        deadline: worth_execution::MonotonicDeadline,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldInstant> {
         self.clock.deadline(deadline)
     }
 }

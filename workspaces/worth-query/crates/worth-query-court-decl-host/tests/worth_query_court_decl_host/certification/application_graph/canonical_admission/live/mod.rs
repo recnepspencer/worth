@@ -109,7 +109,7 @@ fn live_late_original_cancellation_cannot_ack_and_a_fresh_live_request_succeeds(
     let mut live = open(&host);
     publish(&host, 78_101);
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(request_scope().deadline(), cancellation.token());
+    let scope = WorthQueryRequestScope::new(request_scope().deadline(), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.program.installed_schema(), &scope);
     let request = host
         .program

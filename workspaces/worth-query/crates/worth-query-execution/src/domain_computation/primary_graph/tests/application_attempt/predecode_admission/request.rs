@@ -12,11 +12,15 @@ use worth_query_admission::facade::authenticated_principal::{
 
 #[test]
 fn cancelled_before_admission_never_enters_the_raw_callback() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let called = Cell::new(false);
     let result = world
@@ -44,11 +48,15 @@ fn cancelled_before_admission_never_enters_the_raw_callback() {
 
 #[test]
 fn cancellation_during_preflight_is_observable_without_reborrowing_reader() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let observed = Cell::new(None);
     let result = world
@@ -82,10 +90,17 @@ fn cancellation_during_preflight_is_observable_without_reborrowing_reader() {
 
 #[test]
 fn deadline_during_preflight_preserves_its_distinct_request_reason() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let deadline = Instant::now() + Duration::from_secs(1);
-    let request = WorthQueryRequestScope::new(Some(deadline), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(deadline),
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let observed = Cell::new(None);
     let result = world
         .application

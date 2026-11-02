@@ -43,7 +43,10 @@ fn expiring(
 
 #[test]
 fn a_forged_and_expired_core_is_refused_as_forged_at_every_entry() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (mut admissions, expires_at, identity) = expiring(&world, &request, 3);
     for admission in &mut admissions {

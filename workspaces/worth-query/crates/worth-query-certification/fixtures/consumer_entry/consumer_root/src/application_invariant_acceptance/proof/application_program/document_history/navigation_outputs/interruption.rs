@@ -102,7 +102,7 @@ pub(super) fn cancelled_at<'d, 'r>(
         });
         let mut refusal = None;
         for _ in 0..96 {
-            let scope = WorthQueryRequestScope::new(None, cancellation.token());
+            let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             match with_scope(app, &scope, |request| navigation.advance(request)) {
                 WorthQueryHistoryNavigationAdvance::Pending(next) => {
                     if let Some(actual) = next.candidate_branch_for_test() {
@@ -149,7 +149,7 @@ fn cancelled_output_navigation_before_fork_creates_no_candidate_and_can_be_disca
     let expected = with_request(app, |request| document.selection(request).unwrap());
     let owner = prepare(&document, app, target, expected.clone(), 0x9182_e800);
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let result = with_scope(app, &scope, |request| {
         cancellation.cancel();
         owner.advance(request)

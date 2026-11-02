@@ -7,7 +7,10 @@ use crate::domain_computation::authorization::{
 use crate::domain_computation::primary_graph::tests::fixture::TouchAccountOperation;
 
 fn check(redispatch: bool) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let now = std::time::SystemTime::now();
     world.authorization_time.hold(now);
     let (handle, mut admission, _) = committed_handle(&world);

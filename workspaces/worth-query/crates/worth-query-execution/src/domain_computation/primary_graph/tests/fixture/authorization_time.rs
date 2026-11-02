@@ -6,9 +6,11 @@ use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
 };
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct AuthorizationTimeController {
     state: Arc<Mutex<AuthorizationTimeState>>,
+    pub(super) admission_clock:
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 }
 
 #[derive(Default)]
@@ -43,6 +45,11 @@ impl AuthorizationTimeController {
 }
 
 impl WorthQueryRuntimeTimeSource for AuthorizationTimeController {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock {
+        self.admission_clock.clone()
+    }
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         let mut state = self
             .state
@@ -55,5 +62,11 @@ impl WorthQueryRuntimeTimeSource for AuthorizationTimeController {
                 .pop_front()
                 .ok_or(WorthQueryRuntimeTimeSourceDenial::Unavailable),
         }
+    }
+}
+
+impl Default for AuthorizationTimeController {
+    fn default() -> Self {
+        Self { state: Default::default(), admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system() }
     }
 }

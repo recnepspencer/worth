@@ -297,6 +297,3 @@ impl<Schema, Operation, Input, Scope>
             })
     }
 }
-
-#[cfg(test)]
-mod authentication_expiry;

@@ -71,7 +71,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
@@ -166,7 +166,7 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
     fn open_host_advancement<R>(
         &self,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;

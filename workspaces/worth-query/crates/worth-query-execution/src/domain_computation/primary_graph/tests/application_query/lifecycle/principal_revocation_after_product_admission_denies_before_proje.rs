@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn principal_revocation_after_product_admission_denies_before_projection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = super::super::super::fixture::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

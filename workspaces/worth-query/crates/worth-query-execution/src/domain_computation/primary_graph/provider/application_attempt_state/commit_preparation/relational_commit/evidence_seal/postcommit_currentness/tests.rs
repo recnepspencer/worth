@@ -38,7 +38,10 @@ mod producer_decision_absence_uses_native_presence_revision;
 
 #[test]
 fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (entity, locator) = world
         .application
         .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))
@@ -119,7 +122,10 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
 
 #[test]
 fn unavailable_native_revision_never_authorizes_output_reuse() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (entity, note) = world
         .application
         .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))

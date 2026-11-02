@@ -119,7 +119,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let recovery = binding.recovery();
         let prepared = match binding.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                return Outcome::Denied(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 return Outcome::Denied(Denial::ExecutionDenied(advancement_denial(stop)))
             }
             Err(PublicationDenial::Refused(_)) => return Outcome::NoEffect,
@@ -148,6 +151,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     incarnation,
                     terminal.fill(publication.consume(), None),
                 ))
+            }
+            Err(PublicationDenial::ClockMismatch) => {
+                self.runtime
+                    .primary_provider
+                    .clear_inbound_completion_publication_pending(&correlation);
+                Outcome::Denied(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             }
             Err(PublicationDenial::Stopped(stop)) => {
                 self.runtime

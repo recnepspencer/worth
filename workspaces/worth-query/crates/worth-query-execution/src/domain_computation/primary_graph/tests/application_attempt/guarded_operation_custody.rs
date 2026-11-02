@@ -9,7 +9,10 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -151,7 +154,10 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
 
 #[test]
 fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

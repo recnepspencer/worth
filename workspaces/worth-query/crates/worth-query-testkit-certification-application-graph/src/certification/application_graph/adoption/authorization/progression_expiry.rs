@@ -13,15 +13,27 @@ pub use worth_query_host::facade::primary_graph::{
     WorthQueryOperationAuthorizationRefusalKind, WorthQueryRuntimeTimeSource,
     WorthQueryRuntimeTimeSourceDenial,
 };
-#[derive(Clone, Default)]
-pub struct ExpiryClock(pub Arc<Mutex<VecDeque<Option<Instant>>>>);
+#[derive(Clone)]
+pub struct ExpiryClock {
+    scheduled: Arc<Mutex<VecDeque<Option<Instant>>>>,
+    pub time: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionTimeController,
+}
 impl WorthQueryRuntimeTimeSource for ExpiryClock {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
+    {
+        self.time.clock()
+    }
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        let wait = self.0.lock().unwrap().pop_front().flatten();
+        let wait = self.scheduled.lock().unwrap().pop_front().flatten();
         if let Some(deadline) = wait {
-            std::thread::sleep(
-                deadline.saturating_duration_since(Instant::now()) + Duration::from_millis(1),
-            );
+            let elapsed = deadline
+                .checked_duration_since(self.time.clock().now())
+                .expect("scheduled deadline is ahead of the held clock");
+            self.time
+                .advance(elapsed + Duration::from_nanos(1))
+                .unwrap();
         }
         Ok(SystemTime::now())
     }
@@ -29,11 +41,12 @@ impl WorthQueryRuntimeTimeSource for ExpiryClock {
 impl ExpiryClock {
     pub fn expire_during_progression(&self, deadline: Instant) {
         // Admission samples first; the existing owner's currentness refresh samples
-        // next. Only the native clock blocks; no authorization decision is replaced.
-        *self.0.lock().unwrap() = VecDeque::from([None, Some(deadline)]);
+        // next. The time owner advances its real admission observer at that sample.
+        self.time.hold();
+        *self.scheduled.lock().unwrap() = VecDeque::from([None, Some(deadline)]);
     }
     pub fn assert_serviced(&self) {
-        assert!(self.0.lock().unwrap().is_empty());
+        assert!(self.scheduled.lock().unwrap().is_empty());
     }
 }
 pub fn authenticate_live_expiring(
@@ -47,6 +60,7 @@ pub fn authenticate_live_expiring(
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
             WorthQueryAuthenticationMethod::new("certification").unwrap(),
+            scope.clock().clone(),
         ),
         ExpiringOperator,
     )
@@ -85,4 +99,8 @@ pub fn programs_publication(
         .request(principal, scope)
         .programs()
         .publish(prepared)
+}
+
+impl Default for ExpiryClock {
+    fn default() -> Self { Self { scheduled: Default::default(), time: WorthQueryAdmissionTimeController::new().unwrap() } }
 }

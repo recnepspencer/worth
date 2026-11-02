@@ -2766,6 +2766,7 @@ let adapter = admit_authentication_adapter(
     WorthQueryAuthenticationAdapterAdmission::new(
         WorthQueryAuthenticationAudience::new("host")?,
         WorthQueryAuthenticationMethod::new("example")?,
+        admission_clock.clone(), // the observer installed with the runtime time source
     ),
     IdentityAdapter,          // your impl of WorthQueryAuthenticationAdapter
 )?;
@@ -2851,7 +2852,11 @@ use worth_query_host::facade::admission::authenticated_principal::{
 };
 
 let cancellation = WorthQueryCancellationSource::new();
-let scope = WorthQueryRequestScope::new(Some(Instant::now() + Duration::from_secs(60)), cancellation.token());
+let scope = WorthQueryRequestScope::new(
+    Some(admission_clock.now() + Duration::from_secs(60)),
+    cancellation.token(),
+    admission_clock.clone(),
+);
 ```
 
 #### Read governed data at one observation

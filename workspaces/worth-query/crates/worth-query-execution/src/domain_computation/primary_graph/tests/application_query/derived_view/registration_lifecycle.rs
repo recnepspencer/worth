@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn governed_query_cannot_open_a_persistent_view_without_read_reauthorization() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let query = installed_query(&world);
     let definition = ApplicationDerivedViewDefinition::new(
         "governed-account",
@@ -37,7 +40,10 @@ mod public_query_result_reconstructs_disposable_managed_view_from_ow;
 
 #[test]
 fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_change() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world

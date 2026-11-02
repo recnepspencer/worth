@@ -10,9 +10,8 @@ fn interruption_present_at_dispatch_has_equal_original_stop_and_commits() {
     for width in [None, Some(1), Some(2), Some(4)] {
         let cancel = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancel.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancel.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let policy = test_policy(
             std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
             None,

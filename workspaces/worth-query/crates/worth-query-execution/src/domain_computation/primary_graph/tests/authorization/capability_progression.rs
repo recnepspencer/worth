@@ -129,7 +129,10 @@ fn admitted_access_is_runtime_affine_at_operation_progression() {
 
 #[test]
 fn missing_grant_membership_mints_no_access_authority() {
-    let world = installed_authorization_world(false);
+    let world = installed_authorization_world(
+        false,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.authorization_time.script([time(100)]);
     let request = live_scope();
     let principal = world

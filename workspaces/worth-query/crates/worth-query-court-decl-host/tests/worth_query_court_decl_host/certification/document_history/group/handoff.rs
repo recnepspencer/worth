@@ -53,7 +53,7 @@ fn stopped_reservation_and_candidate_handoffs_keep_the_original_group_abortable(
             execution.pause_on_group_handoff_for_test(point)
         };
         let cancellation = WorthQueryCancellationSource::new();
-        let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+        let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let interrupted_principal = authenticate_operator(host.installed_schema(), &stopped);
         let (reached, result) = std::thread::scope(|threads| {
             let (document, execution) = group.parts();
@@ -113,7 +113,7 @@ fn delivery_stop_after_group_adoption_retains_the_selected_result_for_its_origin
         execution.pause_on_group_handoff_for_test(Point::Adoption)
     };
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let interrupted_principal = authenticate_operator(host.installed_schema(), &stopped);
     let (reached, result) = std::thread::scope(|threads| {
         let (document, execution) = group.parts();

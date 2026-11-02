@@ -123,13 +123,12 @@ pub(in super::super) fn authenticate_in_realm<Schema: ApplicationSchema + 'stati
 ) {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     // Fixture law: a request carries a deadline only when the deadline is the fact under test.
-    let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let adapter = authentication::admit_authentication_adapter(
         application.installed_schema(),
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
             authentication::WorthQueryAuthenticationAudience::new(realm.audience()).unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local").unwrap(),
-        ),
+            authentication::WorthQueryAuthenticationMethod::new("local").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         LocalIdentityAdapter(realm),
     )
     .unwrap();
@@ -152,7 +151,7 @@ mod serial {
     #[test]
     fn fixture_principal_expiry_cannot_be_a_wall_clock_timeout() {
         let cancellation = authentication::WorthQueryCancellationSource::new();
-        let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+        let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let principal = block_on(authentication::WorthQueryAuthenticationAdapter::validate(
             &LocalIdentityAdapter(FixtureAuthenticationRealm::Checkpoint),
             LocalCredential,

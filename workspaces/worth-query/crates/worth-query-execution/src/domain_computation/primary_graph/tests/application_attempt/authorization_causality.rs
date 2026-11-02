@@ -16,7 +16,10 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn ownership_revocation_after_admission_stales_before_effect_commit() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -75,7 +78,10 @@ fn ownership_revocation_after_admission_stales_before_effect_commit() {
 
 #[test]
 fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

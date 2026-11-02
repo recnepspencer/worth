@@ -24,7 +24,7 @@ pub fn install_with_projection<const DESTINATION: u64>() -> (
         schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_phase, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());
             graph.bind_principal(

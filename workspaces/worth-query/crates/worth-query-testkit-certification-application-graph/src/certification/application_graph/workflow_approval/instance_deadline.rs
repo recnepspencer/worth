@@ -40,7 +40,7 @@ pub fn deadline_instance(
     PublishedWorkflowDefinitionRef,
     PublishedWorkflowInstanceRef,
 ) {
-    let time = CertificationTrustedTime::new();
+    let time = CertificationTrustedTime::new(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let application = retain_workflow(publish_on_first_program_with_trusted_time(time.clone()));
     let definition = match publish_definition(
         &application,

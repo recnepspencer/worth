@@ -24,7 +24,10 @@ fn with_unmanaged_publications(
         &dyn Fn(&[&Identity]) -> Vec<bool>,
     ),
 ) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

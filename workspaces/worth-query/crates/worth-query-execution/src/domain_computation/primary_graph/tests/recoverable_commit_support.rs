@@ -13,7 +13,10 @@ pub(in crate::domain_computation) fn committed_recoverable_application(
 
 pub(in crate::domain_computation) fn committed_recoverable_application_with_output_demand_observation(
 ) -> WorthQueryApplicationCommitReceipt {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     commit_on_world_with_output_demand_observation(
         &world,
         241,
@@ -26,7 +29,10 @@ pub(in crate::domain_computation) fn recoverable_application_world(
     seed: u8,
     replacement: &str,
 ) -> (AuthorizationWorld, WorthQueryApplicationCommitReceipt) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let receipt = commit_on_world(&world, seed, "open", replacement);
     (world, receipt)
 }
@@ -39,7 +45,10 @@ pub(in crate::domain_computation) fn two_recoverable_application_commits(
     WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationCommitReceipt,
 ) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first = commit_on_world(&world, first_seed, "open", "first-recoverable-commit");
     let second = commit_on_world(
         &world,

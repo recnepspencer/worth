@@ -5,7 +5,10 @@ use super::*;
 
 #[test]
 fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_change() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))

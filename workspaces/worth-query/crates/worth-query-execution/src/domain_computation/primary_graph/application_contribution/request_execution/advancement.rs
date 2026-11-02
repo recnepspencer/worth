@@ -60,6 +60,7 @@ impl WorthQueryAdvancementDenial {
                 | Resource::WorkLimit
                 | Resource::NestedLeaseMisuse
                 | Resource::NestedAdvancementOpening
+                | Resource::ForeignAdmissionClock
                 | Resource::ForeignAdvancementPhase
                 | Resource::NoActiveExecutionScope
                 | Resource::EquivalenceContractUnavailable,
@@ -243,7 +244,7 @@ pub(crate) fn with_test_advancement<R>(
     body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
     let policy =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
             .execution_policy();
     with_owned_bootstrap_advancement(policy, |phase| {
         body(test_host_policy::TestHostRequest::new(phase.active))

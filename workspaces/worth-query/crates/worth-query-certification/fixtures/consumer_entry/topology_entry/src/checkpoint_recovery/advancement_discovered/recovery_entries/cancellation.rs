@@ -43,7 +43,7 @@ mod serial {
             let (live_scope, principal) = authenticate(&application);
             let source = source!(application.request(&principal, &live_scope));
             let cancellation = Arc::new(authentication::WorthQueryCancellationSource::new());
-            let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+            let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             let encoded = Arc::new(AtomicBool::new(false));
             let intent = CancelOnInput {
                 edit: crate::PlanarEdit(crate::PlanarMutation {

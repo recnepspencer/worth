@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn preparation_rejection_is_denied_without_effect_or_idempotency_residue() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

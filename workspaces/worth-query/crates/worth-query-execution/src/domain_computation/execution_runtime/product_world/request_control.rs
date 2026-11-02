@@ -131,7 +131,7 @@ impl WorthQueryProductPublicationBinding {
         WorthQueryPreparedProductPublication,
         Denial<worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial>,
     > {
-        let control = self.request_control(request);
+        let control = self.request_control(request).ok_or(Denial::ClockMismatch)?;
         self.adoption_preparation.reached();
         let prepared = unpublished
             .prepare_settled_relational_adoption(control.cancellation(), control.deadline())
@@ -146,7 +146,8 @@ impl WorthQueryProductPublicationBinding {
     pub(crate) fn request_control(
         &self,
         request: &WorthQueryRequestScope,
-    ) -> WorthQueryProductPublicationRequestControl {
+    ) -> Option<WorthQueryProductPublicationRequestControl> {
+        if !self.clock.admission_clock.same_clock(request.clock()) { return None; }
         let cancellation = Arc::new(PublicationCancellation(
             RuntimeWorldCancellationSource::new(),
         ));
@@ -161,11 +162,14 @@ impl WorthQueryProductPublicationBinding {
         {
             cancellation.0.cancel();
         }
-        WorthQueryProductPublicationRequestControl {
+        Some(WorthQueryProductPublicationRequestControl {
             cancellation: cancellation.0.token(),
-            deadline: request.deadline().map(|deadline| self.deadline(deadline)),
+            deadline: match request.deadline() {
+                Some(deadline) => Some(self.deadline(deadline)?),
+                None => None,
+            },
             _request_cancellation: request_cancellation,
-        }
+        })
     }
 
     pub(crate) fn prepare_relational_candidate(
@@ -189,7 +193,7 @@ impl WorthQueryProductPublicationBinding {
         successor_observation_requested: bool,
         current_read: Option<&worth_runtime_world::facade::ProductBranchObservation>,
     ) -> Result<WorthQueryPreparedProductPublication, Denial<NoEffectCompositePublication>> {
-        let control = self.request_control(request);
+        let control = self.request_control(request).ok_or(Denial::ClockMismatch)?;
         let mut intent = CompositePublicationIntent::without_signal(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )

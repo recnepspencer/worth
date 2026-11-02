@@ -6,9 +6,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         std::sync::OnceLock::new();
     *OCCURRENCE.get_or_init(|| {
         let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
+            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let product = world
             .application
             .product_runtime()

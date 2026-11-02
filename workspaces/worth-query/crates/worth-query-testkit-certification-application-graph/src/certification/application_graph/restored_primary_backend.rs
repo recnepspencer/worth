@@ -71,7 +71,7 @@ pub fn production_runtime(
     let contract = identity_contract();
     let bridge = adapters::runtime_bridge(&graph, &contract, FieldKey::new("id").unwrap());
     WorthQueryRuntime::builder(
-        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
     )
     .primary_runtime_granular_invalidations(installation.clone())
     .conditional_execution_resources(

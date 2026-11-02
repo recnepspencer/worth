@@ -20,6 +20,7 @@ fn check(at_observation: bool) {
     let scope = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = world
         .application

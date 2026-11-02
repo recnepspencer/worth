@@ -4,7 +4,7 @@ use super::*;
 pub(super) fn form(
     policy: ExecutionRequestPolicy,
     cancellation: worth_execution::CancellationToken,
-    deadline: Option<std::time::Instant>,
+    deadline: Option<worth_execution::MonotonicDeadline>,
 ) -> Form<'static> {
     let policy = match policy.accounting() {
         Some(budget) => ExecutionRequestPolicy::new(

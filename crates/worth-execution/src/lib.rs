@@ -8,6 +8,11 @@
 //! Only the composition root constructs an authority. Domain runtimes receive
 //! leases and use checked patterns; they do not control the physical backend.
 
+mod monotonic_clock;
+mod monotonic_deadline;
+pub use monotonic_clock::{MonotonicClock, MonotonicTimeAdvanceDenial, MonotonicTimeController, MonotonicTimeConstructionDenial};
+pub use monotonic_deadline::MonotonicDeadline;
+
 mod authority;
 mod backend;
 mod oracle;

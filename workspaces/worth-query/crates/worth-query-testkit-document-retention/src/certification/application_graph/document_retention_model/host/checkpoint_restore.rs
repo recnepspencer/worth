@@ -46,7 +46,7 @@ where
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
 }

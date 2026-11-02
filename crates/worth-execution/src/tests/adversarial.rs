@@ -1,6 +1,7 @@
 use std::sync::atomic::AtomicUsize;
 
 use super::*;
+use crate::MonotonicClock;
 use crate::backend::{run_scope, ScopeStop};
 use crate::{ExecutionMap, MapKernelFailure, MapKernelStop, MapOutcome, MapPartition, MapStop};
 use worth_foundational::ExecutionFallbackCause;
@@ -159,7 +160,10 @@ fn cancellation_and_deadline_gate_kernels_without_explicit_checkpoints() {
 
     let expired = authority()
         .request_lease(LeaseRequest {
-            deadline: Some(Instant::now() - Duration::from_secs(1)),
+            deadline: Some(
+                MonotonicClock::system()
+                    .deadline_at(Instant::now() - Duration::from_secs(1)),
+            ),
             ..request(1, 1_000, 10)
         })
         .unwrap();
@@ -195,7 +199,7 @@ fn cancellation_and_deadline_gate_kernels_without_explicit_checkpoints() {
     let deadline = Instant::now() + Duration::from_millis(100);
     let expires_between = authority()
         .request_lease(LeaseRequest {
-            deadline: Some(deadline),
+            deadline: Some(MonotonicClock::system().deadline_at(deadline)),
             ..request(1, 1_000, 10)
         })
         .unwrap();

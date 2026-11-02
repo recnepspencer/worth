@@ -33,7 +33,10 @@ fn assert_retention_denied(outcome: &WorthQueryApplicationCommitOutcome) {
 
 #[test]
 fn right_record_wrong_field_retention_denial_commits_nothing() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -141,7 +144,10 @@ mod two_field_cross_record_retention_denial_commits_nothing;
 
 #[test]
 fn two_field_same_record_retains_one_exact_prior_truth() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

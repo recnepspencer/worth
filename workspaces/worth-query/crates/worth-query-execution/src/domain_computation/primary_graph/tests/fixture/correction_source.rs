@@ -34,7 +34,10 @@ impl PreparedLabelCorrection {
 }
 
 pub(in crate::domain_computation::primary_graph) fn install() -> AuthorizationWorld {
-    let mut world = super::installed_authorization_world(true);
+    let mut world = super::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     program::install(&mut world);
     world
 }

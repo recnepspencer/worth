@@ -54,7 +54,7 @@ fn authored_body_replacement_is_denied_before_any_handler_is_installed() {
         schema,
         (program::Installation::Replacement,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_phase, _graph, _installed| Ok(()),
     );
     match result {
@@ -138,7 +138,7 @@ fn authored_body_unbound_program_cannot_acquire_body_by_label() {
         old_schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_phase, _graph, _installed| panic!("mismatching body must deny before initialization"),
     );
     match result {
@@ -163,7 +163,7 @@ fn authored_body_missing_executor_is_denied_at_installation() {
         schema,
         (program::Installation::Missing,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_phase, _graph, _installed| Ok(()),
     );
     match result {

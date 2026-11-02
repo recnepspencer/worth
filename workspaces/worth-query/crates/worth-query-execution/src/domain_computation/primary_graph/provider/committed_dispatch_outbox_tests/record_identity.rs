@@ -5,7 +5,10 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let provider = &world.application.runtime.primary_provider;
     let record = record_for(5);
     provider
@@ -89,7 +92,10 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let provider = &world.application.runtime.primary_provider;
     let first = record_for(61);
     let second = record_for(62);

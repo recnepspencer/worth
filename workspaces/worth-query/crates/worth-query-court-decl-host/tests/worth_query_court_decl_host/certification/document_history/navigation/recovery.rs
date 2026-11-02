@@ -69,7 +69,7 @@ fn unpublished_snapshot_candidate_recovers_without_replaying_an_edit_or_moving_t
 
 pub(super) fn interrupted_publication<'d, 'r>(host: &App, owner: Owner<'d, 'r>) -> Owner<'d, 'r> {
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.installed_schema(), &stopped_scope);
     let Advance::Pending(owner) = owner.advance(&host.request(&principal, &stopped_scope)) else {
         panic!("original request prepares the publication")

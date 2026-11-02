@@ -9,7 +9,7 @@ pub(super) fn run(
     calls: &Arc<provider::Calls>,
 ) {
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let request = world
         .runtime()
         .request(principal, &scope)

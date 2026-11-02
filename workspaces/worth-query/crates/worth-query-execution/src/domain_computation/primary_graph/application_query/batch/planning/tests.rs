@@ -4,7 +4,10 @@ fn installed_schedule_preserves_exact_slots_and_plan_association() {
     use crate::domain_computation::primary_graph::tests::fixture::{
         installed_authorization_world, TestAccountSourceBinding,
     };
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let binding = world
         .application
         .installed_schema()

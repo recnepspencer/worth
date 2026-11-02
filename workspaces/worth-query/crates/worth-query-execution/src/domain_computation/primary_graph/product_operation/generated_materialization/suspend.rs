@@ -223,7 +223,10 @@ where
             .publication_binding()
             .prepare_relational_candidate(candidate, request, true)
             .map_err(|denial| match denial {
-                PublicationDenial::Stopped(stop) => {
+                PublicationDenial::ClockMismatch => {
+                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+                },
+PublicationDenial::Stopped(stop) => {
                     WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(advancement_denial(
                         stop,
                     ))
@@ -278,7 +281,12 @@ where
                     commit,
                 ))
             }
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                Err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                ))
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 Err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
                     advancement_denial(stop),
                 ))

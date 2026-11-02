@@ -83,7 +83,11 @@ fn creation(
 fn same_key_cannot_substitute_another_physical_identity_or_generation() {
     let prepared = prepared(Posture::Create);
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let deletion = |entity_id| {
         WorkerIntentBatch::new("retire").push(MutationIntent::Entity(EntityMutationIntent::Delete(
             DeleteEntityIntent { entity_id },
@@ -134,7 +138,11 @@ fn same_key_cannot_substitute_another_physical_identity_or_generation() {
 fn restoration_matches_its_actual_lowered_create_and_original_key() {
     let prepared = prepared(Posture::Retire);
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let reference = created("new-allocation");
     let target = EntityReference::Created(reference.clone());
     let role = || [("inverse", Posture::Create, "Number", &target)].into_iter();
@@ -174,7 +182,11 @@ fn restoration_matches_its_actual_lowered_create_and_original_key() {
 fn candidate_role_scan_preserves_cancellation_as_interruption() {
     let prepared = prepared(Posture::Create);
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let exact = EntityReference::Existing(prepared.original);
     let roles = [("inverse", Posture::Retire, "Number", &exact)]
         .into_iter()

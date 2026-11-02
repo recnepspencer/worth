@@ -7,13 +7,9 @@ use crate::domain_computation::WorthQueryProviderSessionDenialKind as Cause;
 #[test]
 fn prepared_running_refuses_foreign_phase_with_the_same_typed_cause() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let foreign =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let prepared = world
         .application
         .with_host_advancement(|phase| {

@@ -3,7 +3,10 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 
 #[test]
 fn cancelled_request_cannot_reuse_otherwise_current_authority() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let live_request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &live_request);
     let principal = world
@@ -55,8 +58,9 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
     let cancelled_request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     cancellation.cancel();
 
@@ -87,7 +91,10 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
 
 #[test]
 fn admitted_operation_retains_expiry_and_cancellation_authority() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(1), &request);
     let authentication_expires_at = external.expires_at();
@@ -193,8 +200,9 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
 
     let cancellation = WorthQueryCancellationSource::new();
     let cancellable_request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &cancellable_request);
     let principal = world

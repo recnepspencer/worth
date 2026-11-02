@@ -10,9 +10,8 @@ use crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry;
 
 use super::provider::WorthQueryPrimaryGraphProvider;
 use super::{
-    authentication_clock::WorthQueryAuthenticationClock, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-    WorthQueryPrimaryGraphPublication,
+    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrimaryGraphPublication,
 };
 pub use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupReport;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
@@ -200,11 +199,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         valid_until: std::time::Instant,
     ) -> bool {
         self.runtime.authentication_is_expired(valid_until)
-    }
-
-    #[cfg(test)]
-    pub(crate) fn fix_authentication_time(&mut self, now: std::time::Instant) {
-        self.runtime.authentication_clock = WorthQueryAuthenticationClock::fixed(now);
     }
 }
 

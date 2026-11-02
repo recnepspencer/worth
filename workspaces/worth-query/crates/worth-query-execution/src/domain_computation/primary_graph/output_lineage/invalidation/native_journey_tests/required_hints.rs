@@ -103,7 +103,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
     {
         let allowed_hints = 2_u64;
         {
-            let world = installed_authorization_world(true);
+            let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let (entity, product) = world
                 .application
                 .with_host_advancement(|phase| {

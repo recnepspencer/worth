@@ -96,8 +96,7 @@ pub fn admit_identity_adapter(
             admission::authenticated_principal::WorthQueryAuthenticationAudience::new("host")
                 .expect("the example audience is valid"),
             admission::authenticated_principal::WorthQueryAuthenticationMethod::new("example")
-                .expect("the example method is valid"),
-        ),
+                .expect("the example method is valid"), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         IdentityAdapter,
     )
     .expect("the example identity adapter must be admitted")
@@ -185,7 +184,7 @@ pub fn product_world_resources() -> runtime::WorthQueryProductWorldResources {
                 owner_created_component_custody_records: 256,
             },
         },
-        runtime::WorthQueryProductWorldClock::start(),
+        runtime::WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )

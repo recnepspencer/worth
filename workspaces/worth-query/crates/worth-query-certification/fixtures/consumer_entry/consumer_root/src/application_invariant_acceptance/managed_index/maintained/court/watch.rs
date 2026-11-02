@@ -98,7 +98,7 @@ fn journey() {
         .next_watch(&mut entrant)
         .is_err());
     let cancellation = WorthQueryCancellationSource::new();
-    let interrupted = WorthQueryRequestScope::new(None, cancellation.token());
+    let interrupted = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let interrupted_in_read = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let observed_interruption = interrupted_in_read.clone();
     calls.matched_sources.store(1, Ordering::SeqCst);

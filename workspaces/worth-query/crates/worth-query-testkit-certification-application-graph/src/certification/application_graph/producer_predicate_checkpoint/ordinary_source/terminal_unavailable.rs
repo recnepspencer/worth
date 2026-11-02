@@ -237,7 +237,11 @@ pub fn refuse_foreign_and_cancelled(host: &Host, terminal: Terminal) -> Terminal
 pub fn cancelled_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
-    WorthQueryRequestScope::new(None, cancellation.token())
+    WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
 }
 pub fn assert_cancelled(denial: WorthQueryOperationCloseDenial) {
     assert!(matches!(

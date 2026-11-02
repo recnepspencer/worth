@@ -30,7 +30,10 @@ pub(super) fn observe_case(
     place(workers.map_or(Placement::Serial, |width| {
         Placement::Leased(NonZeroUsize::new(width).unwrap())
     }));
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
     let host_request = phase.test_host_request();
     let phase_custody = &host_request;
@@ -61,8 +64,7 @@ pub(super) fn observe_case(
                     },
                 ),
         ),
-        query_cancel.token(),
-    );
+        query_cancel.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let caller_cancel = worth_execution::CancellationSource::new();
     let selected = world.selected_product(phase_custody);
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);

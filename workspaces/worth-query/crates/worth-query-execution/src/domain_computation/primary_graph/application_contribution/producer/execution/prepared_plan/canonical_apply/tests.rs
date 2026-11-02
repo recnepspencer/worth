@@ -6,7 +6,6 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
-use std::time::Instant;
 use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
@@ -27,9 +26,8 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
     for failure in 0..3 {
         let cancellation = WorthQueryCancellationSource::new();
         let request = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let execution = QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
                 std::num::NonZeroUsize::MIN,

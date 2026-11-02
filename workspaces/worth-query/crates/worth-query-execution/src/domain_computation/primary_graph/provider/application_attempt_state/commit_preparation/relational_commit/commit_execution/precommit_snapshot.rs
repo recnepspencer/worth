@@ -59,9 +59,7 @@ mod tests {
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
         let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
+            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let selected = world
             .application
             .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))

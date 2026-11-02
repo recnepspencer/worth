@@ -5,9 +5,7 @@ struct TestClock;
 fn granular_installation(
 ) -> crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world.application.granular_invalidation_installation()
 }
 

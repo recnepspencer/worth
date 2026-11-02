@@ -8,9 +8,8 @@ fn earlier_completion_failure_wins_over_later_compute_panic() {
     for width in [None, Some(1), Some(2), Some(4)] {
         let cancel = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancel.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancel.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let policy = worth_foundational::ExecutionRequestPolicy::for_workers(
             worth_foundational::ExecutionPosture::Automatic,
             worth_foundational::DeterminismContract::CanonicalBitwise,

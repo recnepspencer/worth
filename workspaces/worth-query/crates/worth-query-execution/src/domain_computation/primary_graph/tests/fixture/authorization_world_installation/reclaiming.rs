@@ -12,9 +12,9 @@ pub(in crate::domain_computation::primary_graph::tests::fixture) fn install_recl
             .expect("the reclaiming authorization fixture admits its Native runtime");
         let mut prepared = prepare_authorization_world(
             &phase, spec.resources, Some(native),
-            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         );
         populate_authorization_world(&mut prepared, &spec);
-        publish_authorization_world(&phase, prepared)
+        publish_authorization_world(&phase, prepared, spec.admission_clock)
     })
 }

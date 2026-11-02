@@ -211,7 +211,10 @@ fn currentness(
 
 #[test]
 fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))

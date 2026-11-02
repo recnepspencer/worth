@@ -18,7 +18,10 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn handler_absence_selection_competes_at_the_real_commit_boundary() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (loser, loser_key) = {
         execute_with_key(
             &world,
@@ -96,7 +99,10 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
 
 #[test]
 fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (execution, key) = { execute(&world, OptionalOutputPlan::RequiredAfterIndexedAbsence) };
     let Ok(HandlerResult::Completed(completed)) = execution else {
         panic!("the installed handler completes its indexed decision");

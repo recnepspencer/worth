@@ -11,7 +11,10 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
     let _owner = crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner();
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let selected = world
         .application

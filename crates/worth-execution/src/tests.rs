@@ -331,7 +331,10 @@ fn cancellation_and_deadline_stop_at_kernel_checkpoint() {
     assert_eq!(cancelled.report.charged_work(), 0);
     let expired = authority()
         .request_lease(LeaseRequest {
-            deadline: Some(Instant::now() - Duration::from_secs(1)),
+            deadline: Some(
+                crate::MonotonicClock::system()
+                    .deadline_at(Instant::now() - Duration::from_secs(1)),
+            ),
             ..accounted_request(1, 10)
         })
         .unwrap();
@@ -391,3 +394,6 @@ fn no_lease_uses_caller_thread_and_serial_posture() {
     assert_eq!(result.report.resolved_posture(), ExecutionPosture::Serial);
     assert_eq!(result.report.physical().active_workers_high_watermark(), 0);
 }
+
+#[path = "tests/owned_time.rs"]
+mod owned_time;

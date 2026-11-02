@@ -22,6 +22,7 @@ pub(in crate::domain_computation::primary_graph) fn authenticate_external<
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("bank").unwrap(),
             WorthQueryAuthenticationMethod::new("test-oidc").unwrap(),
+            scope.clock().clone(),
         ),
         CausalIdentityAdapter,
     )

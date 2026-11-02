@@ -9,7 +9,10 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
-    let world = fixture::installed_authorization_world(true);
+    let world = fixture::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = fixture::live_scope();
     let principal = world
         .application

@@ -6,7 +6,7 @@ fn controlled_child_inherits_policy_and_exact_minimum_deadline_without_parent_mu
     let _serial = TEST_LOCK.lock().unwrap();
     let parent_deadline = Instant::now() + Duration::from_secs(60);
     let mut parent_request = request(2, 8, 19);
-    parent_request.deadline = Some(parent_deadline);
+    parent_request.deadline = Some(crate::MonotonicClock::system().deadline_at(parent_deadline));
     let parent_source = CancellationSource::new();
     parent_request.cancellation = parent_source.token();
     let parent_token = parent_source.token();

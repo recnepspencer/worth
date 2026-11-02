@@ -13,7 +13,10 @@ use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 #[test]
 fn sibling_commit_wakes_only_its_exact_product_partition() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

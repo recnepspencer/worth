@@ -13,7 +13,10 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world

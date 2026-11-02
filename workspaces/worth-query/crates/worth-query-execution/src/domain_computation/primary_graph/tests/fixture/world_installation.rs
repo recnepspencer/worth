@@ -39,7 +39,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn installed_world_with_
         let binding = schema
             .principal_binding(IdentityBinding::reference())
             .unwrap();
-        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
         for (ordinal, (subject, status)) in rows.iter().enumerate() {
             bootstrap
                 .bind_principal(
@@ -121,7 +121,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
         &runtime,
         &schema,
         worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         crate::domain_computation::primary_graph::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
         &decoded,
         false,
@@ -145,8 +145,10 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
 
 pub(in crate::domain_computation) fn installed_authorization_world(
     include_owner_relation: bool,
+    admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 ) -> AuthorizationWorld {
     install_authorization_world(AuthorizationWorldSpec {
+        admission_clock,
         owner_bindings: owner_bindings(include_owner_relation),
         ..standard_spec()
     })
@@ -218,6 +220,9 @@ pub(in crate::domain_computation::primary_graph) fn installed_blocked_authorizat
 
 fn standard_spec<'a>() -> AuthorizationWorldSpec<'a> {
     AuthorizationWorldSpec {
+        admission_clock:
+            worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(
+            ),
         owner_bindings: &[],
         blocked: false,
         principal_count: 1,

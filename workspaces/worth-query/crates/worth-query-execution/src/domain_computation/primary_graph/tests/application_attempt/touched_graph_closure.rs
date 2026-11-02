@@ -6,7 +6,10 @@ use super::super::fixture::{AccountStatus, MultiTouchOperation, TouchAccountOper
 
 #[test]
 fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -67,7 +70,10 @@ fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
 
 #[test]
 fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -141,7 +147,10 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
 
 #[test]
 fn same_type_entity_outside_the_admitted_root_cannot_enter_an_unprojected_read_set() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

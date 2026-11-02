@@ -12,7 +12,7 @@ impl FinancialCourtroomWorld {
         risk_value: u64,
     ) -> Self {
         let resources =
-            worth_query_execution::facade::integration::product_world_resources_for_test(1_024);
+            worth_query_execution::facade::integration::product_world_resources_for_test(1_024, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         with_bootstrap_advancement(resources.execution_policy(), |phase| {
             Self::publish_in_advancement(
                 &phase,

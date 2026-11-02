@@ -70,7 +70,7 @@ fn journey() {
     cold::cold_read(&world, &principal, &scope, &calls);
 
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let reached = Arc::new(Mutex::new(false));
     let observed = Arc::clone(&reached);
     *calls.after_build_node_write.lock().unwrap() = Some(Box::new(move || {

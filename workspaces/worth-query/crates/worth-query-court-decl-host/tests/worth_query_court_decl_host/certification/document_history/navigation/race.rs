@@ -160,7 +160,7 @@ fn delivery_loss_keeps_selected_custody_and_old_key_retry_does_not_reset_later_n
     );
     let pause = owner.pause_after_history_navigation_adoption_for_test();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.installed_schema(), &stopped_scope);
     let (reached, result) = std::thread::scope(|threads| {
         let worker = threads.spawn(|| owner.advance(&host.request(&principal, &stopped_scope)));

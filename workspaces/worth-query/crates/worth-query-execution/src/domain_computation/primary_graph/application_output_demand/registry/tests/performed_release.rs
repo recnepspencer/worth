@@ -7,7 +7,10 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn unheld_performed_sources_release_the_oldest_in_commit_order() {
-    let world = fixture::installed_authorization_world(true);
+    let world = fixture::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let mut sources = Vec::new();
     let mut current = "open".to_owned();
     for index in 0..8 {

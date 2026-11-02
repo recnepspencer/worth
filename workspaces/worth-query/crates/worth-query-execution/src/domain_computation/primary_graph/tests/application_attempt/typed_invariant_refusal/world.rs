@@ -77,7 +77,7 @@ pub(super) fn install(first: Rule, second: Rule) -> World {
         let mut bootstrap = authority.prepare_primary_graph_with_relational_runtime_and_invariants(
             &phase.bootstrap_for_test(), &runtime, &schema,
             worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(), factories,
+            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()), factories,
         ).unwrap();
         bootstrap
             .bind_principal(

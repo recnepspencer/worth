@@ -133,7 +133,10 @@ fn the_decision_read_entry_refuses_a_forged_tag_type_before_basis_preparation() 
 #[test]
 fn foreign_installed_seal_is_stale_at_decision_entry_before_basis_work() {
     let world = installed_decision_read_world();
-    let donor_world = installed_authorization_world(true);
+    let donor_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let donor = donor_world
         .application

@@ -148,7 +148,7 @@ fn disclosed_physical_occurrences_and_deleted_generations_page_without_losing_ro
                 Err(WorthQueryApplicationHistoryDenial::InvalidContinuation)
             ));
             let cancellation = WorthQueryCancellationSource::new();
-            let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+            let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             cancellation.cancel();
             assert!(matches!(page(&world, &relations, &mut cursor, &selected, &stopped), Err(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))));
             checked_stops = true;

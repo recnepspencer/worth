@@ -12,7 +12,10 @@ use worth_query_declaration::facade::application_query::ApplicationQueryParamete
 
 #[test]
 fn completed_query_roster_keeps_original_funding_until_final_observation_close() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let query = world
         .application
         .installed_schema()

@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn cancelled_admission_can_issue_recovery_authority_for_its_live_handle() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (handle, admission, cancellation) = committed_handle(&world);
     cancellation.cancel();
     assert_eq!(

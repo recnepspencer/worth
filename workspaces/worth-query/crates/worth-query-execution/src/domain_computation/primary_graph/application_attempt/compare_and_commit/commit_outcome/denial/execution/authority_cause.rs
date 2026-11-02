@@ -37,7 +37,7 @@ mod tests {
     };
     type Evidence = (Stage, Option<Result<Kind, Control>>, Option<Authority>);
     fn commit_at(ceiling: u64) -> (bool, Option<Evidence>, Vec<u64>) {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let scope = live_scope();
         let program = world
             .application

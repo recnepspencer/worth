@@ -1,5 +1,5 @@
 use std::num::NonZeroUsize;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 pub(super) use super::lifecycle_mutations::{disable_mapping, revoke_account_ownership};
 use super::{current_controls, installed_query};
@@ -20,8 +20,14 @@ mod retained_continuation_releases_the_query_registry_basis;
 
 #[test]
 fn foreign_runtime_rejects_plan_and_releases_its_basis() {
-    let world = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = super::super::fixture::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
@@ -107,7 +113,10 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
 
 #[test]
 fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = super::super::fixture::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
@@ -192,11 +201,15 @@ fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() 
 
 #[test]
 fn cancellation_after_admission_releases_basis_before_projection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

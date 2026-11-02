@@ -21,7 +21,10 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let context = ContinuationTestContext::new(Duration::from_secs(60));
+    let context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let old_cursor = context
         .world
         .application

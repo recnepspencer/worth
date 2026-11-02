@@ -8,7 +8,10 @@ use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, 
 
 #[test]
 fn partial_adjacency_reservations_are_not_endpoint_acquisitions() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (denial, stopped) = read_partial_adjacency(&world);
     assert_eq!(
         stopped,
@@ -98,7 +101,10 @@ fn read_partial_adjacency(
 
 #[test]
 fn acquired_endpoint_metadata_counts_even_when_its_kind_is_rejected() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let completed = world
         .application
         .with_host_advancement(|phase| {
@@ -158,7 +164,10 @@ fn acquired_endpoint_metadata_counts_even_when_its_kind_is_rejected() {
 
 #[test]
 fn cancellation_before_endpoint_acquisition_records_no_endpoint_read() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = CancellationSource::new();
     let host =
         SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);

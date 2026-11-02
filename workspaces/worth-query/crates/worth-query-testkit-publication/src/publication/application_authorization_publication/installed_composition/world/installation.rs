@@ -121,7 +121,7 @@ pub fn product_world_resources(
                 owner_created_component_custody_records: 256,
             },
         },
-        query_runtime::WorthQueryProductWorldClock::start(),
+        query_runtime::WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )

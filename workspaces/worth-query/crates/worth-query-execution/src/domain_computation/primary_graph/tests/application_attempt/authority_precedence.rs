@@ -134,8 +134,14 @@ fn assert_refused_as_foreign_runtime(denial: MutationHandlerExecutionDenial) {
 
 #[test]
 fn a_live_foreign_admission_is_refused_as_foreign_at_mutation_execution() {
-    let source_world = installed_authorization_world(true);
-    let target_world = installed_authorization_world(true);
+    let source_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let target_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (mut admissions, _, principal_identity) = expiring_admissions(&source_world, &request, 1);
     assert_refused_as_foreign_runtime(execute_on(
@@ -147,8 +153,14 @@ fn a_live_foreign_admission_is_refused_as_foreign_at_mutation_execution() {
 
 #[test]
 fn a_foreign_and_expired_admission_is_refused_as_foreign_at_every_entry() {
-    let source_world = installed_authorization_world(true);
-    let target_world = installed_authorization_world(true);
+    let source_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let target_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (mut admissions, expires_at, principal_identity) =
         expiring_admissions(&source_world, &request, 3);

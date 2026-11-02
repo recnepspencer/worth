@@ -103,13 +103,9 @@ impl WorthQueryApplicationAttemptAffinityView for TestAffinityView {
 #[test]
 fn every_plan_session_and_attempt_axis_is_rejected_independently() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let foreign_world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     // Foreign evidence is data; its provider executes only under its own opener.
     let foreign_view = foreign_world
         .application

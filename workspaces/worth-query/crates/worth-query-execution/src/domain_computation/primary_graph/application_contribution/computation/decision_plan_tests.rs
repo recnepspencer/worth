@@ -71,6 +71,7 @@ fn run(
             Instant::now() + Duration::from_secs(60)
         }),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let completed = Arc::new(AtomicUsize::new(0));
     let owner = Owner {

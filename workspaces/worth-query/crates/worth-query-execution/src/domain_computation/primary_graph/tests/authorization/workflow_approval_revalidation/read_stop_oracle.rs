@@ -57,7 +57,11 @@ fn run(
     let world = installed_delegated_capability_world();
     world.authorization_time.hold(time(100));
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let admission = world
         .application
         .with_host_advancement(|phase| {

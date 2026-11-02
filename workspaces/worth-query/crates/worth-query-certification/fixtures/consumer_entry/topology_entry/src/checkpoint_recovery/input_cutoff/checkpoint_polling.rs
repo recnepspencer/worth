@@ -26,7 +26,7 @@ fn interrupted(deadline: bool, later_cancel: bool) {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let expires = deadline.then(|| Instant::now() + Duration::from_secs(2));
     let interrupted_scope =
-        authentication::WorthQueryRequestScope::new(expires, cancellation.token());
+        authentication::WorthQueryRequestScope::new(expires, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_request = application.request(&principal, &interrupted_scope);
     let signal = cancellation.clone();
     let second_signal = cancellation.clone();

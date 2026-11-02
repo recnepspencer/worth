@@ -84,7 +84,8 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::WorkLimit
                             | Resource::NestedLeaseMisuse
                             | Resource::NestedAdvancementOpening
-                            | Resource::ForeignAdvancementPhase
+                            | Resource::ForeignAdmissionClock
+                | Resource::ForeignAdvancementPhase
                             | Resource::NoActiveExecutionScope
                             | Resource::EquivalenceContractUnavailable,
                         ..

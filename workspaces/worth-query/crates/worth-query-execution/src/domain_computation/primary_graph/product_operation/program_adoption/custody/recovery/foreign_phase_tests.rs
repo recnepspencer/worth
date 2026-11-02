@@ -8,8 +8,14 @@ use crate::domain_computation::primary_graph::{
 fn private_recovery_keeps_the_foreign_phase_cause() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let issuer = installed_authorization_world(true);
-    let receiver = installed_authorization_world(true);
+    let issuer = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let receiver = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     issuer
         .application
         .with_host_advancement(|phase| {

@@ -60,7 +60,7 @@ pub fn completed_comparison_survives_late_cancellation_and_checkpoint_retry() {
         !cancellation.token().is_cancelled(),
         "unrelated readiness cannot consume the comparison seam"
     );
-    let cancelled_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let request = application.runtime().request(&principal, &cancelled_scope);
     let mut interrupted = request
         .demand(demand::Demand)

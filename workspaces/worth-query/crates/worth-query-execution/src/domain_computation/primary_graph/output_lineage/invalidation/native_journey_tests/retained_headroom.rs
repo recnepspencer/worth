@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical_copy() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request();
         let execution = &custody.borrowed_request_for_test();

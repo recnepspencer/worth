@@ -110,6 +110,13 @@ where
         return Err(Stop::Interrupted(interruption));
     }
     let operation = current.operation();
+    crate::domain_computation::authorization::admission::validate_admission_clock(
+        &runtime.runtime,
+        principal.principal().clock(),
+        request,
+        operation.operation(),
+    )
+    .map_err(SelectedConventionalAdmissionStop::Authorization)?;
     validate_static_authority_retained(runtime, principal.principal(), scope.scope(), current)
         .map_err(|stop| match stop {
             WorthQueryRetainedMutationStaticStop::Authorization(denial) => {

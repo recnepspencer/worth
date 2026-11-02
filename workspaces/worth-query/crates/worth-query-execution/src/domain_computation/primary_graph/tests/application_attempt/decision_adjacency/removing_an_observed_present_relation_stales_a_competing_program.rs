@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn removing_an_observed_present_relation_stales_a_competing_program() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let actor = world
         .application

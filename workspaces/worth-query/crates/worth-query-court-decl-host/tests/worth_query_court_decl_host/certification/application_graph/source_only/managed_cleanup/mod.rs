@@ -145,8 +145,7 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let terminal = {
         let request = host.runtime().request(&principal, &stopped);
         let (terminal, cause) = terminal

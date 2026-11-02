@@ -51,7 +51,7 @@ fn cancellation_after_proof_keeps_the_same_document_retryable() {
         0x9182_b600,
     );
     let cancel = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancel.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancel.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped = host.request(&principal, &stopped_scope);
     let pause = document.pause_before_history_context_refresh_for_test();
     let (reached, result) = std::thread::scope(|threads| {

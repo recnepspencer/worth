@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn request_controls_do_not_become_query_or_parameter_identity() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world

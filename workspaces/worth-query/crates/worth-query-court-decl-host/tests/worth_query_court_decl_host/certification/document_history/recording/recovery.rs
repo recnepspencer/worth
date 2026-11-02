@@ -25,7 +25,7 @@ fn unpublished_candidate_keeps_its_original_recovery_until_one_recorded_selectio
         edit = next;
     }
     let cancellation = WorthQueryCancellationSource::new();
-    let interrupted_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let interrupted_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let interrupted_principal =
         authenticate_operator(host.runtime().installed_schema(), &interrupted_scope);
     let pause = host
