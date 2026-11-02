@@ -75,6 +75,103 @@ Store authority.
 - The new workspace may use `worth_foundational::compatibility().json()` only
   at named ingress boundaries whose output is native aspect-state material.
 
+## Current Value Grain Contract
+
+This is the current Foundational/Relational/Query semantic contract that Store
+must preserve. It is not a claim about future Store page, chunk, WAL or manifest
+rewrite size. The [public representation table](../../docs/native-representations.md)
+chooses entities and relations for independently mutable structure. An admitted
+canonical String atom remains one native scalar; its JSON-shaped grammar does
+not become Store structure or evidence authority. This does not authorize raw
+JSON state, generic serde admission or terminal text at the gate above.
+
+### Native placement, reads and writes
+
+- **F (Struct field):** one declared, top-level field path selects one complete
+  `AspectValue`. Read/set/clear operates at that field. There is no second path
+  segment into a scalar's mathematical structure, string, enum or sequence.
+- **P (Scalar aspect):** the value is the whole aspect. Read/replacement/removal
+  uses whole-aspect grain, not an invented child path. Query's qualified ordinary
+  declaration is `ApplicationSchemaDeclarationBuilder::scalar_aspect_field`.
+  Current installation refuses a structured canonical String binding there;
+  that binding is qualified as a Struct field. The typed invariant field reader
+  also currently supports Struct children only.
+- **Touches:** an F mutation carries the one-segment semantic field change and
+  descriptive FieldRevision plus AspectRevision touches. A P mutation or whole
+  aspect presence/replacement carries a whole-aspect semantic change. Whole
+  aspect replacement can affect every child; absence is a real dependency.
+- **Conflicts:** native existing-record write loci are record-scoped, with
+  partition validation dependencies. Fine field observations/revisions do not
+  promise concurrent disjoint writes to sibling fields on one record. Query
+  composes an entity's aspect effects into one Native intent while preserving
+  each observed step; this does not weaken Native's conflict law.
+- **Invalidation:** the authoritative patch can retain an exact F path or P
+  whole-aspect change. Bridge requires explicit
+  `BridgeAspectChangeWideningCause::OpaquePayloadToWholeAspect` admission to
+  widen an opaque payload; otherwise it refuses. Consumers may be broader:
+  current native output-entity witnesses cover every installed aspect of each
+  declared entity role, not only the field a readiness predicate selects.
+
+Each row below uses F/P according to that actual native placement. The native
+carrier inventory is
+[`AspectValue`](../../crates/worth-foundational/src/values/aspect_value.rs).
+It does not assert that every carrier has a built-in application binding.
+
+| Canonical/native value kind | Read and patch | Touch | Conflict | Invalidation | Logical canonical serialization |
+|---|---|---|---|---|---|
+| `Null`, `Bool` | Complete value at F/P | F field + aspect revisions, or P whole aspect | Existing record | F exact path / P whole aspect, subject to widening above | Complete tag/value; present Null is not absence |
+| `Int8`, `Int16`, `Int32`, `Int64`, `UInt8`, `UInt16`, `UInt32`, `UInt64` | Complete integer at F/P | F/P as above | Existing record | F/P as above | Whole tagged fixed-width integer |
+| `Float32`, `Float64` | Complete admitted scalar at F/P | F/P as above | Existing record | F/P as above | Whole canonical float bits |
+| `Decimal`, `BigInt`, `Rational` | Complete number at F/P; no numerator/digit subfield patch | F/P as above | Existing record | F/P as above | Whole tagged canonical decimal/big integer; Rational includes complete numerator and denominator |
+| `String`, including ordinary text and interned symbols | Complete string/symbol at F/P; no character path | F/P as above | Existing record | F/P as above | Whole tagged string carrier, with raw-text/symbol distinction |
+| Canonical String bindings: finite/recursive structs, enums, arrays, sequences, pairs, optional/boxed and opaque/delegated values; `native_envelope` documents | Complete atom at F only on the qualified binding path; no inner-field read/patch | Enclosing F field + aspect revisions; no grammar-path touch | Existing record; inner members have no separate write locus | Enclosing F, or broader admitted/consumer scope; no grammar-path invalidation | Complete canonical text atom using installed shape/bounds/protocol, or owner's complete original-text envelope |
+| `Bytes`, `ContentRef` | Complete identifier at F/P; not a payload slice or content-admission read | F/P as above | Existing record | F/P as above; this alone observes no referenced content | Whole `ContentRefId` carrier, not inline bytes, availability or admitted content |
+| `Uuid` | Complete identifier at F/P | F/P as above | Existing record | F/P as above | Complete tagged 16-byte UUID |
+| `Date`, `Time`, `Timestamp`, `TimestampTz` | Complete temporal scalar at F/P; no component patch | F/P as above | Existing record | F/P as above | Complete tagged value, including offset for TimestampTz |
+| `EntityRef` | Complete occurrence identifier at F/P; no implicit relation traversal | F/P as above | Existing record | F/P as above; no automatic target/adjacency dependency | Complete entity identity including occurrence/generation; use actual typed relations for application graph links |
+
+A canonical binding's `ValueShape` grammar is codec meaning, not nested
+`AspectShape` support. Its `worth.canonical-json.v1` protocol can describe inner
+members and refuse malformed input, but the installed native value remains one
+String. Nothing in that grammar supplies a sub-field read/patch, isolated touch,
+conflict, invalidation or partial serialization contract.
+
+### Canonical bytes, original controls and evidence
+
+The current logical field-patch codec writes each selected locator and the
+**complete** value at it; it does not serialize unchanged sibling field values
+as that patch entry. A whole-aspect patch uses its whole selected material.
+This is distinct from full-state serialization and physical Store rewrite work.
+See the [field patch codec](../../crates/worth-relational/src/aspect_wire/field_patch_canonical_codec.rs)
+and [value writer](../../crates/worth-relational/src/aspect_wire/aspect_value_canonical_codec/writing.rs).
+Decimal/BigInt textual components and canonical String's JSON bytes inside that
+native binary framing do not turn Store's semantic boundary into a JSON tree.
+
+Ordinary admitted query/decision decoding uses the installed binding's
+`ApplicationReadableScalarValueBinding::decode_admitted` route with the original
+request's work/cancellation custody. Its admission callback and first-failure
+latch must survive nested decoding and the final handoff: ignoring a codec
+failure cannot complete successfully. A representation policy supplies its
+actual byte/string/collection/depth bounds; `unrestricted()` is not a fabricated
+finite bound. See the owning [decode state](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/value_decode/state.rs)
+and [session](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/value_decode/session.rs).
+
+Do not generalize that qualification to every reader. The installed typed
+invariant field decoder currently calls the binding's plain `decode` closure;
+checked invariant hooks consult the original lease around reads, but this does
+not qualify original-request admission inside an arbitrary canonical decoder.
+See the [invariant resolver](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_installation/schema_resolver.rs).
+A Store handoff claiming that stronger property must supply its own real
+controlled owner evidence, not infer it from a locator or grammar descriptor.
+
+Evidence owners for the remaining grain statements are the
+[semantic change projection](../../crates/worth-relational/src/authority/mutation/canonical_deltas/semantic_change_projection.rs),
+[descriptive touches](../../crates/worth-relational/src/history/data/canonical_commit_envelope/descriptive_touches.rs),
+[native footprint](../../crates/worth-relational/src/mvcc/transaction/footprint.rs),
+and [Bridge lowering gate](../../crates/worth-runtime-bridge/src/relational_source/lowering_precision.rs).
+Physical Store read amplification, page/WAL conflict and rewrite grain still
+need Store-owned measurements and courts; this table certifies none of them.
+
 ## Planned Directory Skeleton
 
 The gate must create or reserve these homes in the dedicated Store workspace
