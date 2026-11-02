@@ -33,6 +33,7 @@ pub use crate::durability::medium::{
     RelationalDurableMemberRetirement, RelationalDurableMemberRetirementObservation,
     RelationalDurableMemberRetirementRefusal, RelationalDurablePublicationRefusal,
     RelationalDurableRecoverySource, RelationalDurableTransitionReadFailure,
+    RelationalMediumRetirementDenial, RelationalMediumRetirementProgress,
     RetiredRelationalDurableMemberCustody,
 };
 pub use crate::durability::migration::ReadmittedCanonicalCommit;

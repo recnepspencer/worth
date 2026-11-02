@@ -7,6 +7,7 @@ use worth_store::physical_runtime::{
     PhysicalStoreCloseFailure, PhysicalStoreCloseObservation, PhysicalStoreCloseOutcome,
     PhysicalStoreCloseTask, PhysicalStoreCloseTaskPoll, ServingPhysicalRuntime,
 };
+mod native_retirement;
 
 enum PhysicalCloseCustody {
     Retained(Arc<ServingPhysicalRuntime>),
@@ -17,7 +18,8 @@ enum PhysicalCloseCustody {
 enum NativeCloseCustody {
     Serving(worth_store_relational::RelationalStoreSection),
     Prepared(worth_store_relational::ClosingRelationalSection),
-    Released,
+    NeverAttached,
+    Retired(worth_store_relational::RetiredRelationalSectionAllocation),
 }
 
 pub struct ApplicationHomeRecoveryCustody {
@@ -27,7 +29,7 @@ pub struct ApplicationHomeRecoveryCustody {
     physical: PhysicalCloseCustody,
     native: NativeCloseCustody,
     world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
-    world_composition: Option<crate::world_section::ApplicationHomeBridgeComposition>,
+    world_composition: Option<crate::world_section::HomeBridgeCloseCustody>,
     checkpoint_owner: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     world_publications: Arc<crate::world_section::WorldPublications>,
 }
@@ -56,7 +58,7 @@ impl ApplicationHomeRecoveryCustody {
             descriptor: context.descriptor,
             checkpoint,
             physical: PhysicalCloseCustody::Retained(context.serving),
-            native: NativeCloseCustody::Released,
+            native: NativeCloseCustody::NeverAttached,
             world_close_report: None,
             world_composition: None,
             checkpoint_owner: context.checkpoint,
@@ -112,7 +114,8 @@ impl ApplicationHomeRecoveryCustody {
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Serving(relational),
             world_close_report: context.world_close_report,
-            world_composition,
+            world_composition: world_composition
+                .map(crate::world_section::HomeBridgeCloseCustody::Serving),
             checkpoint_owner: context.checkpoint,
             world_publications: context.world_publications,
         }
@@ -136,7 +139,9 @@ impl ApplicationHomeRecoveryCustody {
             NativeCloseCustody::Serving(native) => {
                 Some(native.runtime().retention().active_snapshot_count())
             }
-            NativeCloseCustody::Prepared(_) | NativeCloseCustody::Released => None,
+            NativeCloseCustody::Prepared(_)
+            | NativeCloseCustody::Retired(_)
+            | NativeCloseCustody::NeverAttached => None,
         }
     }
 
@@ -209,38 +214,40 @@ impl ApplicationHomeRecoveryCustody {
         if let Err(cause) = interrupted(execution) {
             return self.refused(ApplicationHomeCloseDenial::Execution(cause));
         }
-        if let Some(composition) = self.world_composition.take() {
-            if let Err(composition) = composition.try_close() {
+        loop {
+            let Some(composition) = self.world_composition.take() else {
+                break;
+            };
+            if matches!(
+                composition,
+                crate::world_section::HomeBridgeCloseCustody::Retired(_)
+            ) {
+                self.world_composition = Some(composition);
+                break;
+            }
+            let NativeCloseCustody::Serving(native) = &self.native else {
                 self.world_composition = Some(composition);
                 return self.refused(ApplicationHomeCloseDenial::WorldCompositionRetained);
-            }
-        }
-        if matches!(self.native, NativeCloseCustody::Serving(_)) {
-            if let Err(cause) = self.settle_retained_checkpoint(execution) {
-                return self.refused(cause);
-            }
-        }
-        self.native = match std::mem::replace(&mut self.native, NativeCloseCustody::Released) {
-            NativeCloseCustody::Serving(native) => match native.prepare_close() {
-                Ok(native) => NativeCloseCustody::Prepared(native),
-                Err((native, cause)) => {
-                    self.native = NativeCloseCustody::Serving(native);
-                    return self.refused(ApplicationHomeCloseDenial::Relational(cause));
-                }
-            },
-            phase @ (NativeCloseCustody::Prepared(_) | NativeCloseCustody::Released) => phase,
-        };
-        if matches!(self.native, NativeCloseCustody::Prepared(_)) {
-            if let Err(cause) = self.settle_retained_checkpoint(execution) {
-                return self.refused(cause);
-            }
-            let NativeCloseCustody::Prepared(native) =
-                std::mem::replace(&mut self.native, NativeCloseCustody::Released)
-            else {
-                unreachable!("prepared Native owner is retained until settlement");
             };
-            native.finish();
+            match composition.advance(execution, native.runtime()) {
+                Ok((composition, progress)) => {
+                    self.world_composition = Some(composition);
+                    if progress
+                        == worth_runtime_bridge::facade::BridgeHomeRetirementProgress::Complete
+                    {
+                        break;
+                    }
+                }
+                Err((composition, cause)) => {
+                    self.world_composition = Some(composition);
+                    return self.refused(cause);
+                }
+            }
         }
+        self = match self.advance_native_close(execution) {
+            Ok(home) => home,
+            Err((home, cause)) => return home.refused(cause),
+        };
         if let PhysicalCloseCustody::Retained(serving) = self.physical {
             if let Err(cause) = interrupted(execution) {
                 return Self {
@@ -292,10 +299,30 @@ impl ApplicationHomeRecoveryCustody {
                     }
                     PhysicalStoreCloseTaskPoll::Completed(outcome) => match outcome {
                         PhysicalStoreCloseOutcome::Closed { shutdown, .. } => {
+                            let allocation = super::RetiredApplicationHomeAllocation {
+                                _location: self.location,
+                                _descriptor: self.descriptor,
+                                _world: self.world_composition.map(|composition| {
+                                    composition.into_retired().unwrap_or_else(|_| {
+                                        unreachable!(
+                                            "physical close follows actual Bridge retirement"
+                                        )
+                                    })
+                                }),
+                                _world_report: self.world_close_report,
+                                _checkpoint: self.checkpoint_owner,
+                                _publications: self.world_publications,
+                                _native: match self.native {
+                                    NativeCloseCustody::Retired(original) => Some(original),
+                                    NativeCloseCustody::NeverAttached => None,
+                                    NativeCloseCustody::Serving(_) | NativeCloseCustody::Prepared(_) => unreachable!("physical close follows complete original Native retirement"),
+                                },
+                            };
                             return ApplicationHomeCloseOutcome::Closed {
                                 store: shutdown,
                                 checkpoint: self.checkpoint.into_result(),
-                            }
+                                allocation,
+                            };
                         }
                         outcome @ PhysicalStoreCloseOutcome::InspectionRequired { .. } => {
                             return Self {

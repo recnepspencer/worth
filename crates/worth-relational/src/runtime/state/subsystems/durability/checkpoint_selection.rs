@@ -1,6 +1,8 @@
 //! Selected directory DATA and the independently completed catalog frontier.
+mod source_retirement;
 use crate::durability::data::{
-    PreparedCheckpointDirectory, RelationalCheckpointDirectory, RelationalCheckpointManifest,
+    NativeCheckpointDirectoryEdge, PreparedCheckpointDirectory, RelationalCheckpointDirectory,
+    RelationalCheckpointManifest,
 };
 use crate::durability::medium::RelationalDurableColdSource;
 use std::sync::{Arc, Mutex};
@@ -11,7 +13,7 @@ pub(crate) struct RelationalCheckpointManifestSelection {
 }
 #[derive(Debug, Clone)]
 struct CheckpointSelectionState {
-    directory: Option<Arc<RelationalCheckpointDirectory>>,
+    directory: Option<NativeCheckpointDirectoryEdge>,
     acknowledged_index_definition_frontier: u64,
 }
 impl Default for CheckpointSelectionState {
@@ -35,7 +37,8 @@ impl RelationalCheckpointManifestSelection {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .directory
-            .clone()
+            .as_ref()
+            .and_then(NativeCheckpointDirectoryEdge::snapshot)
     }
     pub(crate) fn acknowledged_index_definition_frontier(&self) -> u64 {
         self.selected
@@ -75,7 +78,9 @@ impl RelationalCheckpointManifestSelection {
                 .selected
                 .lock()
                 .unwrap_or_else(|error| error.into_inner());
-            state.directory.replace(directory)
+            state
+                .directory
+                .replace(NativeCheckpointDirectoryEdge::new(directory))
         };
         drop(prior);
     }
@@ -87,7 +92,9 @@ impl RelationalCheckpointManifestSelection {
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             state.acknowledged_index_definition_frontier =
                 directory.manifest.index_definition_frontier;
-            state.directory.replace(directory)
+            state
+                .directory
+                .replace(NativeCheckpointDirectoryEdge::new(directory))
         };
         drop(prior);
     }
@@ -163,6 +170,9 @@ impl RelationalCheckpointManifestPublication {
         {
             return Err(Denial::StaleCapture);
         }
-        Ok(selected.directory.replace(directory))
+        Ok(selected
+            .directory
+            .replace(NativeCheckpointDirectoryEdge::new(directory))
+            .map(NativeCheckpointDirectoryEdge::into_original))
     }
 }

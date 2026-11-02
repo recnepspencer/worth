@@ -20,6 +20,14 @@ pub struct RelationalBranchRetentionLease {
 }
 
 impl RelationalBranchRetentionLease {
+    /// Retire this issued external lease and its original observation share
+    /// through the same nonwaiting Native observation owner, retaining payloads
+    /// until explicit unbudgeted reclaim. Independent aliases keep their veto.
+    pub fn into_observation_retirement(
+        self,
+    ) -> crate::change_source::RelationalRetainedObservationRetirement {
+        crate::change_source::RelationalRetainedObservationRetirement::from_retention_lease(self)
+    }
     pub(crate) fn new(
         observation: RelationalBranchObservation,
         binding: &super::RelationalBranchRetentionBinding,

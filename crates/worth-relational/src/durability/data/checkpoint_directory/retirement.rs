@@ -8,21 +8,24 @@ use crate::durability::medium::{
 use std::{alloc::Layout, mem::MaybeUninit};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 pub(crate) struct PreparedCheckpointDirectoryRetirement {
-    storage: Box<MaybeUninit<CheckpointDirectoryRetirement>>,
+    storage: Box<MaybeUninit<DirectoryRetirementPayload>>,
     memory: Option<ExecutionMemoryReservation>,
 }
 pub(crate) struct CheckpointDirectoryRetirement {
+    payload: Box<DirectoryRetirementPayload>,
+    _memory: Option<ExecutionMemoryReservation>,
+}
+struct DirectoryRetirementPayload {
     manifest: RelationalCheckpointManifest,
-    source: Arc<dyn RelationalDurableColdSource>,
+    source: Option<Arc<dyn RelationalDurableColdSource>>,
     history_members: Arc<super::super::RelationalHistoryMemberDirectory>,
     member: Option<RelationalDurableMemberRetirement>,
     read: SelectedCheckpointReadRetirement,
     retired_member: Option<RetiredRelationalDurableMemberCustody>,
-    _memory: Option<ExecutionMemoryReservation>,
 }
 impl PreparedCheckpointDirectoryRetirement {
     pub(crate) fn prepare(request: &ExecutionRequest<'_, '_>) -> Result<Self, Ack> {
-        let bytes = Layout::new::<CheckpointDirectoryRetirement>().size();
+        let bytes = Layout::new::<DirectoryRetirementPayload>().size();
         let memory = request
             .reserve_retained_memory(bytes as u64)
             .map_err(|cause| {
@@ -33,34 +36,45 @@ impl PreparedCheckpointDirectoryRetirement {
             memory,
         })
     }
-    pub(crate) fn fill(
-        self,
-        directory: RelationalCheckpointDirectory,
-    ) -> Box<CheckpointDirectoryRetirement> {
-        let RelationalCheckpointDirectory {
+}
+impl RelationalCheckpointDirectory {
+    pub(crate) fn into_retirement(self) -> CheckpointDirectoryRetirement {
+        let Self {
             manifest,
             source,
             history_members,
             canonical_read,
             _basis,
-        } = directory;
-        let task = CheckpointDirectoryRetirement {
+            retirement,
+        } = self;
+        let payload = DirectoryRetirementPayload {
             manifest,
-            source,
+            source: Some(source),
             history_members,
             member: Some(_basis.into_retirement()),
             read: canonical_read.into_retirement(),
             retired_member: None,
-            _memory: self.memory,
         };
-        Box::write(self.storage, task)
+        CheckpointDirectoryRetirement {
+            payload: Box::write(retirement.storage, payload),
+            _memory: retirement.memory,
+        }
     }
 }
+
 impl CheckpointDirectoryRetirement {
+    pub(crate) fn advance(&mut self, request: &ExecutionRequest<'_, '_>) -> Result<bool, Ack> {
+        self.payload.advance(request)
+    }
+}
+impl DirectoryRetirementPayload {
     /// No allocation, arbitrary Drop or source replacement occurs in this step.
     pub(crate) fn advance(&mut self, request: &ExecutionRequest<'_, '_>) -> Result<bool, Ack> {
+        let Some(source) = &self.source else {
+            return Ok(true);
+        };
         if let Some(member) = &mut self.member {
-            match member.advance(request, self.source.as_ref()) {
+            match member.advance(request, source.as_ref()) {
                 O::Complete => {
                     self.retired_member = Some(
                         self.member
@@ -74,7 +88,29 @@ impl CheckpointDirectoryRetirement {
                 observation => return progress(observation),
             }
         }
-        progress(self.read.advance(request, self.source.as_ref()))
+        let complete = progress(self.read.advance(request, source.as_ref()))?;
+        if complete {
+            self.source.take();
+        }
+        Ok(complete)
+    }
+}
+impl RelationalCheckpointDirectory {
+    pub(crate) fn preflight_retirement(
+        &self,
+        source: &dyn RelationalDurableColdSource,
+    ) -> Result<(), Ack> {
+        if !std::ptr::addr_eq(self.source.as_ref(), source) {
+            return Err(Ack::Retirement(
+                crate::durability::medium::RelationalDurableMemberRetirementRefusal::ForeignSource,
+            ));
+        }
+        self._basis
+            .preflight_retirement(source)
+            .map_err(Ack::Retirement)?;
+        self.canonical_read
+            .preflight_retirement(source)
+            .map_err(Ack::Retirement)
     }
 }
 fn progress(observation: O) -> Result<bool, Ack> {
@@ -98,10 +134,10 @@ impl std::fmt::Debug for CheckpointDirectoryRetirement {
         f.debug_struct("CheckpointDirectoryRetirement")
             .field(
                 "canonical_members",
-                &self.manifest.canonical_members.entries().len(),
+                &self.payload.manifest.canonical_members.entries().len(),
             )
-            .field("history", &Arc::as_ptr(&self.history_members))
-            .field("member_active", &self.member.is_some())
+            .field("history", &Arc::as_ptr(&self.payload.history_members))
+            .field("member_active", &self.payload.member.is_some())
             .finish_non_exhaustive()
     }
 }

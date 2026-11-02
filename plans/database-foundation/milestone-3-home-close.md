@@ -56,13 +56,15 @@ translation is permitted. New public owner ports use their existing facades.
 
 | Requirement | Acceptance evidence |
 |---|---|
-| D11 ordinary handler custody and retained payload | Handler registry retirement controls and Host `handler_retirement` courts; coordinator ruling retires the old ordinary-supplier Unsupported assertion |
-| D11 original slot/handler aliases refuse Busy | `original_erased_slot_and_handler_aliases_preserve_the_same_handler_and_payload` and same-Home Host resume control |
+| D11 ordinary handler custody and retained payload | `default_supplier_hooks_retire_invocation_without_destroying_shared_payload`, `ordinary_supplier_retirement_retains_the_original_payload_until_reclaim`, and Host `handler_retirement` courts; coordinator ruling retires the old ordinary-supplier Unsupported assertion |
+| D11 original slot/handler aliases refuse Busy | `original_erased_slot_and_handler_aliases_preserve_the_same_handler_and_payload` and `erased_slot_and_active_handler_aliases_refuse_while_the_same_query_serves`; Host `program_alias_refusal_resumes_the_same_query_and_ordinary_handler_retires` |
 | D11 active call refuses before seal | `active_installed_call_refuses_before_world_seal_and_resumes_the_same_home` |
 | D11 registered source, serving graph and provider custody | Six unchanged `query_readmission::native_artifacts` acceptance courts named in the P-B brief, plus owner retirement controls |
-| D11 original request deadlines and refusal custody | Host close interruption/retry courts, with the same original owners retained |
-| D11/D12 failed close checkpoint does not prevent Closed | Host checkpoint-failure court, observing actual physical shutdown and retained checkpoint failure |
-| D11 kill without close preserves acknowledged results | Production Host filesystem process court; exact RootLinkage or CompleteNativeRequired reopen refusal is reported to P-A |
+| D11 original request deadlines and refusal custody | `expired_host_close_preserves_the_same_serving_home_and_a_live_retry_physically_closes`, with the original owners retained |
+| D11/D12 failed close checkpoint does not prevent Closed | `host_checkpoint_memory_failure_is_reported_while_original_retired_owners_remain_physically_closed` |
+| D11 kill without close preserves acknowledged results | `killed_host_without_close_reopens_its_acknowledged_value_and_original_idempotency_record`; exact P-A refusal is retained if blocked |
+| D17 original member callback custody | `completed_member_callback_survives_a_busy_original_return_slot_without_replay`, `cancelled_member_handoff_returns_original_custody_and_a_live_request_continues_it` |
+| D17 prepaid close storage | `prepaid_close_storage_retains_original_backings_through_exhaustion_and_public_moveout`, `prepaid_slot_denial_targets_actual_backing_and_preserves_cancellation` |
 | D17 no service after seal; terminal custody consumed once | Prepared/retiring/retired owner types and sealed `query-home-retirement` caller |
 
 This map records intended evidence, not completed verification. Lane logs are
@@ -79,3 +81,59 @@ blanket supplier-refusal claim and the ordinary-supplier refusal portion of
 The replacement controls require ordinary supplier retirement, preserved
 original payloads, actual alias Busy and explicit handler-declared refusal.
 No acceptance court is removed, ignored or allowed to accept an arbitrary error.
+
+## Native and Store retirement ownership
+
+Native close consumes the authentic outer runtime Arc (or the still-unshared
+pre-service owner), preserving its inner state Arc and dormant Weak services.
+It validates original live and retired roots, both mirror directories, nested
+symbol tables, empty lineage registrations, history-prefix registrations,
+deferred-index detached history and canonical source placements. An original
+medium binding is mandatory. Its successful consuming extraction seals the
+phase; subsequent Busy/stop/refusal retains the same owners and callbacks.
+
+A callback task and its returned observation remain in the current owner cursor
+until the exact original slot accepts their nonwaiting return. Retry returns the
+cached observation before another callback. Retired original payloads remain
+in those owner slots. Native-owned region leases retire once; independent
+resident metadata leases keep their normal clone/Drop accounting.
+
+The retired-root owner now uses its own RwLock/BTreeMap. Ordinary sweeps copy
+one entry's generation/root/bindings, inspect lane liveness outside the primary
+gate, and revalidate generation plus binding identity before pruning. This adds
+real global write serialization. Close uses successor lookup over original
+entries and a fixed radix path, without invoking the ordinary reclaimer.
+
+Home's existing pre-descriptor close storage prepays the Native close frame and
+possible reversible outer allocation from the original opening request. A
+refusal returns the same vacant preparation; no allocation is admitted at close
+merely because a checkpoint exhausted memory. Each admitted checkpoint directory
+also prepays its own finite retirement Box before its physical custody is issued.
+These are real extra cold allocations and inline state, not free bookkeeping.
+The fixed Home result Box and Native frame Box are distinct responsibilities;
+each allocation dies before its own reservation is refunded.
+
+Store retires its original installed selected read through the existing physical
+read-membership port. A shared external source keeps its own protection and
+prevents physical close. A unique local source retains its original data and
+supplier payload while releasing only matching physical capabilities. Actual
+physical Closed moves the retired Native, provider, Bridge and Home allocations
+into the existing retired Home result; explicit reclaim destroys them later.
+
+The P-B brief authorizes these missing in-memory Native retirement ports.
+Persisted formats and reopen reconstruction remain with P-A. No opening or
+format grammar is changed by this slice.
+
+## Verification scope
+
+The six unchanged native-artifact acceptance assertions remain the requested
+Store controls. Ordinary fixture configuration remains its original contacts Arc;
+a separate authored fixture supplies the explicit handler refusal. New Host
+courts cover expired close/resume, a real bounded-memory checkpoint failure and
+a killed acknowledged writer. The kill/reopen court must report an exact P-A
+RootLinkage or CompleteNativeRequired refusal if that prerequisite remains red.
+
+This map records intended evidence until the focused courts, affected normal
+targets, default-stack direct controls and completion gates qualify the current
+committed source. Earlier compilation logs qualify only their earlier dirty
+source, and do not certify physical Closed. Independent review remains required.

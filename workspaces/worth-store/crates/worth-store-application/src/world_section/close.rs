@@ -4,7 +4,9 @@ use super::WorldReadmittedApplicationHome;
 use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::RuntimeWorldOwnerLifecycleObservation;
 mod admission;
+mod bridge_retirement;
 mod checkpoint;
+pub(crate) use bridge_retirement::{HomeBridgeCloseCustody, RetiredHomeBridgeComposition};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum WorldHomeClosePosture {
@@ -19,6 +21,41 @@ pub struct WorldSealedApplicationHome {
     composition: Option<super::attachment::ApplicationHomeBridgeComposition>,
 }
 impl WorldSealedApplicationHome {
+    #[doc(hidden)]
+    pub fn retire_checkpoint_operation(
+        &self,
+        operation: crate::ApplicationHomeCheckpointOperation,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::RetiredApplicationHomeCheckpointOperation,
+        (
+            crate::ApplicationHomeCheckpointOperation,
+            crate::ApplicationHomeCloseDenial,
+        ),
+    > {
+        operation.retire_for_home(&self.home.context.serving, request)
+    }
+    /// Closed Host retirement borrows the same Native owner; no raw handle or
+    /// source escapes, and its Store-owned Arc remains alive throughout.
+    #[doc(hidden)]
+    pub fn with_query_retirement_owners<R>(
+        &self,
+        retire: impl FnOnce(
+            &worth_relational::facade::runtime::RelationalRuntime,
+            &std::sync::Arc<
+                std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
+            >,
+        ) -> R,
+    ) -> R {
+        retire(
+            self.home.relational().runtime(),
+            &self
+                .composition
+                .as_ref()
+                .expect("Query Home owns its original composition")
+                .conditional,
+        )
+    }
     pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {
         self.home.home_identity()
     }
@@ -137,6 +174,9 @@ where
                 .context
                 .world_publications
                 .settle_for_close(&self.home.context.serving);
+            if let Err(reason) = self.prepare_composite_close(request) {
+                return Err(WorldHomeCloseRefused { home: self, reason });
+            }
             let report = match self.world.lifecycle_port().close(request, &self.world) {
                 Ok(report) => report,
                 Err(cause) => {

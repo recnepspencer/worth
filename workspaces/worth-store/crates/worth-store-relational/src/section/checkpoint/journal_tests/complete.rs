@@ -148,23 +148,30 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
         ))
     ));
     let prepared = preparation.prepare(execution).unwrap();
-    let (section, cause) = match section.prepare_close() {
+    let retirement =
+        worth_relational::facade::runtime::PreparedRelationalSourceClose::prepare(execution)
+            .unwrap();
+    let (section, retirement, cause) = match section.prepare_close(retirement, execution) {
         Err(refused) => refused,
         Ok(_) => panic!("the actual retained Complete capture must veto Native close"),
     };
-    assert_eq!(
+    assert!(matches!(
         cause,
         RelationalSectionCloseDenial::Native(RelationalRuntimeCloseDenial::ReadCustodyRetained)
-    );
+    ));
     drop(prepared);
-    let closing = section.prepare_close().unwrap_or_else(|(_, cause)| {
-        panic!("idle weak preparation cannot retain close custody: {cause:?}")
-    });
+    let closing = section
+        .prepare_close(retirement, execution)
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!("idle weak preparation cannot retain close custody: {cause:?}")
+        });
     assert!(
         matches!(preparation.prepare(execution), Err(Denial::Capture(_))),
         "stopped Native owner cannot prepare through a weak port"
     );
-    let section = closing.resume();
+    let (section, _retirement) = closing
+        .resume()
+        .unwrap_or_else(|_| panic!("reversible preparation retains the same serving owner"));
     let prepared = idle.prepare(execution).unwrap();
     assert_eq!(prepared.covered().0, 1);
     drop(prepared);

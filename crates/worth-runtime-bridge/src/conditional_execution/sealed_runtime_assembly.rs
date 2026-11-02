@@ -1,5 +1,6 @@
 mod causal_inspection;
 mod conditional_dispatch;
+mod home_retirement;
 mod owned_async;
 mod process_local_release;
 mod unqueued_owned_async;
@@ -37,6 +38,7 @@ pub struct BridgeSealedRuntimeAssembly {
     correspondence: RuntimeWorldCorrespondencePort,
     correspondence_basis: crate::facade::AdmittedRuntimeWorldCorrespondenceBasis,
     affinity: BridgeSealedOwnerAffinity,
+    home_retirement: Option<home_retirement::FundedBridgeAssemblyRetirement>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -155,6 +157,7 @@ impl BridgeSealedRuntimeAssembly {
             correspondence,
             correspondence_basis,
             affinity,
+            home_retirement: None,
         })
     }
 

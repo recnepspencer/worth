@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
+mod source_retirement;
+pub(crate) use source_retirement::SealedRelationalMediumBinding;
 mod checkpoint_selection;
 pub(crate) use checkpoint_selection::CheckpointPublication;
 use worth_proof::{AuthorityMarker, DurablyCommitted};
@@ -26,7 +28,7 @@ use crate::history::data::PositionedCanonicalCommit;
 #[derive(Debug)]
 pub(crate) struct RelationalDurableMediumBinding {
     state: Mutex<BindingState>,
-    cold_source: Arc<dyn super::RelationalDurableColdSource>,
+    cold_source: Option<Arc<dyn super::RelationalDurableColdSource>>,
     unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
 }
 
@@ -88,7 +90,10 @@ impl RelationalDurableMediumBinding {
         self.unresolved.get().is_some()
     }
     pub(crate) fn cold_source(&self) -> Arc<dyn super::RelationalDurableColdSource> {
-        self.cold_source.clone()
+        self.cold_source
+            .as_ref()
+            .expect("only the live binding exposes its source")
+            .clone()
     }
     pub(super) fn preparation_fate(&self) -> Arc<OnceLock<RelationalDurabilityUnresolved>> {
         self.unresolved.clone()
@@ -108,7 +113,7 @@ impl RelationalDurableMediumBinding {
         let unresolved = Arc::new(OnceLock::new());
         let cold_source = medium.cold_source();
         Self {
-            cold_source,
+            cold_source: Some(cold_source),
             state: Mutex::new(BindingState {
                 medium: Some(medium),
                 unresolved: unresolved.clone(),
@@ -151,7 +156,7 @@ impl RelationalDurableMediumBinding {
             || RelationalDurableCommitReadmission {
                 positioned: commit,
                 entry,
-                source: self.cold_source.clone(),
+                source: self.cold_source(),
             },
         )
     }

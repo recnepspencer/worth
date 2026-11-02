@@ -19,12 +19,55 @@ pub struct ApplicationHomeCheckpointOperation {
     native: RelationalSectionCompleteCheckpointPreparation,
     limits: ApplicationHomeCheckpointLimits,
 }
+/// Original operation metadata after its actual serving alias is discharged.
+pub struct RetiredApplicationHomeCheckpointOperation {
+    _owner: Arc<HomeCheckpointOwner>,
+    _world: WorldCheckpointPort,
+    _native: RelationalSectionCompleteCheckpointPreparation,
+    _limits: ApplicationHomeCheckpointLimits,
+}
+impl std::fmt::Debug for RetiredApplicationHomeCheckpointOperation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("RetiredApplicationHomeCheckpointOperation")
+    }
+}
 impl std::fmt::Debug for ApplicationHomeCheckpointOperation {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("ApplicationHomeCheckpointOperation")
     }
 }
 impl ApplicationHomeCheckpointOperation {
+    pub(crate) fn retire_for_home(
+        self,
+        owner: &Arc<ServingPhysicalRuntime>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<RetiredApplicationHomeCheckpointOperation, (Self, crate::ApplicationHomeCloseDenial)>
+    {
+        if !Arc::ptr_eq(&self.serving, owner) {
+            return Err((
+                self,
+                crate::ApplicationHomeCloseDenial::ForeignCheckpointOperation,
+            ));
+        }
+        if let Err(cause) = request.consult() {
+            return Err((self, crate::ApplicationHomeCloseDenial::Execution(cause)));
+        }
+        let Self {
+            serving,
+            owner,
+            world,
+            native,
+            limits,
+        } = self;
+        // The matching borrowed Home Arc guarantees nonfinal local release.
+        drop(serving);
+        Ok(RetiredApplicationHomeCheckpointOperation {
+            _owner: owner,
+            _world: world,
+            _native: native,
+            _limits: limits,
+        })
+    }
     pub(crate) fn new(
         serving: Arc<ServingPhysicalRuntime>,
         owner: Arc<HomeCheckpointOwner>,

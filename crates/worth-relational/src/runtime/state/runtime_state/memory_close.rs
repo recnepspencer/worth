@@ -9,7 +9,7 @@ impl RelationalRuntime {
     /// Reversible preflight: no cache/head payload has been altered yet.
     /// Stopping first closes the admission race; all following probes are
     /// nonwaiting and new accepted work cannot appear while quiescent.
-    pub(crate) fn try_prepare_memory_close(
+    pub(crate) fn try_prepare_stopped_close(
         &self,
     ) -> Result<Option<RelationalRuntimeCloseDenial>, ()> {
         let Some(close) = self.tenure.close_authority() else {
@@ -39,7 +39,7 @@ impl RelationalRuntime {
         Ok(None)
     }
 
-    pub(crate) fn complete_memory_close_business(
+    pub(crate) fn complete_stopped_close_business(
         &self,
     ) -> Result<Option<RelationalRuntimeCloseDenial>, ()> {
         let observed = self.memory_close_business_preflight()?;
@@ -52,7 +52,7 @@ impl RelationalRuntime {
         self.tenure.close_authority().expect(
             /* Proof: Memory close checks authentic Owner tenure before exposing its phase; that private phase retains the same runtime and never changes tenure. */
             "memory close retains original owner authority"
-        ).complete_memory_business();
+        ).complete_stopped_business();
         Ok(None)
     }
 }

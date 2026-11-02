@@ -10,6 +10,49 @@ use worth_execution::{CancellationSource, ExecutionRequest};
 use worth_relational::facade::change_source::RelationalRuntimeHandleAliasRetirementDenial as AliasDenial;
 
 #[test]
+fn source_alias_retirement_preserves_foreign_refusal_and_independent_read_custody() {
+    let host = crate::snapshot::test_serial_request();
+    let request = ExecutionRequest::serial(&host);
+    let runtime = Arc::new(runtime_with_test_schema());
+    let created = create_entity_outcome(&request, &runtime, "retired-source");
+    release_test_commit_snapshot(&runtime, &created);
+    let source = RuntimeBridgeRelationalSource::for_graph_role(runtime.clone(), "primary").unwrap();
+    let foreign = runtime_with_test_schema();
+    let (source, denied) = match source.try_retire_alias_for_request(&request, &foreign) {
+        Err(refused) => refused,
+        Ok(_) => panic!("foreign owner must retain the original source"),
+    };
+    assert_eq!(denied, AliasDenial::ForeignOwner);
+    let (_, basis) = source
+        .observe_branch_basis(&runtime.main_branch_identity())
+        .unwrap();
+    let lease = source.retain_branch_basis_for_bridge(&basis).unwrap();
+    let snapshot = source.open_retained_snapshot(lease).unwrap();
+    let retired = source
+        .try_retire_alias_for_request(&request, &runtime)
+        .unwrap_or_else(|(_, cause)| panic!("actual source alias: {cause:?}"));
+    assert_eq!(
+        snapshot
+            .read_packet(&packet(&created), request)
+            .unwrap()
+            .records()[0]
+            .scalar_aspect_value(),
+        Some(&AspectValue::String("retired-source".into()))
+    );
+    drop(snapshot);
+    let runtime = Arc::try_unwrap(runtime).unwrap();
+    let refused = runtime.prepare_close().unwrap_err();
+    assert_eq!(
+        refused.reason(),
+        worth_relational::facade::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained
+    );
+    drop(basis);
+    refused.into_runtime().prepare_close().unwrap().finish();
+    foreign.prepare_close().unwrap().finish();
+    retired.reclaim();
+}
+
+#[test]
 fn retained_snapshot_retirement_entry_refusal_returns_same_readable_foreign_and_shared_snapshot() {
     let host = crate::snapshot::test_serial_request();
     let request = ExecutionRequest::serial(&host);

@@ -26,7 +26,7 @@ impl StoreColdSource {
             || !owner
                 .serving
                 .as_ref()
-                .is_some_and(|serving| Arc::ptr_eq(serving, &self.serving))
+                .is_some_and(|serving| Arc::ptr_eq(serving, self.serving()))
         {
             return Err(R::ForeignCustody);
         }

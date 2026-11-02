@@ -1,4 +1,9 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
+mod source_retirement;
+pub(crate) use source_retirement::{
+    NativeRegionSourceRetirement, NativeRegionSourceRetirementDenial,
+    NativeRegionSourceRetirementProgress, NativeSourcePass,
+};
 mod cell;
 mod content_capture;
 pub(crate) use content_capture::RegionContentFailure;

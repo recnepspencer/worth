@@ -237,7 +237,10 @@ pub mod runtime {
         VisibilityReadContext, VisibilityRetentionAuthority,
     };
     pub use crate::runtime::{
-        PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+        PreparedRelationalRuntimeClose, PreparedRelationalSourceClose,
+        RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused, RelationalSourceClose,
+        RelationalSourceCloseDenial, RelationalSourceCloseProgress,
+        RetiredSourceRelationalAllocation,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,

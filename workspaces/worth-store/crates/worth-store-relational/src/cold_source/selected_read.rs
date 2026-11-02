@@ -64,7 +64,7 @@ impl StoreColdSource {
             complete: false,
             entries: MemberMap::default(),
             issuer: self.weak_self.clone(),
-            serving: Some(self.serving.clone()),
+            serving: Some(Arc::clone(self.serving())),
             _memory: memory,
         });
         {
@@ -77,7 +77,7 @@ impl StoreColdSource {
                 .read
                 .as_ref()
                 .ok_or(Refusal::Storage(Cause::SourceUnavailable))?;
-            self.serving
+            self.serving()
                 .anchored_records()
                 .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
                 .validate_read_membership(read)
@@ -102,7 +102,7 @@ impl StoreColdSource {
             || !selected
                 .serving
                 .as_ref()
-                .is_some_and(|serving| Arc::ptr_eq(serving, &self.serving))
+                .is_some_and(|serving| Arc::ptr_eq(serving, self.serving()))
         {
             return Err(Refusal::ForeignSource);
         }
@@ -113,7 +113,7 @@ impl StoreColdSource {
             .get(&locator)
             .ok_or(Refusal::Storage(Cause::MissingMember))?;
         let stream = self
-            .serving
+            .serving()
             .anchored_records()
             .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
             .open_read_member(

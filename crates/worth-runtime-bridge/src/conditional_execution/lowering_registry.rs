@@ -48,6 +48,11 @@ struct BridgeExactConditionalBasisClaim {
 }
 
 impl BridgeConditionalLoweringRegistry {
+    pub(super) fn is_empty_for_home_stop(&self) -> bool {
+        self.slots.is_empty()
+            && self.reserved_exact_basis_slots == 0
+            && self.exact_basis.is_empty_for_home_stop()
+    }
     pub(super) fn install(
         &mut self,
         key: BridgeConditionalLoweringKey,

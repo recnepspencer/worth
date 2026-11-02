@@ -19,7 +19,7 @@ impl StoreColdSource {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         let records = self
-            .serving
+            .serving()
             .anchored_records()
             .map_err(Denial::Unavailable)?;
         let membership = records
@@ -57,7 +57,7 @@ impl StoreColdSource {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         let records = self
-            .serving
+            .serving()
             .anchored_records()
             .map_err(Denial::Unavailable)?;
         let membership = records

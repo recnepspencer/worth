@@ -206,3 +206,52 @@ fn finish(task: &mut RelationalRetainedObservationRetirement, request: &Executio
     }
     panic!("original custody did not complete retirement");
 }
+
+#[test]
+fn single_external_lease_retirement_preserves_an_independent_observation_veto() {
+    let host = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request = ExecutionRequest::serial(&host);
+    let runtime = runtime_with_test_schema();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let retained = runtime.retain_observation_snapshot(&basis).unwrap();
+    let accounting = runtime
+        .services
+        .instrumentation
+        .external_retention_terminal_accounting();
+    let before = accounting.snapshot();
+    let mut task = retained.retention.into_observation_retirement();
+    drop(retained.observation);
+    finish(&mut task, &request);
+    let retired = task.into_retired().unwrap();
+    let refused = runtime.prepare_close().unwrap_err();
+    assert_eq!(
+        refused.reason(),
+        RelationalRuntimeCloseDenial::ReadCustodyRetained
+    );
+    let runtime = refused.into_runtime();
+    assert_eq!(
+        accounting.snapshot().explicit_releases,
+        before.explicit_releases + 1
+    );
+    assert_eq!(
+        accounting.snapshot().dropped_releases,
+        before.dropped_releases
+    );
+    drop(basis);
+    runtime.prepare_close().unwrap().finish();
+    retired.reclaim();
+    assert_eq!(
+        accounting.snapshot().explicit_releases,
+        before.explicit_releases + 1
+    );
+    assert_eq!(
+        accounting.snapshot().dropped_releases,
+        before.dropped_releases
+    );
+}

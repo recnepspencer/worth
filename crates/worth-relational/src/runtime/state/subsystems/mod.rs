@@ -39,8 +39,8 @@ pub(crate) use history::{
     PreparedCanonicalPublicationRoute, PreparedCommitSequence,
     PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
     PreparedVersionedArtifactPublication, RelationalCanonicalPublicationRoutes,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    RetainedCanonicalPosition,
+    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPerformedSourceWalk,
+    RelationalPreparationHistory, RelationalSourceHistoryBinding, RetainedCanonicalPosition,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub use history::{

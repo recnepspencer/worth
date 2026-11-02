@@ -22,9 +22,9 @@ use worth_store::physical_runtime::{
 const PUBLICATION_DEADLINE_MILLIS: u64 = 30_000;
 
 pub(crate) struct StoreJournalMedium {
-    serving: Arc<ServingPhysicalRuntime>,
+    serving: Option<Arc<ServingPhysicalRuntime>>,
     placement: AdmittedRecordPlacementPolicy,
-    cold_source: Arc<crate::cold_source::StoreColdSource>,
+    cold_source: Option<Arc<crate::cold_source::StoreColdSource>>,
     checkpoint_selection: Arc<dyn crate::section::RelationalCheckpointSelectionSource>,
 }
 
@@ -36,13 +36,18 @@ impl StoreJournalMedium {
         checkpoint_selection: Arc<dyn crate::section::RelationalCheckpointSelectionSource>,
     ) -> Self {
         Self {
-            serving,
+            serving: Some(serving),
             placement,
-            cold_source,
+            cold_source: Some(cold_source),
             checkpoint_selection,
         }
     }
 
+    fn serving(&self) -> &Arc<ServingPhysicalRuntime> {
+        self.serving
+            .as_ref()
+            .expect("retired medium cannot publish or read")
+    }
     /// Append `bytes` at `entry` of the borrowed journal.
     fn publish_entry(
         &self,
@@ -85,7 +90,26 @@ impl std::fmt::Debug for StoreJournalMedium {
     }
 }
 
+mod home_retirement;
 impl RelationalDurableMedium for StoreJournalMedium {
+    fn preflight_source_retirement(
+        &self,
+        source: &dyn worth_relational::facade::durability::RelationalDurableColdSource,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), worth_relational::facade::durability::RelationalMediumRetirementDenial> {
+        self.preflight_home_retirement(source, request)
+    }
+    fn advance_source_retirement(
+        &mut self,
+        source: &dyn worth_relational::facade::durability::RelationalDurableColdSource,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_relational::facade::durability::RelationalMediumRetirementProgress,
+        worth_relational::facade::durability::RelationalMediumRetirementDenial,
+    > {
+        self.advance_home_retirement(source, request)
+    }
+
     fn checkpoint_selection(
         &self,
         subject: &worth_relational::facade::durability::OpaqueCapturedCheckpointSubject,
@@ -95,7 +119,10 @@ impl RelationalDurableMedium for StoreJournalMedium {
     fn cold_source(
         &self,
     ) -> Arc<dyn worth_relational::facade::durability::RelationalDurableColdSource> {
-        self.cold_source.clone()
+        self.cold_source
+            .as_ref()
+            .expect("serving medium owns its source")
+            .clone()
     }
     fn read_transition(
         &self,
@@ -105,12 +132,12 @@ impl RelationalDurableMedium for StoreJournalMedium {
         worth_relational::facade::durability::RelationalDurableTransitionReadFailure,
     > {
         use worth_relational::facade::durability::RelationalDurableTransitionReadFailure as Failure;
-        let journal = self
-            .serving
-            .branch_transitions()
-            .map_err(|denial| Failure::Unavailable {
-                detail: format!("{denial:?}"),
-            })?;
+        let journal =
+            self.serving()
+                .branch_transitions()
+                .map_err(|denial| Failure::Unavailable {
+                    detail: format!("{denial:?}"),
+                })?;
         let bytes = journal
             .read(
                 sequence.0,
@@ -128,7 +155,7 @@ impl RelationalDurableMedium for StoreJournalMedium {
         artifact: &RelationalCanonicalCommitArtifact,
     ) -> DurablePublicationFate<String> {
         self.publish_entry(
-            self.serving.canonical_commits(),
+            self.serving().canonical_commits(),
             artifact.position().0,
             artifact.as_bytes(),
         )
@@ -139,7 +166,7 @@ impl RelationalDurableMedium for StoreJournalMedium {
         artifact: &RelationalBranchTransitionArtifact,
     ) -> DurablePublicationFate<String> {
         self.publish_entry(
-            self.serving.branch_transitions(),
+            self.serving().branch_transitions(),
             artifact.sequence().0,
             artifact.as_bytes(),
         )

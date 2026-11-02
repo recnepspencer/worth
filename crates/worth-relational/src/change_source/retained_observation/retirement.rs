@@ -59,6 +59,17 @@ impl RelationalRetainedObservation {
 }
 
 impl RelationalRetainedObservationRetirement {
+    pub(crate) fn from_retention_lease(
+        lease: crate::history::retention::RelationalBranchRetentionLease,
+    ) -> Self {
+        Self {
+            observation: None,
+            external: lease.into_retirement(),
+            external_released: false,
+            shares: None,
+            complete: false,
+        }
+    }
     /// Advance one original stage without waiting. Every live step borrows the
     /// original request; completed tasks do not poll or repeat effects.
     pub fn advance(
@@ -100,9 +111,11 @@ impl RelationalRetainedObservationRetirement {
             return Ok(false);
         }
         if self.shares.is_none() {
-            let first = self.observation.take().expect(/* Proof: into_retirement installs this original share; only this one-time handoff consumes it. */ "original retained observation remains owned");
             let second = self.external.take_retired_observation().expect(/* Proof: The authentic external lease owns its second share, and external_released is set only after successful retirement. */ "retired external lease retains its observation");
-            self.shares = Some(RelationalRetainedObservationShares::new(first, second));
+            self.shares = Some(match self.observation.take() {
+                Some(first) => RelationalRetainedObservationShares::new(first, second),
+                None => RelationalRetainedObservationShares::single(second),
+            });
             return Ok(false);
         }
         self.shares.as_mut().expect(/* Proof: The preceding branch installs shares and returns; every later step retains that same task. */ "original share retirement is installed").advance(request)

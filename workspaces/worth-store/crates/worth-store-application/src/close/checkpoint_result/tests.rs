@@ -8,11 +8,32 @@ use worth_execution::{
 
 fn independent_bill() -> u64 {
     Layout::new::<Option<CheckpointResult>>()
+        .extend(Layout::new::<
+            Option<worth_relational::facade::runtime::PreparedRelationalSourceClose>,
+        >())
+        .unwrap()
+        .0
         .extend(Layout::new::<Option<ExecutionMemoryReservation>>())
         .unwrap()
         .0
         .pad_to_align()
         .size() as u64
+}
+fn native_preparation_bill() -> u64 {
+    let budget = SerialMemoryBudget::new(Some(64 << 10));
+    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+    let original = worth_relational::facade::runtime::PreparedRelationalSourceClose::prepare(
+        &ExecutionRequest::serial(&host),
+    )
+    .unwrap();
+    let bill = budget.charged_memory_bytes();
+    assert!(
+        bill > 0,
+        "the actual Native owner funds its fixed frame and reversible outer storage"
+    );
+    drop(original);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    bill
 }
 fn controller() -> u64 {
     let budget = SerialMemoryBudget::new(Some(64 << 10));
@@ -28,13 +49,13 @@ fn controller() -> u64 {
 }
 
 #[test]
-fn prepaid_slot_retains_one_backing_through_exhaustion_and_public_moveout() {
+fn prepaid_close_storage_retains_original_backings_through_exhaustion_and_public_moveout() {
     let ceiling = 64 << 10;
     let budget = SerialMemoryBudget::new(Some(ceiling));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let execution = ExecutionRequest::serial(&host);
     let mut slot = HomeCloseCheckpointResult::prepare(&execution).unwrap();
-    let bill = independent_bill();
+    let bill = independent_bill() + native_preparation_bill();
     assert!(slot.is_none());
     assert_eq!(budget.charged_memory_bytes(), bill);
     let original = slot.backing.as_deref().unwrap() as *const Backing;

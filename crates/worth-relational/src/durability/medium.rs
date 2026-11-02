@@ -14,6 +14,10 @@
 //! tail back to Relational through
 //! [`DurabilityAccess::recovery_plan_from_source`](crate::durability::access::DurabilityAccess::recovery_plan_from_source).
 
+mod native_journal_source;
+mod source_retirement;
+pub(crate) use native_journal_source::NativeJournalSourceEdge;
+pub use source_retirement::{RelationalMediumRetirementDenial, RelationalMediumRetirementProgress};
 mod binding;
 mod checkpoint_selection;
 pub use checkpoint_selection::{
@@ -24,6 +28,9 @@ mod cold_source;
 mod commit_publication;
 pub use cold_source::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 mod member_custody;
+pub(crate) use member_custody::{
+    NativeMemberRetirementHandoff, NativeMemberSlotDenial, NativeSourceMemberState,
+};
 pub use member_custody::{
     RelationalDurableMemberCustody, RelationalDurableMemberRetirement,
     RelationalDurableMemberRetirementObservation, RelationalDurableMemberRetirementRefusal,
@@ -43,6 +50,7 @@ pub(crate) use transition_read::RelationalTransitionHistoryReader;
 pub(crate) use binding::{
     CheckpointPublication, RelationalDurableCommitReadmission, RelationalDurableMediumBinding,
     RelationalDurableStepStop, RelationalDurableTransitionPublication,
+    SealedRelationalMediumBinding,
 };
 pub(crate) use commit_publication::RelationalCommitPublication;
 pub use recovery_source::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
@@ -69,6 +77,26 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 /// runtime, and a forked runtime never inherits publication access. Speculative
 /// forks may carry only a read-only historical-transition reader.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
+    /// Non-consuming validation of this original provider's retirement path.
+    /// Unknown providers refuse before the Native publication binding is sealed.
+    fn preflight_source_retirement(
+        &self,
+        source: &dyn RelationalDurableColdSource,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalMediumRetirementDenial> {
+        source_retirement::unsupported(request, source)
+    }
+    /// Retire this provider's actual physical capabilities. The original Box
+    /// and its inert allocations stay owned until explicit unbudgeted reclaim.
+    fn advance_source_retirement(
+        &mut self,
+        source: &dyn RelationalDurableColdSource,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalMediumRetirementProgress, RelationalMediumRetirementDenial> {
+        source_retirement::unsupported(request, source)?;
+        unreachable!("unknown provider refuses")
+    }
+
     /// Read the exact Home attempt's actual terminal receipt. A caller-supplied
     /// fate or separately paired receipt is not an answer to this question.
     fn checkpoint_selection(

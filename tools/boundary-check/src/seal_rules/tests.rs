@@ -141,6 +141,12 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ("readmit_world_home", "world-home"),
         ("readmit_home_from_read", "native-selected-home-readmission"),
         ("begin_after_world_seal", "query-home-retirement"),
+        ("retire_home_maintenance", "query-home-retirement"),
+        ("with_query_retirement_owners", "query-home-retirement"),
+        (
+            "prepare_initial_empty_home_stop",
+            "application-home-bridge-stop",
+        ),
         ("world_composition_runtime", "native-home-composition"),
         ("world_recovery_authority", "native-world-readmission"),
         (

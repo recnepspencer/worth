@@ -1,5 +1,8 @@
 //! Partial live admission stays inside the original pending ACK owner.
-use super::{PreparedCheckpointDirectory, RelationalCheckpointDirectory};
+use super::{
+    PreparedCheckpointDirectory, PreparedCheckpointDirectoryRetirement,
+    RelationalCheckpointDirectory,
+};
 use crate::durability::{
     checkpoint_history::readmission::SelectedCheckpointRead,
     medium::{
@@ -14,6 +17,7 @@ pub(crate) struct CheckpointDirectoryAdmission {
     members: Option<ExecutionArray<RelationalDurableMemberLocator>>,
     read: Option<SelectedCheckpointRead>,
     basis: Option<RelationalDurableMemberCustody>,
+    retirement: Option<PreparedCheckpointDirectoryRetirement>,
 }
 impl CheckpointDirectoryAdmission {
     pub(crate) fn new(draft: PreparedCheckpointDirectory) -> Self {
@@ -22,6 +26,7 @@ impl CheckpointDirectoryAdmission {
             members: None,
             read: None,
             basis: None,
+            retirement: None,
         }
     }
     pub(crate) fn advance(
@@ -32,6 +37,9 @@ impl CheckpointDirectoryAdmission {
             .draft
             .as_ref()
             .expect("incomplete admission retains its original draft");
+        if self.retirement.is_none() {
+            self.retirement = Some(PreparedCheckpointDirectoryRetirement::prepare(request)?);
+        }
         if self.members.is_none() {
             self.members = Some(
                 draft
@@ -71,6 +79,10 @@ impl CheckpointDirectoryAdmission {
             history_members: draft.history_members,
             canonical_read: self.read.take().expect("admitted original selected read"),
             _basis: self.basis.take().expect("admitted original member custody"),
+            retirement: self
+                .retirement
+                .take()
+                .expect("directory retirement storage prepaid before custody"),
         })
     }
 }

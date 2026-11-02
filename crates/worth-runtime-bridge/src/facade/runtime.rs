@@ -1,6 +1,11 @@
 use super::*;
 
 mod closeout;
+mod home_retirement;
+pub use home_retirement::{
+    BridgeHomeRetirementDenial, BridgeHomeRetirementProgress, RetiredRuntimeBridge,
+    RetiringRuntimeBridge,
+};
 mod continuity_planning;
 mod debug;
 mod diagnostics;

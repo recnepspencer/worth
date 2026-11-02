@@ -178,6 +178,7 @@ impl PreparedRelationalSection {
     pub fn selection_protection(&self) -> RelationalCheckpointSelectionProtection {
         self.publication.selection_protection()
     }
+    #[cfg(test)]
     pub(super) fn with_selection(
         mut self,
         selection: std::sync::Arc<dyn super::RelationalCheckpointSelectionSource>,

@@ -270,3 +270,9 @@ fn lock_lane(
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
+
+impl RelationalBranchRetentionBinding {
+    pub(in crate::history::retention) fn same_lane(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.owner, &other.owner) && Arc::ptr_eq(&self.lane, &other.lane)
+    }
+}

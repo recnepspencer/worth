@@ -14,7 +14,9 @@ use worth_store::physical_runtime::{
     OrderedJournalReadFailure, RecordReadDenial, RecordReadError, ServingPhysicalRuntime,
 };
 
+mod home_retirement;
 mod initial_selection;
+pub(crate) use home_retirement::{RetiredStoreColdSource, StoreColdSourceClose};
 mod member_custody;
 mod member_read;
 mod owned_read;
@@ -48,7 +50,7 @@ pub(crate) struct StoreColdSource {
     commit_read_observer:
         Option<Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>>,
     // Local selected readers/pins retire before a possible final pool-owner Drop.
-    serving: Arc<ServingPhysicalRuntime>,
+    serving: Option<Arc<ServingPhysicalRuntime>>,
 }
 
 impl std::fmt::Debug for StoreColdSource {
@@ -58,6 +60,17 @@ impl std::fmt::Debug for StoreColdSource {
 }
 
 impl StoreColdSource {
+    fn serving(&self) -> &Arc<ServingPhysicalRuntime> {
+        self.serving
+            .as_ref()
+            .expect("only a serving cold source exposes physical ports")
+    }
+    pub(crate) fn belongs_to(&self, serving: &Arc<ServingPhysicalRuntime>) -> bool {
+        self.serving
+            .as_ref()
+            .is_some_and(|original| Arc::ptr_eq(original, serving))
+    }
+
     pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Arc<Self> {
         Arc::new_cyclic(|weak_self| Self {
             weak_self: weak_self.clone(),
@@ -67,7 +80,7 @@ impl StoreColdSource {
             commit_reads: AtomicU64::new(0),
             #[cfg(feature = "certification-test-authority")]
             commit_read_observer: None,
-            serving,
+            serving: Some(serving),
         })
     }
     pub(crate) fn counters(&self) -> RelationalStoreColdReadCounters {
@@ -89,7 +102,7 @@ impl StoreColdSource {
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
             commit_read_observer: Some(observer),
-            serving,
+            serving: Some(serving),
         })
     }
     pub(crate) fn protect_member_selection_for_request(
@@ -102,6 +115,7 @@ impl StoreColdSource {
     > {
         self.custody.protect_selection_for_request(next, request)
     }
+    #[cfg(test)]
     pub(crate) fn member_locators(&self) -> Vec<RelationalDurableMemberLocator> {
         self.members
             .read()
@@ -117,7 +131,7 @@ impl StoreColdSource {
         members: &[RelationalDurableMemberLocator],
     ) -> Result<member_custody::MemberCustodyOwner, Cause> {
         self.custody
-            .retain(members, self.serving.clone(), |selected| {
+            .retain(members, Arc::clone(self.serving()), |selected| {
                 let current = self
                     .members
                     .read()
@@ -222,8 +236,11 @@ impl RelationalDurableColdSource for StoreColdSource {
             return Err(Refusal::ForeignSource);
         }
         RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
-            self.custody
-                .retain_for_request(members, self.serving.clone(), request, |selected| {
+            self.custody.retain_for_request(
+                members,
+                Arc::clone(self.serving()),
+                request,
+                |selected| {
                     let current = match self.members.try_read() {
                         Ok(current) => current,
                         Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
@@ -237,7 +254,8 @@ impl RelationalDurableColdSource for StoreColdSource {
                     } else {
                         Err(Refusal::Storage(Cause::MissingMember))
                     }
-                })
+                },
+            )
         })
     }
 
@@ -262,7 +280,7 @@ impl RelationalDurableColdSource for StoreColdSource {
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
         self.commit_reads.fetch_add(1, Ordering::Relaxed);
         let bytes = self
-            .serving
+            .serving()
             .canonical_commits()
             .map_err(|_| Cause::SourceUnavailable)?
             .read(position.0, limit)

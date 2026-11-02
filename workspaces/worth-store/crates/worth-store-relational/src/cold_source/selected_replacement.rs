@@ -87,7 +87,7 @@ impl SelectedReplacement {
             .as_ref()
             .expect("retained verified replacement read");
         let records = source
-            .serving
+            .serving()
             .anchored_records()
             .map_err(Denial::Unavailable)?;
         let membership = records
@@ -171,7 +171,7 @@ impl SelectedReplacement {
         }
         if let Some(task) = self.retirement.as_mut() {
             let records = source
-                .serving
+                .serving()
                 .anchored_records()
                 .map_err(Denial::Unavailable)?;
             loop {
@@ -203,20 +203,19 @@ pub(crate) fn read_expected(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<AnchoredRecordReadMembership, Denial> {
     let records = source
-        .serving
+        .serving()
         .anchored_records()
         .map_err(Denial::Unavailable)?;
-    let reader =
-        source
-            .serving
-            .try_records_for_checkpoint(request)
-            .map_err(|cause| match cause {
-                Capture::Busy => Denial::Busy,
-                Capture::Request(cause) => {
-                    Denial::Execution(worth_execution::WorkCeilingDenial::Stopped(cause))
-                }
-                Capture::Protection(cause) => Denial::Read(ReadFailure::Protection(cause)),
-            })?;
+    let reader = source
+        .serving()
+        .try_records_for_checkpoint(request)
+        .map_err(|cause| match cause {
+            Capture::Busy => Denial::Busy,
+            Capture::Request(cause) => {
+                Denial::Execution(worth_execution::WorkCeilingDenial::Stopped(cause))
+            }
+            Capture::Protection(cause) => Denial::Read(ReadFailure::Protection(cause)),
+        })?;
     let mut stream = records
         .open_payload_from(&reader, request, expected.name(), expected.payload_bytes())
         .map_err(Denial::Read)?

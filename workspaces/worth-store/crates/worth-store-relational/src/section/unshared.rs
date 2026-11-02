@@ -1,4 +1,5 @@
 //! Concrete Home construction phases precede the Native owner's first Arc.
+mod close;
 use super::*;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -67,14 +68,6 @@ impl AttachedRelationalRuntime {
 }
 
 impl UnrecoveredRelationalSection {
-    pub fn prepare_close(
-        self,
-    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
-        match super::close::prepare_attached_close(self.attached) {
-            Ok(closing) => Ok(closing),
-            Err((attached, cause)) => Err((Self { attached }, cause)),
-        }
-    }
     pub fn attach_unrecovered_home(
         definition: RelationalRuntimeDefinition,
         serving: Arc<ServingPhysicalRuntime>,
@@ -237,18 +230,6 @@ impl UnrecoveredRelationalSection {
     }
 }
 impl UnsharedReadmittedRelationalSection {
-    pub fn prepare_close(
-        self,
-    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
-        let Self { attached, source } = self;
-        match super::close::prepare_attached_close(attached) {
-            Ok(mut closing) => {
-                closing.source = Some(source);
-                Ok(closing)
-            }
-            Err((attached, cause)) => Err((Self { attached, source }, cause)),
-        }
-    }
     pub fn home_fresh_query_finalization_parts(
         &mut self,
     ) -> Result<

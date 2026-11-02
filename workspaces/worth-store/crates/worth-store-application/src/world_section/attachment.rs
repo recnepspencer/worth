@@ -45,35 +45,6 @@ pub(crate) struct ApplicationHomeBridgeComposition {
     pub(super) conditional:
         Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>,
 }
-impl ApplicationHomeBridgeComposition {
-    pub(crate) fn try_close(self) -> Result<(), Self> {
-        let Self {
-            source,
-            ordinary,
-            conditional,
-        } = self;
-        let conditional = match Arc::try_unwrap(conditional) {
-            Ok(conditional) => conditional,
-            Err(conditional) => {
-                return Err(Self {
-                    source,
-                    ordinary,
-                    conditional,
-                })
-            }
-        };
-        let mut conditional = conditional
-            .into_inner()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        conditional.close_conditional_resources();
-        // Drops the same source and ordinary Bridge after actual conditional
-        // cleanup; independently retained caller handles remain real custody.
-        drop(conditional);
-        drop(ordinary);
-        drop(source);
-        Ok(())
-    }
-}
 pub(super) fn attach_query_bridge(
     section: &worth_store_relational::RelationalStoreSection,
     builder: worth_runtime_bridge::facade::UnattachedRelationalBridgeBuilder,
