@@ -4,6 +4,7 @@
 
 mod media_admission;
 mod profile;
+mod recovered_serving;
 mod recovery_refusal;
 
 pub(crate) use profile::placement;
@@ -15,9 +16,8 @@ use std::path::Path;
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, MediaOwnedPhysicalRuntime,
-    PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalRecoveryProcessYieldpoint,
-    PhysicalRuntimeAdmission, PhysicalStore, RecoveredPhysicalServingHandoff,
-    ServingPhysicalRuntime,
+    PhysicalRecordInitialization, PhysicalRecoveryProcessYieldpoint, PhysicalRuntimeAdmission,
+    PhysicalStore, RecoveredPhysicalServingHandoff, ServingPhysicalRuntime,
 };
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimits, PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome,
@@ -154,49 +154,14 @@ fn initialize_owned(media: MediaOwnedPhysicalRuntime) -> Result<ServingPhysicalR
 
 /// Recover the Store at `root` through the production recovery entry and
 /// open it for serving under the custody recovery established.
+#[inline(never)]
 fn recover(
     root: &Path,
     opening: PhysicalOpening,
     held: worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
 ) -> Result<ServingPhysicalRuntime, Refusal> {
     let handoff = recover_custody(root, opening.recovery_yieldpoint.clone(), held)?;
-    if let Some(yieldpoint) = &opening.recovery_yieldpoint
-        && yieldpoint
-            .pause_after(
-                worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::ServingHandoff,
-            )
-            .is_interrupted()
-    {
-        return Err(Refusal::new(Stage::Recovery, "serving handoff interrupted"));
-    }
-    let admission = PhysicalRuntimeAdmission::new(root)
-        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
-    let runtime = PhysicalStore::admit(admission)
-        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
-    let media = match handoff.admit_serving(runtime, opening.media).into_raw() {
-        TransitionOutcome::Success(media) => media,
-        other => {
-            return Err(Refusal::new(
-                Stage::MediaAdmission,
-                unfinished_outcome(&other),
-            ))
-        }
-    };
-    let durability = admit_durability(media.physical_durability_admission_basis())?;
-    let open = PhysicalRecordOpen::new(profile::record_format(), profile::access(), durability)
-        .with_journal_registry(crate::registry::registry());
-    match media.open_record_store(open).into_raw() {
-        TransitionOutcome::Success(serving) => Ok(serving),
-        TransitionOutcome::Denied(denial) => {
-            let reason = format!("{:?}", denial.reason());
-            denial.into_runtime().close();
-            Err(Refusal::new(Stage::ServingOpen, reason))
-        }
-        _ => Err(Refusal::new(
-            Stage::ServingOpen,
-            "serving open after recovery did not complete",
-        )),
-    }
+    recovered_serving::open(root, opening, handoff)
 }
 
 fn recover_custody(
