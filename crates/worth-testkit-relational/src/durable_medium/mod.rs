@@ -3,6 +3,7 @@
 mod attachment;
 pub mod bytes;
 mod cold_source;
+mod member_faults;
 mod owned_snapshot;
 use bytes::{ByteJournal, MemberBytes};
 pub use owned_snapshot::{OwnedNativeReadSnapshot, OwnedSnapshotDenial};
@@ -16,6 +17,8 @@ pub struct TestDurableMedium {
     contents: Mutex<Contents>,
     member_cancellation: Mutex<Option<worth_execution::CancellationSource>>,
     canonical_member_reads: std::sync::atomic::AtomicU64,
+    canonical_journal_reads: std::sync::atomic::AtomicU64,
+    member_faults: Mutex<member_faults::MemberFaultState>,
 }
 #[derive(Debug, Default)]
 struct Contents {
@@ -35,6 +38,10 @@ impl TestDurableMedium {
         let mut armed = self.member_cancellation.lock().unwrap();
         assert!(armed.is_none());
         *armed = Some(cancellation);
+    }
+    pub fn canonical_journal_reads(&self) -> u64 {
+        self.canonical_journal_reads
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
     pub fn canonical_member_reads(&self) -> u64 {
         self.canonical_member_reads

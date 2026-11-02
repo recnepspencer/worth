@@ -256,7 +256,7 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
         .durability_authority()
         .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
-    assert!(checkpoint.bytes().starts_with(b"WORTH-REL-CHK17\n"));
+    assert!(checkpoint.bytes().starts_with(b"WORTH-REL-CHK18\n"));
     // The actual embedded checkpoint projection preserves the declaration too.
     let mut restored = memory_runtime();
     restored
@@ -267,15 +267,15 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
         restored.index_access().matching_definition(&installed),
         Some(installed)
     );
-    for version in [1u16, 2, 3] {
+    for version in [1u16, 2, 3, 4] {
         let mut old = artifact.as_bytes().to_vec();
         old[8..10].copy_from_slice(&version.to_le_bytes());
         assert!(Artifact::readmit(&old, execution).is_err());
     }
     wire::assert_malformed_deltas(execution, &artifact);
-    for version in [13, 14, 15, 16] {
+    for version in [13, 14, 15, 16, 17] {
         let mut old = checkpoint.bytes().to_vec();
-        old[..b"WORTH-REL-CHK17\n".len()]
+        old[..b"WORTH-REL-CHK18\n".len()]
             .copy_from_slice(format!("WORTH-REL-CHK{version}\n").as_bytes());
         let refused = restored.durability_recovery().restore_native_checkpoint(
             execution,

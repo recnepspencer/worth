@@ -120,6 +120,8 @@ impl RelationalDurableColdSource for TestDurableMedium {
         worth_execution::ExecutionImmutableBytes,
         worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
     > {
+        self.canonical_journal_reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let snapshot=original.downcast_ref::<super::OwnedNativeReadSnapshot>().ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
         snapshot
             .canonical(request, position.0, limit)
@@ -154,9 +156,7 @@ impl RelationalDurableColdSource for TestDurableMedium {
             cancellation.cancel();
         }
         let snapshot=original.downcast_ref::<super::OwnedNativeReadSnapshot>().ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
-        snapshot
-            .member(request, locator.sha256, locator.length, limit)
-            .map_err(owned_failure)
+        self.read_original_member(request, snapshot, locator, limit)
     }
     fn validate_member_custody_retirement(
         &self,
@@ -211,6 +211,8 @@ impl RelationalDurableColdSource for TestDurableMedium {
         )
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        self.canonical_journal_reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         bounded(
             self.lock()
                 .commits
@@ -222,7 +224,7 @@ impl RelationalDurableColdSource for TestDurableMedium {
     }
 }
 
-fn owned_failure(
+pub(super) fn owned_failure(
     cause: super::OwnedSnapshotDenial,
 ) -> worth_relational::facade::durability::RelationalDurableOwnedReadRefusal {
     use super::OwnedSnapshotDenial as Failure;

@@ -1,4 +1,6 @@
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
+#[path = "worth_court_relational_certification/support/canonical_commit_frame.rs"]
+pub(crate) mod canonical_commit_frame;
 #[path = "worth_court_relational_certification/cost/mod.rs"]
 pub(crate) mod cost;
 #[path = "worth_court_relational_certification/determinism/mod.rs"]
@@ -8,6 +10,8 @@ pub(crate) mod index_retirement;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_relational_certification/support/leased_preparation/mod.rs"]
 pub(crate) mod leased_preparation;
+#[path = "worth_court_relational_certification/support/messagepack_value_spans.rs"]
+pub(crate) mod messagepack_value_spans;
 #[path = "worth_court_relational_certification/oracle/mod.rs"]
 pub(crate) mod oracle;
 #[path = "worth_court_relational_certification/process/mod.rs"]

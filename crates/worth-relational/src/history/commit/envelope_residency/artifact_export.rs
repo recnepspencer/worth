@@ -1,5 +1,5 @@
 //! Export journal frames through the same cell and sticky damage state as body reads.
-use super::{EnvelopeBacking, EnvelopeState, RelationalCommitEnvelopeResidency};
+use super::{EnvelopeBacking, RelationalCommitEnvelopeResidency};
 use crate::durability::canonical_commit_artifact::{
     RelationalCanonicalCommitArtifact as Artifact,
     RelationalCanonicalCommitArtifactEncodeDenial as Denial,
@@ -94,7 +94,9 @@ impl RelationalCommitEnvelopeResidency {
             }
             Ok(artifact)
         })();
-        remember_original_damage(&mut state, &result);
+        if let Err(stop) = &result {
+            state.remember_original_failure(stop);
+        }
         result
     }
 
@@ -122,7 +124,9 @@ impl RelationalCommitEnvelopeResidency {
         }
         if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
             let result = Self::selected_artifact(entry, directory, execution, 1 << 30);
-            remember_original_damage(&mut state, &result);
+            if let Err(stop) = &result {
+                state.remember_original_failure(stop);
+            }
             return result.map_err(export_stop);
         }
         if let Some(commit) = state
@@ -171,14 +175,6 @@ impl RelationalCommitEnvelopeResidency {
     }
 }
 
-fn remember_original_damage(state: &mut EnvelopeState, result: &Result<Artifact, Stop>) {
-    if let Err(Stop::Durability(error)) = result
-        && let Some(failure) = error.storage_unavailable
-        && failure.cause.is_proven_damage()
-    {
-        state.damage = Some(failure);
-    }
-}
 fn export_stop(stop: Stop) -> Denial {
     match stop {
         Stop::Durability(error) => match error.storage_unavailable {

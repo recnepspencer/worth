@@ -564,3 +564,6 @@ crates/worth-relational/ crates/worth-court-relational-certification/tests/worth
 
 # Cancel only the actual medium member-read ingress for retained Complete-plan retry.
 crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/plan_retry.rs
+
+# Actual held selected-member fault controls; source issuer and original cut stay unchanged.
+crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recorded_component_checkpoint.rs

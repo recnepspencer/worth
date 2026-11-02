@@ -69,10 +69,17 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
     }
     assert!(observed
         .iter()
-        .any(|generation| generation["source_commit_id"] == tail_commit));
+        .any(
+            |generation| rmp_serde::from_slice::<u64>(crate::messagepack_value_spans::field(
+                generation,
+                "source_commit_id"
+            ))
+            .unwrap()
+                == tail_commit
+        ));
     assert_eq!(next.source_artifact().covered().0, 2);
 }
-fn generations(image: &CompleteRelationalNativeCheckpoint) -> Vec<serde_json::Value> {
+fn generations(image: &CompleteRelationalNativeCheckpoint) -> Vec<Vec<u8>> {
     // Published member framing is independent of the producer's private constants.
     let prefix = b"WORTH-REL-MBR1\n\0\x01\x02";
     let payload = image
@@ -84,8 +91,10 @@ fn generations(image: &CompleteRelationalNativeCheckpoint) -> Vec<serde_json::Va
             RelationalCheckpointMember::Carried { .. } => None,
         })
         .expect("the actual Complete contains its derived-index member");
-    crate::source_wire_value::read(payload)[0]["generations"]
-        .as_array()
-        .unwrap()
-        .clone()
+    let state = crate::messagepack_value_spans::sequence(payload)[0];
+    let generations = crate::messagepack_value_spans::field(state, "generations");
+    crate::messagepack_value_spans::sequence(generations)
+        .into_iter()
+        .map(<[u8]>::to_vec)
+        .collect()
 }
