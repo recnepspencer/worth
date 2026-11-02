@@ -35,6 +35,24 @@ fn idempotency_inspection_denies_before_receipt_after_grant_revocation() {
         .with_host_advancement(|phase| revoke_grant(&phase, &world))
         .expect("the fixture read owns its installed host call");
 
+    let claim_denial = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .resolve_admitted_recovery_claim_status(&phase, &admission, idempotency(57, 57))
+                .unwrap_err()
+        })
+        .unwrap();
+    assert_eq!(
+        claim_denial.kind(),
+        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleAuthorization
+            )
+        )
+    );
+
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {

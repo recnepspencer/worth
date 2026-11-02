@@ -2,7 +2,7 @@ use super::DurableWorldOwnerIdentity;
 
 /// Descriptive World coordinates keep explicit memory-only observations
 /// separate from Home identity. Neither variant grants runtime authority.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum WorldOwnerCoordinate {
     Home { owner: DurableWorldOwnerIdentity },
     MemoryOnly { observation: u64 },

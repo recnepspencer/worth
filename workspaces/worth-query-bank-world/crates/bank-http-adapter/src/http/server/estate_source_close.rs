@@ -6,11 +6,18 @@ pub(super) async fn describe<A: super::authentication::BankHttpApplicationAuthen
     application: &A,
     record: &EstateSourceRecord,
     command: &AdmittedMutationCommand,
+    principal: &bank_server::BankAuthenticatedPrincipal,
+    scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
 ) -> BankHttpMutationOutcome {
     let Some(receipt) = record.custody.live_receipt() else {
-        return record
-            .custody
-            .describe(&command.custody_id, &command.request_id, command.sequence);
+        return super::estate_recorded_recovery::describe(
+            application,
+            record,
+            command,
+            principal,
+            scope,
+        )
+        .await;
     };
     let runtime = application.runtime();
     let commit = super::recovery_executor::outcome::commit_description(receipt);
@@ -29,6 +36,17 @@ pub(super) async fn describe<A: super::authentication::BankHttpApplicationAuthen
         denial: super::mutation_refusal::denial(kind),
         accepted_sequence: Some(command.sequence),
     };
+    if let Err(cause) =
+        runtime.observe_estate_recovery_claim_status(principal, record.action, &record.key, scope)
+    {
+        return BankHttpMutationOutcome::Refused {
+            request_id: command.request_id.clone(),
+            custody_id: command.custody_id.clone(),
+            sequence: command.sequence,
+            denial: super::estate_denial::estate_denial(cause),
+            accepted_sequence: Some(command.sequence),
+        };
+    }
     let mut registry = record.registry.lock().await;
     registry.purge_expired(runtime);
     let replay = match record.action {

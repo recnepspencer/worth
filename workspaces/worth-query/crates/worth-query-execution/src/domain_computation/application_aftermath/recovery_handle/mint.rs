@@ -44,7 +44,7 @@ where
     /// Query runtime authority that admitted its operation, derived at commit
     /// from the admitted operation and not caller-supplied. Without this
     /// comparison a second runtime could mint a handle for a commit it never
-    /// made — and, because `register_once` claims commits per registry, both
+    /// made â€” and, because `register_once` claims commits per registry, both
     /// runtimes would hold a live handle for the same commit (R8.28).
     pub fn mint_recovery_handle(
         &self,
@@ -108,32 +108,11 @@ where
             receipt.runtime_authority(),
         )?;
         let (claimed, terminal) = self.recovery_handles.claim_state(&claim_for(receipt));
-        Ok(match terminal {
-            Some(WorthQueryRecoveryResourceTerminal::Consumed) => {
-                WorthQueryRecoveryClaimStatus::Consumed
-            }
-            Some(WorthQueryRecoveryResourceTerminal::Completed) => {
-                WorthQueryRecoveryClaimStatus::Completed
-            }
-            Some(WorthQueryRecoveryResourceTerminal::Expired) => {
-                WorthQueryRecoveryClaimStatus::Expired
-            }
-            Some(WorthQueryRecoveryResourceTerminal::Disposed) => {
-                WorthQueryRecoveryClaimStatus::Disposed
-            }
-            Some(WorthQueryRecoveryResourceTerminal::ForceTerminated) => {
-                WorthQueryRecoveryClaimStatus::ForceTerminated
-            }
-            Some(WorthQueryRecoveryResourceTerminal::Relinquished) => {
-                WorthQueryRecoveryClaimStatus::Unclaimed
-            }
-            None if claimed => WorthQueryRecoveryClaimStatus::Live,
-            None => WorthQueryRecoveryClaimStatus::Unclaimed,
-        })
+        Ok(status_from_claim_state(claimed, terminal))
     }
 
     // There is deliberately no `recovery_handle_registry()` here. It existed,
-    // was `pub`, and had no caller in either workspace — it simply handed any
+    // was `pub`, and had no caller in either workspace â€” it simply handed any
     // host the whole instance registry without holding a single handle. The
     // registry is reached only through a handle now, and only in fixtures.
 }
@@ -144,7 +123,7 @@ pub const DEFAULT_RECOVERY_HANDLE_TTL_MS: u64 = 3_600_000;
 /// Mint one framework-owned recovery handle into the runtime's registry.
 ///
 /// Derives exactly one identity (R8.33). Binding fields come from the receipt
-/// (R8.62) — never from caller assertions. Lookup/inspection remain at zero
+/// (R8.62) â€” never from caller assertions. Lookup/inspection remain at zero
 /// basis/digest cost after mint.
 ///
 /// The deadline comes from the registry's own runtime clock. Passing the clock
@@ -222,4 +201,30 @@ fn expiry_deadline(
         ));
     };
     Ok(Some(now_ms.saturating_add(DEFAULT_RECOVERY_HANDLE_TTL_MS)))
+}
+
+pub(super) fn status_from_claim_state(
+    claimed: bool,
+    terminal: Option<WorthQueryRecoveryResourceTerminal>,
+) -> WorthQueryRecoveryClaimStatus {
+    match terminal {
+        Some(WorthQueryRecoveryResourceTerminal::Consumed) => {
+            WorthQueryRecoveryClaimStatus::Consumed
+        }
+        Some(WorthQueryRecoveryResourceTerminal::Completed) => {
+            WorthQueryRecoveryClaimStatus::Completed
+        }
+        Some(WorthQueryRecoveryResourceTerminal::Expired) => WorthQueryRecoveryClaimStatus::Expired,
+        Some(WorthQueryRecoveryResourceTerminal::Disposed) => {
+            WorthQueryRecoveryClaimStatus::Disposed
+        }
+        Some(WorthQueryRecoveryResourceTerminal::ForceTerminated) => {
+            WorthQueryRecoveryClaimStatus::ForceTerminated
+        }
+        Some(WorthQueryRecoveryResourceTerminal::Relinquished) => {
+            WorthQueryRecoveryClaimStatus::Unclaimed
+        }
+        None if claimed => WorthQueryRecoveryClaimStatus::Live,
+        None => WorthQueryRecoveryClaimStatus::Unclaimed,
+    }
 }

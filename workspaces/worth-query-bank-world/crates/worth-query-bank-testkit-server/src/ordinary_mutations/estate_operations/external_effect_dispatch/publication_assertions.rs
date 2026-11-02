@@ -32,7 +32,26 @@ pub fn assert_recovered_commit_axes<R>(
     );
     let before = live.basis_descriptor();
     let after = data.basis_descriptor();
-    assert_eq!(before.reference(), after.reference());
+    assert_eq!(before.descriptor_version(), after.descriptor_version());
+    assert_eq!(before.branch_id(), after.branch_id());
+    assert_eq!(before.posture(), after.posture());
+    assert_eq!(
+        before.reference().generation(),
+        after.reference().generation()
+    );
+    match (
+        before.reference().target().as_basis(),
+        after.reference().target().as_basis(),
+    ) {
+        (Some(left), Some(right)) => {
+            assert_eq!(left.selected_commit_id(), right.selected_commit_id());
+            assert_eq!(left.version_id(), right.version_id());
+            assert_eq!(left.parent_commit_ids(), right.parent_commit_ids());
+            assert_eq!(left.roots(), right.roots());
+        }
+        (None, None) => {}
+        (Some(_), None) | (None, Some(_)) => panic!("original target kind changed"),
+    }
     assert_eq!(before.truth_version(), after.truth_version());
     assert_eq!(before.schema_commitment(), after.schema_commitment());
     assert_eq!(

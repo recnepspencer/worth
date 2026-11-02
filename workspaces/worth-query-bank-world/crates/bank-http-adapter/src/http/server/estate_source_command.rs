@@ -77,7 +77,14 @@ pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthent
         MutationCommand::Close => match record.custody.close(&request) {
             Ok(custody) => {
                 record.custody = custody;
-                super::estate_source_close::describe(application, &record, &command).await
+                super::estate_source_close::describe(
+                    application,
+                    &record,
+                    &command,
+                    principal,
+                    &scope,
+                )
+                .await
             }
             Err((custody, cause)) => {
                 record.custody = custody;

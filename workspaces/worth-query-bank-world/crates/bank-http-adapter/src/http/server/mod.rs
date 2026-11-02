@@ -233,6 +233,7 @@ mod cleanup_description;
 mod native_cleanup_handoff;
 pub use native_cleanup_custody::{BankHttpCleanupRuntime, BankHttpReleasedCleanup};
 
+mod estate_recorded_recovery;
 mod estate_source_close;
 mod estate_source_command;
 mod estate_source_custody;

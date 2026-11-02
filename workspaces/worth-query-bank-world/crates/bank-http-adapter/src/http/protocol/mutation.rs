@@ -199,6 +199,14 @@ pub enum BankHttpMutationOutcome {
         recovery: Option<String>,
         recovery_status: super::BankHttpRecoveryStatus,
     },
+    RecordedRailRecoveryReady {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        commit: BankHttpRecordedCommitDescription,
+        recovery: Option<String>,
+        recovery_status: super::BankHttpRecoveryStatus,
+    },
     CollectionReleased {
         request_id: String,
         custody_id: String,

@@ -60,12 +60,34 @@ async fn lost_notification_response_replays_the_exact_opaque_handle() {
     let client = reqwest::Client::new();
     let action = recovery_action();
     let first = notify(&client, server.local_address(), &action, "notification-a").await;
+    let original_native = match &first {
+        BankHttpEstateNotificationOutcome::Owning {
+            outcome:
+                super::super::super::protocol::BankHttpMutationOutcome::Completed { source, .. },
+        } => source.relational.clone(),
+        other => panic!("original completion has actual Native coordinates: {other:?}"),
+    };
     let replay = notify(&client, server.local_address(), &action, "notification-b").await;
     let (first_commit, first_recovery) =
         rail_notification_parts(close_notification(&client, server.local_address(), first).await);
-    let (replay_commit, replay_recovery) =
-        rail_notification_parts(close_notification(&client, server.local_address(), replay).await);
-    assert_eq!(replay_commit, first_commit);
+    let (replay_commit, replay_recovery) = recorded_notification_parts(
+        close_notification(&client, server.local_address(), replay).await,
+    );
+    assert_eq!(
+        replay_commit.changed_record_count,
+        first_commit.changed_record_count
+    );
+    assert_eq!(
+        replay_commit.emitted_effect_count,
+        first_commit.emitted_effect_count
+    );
+    let late = notify(&client, server.local_address(), &action, "notification-c").await;
+    let (late_commit, late_recovery) = recorded_notification_parts(
+        close_notification(&client, server.local_address(), late).await,
+    );
+    assert_eq!(replay_commit.native_commit, original_native);
+    assert_eq!(late_commit, replay_commit);
+    assert_eq!(late_recovery, first_recovery);
     assert_eq!(replay_recovery, first_recovery);
     server.shutdown().await.expect("server should shut down");
     assert!(_mutation_continuation.finish().await.is_ok());
@@ -101,8 +123,9 @@ async fn local_token_lifetime_cannot_discard_live_query_recovery() {
         "expiring-notification-replay",
     )
     .await;
-    let (_, replay_recovery) =
-        rail_notification_parts(close_notification(&client, server.local_address(), replay).await);
+    let (_, replay_recovery) = recorded_notification_parts(
+        close_notification(&client, server.local_address(), replay).await,
+    );
     assert_eq!(replay_recovery, recovery);
     server.shutdown().await.expect("server should shut down");
     assert!(_mutation_continuation.finish().await.is_ok());
@@ -251,16 +274,21 @@ async fn close_notification(
     address: std::net::SocketAddr,
     outcome: BankHttpEstateNotificationOutcome,
 ) -> super::super::super::protocol::BankHttpMutationOutcome {
-    let BankHttpEstateNotificationOutcome::Owning {
-        outcome:
-            super::super::super::protocol::BankHttpMutationOutcome::Completed {
-                custody_id,
-                sequence,
-                ..
-            },
-    } = outcome
-    else {
-        panic!("notification must return its actual completed SourceOnly owner: {outcome:?}")
+    let (custody_id, sequence) = match outcome {
+        BankHttpEstateNotificationOutcome::Owning {
+            outcome:
+                super::super::super::protocol::BankHttpMutationOutcome::Completed {
+                    custody_id,
+                    sequence,
+                    ..
+                }
+                | super::super::super::protocol::BankHttpMutationOutcome::Recorded {
+                    custody_id,
+                    sequence,
+                    ..
+                },
+        } => (custody_id, sequence),
+        other => panic!("notification must retain its actual completion owner: {other:?}"),
     };
     post_typed(
         client,
@@ -330,4 +358,20 @@ async fn post_typed<T: serde::de::DeserializeOwned>(
         .json()
         .await
         .expect("typed HTTP response should decode")
+}
+
+fn recorded_notification_parts(
+    outcome: super::super::super::protocol::BankHttpMutationOutcome,
+) -> (
+    super::super::super::protocol::BankHttpRecordedCommitDescription,
+    String,
+) {
+    match outcome {
+        super::super::super::protocol::BankHttpMutationOutcome::RecordedRailRecoveryReady {
+            commit,
+            recovery: Some(recovery),
+            ..
+        } => (commit, recovery),
+        other => panic!("recorded completion retains an existing recovery token: {other:?}"),
+    }
 }
