@@ -2000,9 +2000,15 @@ source canonical-proposal tests. The two named controls move to the existing
 relational certification court; no baseline or enforcement rule is changed.
 They now use actual public transaction validation and consuming Native
 admission rather than directly calling the private retain/into_state methods.
-A finite 4 KiB original budget refuses the actual larger state admission with
+A finite 8 KiB original budget refuses the actual larger state admission with
 its exact typed policy-memory cause; the unbounded control retains the real
 bill until the same cancelled request consumes the proposal. Both require
 zero remaining charge and an unchanged actual branch after refusal. The three
 existing source custody controls retain their private pending-slot/identity
 assertions. The two migrated test names are unchanged; module paths change.
+
+The court's first 4 KiB fixture refused an earlier 368-byte preparation copy
+with only 290 bytes available. Its 8 KiB ceiling remains below the measured
+10,240-byte accepted-state backing, while allowing the ordinary preparation
+prefix to reach that backing admission. The strict requested-greater-than-total-
+ceiling assertion remains; no arbitrary error or earlier stop is accepted.

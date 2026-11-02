@@ -8,7 +8,7 @@ use worth_testkit_relational::{
     durable_publication::{batch_create, memory_runtime},
 };
 
-const SMALL_OWNER_CEILING: u64 = 4096;
+const SMALL_OWNER_CEILING: u64 = 8192;
 
 #[test]
 fn validated_proposal_backing_charges_original_request_until_native_consumption() {
@@ -65,10 +65,13 @@ fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
     let TransactionCommitError::Execution { denial, .. } = denied else {
         panic!("unfunded real validation must preserve its typed execution refusal");
     };
-    assert!(matches!(denial.kind,
+    assert!(
+        matches!(denial.kind,
         CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::PolicyMemoryExhausted {
             requested, admitted, ancestor: 0,
-        }) if requested > SMALL_OWNER_CEILING && admitted < requested));
+        }) if requested > SMALL_OWNER_CEILING && admitted < requested),
+        "{denial:?}"
+    );
     assert_eq!(budget.charged_memory_bytes(), 0);
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, before);
 }
