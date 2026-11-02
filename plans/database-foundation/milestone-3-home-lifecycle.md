@@ -1874,3 +1874,12 @@ under the same owner lock. The original identity, actual attempt/candidate and
 completion owner are unchanged. This removes a tree mutation and allocation
 opportunity rather than adding another backing owner. Existing attempt-store
 phase, cleanup and provider commit courts cover this handoff.
+
+Durable orchestration itself retained 641,144 bytes across owner progression
+(`target/lane-evidence/integration-checkout-stack.log`); its progression frame
+is independently 183,880 bytes (`integration-durable-frame-study.log`). The
+same original guard now crosses separate `durable/opening.rs`, progression,
+and `durable/completion.rs` calls. Opening temporaries return before progression;
+terminal handback locals exist only after it returns. All actual terminal
+custody still wins over a late framework stop. No owner, grant or World phase
+is replaced, and no allocation is introduced by this split.
