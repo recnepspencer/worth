@@ -28,7 +28,7 @@ struct Contents {
     selected: Option<OpaqueCapturedCheckpointSubject>,
 }
 impl TestDurableMedium {
-    pub fn cancel_next_owned_member_read_for_test(
+    pub fn cancel_next_member_read_for_test(
         &self,
         cancellation: worth_execution::CancellationSource,
     ) {

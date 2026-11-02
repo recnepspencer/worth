@@ -202,6 +202,9 @@ impl RelationalDurableColdSource for TestDurableMedium {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
+        if let Some(cancellation) = self.member_cancellation.lock().unwrap().take() {
+            cancellation.cancel();
+        }
         bounded(
             self.lock().members.get(locator.sha256, locator.length),
             limit,

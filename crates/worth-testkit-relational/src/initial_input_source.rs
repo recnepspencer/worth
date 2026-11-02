@@ -55,6 +55,24 @@ pub fn capture(
         .prepare(request, RelationalCheckpointArtifactPolicy::Embedded)
         .unwrap()
 }
+/// Real external placement preserves the cold restore path used by Home.
+pub fn capture_external(
+    runtime: &RelationalRuntime,
+    medium: &Arc<TestDurableMedium>,
+    request: &ExecutionRequest<'_, '_>,
+) -> CompleteRelationalNativeCheckpoint {
+    let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
+    runtime
+        .complete_checkpoint_service()
+        .prepare(
+            request,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: Some(source),
+            },
+        )
+        .unwrap()
+}
 pub fn home_input(
     medium: &Arc<TestDurableMedium>,
     artifact: RelationalCompleteSourceArtifact,

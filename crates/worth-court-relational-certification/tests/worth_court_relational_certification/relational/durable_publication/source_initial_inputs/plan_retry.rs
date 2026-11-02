@@ -8,14 +8,40 @@ fn cloned_complete_plan_retries_after_member_read_cancellation_without_directory
     let (runtime, medium) = initialized(&request);
     let commit = create_entity_outcome(&request, &runtime, "covered-before-stop");
     release_test_commit_snapshot(&runtime, &commit);
-    let image = capture(&runtime, &request);
+    let image = capture_external(&runtime, &medium, &request);
     medium.file_checkpoint(image.checkpoint().clone());
-    let input = home_input(&medium, image.source_artifact().clone(), &request).unwrap();
+    let canonical = image
+        .checkpoint()
+        .members()
+        .iter()
+        .find_map(|member| match member {
+            RelationalCheckpointMember::New { locator, bytes }
+                if bytes.bytes().starts_with(b"WRTHRCCA") =>
+            {
+                Some(*locator)
+            }
+            RelationalCheckpointMember::New { .. } | RelationalCheckpointMember::Carried { .. } => {
+                None
+            }
+        })
+        .expect("actual canonical frame member");
+    let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
+    let original = source
+        .checkpoint_selected_read_protection(&request)
+        .unwrap();
+    let before_probe = medium.canonical_member_reads();
+    let prefix = source
+        .read_member_prefix_owned(&request, original.as_ref(), canonical, 10)
+        .unwrap();
+    RelationalCanonicalCommitArtifact::preflight_frame_version(prefix.bytes()).unwrap();
     assert_eq!(
         medium.canonical_member_reads(),
-        0,
-        "version probes are not canonical bodies"
+        before_probe,
+        "a version prefix probe is not a full body"
     );
+    let later = create_entity_outcome(&request, &runtime, "tail-after-checkpoint");
+    release_test_commit_snapshot(&runtime, &later);
+    let input = home_input(&medium, image.source_artifact().clone(), &request).unwrap();
     let mut receiver = receiver(&medium);
     let before = receiver.runtime_instance_id();
     let plan = receiver
@@ -33,7 +59,7 @@ fn cloned_complete_plan_retries_after_member_read_cancellation_without_directory
         cancellation.token(),
         None,
     );
-    medium.cancel_next_owned_member_read_for_test(cancellation.clone());
+    medium.cancel_next_member_read_for_test(cancellation.clone());
     let stopped = receiver
         .durability_recovery()
         .recover_with_authority(&ExecutionRequest::serial(&stopping), plan)
@@ -58,13 +84,13 @@ fn cloned_complete_plan_retries_after_member_read_cancellation_without_directory
         .canonical_commit_artifacts(&request)
         .map(|artifact| artifact.unwrap())
         .collect();
-    assert_eq!(artifacts.len(), 1);
+    assert_eq!(artifacts.len(), 2);
     assert!(
         medium.canonical_member_reads() > 0,
         "selected canonical bodies are observed at their actual read seam"
     );
     assert_eq!(
         capture(&receiver, &request).source_artifact().covered().0,
-        1
+        2
     );
 }
