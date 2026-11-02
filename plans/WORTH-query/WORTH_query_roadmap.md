@@ -6009,6 +6009,14 @@ in one final cutover, rather than a private SDK refactor after each phase.
 Phase 5 certifies generic public contracts with Bank and existing bounded box/prefix
 fixtures. Application-specific geometry/topology and actual-face scale acceptance
 use the real private CAD application in Phase 6; no public CAD substitute is required.
+The2026-11-01 user-approved expansion also replaces CAD's authoritative structured
+JSON fields with native aspects/scalars/entities/relations in Phase6. Its private
+governing plan, `cad/docs/plans/aspect-native-kernel.md`, sequences profiling and
+mapping, generic pattern/codemod qualification, cell geometry, document/naming
+records, sketches/routes, the bounded canonical remainder and final integrated
+adoption. Preserve numerical admission, exactness and names; version changed
+storage bytes. Completed public phases remain closed. Mac-owned booleans/U5/U6/
+Studio work remains separate, and the final pin is coordinated through the user.
 
 ### Specification
 
@@ -6039,6 +6047,8 @@ the coherent public CAD cleanup and its219 distinct tests plus ordinary executab
 Under the2026-11-01 scope correction, further public Scene/triangle/contact
 expansion is not a prerequisite. Phase6 remains open for the single final private
 pin and real CAD cutover in a new worktree based on updated Proprietary main.
+That cutover now includes the native-representation subphases above and retains
+the complete actual-face, history/storage, cancellation and private-gate acceptance.
 
 
 ### Committed Provider Indexes

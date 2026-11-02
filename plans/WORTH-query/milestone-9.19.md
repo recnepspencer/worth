@@ -9,6 +9,11 @@
 > require a public CAD application, Scene/Face authoring, a new contact engine or
 > actual-face scale qualification. Real CAD integration and its geometry/topology
 > acceptance belong to Phase 6, using the existing private application owners.
+> **Scope expanded 2026-11-01:** Phase 6 also owns the user-approved aspect-native
+> CAD cutover: replace durable structured JSON blobs with native aspects, scalar
+> fields, entities and relations. Preserve completed Phases 1–5. The private
+> `cad/docs/plans/aspect-native-kernel.md` governs K0–K6 below; numerical domain
+> APIs remain Query-independent and the final CAD locality acceptance remains required.
 
 ## Goal
 
@@ -24,6 +29,9 @@ index. Both must use the same extension and both read postures. CAD then adopts
 the qualified public capability once, at the end, for arrange pair discovery and
 installed B-rep contact validation. This closes the retained spatial-view gap
 without making spatial meaning part of the generic runtime.
+The final private cutover also moves authoritative CAD structure out of opaque
+JSON String fields, so complete managed Sources can consume actual scalar and
+reference dependencies rather than depend on a new legacy-geometry JSON adapter.
 
 ### What Must Be True At Completion
 
@@ -47,6 +55,11 @@ without making spatial meaning part of the generic runtime.
   on the integrated implementation. The real Proprietary CAD application then
   passes its adoption and domain acceptance. Superseded consumer caches and
   orchestration are removed during their respective adoption phases.
+- CAD cell geometry, scalar/document records and referenceable sketch/route
+  objects use the approved native representation. Remaining small or compiled
+  pack-owned canonical values have explicit shape, bounds and admitted decoding;
+  terminal JSON is separate. Storage identity changes are versioned, while exact
+  numerical meaning, stable naming and domain admission remain with their owners.
 
 ### Scope Boundaries
 
@@ -2040,7 +2053,63 @@ cleanup. Existing domain fixture work creates no new Phase 5 acceptance obligati
 **Owner:** Proprietary CAD entry and SDK adoption, with fixes at their public owners.
 **Depends on:** completed Phases 1–5 and their integrated public candidate.
 **Result:** Proprietary uses the stable public extension and closes the actual
-retained spatial-discovery and scoped-invariant gaps.
+retained spatial-discovery and scoped-invariant gaps on its aspect-native CAD
+representation. The user-approved expansion replaces authoritative structured
+JSON fields; it does not reopen public Phases1–5 or create a public CAD kernel.
+
+**Expanded cutover sequence.** The private governing design is
+`cad/docs/plans/aspect-native-kernel.md`. Its K0–K6 are implementation subphases
+of this Phase6, not new Query runtime phases. Existing acceptance below remains
+mandatory after the representation change.
+
+| Subphase | Result and predecessor | Required distinguishing evidence |
+|---|---|---|
+| K0 | Reconcile actual current owners, profile real Session Apply cabinet2–3-shelf/member edits, inventory mappings and compatibility; no speculative repin | Separate realization breadth, parsing, numerical work and publication; verify reported SDK failures and saved-data commitments |
+| K1 | After K0, prove generic optional-aspect variants, positioned relations and actual typed-content admission; implement mapping-driven codemods | Installed one-of/order corruption, correction/retirement/recovery and original controls; dry-run, unsupported-syntax refusal and idempotent transformation |
+| K2 | After K1, cut over cell geometry/certification to native scalar/class aspects and actual definition relations | Bounded rational admission parity, full curved/affine/certified semantics and indirect dependency changes through actual CAD; remove switched JSON paths |
+| K3 | After shared contracts, native scalar/document/alias/lineage records at current owners | Origin/generation/frontier and naming through correction/reconstruction; explicit storage-version refusal or required migration |
+| K4 | After K1 and identity contracts, sketch/route objects become named entities with typed reference/order relations | Local middle-object edit, insertion/deletion/reorder, inverse and reconstruction retain names and solver/refusal meaning |
+| K5 | After K2–K4, bound the canonical remainder and delete displaced ordinary blob adapters | Every exception has an owner, shape, bounds and original charged decode; no hidden references or unclassified structured JSON authority |
+| K6 | After K2–K5 and public qualification, one integrated SDK adoption and managed CAD cutover | Existing actual1000/2000/+50000, Acceptance8 features1/100/10000, lifecycle/oracle and complete private gate acceptance |
+
+**Representation and numerical authority.** Referenceable objects are entities;
+links are actual typed relations. Flat facts use native scalars, with Rational
+for genuinely rational coefficients. Geometry alternatives use one optional
+aspect per class and an installed exactly-one rule. Ordered lists use a real
+membership-occurrence entity with a native position field and typed parent/target
+relations, or a directly fielded relation only after its SDK carrier is qualified.
+Neither representation erases existing Native cycle semantics.
+Large identity-free numeric arrays require controlled typed content references;
+a ContentRef id alone proves neither available bytes nor admitted geometry.
+Small identity-free or compiled pack-owned canonical values are explicit
+exceptions, not containers for independently mutable objects or graph links.
+JSON remains at named terminal projection boundaries.
+
+Math retains exact parsing/admission, normalization, bit capacity and numerical
+work; native Rational validity alone is insufficient. Preserve symbolic and
+certified representations, tolerance, units, frame and provenance. New storage
+revisions intentionally change internal bytes/digests; preserve domain meaning,
+names and explicitly committed terminal/export bytes. Verify the actual CAD
+compatibility commitment before choosing current-format-only rejection versus
+migration; never reinterpret or erase unsupported historical bytes.
+
+**Mechanical work and coordination.** Use syntax-aware, mapping-driven codemods
+for reviewed declarations, gather/write call sites and fixtures. Check mode is
+read-only; apply is scoped and idempotent, refuses unknown/drifted input and
+edits generated artifacts only through their real generators. Codemods do not
+decide schema ownership, references, order, provenance, inverses or recovery.
+Keep tests in existing owner/leaf targets, with source/configuration checks
+before compilation. No new list/variant/nested AspectShape forms are authorized
+without returning to the user. Public representation guidance and Store's actual
+sub-field granularity contract are K1 documentation deliverables.
+
+The Mac retains booleans/arrangement, DP-3, U5, U6a/U6b and Studio work; U6b owns
+the generated realization-record split. Consume the whole-entity source/output
+witness contract without editing those worktrees or duplicating those lanes.
+Coordinate the final SDK pin through the user after reported public regressions
+are understood. Finish representation before PS-4 or the first T2 handoff if
+earlier. Private landing additionally requires independent Claude certification.
+These coordination constraints do not replace each slice's independent review.
 
 **Integration checkout.** Fetch the current Proprietary `main` and create a new
 worktree from that updated branch for this integration. Record the selected
