@@ -8,7 +8,7 @@ from compiler_units import CompilerUnitRefusal, attribute
 def dependency_features(event):
     # Filenames locate Cargo's own fingerprint; their hashes never identify a
     # declared unit. Only the recorded dependency graph refines attribution.
-    artifact = next(Path(name) for name in event['filenames'] if name.endswith('.rlib'))
+    artifact = next(Path(name) for name in event['filenames'] if name.endswith(('.rlib', '.rmeta')))
     fingerprints = artifact.parent.parent / '.fingerprint'
     stem = artifact.stem.removeprefix('lib')
     record = json.loads((fingerprints / stem / ('lib-' + event['target']['name'] + '.json')).read_text())

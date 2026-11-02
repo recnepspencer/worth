@@ -3,12 +3,30 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from compiler_units import CompilerUnitRefusal
-from test_compiler_units import graph, unit
+from compiler_units import CompilerUnitRefusal, attribute
+from test_compiler_units import event, graph, unit
 from unit_plan import command_for, declare, verify
 
 
 class RequiredUnitPlanTests(unittest.TestCase):
+    def test_explicit_checked_tests_distinguish_library_harness_from_dependency(self):
+        library = unit('owner', dependencies=[3])
+        observed_graph = graph(unit('court', kind='test', dependencies=[1]),
+                               library, library, unit('dependency'))
+        observed_graph['roots'] = [0, 2]
+        with tempfile.TemporaryDirectory() as temporary:
+            declaration = declare(['cargo', 'check', '--tests'], temporary, {}, json.dumps(observed_graph))
+            ordinary = attribute(event(library), declaration)
+            checked_test = event(library)
+            checked_test['profile']['test'] = True
+            harness = attribute(checked_test, declaration)
+            self.assertFalse(ordinary['test_harness'])
+            self.assertTrue(harness['test_harness'])
+            self.assertNotEqual(ordinary['identity'], harness['identity'])
+            unknown = declare(['cargo', 'check'], temporary, {}, json.dumps(observed_graph))
+            with self.assertRaises(CompilerUnitRefusal):
+                attribute(checked_test, unknown)
+
     def test_nextest_build_declares_the_same_cargo_targets_profile_and_features(self):
         command = ['cargo', 'nextest', 'list', '--cargo-message-format=json', '--workspace',
                    '--all-targets', '--cargo-profile', 'ci-test', '--manifest-path', 'Cargo.toml',

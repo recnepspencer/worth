@@ -57,6 +57,18 @@ class CargoDependencyFeaturesTests(unittest.TestCase):
             with self.assertRaises(CompilerUnitRefusal):
                 attribute(observed, declaration)
 
+    def test_metadata_only_artifact_retains_actual_dependency_features(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            observed, declaration, _ = self.fixture(Path(temporary))
+            observed['filenames'][0] = observed['filenames'][0].replace('.rlib', '.rmeta')
+            # Only the evidence locator changes; these graph units are now checks.
+            for row in declaration['units']:
+                row['output'] = 'check'
+            enriched = json.loads(retain_dependencies(json.dumps(observed), declaration))
+            self.assertEqual(enriched['cargo_dependency_features'], [['digest', ['std']]])
+            self.assertEqual(attribute(enriched, declaration)['dependency_units'],
+                             declaration['units'][1]['dependency_units'])
+
 
 if __name__ == '__main__':
     unittest.main()
