@@ -148,7 +148,7 @@ fn fresh_directory_home_journey() {
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
 }
 
-mod pending_support;
+pub(crate) mod pending_support;
 
 #[test]
 fn directory_pre_effect_pending_retains_key_through_handoff_and_reopen_requirement() {
@@ -284,7 +284,7 @@ fn directory_post_native_unwind_retains_original_key_without_handler_replay() {
     // Only genuine reopened custody can admit a recovered disposition.
 }
 
-mod reopening;
+pub(crate) mod reopening;
 
 #[test]
 fn effect_bearing_native_nine_world_eight_reopens_only_into_owned_custody_refusal() {

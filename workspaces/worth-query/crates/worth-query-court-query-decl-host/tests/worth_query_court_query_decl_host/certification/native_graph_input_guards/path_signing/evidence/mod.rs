@@ -115,8 +115,8 @@ fn signed_parent_bookkeeping_is_atomic_and_original_replay_needs_no_new_event() 
         .prepare_in_program(&app, Allocation::SystemAllocation)
         .unwrap()
     {
-        Preparation::Settled(Outcome::AlreadyCommitted(recovered)) => {
-            assert_eq!(recovered.outcome_identity(), receipt.outcome_identity())
+        Preparation::Settled(Outcome::RecoveredCommitted(recovered)) => {
+            assert_eq!(Some(recovered.outcome_identity()), receipt.outcome_identity())
         }
         _ => panic!("exact replay must settle before asking for another authentication event"),
     }

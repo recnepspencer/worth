@@ -169,6 +169,17 @@ fn live_original_publication_reads_exact_native_source_after_a_later_publication
         original.semantic_result()
     );
     assert_eq!(semantics(original.semantic_result()), semantic);
+    // Original creation data remains source-backed after later publication.
+    // The correspondence comes from the independent live semantic reference.
+    for created in &semantic.1 {
+        let row = original
+            .created_entity(&execution, created.assigned)
+            .unwrap()
+            .unwrap();
+        assert_eq!(row.entity_id(), created.assigned);
+        assert_eq!(row.kind_id(), created.key.kind);
+        assert!(row.owned_allocation_capacity_bytes() > 0);
+    }
     assert_eq!(
         observation
             .observe_root_product_branch()

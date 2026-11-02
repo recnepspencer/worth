@@ -2,11 +2,10 @@
 use super::pending_support::{balance, scope, set};
 use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
-mod durable_retry;
 mod refusals;
 mod separate_process;
 
-pub(super) fn opening_failed(stage: &str, refused: &impl std::fmt::Debug) -> ! {
+pub(crate) fn opening_failed(stage: &str, refused: &impl std::fmt::Debug) -> ! {
     let detail = format!("{refused:?}");
     let end = detail
         .char_indices()
@@ -54,10 +53,10 @@ fn same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old
     .unwrap_or_else(|refused| opening_failed("same Home readmission", &refused));
     assert_eq!(balance(home.runtime(), &live), 8);
     match set(home.runtime(), &live, 0x771, 8).unwrap() {
-        WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observed) => {
-            assert_eq!(observed.commit_id(), original_commit);
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(observed) => {
+            assert_eq!(observed.commit_reference().commit_id, original_commit);
         }
-        other => panic!("old key must report only its historical commit: {other:?}"),
+        other => panic!("old key must return its exact original durable receipt: {other:?}"),
     }
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
     assert_eq!(balance(home.runtime(), &live), 8);

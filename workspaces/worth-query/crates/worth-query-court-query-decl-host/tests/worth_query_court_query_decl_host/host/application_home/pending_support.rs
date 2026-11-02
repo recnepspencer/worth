@@ -10,7 +10,7 @@ use worth_query_host::facade::{
     WorthQueryApplicationHome,
 };
 type Runtime = WorthQueryProgramApplicationRuntime<HomeIdentitySchema, HomeProgram>;
-pub(super) fn open(
+pub(crate) fn open(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     contacts: Arc<AtomicUsize>,
 ) -> WorthQueryApplicationHome<HomeIdentitySchema, HomeProgram> {
@@ -24,7 +24,7 @@ pub(super) fn open(
         .expect("the real bootstrap execution opens")
         .unwrap_or_else(|refused| panic!("fresh physical Home: {refused:?}"))
 }
-pub(super) fn scope() -> (WorthQueryCancellationSource, WorthQueryRequestScope) {
+pub(crate) fn scope() -> (WorthQueryCancellationSource, WorthQueryRequestScope) {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
@@ -32,7 +32,7 @@ pub(super) fn scope() -> (WorthQueryCancellationSource, WorthQueryRequestScope) 
     );
     (cancellation, scope)
 }
-pub(super) fn set(
+pub(crate) fn set(
     runtime: &Runtime,
     scope: &WorthQueryRequestScope,
     key: u64,
@@ -57,7 +57,7 @@ pub(super) fn set(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
 }
-pub(super) fn balance(runtime: &Runtime, scope: &WorthQueryRequestScope) -> u64 {
+pub(crate) fn balance(runtime: &Runtime, scope: &WorthQueryRequestScope) -> u64 {
     let principal = identity::inspection_authentication::authenticate(
         runtime.runtime().installed_schema(),
         scope,
@@ -71,7 +71,7 @@ pub(super) fn balance(runtime: &Runtime, scope: &WorthQueryRequestScope) -> u64 
         .unwrap();
     result.rows()[0]
 }
-pub(super) fn pending(
+pub(crate) fn pending(
     outcome: Result<
         WorthQueryApplicationMutationOutcome<(), u64>,
         WorthQueryApplicationRequestMutationDenial,
@@ -84,7 +84,7 @@ pub(super) fn pending(
     }
 }
 
-pub(super) fn reopen_required(
+pub(crate) fn reopen_required(
     result: Result<
         worth_query_host::facade::product::WorthQueryProductBranchOwnerCleanupReceipt,
         worth_query_host::facade::primary_graph::WorthQueryProductUnpublishedRecoveryReleaseFailure,
@@ -112,7 +112,7 @@ pub(super) fn reopen_required(
     recovery
 }
 
-pub(super) fn assert_reopen_actions(
+pub(crate) fn assert_reopen_actions(
     effects: &worth_query_host::facade::primary_graph::WorthQueryProductUnpublishedApplication,
 ) {
     use worth_query_host::facade::primary_graph::ProductUnpublishedNextAction::{

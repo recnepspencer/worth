@@ -1,18 +1,30 @@
 //! Filesystem retries compare original public receipt facts after actual process death.
-use super::*;
+use std::{sync::{Arc, atomic::{AtomicUsize, Ordering}}, time::{Duration, Instant}};
+use worth_query_host::facade::{
+ admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
+ application_contribution::{with_bootstrap_advancement_from_request, WorthQueryAdvancementDenial},
+ application_installation::ApplicationBuildIdentity,
+ application_entry::WorthQueryApplicationRequestExt,
+};
+use worth_query_testkit_host::facade::host::{application_home as fixture, application_runtime_surface as identity, checkpoint_capture};
+use crate::host::application_home::{pending_support, reopening::opening_failed};
+use pending_support::{balance, scope, set};
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
 
-mod process;
+mod affinity;
+mod fate_reopening;
+mod child_reexecution;
 mod receipt_fields;
+mod request_stops;
 
 #[test]
 fn lost_response_kill_reopen_retry_preserves_receipt_before_checkpoint() {
-    process::journey(false);
+    child_reexecution::journey(false);
 }
 
 #[test]
 fn lost_response_kill_reopen_retry_preserves_receipt_after_checkpoint() {
-    process::journey(true);
+    child_reexecution::journey(true);
 }
 
 #[test]
@@ -20,7 +32,7 @@ fn concurrent_identical_directory_keys_publish_one_original_receipt() {
     let contacts = Arc::new(AtomicUsize::new(0));
     let lease = checkpoint_capture::lease(128 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let home = super::super::pending_support::open(execution, contacts.clone());
+    let home = pending_support::open(execution, contacts.clone());
     let receipts = std::thread::scope(|threads| {
         let threads = (0..4)
             .map(|_| {
@@ -28,8 +40,17 @@ fn concurrent_identical_directory_keys_publish_one_original_receipt() {
                 threads.spawn(move || {
                     let (_, live) = scope();
                     match set(runtime, &live, 0x7265747279, 8).unwrap() {
-                        Outcome::Committed { receipt, result: 8 }
-                        | Outcome::AlreadyCommitted(receipt) => receipt,
+                        Outcome::Committed { receipt, result: 8 } => {
+                            let recorded = match set(runtime, &live, 0x7265747279, 8).unwrap() {
+                                Outcome::RecoveredCommitted(recorded) => recorded,
+                                other => {
+                                    panic!("fresh caller reads the durable original: {other:?}")
+                                }
+                            };
+                            receipt_fields::assert_live_agrees(&receipt, &recorded);
+                            recorded
+                        }
+                        Outcome::RecoveredCommitted(receipt) => receipt,
                         other => {
                             panic!("identical key must resolve original publication: {other:?}")
                         }
@@ -43,7 +64,7 @@ fn concurrent_identical_directory_keys_publish_one_original_receipt() {
             .collect::<Vec<_>>()
     });
     for receipt in &receipts[1..] {
-        assert!(receipt.is_same_authoritative_commit(&receipts[0]));
+        assert_eq!(receipt, &receipts[0]);
         assert_eq!(
             receipt_fields::projection(receipt),
             receipt_fields::projection(&receipts[0])
@@ -61,7 +82,7 @@ fn changed_intent_refuses_after_later_directory_publications() {
     let contacts = Arc::new(AtomicUsize::new(0));
     let lease = checkpoint_capture::lease(128 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let home = super::super::pending_support::open(execution, contacts.clone());
+    let home = pending_support::open(execution, contacts.clone());
     let (_, live) = scope();
     let original = match set(home.runtime(), &live, 0x7265747279, 8).unwrap() {
         Outcome::Committed { receipt, result: 8 } => receipt,
@@ -75,11 +96,16 @@ fn changed_intent_refuses_after_later_directory_publications() {
         set(home.runtime(), &live, 0x7265747279, 10).unwrap(),
         Outcome::IdempotencyIntentDrift
     ));
+    let recorded = match set(home.runtime(), &live, 0x7265747279, 8).unwrap() {
+        Outcome::RecoveredCommitted(recorded) => recorded,
+        other => panic!("the original source must remain readable: {other:?}"),
+    };
+    receipt_fields::assert_live_agrees(&original, &recorded);
     match set(home.runtime(), &live, 0x7265747279, 8).unwrap() {
-        Outcome::AlreadyCommitted(receipt) => {
+        Outcome::RecoveredCommitted(receipt) => {
             assert_eq!(
                 receipt_fields::projection(&receipt),
-                receipt_fields::projection(&original)
+                receipt_fields::projection(&recorded)
             );
         }
         other => panic!("later history cannot replace the original receipt: {other:?}"),

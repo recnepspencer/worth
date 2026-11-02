@@ -10,20 +10,34 @@ const EXPECTED: &str = "WORTH_QUERY_ORIGINAL_RECEIPT_EXPECTED";
 const READY: &str = "ORIGINAL_RECEIPT_WRITER_READY";
 
 pub(super) fn journey(after_checkpoint: bool) {
-    match std::env::var(MODE).as_deref() {
-        Ok("writer") => writer(after_checkpoint),
-        Ok("reader") => reader(),
-        Ok(mode) => panic!("unknown original receipt child mode {mode}"),
-        Err(_) => kill_and_read(after_checkpoint),
-    }
-}
-
-fn child(location: &Path, expected: &Path, mode: &str, after_checkpoint: bool) -> Command {
     let behavior = if after_checkpoint {
         "lost_response_kill_reopen_retry_preserves_receipt_after_checkpoint"
     } else {
         "lost_response_kill_reopen_retry_preserves_receipt_before_checkpoint"
     };
+    drive(behavior, || writer(after_checkpoint), reader);
+}
+
+pub(super) fn drive(behavior: &str, writer: impl FnOnce(), reader: impl FnOnce()) {
+    match std::env::var(MODE).as_deref() {
+        Ok("writer") => writer(),
+        Ok("reader") => reader(),
+        Ok(mode) => panic!("unknown original receipt child mode {mode}"),
+        Err(_) => kill_and_read(behavior),
+    }
+}
+pub(super) fn location() -> std::path::PathBuf {
+    std::env::var_os(LOCATION).unwrap().into()
+}
+pub(super) fn wait_for_kill() {
+    println!("{READY}");
+    std::io::stdout().flush().unwrap();
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+    panic!("writer must be killed; it cannot return or close normally");
+}
+
+fn child(location: &Path, expected: &Path, mode: &str, behavior: &str) -> Command {
     let parent = module_path!().rsplit_once("::").unwrap().0;
     let test = format!("{}::{behavior}", parent.split_once("::").unwrap().1);
     let mut command = Command::new(std::env::current_exe().unwrap());
@@ -35,10 +49,10 @@ fn child(location: &Path, expected: &Path, mode: &str, after_checkpoint: bool) -
     command
 }
 
-fn kill_and_read(after_checkpoint: bool) {
+fn kill_and_read(behavior: &str) {
     let location = fixture::location();
     let expected = location.with_extension("receipt-expectation");
-    let mut writer = child(&location, &expected, "writer", after_checkpoint)
+    let mut writer = child(&location, &expected, "writer", behavior)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
@@ -70,12 +84,12 @@ fn kill_and_read(after_checkpoint: bool) {
     );
     killed.expect("kill the writer without closing the Home");
     assert!(!status.success());
-    let reader = child(&location, &expected, "reader", after_checkpoint)
+    let reader = child(&location, &expected, "reader", behavior)
         .output()
         .expect("fresh reader process starts");
     assert!(
         reader.status.success(),
-        "reader after checkpoint={after_checkpoint}: {}\n{}",
+        "reader for {behavior}: {}\n{}",
         String::from_utf8_lossy(&reader.stdout),
         String::from_utf8_lossy(&reader.stderr)
     );
@@ -105,11 +119,17 @@ fn writer(after_checkpoint: bool) {
         Outcome::Committed { receipt, result: 8 } => receipt,
         other => panic!("original key must durably publish: {other:?}"),
     };
+    let recorded = match set(home.runtime(), &live, 0x7265747279, 8).unwrap() {
+        Outcome::RecoveredCommitted(recorded) => recorded,
+        other => panic!("the original durable source answers before response loss: {other:?}"),
+    };
+    receipt_fields::assert_live_agrees(&receipt, &recorded);
     std::fs::write(
         std::env::var_os(EXPECTED).unwrap(),
-        receipt_fields::projection(&receipt),
+        receipt_fields::projection(&recorded),
     )
     .unwrap();
+    drop(recorded);
     drop(receipt);
     assert!(matches!(
         set(home.runtime(), &live, 0x726574727a, 9).unwrap(),
@@ -123,12 +143,7 @@ fn writer(after_checkpoint: bool) {
             .expect("actual Complete Home checkpoint");
         assert!(checkpoint.covered().0 > 0);
     }
-    println!("{READY}");
-    std::io::stdout().flush().unwrap();
-    // Keep the genuine Home and lease alive until the parent kills this process.
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
-    panic!("writer must be killed; it cannot return or close normally");
+    wait_for_kill();
 }
 
 fn reader() {
@@ -171,8 +186,36 @@ fn assert_original(
     expected: &str,
 ) {
     match set(runtime, live, 0x7265747279, 8).unwrap() {
-        Outcome::AlreadyCommitted(receipt) => {
-            assert_eq!(receipt_fields::projection(&receipt), expected)
+        Outcome::RecoveredCommitted(receipt) => {
+            assert_eq!(receipt_fields::projection(&receipt), expected);
+            let original = receipt
+                .new_product_head()
+                .durable()
+                .unwrap()
+                .selected_commit();
+            let principal = identity::inspection_authentication::authenticate(
+                runtime.runtime().installed_schema(),
+                live,
+            );
+            let historical = runtime
+                .runtime()
+                .with_application_advancement(live, |phase| {
+                    runtime
+                        .request(&principal, live)
+                        .at_recorded_commit(&phase, original, None)
+                        .unwrap()
+                        .query(fixture::balance_query::AccountRead(
+                            "account-001".to_owned(),
+                        ))
+                        .execute_in_advancement(&phase)
+                        .unwrap()
+                })
+                .unwrap();
+            assert_eq!(
+                historical.rows(),
+                &[8],
+                "original data selects its actual historical state after later mutations"
+            );
         }
         other => {
             panic!("retry must return the exact original receipt without a handler: {other:?}")
