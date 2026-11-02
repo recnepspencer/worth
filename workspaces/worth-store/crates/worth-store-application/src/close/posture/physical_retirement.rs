@@ -57,7 +57,7 @@ impl ApplicationHomeRecoveryCustody {
                     }
                     PhysicalStoreCloseTaskPoll::Completed(outcome) => match outcome {
                         PhysicalStoreCloseOutcome::Closed { shutdown, .. } => {
-                            let allocation = super::RetiredApplicationHomeAllocation {
+                            let allocation = super::super::RetiredApplicationHomeAllocation {
                                 _location: self.location,
                                 _descriptor: self.descriptor,
                                 _world: self.world_composition.map(|composition| {

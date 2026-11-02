@@ -128,9 +128,9 @@ fn original_erased_slot_and_handler_aliases_preserve_the_same_handler_and_payloa
 }
 
 #[test]
-fn ordinary_supplier_retirement_retains_the_original_payload_until_reclaim() {
+fn ordinary_supplier_retirement_retains_payload_with_an_exhausted_memory_budget() {
     let policy = SerialRequest::from_memory(
-        SerialMemoryBudget::new(Some(1 << 20)),
+        SerialMemoryBudget::new(Some(0)),
         CancellationToken::new(),
         None,
     );

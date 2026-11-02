@@ -181,3 +181,9 @@ issued operation; observer hooks forward through its real checkpoint journey.
 The detached-read admission added for source close is local to that source-close
 phase. Memory retirement retains its existing incremental read/cache sequencing;
 it does not inherit source-close's stronger initial-capture veto.
+
+The handler retirement cursor retains the original static binding rather than
+allocating a copied key after checkpoint. The court
+`ordinary_supplier_retirement_retains_payload_with_an_exhausted_memory_budget`
+traces D11 release after checkpoint memory exhaustion and preserves payload
+until the same registry is reclaimed.
