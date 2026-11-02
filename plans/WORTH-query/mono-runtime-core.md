@@ -45,8 +45,13 @@ lock. Expected seals are never inferred from the admission being checked.
 
 Every typed re-entry validates runtime/brand ownership, the genuine installed
 seal/definition and operation type, input type, then lapse, before source work.
-The existing outer phase and handle/disclosure ownership gates retain their
-roles. Mismatched installed facts produce `StaleInstalledOperation`; input mismatch
+Transaction application/branch custody and redispatch handle gates keep their
+original precedence. Admission lapse precedes funded advancement; this deliberately
+retains the ruled pre-funding refusal, so the former claim that all outer phase
+gates were unchanged was too broad. Recovery-authority issuance checks ownership,
+seal and type without adding lapse refusal; actual use still checks currentness.
+History work and source binding/consumption now gate admission before reads or
+mutation. Pure carried-proof comparison helpers remain immutable predicates. Mismatched installed facts produce `StaleInstalledOperation`; input mismatch
 retains mutation's exact `InputNotAdmitted` and adds that exact general
 authorization refusal. Redispatch/recovery preserve its original kind through
 `AdmissionAuthorization`. Requested/approved/mandatory lifecycle bindings return

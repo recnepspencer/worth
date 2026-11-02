@@ -171,5 +171,7 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
     }
 }
 
+#[path = "advancement_custody/cancellation.rs"]
+mod cancellation;
 #[path = "advancement_custody/runtime_identity.rs"]
 mod runtime_identity;
