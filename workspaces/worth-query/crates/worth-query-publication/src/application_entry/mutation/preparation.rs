@@ -1,4 +1,6 @@
 //! Prepare one installed handler candidate without entering commit progression.
+mod completion;
+mod handler_execution;
 mod original_input;
 use super::{
     commit_binding::{WorthQueryCommitExtension, WorthQueryMutationCommitBinding},
@@ -171,128 +173,20 @@ where
         CandidatePreparation<'request, Schema, Intent::Binding>,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        let prepared = prepare(self, &identities, staged)?;
-        let principal_identity = prepared.principal_identity;
-        let mut admission = prepared.admission;
-        let commit_binding = WorthQueryMutationCommitBinding::new(&identities, prepared.extension);
-        if let Some(outcome) =
-            self.resolve_idempotency(phase, &admission, commit_binding.idempotency())?
-        {
-            return Ok(CandidatePreparation::Settled(outcome));
-        }
-        if let Some(pending) = prepared.pending_source {
-            pending
-                .consume_into(self.request.application, phase, &mut admission)
-                .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?;
-        }
-        let workflow_authority = self
-            .workflow_authority
-            .as_ref()
-            .and_then(|slot| slot.take());
-        if <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY {
-            workflow_authority
-                .as_ref()
-                .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?
-                .validate_before_handler(phase, self.request.application, self.request.scope)
-                .map_err(
-                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
-                )?;
-        }
-        let (handler_outcome, work) = self
-            .request
-            .application
-            .execute_mutation_handler_report_with_query_reads::<Intent::Binding>(
-                phase,
-                &identities,
-                &principal_identity,
-                self.request.principal,
-                admission,
-                allocation_policy,
-            )
-            .into_parts();
-        *decision_work = work;
-        let completed =
-            match handler_outcome.map_err(WorthQueryApplicationRequestMutationDenial::Handler)? {
-                HandlerResult::Completed(completed) => completed,
-                HandlerResult::DomainDenied(denial) => {
-                    return Ok(CandidatePreparation::Settled(
-                        WorthQueryApplicationMutationOutcome::DomainDenied(denial),
-                    ));
-                }
-                HandlerResult::ExecutionDenied(denial) => {
-                    return Err(WorthQueryApplicationRequestMutationDenial::Handler(
-                        MutationHandlerExecutionDenial::Handler(denial),
-                    ));
-                }
-                HandlerResult::Cancelled => {
-                    return Ok(CandidatePreparation::Settled(
-                        WorthQueryApplicationMutationOutcome::Cancelled,
-                    ));
-                }
-                HandlerResult::DeadlineExceeded => {
-                    return Ok(CandidatePreparation::Settled(
-                        WorthQueryApplicationMutationOutcome::DeadlineExceeded,
-                    ));
-                }
-            };
-        let (mut program, result) = completed.into_parts();
-        let publication_access =
-            worth_query_execution::publication_boundary::program_publication_access();
-        if program.requires_original_source_capture(&publication_access) {
-            program = program
-                .retain_original_mutation_input::<Intent::Binding>(
-                    &publication_access,
-                    phase,
-                    self.request.application,
-                    identities.encoded_input(),
-                )
-                .map_err(|cause| {
-                    WorthQueryApplicationRequestMutationDenial::Handler(
-                        MutationHandlerExecutionDenial::Attempt(cause),
-                    )
-                })?;
-        }
-        if self.workflow_birth_identity.is_some() {
-            let authority = self
-                .workflow_birth_authority
-                .as_ref()
-                .and_then(|slot| slot.take())
-                .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?;
-            program = program
-                .bind_workflow_birth_authority(phase, authority, allocation_policy)
-                .map_err(
-                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
-                )?;
-        }
-        if self.workflow_succession_identity.is_some() {
-            let authority = self
-                .workflow_succession_authority
-                .as_ref()
-                .and_then(|slot| slot.take())
-                .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?;
-            program = program
-                .bind_workflow_succession_authority(phase, authority, allocation_policy)
-                .map_err(
-                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
-                )?;
-        }
-        if let Some(authority) = workflow_authority.as_ref() {
-            program = program
-                .bind_workflow_operation_authority(phase, authority, allocation_policy)
-                .map_err(
-                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
-                )?;
-        }
-        let program = worth_query_execution::publication_boundary::signed_creation::WorthQuerySignedCreationAdapter::prepare::<Schema, Intent::Binding>(
-            &worth_query_execution::publication_boundary::program_publication_access(), phase, self.request.application, program, &identities,
-        ).map_err(WorthQueryApplicationRequestMutationDenial::SignedCreation)?;
-        Ok(CandidatePreparation::Prepared(PreparedCandidate {
-            program,
-            result,
+        match self.execute_staged_handler(
+            phase,
             identities,
-            principal: self.request.principal,
-            extension: prepared.extension,
-            decision_work: work,
-        }))
+            staged,
+            prepare,
+            decision_work,
+            allocation_policy,
+        )? {
+            handler_execution::HandlerPreparation::Executed(executed) => {
+                self.finish_executed_candidate(phase, executed, allocation_policy)
+            }
+            handler_execution::HandlerPreparation::Settled(outcome) => {
+                Ok(CandidatePreparation::Settled(outcome))
+            }
+        }
     }
 }

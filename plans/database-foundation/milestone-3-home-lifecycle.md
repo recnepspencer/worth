@@ -1795,3 +1795,28 @@ preparation on every stack frame. The existing recorded-correction consumer's
 explicit 8 MiB thread is the reproducer; its stack size and the repository's
 configured stack size are unchanged. Guard handback, recovery and destructor
 ordering retain their existing semantics.
+
+### Merged default-stack candidate execution boundary
+
+On merged source `224c00ae83`, raw libtest with `RUST_MIN_STACK` absent
+completes fresh initialization and the first authored checkpoint, then overflows
+on the ordinary business mutation. Windows x64 unwind metadata at the actual
+overflow attributes 1,596,504 bytes to Publication's `prepare_staged_candidate`
+and 273,480 bytes to its `prepare_in_program_using` caller. The captured stack
+and complete symbol names are in
+`target/lane-evidence/integration-baseline-stack.log`.
+
+Candidate preparation separates actual handler execution from completed-program
+binding. `preparation/handler_execution.rs` owns authorization, idempotency,
+pending-source consumption and the handler. Its move-only execution result
+carries the actual completed program, original identities, extension, work and
+workflow authority. `preparation/completion.rs` consumes those exact values for
+original-input retention, workflow binding and signed creation. Handler and
+Native preparation frames return before completion's program-move temporaries
+exist. There is no new allocation, authority, execution allowance, alternate
+preparation algorithm or changed publication order. Keep all existing terminal
+outcomes and validate ordinary and external custody through the production
+courts. Raw default-stack qualification covers fresh Host startup, the authored
+Host checkpoint/business/automatic-maintenance journey and Store's C0/manual/
+automatic checkpoint control. This integration does not qualify Complete
+reopening, retirement, transitions, discard, receipts or the joint landing.
