@@ -1940,3 +1940,20 @@ seal, its same lifecycle-owned conditional-runtime refusal, and the original
 resumed directory. Successful post-seal/full retirement belongs to the
 separately owned D11 qualification; this integration introduces no retirement,
 reopen or discard implementation.
+
+The expanded fresh-journey close assertions themselves increased its debug
+caller frame to 261,592 bytes, compared with 155,936 in the authored Host
+control (`target/lane-evidence/integration-fresh-control-complete-stack.log`).
+Its exact post-mutation alias/supplier assertions now consume the original
+Home in `host/application_home/fresh_close.rs` after the business assertions
+finish. No assertion or resource handoff is removed; the close-result
+construction frames do not overlap business mutation. This repairs the court
+expansion introduced by the assertion migration, with no new product backing,
+thread, stack setting or retry authority.
+
+The same still-aliased runtime's legacy conditional close first returns exact
+`RuntimeKeepaliveRetained`, as the existing program-runtime custody court
+asserts (`program/speculation/counted_read_stops/custody.rs`). Its old
+`ApplicationHomeOwnsLifecycle` expectation also assumed the retired World-first
+ordering. The fresh control now checks that actual earlier ownership refusal;
+it does not weaken the assertion to any conditional-close error.
