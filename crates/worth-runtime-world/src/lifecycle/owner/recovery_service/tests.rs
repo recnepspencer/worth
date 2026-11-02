@@ -23,6 +23,9 @@ use crate::publication::{
 };
 use crate::recovery::{ProductUnpublishedCause, ProductUnpublishedNextAction};
 
+#[path = "foreign_authority_tests.rs"]
+mod foreign_authority_tests;
+
 pub(super) type TestOwner = super::super::RuntimeWorldOwnerRoot<(), (), (), (), ()>;
 
 struct FixedClock;

@@ -220,3 +220,18 @@ product facade. No new construction door or Cargo feature is introduced.
 Broader handle families, including preview installation and external recovery
 handle admission, have not acquired full filesystem N+1 qualification in this
 candidate. The new operation checks do not imply those families are complete.
+
+
+The correction's read-set responsibility split first failed compilation because
+three relative paths still named their previous parent. They now resolve the
+same ValueDecodeState and retained decision facts owners from the child module;
+no behavior or assertion changes. The first formatting attempt also exposed a
+missing explicit module path; the declaration now follows this owner's existing
+`#[path = "operation_admission/..."]` convention.
+
+A new real-owner foreign-custody control,
+`foreign_recovery_authority_refuses_release_continuation_and_adoption_without_effects`,
+passes (1/1). It presents actual retained Native/World custody to another genuine
+World owner through all three receiver methods, checks typed ForeignHandle and
+proves the receiver head/catalog and original retained record are unchanged.
+It is memory-owner affinity evidence, not a fabricated filesystem N+1 proof.
