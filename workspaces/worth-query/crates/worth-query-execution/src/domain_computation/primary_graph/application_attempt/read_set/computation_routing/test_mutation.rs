@@ -34,12 +34,12 @@ impl SealedComputationFacts {
         self.layout = super::layout::SealedReadLayout::OwnerFixture;
     }
 
-    pub(in crate::domain_computation::primary_graph) fn copy_key(
+    pub(in crate::domain_computation::primary_graph) fn copy_keys(
         &mut self,
         key: &WorthQueryApplicationFactKey,
-        to: WorthQueryApplicationFactKey,
+        destinations: impl IntoIterator<Item = WorthQueryApplicationFactKey>,
     ) {
-        self.move_key(key, to, false);
+        self.move_keys(key, destinations, false);
     }
 
     pub(in crate::domain_computation::primary_graph) fn rename_key(
@@ -47,13 +47,13 @@ impl SealedComputationFacts {
         key: &WorthQueryApplicationFactKey,
         to: WorthQueryApplicationFactKey,
     ) {
-        self.move_key(key, to, true);
+        self.move_keys(key, [to], true);
     }
 
-    fn move_key(
+    fn move_keys(
         &mut self,
         key: &WorthQueryApplicationFactKey,
-        to: WorthQueryApplicationFactKey,
+        destinations: impl IntoIterator<Item = WorthQueryApplicationFactKey>,
         remove: bool,
     ) {
         let mut facts: BTreeMap<_, _> = self
@@ -64,7 +64,9 @@ impl SealedComputationFacts {
         if remove {
             facts.remove(key);
         }
-        facts.insert(to, value);
+        for destination in destinations {
+            facts.insert(destination, value.clone());
+        }
         let mut values = Vec::new();
         let mut metadata = BTreeMap::new();
         for (key, (fact, readers)) in facts {

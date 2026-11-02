@@ -4,6 +4,7 @@ use super::{ApplicationQueryCardinality, ApplicationQueryResultTraversalDirectio
 use crate::application_query::ApplicationQueryResultFieldPresence;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
+mod field_match;
 mod retained_backing;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

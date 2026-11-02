@@ -14,6 +14,7 @@ mod fact_body;
 use fact_body::append_fact;
 pub(super) mod aggregate;
 mod canonical_digest;
+pub(super) mod derived_source;
 mod indexed_selection;
 mod observation_identity;
 mod source_publication;

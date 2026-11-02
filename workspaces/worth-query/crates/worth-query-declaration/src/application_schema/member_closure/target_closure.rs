@@ -76,6 +76,13 @@ impl ClosureIndex<'_> {
         target: &ApplicationOperationDecisionReadTarget,
     ) -> bool {
         match target {
+            ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
+                self.members.iter().any(|member| {
+                    matches!(member, ApplicationSchemaMember::ApplicationQuery { definition }
+                    if definition.name() == parent.parts().query_name
+                        && definition.managed_index().is_some())
+                })
+            }
             ApplicationOperationDecisionReadTarget::Entity { entity } => {
                 self.entities.contains(entity.as_str())
             }

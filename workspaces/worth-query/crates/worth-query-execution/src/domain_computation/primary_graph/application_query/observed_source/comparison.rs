@@ -79,6 +79,16 @@ pub(in crate::domain_computation::primary_graph::application_query) fn equal(
                     }
                     _ => return Ok(false),
                 }
+                let a = left.derived.as_ref().map_or(&[][..], |d| d.values());
+                let b = right.derived.as_ref().map_or(&[][..], |d| d.values());
+                if a.len() != b.len() {
+                    return Ok(false);
+                }
+                for (a, b) in a.iter().zip(b) {
+                    if !walks.equal_derived(a, b, execution, context, control)? {
+                        return Ok(false);
+                    }
+                }
                 let left = left.walks.as_ref().map_or(&[][..], |w| w.values());
                 let right = right.walks.as_ref().map_or(&[][..], |w| w.values());
                 if left.len() != right.len() {

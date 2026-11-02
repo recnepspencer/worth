@@ -7,6 +7,12 @@ pub(super) fn append_decision_read_target(
     target: &ApplicationOperationDecisionReadTarget,
 ) {
     match target {
+        ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
+            basis.text(format!("{prefix}.kind"), "managed-index");
+            for (field, value) in parent.canonical_fields() {
+                basis.text(format!("{prefix}.parent.{field}"), value);
+            }
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => {
             basis.text(format!("{prefix}.kind"), "entity");
             basis.text(format!("{prefix}.entity"), entity);

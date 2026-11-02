@@ -84,6 +84,10 @@ fn mix_canonical_locus(revision: &mut RevisionHasher, locus: &CanonicalBasisLocu
 
 fn mix_canonical_value(revision: &mut RevisionHasher, value: &CanonicalBasisValue) {
     match value {
+        CanonicalBasisValue::InlineBytes(value) => {
+            revision.mix_u8(19);
+            revision.mix_bytes(value.as_bytes());
+        }
         CanonicalBasisValue::Null => revision.mix_u8(0),
         CanonicalBasisValue::Bool(value) => {
             revision.mix_u8(1);

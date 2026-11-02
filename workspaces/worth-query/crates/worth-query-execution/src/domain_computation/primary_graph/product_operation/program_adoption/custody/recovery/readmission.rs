@@ -4,6 +4,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recover_branch_adoption_in_advancement<
@@ -23,6 +24,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
     {
+        let mut retirements = OwnerCleanupRetirements::default();
         if let Err(cause) = admission.validate_current_authority() {
             return Err(failure(WorthQueryBranchAdoptionRecoveryDenial::Authorization(super::super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)), recovery));
         }
@@ -112,9 +114,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     migration,
                     custody,
                 );
-                let cleanup = self.application().release_product_publication_recovery(
+                let cleanup = self.application().release_product_recovery_in_request(
+                    execution,
                     product,
                     IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,
+                    &mut retirements,
                 );
                 Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup })
             }
@@ -158,9 +162,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         .unpublished_idempotency_disposition(),
                     support_custody,
                 );
-                let prior_cleanup = self.application().release_product_publication_recovery(
+                let prior_cleanup = self.application().release_product_recovery_in_request(
+                    execution,
                     product,
                     IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,
+                    &mut retirements,
                 );
                 Ok(
                     WorthQueryBranchAdoptionRecoveryOutcome::ProductUnpublished {

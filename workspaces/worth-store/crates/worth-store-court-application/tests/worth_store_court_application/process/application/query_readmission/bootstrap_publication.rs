@@ -208,7 +208,7 @@ fn failed_completion_retains_seed_history_and_same_home_without_retry_or_genesis
         home.physical_serving_for_test().certification_reject_next_candidate_retention_before_effect();
         let cause = query.publish_home_query_seed(&phase).unwrap_err();
         assert_eq!(cause.kind(), WorthQueryPrimaryGraphInstallationDenialKind::RelationalDurabilityUnresolved, "{cause:?}");
-        assert_eq!(cause.subject(), "Relational rejected the application principal bootstrap transaction: durable publication of canonical commit 4 at position 4 is unresolved: Indeterminate { stage: DataDispatch }");
+        assert_eq!(cause.subject(), "Relational rejected the application seed transaction: durable publication of canonical commit 4 at position 4 is unresolved: Indeterminate { stage: DataDispatch }");
         {
             let journal = home.physical_serving_for_test().canonical_commits().unwrap();
             assert_eq!(journal.head().unwrap().unwrap().position(), 3);

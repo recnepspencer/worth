@@ -1,4 +1,5 @@
 //! Authored fields and the installed correction association.
+pub use super::domain_binding::InlineCounterBinding;
 use super::{correction::RecordedEdit, other_edit, principal_status, query};
 use worth_query_host::facade::declaration::application_query::{
     ApplicationQueryDisclosureContract, ApplicationQueryInspectionDefinition,
@@ -10,7 +11,7 @@ use worth_query_host::facade::{
 
 worth_query_application! {
     pub NumericSchema {
-        owner: "numeric_correction", version: (1, 0),
+        owner: "numeric_correction", version: (2, 0),
         contributions: [NumericContribution],
     }
 }
@@ -21,6 +22,7 @@ worth_query_application_contribution! {
         members: |schema| {
             let schema = super::causal_inspection::declare(schema);
             let schema = super::operand_edit::declare(schema);
+            let schema = super::write_admission::declare(schema);
             let schema = super::aspect_input::declare(schema);
             let schema = super::scalar_input::declare(schema);
             let schema = super::composite_definition_model::declare(schema);
@@ -71,12 +73,12 @@ worth_query_entity!(pub Principal for NumericSchema);
 worth_query_entity!(pub Number for NumericSchema);
 worth_query_aspect!(pub ExternalIdentity for NumericSchema, ExternalMapping; identity = AspectIdentity(0x91800101), revision = AspectContractRevision(1));
 worth_query_aspect!(pub PrincipalFacts for NumericSchema, Principal; identity = AspectIdentity(0x91800102), revision = AspectContractRevision(1));
-worth_query_aspect!(pub NumberFacts for NumericSchema, Number; identity = AspectIdentity(0x91800103), revision = AspectContractRevision(1));
+worth_query_aspect!(pub NumberFacts for NumericSchema, Number; identity = AspectIdentity(0x91800103), revision = AspectContractRevision(2));
 worth_query_field!(pub ExternalIdentityField for NumericSchema, ExternalMapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
 worth_query_field!(pub MappingStatusField for NumericSchema, ExternalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
 worth_query_field!(pub PrincipalIdentityField for NumericSchema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_field!(pub Key for NumericSchema, Number, NumberFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Primary for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub Primary for NumericSchema, Number, NumberFacts: u64 => InlineCounterBinding, read_write, no_equality);
 worth_query_field!(pub Secondary for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_field!(pub ReadEnabled for NumericSchema, Number, NumberFacts: bool => BoolApplicationValueBinding, read_write, equality);
 worth_query_field!(pub Ceiling for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);

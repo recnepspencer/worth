@@ -49,7 +49,10 @@ fn assert_original(report: &WorthQueryMaterializedPerformedSourceInspection) {
     assert_eq!(input.effect(), Effect::Present);
     assert_eq!(
         input.value(),
-        Some(&WorthQueryMaterializedFieldValue::UInt64(4))
+        Some(&WorthQueryMaterializedFieldValue::InlineBytes(
+            worth_foundational::facade::InlineBytes::try_new(vec![1, 4, 0, 0, 0, 0, 0, 0, 0])
+                .unwrap(),
+        ))
     );
     for name in ["calculated", "operand"] {
         let field = fields

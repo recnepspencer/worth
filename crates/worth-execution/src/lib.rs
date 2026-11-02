@@ -17,8 +17,10 @@ mod reduction;
 mod report;
 mod storage;
 pub use storage::{
+    build_ordered_tree, build_sorted_ordered_tree, insert_ordered_tree, remove_ordered_tree,
     ExecutionOrderedMap, ExecutionOrderedMapCell, ExecutionOrderedMapDenial,
-    ExecutionOrderedMapUniqueDenial,
+    ExecutionOrderedMapUniqueDenial, ExecutionOrderedTreeBounds, ExecutionOrderedTreeNode,
+    ExecutionOrderedTreeStorage,
 };
 
 pub use authority::{
@@ -38,7 +40,8 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 mod tests;
 pub use backend::{
     ExecutionKernelReceipt, ExecutionKernelReceiptStorage, ExecutionOwnerContext,
-    ExecutionRetainedResult, NestedComputationStop, ScopeOutcome, ScopeStop,
+    ExecutionRetainedResult, ExecutionWorkLoan, ExecutionWorkLoanDenial, NestedComputationStop,
+    ScopeOutcome, ScopeStop,
 };
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentEdit,

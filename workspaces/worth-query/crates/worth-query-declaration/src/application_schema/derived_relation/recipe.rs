@@ -82,6 +82,28 @@ impl<S, F, T> ApplicationDerivedRelation<S, F, T> {
         }
     }
 
+    /// Selects physical rows introduced along an actual newest-first predecessor
+    /// chain. Retirement suppresses same-step and older introductions; it does
+    /// not erase a newer introduction. Native proves the actual chain at read.
+    pub fn ordered_events<Previous, Introduces, Retires>(
+        predecessor: ApplicationRelationRef<S, Previous, F, F>,
+        introduced: ApplicationRelationRef<S, Introduces, F, T>,
+        retired: ApplicationRelationRef<S, Retires, F, T>,
+    ) -> Self {
+        let mut nodes = predecessor.into_expression().nodes;
+        nodes.extend(introduced.into_expression().nodes);
+        nodes.extend(retired.into_expression().nodes);
+        nodes.push(super::ApplicationDerivedRelationNode::OrderedEvents {
+            predecessor: 0,
+            introduced: 1,
+            retired: 2,
+        });
+        Self {
+            expression: ApplicationDerivedRelationExpression { nodes },
+            marker: PhantomData,
+        }
+    }
+
     /// Lifts a stored carrier to one actual case in its declared finite domain.
     pub fn carrier_case<Case>(
         domain: ApplicationProjectedMemberDomainRef<S, T, F>,

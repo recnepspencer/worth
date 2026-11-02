@@ -55,6 +55,9 @@ fn append_root_paths(
     for (path_index, root_path) in paths.iter().enumerate() {
         for (step_index, step) in root_path.steps().iter().enumerate() {
             let path = format!("root-path[{path_index}].step[{step_index}]");
+            if step.source_kind() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived {
+                entries.push(text(format!("{path}.source-kind"), "derived"));
+            }
             if step.traversal() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::Closure {
                 entries.push(text(format!("{path}.traversal"), "closure"));
             }

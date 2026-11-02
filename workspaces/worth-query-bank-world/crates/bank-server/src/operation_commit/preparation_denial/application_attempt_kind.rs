@@ -6,6 +6,9 @@ pub(super) const fn application_attempt_kind(
 ) -> BankApplicationAttemptDenialKind {
     use WorthQueryApplicationAttemptDenialKind as Query;
     match kind {
+        Query::ManagedIndexSourceDenied => {
+            BankApplicationAttemptDenialKind::ManagedIndexSourceDenied
+        }
         Query::ValueDecode(cause) => BankApplicationAttemptDenialKind::ValueDecode(cause),
         Query::ForeignPhase => BankApplicationAttemptDenialKind::ForeignPhase,
         Query::StorageUnavailable => BankApplicationAttemptDenialKind::StorageUnavailable,

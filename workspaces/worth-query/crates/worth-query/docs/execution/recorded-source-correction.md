@@ -122,6 +122,39 @@ target: even a later equal-value write makes an older prepared target stale.
 Compensation keeps its fresh ordinary reads, and reapplication keeps its
 separate declared source-action and active-reversal checks.
 
+## Qualified managed Source support
+
+A qualified retained managed Source observation can join ordinary recorded
+correction through the existing receipt selection and preparation APIs. The
+original observation issues its Native history selector from its actual Source
+program, full-generation scope and runtime. It grants no historical READ.
+
+Ordinary field/aspect/adjacency occurrences are preserved independently. For a
+qualified Public Parent, Native managed scope candidates can be narrowed using
+actual affected row keys and both historical Source images. Query validates the
+actual installed adapter, program and full-generation scope, then applies the
+same forward `matches_source` predicate outside runtime/attempt gates. Exact
+refinement never excludes a matching candidate from history, even when its DTO
+result was empty. Payload acquisition and disposal use the original request.
+
+Missing or expired historical material and governed Parents keep conservative
+candidates; wrong associations and missing live Native history metadata refuse.
+Every remaining occurrence requires an authentic performed recorded cancellation
+before strict original and complete target support are compared. Equal present
+results, raw restoration and matching authored no-ops cannot replace cancellation.
+An irrelevant uncancelled edit or nonmatching no-op can be excluded when actual
+historical material survives. Independent ordinary facts still apply.
+
+The compiled [maintained Catalog correction court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/correction.rs)
+exercises populated/empty prefix inputs, irrelevant edits, transient entrants,
+matching exact-rejected no-ops, ordinary authored overlap and cancellation/retry.
+The same correction family qualifies the box provider's actual indirect endpoint
+history, including irrelevant motion, transient entrants, genuine recorded motion
+reversal and an AABB match rejected by exact contact. The motion inverse decodes
+its actual retained coordinate preimage; domain numerical meaning is unchanged.
+Governed historical relevance remains explicitly conservative. Current authority,
+disclosure and exact prepared-target publication remain required.
+
 ## Select a source after closing its operation
 
 Capture the completed receipt's `correction_source()` locator, then close

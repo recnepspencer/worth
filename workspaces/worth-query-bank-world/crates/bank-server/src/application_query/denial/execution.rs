@@ -21,6 +21,7 @@ pub enum BankApplicationPreviewSessionDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProductSelectionDenialKind {
+    DurableBranchPublicationRequired,
     ExpectedDescriptionVersionUnsupported {
         supported: u16,
         actual: u16,
@@ -162,6 +163,9 @@ pub(super) const fn product_selection(
         QueryProductSelection::Refused(kind) => match kind {
             QueryRefusal::ExpectedDescriptionVersionUnsupported { supported, actual } => {
                 Bank::ExpectedDescriptionVersionUnsupported { supported, actual }
+            }
+            QueryRefusal::DurableBranchPublicationRequired => {
+                Bank::DurableBranchPublicationRequired
             }
             QueryRefusal::ExpectedDescriptionNameInvalid => Bank::ExpectedDescriptionNameInvalid,
             QueryRefusal::ForeignPhase => Bank::ForeignPhase,

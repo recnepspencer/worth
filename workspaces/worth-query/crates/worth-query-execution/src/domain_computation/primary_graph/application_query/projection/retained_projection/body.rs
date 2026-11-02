@@ -1,10 +1,10 @@
 //! Original body and original-request funding share exactly one lifetime.
-use super::super::WorthQueryApplicationProjectionNode;
+use super::super::OwnedProjectionRows;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey;
 
 pub(in crate::domain_computation::primary_graph) struct OriginalProjection {
-    pub(super) rows: Vec<WorthQueryApplicationProjectionNode>,
+    pub(super) rows: OwnedProjectionRows,
     // Every declared field/relation decision, including withheld slots.
     // The original compiled binding interprets these exact shared slot keys.
     pub(super) disclosure:
@@ -16,7 +16,7 @@ pub(in crate::domain_computation::primary_graph) struct OriginalProjection {
 
 impl OriginalProjection {
     pub(super) fn new(
-        rows: Vec<WorthQueryApplicationProjectionNode>,
+        rows: OwnedProjectionRows,
         disclosure: worth_execution::ExecutionArray<(Arc<ApplicationQueryResultSlotKey>, bool)>,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Self {

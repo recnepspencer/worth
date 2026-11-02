@@ -133,6 +133,7 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
                     Kind::WrongEntityKind
                 }
                 Definition::InvalidGraphLaws => Kind::RelationNotInstalled,
+                Definition::InvalidEventChain => Kind::InvalidEventChain,
             };
             Denial::new(kind, format!("derived relation read: {cause:?}"))
         }
@@ -140,8 +141,16 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
 }
 
 #[cfg(test)]
-mod native_fixture;
+use worth_testkit_relational::derived_relation as native_fixture;
 #[cfg(test)]
 mod native_snapshot;
 #[cfg(test)]
 mod native_source_shapes;
+
+#[test]
+fn malformed_event_chain_preserves_its_typed_query_denial() {
+    let denial = native_denial(NativeDenial::Definition(
+        worth_relational::facade::schema::DerivedRelationDenial::InvalidEventChain,
+    ));
+    assert_eq!(denial.kind(), Kind::InvalidEventChain);
+}

@@ -22,7 +22,13 @@ pub struct WorthQueryInstalledManagedIndexReadMeaning {
     parent_binding: String,
     parent_query: WorthQueryInstalledApplicationQueryIdentity,
     parent_graph: WorthQueryInstalledGraphReadContract,
+    parent_disclosure:
+        worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture,
     maximum_source_results: usize,
+    predicate_profile: Result<
+        super::WorthQueryManagedIndexPredicateProfile,
+        super::WorthQueryManagedIndexPredicateProfileDenial,
+    >,
 }
 
 /// One cold compiled correspondence, shared by all live associations for this Parent.
@@ -50,8 +56,14 @@ impl WorthQueryInstalledManagedIndexAccessContract {
             parent_binding: parent.descriptor().identity().to_owned(),
             parent_query: parent.query_identity().clone(),
             parent_graph: parent.query().read_graph().clone(),
+            parent_disclosure: parent.query().disclosure().posture(),
             maximum_source_results: source.limits().maximum_results().get(),
+            predicate_profile: super::matching::compile(recipe, source, parent),
         });
+        if meaning.match_posture() == worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined
+            && meaning.predicate_profile.is_err() {
+            return Err(super::denied(super::Kind::ManagedIndexParentUnsupported, &recipe.meaning().parts().name));
+        }
         let obligations = bind_managed_index_obligations(&meaning).map_err(|cause| {
             super::super::denial::graph_obligation_denial(&recipe.meaning().parts().name, cause)
         })?;
@@ -89,6 +101,31 @@ impl WorthQueryInstalledManagedIndexAccessContract {
 }
 
 impl WorthQueryInstalledManagedIndexReadMeaning {
+    pub fn parent_disclosure_posture(
+        &self,
+    ) -> worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture {
+        self.parent_disclosure
+    }
+    pub fn match_posture(
+        &self,
+    ) -> worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture
+    {
+        self.parent_graph
+            .managed_index_selection()
+            .expect("managed access has its compiled selector")
+            .posture()
+    }
+    /// The compiled tracked full-Parent profile; still requires a maintained
+    /// Source, actual provider association, and fresh read admission at use.
+    pub fn predicate_profile(
+        &self,
+    ) -> Result<
+        super::WorthQueryManagedIndexPredicateProfile,
+        super::WorthQueryManagedIndexPredicateProfileDenial,
+    > {
+        self.predicate_profile
+    }
+
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         &self.schema
     }

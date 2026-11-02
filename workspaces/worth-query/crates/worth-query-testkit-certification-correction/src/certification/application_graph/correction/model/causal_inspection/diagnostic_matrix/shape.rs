@@ -45,7 +45,7 @@ pub(super) fn ordering<Q>() -> ApplicationQueryResultFieldRef<
     Primary,
     u64,
     ReadWrite,
-    EqualityPredicate,
+    NoEqualityPredicate,
     NoApplicationUnit,
 > {
     ApplicationQueryResultFieldRef::new("ordering", Primary::reference())

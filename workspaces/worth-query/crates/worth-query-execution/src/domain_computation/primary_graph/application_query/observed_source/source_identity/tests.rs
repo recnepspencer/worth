@@ -3,6 +3,40 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 use super::*;
 
 #[test]
+fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
+    let root = EntityId::new(PartitionId::main(), 1, 1);
+    // Descriptive registry mechanics need no runtime, Native read or epoch grant.
+    let selection = WorthQueryApplicationBasisSelectionIdentity::Relational;
+    let first = registry
+        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .unwrap();
+    let ordinal = registry.state.lock().unwrap().next_ordinal;
+    let denied = registry.intern_compared(
+        &[7; 32],
+        &[8; 32],
+        footprint(root, false),
+        &selection,
+        &mut |_, _| Err::<bool, _>(String::from("owned comparison refusal")),
+    );
+    assert_eq!(denied.err().as_deref(), Some("owned comparison refusal"));
+    {
+        let state = registry.state.lock().unwrap();
+        assert_eq!(state.next_ordinal, ordinal);
+        assert_eq!(state.meanings.len(), 1);
+    }
+    let retry = registry
+        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .unwrap();
+    assert!(Arc::ptr_eq(&first, &retry));
+    drop(first);
+    drop(retry);
+    assert!(registry.state.lock().unwrap().meanings.is_empty());
+}
+
+#[test]
 fn exact_meaning_is_reused_but_a_changed_footprint_gets_a_new_identity() {
     let registry = WorthQueryObservedSourceMeaningRegistry::new(
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),

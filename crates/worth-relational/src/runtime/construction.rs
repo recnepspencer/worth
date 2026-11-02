@@ -29,6 +29,7 @@ pub enum RelationalRuntimeForkDenial {
 #[derive(Debug, Default)]
 pub(crate) struct RuntimeExtensions {
     custom_invariants: Vec<CustomInvariantRegistration>,
+    managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
     post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
     durable_medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
@@ -41,10 +42,19 @@ impl RuntimeExtensions {
     ) -> Self {
         Self {
             custom_invariants,
+            managed_sources: Vec::new(),
             commit_strategy_executors,
             post_commit_consumer: None,
             durable_medium: None,
         }
+    }
+
+    pub(crate) fn with_managed_index_sources(
+        mut self,
+        programs: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
+    ) -> Self {
+        self.managed_sources = programs;
+        self
     }
 
     pub(crate) fn with_post_commit_consumer(
@@ -69,9 +79,18 @@ impl RuntimeExtensions {
     ) -> Result<SchemaContractRuntimeSubsystem, Denial> {
         let mut schema_contract_runtime =
             <SchemaContractRuntimeSubsystem as RuntimeSubsystem>::new(config);
+        let sources =
+            crate::validation::candidate_source::SourcePreparationGroup::for_public_sources(
+                &config.schema.registry,
+                self.managed_sources.clone(),
+            )
+            .map_err(Denial::ManagedIndexSource)?;
         schema_contract_runtime.custom_invariant_registries =
-            FrozenCustomInvariantRegistry::from_registrations(self.custom_invariants.clone())
-                .map_err(Denial::CustomInvariant)?;
+            FrozenCustomInvariantRegistry::from_registrations(
+                self.custom_invariants.clone(),
+                sources,
+            )
+            .map_err(Denial::CustomInvariant)?;
         Ok(schema_contract_runtime)
     }
 

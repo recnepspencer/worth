@@ -40,6 +40,8 @@ fn fact_is_current(
     snapshot: &SnapshotHandle,
 ) -> Result<bool, InputCutoffVerificationStop> {
     match fact.source_currentness_in(runtime, execution, snapshot)? {
+        Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => Err(InputCutoffVerificationStop::OutputObservation(
+            crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause))),
         Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => {
             Err(InputCutoffVerificationStop::OutputObservation(stop))
         }

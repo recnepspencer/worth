@@ -137,7 +137,14 @@ impl RetainedInputCutoffCandidate {
         let Some(witness) = self.native_output_witness() else {
             return Ok(None);
         };
-        if !prior_key.same_prepared_input_as(fresh_key) {
+        if !prior_key
+            .same_prepared_input_as(fresh_key, &mut |work| {
+                crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::work(
+                    execution, work,
+                )
+            })
+            .map_err(InputCutoffVerificationStop::Execution)?
+        {
             return Ok(None);
         }
         observation::reach(Gate::DecisionContext);
@@ -212,9 +219,10 @@ impl RetainedInputCutoffCandidate {
                     Err(ConsumedOutputVerificationStop::CapacityExhausted(_)) => {
                         return Err(InputCutoffVerificationStop::CapacityExhausted);
                     }
-                    Err(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => {
-                        return Err(InputCutoffVerificationStop::OutputObservation(stop))
-                    }
+                    Err(
+                        stop @ (ConsumedOutputVerificationStop::SourceQueryAuthorization(_)
+                        | ConsumedOutputVerificationStop::ManagedIndex(_)),
+                    ) => return Err(InputCutoffVerificationStop::OutputObservation(stop)),
                     Err(ConsumedOutputVerificationStop::Execution(cause)) => {
                         return Err(InputCutoffVerificationStop::Execution(cause))
                     }
@@ -287,9 +295,10 @@ impl RetainedInputCutoffCandidate {
             selected,
         ) {
             Ok(ConsumedOutputVerification::Current) => {}
-            Err(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => {
-                return Err(InputCutoffVerificationStop::OutputObservation(stop))
-            }
+            Err(
+                stop @ (ConsumedOutputVerificationStop::SourceQueryAuthorization(_)
+                | ConsumedOutputVerificationStop::ManagedIndex(_)),
+            ) => return Err(InputCutoffVerificationStop::OutputObservation(stop)),
             Ok(
                 ConsumedOutputVerification::PendingUpstream
                 | ConsumedOutputVerification::ChangedOutput

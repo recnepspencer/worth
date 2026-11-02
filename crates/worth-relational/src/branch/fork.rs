@@ -37,6 +37,8 @@ pub enum RelationalForkDenial {
     ForeignRuntime,
     StaleSource,
     MissingArtifact,
+    RootIdentityExhausted,
+    ManagedSource(crate::mvcc::CompanionPreflightStop),
     InvalidTarget(BranchCreateError),
     Cell(RelationalBranchCellDenial),
     RetentionCapacityExhausted,

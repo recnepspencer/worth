@@ -163,12 +163,14 @@ impl CompletedApplicationFacts {
     }
     pub(in crate::domain_computation) fn into_table(
         self,
-    ) -> Result<super::ApplicationFactTable, &'static str> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::ApplicationFactTable, super::BindingFailure> {
         let bytes = self
             .binding_bytes
-            .ok_or("application binding was not admitted")?;
+            .ok_or_else(|| super::binding_failure("application binding was not admitted"))?;
         if let Some(projection) = self.projection.clone() {
             super::ApplicationFactTable::projected(
+                execution,
                 self.original,
                 self.installed,
                 projection,
@@ -179,7 +181,8 @@ impl CompletedApplicationFacts {
         } else {
             let mut this = self;
             let memory = this.binding_memory.take();
-            super::ApplicationFactTable::full(this.into_decisions()?, memory, bytes)
+            super::ApplicationFactTable::full(this.into_decisions(execution)?, memory, bytes)
+                .map_err(super::binding_failure)
         }
     }
 
@@ -187,9 +190,12 @@ impl CompletedApplicationFacts {
     /// newly issued principal/requirement observations after this projection.
     pub(in crate::domain_computation) fn into_decisions(
         self,
-    ) -> Result<Vec<Decision>, &'static str> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<Decision>, super::BindingFailure> {
         if self.installed.len() > self.original.len() {
-            return Err("installed read scopes exceed retained application facts");
+            return Err(super::binding_failure(
+                "installed read scopes exceed retained application facts",
+            ));
         }
         let installed_count = self.installed.len();
         let mut facts: Vec<_> = (0..installed_count)
@@ -215,7 +221,9 @@ impl CompletedApplicationFacts {
             .map(|(index, fact)| (fact.locator_identity(), index))
             .collect::<BTreeMap<_, _>>();
         if indices.len() != facts.len() {
-            return Err("application decision facts contain duplicate structural locators");
+            return Err(super::binding_failure(
+                "application decision facts contain duplicate structural locators",
+            ));
         }
         for ordinal in installed_count..self.original.len() {
             crate::domain_computation::primary_graph::fact_verification_observation::provider_application_fact();
@@ -225,7 +233,9 @@ impl CompletedApplicationFacts {
             };
             let locator = source.dependency_locator_identity();
             if let Some(index) = indices.get(&locator).copied() {
-                facts[index] = facts[index].clone().retain_observed_source_role(source)?;
+                facts[index] = facts[index]
+                    .clone()
+                    .retain_observed_source_role(source, execution)?;
             } else {
                 indices.insert(locator, facts.len());
                 facts.push(Decision::observed_source(source));

@@ -41,6 +41,14 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::InvariantManagedIndexSource {
+                invariant,
+                requirement,
+                ..
+            } => {
+                validate_simple_identifier(invariant)?;
+                validate_simple_identifier(requirement.index())?;
+            }
             ApplicationSchemaMember::ManagedIndex { definition } => {
                 definition.validate().map_err(|cause| {
                     ApplicationSchemaDeclarationDenial::InvalidManagedIndex {

@@ -2,44 +2,6 @@ use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// A required cue reserves the Query read's maximum, plus its retained
-    /// custody copies, on its existing carried admission before execution,
-    /// then returns unused Work after observing the actual root/tree/custody
-    /// phases. Only root and tree work count against the Query's declared
-    /// limit. A denial settles its partial work before the caller stops the
-    /// wave.
-    pub(in crate::domain_computation::primary_graph) fn execute_application_query_one_shot_admitted<
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        plan: WorthQueryAdmittedApplicationQueryPlan<
-            '_,
-            Schema,
-            Query,
-            Parameters,
-            QueryResult,
-            Principal,
-            PrincipalIdentity,
-            Scope,
-        >,
-    ) -> Result<WorthQueryApplicationOneShotResult<Query, QueryResult>, WorthQueryAdmittedOneShotStop>
-    where
-        QueryResult: WorthQueryApplicationProjection<Schema, Query>,
-    {
-        self.execute_application_query_one_shot_admitted_with_native_access(
-            execution,
-            plan,
-            &mut super::super::ApplicationQueryNativeAccess::acquire(),
-        )
-        .map(|completed| completed.read)
-    }
-
     pub(in crate::domain_computation::primary_graph::application_query) fn execute_application_query_one_shot_admitted_with_native_access<
         Query,
         Parameters,
@@ -102,7 +64,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-fn settle_admitted_read<Query, QueryResult>(
+pub(in crate::domain_computation::primary_graph::application_query) fn settle_admitted_read<
+    Query,
+    QueryResult,
+>(
     spent: &OneShotReadWorkObservation,
     result: Result<
         super::outcome::CompletedOneShotRead<Query, QueryResult>,
@@ -124,7 +89,7 @@ fn settle_admitted_read<Query, QueryResult>(
     }
 }
 
-fn map_selected_read_stop(
+pub(in crate::domain_computation::primary_graph::application_query) fn map_selected_read_stop(
     stop: SelectedAuthorizedReadStop,
     query: &str,
 ) -> WorthQueryAdmittedOneShotStop {

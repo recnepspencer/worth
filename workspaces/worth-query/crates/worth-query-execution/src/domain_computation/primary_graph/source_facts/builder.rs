@@ -24,6 +24,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceFactsBuilder {
     aspects: BTreeMap<(EntityId, AspectKey, FieldKey), WorthQueryObservedFieldRevision>,
     adjacencies: BTreeMap<(EntityId, KindId, u8), WorthQueryObservedAdjacencyRevision>,
     walks: Option<Arc<StructuralWalkDependencies>>,
+    derived: Option<Arc<DerivedSourceDependencies>>,
     allocation: Option<Arc<SourceFactsAllocation>>,
 }
 
@@ -89,6 +90,41 @@ impl SourceFactsBuilder {
             + self.aspects.len()
             + self.adjacencies.len()
             + usize::from(self.walks.is_some())
+            + usize::from(self.derived.is_some())
+    }
+    pub(in crate::domain_computation::primary_graph) fn record_derived(
+        &mut self,
+        body: &Arc<super::super::derived_source::DerivedSourceObservation>,
+        execution: &ExecutionRequest<'_, '_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+        control: Option<&dyn Fn() -> Result<(), Cause>>,
+    ) -> Result<(), Cause> {
+        self.derived = Some(DerivedSourceDependencies::append(
+            self.derived.as_ref(),
+            body,
+            execution,
+            context,
+            control,
+        )?);
+        Ok(())
+    }
+    pub(in crate::domain_computation::primary_graph) fn record_derived_batch(
+        &mut self,
+        bodies: &[Arc<super::super::derived_source::DerivedSourceObservation>],
+        execution: &ExecutionRequest<'_, '_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+        control: Option<&dyn Fn() -> Result<(), Cause>>,
+    ) -> Result<(), Cause> {
+        if !bodies.is_empty() {
+            self.derived = Some(DerivedSourceDependencies::extend(
+                self.derived.as_ref(),
+                bodies,
+                execution,
+                context,
+                control,
+            )?);
+        }
+        Ok(())
     }
     pub(in crate::domain_computation::primary_graph) fn walks(
         &self,
@@ -245,6 +281,7 @@ impl SourceFactsBuilder {
             aspects: collect_facts(self.aspects.into_values())?,
             adjacencies: collect_facts(self.adjacencies.into_values())?,
             walks: self.walks,
+            derived: self.derived,
             allocation: self.allocation,
         })
     }

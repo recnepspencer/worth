@@ -18,6 +18,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use selected
     validate_selected_authorization_currentness, SelectedAuthorizationCurrentnessStop,
 };
 pub(in crate::domain_computation::primary_graph::application_query) use selected_read::{
+    execute_selected_authorized_body_with_native_access,
     execute_selected_authorized_read_with_native_access, SelectedAuthorizedReadStop,
 };
 

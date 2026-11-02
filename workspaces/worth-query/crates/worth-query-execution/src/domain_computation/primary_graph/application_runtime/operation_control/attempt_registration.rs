@@ -11,6 +11,8 @@ use std::sync::{
 use std::time::Duration;
 
 mod caller_pass;
+mod managed_source;
+pub use managed_source::WorthQueryManagedSourceRevalidationPauseForTest;
 mod source_publication;
 pub use source_publication::{
     WorthQuerySourceFactComparisonPauseForTest, WorthQuerySourcePublicationHeadForTest,
@@ -26,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     pending_candidate: Arc<PendingAttemptPause>,
     pending_source_validation: Arc<PendingAttemptPause>,
     pending_source_comparison: Arc<PendingAttemptPause>,
+    pending_managed_revalidation: Arc<PendingAttemptPause>,
     source_validation_observations: Arc<Mutex<Vec<WorthQuerySourcePublicationImageForTest>>>,
 }
 

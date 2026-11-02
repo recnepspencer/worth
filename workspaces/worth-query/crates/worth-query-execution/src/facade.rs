@@ -108,9 +108,11 @@ pub mod runtime {
         WorthQueryWorkflowRunCleanupReceipt, WorthQueryWorkflowRunTerminal,
     };
     pub use worth_execution::{
+        build_ordered_tree, build_sorted_ordered_tree, insert_ordered_tree, remove_ordered_tree,
         CancellationSource, CancellationToken, ConstructionDenial, ExecutionAllocationDenial,
         ExecutionAllocationDenialClass, ExecutionAllocationPolicy, ExecutionAuthority,
         ExecutionAuthorityConfig, ExecutionMemoryReservation, ExecutionOrderedMapDenial,
+        ExecutionOrderedTreeBounds, ExecutionOrderedTreeNode, ExecutionOrderedTreeStorage,
         ExecutionPhysicalAllocationDenialKind, ExecutionRequestArrayDenial, ExecutionResourceLease,
         LeaseDenial, LeaseRequest, MapKernelStop, MemoryLimitDenial, MemoryLimitLevel,
         WorkCeilingDenial,

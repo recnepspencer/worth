@@ -111,8 +111,9 @@ impl ConsumedOutputVerification {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerificationStop {
+    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     SourceQueryAuthorization(
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,

@@ -159,6 +159,14 @@ where
                 WorthQueryApplicationCommitDenial::signing_lifecycle_attempt(cause.into_attempt_denial(admission.operation())))),
         }
     };
+    if let Err(denial) = super::domain_value_write::admit(
+        execution,
+        application.installed_schema.value_bindings(),
+        &lease.layout,
+        &effects,
+    ) {
+        return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
+    }
     let lease = match readmit_current_basis(
         execution,
         application,

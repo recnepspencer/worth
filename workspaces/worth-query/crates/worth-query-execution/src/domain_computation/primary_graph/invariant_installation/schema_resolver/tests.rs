@@ -143,8 +143,13 @@ fn lower<const P: u8>() -> Result<(), WorthQueryPrimaryGraphInstallationDenial> 
             Ok(Rule)
         })
         .unwrap();
+    let host = crate::test_request_policy::serial_request();
     factories
-        .lower(schema.binding_identity(), &layout)
+        .lower(
+            &worth_execution::ExecutionRequest::serial(&host),
+            schema.binding_identity(),
+            &layout,
+        )
         .map(|_| ())
 }
 #[test]

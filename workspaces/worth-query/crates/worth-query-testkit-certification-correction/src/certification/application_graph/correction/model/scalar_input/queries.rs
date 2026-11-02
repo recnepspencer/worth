@@ -26,7 +26,7 @@ macro_rules! query {
             worth_query_structured_value_binding!(pub ResultBinding for Row { identity: $result });
             worth_query_application_query!(pub Query for NumericSchema, identity $identity,
                 parameters ParametersBinding, result ResultBinding, scope Number => "Number", name $name);
-            fn primary() -> ApplicationQueryResultFieldRef<Query, PrimarySlot, NumericSchema, Number, NumberFacts, Primary, u64, ReadWrite, EqualityPredicate, NoApplicationUnit> {
+            fn primary() -> ApplicationQueryResultFieldRef<Query, PrimarySlot, NumericSchema, Number, NumberFacts, Primary, u64, ReadWrite, NoEqualityPredicate, NoApplicationUnit> {
                 ApplicationQueryResultFieldRef::new("input", Primary::reference())
             }
             fn scalar() -> ApplicationQueryOptionalAspectFieldRef<Query, ScalarSlot, NumericSchema, Number, ScalarFacts, Value, u64, ReadWrite, EqualityPredicate, NoApplicationUnit> {

@@ -33,12 +33,41 @@ fn closed_original_and_target_keep_exact_history_until_cursor_release() {
         .unwrap()
         .deleted()
         .is_some());
-    // The original's immutable ancestry remains usable while the descendant
-    // is live. Closing a branch must not make fresh live admission possible.
-    assert!(matches!(
-        runtime.retain_component_basis(&original),
-        Err(crate::branch::RelationalBranchBasisDenial::UnknownBranch(_))
-    ));
+    // Existing immutable custody can be extended; it is not fresh live admission.
+    {
+        let external = runtime.retain_component_basis(&original).unwrap();
+        assert_eq!(
+            runtime
+                .readmit_retained_branch_basis(original.descriptor(), &external)
+                .unwrap(),
+            original
+        );
+        let bridge_hold = runtime.retain_observation_snapshot(&original).unwrap();
+        assert_eq!(
+            bridge_hold.observation().descriptor(),
+            original.descriptor()
+        );
+        assert!(!original.is_current());
+        assert!(matches!(
+            runtime.observe_branch(&original_identity),
+            Err(crate::branch::RelationalBranchBasisDenial::UnknownBranch(_))
+        ));
+        assert!(matches!(
+            runtime.readmit_branch_basis(original.descriptor()),
+            Err(crate::branch::RelationalBranchBasisDenial::UnknownBranch(_))
+        ));
+        assert!(matches!(
+            runtime.observe_fork_source(original_identity.branch_id()),
+            Err(crate::branch::RelationalForkDenial::SourceBranchMissing)
+        ));
+        assert!(matches!(
+            runtime.begin_branch_transaction(
+                &original,
+                crate::mvcc::RelationalTransactionIntent::ordinary()
+            ),
+            Err(crate::mvcc::RelationalBranchTransactionAdmissionDenial::UnknownBranch)
+        ));
+    }
     assert_eq!(
         collect(
             &runtime,
@@ -53,8 +82,9 @@ fn closed_original_and_target_keep_exact_history_until_cursor_release() {
         .unwrap()
         .deleted()
         .is_some());
+    drop(runtime.retain_component_basis(&target).unwrap());
     assert!(matches!(
-        runtime.retain_component_basis(&target),
+        runtime.observe_branch(&target_identity),
         Err(crate::branch::RelationalBranchBasisDenial::UnknownBranch(_))
     ));
     let older = runtime

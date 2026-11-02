@@ -4,8 +4,8 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_foundational::facade::CanonicalFieldPath;
 use worth_relational::facade::history::{
-    RelationalAuthoredEntityIndexDefinition as Definition, RelationalAuthoredWriteScope as Scope,
-    RelationalAuthoredWriteSelector as Key,
+    RelationalAuthoredEntityIndexDefinition as Definition, RelationalAuthoredManagedSourceSelector,
+    RelationalAuthoredWriteScope as Scope, RelationalAuthoredWriteSelector as Key,
 };
 use worth_relational::facade::indexes::DerivedIndexKind;
 use worth_relational::facade::runtime::VisibilityProjectionView;
@@ -13,9 +13,11 @@ use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Compar
 use worth_relational::facade::transactions::RecordRef;
 
 mod aspect;
+mod source_authorization;
 
 pub(super) struct Selection {
     pub(super) keys: ExecutionArray<Key>,
+    pub(super) managed: ExecutionArray<RelationalAuthoredManagedSourceSelector>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -23,15 +25,20 @@ pub(super) struct Selection {
 pub(super) fn select(
     execution: ExecutionRequest<'_, '_>,
     facts: &FactPayload,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     original: &VisibilityProjectionView,
     target: &VisibilityProjectionView,
 ) -> Result<Selection, Stop> {
     super::admit_work(execution, facts.len() as u64)?;
     let mut count = 0usize;
+    let mut managed_count = 0usize;
     let mut bytes = 0u64;
     for fact in facts.iter() {
         execution.consult().map_err(Stop::Request)?;
         let (entries, payload) = match fact {
+            Fact::SourceReadAuthorization { observation } => {
+                source_authorization::measure(execution, observation)?
+            }
             Fact::SourceEntity { .. } | Fact::Entity { .. } => (1, 0),
             Fact::SourceFieldRevision {
                 entity_id, locator, ..
@@ -161,10 +168,18 @@ pub(super) fn select(
             }
             Fact::Relation { .. } => return Err(unsupported("Relation", fact)),
             Fact::Adjacency { .. } => return Err(unsupported("Adjacency", fact)),
+            Fact::DerivedSource { .. } => return Err(unsupported("DerivedSource", fact)),
             Fact::StructuralWalk { .. } => return Err(unsupported("StructuralWalk", fact)),
             Fact::Aggregate { .. } => return Err(unsupported("Aggregate", fact)),
             Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection", fact)),
             Fact::SourcePublication { .. } => return Err(unsupported("SourcePublication", fact)),
+            Fact::ManagedIndexSource { observation } => {
+                if !observation.has_verified_realized_footprint() {
+                    return Err(unsupported("unqualified-managed-influence", fact));
+                }
+                managed_count = managed_count.checked_add(1).ok_or(Stop::SizeOverflow)?;
+                (0, 0)
+            }
             Fact::RetiredOutputEntity { entity_id, .. } => {
                 if entity_id.generation_value() == 0 {
                     return Err(unsupported("retirement-generation", fact));
@@ -190,16 +205,33 @@ pub(super) fn select(
         count = count.checked_add(entries).ok_or(Stop::SizeOverflow)?;
         bytes = bytes.checked_add(payload).ok_or(Stop::SizeOverflow)?;
     }
-    let copy_work = bytes.checked_add(count as u64).ok_or(Stop::Interrupted(
-        worth_execution::MapKernelStop::WorkCounterOverflow,
-    ))?;
+    let copy_work = bytes
+        .checked_add(count as u64)
+        .and_then(|work| work.checked_add(managed_count as u64))
+        .ok_or(Stop::Interrupted(
+            worth_execution::MapKernelStop::WorkCounterOverflow,
+        ))?;
     super::admit_work(execution, copy_work)?;
     let memory = execution
         .reserve_retained_memory(bytes)
         .map_err(Stop::Request)?;
     let mut keys = ExecutionRequestArrayBuilder::allocate(execution, count).map_err(array_stop)?;
+    let mut managed =
+        ExecutionRequestArrayBuilder::allocate(execution, managed_count).map_err(array_stop)?;
     for fact in facts.iter() {
         execution.consult().map_err(Stop::Request)?;
+        if let Fact::SourceReadAuthorization { observation } = fact {
+            source_authorization::append(execution, observation, &mut keys)?;
+            continue;
+        }
+        if let Fact::ManagedIndexSource { observation } = fact {
+            let selector = observation
+                .history_selector(runtime, &execution)
+                .map_err(Stop::Native)?
+                .ok_or_else(|| unsupported("unadmitted-managed-influence", fact))?;
+            managed.push(selector).map_err(array_stop)?;
+            continue;
+        }
         if let Fact::SourceAdjacencyRevision {
             relation_kind,
             anchor,
@@ -315,6 +347,7 @@ pub(super) fn select(
     }
     Ok(Selection {
         keys: keys.seal().map_err(array_stop)?,
+        managed: managed.seal().map_err(array_stop)?,
         _memory: memory,
     })
 }

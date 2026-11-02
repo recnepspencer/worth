@@ -50,36 +50,16 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
             };
         }
         for triple in scope {
-            let mut points = [(0i128, 0i128); 3];
+            let mut points = [[0u64; 2]; 3];
             for (index, entity) in triple.iter().enumerate() {
                 evaluation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
-                points[index] = (
-                    i128::from(PositiveLength::get(&required_field(
-                        &proposed,
-                        &self.x,
-                        entity,
-                        "position x",
-                    )?)),
-                    i128::from(PositiveLength::get(&required_field(
-                        &proposed,
-                        &self.y,
-                        entity,
-                        "position y",
-                    )?)),
-                );
+                points[index] = [
+                    PositiveLength::get(&required_field(&proposed, &self.x, entity, "position x")?),
+                    PositiveLength::get(&required_field(&proposed, &self.y, entity, "position y")?),
+                ];
             }
             let [a, b, c] = points;
-            let turn = (b.0 - a.0).checked_mul(c.1 - b.1).and_then(|left| {
-                (b.1 - a.1)
-                    .checked_mul(c.0 - b.0)
-                    .and_then(|right| left.checked_sub(right))
-            });
-            let turn = turn.ok_or_else(|| {
-                WorthQueryApplicationInvariantExecutionError::new(
-                    "coordinate determinant exceeds supported arithmetic",
-                )
-            })?;
-            if turn <= 0 {
+            if !worth_query_consumer_values::integer_orientation(a, b, c).is_gt() {
                 return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
             }
         }

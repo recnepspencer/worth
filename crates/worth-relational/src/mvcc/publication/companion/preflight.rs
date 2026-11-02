@@ -11,7 +11,9 @@ use crate::runtime::{
 use super::cell::publication_admission::PublicationCellAdmission;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
 use super::{PreparedCompanionBranchCell, ReservedCompanionBranchCell};
+mod cell_swap;
 mod cutover;
+mod managed_source;
 pub use cutover::PreparedPublicationCompanionEffect;
 
 mod observer;
@@ -36,6 +38,8 @@ pub enum CompanionPreflightStop {
     SelectedPositionUnavailable { commit_id: CommitId },
     ForeignCell,
     RegistrationChanged,
+    ManagedSourceNotPrepared,
+    ManagedSourceChanged,
     WorkCounterOverflow,
     PreparationMemoryCounterOverflow,
     Interrupted(RelationalInterruptionEvent),
@@ -43,6 +47,42 @@ pub enum CompanionPreflightStop {
 
 /// Query-owned preparation runs here, before Relational's irreversible cutover.
 pub trait RelationalPublicationCompanion: Debug + Send + Sync {
+    /// Stage only the lookup for Native's genuine uninstalled fork target.
+    /// The returned owner removes its pending metadata on refusal; it carries
+    /// no permission to admit the target or to read Source rows.
+    fn prepare_managed_source_fork(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _target: &super::ManagedIndexSourceForkPreparation<'_>,
+    ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Publication,
+        )
+        .map_err(|cause| CompanionPreflightStop::Execution(cause.into()))?;
+        Err(CompanionPreflightStop::ManagedSourceNotPrepared)
+    }
+    /// Runs on the actual applied draft before Native's FIRST invariant. It
+    /// prepares only installed derived Source roots, never validates a rule.
+    /// The default consults the original request's validation stage before refusal.
+    fn prepare_managed_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _source: &crate::validation::candidate_source::ManagedIndexSourcePreparation<'_>,
+    ) -> Result<
+        Vec<crate::validation::candidate_source::PreparedManagedIndexSourceRoot>,
+        crate::validation::candidate_source::ManagedIndexSourcePreparationDenial,
+    > {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )
+        .map_err(|cause| {
+            crate::derived_relation::DerivedRelationReadDenial::Request(cause.into())
+        })?;
+        Err(crate::validation::candidate_source::ManagedIndexSourcePreparationDenial::MissingParticipant)
+    }
+
     fn prepare(
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
@@ -66,6 +106,8 @@ pub struct PublicationCompanionPreflight<'a> {
     pub(crate) binding: CandidateCompanionBinding,
     pub(crate) envelope: &'a CanonicalCommitEnvelope,
     pub(crate) control: &'a RelationalOperationControl,
+    sources: crate::validation::candidate_source::ManagedIndexSourcePublication<'a>,
+    pub(crate) execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
 }
 
 impl<'a> PublicationCompanionPreflight<'a> {
@@ -73,16 +115,36 @@ impl<'a> PublicationCompanionPreflight<'a> {
         binding: CandidateCompanionBinding,
         envelope: &'a CanonicalCommitEnvelope,
         control: &'a RelationalOperationControl,
-    ) -> Self {
-        Self {
+        source: &'a crate::validation::candidate_source::NativeManagedSourceInterpretation,
+        execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
+    ) -> Result<Self, CompanionPreflightStop> {
+        if source.proposed_version() != envelope.commit.version_id {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
+        }
+        let sources = source.prepare_publication_loan(&binding)?;
+        Ok(Self {
             binding,
             envelope,
             control,
-        }
+            sources,
+            execution,
+        })
+    }
+
+    /// The exact payloads prepared before this candidate's first dependent rule.
+    /// Publication cannot rebuild them or turn their logical share into READ.
+    pub fn managed_sources(
+        &self,
+    ) -> &crate::validation::candidate_source::ManagedIndexSourcePublication<'a> {
+        &self.sources
     }
 
     pub fn canonical_commit(&self) -> &CanonicalCommitEnvelope {
         self.envelope
+    }
+    /// Borrow this publication's original execution for derived backing admission.
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'_, '_> {
+        *self.execution
     }
     pub fn runtime_instance_id(&self) -> u64 {
         self.binding.runtime_instance_id
@@ -175,14 +237,46 @@ impl<'a> PublicationCompanionPreflight<'a> {
         let core = reserved.into_core();
         Ok(PreparedPublicationCompanionEffect {
             binding: self.binding.clone(),
-            pinned_topology_generation: next_topology_generation - 1,
-            pinned_image,
-            cell: core,
-            next,
-            retired: None,
-            next_topology_generation,
+            primary: Some(cell_swap::PreparedCellSwap {
+                pinned_topology_generation: next_topology_generation - 1,
+                pinned_image,
+                cell: core,
+                next,
+                retired: None,
+                next_topology_generation,
+                publication_admission,
+            }),
+            managed: None,
             completion: None,
-            publication_admission,
         })
+    }
+
+    /// The existing required participant publishes exactly two fixed images:
+    /// consumed-Source marks and managed Source/root state. This is not a list
+    /// of independently registered callbacks or extensible publication effects.
+    /// Both reservations must belong to this candidate and its selected source.
+    /// A refusal releases both reservations and unpublished replacements, including
+    /// a first replacement prepared before the second cell refuses. Dropping the
+    /// sealed effect also releases its unpublished backing. The publication port
+    /// checks the original request and installs both images at the graph's one
+    /// Native-issued publication position; callers cannot supply that position.
+    pub fn seal_managed_source_replacement<
+        Marks: Send + Sync + 'static,
+        Managed: Send + Sync + 'static,
+    >(
+        &mut self,
+        marks: ReservedCompanionBranchCell<Marks>,
+        next_marks: Arc<Marks>,
+        managed: ReservedCompanionBranchCell<Managed>,
+        next_managed: Arc<Managed>,
+    ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
+        if Arc::ptr_eq(&marks.core, &managed.core) {
+            return Err(CompanionPreflightStop::ForeignCell);
+        }
+        managed.core.retain_source_affinity(self.execution)?;
+        let mut effect = self.seal_replacement(marks, next_marks)?;
+        let mut source = self.seal_replacement(managed, next_managed)?;
+        effect.managed = source.primary.take();
+        Ok(effect)
     }
 }

@@ -8,6 +8,9 @@ pub(super) fn from_stop(
 ) -> WorthQueryCurrentOutputDenial {
     WorthQueryCurrentOutputDenial::new(
         match stop {
+            ConsumedOutputVerificationStop::ManagedIndex(cause) => {
+                return WorthQueryCurrentOutputDenial::managed_index(cause, subject)
+            }
             ConsumedOutputVerificationStop::SourceQueryAuthorization(kind) => {
                 WorthQueryCurrentOutputDenialKind::SourceQueryAuthorization(kind)
             }

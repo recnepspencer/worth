@@ -19,7 +19,10 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{identity::EntityId, transactions::RelationalExecutionDenialCause};
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIncarnation};
 
-mod publication;
+mod association;
+mod eviction;
+pub(in crate::domain_computation::primary_graph::application_query) use association::ManagedIndexRegistrationKey;
+mod maintained;
 mod transitions;
 
 /// Retained cache status; it does not assert current authorization or Source availability.
@@ -46,6 +49,7 @@ pub(in crate::domain_computation::primary_graph::application_query) enum WorthQu
     EpochExhausted,
     StaleImage,
     NotReady,
+    InvariantOwned,
     Session(WorthQueryManagedIndexSessionDenial),
 }
 impl From<RelationalExecutionDenialCause> for WorthQueryManagedIndexLifecycleDenial {
@@ -59,15 +63,37 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Ready
     I: ApplicationManagedIndexBinding<S>,
 > {
     pub(super) source: Arc<SourceImage<S, I>>,
-    pub(super) nodes: Arc<dyn Any + Send + Sync>,
+    pub(super) cache: worth_relational::facade::mvcc::ManagedIndexPublicCache,
     // The header follows every independent root share, including eviction.
+    _allocation: Arc<SourceFactsAllocation>,
+}
+
+/// Native owns only pure material. Completed Source READ custody remains in ReadyIndex.
+pub(super) struct ReadyIndexMaterial {
+    pub(super) source: Arc<super::source_image::SourceMaterial>,
+    pub(super) nodes: Arc<dyn Any + Send + Sync>,
     _allocation: Arc<SourceFactsAllocation>,
 }
 struct Retained<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
     epoch: u64,
     current: CompositeCommitIdentity,
     status: WorthQueryManagedIndexLifecycle,
-    root: Option<Arc<ReadyIndex<S, I>>>,
+    root: Option<RetainedIndexImage<S, I>>,
+}
+enum RetainedIndexImage<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
+    Completed(Arc<ReadyIndex<S, I>>),
+    // Status owns one observation directly. The funded registration header
+    // includes this slot; replacing it creates no accumulating header charge.
+    Maintained(worth_relational::facade::runtime::ManagedIndexSourceObservation),
+}
+
+impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> RetainedIndexImage<S, I> {
+    fn retire(self) {
+        if let Self::Completed(root) = &self {
+            drop(root.cache.retire());
+        }
+        drop(self);
+    }
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ManagedIndexState<
@@ -150,10 +176,34 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
     pub(in crate::domain_computation::primary_graph::application_query) fn lifecycle(
         &self,
     ) -> WorthQueryManagedIndexLifecycle {
+        let (status, cache) = {
+            let retained = self
+                .retained
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let cache = match &retained.root {
+                Some(RetainedIndexImage::Completed(root)) => Some(root.cache.clone()),
+                _ => None,
+            };
+            (retained.status, cache)
+        };
+        if status == WorthQueryManagedIndexLifecycle::Ready
+            && cache.is_some_and(|cache| !cache.is_at_head())
+        {
+            WorthQueryManagedIndexLifecycle::Evicted
+        } else {
+            status
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn is_disposed(
+        &self,
+    ) -> bool {
         self.retained
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .status
+            == WorthQueryManagedIndexLifecycle::Disposed
     }
 }
 
@@ -161,6 +211,32 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ReadyIndex<S, I
     pub(super) fn retain(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: Arc<SourceImage<S, I>>,
+        cache: worth_relational::facade::mvcc::ManagedIndexPublicCache,
+        allocation: Arc<SourceFactsAllocation>,
+    ) -> Result<Arc<Self>, WorthQueryManagedIndexLifecycleDenial> {
+        execution
+            .consult()
+            .map_err(|cause| WorthQueryManagedIndexLifecycleDenial::Execution(cause.into()))?;
+        Ok(Arc::new(Self {
+            source,
+            cache,
+            _allocation: allocation,
+        }))
+    }
+}
+
+impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
+    super::super::derived_view::RegisteredManagedIndex for ManagedIndexState<S, I>
+{
+    fn dispose(&self) {
+        self.close();
+    }
+}
+
+impl ReadyIndexMaterial {
+    pub(super) fn retain(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: Arc<super::source_image::SourceMaterial>,
         nodes: Arc<dyn Any + Send + Sync>,
     ) -> Result<Arc<Self>, WorthQueryManagedIndexLifecycleDenial> {
         let allocation = SourceFactsAllocation::open(execution)?;

@@ -10,6 +10,15 @@ pub(in crate::http::server) fn request_mutation_denial(
     use WorthQueryApplicationRequestMutationDenialKind as Denial;
     match kind {
         Denial::ExecutionRequest(cause) => super::super::advancement_denial::advancement(cause),
+        Denial::IdempotencyPreparationBusy => {
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
+        }
+        Denial::DurableStateAdmission(_) | Denial::DurableBindingAdmission(_) => {
+            BankHttpDenial::new(
+                BankHttpDenialKind::Unavailable,
+                BankHttpNextAction::ContactOperator,
+            )
+        }
         Denial::IdempotencyExecutionDenied(stop) => pending_execution_stop(stop),
         Denial::ProductSelection => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)

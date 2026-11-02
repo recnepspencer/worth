@@ -79,6 +79,7 @@ impl SnapshotCustody {
 pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
     custody: Option<SnapshotCustody>,
     product: crate::basis::WorthQueryProductBranchLease,
+    selection_origin: super::super::product_operation::SelectedQueryOrigin,
     pub(super) layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
 }
 
@@ -104,6 +105,7 @@ impl WorthQueryApplicationSnapshotLease {
         let retained = Self {
             custody: Some(SnapshotCustody::Original(shared)),
             product: self.product.retained_clone(),
+            selection_origin: self.selection_origin,
             layout: self.layout.clone(),
         };
         Ok((self, retained))
@@ -137,6 +139,7 @@ impl WorthQueryApplicationSnapshotLease {
         Ok(Self {
             custody: Some(SnapshotCustody::Owned { handle, snapshot }),
             product,
+            selection_origin: Default::default(),
             layout,
         })
     }
@@ -166,6 +169,7 @@ impl WorthQueryApplicationSnapshotLease {
         Self {
             custody: Some(SnapshotCustody::Owned { handle, snapshot }),
             product,
+            selection_origin: Default::default(),
             layout,
         }
     }
@@ -190,8 +194,31 @@ impl WorthQueryApplicationSnapshotLease {
         Ok(Self {
             custody: Some(SnapshotCustody::Shared(basis)),
             product: selected.product().retained_clone(),
+            selection_origin: selected.selection_origin(),
             layout: graph.retain_layout(),
         })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_selection_origin_from<
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    >(
+        &mut self,
+        selected: &super::super::product_operation::WorthQuerySelectedProductOperation<'_, Schema>,
+    ) -> bool {
+        if !self
+            .product
+            .shares_retained_mutation_source(selected.product())
+        {
+            return false;
+        }
+        self.selection_origin = selected.selection_origin();
+        true
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn selection_origin(
+        &self,
+    ) -> super::super::product_operation::SelectedQueryOrigin {
+        self.selection_origin
     }
 
     pub(in crate::domain_computation) fn snapshot(&self) -> &SnapshotHandle {

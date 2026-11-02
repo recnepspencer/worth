@@ -34,6 +34,10 @@ fn all_raw_allocation_kinds_have_one_exact_classification() {
             Raw::IncompleteSeal,
             Class::Physical(Physical::IncompleteSeal),
         ),
+        (
+            Raw::UninitializedElement,
+            Class::Physical(Physical::UninitializedElement),
+        ),
     ];
     for (raw, expected) in cases {
         assert_eq!(raw.classify(), expected);

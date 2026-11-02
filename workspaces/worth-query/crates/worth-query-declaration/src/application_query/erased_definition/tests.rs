@@ -260,5 +260,7 @@ fn query_parameter_dimensions_change_canonical_meaning_and_reject_malformed_iden
 
 #[path = "tests/closure.rs"]
 mod closure;
+#[path = "tests/managed_live.rs"]
+mod managed_live;
 #[path = "tests/root_paths.rs"]
 mod root_paths;

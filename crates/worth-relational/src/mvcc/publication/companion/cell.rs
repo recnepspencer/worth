@@ -1,4 +1,8 @@
+mod managed_source;
 mod read_condition;
+pub(in crate::mvcc) use managed_source::ManagedSourceReadConditions;
+pub use managed_source::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
+pub(crate) use managed_source::{ManagedSourceHistoryOwner, ManagedSourceRootImage};
 pub(in crate::mvcc) use read_condition::CompanionReadCondition;
 use std::any::Any;
 use std::marker::PhantomData;
@@ -14,10 +18,12 @@ use super::preflight::{CompanionPreflightStop, PublicationCompanionPreflight};
 pub(super) mod publication_admission;
 pub use publication_admission::{CompanionBranchCellSlot, PreparedCompanionBranchCell};
 mod derived_replacement;
+mod public_cache;
 pub use derived_replacement::{
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, PreparedCompanionDerivedRoot,
 };
+pub use public_cache::{ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement};
 
 pub(super) struct CompanionRootImage {
     pub(super) root_id: u64,
@@ -42,6 +48,9 @@ pub(super) struct CompanionBranchCellCore {
     pub(super) current: Mutex<Arc<CompanionRootImage>>,
     pub(super) reservation_live: AtomicBool,
     pub(super) topology_generation: AtomicU64,
+    pub(super) source_affinity:
+        std::sync::OnceLock<Arc<managed_source::affinity::ManagedSourceCellAffinity>>,
+    pub(super) _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 struct DerivedCellEdit<'a>(&'a CompanionBranchCellCore);
@@ -161,7 +170,7 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         )
     }
 
-    fn at_selection(
+    pub(super) fn at_selection(
         runtime_instance_id: u64,
         branch_id: BranchId,
         root_id: u64,
@@ -184,6 +193,8 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
                 current: Mutex::new(image),
                 reservation_live: AtomicBool::new(false),
                 topology_generation: AtomicU64::new(1),
+                source_affinity: std::sync::OnceLock::new(),
+                _fork_memory: None,
             }),
             _payload: PhantomData,
         }

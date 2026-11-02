@@ -27,6 +27,7 @@ pub use derived_relation::{
     WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
+mod managed_index;
 mod output_availability;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,

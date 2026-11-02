@@ -46,27 +46,36 @@ impl WorthQueryRelationalSourceOwner {
         invalidation_resources: super::super::WorthQueryInvalidationResources,
     ) -> Result<Self, WorthQueryRelationalSourceInstallationDenial> {
         let runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();
+        let invalidation_owner = Arc::new(
+            crate::domain_computation::primary_graph::SourceInvalidationOwner::new(
+                invalidation_resources,
+                runtime_instance_id,
+            ),
+        );
+        Self::with_invalidation_owner(runtime, graph_role, invalidation_owner)
+    }
+
+    pub(in crate::domain_computation) fn with_invalidation_owner(
+        runtime: RelationalRuntime,
+        graph_role: impl Into<Arc<str>>,
+        invalidation_owner: Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
+    ) -> Result<Self, WorthQueryRelationalSourceInstallationDenial> {
+        let runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();
         let runtime = Arc::new(runtime);
         let source =
             RuntimeBridgeRelationalSource::for_graph_role(Arc::clone(&runtime), graph_role)
                 .map_err(WorthQueryRelationalSourceInstallationDenial::BridgeConfiguration)?;
         let runtime =
             worth_relational::facade::change_source::RelationalRuntimeHandle::immutable(runtime);
-        Self::from_registered_handle(runtime, source, runtime_instance_id, invalidation_resources)
+        Self::from_registered_handle(runtime, source, runtime_instance_id, invalidation_owner)
     }
 
     fn from_registered_handle(
         runtime: worth_relational::facade::change_source::RelationalRuntimeHandle,
         source: RuntimeBridgeRelationalSource,
         runtime_instance_id: u64,
-        invalidation_resources: super::super::WorthQueryInvalidationResources,
+        invalidation_owner: Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
     ) -> Result<Self, WorthQueryRelationalSourceInstallationDenial> {
-        let invalidation_owner = Arc::new(
-            crate::domain_computation::primary_graph::SourceInvalidationOwner::new(
-                invalidation_resources.clone(),
-                runtime_instance_id,
-            ),
-        );
         let pending = source
             .begin_canonical_envelope_subscription()
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;

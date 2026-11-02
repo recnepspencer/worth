@@ -43,7 +43,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
     }
 }
 
-mod managed_index;
+pub(super) mod managed_index;
 use managed_index::managed_index;
 
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
@@ -51,6 +51,9 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
     match kind {
         Selection::ExpectedDescriptionVersionUnsupported { .. } => {
             BankHttpDenial::new(Kind::UnsupportedProtocol, Next::CorrectRequest)
+        }
+        Selection::DurableBranchPublicationRequired => {
+            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
         }
         Selection::ExpectedDescriptionNameInvalid => malformed(),
         Selection::ReadExecution(stop) => super::mutation_application::pending_execution_stop(stop),
@@ -262,7 +265,9 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         | Settlement::ProductDelivery(_) => unavailable(),
         Settlement::ExecutionRequest(cause) => super::advancement_denial::advancement(cause),
         Settlement::RelationalExecution(cause) => super::relational_execution_denial::denial(cause),
-        Settlement::SourceQueryInstallation(_) => unavailable(),
+        Settlement::ManagedIndexSourceDenied | Settlement::SourceQueryInstallation(_) => {
+            unavailable()
+        }
         Settlement::SourcePrincipal(_) => stale(),
         Settlement::SourceScope(kind) => entity(kind),
         Settlement::SourceQueryAdmission(kind) => admission(kind),

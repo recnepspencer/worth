@@ -3,15 +3,17 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use super::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryBasisPosture, WorthQueryApplicationQueryControls,
+    WorthQueryApplicationQueryControls,
 };
 
 pub(super) fn validate_controls<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     controls: &WorthQueryApplicationQueryControls<'_, Schema>,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-    let basis_supported = match controls.basis_posture() {
-        WorthQueryApplicationQueryBasisPosture::SelectedProduct => query.basis_support().pinned(),
+    let basis_supported = if controls.selected_current_at_selection() {
+        query.basis_support().current()
+    } else {
+        query.basis_support().pinned()
     };
     if !basis_supported {
         return Err(denial(

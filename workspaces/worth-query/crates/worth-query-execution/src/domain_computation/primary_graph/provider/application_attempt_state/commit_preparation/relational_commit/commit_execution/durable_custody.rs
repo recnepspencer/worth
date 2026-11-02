@@ -40,6 +40,7 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurableWorl
 }
 
 pub(in crate::domain_computation) struct QueryPreparingApplicationCommit {
+    pub(super) predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     pub(super) attempt: WorthQueryPrimaryGraphApplicationAttempt,
     pub(super) native: QueryNativeCustody,
     pub(super) work: WorthQueryPrimaryMutationWorkCounters,
@@ -78,6 +79,7 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePrep
 }
 
 pub(super) enum QueryCandidatePreparationDenial {
+    ManagedSource(managed_source::ManagedSourcePreparationDenial),
     Native(worth_relational::facade::mvcc::TransactionCommitError),
     OutputWitness(worth_relational::facade::mvcc::CompanionPreflightStop),
     SourceFacts(super::super::PreparedRebaseDenial),

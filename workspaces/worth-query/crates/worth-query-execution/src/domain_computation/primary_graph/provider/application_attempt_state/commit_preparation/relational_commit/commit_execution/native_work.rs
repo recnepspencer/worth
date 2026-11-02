@@ -15,6 +15,7 @@ pub(super) fn prepare_before_native(
     let WorthQueryPreparedApplicationCommit {
         mut attempt,
         candidate,
+        predicate,
         work,
         retained_preimage,
         preimage_retention_work,
@@ -52,6 +53,7 @@ pub(super) fn prepare_before_native(
     )?;
     Ok(QueryPreparingApplicationCommit {
         attempt,
+        predicate,
         native: QueryNativeCustody::Proposal(candidate),
         work,
         retained_preimage,
@@ -105,6 +107,14 @@ pub(super) fn prepare_candidate_support(
     if let Some(fence) = query.availability_fence.take() {
         fence.bind(candidate).map_err(Denial::OutputWitness)?;
     }
+    managed_source::bind(
+        execution,
+        provider,
+        query.before.as_snapshot(),
+        &query.attempt,
+        candidate,
+    )
+    .map_err(Denial::ManagedSource)?;
     query.prepared_touched_records = Some(
         touched_records::PreparedTouchedRecords::prepare_retained(candidate, allocation_policy)
             .map_err(Denial::TouchedRecords)?,
@@ -168,6 +178,7 @@ pub(super) fn memory_stop(
             }
             stop => stop,
         },
+        Denial::ManagedSource(cause) => cause.into_memory_stop(),
         Denial::OutputWitness(stop) => native_output_witness_stop(stop),
         Denial::SourceFacts(cause) => stops::source_rebase_preparation_stop(cause),
         Denial::Index(cause) => index_preparation_stop(cause),

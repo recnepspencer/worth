@@ -121,7 +121,10 @@ pub(super) fn attach_relation(
         });
     }
     let target_count = if work.materialized() {
-        targets.values().try_fold(0usize, |count, values| count.checked_add(values.len())).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, relation.result_path()))?
+        parents.iter().try_fold(0usize, |count, parent| {
+            work.checkpoint(relation.result_path())?;
+            count.checked_add(targets.get(&parent.entity_id()).map_or(0, Vec::len)).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, relation.result_path()))
+        })?
     } else {
         0
     };
@@ -184,7 +187,10 @@ pub(super) fn attach_relation(
             .collect::<Result<Vec<_>, WorthQueryApplicationReadExecutionDenial>>()?
     };
     let selected_count = if work.materialized() {
-        targets.values().try_fold(0usize, |count, values| count.checked_add(values.len())).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, relation.result_path()))?
+        parents.iter().try_fold(0usize, |count, parent| {
+            work.checkpoint(relation.result_path())?;
+            count.checked_add(targets.get(&parent.entity_id()).map_or(0, Vec::len)).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, relation.result_path()))
+        })?
     } else {
         0
     };
@@ -346,7 +352,7 @@ fn attach_targeted_relation(
     )
 }
 
-fn validate_relation_cardinality(
+pub(in crate::domain_computation::primary_graph::application_query) fn validate_relation_cardinality(
     relation: &WorthQueryInstalledGraphRelation,
     count: usize,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {

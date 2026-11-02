@@ -21,6 +21,9 @@ impl RunLimits {
         prepared_cell_charged: bool,
     ) -> Self {
         let parent = ACTIVE_METER.with(|active| active.borrow().last().cloned());
+        let work_loan_affinity = parent
+            .as_ref()
+            .and_then(|parent| parent.borrow().limits.work_loan_affinity.clone());
         let parent_tokens = parent
             .as_ref()
             .map_or(0, |meter| meter.borrow().limits.tokens.len());
@@ -77,6 +80,7 @@ impl RunLimits {
             )
         };
         let mut limits = Self {
+            work_loan_affinity,
             tokens,
             deadline,
             ceiling,

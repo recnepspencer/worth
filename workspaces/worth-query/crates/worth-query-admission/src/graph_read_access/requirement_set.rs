@@ -128,6 +128,7 @@ pub struct WorthQueryGraphReadAccessRequirementCounters {
     directional_adjacency_count: usize,
     reverse_adjacency_count: usize,
     aggregate_selection_count: usize,
+    derived_source_count: usize,
     predicate_support_count: usize,
     ordering_support_count: usize,
     traversal_workset_count: usize,
@@ -147,6 +148,7 @@ impl WorthQueryGraphReadAccessRequirementCounters {
             directional_adjacency_count: 0,
             reverse_adjacency_count: 0,
             aggregate_selection_count: 0,
+            derived_source_count: 0,
             predicate_support_count: 0,
             ordering_support_count: 0,
             traversal_workset_count: 0,
@@ -167,6 +169,9 @@ impl WorthQueryGraphReadAccessRequirementCounters {
                 }
                 WorthQueryGraphReadAccessRequirementKind::ReverseAdjacency => {
                     counts.reverse_adjacency_count += 1
+                }
+                WorthQueryGraphReadAccessRequirementKind::DerivedSource => {
+                    counts.derived_source_count += 1
                 }
                 WorthQueryGraphReadAccessRequirementKind::AggregateSelection => {
                     counts.aggregate_selection_count += 1
@@ -209,6 +214,9 @@ impl WorthQueryGraphReadAccessRequirementCounters {
     }
     pub const fn reverse_adjacency_count(&self) -> usize {
         self.reverse_adjacency_count
+    }
+    pub const fn derived_source_count(&self) -> usize {
+        self.derived_source_count
     }
     pub const fn aggregate_selection_count(&self) -> usize {
         self.aggregate_selection_count

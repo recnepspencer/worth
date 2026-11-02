@@ -43,8 +43,10 @@ fn inline_child_reuses_parent_slot_and_charges_parent_work() {
     let authority = authority();
     let occupied = authority.request_lease(request(3, 100, 10)).unwrap();
     let three_other_slots = occupied.try_reserve(3, 0).unwrap();
-    let parent = authority.request_lease(request(1, 1_000, 10)).unwrap();
-    let child = parent.child(request(1, 500, 10)).unwrap();
+    // This court prices worker reuse and work, without an incidental byte cap
+    // that can reject before the nested worker reaches either boundary.
+    let parent = authority.request_lease(accounted_request(1, 10)).unwrap();
+    let child = parent.child(accounted_request(1, 10)).unwrap();
     let admitted = batch(&[1], 5);
     let outer = run_checked_batch(
         Some(&parent),
@@ -61,8 +63,8 @@ fn inline_child_reuses_parent_slot_and_charges_parent_work() {
                     Ok::<_, KernelFailure<()>>(*value + 1)
                 },
             );
-            assert_eq!(nested.values, vec![2]);
             assert_eq!(nested.stop, None);
+            assert_eq!(nested.values, vec![2]);
             Ok::<_, KernelFailure<()>>(*value + nested.values[0])
         },
     );

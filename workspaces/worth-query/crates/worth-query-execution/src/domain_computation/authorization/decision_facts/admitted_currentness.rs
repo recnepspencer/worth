@@ -18,11 +18,12 @@ impl From<CompanionPreflightStop> for AuthorizationCurrentnessStop {
 impl WorthQueryRetainedAuthorizationDecisionFacts {
     pub(in crate::domain_computation) fn source_query_principal_facts(
         &self,
+        admit: impl FnOnce(usize) -> Result<(), CompanionPreflightStop>,
     ) -> Result<
         Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
         CompanionPreflightStop,
     > {
-        super::principal(self).source_query_facts()
+        super::principal(self).source_query_facts(admit)
     }
 
     /// The selected-access proof separately authenticates the principal on

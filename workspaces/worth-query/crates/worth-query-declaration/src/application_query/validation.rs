@@ -247,7 +247,7 @@ fn validate_live_cause(
     definition: &WorthQueryPortableApplicationQueryParts,
 ) -> Result<(), ApplicationQueryDefinitionDenial> {
     let Some(live) = definition.live_cause() else {
-        return if definition.lanes().live_enabled() {
+        return if definition.lanes().live_enabled() && definition.managed_index().is_none() {
             Err(ApplicationQueryDefinitionDenial::LiveLaneWithoutCauseContract)
         } else {
             Ok(())

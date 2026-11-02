@@ -118,7 +118,9 @@ fn relations(
                     WorthQueryAdmittedGraphReadRelationDirection::Ancestor
                 }
             };
-            let mut operators = vec![if relation.complete_closure {
+            let mut operators = vec![if relation.source_kind == worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived {
+            WorthQueryGraphReadTraversalOperator::CompleteDerivedSource
+        } else if relation.complete_closure {
                 WorthQueryGraphReadTraversalOperator::CompleteClosure
             } else {
                 WorthQueryGraphReadTraversalOperator::DirectEdge

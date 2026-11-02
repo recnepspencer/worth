@@ -14,6 +14,7 @@ use super::{
     InstalledTransportCompletion, InstalledTransportPendingReason,
     PerformedInstalledTransportCompletion, RecoveryProgress, RecoveryRelease,
 };
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::{
@@ -24,11 +25,13 @@ use crate::domain_computation::{
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn finish_recovery_release(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         release: RecoveryRelease,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<(), RecoveryRelease> {
         match release {
             RecoveryRelease::World(recovery) => self
-                .release_product_publication_recovery(recovery, 0)
+                .release_product_recovery_in_request(execution, recovery, 0, retirements)
                 .map(|_| ())
                 .map_err(|failure| match failure {
                     WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failed) => {
@@ -39,7 +42,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     }
                 }),
             RecoveryRelease::Cleanup(cleanup) => cleanup
-                .retry()
+                .retry_in_request_with_retirements(execution, retirements)
                 .map(|_| ())
                 .map_err(|failed| RecoveryRelease::Cleanup(failed.into_cleanup())),
         }
@@ -52,6 +55,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         evidence: Arc<InstalledTransportCompletion>,
         prior: WorthQueryProductUnpublishedRecovery,
         request: &WorthQueryRequestScope,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> RecoveryProgress {
         use InstalledTransportPendingReason as Pending;
         let publication_execution = match phase.execution_request_for(&self.product_runtime) {
@@ -109,7 +113,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             drop(unpublished);
             drop(publication);
             drop(lease);
-            return match self.finish_recovery_release(RecoveryRelease::World(prior)) {
+            return match self.finish_recovery_release(
+                &publication_execution,
+                RecoveryRelease::World(prior),
+                retirements,
+            ) {
                 Ok(()) => RecoveryProgress::StaleReleased,
                 Err(failed) => RecoveryProgress::StalePending(failed),
             };
@@ -149,7 +157,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     receipt.fill(performed.consume(), None),
                 );
                 let release = self
-                    .finish_recovery_release(RecoveryRelease::World(prior))
+                    .finish_recovery_release(
+                        &publication_execution,
+                        RecoveryRelease::World(prior),
+                        retirements,
+                    )
                     .err();
                 RecoveryProgress::Performed(terminal, release)
             }
@@ -169,7 +181,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )
                 .into_recovery();
                 let release = self
-                    .finish_recovery_release(RecoveryRelease::World(prior))
+                    .finish_recovery_release(
+                        &publication_execution,
+                        RecoveryRelease::World(prior),
+                        retirements,
+                    )
                     .err();
                 RecoveryProgress::Pending(next, release, Pending::ProductRecoveryRequired)
             }

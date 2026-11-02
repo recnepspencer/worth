@@ -155,7 +155,13 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
     WorthQueryRelationalSourceOwner::attach_home_source(
         source.clone(),
         &schema.receipt,
-        state.limits.world.invalidation_resources(),
+        Arc::new(
+            super::super::super::SourceInvalidationOwner::with_managed_views(
+                state.limits.world.invalidation_resources(),
+                schema.receipt.runtime_instance_id(),
+                Arc::clone(&schema.managed_views),
+            ),
+        ),
     )
     .map_err(|cause| home_source_denial(format!("Home Native source attachment denied: {cause:?}")))
 }

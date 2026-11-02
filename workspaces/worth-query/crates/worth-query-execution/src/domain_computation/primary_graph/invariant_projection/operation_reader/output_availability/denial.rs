@@ -57,6 +57,15 @@ impl WorthQueryOutputAvailabilityDenial {
     ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenial> {
         match self.cause.as_ref() { Cause::SourceQuery(SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Execution(stop))) => Some(stop), _ => None }
     }
+    /// Exact owned managed Source read failure, including domain/request causes.
+    pub fn managed_source_query_denial(&self) -> Option<&crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial>{
+        match self.cause.as_ref() {
+            Cause::SourceQuery(SourceQueryObservationStop::ManagedIndex(cause)) => {
+                Some(cause.as_ref())
+            }
+            _ => None,
+        }
+    }
     pub fn current_output_denial(&self) -> Option<&WorthQueryCurrentOutputDenial> {
         match self.cause.as_ref() {
             Cause::Current(stop) => Some(stop),
@@ -82,6 +91,8 @@ impl worth_execution::ChargedBytes for WorthQueryOutputAvailabilityDenial {
  // Installation diagnostics remain owned by Installation, which does not yet
  // expose a resident-error quote. They refuse retained error storage.
  Cause::SourceQuery(Query::Installation(_))=>u64::MAX,
+ // Shared error backing and Arc were paid by the original managed read.
+ Cause::SourceQuery(Query::ManagedIndex(_))=>0,
  Cause::ContextUnavailable|Cause::SourceMismatch|Cause::Verification(_)|Cause::Registration(_)|Cause::SourceQuery(_)=>0,
  };
         (std::mem::size_of::<Cause>() as u64).saturating_add(payload)

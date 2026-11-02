@@ -7,6 +7,7 @@ impl WorthQueryPrincipalFreshnessEvidence {
     pub(in crate::domain_computation) fn source_query_facts(
         &self,
         layout: &WorthQueryPrimaryPrincipalBindingLayout,
+        admit: impl FnOnce(usize) -> Result<(), CompanionPreflightStop>,
     ) -> Result<Vec<Fact>, CompanionPreflightStop> {
         let locators = [
             &layout.identity_locator,
@@ -22,6 +23,7 @@ impl WorthQueryPrincipalFreshnessEvidence {
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
         }
 
+        admit(bytes)?;
         Ok(vec![
             Fact::Entity { entity_id: self.mapping.entity_id, kind: self.mapping.kind_id },
             Fact::Entity { entity_id: self.target.target, kind: self.target.principal_kind },

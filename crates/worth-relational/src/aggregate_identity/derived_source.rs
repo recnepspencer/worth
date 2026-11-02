@@ -76,6 +76,10 @@ impl SourceRead for StateSource<'_, '_, '_, '_, '_, '_, '_> {
         let result = self.work.borrow_mut().retain(bytes as u64);
         self.funded(result)
     }
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial> {
+        let result = self.work.borrow_mut().check_scratch_peak(bytes as u64);
+        self.funded(result)
+    }
     fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial> {
         self.checkpoint(1)?;
         let entity = self

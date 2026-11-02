@@ -25,6 +25,10 @@ pub enum ApplicationSchemaDeclarationDenial {
         index: String,
         cause: crate::application_query::ApplicationManagedIndexDefinitionDenial,
     },
+    UnsupportedInvariantSource {
+        invariant: String,
+        index: String,
+    },
     InvalidProjectedMemberDomain {
         domain: String,
         cause: super::ApplicationProjectedMemberDomainDefinitionDenial,

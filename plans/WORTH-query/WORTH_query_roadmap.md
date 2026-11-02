@@ -6006,11 +6006,55 @@ candidate staging, dependency routing and verified footprints; providers own
 their data structures and algorithms. Geometry boxes and nonspatial name-prefix
 queries must use the same extension. Real CAD adoption follows public qualification
 in one final cutover, rather than a private SDK refactor after each phase.
+Phase 5 certifies generic public contracts with Bank and existing bounded box/prefix
+fixtures. Application-specific geometry/topology and actual-face scale acceptance
+use the real private CAD application in Phase 6; no public CAD substitute is required.
+The2026-11-01 user-approved expansion also replaces CAD's authoritative structured
+JSON fields with native aspects/scalars/entities/relations in Phase6. Its private
+governing plan, `cad/docs/plans/aspect-native-kernel.md`, sequences profiling,
+mapping and design decisions, per-field seams, generic pattern, content and
+inline domain value qualification, realization-stamp cutoff, cell geometry, document/naming records,
+one repin, an installed vertical slice, sketches/routes, the classified canonical
+remainder and final integrated acceptance. Storage slices land on private main at
+the current pin. Preserve numerical admission, exactness and names; version changed
+storage bytes. Completed public phases remain closed. Mac-owned booleans/U5/U6/
+Studio work remains separate, and the one pin is coordinated through the user.
+The kernel cutover is mandatory 9.19 completion scope: all K0–K6 deliverables
+and acceptance gates must close. The separate private document does not make it
+an optional successor; managed-index/SDK adoption alone cannot complete 9.19.
 
 ### Specification
 
 The governing milestone spec is
 [milestone-9.19.md](./milestone-9.19.md).
+
+### Phase5 public maintenance progress
+
+Explicit public Native Source requirements and current-only receiving now use the
+existing Decl/Host installation path, preserving default v3/v4 bytes and real rule
+requirements. The existing Catalog's independent public-only geometry index and
+corrected paired1000/2000/+50000 maintenance court pass; the old asymmetric cost
+calibration failure remains explicit. [Current evidence](milestone-9.19-phase5-query-maintenance-evidence.md)
+records848 distinct passes and the two established unrelated cleanup exclusions.
+Conventional ability-authorized Sources now retain independent READ support through
+Native and Completed reads, expectations and recorded correction. The
+[Source authorization evidence](milestone-9.19-phase5-source-authorization-evidence.md)
+records854 distinct passes. Current-only
+Parents preserve genuine operation selection custody; retained equal-head reads
+still refuse. Bank's distinct current-only current_accounts() Parent now adopts
+the unchanged principal-specific v1 Source through its ordinary receiver, preserving
+all original budgets/populations and pinned v1 reads. The
+[Bank adoption evidence](milestone-9.19-phase5-bank-current-accounts-evidence.md)
+records524 distinct passes, two established unrelated cleanup failures and the
+unchanged paired1000/2000/+50000 maintenance court. Phases1 through5 are complete
+at the [revised public-contract closure](milestone-9.19-phase5-closure.md), including
+the coherent public CAD cleanup and its219 distinct tests plus ordinary executable.
+Under the2026-11-01 scope correction, further public Scene/triangle/contact
+expansion is not a prerequisite. Phase6 remains open for the single final private
+pin and real CAD cutover in a new worktree based on updated Proprietary main.
+That cutover now includes the native-representation subphases above and retains
+the complete actual-face, history/storage, cancellation and private-gate acceptance.
+
 
 ### Committed Provider Indexes
 
@@ -6039,8 +6083,9 @@ for the declaration, read, rebuild and cleanup sequence.
 - six self-contained required phases: provider lifecycle; incremental/candidate
   roots; complete membership/refinement/disclosure; verified footprints; public
   consumer/facade qualification; final Proprietary cutover and CAD acceptance
-- bank/compliance, public geometry and nonspatial provider qualification with
-  executable docs and independent full-scan/resource courts before private cutover
+- Bank/compliance and existing box/prefix provider contract qualification with
+  executable docs and independent full-scan/resource courts before private cutover;
+  application-specific CAD behavior is qualified against the real private app
 - one final SDK adoption deleting displaced CAD discovery/validation paths and
   qualifying 1,000/2,000-vertex and 50,000-face locality on the actual installation
 

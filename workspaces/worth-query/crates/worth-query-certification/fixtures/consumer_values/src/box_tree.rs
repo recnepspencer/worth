@@ -1,15 +1,23 @@
 //! A balanced finite box tree; callers own storage, controls and source resolution.
-use crate::{BoundsDenial, Box2};
+use crate::{BoundsDenial, BoxSpace, IntegerBox2, SignedFixture};
+mod edit;
+#[cfg(test)]
+mod model_local_tests;
+mod order;
+pub use edit::{insert_box_source, remove_box_source, replace_box_source, BoxEditStorage};
+pub use order::compare_box_bounds;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BoxIndexDenial {
     Bounds(BoundsDenial),
     InvalidTopology,
+    SegmentContact(crate::SegmentBoxDenial),
 }
 impl std::fmt::Display for BoxIndexDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Bounds(cause) => std::fmt::Display::fmt(cause, formatter),
+            Self::SegmentContact(cause) => std::fmt::Display::fmt(cause, formatter),
             Self::InvalidTopology => formatter.write_str("invalid finite box tree"),
         }
     }
@@ -18,70 +26,49 @@ impl std::error::Error for BoxIndexDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Bounds(cause) => Some(cause),
+            Self::SegmentContact(cause) => Some(cause),
             Self::InvalidTopology => None,
         }
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum BoxNodeLinks<Id> {
-    Leaf { source: usize },
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BoxNodeLinks<Id, Source = usize> {
+    Leaf { source: Source },
     Branch { left: Id, right: Id },
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct BoxNode<Id> {
-    pub bounds: Box2,
-    pub links: BoxNodeLinks<Id>,
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BoxNode<Id, Source = usize, Space: BoxSpace = SignedFixture> {
+    pub bounds: IntegerBox2<Space>,
+    pub links: BoxNodeLinks<Id, Source>,
+    pub last_source: Source,
+    pub last_bounds: IntegerBox2<Space>,
+    pub height: u8,
 }
 
-/// Every source becomes one leaf; adjacent source spans form exact enclosing nodes.
-pub fn build_box_tree<Id: Copy, E>(
+/// Cold construction uses the same spatial ordering and edits as maintained roots.
+pub fn build_box_tree<Space: BoxSpace, S: BoxEditStorage<Space>>(
     count: usize,
-    mut source: impl FnMut(usize) -> Result<Box2, E>,
-    mut append: impl FnMut(BoxNode<Id>) -> Result<Id, E>,
-    mut checkpoint: impl FnMut(u64) -> Result<(), E>,
-) -> Result<Option<Id>, E> {
-    if count == 0 {
-        return Ok(None);
+    mut source: impl FnMut(usize) -> Result<(S::Source, IntegerBox2<Space>), S::Stop>,
+    storage: &mut S,
+) -> Result<Option<S::Id>, S::Stop> {
+    storage.checkpoint()?;
+    let mut root = None;
+    for ordinal in 0..count {
+        let (source, bounds) = source(ordinal)?;
+        root = Some(insert_box_source(root, source, bounds, storage)?);
     }
-    build_span(0, count, &mut source, &mut append, &mut checkpoint).map(|(id, _)| Some(id))
-}
-
-fn build_span<Id: Copy, E>(
-    start: usize,
-    end: usize,
-    source: &mut impl FnMut(usize) -> Result<Box2, E>,
-    append: &mut impl FnMut(BoxNode<Id>) -> Result<Id, E>,
-    checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
-) -> Result<(Id, Box2), E> {
-    checkpoint(1)?;
-    if end - start == 1 {
-        let bounds = source(start)?;
-        return append(BoxNode {
-            bounds,
-            links: BoxNodeLinks::Leaf { source: start },
-        })
-        .map(|id| (id, bounds));
-    }
-    let middle = start + (end - start) / 2;
-    let (left, left_bounds) = build_span(start, middle, source, append, checkpoint)?;
-    let (right, right_bounds) = build_span(middle, end, source, append, checkpoint)?;
-    let bounds = left_bounds.union(right_bounds);
-    append(BoxNode {
-        bounds,
-        links: BoxNodeLinks::Branch { left, right },
-    })
-    .map(|id| (id, bounds))
+    Ok(root)
 }
 
 /// Emit only overlapping leaf ordinals. The source owner resolves those ordinals.
-pub fn query_box_tree<Id: Copy, E>(
+pub fn query_box_tree<Id: Copy, Source: Copy, E, Space: BoxSpace>(
     root: Option<Id>,
     node_count: usize,
-    probe: Box2,
-    mut read: impl FnMut(Id) -> Result<BoxNode<Id>, E>,
-    mut emit: impl FnMut(usize) -> Result<(), E>,
+    probe: IntegerBox2<Space>,
+    mut read: impl FnMut(Id) -> Result<BoxNode<Id, Source, Space>, E>,
+    mut emit: impl FnMut(Source) -> Result<(), E>,
     mut checkpoint: impl FnMut(u64) -> Result<(), E>,
     invalid: impl Fn() -> E,
 ) -> Result<(), E> {
@@ -102,20 +89,20 @@ pub fn query_box_tree<Id: Copy, E>(
     }
 }
 
-fn visit<Id: Copy, E>(
+fn visit<Id: Copy, Source: Copy, E, Space: BoxSpace>(
     id: Id,
     depth: u32,
     remaining: &mut usize,
-    probe: Box2,
-    read: &mut impl FnMut(Id) -> Result<BoxNode<Id>, E>,
-    emit: &mut impl FnMut(usize) -> Result<(), E>,
+    probe: IntegerBox2<Space>,
+    read: &mut impl FnMut(Id) -> Result<BoxNode<Id, Source, Space>, E>,
+    emit: &mut impl FnMut(Source) -> Result<(), E>,
     checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
     invalid: &impl Fn() -> E,
 ) -> Result<(), E> {
     checkpoint(1)?;
-    // A balanced split of any addressable source span is at most usize::BITS deep.
+    // Cold splits and subsequent AVL edits both have logarithmic height.
     // This also prevents malformed cyclic backing from recursing without bound.
-    if depth > usize::BITS || *remaining == 0 {
+    if depth > 2 * usize::BITS || *remaining == 0 {
         return Err(invalid());
     }
     *remaining -= 1;

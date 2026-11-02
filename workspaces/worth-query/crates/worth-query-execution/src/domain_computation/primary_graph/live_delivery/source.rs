@@ -1,21 +1,45 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 mod custody;
+mod partition;
+mod predicate;
+mod publication;
 mod reservation;
 mod subscription;
 pub(in crate::domain_computation::primary_graph) use subscription::WorthQueryLiveSubscriptionCapacityExhausted;
 #[cfg(test)]
 mod testing;
 
+use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 pub(in crate::domain_computation::primary_graph) use custody::{
     WorthQueryLivePublicationReservation, WorthQueryLiveSubscription,
 };
-
-use super::super::application_attempt::{
-    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
+pub(in crate::domain_computation::primary_graph) use predicate::{
+    WorthQueryLivePredicateOpening, WorthQueryLivePredicatePreparation,
+    WorthQueryLivePredicateSubscription,
 };
+use worth_execution::ExecutionRequest;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+
+#[derive(Debug)]
+pub(in crate::domain_computation::primary_graph) enum WorthQueryLiveAdmissionDenial {
+    Execution(Cause),
+    Unavailable(&'static str),
+}
+impl From<&'static str> for WorthQueryLiveAdmissionDenial {
+    fn from(detail: &'static str) -> Self {
+        Self::Unavailable(detail)
+    }
+}
+impl From<Cause> for WorthQueryLiveAdmissionDenial {
+    fn from(cause: Cause) -> Self {
+        Self::Execution(cause)
+    }
+}
+
+use super::super::application_attempt::WorthQueryApplicationEmission;
 use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
 
 const RETAINED_COMMIT_BATCH_CAPACITY: usize = 64;
@@ -51,7 +75,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveDeliverySo
 
 #[derive(Default)]
 struct WorthQueryLiveDeliverySourceState {
-    partitions: HashMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
+    partitions: BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
     published_commit_count: usize,
     subscriber_count: usize,
     closed: bool,
@@ -65,6 +89,10 @@ struct WorthQueryLiveProductPartition {
     subscriber_count: usize,
     reservation_live: bool,
     retired: bool,
+    preparation_count: usize,
+    opening_count: usize,
+    resync_epoch: u64,
+    _allocation: Option<Arc<SourceFactsAllocation>>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatch {
@@ -72,10 +100,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatc
     pub(super) publication: WorthQueryCommittedProductPublication,
     pub(super) product: crate::basis::WorthQueryProductObservationLease,
     pub(super) emissions: Vec<WorthQueryApplicationEmission>,
+    pub(super) predicate: Option<Arc<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicateNotices>>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatchCell(
     OnceLock<WorthQueryLiveCommitBatch>,
+    Arc<SourceFactsAllocation>,
 );
 
 impl WorthQueryLiveCommitBatchCell {
@@ -109,10 +139,14 @@ impl WorthQueryLiveDeliverySource {
 
     pub(in crate::domain_computation::primary_graph) fn reserve(
         &self,
+        execution: &ExecutionRequest<'_, '_>,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-    ) -> Result<WorthQueryLivePublicationReservation, &'static str> {
+    ) -> Result<WorthQueryLivePublicationReservation, WorthQueryLiveAdmissionDenial> {
         let key = WorthQueryLiveProductKey::from_observation(observation);
         let configured_batch_capacity = self.batch_capacity.load(Ordering::Acquire);
+        let mut candidate = self.funded_partition(execution, observation)?;
+        let admitted_capacity = candidate.capacity;
+        let mut storage = reservation::admit_storage(execution, admitted_capacity)?;
         let mut state = self
             .state
             .lock()
@@ -123,36 +157,39 @@ impl WorthQueryLiveDeliverySource {
                 key,
             ));
         }
+        Self::lookup_work(execution, &state, &key)?;
         let created = !state.partitions.contains_key(&key);
+        if state
+            .partitions
+            .get(&key)
+            .is_some_and(|partition| partition.allocated_batch_capacity > admitted_capacity)
+        {
+            return Err("live partition capacity changed during reservation admission".into());
+        }
+        self.install_funded_partition(&mut state, &key, &mut candidate)?;
         let result = reservation::reserve_partition(
             state
                 .partitions
-                .entry(key.clone())
-                .or_insert_with(|| WorthQueryLiveProductPartition {
-                    batches: VecDeque::with_capacity(configured_batch_capacity),
-                    allocated_batch_capacity: configured_batch_capacity,
-                    next_sequence: 0,
-                    last_product_commit: None,
-                    subscriber_count: 0,
-                    reservation_live: false,
-                    retired: false,
-                }),
+                .get_mut(&key)
+                .expect("funded product partition"),
             configured_batch_capacity,
         );
-        let (slot, evictions) = match result {
-            Ok(reservation) => reservation,
+        let evictions = match result {
+            Ok(evictions) => evictions,
             Err(denial) => {
-                if created {
-                    state.partitions.remove(&key);
-                }
-                return Err(denial);
+                let retired = created.then(|| state.remove_partition(&key));
+                drop(state);
+                drop(retired);
+                return Err(denial.into());
             }
         };
         let reservation = WorthQueryLivePublicationReservation {
             state: Arc::clone(&self.state),
             key,
-            slot: Some(slot),
+            slot: storage.slot.take(),
             evictions,
+            retired_batches: storage.retired_batches,
+            _allocation: storage.allocation,
             active: true,
         };
         drop(state);
@@ -166,85 +203,6 @@ impl WorthQueryLiveDeliverySource {
             hook();
         }
         Ok(reservation)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn publish(
-        &self,
-        mut reservation: WorthQueryLivePublicationReservation,
-        publication: WorthQueryCommittedProductPublication,
-        emissions: WorthQueryAdmittedApplicationEmissionBatch,
-    ) -> usize {
-        let emitted = emissions.len();
-        let emissions = emissions.into_emissions();
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.published_commit_count = state.published_commit_count.saturating_add(1);
-        if !reservation.active {
-            return emitted;
-        }
-        assert!(reservation.key.admits(&publication));
-        let closed = state.closed;
-        let partition = state
-            .partitions
-            .get_mut(&reservation.key)
-            .expect("an active reservation retains its product partition");
-        assert!(partition.reservation_live);
-        if partition
-            .last_product_commit
-            .as_ref()
-            .is_some_and(|last| publication.composite_commit() <= last)
-        {
-            panic!("application product publication causality is not strictly ordered");
-        }
-        let observation = publication
-            .take_successor_observation()
-            .expect("reserved live delivery carries World's exact successor observation");
-        assert_eq!(observation.branch_identity(), publication.product_branch());
-        assert_eq!(
-            observation.lifecycle_incarnation(),
-            publication.product_incarnation()
-        );
-        assert_eq!(
-            observation.selected_commit(),
-            publication.composite_commit()
-        );
-        for _ in 0..reservation.evictions {
-            partition
-                .batches
-                .pop_front()
-                .expect("reserved eviction exists");
-        }
-        partition.reservation_live = false;
-        reservation.active = false;
-        if partition.subscriber_count == 0 {
-            state.partitions.remove(&reservation.key);
-            return emitted;
-        }
-        if closed {
-            return emitted;
-        }
-        let sequence = partition.next_sequence;
-        partition.next_sequence = partition
-            .next_sequence
-            .checked_add(1)
-            .expect("reservation proved live sequence capacity");
-        let slot = reservation
-            .slot
-            .take()
-            .expect("active reservation owns a batch slot");
-        slot.0
-            .set(WorthQueryLiveCommitBatch {
-                sequence,
-                publication,
-                product: crate::basis::WorthQueryProductObservationLease::new(observation),
-                emissions,
-            })
-            .unwrap_or_else(|_| panic!("reserved live batch initializes once"));
-        partition.last_product_commit = Some(slot.batch().publication.composite_commit().clone());
-        partition.batches.push_back(slot);
-        emitted
     }
 
     pub(in crate::domain_computation::primary_graph) fn poll(
@@ -298,11 +256,11 @@ impl WorthQueryLiveDeliverySource {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let remove = state.partitions.get_mut(&key).is_some_and(|partition| {
             partition.retired = true;
-            partition.subscriber_count == 0 && !partition.reservation_live
+            partition.is_unowned()
         });
-        if remove {
-            state.partitions.remove(&key);
-        }
+        let retired = remove.then(|| state.remove_partition(&key));
+        drop(state);
+        drop(retired);
     }
 
     pub(in crate::domain_computation::primary_graph) fn close(&self) -> usize {

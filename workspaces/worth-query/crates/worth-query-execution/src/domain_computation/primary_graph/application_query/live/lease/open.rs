@@ -9,9 +9,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-mod managed_basis_admission;
-
-use self::managed_basis_admission::admit_live_managed_basis;
+use super::super::admit_live_managed_basis;
 use super::super::{
     controls::WorthQueryApplicationLiveControls,
     outcome::{WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind},

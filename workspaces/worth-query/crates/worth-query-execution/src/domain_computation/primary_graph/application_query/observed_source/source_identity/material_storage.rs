@@ -1,4 +1,4 @@
-//! Actual shared interner backing keeps every original managed-source grant.
+//! Coordinate backing keeps its own grant, independently of read material.
 use super::*;
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 use worth_execution::ExecutionRequest;
@@ -76,84 +76,74 @@ impl ManagedInternerStorage<'_, '_, '_> {
             .ok_or(Cause::ChargedBytesOverflow)?;
         self.allocation.claim(self.execution, bytes)
     }
+}
 
-    pub(super) fn prepare_container(
-        &self,
-        state: &mut WorthQueryObservedSourceMeaningRegistryState,
-        coordinate: &WorthQueryObservedSourceCoordinate,
-    ) -> Result<Option<Vec<Weak<WorthQueryObservedSourceMeaning>>>, Cause> {
-        self.lookup(state.meanings.len())?;
-        let existing = state.meanings.get(coordinate);
-        if existing.is_some_and(|entries| entries.len() < entries.capacity()) {
-            return Ok(None);
+#[derive(Default)]
+pub(super) struct CoordinateMeanings {
+    pub(super) entries: Vec<Weak<WorthQueryObservedSourceMeaning>>,
+    // The payload drops before its dedicated original funding. No batch read
+    // allocation is retained by an unrelated Source coordinate.
+    allocations: Vec<Arc<SourceFactsAllocation>>,
+}
+impl CoordinateMeanings {
+    pub(super) fn reserve(
+        &mut self,
+        storage: &ManagedInternerStorage<'_, '_, '_>,
+        count: usize,
+    ) -> Result<(), Cause> {
+        if !self.allocations.is_empty() && self.entries.len() < self.entries.capacity() {
+            return Ok(());
         }
-        let replacement = existing
-            .map_or(Some(1), |entries| entries.len().checked_add(1))
+        // Each growth is funded by this request, never by resizing a prior
+        // reader's retained grant or keeping this request's payload batch alive.
+        let allocation = SourceFactsAllocation::open(storage.execution)?;
+        if self.allocations.is_empty() {
+            // Each live coordinate covers a conservative complete BTree node
+            // and path. Deletion allocates nothing; surviving coordinates keep
+            // their own node/slack bounds until the empty map is deallocated.
+            allocation.claim_tree::<(WorthQueryObservedSourceCoordinate, Self)>(
+                storage.execution,
+                count,
+            )?;
+        }
+        let next = self
+            .entries
+            .len()
+            .checked_add(1)
             .ok_or(Cause::ChargedBytesOverflow)?;
-        // The map and coordinate vectors share backing across meanings. Their
-        // original grants belong to the registry state, not any single Arc.
-        self.work(
-            state
-                .material_allocations
-                .len()
-                .checked_mul(2)
-                .ok_or(Cause::WorkCounterOverflow)?,
+        allocation.claim_slice::<Weak<WorthQueryObservedSourceMeaning>>(
+            storage.execution,
+            next.max(self.entries.capacity()),
         )?;
-        if !state
-            .material_allocations
-            .iter()
-            .any(|grant| Arc::ptr_eq(grant, self.allocation))
-        {
-            let count = state
-                .material_allocations
+        allocation.claim_slice::<Arc<SourceFactsAllocation>>(
+            storage.execution,
+            self.allocations
                 .len()
                 .checked_add(1)
-                .ok_or(Cause::ChargedBytesOverflow)?;
-            self.allocation
-                .claim_slice::<Arc<SourceFactsAllocation>>(self.execution, count)?;
-            let mut owners = Vec::new();
-            owners
-                .try_reserve_exact(count)
-                .map_err(|_| Cause::AllocationFailed)?;
-            owners.extend(state.material_allocations.iter().cloned());
-            owners.push(Arc::clone(self.allocation));
-            state.material_allocations = owners;
-        }
-        self.allocation
-            .claim_slice::<Weak<WorthQueryObservedSourceMeaning>>(self.execution, replacement)?;
-        self.lookup(state.meanings.len())?;
-        if let Some(entries) = state.meanings.get_mut(coordinate) {
-            entries
+                .ok_or(Cause::ChargedBytesOverflow)?,
+        )?;
+        self.allocations
+            .try_reserve_exact(1)
+            .map_err(|_| Cause::AllocationFailed)?;
+        // Retain the grant before either live container can keep new capacity
+        // across a later refusal. A newly prepared bucket drops as one owner.
+        self.allocations.push(allocation);
+        if self.entries.len() == self.entries.capacity() {
+            self.entries
                 .try_reserve_exact(1)
                 .map_err(|_| Cause::AllocationFailed)?;
-            Ok(None)
-        } else {
-            self.allocation.claim_tree::<(
-                WorthQueryObservedSourceCoordinate,
-                Vec<Weak<WorthQueryObservedSourceMeaning>>,
-            )>(self.execution, state.meanings.len())?;
-            let mut entries = Vec::new();
-            entries
-                .try_reserve_exact(1)
-                .map_err(|_| Cause::AllocationFailed)?;
-            Ok(Some(entries))
         }
+        Ok(())
     }
 }
 
 impl WorthQueryObservedSourceMeaningRegistryState {
     pub(super) fn take_empty_material_storage(
         &mut self,
-    ) -> Option<(
-        BTreeMap<WorthQueryObservedSourceCoordinate, Vec<Weak<WorthQueryObservedSourceMeaning>>>,
-        Vec<Arc<SourceFactsAllocation>>,
-    )> {
-        self.meanings.is_empty().then(|| {
-            (
-                std::mem::take(&mut self.meanings),
-                std::mem::take(&mut self.material_allocations),
-            )
-        })
+    ) -> Option<BTreeMap<WorthQueryObservedSourceCoordinate, CoordinateMeanings>> {
+        self.meanings
+            .is_empty()
+            .then(|| std::mem::take(&mut self.meanings))
     }
 }
 

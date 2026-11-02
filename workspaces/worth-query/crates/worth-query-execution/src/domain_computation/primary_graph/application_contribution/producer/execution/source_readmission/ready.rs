@@ -24,6 +24,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             Stop::Interrupted(event) => {
                 WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }
+            Stop::ManagedSourceNotPrepared => {
+                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+            }
+            Stop::ManagedSourceChanged => WorthQueryOutputDemandDenialKind::Superseded,
             Stop::TopologyPending
             | Stop::SelectedSourceMismatch
             | Stop::SelectedPositionUnavailable { .. }
@@ -71,6 +75,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         CurrentAcceptedStop::Closure(_) | CurrentAcceptedStop::Registration(_) => None,
     };
     let kind = match stop {
+        CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::ManagedIndex(cause)) => {
+            return WorthQueryOutputDemandDenial::managed_index(cause, subject.to_owned()).into()
+        }
         CurrentAcceptedStop::Closure(
             stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_),
         ) => {

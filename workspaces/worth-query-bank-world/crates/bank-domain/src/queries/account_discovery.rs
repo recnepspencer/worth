@@ -69,7 +69,7 @@ pub fn account_discovery_definition() -> ApplicationQueryDefinition<
     VisibleAccount,
     Principal,
 > {
-    let identity = account_identity();
+    let identity = account_identity::<AccountDiscoveryQuery>();
     let shape = ApplicationQueryResultShapeBuilder::new(Account::reference())
         .field(identity)
         .build();
@@ -109,8 +109,8 @@ impl WorthQueryApplicationProjection<BankSchema, AccountDiscoveryQuery> for Visi
     }
 }
 
-fn account_identity() -> ApplicationQueryResultFieldRef<
-    AccountDiscoveryQuery,
+pub(super) fn account_identity<Q>() -> ApplicationQueryResultFieldRef<
+    Q,
     AccountIdentitySlot,
     BankSchema,
     Account,

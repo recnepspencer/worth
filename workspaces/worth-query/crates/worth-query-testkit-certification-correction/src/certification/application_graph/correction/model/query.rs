@@ -37,7 +37,7 @@ pub fn primary_field() -> ApplicationQueryResultFieldRef<
     Primary,
     u64,
     ReadWrite,
-    EqualityPredicate,
+    NoEqualityPredicate,
     NoApplicationUnit,
 > {
     ApplicationQueryResultFieldRef::new("primary", Primary::reference())

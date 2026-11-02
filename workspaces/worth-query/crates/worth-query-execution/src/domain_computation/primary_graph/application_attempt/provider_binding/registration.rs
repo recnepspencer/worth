@@ -129,18 +129,15 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             ));
         }
     };
-    let decision_facts = match authorization.bind_application_facts(application) {
+    let binding_execution = staged.execution_request();
+    let decision_facts = match authorization.bind_application_facts(application, &binding_execution)
+    {
         Ok(bound) => bound,
-        Err(detail) => {
+        Err(failure) => {
             let _ = staged.abort();
-            return Err(
-                super::super::provider_execution::WorthQueryProviderProgressionOutcome::Denied(
-                    super::super::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                        DenialStage::DecisionReadSet,
-                        detail,
-                    ),
-                ),
-            );
+            return Err(super::super::provider_compare_denial::read_set_failure(
+                failure,
+            ));
         }
     };
     let source_fact_rebase = match match (&output_currentness_facts, correction_facts) {

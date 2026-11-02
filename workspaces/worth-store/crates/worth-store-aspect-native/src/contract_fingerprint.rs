@@ -162,5 +162,6 @@ const fn scalar_code(value: ScalarAspectType) -> u8 {
         ScalarAspectType::TimestampTz => 22,
         ScalarAspectType::EntityRef => 23,
         ScalarAspectType::ContentRef => 24,
+        ScalarAspectType::InlineBytes => 25,
     }
 }

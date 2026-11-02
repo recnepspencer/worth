@@ -107,8 +107,8 @@ fn logical_recipe_and_components_have_distinct_canonical_transport_and_real_carr
             ..
         })
     ));
-    for tag in [46u16, 47] {
-        let bytes = [tag.to_be_bytes(), 2u16.to_be_bytes()].concat();
+    for (tag, version) in [(46u16, 2u16), (47, 3)] {
+        let bytes = [tag.to_be_bytes(), version.to_be_bytes()].concat();
         assert_eq!(
             try_decode_member(&bytes).unwrap_err().kind(),
             Kind::UnsupportedRecordVariant

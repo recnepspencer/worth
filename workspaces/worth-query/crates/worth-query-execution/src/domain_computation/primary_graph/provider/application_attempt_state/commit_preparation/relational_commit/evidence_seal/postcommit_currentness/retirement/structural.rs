@@ -23,6 +23,9 @@ pub(in super::super) fn prepare(
             };
             (*anchor, observation.source())
         }
+        // This Source-only observation cannot be rewritten into a synthetic
+        // retirement witness. Preserve its original source and currentness.
+        Fact::DerivedSource { .. } => return Ok(None),
         _ => return Ok(None),
     };
     if source.runtime_instance_id() != snapshot.runtime_instance_id()

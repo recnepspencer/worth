@@ -21,6 +21,9 @@ pub struct WorthQueryInstalledApplicationInvariantDescriptor {
     applicability: Vec<ApplicationInvariantScopeTarget>,
     provider: String,
     cost_posture: ApplicationInvariantCostPosture,
+    managed_index_sources: Vec<
+        worth_query_declaration::facade::application_query::ApplicationInvariantManagedIndexSource,
+    >,
 }
 
 impl WorthQueryInstalledApplicationInvariantDescriptor {
@@ -49,6 +52,7 @@ impl WorthQueryInstalledApplicationInvariantDescriptor {
             applicability,
             provider,
             cost_posture,
+            managed_index_sources: Vec::new(),
         }
     }
     pub fn identifier(&self) -> &str {
@@ -84,6 +88,9 @@ impl WorthQueryInstalledApplicationInvariantDescriptor {
     pub const fn cost_posture(&self) -> ApplicationInvariantCostPosture {
         self.cost_posture
     }
+    pub fn managed_index_sources(&self) -> &[worth_query_declaration::facade::application_query::ApplicationInvariantManagedIndexSource]{
+        &self.managed_index_sources
+    }
     pub(crate) fn canonical_parts(&self) -> Vec<String> {
         let mut parts = vec![
             self.identifier.clone(),
@@ -110,6 +117,16 @@ impl WorthQueryInstalledApplicationInvariantDescriptor {
                 .iter()
                 .map(|target| format!("{target:?}")),
         );
+        // Preserve existing program identities when the new association is absent.
+        if !self.managed_index_sources.is_empty() {
+            parts.push("invariant-managed-index-sources.v1".to_owned());
+            parts.push(self.managed_index_sources.len().to_string());
+            for source in &self.managed_index_sources {
+                parts.push(source.index().to_owned());
+                parts.push(source.interpretation().canonical_token().to_owned());
+                parts.push(source.cold().canonical_token().to_owned());
+            }
+        }
         parts
     }
 }
@@ -153,6 +170,20 @@ impl WorthQueryInstalledApplicationInvariantCatalog {
                     applicability: applicability.clone(),
                     provider: provider.clone(),
                     cost_posture: *cost_posture,
+                    managed_index_sources: declaration
+                        .members()
+                        .iter()
+                        .filter_map(|member| match member {
+                            ApplicationSchemaMember::InvariantManagedIndexSource {
+                                invariant: source_rule,
+                                execution_point: point,
+                                requirement,
+                            } if source_rule == invariant && point == execution_point => {
+                                Some(requirement.clone())
+                            }
+                            _ => None,
+                        })
+                        .collect(),
                 })
             })
             .collect();

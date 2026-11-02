@@ -4,6 +4,7 @@ mod account_detail;
 mod account_discovery;
 mod account_summary;
 mod account_summary_projection;
+mod current_accounts;
 mod estate;
 mod institution_audit;
 mod payment_amount;
@@ -73,4 +74,9 @@ pub use payment_detail::{
 pub use pending_payments::{
     pending_payments, pending_payments_definition, PendingPaymentsQuery,
     PendingPaymentsQueryBinding, PendingPaymentsQueryParameters, PendingPaymentsRequest,
+};
+
+pub use current_accounts::{
+    current_accounts, current_accounts_definition, CurrentAccountsIndex, CurrentAccountsQuery,
+    CurrentAccountsQueryBinding, CurrentAccountsRequest,
 };

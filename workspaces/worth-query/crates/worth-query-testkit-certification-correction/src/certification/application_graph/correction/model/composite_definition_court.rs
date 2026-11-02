@@ -167,6 +167,7 @@ pub fn change(application: &host::Host) -> WorthQueryApplicationCommitReceipt {
         .mutate(Change {
             key: "numeric".to_owned(),
             value: 23,
+            revision: 23,
         })
         .without_source()
         .idempotency(&key)

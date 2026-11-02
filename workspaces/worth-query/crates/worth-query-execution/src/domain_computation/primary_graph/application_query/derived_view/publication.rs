@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, LocatorAuthority,
@@ -36,18 +36,28 @@ enum Target<Key> {
     Entry(Key),
 }
 
-pub(super) struct DependencyIndex<Key> {
-    exact: BTreeMap<ViewDependency, BTreeSet<Target<Key>>>,
-    entity: BTreeMap<EntityId, BTreeSet<Target<Key>>>,
-    aspect: BTreeMap<(EntityId, AspectKey), BTreeSet<Target<Key>>>,
+pub(in crate::domain_computation::primary_graph::application_query) struct DependencyIndex<Key> {
+    exact: im::OrdMap<ViewDependency, im::OrdSet<Target<Key>>>,
+    entity: im::OrdMap<EntityId, im::OrdSet<Target<Key>>>,
+    aspect: im::OrdMap<(EntityId, AspectKey), im::OrdSet<Target<Key>>>,
+}
+
+impl<Key: Clone + Ord> Clone for DependencyIndex<Key> {
+    fn clone(&self) -> Self {
+        Self {
+            exact: self.exact.clone(),
+            entity: self.entity.clone(),
+            aspect: self.aspect.clone(),
+        }
+    }
 }
 
 impl<Key> Default for DependencyIndex<Key> {
     fn default() -> Self {
         Self {
-            exact: BTreeMap::new(),
-            entity: BTreeMap::new(),
-            aspect: BTreeMap::new(),
+            exact: im::OrdMap::new(),
+            entity: im::OrdMap::new(),
+            aspect: im::OrdMap::new(),
         }
     }
 }
@@ -77,12 +87,7 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
             .entry(dependency.clone())
             .or_default()
             .insert(target.clone());
-        let entity = match dependency {
-            ViewDependency::Entity(entity)
-            | ViewDependency::Aspect(entity, _)
-            | ViewDependency::Field(entity, _)
-            | ViewDependency::Adjacency(entity, _, _) => *entity,
-        };
+        let entity = dependency.entity();
         self.entity
             .entry(entity)
             .or_default()
@@ -104,7 +109,11 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         }
     }
 
-    pub(super) fn insert_entry(&mut self, dependency: &ViewDependency, key: &Key) {
+    pub(in crate::domain_computation::primary_graph::application_query) fn insert_entry(
+        &mut self,
+        dependency: &ViewDependency,
+        key: &Key,
+    ) {
         self.insert(dependency, Target::Entry(key.clone()));
     }
 
@@ -112,7 +121,11 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         self.insert(dependency, Target::Membership);
     }
 
-    pub(super) fn remove_entry(&mut self, key: &Key, dependencies: &BTreeSet<ViewDependency>) {
+    pub(in crate::domain_computation::primary_graph::application_query) fn remove_entry(
+        &mut self,
+        key: &Key,
+        dependencies: &BTreeSet<ViewDependency>,
+    ) {
         self.remove_target(dependencies, Target::Entry(key.clone()));
     }
 
@@ -128,12 +141,7 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
                     self.exact.remove(dependency);
                 }
             }
-            let entity = match dependency {
-                ViewDependency::Entity(entity)
-                | ViewDependency::Aspect(entity, _)
-                | ViewDependency::Field(entity, _)
-                | ViewDependency::Adjacency(entity, _, _) => *entity,
-            };
+            let entity = dependency.entity();
             if let Some(targets) = self.entity.get_mut(&entity) {
                 targets.remove(&target);
                 if targets.is_empty() {
@@ -157,7 +165,9 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         }
     }
 
-    pub(super) fn entry_insertion_bound(dependency: &ViewDependency) -> usize {
+    pub(in crate::domain_computation::primary_graph::application_query) fn entry_insertion_bound(
+        dependency: &ViewDependency,
+    ) -> usize {
         let axes = if matches!(
             dependency,
             ViewDependency::Aspect(..) | ViewDependency::Field(..)
@@ -171,6 +181,23 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
             .saturating_mul(axes)
             .saturating_add(std::mem::size_of::<Target<Key>>().saturating_mul(axes))
             .saturating_add(128)
+    }
+
+    /// A lifecycle or scalar event reaches every exact field/entry posting for
+    /// that full-generation entity. The caller charges each yielded routing edge;
+    /// no retained Source roster or unrelated query is enumerated.
+    pub(in crate::domain_computation::primary_graph::application_query) fn entries_for_entity(
+        &self,
+        entity: EntityId,
+    ) -> impl Iterator<Item = &Key> {
+        self.entity
+            .get(&entity)
+            .into_iter()
+            .flat_map(|targets| targets.iter())
+            .filter_map(|target| match target {
+                Target::Entry(key) => Some(key),
+                Target::Membership => None,
+            })
     }
 
     pub(super) fn affected(
@@ -250,7 +277,7 @@ impl<Key> Default for AffectedTargets<Key> {
 impl<Key: Clone + Ord> AffectedTargets<Key> {
     fn extend(
         &mut self,
-        targets: Option<&BTreeSet<Target<Key>>>,
+        targets: Option<&im::OrdSet<Target<Key>>>,
         work: &mut usize,
         maximum_work_units: usize,
     ) -> Option<()> {

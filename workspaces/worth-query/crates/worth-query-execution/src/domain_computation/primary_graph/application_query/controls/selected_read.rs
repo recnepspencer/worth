@@ -33,6 +33,7 @@ impl<'request, Schema> WorthQueryApplicationQueryControls<'request, Schema> {
 
             request_scope,
             producer: None,
+            selection_origin: Default::default(),
             _schema: PhantomData,
         })
     }

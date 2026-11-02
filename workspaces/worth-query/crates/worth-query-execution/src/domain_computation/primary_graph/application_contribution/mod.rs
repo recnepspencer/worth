@@ -104,7 +104,9 @@ pub use request_execution::{
 pub use request_execution::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
 };
-pub use setup::WorthQueryApplicationContributionSetup;
+pub use setup::{
+    WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,
+};
 
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::sealed_run_for_lineage_test;

@@ -70,12 +70,15 @@ pub enum Conclusion {
 }
 #[derive(Serialize, schemars::JsonSchema)]
 pub enum KeyedResolution {
+    ProductPreparationPending,
     Unseen,
     AlreadyCommitted,
     IntentDrift,
 }
 #[derive(Serialize, schemars::JsonSchema)]
 pub enum CommitPosture {
+    ProductPreparationPending,
+    ProductPreparationRefused,
     CleanupRequired(Box<Self>),
     ProductStale,
     ProductUnpublished,
@@ -118,6 +121,7 @@ pub(super) fn describe<C: SourceCommand>(
         Custody::Terminal(done) => View::Terminal {
             outcome: done.native_outcome().map(conclusion::<C>),
             keyed:done.native_keyed_resolution().map(|keyed|match keyed {
+                worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(_)=>KeyedResolution::ProductPreparationPending,
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::Unseen=>KeyedResolution::Unseen,
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_)=>KeyedResolution::AlreadyCommitted,
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::IntentDrift=>KeyedResolution::IntentDrift,
@@ -161,6 +165,8 @@ fn source(posture: &Posture) -> SourcePosture {
 }
 fn commit(posture: &Commit) -> CommitPosture {
     match posture {
+        Commit::ProductPreparationPending(_) => CommitPosture::ProductPreparationPending,
+        Commit::ProductPreparationRefused(_) => CommitPosture::ProductPreparationRefused,
         Commit::CleanupRequired(cause) => {
             CommitPosture::CleanupRequired(Box::new(commit(cause.outcome())))
         }

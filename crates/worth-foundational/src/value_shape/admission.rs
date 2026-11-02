@@ -10,6 +10,16 @@ pub struct ValueDecodeBounds {
 }
 
 impl ValueDecodeBounds {
+    /// A binary owner's finite wire policy, with no invented component limits.
+    pub const fn wire_bytes(maximum: usize) -> Self {
+        assert!(maximum > 0 && maximum < usize::MAX);
+        Self {
+            maximum_wire_bytes: Some(maximum),
+            maximum_string_bytes: None,
+            maximum_sequence_length: None,
+            maximum_depth: None,
+        }
+    }
     /// Every bound must be finite and nonzero. Depth counts structural nesting.
     pub const fn new(wire: usize, string: usize, sequence: usize, depth: usize) -> Self {
         assert!(wire > 0 && wire < usize::MAX);
@@ -95,11 +105,20 @@ pub enum ValueCodecDenial {
     Admission,
     UnsupportedAdmission,
     UnsupportedShape,
+    UnsupportedVersion { expected: u32, observed: u32 },
+    InternalInconsistency,
 }
 
 impl std::fmt::Display for ValueCodecDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
+            Self::UnsupportedVersion { expected, observed } => {
+                return write!(
+                    f,
+                    "value version {observed} is unsupported; expected {expected}"
+                );
+            }
+            Self::InternalInconsistency => "admitted value disagrees with its canonical encoding",
             Self::WireBytes => "canonical value exceeds its wire byte bound",
             Self::StringBytes => "canonical value exceeds its string byte bound",
             Self::SequenceLength => "canonical value exceeds its sequence length bound",

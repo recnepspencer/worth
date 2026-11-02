@@ -56,3 +56,11 @@ impl BankIdentityRuntime {
             .expect("control opens its host call")
     }
 }
+
+impl BankIdentityRuntime {
+    /// Passive build/update callback attempts and changed occurrences. No handles escape.
+    #[doc(hidden)]
+    pub fn account_index_work_for_test(&self) -> (usize, usize, usize) {
+        self.account_index_work.snapshot()
+    }
+}

@@ -23,6 +23,7 @@ fn array_stop(cause: ArrayStop) -> Denial {
             Allocation::Physical(
                 Physical::CapacityMismatch
                 | Physical::WriteBeyondReserved
+                | Physical::UninitializedElement
                 | Physical::IncompleteSeal,
             ) => Cause::ResultCapacityExceeded,
         },

@@ -5,6 +5,7 @@ pub enum ApplicationDerivedRelationDefinitionDenial {
     InvalidIdentifier,
     EmptyExpression,
     InvalidNodeReference,
+    InvalidEventOperand,
     UnusedExpressionNode,
     DiscontinuousEndpoints,
     HeterogeneousSelfExclusion,

@@ -12,13 +12,13 @@ use crate::transactions::data::RecordRef;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-pub(super) struct Lifecycle {
-    pub(super) carrier: EntityId,
-    pub(super) before: Option<KindId>,
-    pub(super) after: Option<KindId>,
+pub(in crate::derived_relation) struct Lifecycle {
+    pub(in crate::derived_relation) carrier: EntityId,
+    pub(in crate::derived_relation) before: Option<KindId>,
+    pub(in crate::derived_relation) after: Option<KindId>,
 }
 
-pub(super) fn kind(
+pub(in crate::derived_relation) fn kind(
     read: &mut impl SourceRead,
     carrier: EntityId,
 ) -> Result<Option<KindId>, Denial> {

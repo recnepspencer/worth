@@ -95,6 +95,11 @@ impl WorthQueryProductBranchLease {
         }
     }
 
+    /// Only a retained clone shares this exact admitted mutation source owner.
+    pub(crate) fn shares_retained_mutation_source(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.bridge_source, &other.bridge_source)
+    }
+
     #[doc(hidden)]
     pub fn has_same_selected_occurrence(&self, other: &Self) -> bool {
         self.observation() == other.observation()

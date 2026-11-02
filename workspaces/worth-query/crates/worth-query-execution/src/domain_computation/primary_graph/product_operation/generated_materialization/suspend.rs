@@ -49,9 +49,34 @@ where
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        self.application().with_application_advancement(request, |phase| {
-        let phase = &phase;
+        let mut outcome = None;
+        let admission = self
+            .application()
+            .with_application_advancement(request, |phase| {
+                outcome = Some(
+                    self.suspend_observed_generated_output::<Producer>(&phase, request, source),
+                );
+            });
+        // Once the callback ran, its complete owned result must survive a final
+        // outer poll, including an actual unpublished-effect recovery carrier.
+        if let Some(outcome) = outcome {
+            return outcome;
+        }
+        admission.map_err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied)?;
+        unreachable!("advancement invokes its callback")
+    }
 
+    fn suspend_observed_generated_output<Producer>(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
+            <<Producer::OutputFamily as crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query,
+        >,
+    ) -> Result<WorthQuerySuspendedGeneratedOutput, WorthQueryGeneratedOutputSuspensionFailure>
+    where
+        Producer: WorthQueryApplicationProducerBinding<Schema>,
+    {
         let source_identity = source.idempotency_identity();
         let checkpoint_source_identity = source.checkpoint_identity();
         let source_root = source.source_root();
@@ -72,8 +97,6 @@ where
                 selection,
             },
         )
-
-        }).map_err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied)?
     }
 
     pub(in crate::domain_computation::primary_graph::product_operation) fn suspend_qualified_generated_output<

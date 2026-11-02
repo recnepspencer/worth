@@ -6,6 +6,17 @@ use std::{
 
 use super::{KernelContext, MemoryActivityGuard, PhysicalActivity, RunLimits, ACTIVE_METER};
 
+impl Drop for super::KernelMeterGuard {
+    fn drop(&mut self) {
+        ACTIVE_METER.with(|active| {
+            let meter = active.borrow_mut().pop().expect("balanced kernel meter");
+            if let Some(affinity) = &meter.borrow().issued_work_loan {
+                affinity.close();
+            }
+        });
+    }
+}
+
 thread_local! {
     static CERTIFICATION_PHYSICAL: RefCell<Vec<Arc<PhysicalActivity>>> = const { RefCell::new(Vec::new()) };
 }

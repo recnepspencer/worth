@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 mod advancement;
 use crate::basis::WorthQueryProductBranchAdmissionDenial as Admission;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
@@ -144,6 +145,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         retry: SuspensionRetry,
         needs_settlement: bool,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<
         WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
@@ -154,7 +156,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled(execution, recovery, retry, request)
+        self.adopt_settled(execution, recovery, retry, request, retirements)
     }
 
     fn adopt_settled(
@@ -163,6 +165,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<
         WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
@@ -241,12 +244,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .take_successor_observation()
                     .expect("settled adoption reserves its successor observation");
                 self.finish_published(
+                    execution,
                     recovery,
                     PublishedSuspensionSettlement {
                         publication: self.materialization_publication_binding(observation),
                         commit,
                         retry,
                     },
+                    retirements,
                 )
             }
             Err(PublicationDenial::Stopped(stop)) => Err(failure(
@@ -263,7 +268,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 let next = self
                     .unpublished_materialization_from_binding(effects, &binding)
                     .into_recovery();
-                self.finish_handoff(recovery, next, retry)
+                self.finish_handoff(execution, recovery, next, retry, retirements)
             }
         }
     }

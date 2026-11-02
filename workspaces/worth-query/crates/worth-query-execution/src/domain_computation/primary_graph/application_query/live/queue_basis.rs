@@ -1,0 +1,56 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use super::outcome::{
+    WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
+};
+use crate::domain_computation::{
+    managed_run::{
+        admit_live_lower_execution_basis, WorthQueryManagedLowerExecutionBasis,
+        WorthQueryManagedTruthReadRequest,
+    },
+    primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
+};
+
+static NEXT_APPLICATION_QUERY_LIVE_LEASE: AtomicU64 = AtomicU64::new(1);
+
+pub(in crate::domain_computation::primary_graph::application_query) fn admit_live_managed_basis<
+    Schema,
+>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    buffer_capacity: usize,
+    graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    subject: &str,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryApplicationLiveOpenDenial> {
+    let descriptor = graph_work
+        .query_basis()
+        .map(|basis| basis.descriptor().clone())
+        .ok_or_else(|| {
+            WorthQueryApplicationLiveOpenDenial::new(
+                WorthQueryApplicationLiveOpenDenialKind::ProviderVersionUnavailable,
+                subject,
+            )
+        })?;
+    let attempt = NEXT_APPLICATION_QUERY_LIVE_LEASE.fetch_add(1, Ordering::Relaxed);
+    let attempt_identity = format!("application-query-live:{attempt}");
+    let request = WorthQueryManagedTruthReadRequest::from_relational_basis(
+        descriptor,
+        worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
+    );
+    let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
+    admit_live_lower_execution_basis(
+        &request_bridge,
+        &application.product_runtime.source,
+        subject,
+        &attempt_identity,
+        buffer_capacity,
+        request,
+        execution,
+    )
+    .map_err(|failure| {
+        WorthQueryApplicationLiveOpenDenial::new(
+            WorthQueryApplicationLiveOpenDenialKind::BridgeBasisRejected,
+            failure.detail.as_ref(),
+        )
+    })
+}

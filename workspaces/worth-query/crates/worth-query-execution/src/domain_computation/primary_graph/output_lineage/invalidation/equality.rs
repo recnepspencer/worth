@@ -12,10 +12,12 @@ use super::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::output_lineage::input_cutoff::StableEqualityConsequence;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
+/// Register a sealed stable publication. Unsupported physical postings retain
+/// full verification and genuine output custody, without clean equality links.
 /// Mutates only the unpublished successor mark root. All selected walks and
 /// copy-on-write edits are admitted before their individual operations; a
 /// denial discards this root without changing the visible source image.
-pub(super) fn certify(
+pub(super) fn register_verified(
     state: &mut MarkState,
     equality: &StableEqualityConsequence<'_>,
 ) -> Result<(), SettlementRegistrationStop> {
@@ -34,7 +36,6 @@ pub(super) fn certify(
         return Err(missing(FullVerificationReason::MissingSettlement));
     };
     if alias.delivery_epoch != state.delivery_epoch
-        || alias.verification_requirement.is_some()
         || !alias.dirty_ordinals.is_empty()
         || !alias.pending_upstream.is_empty()
     {
@@ -48,6 +49,26 @@ pub(super) fn certify(
     let old_link = state.equal_links.get(predecessor).cloned();
     if old_link.as_ref().is_some_and(|link| link.next.is_some()) {
         return Err(missing(FullVerificationReason::RetainedDeliveryGap));
+    }
+
+    match alias.verification_requirement {
+        None => {}
+        Some(FullVerificationReason::UnsupportedFact) => {
+            // Full verification just proved this exact selected cutover. Without
+            // complete reverse postings it cannot establish a future Clean mark
+            // or discharge downstream edges. Keep the original requirement.
+            projection::carry(state, predecessor, successor)?;
+            return if state
+                .settlements
+                .get(successor)
+                .is_some_and(|row| row.output_facts.is_some())
+            {
+                Ok(())
+            } else {
+                Err(missing(FullVerificationReason::RetainedDeliveryGap))
+            };
+        }
+        Some(_) => return Err(missing(FullVerificationReason::RetainedDeliveryGap)),
     }
 
     projection::carry(state, predecessor, successor)?;

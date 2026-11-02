@@ -15,6 +15,12 @@ use super::{
 
 #[derive(Debug)]
 pub enum BankMutationCommitOutcome {
+    ProductPreparationPending(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationPending,
+    ),
+    ProductPreparationRefused(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationRefused,
+    ),
     CleanupRequired(super::BankManagedCleanup),
     ProductStale(WorthQueryProductStaleApplication),
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
@@ -63,6 +69,12 @@ impl BankMutationCommitOutcome {
 impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
     fn from(outcome: WorthQueryApplicationCommitOutcome) -> Self {
         match outcome {
+            WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending) => {
+                Self::ProductPreparationPending(pending)
+            }
+            WorthQueryApplicationCommitOutcome::ProductPreparationRefused(refused) => {
+                Self::ProductPreparationRefused(refused)
+            }
             WorthQueryApplicationCommitOutcome::CleanupRequired(owner) => {
                 Self::CleanupRequired(owner.into())
             }

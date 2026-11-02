@@ -139,6 +139,7 @@ fn bind_original(
     let storage_version = envelope.commit.version_id.0;
     Ok(Arc::new(RelationalBranchRoot {
         id: prepared.root_id,
+        managed_source_image: Default::default(),
         regions: prepared.regions,
         entity_slot_count: prepared.entity_slot_count,
         relation_slot_count: prepared.relation_slot_count,

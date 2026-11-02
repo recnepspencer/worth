@@ -1,7 +1,9 @@
 //! Capability disclosure and READ policy share real scoped grant facts.
 use super::super::schema::*;
 use worth_query_decl::facade::{application_capability::*, application_schema::*, *};
+#[path = "access/contract.rs"]
 mod contract;
+#[path = "access/grants.rs"]
 pub mod grants;
 worth_query_capability!(pub ReadBoxes in Catalog, identity "managed-catalog.box-disclosure.v1");
 worth_query_capability_context!(pub BoxContext in Catalog);

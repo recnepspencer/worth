@@ -177,7 +177,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for ReverseLink {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
                 [DeclaredPreImageLocus::from_field(Primary::reference())],
-                U64ApplicationValueBinding::encode(&u64::MAX)
+                InlineCounterBinding::encode(&u64::MAX)
                     .unwrap()
                     .semantic_byte_width(),
             )
@@ -194,7 +194,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for ReverseLink {
         let ApplicationCorrectionSourceMaterial::RecordedInverse(preimage) = material else {
             return Err(UnsupportedSourceMeaning);
         };
-        let primary = U64ApplicationValueBinding::decode(
+        let primary = InlineCounterBinding::decode(
             preimage
                 .field(&DeclaredPreImageLocus::from_field(Primary::reference()))
                 .ok_or(MissingPreImage)?,

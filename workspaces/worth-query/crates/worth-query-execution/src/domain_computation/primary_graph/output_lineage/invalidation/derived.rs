@@ -265,7 +265,7 @@ impl SourceInvalidationOwner {
         };
         settlement::insert(&mut state, registration, &image, alignment, output_coverage)?;
         if let Some(equality) = equality {
-            equality::certify(&mut state, equality)?;
+            equality::register_verified(&mut state, equality)?;
         }
         let completion_cues = if let Some(partition) = publication_partition {
             let affected = super::output_availability::record_completion(

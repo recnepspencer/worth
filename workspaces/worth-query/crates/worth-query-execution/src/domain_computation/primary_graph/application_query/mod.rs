@@ -41,15 +41,25 @@ pub use one_shot::WorthQueryApplicationHistoryCaptureResult;
 mod installed_schema_currentness;
 mod live;
 pub(in crate::domain_computation::primary_graph) mod managed_index;
+pub(in crate::domain_computation::primary_graph) use managed_index::WatchSlot;
 pub use managed_index::{
     WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
     WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
-    WorthQueryManagedIndexLifecycle, WorthQueryManagedIndexNodeId,
+    WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexLifecycle,
+    WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
     WorthQueryManagedIndexNodeWriter, WorthQueryManagedIndexNodes,
+    WorthQueryManagedIndexPredicateProvider, WorthQueryManagedIndexPredicateSummary,
     WorthQueryManagedIndexProbeValue, WorthQueryManagedIndexProvider,
     WorthQueryManagedIndexProviderFailure, WorthQueryManagedIndexProviderStop,
-    WorthQueryManagedIndexRefusal, WorthQueryManagedIndexSourceRows,
-    WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop, WorthQueryManagedIndexWorkDenial,
+    WorthQueryManagedIndexRefinementProvider, WorthQueryManagedIndexRefusal,
+    WorthQueryManagedIndexSourceChange, WorthQueryManagedIndexSourceRow,
+    WorthQueryManagedIndexSourceRows, WorthQueryManagedIndexSourceSlot, WorthQueryManagedIndexStop,
+    WorthQueryManagedIndexSummarySources, WorthQueryManagedIndexTextReadDenial,
+    WorthQueryManagedIndexWorkDenial,
+};
+pub use managed_index::{
+    WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
+    WorthQueryManagedIndexWatchUpdate,
 };
 mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;
@@ -71,6 +81,9 @@ pub(in crate::domain_computation::primary_graph) use output_source_observation::
 mod projection;
 pub(in crate::domain_computation::primary_graph) use projection::retained_projection::{
     compare_original_projections, ProjectionComparisonDenial,
+};
+pub(in crate::domain_computation::primary_graph) use projection::{
+    ContentScratch, ProjectionContentStorageFault,
 };
 mod read_execution;
 pub use read_execution::{

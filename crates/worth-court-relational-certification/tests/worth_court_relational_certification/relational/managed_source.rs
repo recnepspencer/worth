@@ -1,0 +1,372 @@
+//! Native scope scheduling and observation custody in the existing Native court.
+//! This is not public managed-root/World publication evidence.
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc, Mutex,
+};
+use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational::facade::{
+    config::{CascadeDeletePolicy, CrossContextPolicy},
+    history::BranchId,
+    identity::*,
+    merge::{
+        LoweredRecordDecisionKind, MergeExecutionPreparationError, MergeExecutionRequest,
+        MergeIntent,
+    },
+    runtime::*,
+    schema::*,
+    symbols::ClientKey,
+    transactions::*,
+};
+
+mod authored_fields;
+mod context;
+mod derived_admission;
+mod events;
+mod historical_material;
+mod history;
+mod journal;
+mod nested;
+mod public_only;
+mod registry;
+mod row_read;
+pub(crate) use registry::registry;
+#[path = "managed_source/owner.rs"]
+pub(crate) mod owner;
+
+pub(crate) fn created(kind: u32, label: &str) -> CreatedEntityRef {
+    CreatedEntityRef {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(kind),
+        client_key: ClientKey::raw(label),
+    }
+}
+
+fn commit(
+    runtime: &RelationalRuntime,
+    execution: &ExecutionRequest<'_, '_>,
+    batch: WorkerIntentBatch,
+) -> CommitResult {
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut transaction = runtime
+        .begin_branch_transaction(
+            &basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
+        .unwrap();
+    transaction
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    transaction.commit(execution, runtime).unwrap()
+}
+
+#[test]
+fn native_managed_source_stages_all_scopes_before_validation_and_reborrows_each_actual_observation()
+{
+    let (registry, program) = registry();
+    let court = Arc::new(owner::Court::default());
+    let rule = CustomInvariantRegistration::new(owner::Reader {
+        maximum_work: None,
+        program: program.clone(),
+        court: court.clone(),
+    })
+    .unwrap()
+    .with_managed_index_sources(vec![program])
+    .unwrap();
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(registry)
+        .custom_invariant(rule)
+        .build()
+        .unwrap();
+    let _registration = runtime
+        .publication_companion_port()
+        .begin_required_registration()
+        .unwrap()
+        .activate(Arc::new(owner::SourceOwner(court.clone())))
+        .unwrap();
+    let host = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let execution = ExecutionRequest::serial(&host);
+    let mut birth = WorkerIntentBatch::new("source-scope-birth");
+    for (kind, label) in [(1, "A"), (1, "B"), (4, "x"), (4, "y")] {
+        birth = birth.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: PartitionId::main(),
+            kind_id: KindId(kind),
+            client_key: ClientKey::raw(label),
+            fields: Default::default(),
+        })));
+    }
+    birth = birth.push(MutationIntent::Create(CreateIntent::Relation(
+        RelationSpec {
+            partition_id: PartitionId::main(),
+            kind_id: KindId(2),
+            client_key: ClientKey::raw("A-x"),
+            source: EntityReference::Created(created(1, "A")),
+            target: EntityReference::Created(created(4, "x")),
+            fields: Default::default(),
+        },
+    )));
+    let born = commit(&runtime, &execution, birth);
+    let a = born.created_entity(&created(1, "A")).unwrap();
+    let b = born.created_entity(&created(1, "B")).unwrap();
+    let x = born.created_entity(&created(4, "x")).unwrap();
+    let y = born.created_entity(&created(4, "y")).unwrap();
+    // Independent authored edge roster: A->x, empty B, then add B->x.
+    // No public session or retained public root is opened for either scope.
+    *court.expected.lock().unwrap() =
+        BTreeMap::from([(a, (vec![x], vec![x])), (b, (vec![], vec![x]))]);
+    court.staged.lock().unwrap().clear();
+    court.observed.lock().unwrap().clear();
+    court
+        .checking_previous_proposal
+        .store(true, Ordering::SeqCst);
+    let shared = commit(
+        &runtime,
+        &execution,
+        WorkerIntentBatch::new("share-with-unopened-B").push(MutationIntent::Create(
+            CreateIntent::Relation(RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(2),
+                client_key: ClientKey::raw("B-x"),
+                source: EntityReference::Existing(b),
+                target: EntityReference::Existing(x),
+                fields: Default::default(),
+            }),
+        )),
+    );
+    assert_eq!(*court.staged.lock().unwrap(), BTreeSet::from([a, b]));
+    assert_eq!(*court.observed.lock().unwrap(), BTreeSet::from([a, b]));
+    assert!(court.foreign_observation.load(Ordering::SeqCst) > 0);
+
+    let b_x = shared
+        .created_relation(&CreatedRelationRef {
+            partition_id: PartitionId::main(),
+            kind_id: KindId(2),
+            client_key: ClientKey::raw("B-x"),
+            source: EntityReference::Existing(b),
+            target: EntityReference::Existing(x),
+        })
+        .unwrap();
+    let source_branch = BranchId("managed-source-merge".into());
+    let (_, fork_basis) = runtime
+        .observe_fork_source(&BranchId("main".into()))
+        .unwrap();
+    runtime
+        .fork_branch(&execution, source_branch.clone(), fork_basis)
+        .unwrap();
+    let source_identity = runtime.branch_identity(&source_branch).unwrap();
+    let (_, source_basis) = runtime.observe_branch(&source_identity).unwrap();
+    // Authored source-branch edit and merge expectation: retain A->x,
+    // remove B->x. Main still contains both edges until the actual merge.
+    *court.expected.lock().unwrap() =
+        BTreeMap::from([(a, (vec![x], vec![x])), (b, (vec![x], vec![]))]);
+    court.staged.lock().unwrap().clear();
+    court.observed.lock().unwrap().clear();
+    let mut transaction = runtime
+        .begin_branch_transaction(
+            &source_basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
+        .unwrap();
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("remove-source-B-x").push(MutationIntent::Relation(
+                RelationMutationIntent::Delete(DeleteRelationIntent { relation_id: b_x }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    transaction.commit(&execution, &runtime).unwrap();
+
+    let bound = runtime
+        .bind_merge_execution_request(MergeExecutionRequest::new(
+            BranchId("main".into()),
+            source_branch,
+            MergeIntent::ReconcileIntoTarget,
+        ))
+        .unwrap();
+    // Native requires manual resolution for source-deleted/target-live records.
+    // The ordinary source-branch deletion above keeps its exact roster oracle;
+    // it cannot lawfully be used as an executable merge fixture.
+    court.staged.lock().unwrap().clear();
+    court.observed.lock().unwrap().clear();
+    let refused_before_planning = court.foreign_observation.load(Ordering::SeqCst);
+    let error = runtime
+        .prepare_merge_execution(&execution, bound)
+        .unwrap_err();
+    let MergeExecutionPreparationError::NotExecutionReady(report) = error else {
+        panic!("expected the installed deletion rule, got {error:?}");
+    };
+    assert_eq!(
+        (
+            report.record_count,
+            report.blocked_count,
+            report.rejected_count
+        ),
+        (1, 1, 0)
+    );
+    assert_eq!(report.denied_records.len(), 1);
+    assert_eq!(report.denied_records[0].record, RecordRef::Relation(b_x));
+    assert_eq!(
+        report.denied_records[0].decision,
+        LoweredRecordDecisionKind::Block
+    );
+    assert!(court.staged.lock().unwrap().is_empty());
+    assert!(court.observed.lock().unwrap().is_empty());
+    assert_eq!(
+        court.foreign_observation.load(Ordering::SeqCst),
+        refused_before_planning
+    );
+
+    // A new fork of unchanged main contributes two genuine source-only edges.
+    // No deletion policy is bypassed: main still has A->x and B->x, and the
+    // merge must add A->y and B->y through the normal merge execution owner.
+    let source_branch = BranchId("managed-source-additions".into());
+    let (_, fork_basis) = runtime
+        .observe_fork_source(&BranchId("main".into()))
+        .unwrap();
+    runtime
+        .fork_branch(&execution, source_branch.clone(), fork_basis)
+        .unwrap();
+    let source_identity = runtime.branch_identity(&source_branch).unwrap();
+    let (_, source_basis) = runtime.observe_branch(&source_identity).unwrap();
+    let mut expanded = vec![x, y];
+    expanded.sort();
+    *court.expected.lock().unwrap() =
+        BTreeMap::from([(a, (vec![x], expanded.clone())), (b, (vec![x], expanded))]);
+    let mut additions = WorkerIntentBatch::new("shared-source-additions");
+    for (scope, label) in [(a, "A-y"), (b, "B-y")] {
+        additions = additions.push(MutationIntent::Create(CreateIntent::Relation(
+            RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(2),
+                client_key: ClientKey::raw(label),
+                source: EntityReference::Existing(scope),
+                target: EntityReference::Existing(y),
+                fields: Default::default(),
+            },
+        )));
+    }
+    let mut transaction = runtime
+        .begin_branch_transaction(
+            &source_basis,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
+        .unwrap();
+    transaction
+        .push_batch(
+            additions,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    transaction.commit(&execution, &runtime).unwrap();
+    let bound = runtime
+        .bind_merge_execution_request(MergeExecutionRequest::new(
+            BranchId("main".into()),
+            source_branch,
+            MergeIntent::ReconcileIntoTarget,
+        ))
+        .unwrap();
+    let prepared = runtime.prepare_merge_execution(&execution, bound).unwrap();
+    assert!(!prepared.merged_intents().is_empty());
+    court.staged.lock().unwrap().clear();
+    court.observed.lock().unwrap().clear();
+    let refused_before_merge = court.foreign_observation.load(Ordering::SeqCst);
+    runtime
+        .execute_prepared_merge(&execution, prepared)
+        .unwrap();
+    assert_eq!(*court.staged.lock().unwrap(), BTreeSet::from([a, b]));
+    assert_eq!(*court.observed.lock().unwrap(), BTreeSet::from([a, b]));
+    assert!(court.foreign_observation.load(Ordering::SeqCst) > refused_before_merge);
+}
+
+// Keep actual runtime/request construction in this existing registered court root.
+fn with_event_source(
+    test: impl FnOnce(
+        &RelationalRuntime,
+        &events::Control,
+        &Arc<owner::Court>,
+        &SerialRequest,
+        &CancellationSource,
+    ),
+) {
+    let (registry, program, path) = events::registry::profile();
+    let court = Arc::new(owner::Court::default());
+    *court.event_cohorts.lock().unwrap() = Some(BTreeMap::new());
+    let control = events::Control::default();
+    let rule = CustomInvariantRegistration::new(events::Reader {
+        base: owner::Reader {
+            maximum_work: None,
+            program: program.clone(),
+            court: court.clone(),
+        },
+        path,
+        control: control.clone(),
+    })
+    .unwrap()
+    .with_managed_index_sources(vec![program])
+    .unwrap();
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(registry)
+        .custom_invariant(rule)
+        .build()
+        .unwrap();
+    let _registration = runtime
+        .publication_companion_port()
+        .begin_required_registration()
+        .unwrap()
+        .activate(Arc::new(owner::SourceOwner(court.clone())))
+        .unwrap();
+    let cancellation = CancellationSource::new();
+    let host =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
+    test(&runtime, &control, &court, &host, &cancellation);
+}
+
+fn with_event_probe(
+    test: impl FnOnce(&RelationalRuntime, &events::probe::Control, &SerialRequest, &CancellationSource),
+) {
+    with_event_probe_limit(None, test);
+}
+fn with_event_probe_limit(
+    maximum_work: Option<std::num::NonZeroU64>,
+    test: impl FnOnce(&RelationalRuntime, &events::probe::Control, &SerialRequest, &CancellationSource),
+) {
+    let (registry, _, path) = events::registry::profile();
+    let control = events::probe::Control::default();
+    let rule = CustomInvariantRegistration::new(events::probe::Reader {
+        path,
+        maximum_work,
+        control: control.clone(),
+    })
+    .unwrap();
+    // No Source participant is installed: this court qualifies the Native
+    // descriptive reader against permissive stored graphs, including bad chains.
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(registry)
+        .custom_invariant(rule)
+        .build()
+        .unwrap();
+    let cancellation = CancellationSource::new();
+    let host =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
+    test(&runtime, &control, &host, &cancellation);
+}
+
+fn with_fresh_event_request(test: impl FnOnce(&SerialRequest)) {
+    let host = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    test(&host);
+}

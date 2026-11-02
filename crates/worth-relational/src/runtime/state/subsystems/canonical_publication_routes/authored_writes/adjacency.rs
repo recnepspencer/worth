@@ -1,9 +1,10 @@
 //! Authored endpoint intent gates canonical full-generation membership effects.
-use super::{AuthoredWriteGeneration, Denial, Key};
+use super::{AuthoredWriteGeneration, Denial};
 use crate::history::data::{
     CanonicalCommitEnvelope, RelationalDescriptiveTouch as Touch,
     RelationalTouchAdjacencyDirection as Direction,
 };
+use crate::history::{AuthoredWritePostingKey, RelationalAuthoredWriteSelector as Key};
 use crate::identity::data::RelationId;
 use crate::transactions::data::{MutationIntent, RecordRef, RelationMutationIntent};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest, MapKernelContext};
@@ -69,11 +70,11 @@ pub(super) fn append(
             generation.append(
                 execution,
                 context,
-                &Key::Adjacency {
+                &AuthoredWritePostingKey::Ordinary(Key::Adjacency {
                     anchor,
                     kind: *kind,
                     direction,
-                },
+                }),
                 envelope.commit.commit_id,
             )?;
         }

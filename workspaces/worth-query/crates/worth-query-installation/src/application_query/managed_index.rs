@@ -23,8 +23,12 @@ pub use access::{
     WorthQueryInstalledManagedIndexAccessContract, WorthQueryInstalledManagedIndexReadMeaning,
 };
 mod installed;
+mod matching;
 pub(crate) use compiled::CompiledManagedIndex;
 pub use installed::{WorthQueryInstalledManagedIndex, WorthQueryInstalledManagedIndexParent};
+pub use matching::{
+    WorthQueryManagedIndexPredicateProfile, WorthQueryManagedIndexPredicateProfileDenial,
+};
 
 #[cfg(test)]
 mod tests;
@@ -135,8 +139,7 @@ fn validate_source(
     let query = source.query();
     let definition = query.definition();
     let disclosure = definition.disclosure();
-    if definition.authorization() != &ApplicationQueryAuthorizationRequirement::Public
-        || disclosure.posture() != ApplicationQueryDisclosurePosture::Public
+    if disclosure.posture() != ApplicationQueryDisclosurePosture::Public
         || disclosure.capability_name().is_some()
         || disclosure.capability_type().is_some()
         || !disclosure.rules().is_empty()
@@ -163,6 +166,12 @@ fn validate_parent(
     parent: &Binding,
 ) -> Result<(), Denial> {
     let name = &index.parts().name;
+    if source.query().definition().authorization()
+        != &ApplicationQueryAuthorizationRequirement::Public
+        && parent.query().definition().basis_support().pinned()
+    {
+        return Err(denied(Kind::ManagedIndexParentUnsupported, name));
+    }
     let source = source.descriptor();
     let descriptor = parent.descriptor();
     if descriptor.scope_identity() != source.scope_identity()

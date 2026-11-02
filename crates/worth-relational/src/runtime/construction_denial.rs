@@ -11,6 +11,7 @@ pub enum RelationalRuntimeConstructionDenial {
         execution_point: crate::validation::data::InvariantExecutionPoint,
     },
     CustomInvariant(DuplicateCustomInvariantRegistration),
+    ManagedIndexSource(crate::derived_relation::DerivedRelationDenial),
     CommitStrategy(DuplicateCommitStrategyRegistration),
     CommitStrategyExecutor(CommitStrategyExecutionRegistryError),
     MainBranch(crate::branch::RelationalBranchObservationConstructionDenial),

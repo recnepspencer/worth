@@ -2,6 +2,7 @@
 use super::denial::ApplicationDerivedRelationDefinitionDenial as Denial;
 use super::expression::{ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode};
 use crate::application_schema::ApplicationGraphMemberSelector as Member;
+mod ordered_events;
 
 impl ApplicationDerivedRelationExpression {
     /// Checks finite postorder syntax and returns the final endpoint kinds.
@@ -42,6 +43,15 @@ impl ApplicationDerivedRelationExpression {
                 ApplicationDerivedRelationNode::CarrierLift {
                     domain, carrier, ..
                 } => (Member::Entity(carrier), Member::Projected(domain)),
+                ApplicationDerivedRelationNode::OrderedEvents {
+                    predecessor,
+                    introduced,
+                    retired,
+                } => ordered_events::endpoints(
+                    &self.nodes,
+                    index,
+                    [*predecessor, *introduced, *retired],
+                )?,
                 ApplicationDerivedRelationNode::Union { left, right }
                 | ApplicationDerivedRelationNode::Intersection { left, right } => {
                     let pair = before(*left)?;
@@ -67,6 +77,15 @@ impl ApplicationDerivedRelationExpression {
                 | ApplicationDerivedRelationNode::Intersection { left, right } => {
                     reached[*left] = true;
                     reached[*right] = true;
+                }
+                ApplicationDerivedRelationNode::OrderedEvents {
+                    predecessor,
+                    introduced,
+                    retired,
+                } => {
+                    for input in [predecessor, introduced, retired] {
+                        reached[*input] = true;
+                    }
                 }
                 ApplicationDerivedRelationNode::Reverse { input }
                 | ApplicationDerivedRelationNode::WithoutSelfEdges { input } => {

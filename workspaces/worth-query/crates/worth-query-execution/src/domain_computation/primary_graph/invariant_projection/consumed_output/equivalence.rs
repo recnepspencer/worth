@@ -13,7 +13,7 @@ enum DecisiveMeaning {
     Changed,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 enum EquivalenceComparison {
     Equivalent,
     Inconclusive(ConsumedOutputVerificationStop),
@@ -39,7 +39,7 @@ pub(super) fn check<'evidence>(
         }
         Ok(FullVerificationDecision::Current)
     });
-    match compare(marked, full) {
+    match compare(marked.clone(), full) {
         EquivalenceComparison::Equivalent => marked,
         // The full oracle cannot discharge a native pending obligation.
         // Preserve that non-current semantic result without claiming equivalence.
@@ -77,6 +77,8 @@ fn compare(
     let full = match full {
         Ok(FullVerificationDecision::Current) => DecisiveMeaning::Current,
         Ok(FullVerificationDecision::Changed) => DecisiveMeaning::Changed,
+        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause))) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::ManagedIndex(cause)),
+        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::OutputObservation(stop))) => return EquivalenceComparison::Inconclusive(stop),
         Err(FullVerificationStop::Admission(stop)) => {
             return EquivalenceComparison::Inconclusive(super::verification::map_admission_stop(stop));
         }

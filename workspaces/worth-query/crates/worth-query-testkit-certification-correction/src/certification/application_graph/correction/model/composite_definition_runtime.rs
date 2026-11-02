@@ -3,7 +3,7 @@ use super::{
     authentication,
     composite_definition_adapters::{IntentProjector, Invoker, PrincipalSource},
     composite_definition_contract::{self as contract, ReadyNode},
-    composite_definition_model::Tick,
+    composite_definition_model::{DefinitionRevision, Tick},
     composite_definition_query,
     schema::*,
 };
@@ -15,7 +15,9 @@ use worth_query_host::facade::{
     application_contribution::*,
     declaration::{
         application_query::ApplicationQueryParameterSet,
-        application_schema::ErasedApplicationSchemaDeclaration,
+        application_schema::{
+            ApplicationReadableScalarValueBinding, ErasedApplicationSchemaDeclaration,
+        },
     },
     domain,
     primary_graph::*,
@@ -80,17 +82,31 @@ impl domain::WorthQueryHostConditionalPredicateProvider<ReadyNode> for Predicate
         observation: domain::WorthQueryConditionalObservationView<'_>,
     ) -> Result<domain::WorthQueryHostPredicateDecision, domain::WorthQueryHostPredicateFailure>
     {
-        let observed_parameter = observation.dependency(0).and_then(|dependency| {
-            let domain::WorthQueryConditionalObservedValue::Present(artifact) =
-                dependency.current()
-            else {
-                return None;
-            };
-            match artifact.field(&domain::FieldKey::new("Primary").unwrap()) {
-                Some(domain::AspectValue::UInt64(value)) => Some(*value),
-                _ => None,
+        let dependency = observation.dependency(0).ok_or_else(|| {
+            domain::WorthQueryHostPredicateFailure::new(
+                domain::WorthQueryHostPredicateFailureKind::ObservationUnsupported,
+                "numeric dependency 0 was not observed",
+            )
+        })?;
+        let observed_parameter = match dependency.current() {
+            domain::WorthQueryConditionalObservedValue::Absent => None,
+            domain::WorthQueryConditionalObservedValue::Present(artifact) => {
+                let raw = artifact
+                    .field(&domain::FieldKey::new("Primary").unwrap())
+                    .ok_or_else(|| {
+                        domain::WorthQueryHostPredicateFailure::new(
+                            domain::WorthQueryHostPredicateFailureKind::ObservationUnsupported,
+                            "present numeric dependency lacks Primary",
+                        )
+                    })?;
+                Some(InlineCounterBinding::decode(raw).map_err(|cause| {
+                    domain::WorthQueryHostPredicateFailure::new(
+                        domain::WorthQueryHostPredicateFailureKind::ObservationUnsupported,
+                        format!("numeric Primary codec refused: {cause:?}"),
+                    )
+                })?)
             }
-        });
+        };
         // Both authored rows (5 and 23) satisfy the dependency condition. At
         // either row, provider 5 allows the wake and provider 23 rejects it.
         // Skipping either definition replacement therefore changes execution.
@@ -157,7 +173,7 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Conditional {
             invariant,
             Invoker,
             Key::reference(),
-            Primary::reference(),
+            DefinitionRevision::reference(),
             Ceiling::reference(),
             100_u64,
             101_u64,

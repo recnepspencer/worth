@@ -15,6 +15,7 @@ impl Clone for super::super::RelationalBranchRoot {
             output_publication_positions: self.output_publication_positions.clone(),
             schema_authority: self.schema_authority.clone(),
             committed: self.committed.clone(),
+            managed_source_image: self.managed_source_image.clone(),
             _memory: None,
         }
     }

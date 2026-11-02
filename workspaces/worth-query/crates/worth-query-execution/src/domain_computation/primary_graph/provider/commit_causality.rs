@@ -27,12 +27,13 @@ impl WorthQueryPrimaryGraphProvider {
 
     pub(in crate::domain_computation::primary_graph) fn reserve_application_commit_causality(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> Result<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
-        &'static str,
+        crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial,
     >{
-        self.live_delivery.reserve(product)
+        self.live_delivery.reserve(execution, product)
     }
 
     pub(in crate::domain_computation::primary_graph) fn publish_application_commit_causality(
@@ -40,9 +41,10 @@ impl WorthQueryPrimaryGraphProvider {
         reservation: crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
         publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
         emissions: WorthQueryAdmittedApplicationEmissionBatch,
+        predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicatePublication>,
     ) -> usize {
         self.live_delivery
-            .publish(reservation, publication, emissions)
+            .publish(reservation, publication, emissions, predicate)
     }
 
     #[cfg(test)]

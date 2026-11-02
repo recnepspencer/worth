@@ -26,7 +26,13 @@ use crate::ConsumerSchema;
 mod application_program;
 mod current_output_selector;
 mod generated_materialization;
+#[cfg(test)]
+mod integer_orientation;
+#[cfg(test)]
+mod length_codec;
 mod output_correspondence;
+#[cfg(test)]
+mod planar_wire;
 mod prior_output_family;
 mod publication;
 

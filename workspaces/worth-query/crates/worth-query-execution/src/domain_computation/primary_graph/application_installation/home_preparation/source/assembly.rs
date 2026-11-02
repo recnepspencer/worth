@@ -48,6 +48,7 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
             invariant_installation_receipt: schema.receipt,
             expected_invariant_inventory_digest: schema.expected_invariant_inventory_digest,
             typed_rows: Default::default(),
+            source_initializer: schema.source_initializer,
         };
     let mut bootstrap = meaning.into_bootstrap(
         &state.runtime,

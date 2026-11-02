@@ -1,9 +1,14 @@
 //! Move-only recovery state for Query publication after Relational movement.
 mod aggregate_projection;
+mod custody;
 use aggregate_projection::publish_aggregate_projection;
+pub(in crate::domain_computation::primary_graph) use custody::WorthQueryPendingApplicationPublication;
 
 use std::sync::Arc;
 
+use crate::domain_computation::primary_graph::application_query::derived_view::{
+    PredicatePreparationOwner, PredicatePreparationRetirement,
+};
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod aftermath;
@@ -23,83 +28,6 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::WorthQueryProviderSessionFailure;
 use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
 use crate::domain_computation::WorthQueryProviderSessionRecoveryPosture;
-
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
-    product_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
-    idempotency: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
-    attempt: Option<WorthQueryPrimaryGraphApplicationAttempt>,
-    before: Option<worth_relational::facade::snapshots::SnapshotHandle>,
-    next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    committed: Arc<worth_relational::facade::transactions::CommitResult>,
-    application: Option<WorthQueryPrimaryGraphCommittedApplication>,
-    emitted_effect_count: usize,
-    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
-    aggregate_published: bool,
-    source_read_stop: Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
-    receipt_basis_lease:
-        Option<worth_relational::facade::branch::RelationalBranchRetentionLease>,
-    required_prerequisites:
-        Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
-    prepared_lineage_slot:
-        Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
-
-}
-
-impl WorthQueryPendingApplicationPublication {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        attempt: WorthQueryPrimaryGraphApplicationAttempt,
-        before: worth_relational::facade::snapshots::SnapshotHandle,
-        next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-        committed: Arc<worth_relational::facade::transactions::CommitResult>,
-        application: WorthQueryPrimaryGraphCommittedApplication,
-        required_prerequisites: Option<
-            crate::domain_computation::primary_graph::PreparedPrerequisiteClaims,
-        >,
-        prepared_lineage_slot: Option<
-            crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot,
-        >,
-    ) -> Self {
-        let product_incarnation = application
-            .committed_product_publication()
-            .product_incarnation();
-        let idempotency = application.commit_evidence().idempotency();
-        let source_read_stop = application.commit_evidence().source_request_stop();
-        let emitted_effect_count = attempt.emitted_effect_count();
-        let outcome_identity = attempt.outcome_identity();
-        Self {
-            product_incarnation,
-            idempotency,
-            attempt: Some(attempt),
-            before: Some(before),
-            next_basis,
-            committed,
-            application: Some(application),
-            emitted_effect_count,
-            outcome_identity,
-            aggregate_published: false,
-            source_read_stop,
-            receipt_basis_lease: None,
-            required_prerequisites,
-            prepared_lineage_slot,
-        }
-    }
-
-    fn release_before(&mut self, runtime: &worth_relational::facade::runtime::RelationalRuntime) {
-        if let Some(before) = self.before.take() {
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
-        }
-    }
-
-    const fn product_incarnation(&self) -> worth_runtime_world::facade::ProductBranchIncarnation {
-        self.product_incarnation
-    }
-
-    pub(super) const fn idempotency(
-        &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding{
-        self.idempotency
-    }
-}
 
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn inspect_pending_application_idempotency(
@@ -155,10 +83,12 @@ impl WorthQueryPrimaryGraphProvider {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         reservation: WorthQueryApplicationPublicationRecoveryReservation,
         pending: WorthQueryPendingApplicationPublication,
+        predicate: &mut Option<PredicatePreparationOwner>,
+        retired: &mut PredicatePreparationRetirement,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
         let occurrence = pending.product_incarnation();
-        reservation.install(pending);
-        self.resume_pending_application_publication(execution, runtime, occurrence)
+        reservation.install(pending, predicate);
+        self.resume_pending_application_publication(execution, runtime, occurrence, retired)
     }
 
     pub(in crate::domain_computation::primary_graph) fn resume_pending_application_publication(
@@ -166,6 +96,7 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        retired: &mut PredicatePreparationRetirement,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
         let Some(slot) = self
             .pending_application_publications
@@ -180,6 +111,9 @@ impl WorthQueryPrimaryGraphProvider {
                 let result = resume(execution, self, runtime, pending);
                 if result.is_err() {
                     pending.release_before(runtime);
+                }
+                if pending.attempt.is_none() {
+                    retired.retire(&mut pending.predicate);
                 }
                 result.map(|world| (world, Arc::clone(&pending.committed)))
             })
@@ -277,7 +211,13 @@ fn publish_with_snapshot(
     // outputs; the completed receipt evidence never does.
     let consumed_outputs = attempt.retain_consumed_outputs();
     let outstanding = attempt.take_outstanding_dispatch_reservation();
-    let causality = attempt.publish_causality(provider, committed_product_publication);
+    let predicate = pending.predicate.as_ref().map(|owner| {
+        owner.publication_for(
+            attempt.affinity().product_publication().observation(),
+            &committed_product_publication,
+        )
+    });
+    let causality = attempt.publish_causality(provider, committed_product_publication, predicate);
     assert_eq!(
         causality.emitted_effect_count(),
         pending.emitted_effect_count

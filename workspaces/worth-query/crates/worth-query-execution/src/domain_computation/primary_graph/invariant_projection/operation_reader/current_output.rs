@@ -19,6 +19,7 @@ pub enum WorthQueryCurrentOutputSelection<Schema, Entity> {
 /// Why the current output for a producer could not be selected.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCurrentOutputDenialKind {
+    ManagedIndexSourceDenied,
     ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// The projection has no selected product, or the output family is not
     /// installed for this operation's binding.
@@ -61,6 +62,8 @@ pub enum WorthQueryCurrentOutputDenialKind {
 /// producer entity, or the output role read.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCurrentOutputDenial {
+    managed_index:
+        Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryCurrentOutputDenialKind,
     subject: String,
     pub(in crate::domain_computation::primary_graph) requested_output:
@@ -78,6 +81,7 @@ impl WorthQueryCurrentOutputDenial {
 
     fn new(kind: WorthQueryCurrentOutputDenialKind, subject: impl Into<String>) -> Self {
         Self {
+            managed_index: None,
             kind,
             subject: subject.into(),
             requested_output: None,
@@ -95,14 +99,24 @@ impl std::fmt::Display for WorthQueryCurrentOutputDenial {
     }
 }
 
-impl std::error::Error for WorthQueryCurrentOutputDenial {}
+impl std::error::Error for WorthQueryCurrentOutputDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.managed_index_denial()
+            .map(|cause| cause as &dyn std::error::Error)
+    }
+}
+mod managed_index;
 
 impl worth_execution::ChargedBytes for WorthQueryCurrentOutputDenial {
     fn additional_charged_bytes(&self) -> u64 {
         if self.requested_output.is_some() {
             u64::MAX
         } else {
-            self.subject.capacity() as u64
+            (self.subject.capacity() as u64).saturating_add(
+                self.managed_index
+                    .as_ref()
+                    .map_or(0, worth_execution::ChargedBytes::additional_charged_bytes),
+            )
         }
     }
 }

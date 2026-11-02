@@ -5,6 +5,7 @@ impl WorthQuerySealedOperationContractCompilation {
     pub(in crate::application_operation) fn into_parts(
         self,
     ) -> (
+        Vec<worth_query_declaration::facade::application_query::ApplicationQueryBindingReference>,
         Option<ApplicationOperationBodyProgram>,
         WorthQueryInstalledApplicationOperationAuthorization,
         Vec<WorthQueryInstalledAbilityRequirement>,
@@ -23,6 +24,7 @@ impl WorthQuerySealedOperationContractCompilation {
         Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
     ){
         (
+            self.managed_index_reads,
             self.body,
             self.authorization,
             self.ability_requirements,

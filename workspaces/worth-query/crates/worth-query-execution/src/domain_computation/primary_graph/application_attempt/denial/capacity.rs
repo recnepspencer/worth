@@ -13,13 +13,18 @@ impl ChargedBytes for WorthQueryApplicationAttemptDenial {
 impl ChargedBytes for AttemptDenialCause {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
+            AttemptDenialCause::ManagedIndex(cause) => cause.additional_charged_bytes(),
             AttemptDenialCause::UnobservedWrite(cause) => (std::mem::size_of_val(cause.as_ref()) as u64)
                 .saturating_add(cause.owned_allocation_capacity_bytes() as u64),
             AttemptDenialCause::SourceDisclosureParameters(cause)=>(std::mem::size_of_val(cause.as_ref()) as u64).saturating_add(cause.owned_allocation_capacity_bytes() as u64),
             AttemptDenialCause::IndexedLookup(_) => std::mem::size_of::<
                 worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
             >() as u64,
-            AttemptDenialCause::OutputObservation(_) => std::mem::size_of::<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>() as u64,
+            AttemptDenialCause::OutputObservation(cause) => (std::mem::size_of_val(cause.as_ref()) as u64).saturating_add(
+                match cause.as_ref() {
+                    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause) => cause.additional_charged_bytes(),
+                    _ => 0,
+                }),
             AttemptDenialCause::None => 0,
             // Native query stops contain only inline reports, identities and enums.
             AttemptDenialCause::NativeQueryRead(_) => std::mem::size_of::<

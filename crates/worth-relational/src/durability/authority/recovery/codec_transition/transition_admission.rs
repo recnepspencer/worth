@@ -120,7 +120,10 @@ impl DurabilityRecoveryAuthority<'_> {
             .indexes
             .with_definitions(|indexes| {
                 super::source_schema::admit_supported_consequences(
-                    self.runtime,
+                    &self
+                        .runtime
+                        .schema_contract_runtime
+                        .custom_invariant_registries,
                     indexes.values().map(std::sync::Arc::as_ref),
                     &changes,
                 )

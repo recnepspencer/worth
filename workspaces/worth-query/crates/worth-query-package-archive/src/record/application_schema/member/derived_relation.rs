@@ -152,9 +152,10 @@ fn write_node(output: &mut dyn BinaryEncodingSink, node: &Node) -> Result<(), De
             })?;
             output.u64(*input as u64)
         }
-        Node::CarrierLift { .. } | Node::Union { .. } | Node::Intersection { .. } => {
-            Err(Denial::new(Kind::InvalidRecordShape))
-        }
+        Node::CarrierLift { .. }
+        | Node::Union { .. }
+        | Node::Intersection { .. }
+        | Node::OrderedEvents { .. } => Err(Denial::new(Kind::InvalidRecordShape)),
     }
 }
 

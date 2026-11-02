@@ -8,3 +8,5 @@ pub mod estate_fixture;
 pub use super::fixture;
 pub mod locality;
 pub mod pending_payments;
+
+pub mod current_accounts;

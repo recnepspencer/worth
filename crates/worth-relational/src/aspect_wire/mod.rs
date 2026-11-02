@@ -1,6 +1,8 @@
 mod aspect_locator_canonical_codec;
 mod aspect_value_canonical_codec;
+mod canonical_byte_input;
 mod field_patch_canonical_codec;
+pub(crate) use canonical_byte_input::read_canonical_bytes;
 
 pub(crate) use aspect_locator_canonical_codec::encode_aspect_field_locator;
 pub(crate) use aspect_locator_canonical_codec::{

@@ -5,7 +5,7 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
 use worth_query_execution::facade::primary_graph::WorthQueryApprovedElevation;
-type Scope<S, I> = <<<I as ApplicationQueryIntent<S>>::Binding as ApplicationQueryBinding<S>>::ScopeBinding as worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding<S>>::Scope;
+pub(super) type Scope<S, I> = <<<I as ApplicationQueryIntent<S>>::Binding as ApplicationQueryBinding<S>>::ScopeBinding as worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding<S>>::Scope;
 
 impl<Schema, Intent> WorthQueryApplicationQueryRequest<'_, '_, '_, Schema, Intent>
 where
@@ -143,12 +143,14 @@ where
     {
         let application = self.application;
         let request = self.scope;
-        application
+        let mut completed = None;
+        let advancement = application
             .with_application_advancement(request, |phase| {
                 if self.retained.is_some() {
-                    return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
+                    completed = Some(Err(WorthQueryApplicationRequestQueryDenial::RequestMode));
+                    return;
                 }
-                self.with_admitted_governed_query(
+                completed = Some(self.with_admitted_governed_query(
                     &phase,
                     approved,
                     capability,
@@ -161,8 +163,9 @@ where
                             )
                             .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
                     },
-                )
+                ));
             })
-            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
+        super::completion::completed_effect(advancement, completed)
     }
 }

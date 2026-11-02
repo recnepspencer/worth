@@ -16,6 +16,8 @@ pub(super) struct MutatedCommitExecution {
     pub(super) outcome: MutationApplyOutcome,
     pub(super) mutation_identities: PendingMutationIdentities,
     pub(super) aggregate: Option<crate::aggregate_identity::AggregateProposal>,
+    pub(super) source_interpretation:
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     pub(super) aggregate_admission: Option<crate::aggregate_identity::AggregateAdmission>,
 }
 
@@ -41,6 +43,7 @@ pub(super) fn mutate_commit_execution(
             outcome,
             identities: mutation_identities,
             aggregate,
+            source_interpretation,
         },
     ) = prepared.into_parts();
     let selected = prepared.selected_branch_state().clone();
@@ -90,6 +93,7 @@ pub(super) fn mutate_commit_execution(
         outcome,
         mutation_identities,
         aggregate,
+        source_interpretation,
         aggregate_admission: None,
     })
 }

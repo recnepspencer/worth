@@ -5,12 +5,12 @@ mod touched_scope;
 
 pub use crate::validation::custom_rule::{
     CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantInterruption,
-    CustomInvariantLeaseBudget, CustomInvariantNonApplicability, CustomInvariantProvenance,
-    CustomInvariantReadBudget, CustomInvariantRegistration, CustomInvariantRegistrationError,
-    CustomInvariantRule, CustomInvariantScopePlanner, CustomInvariantTraversalSummary,
-    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
-    StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
-    StructuralWalkStep,
+    CustomInvariantLeaseBudget, CustomInvariantNativeCheckpointDenial,
+    CustomInvariantNonApplicability, CustomInvariantProvenance, CustomInvariantReadBudget,
+    CustomInvariantRegistration, CustomInvariantRegistrationError, CustomInvariantRule,
+    CustomInvariantScopePlanner, CustomInvariantTraversalSummary, StructuralAspectStateView,
+    StructuralReadError, StructuralRelationRecord, StructuralRelationView, StructuralWalkDenial,
+    StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
 };
 pub use errors::{
     CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,

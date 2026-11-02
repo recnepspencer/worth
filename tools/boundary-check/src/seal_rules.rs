@@ -2,7 +2,7 @@
 use crate::{
     config::*,
     inputs::Inputs,
-    lexical::{close, tokens, Token},
+    lexical::{close, generic_end, tokens, Token},
 };
 use std::collections::{BTreeMap, BTreeSet};
 mod factory_ownership;
@@ -32,24 +32,6 @@ fn permitted(path: &str, owners: &BTreeSet<String>, callers: &BTreeSet<(&str, &s
             path == o
         }
     }) || owners.iter().any(|o| callers.contains(&(o.as_str(), path)))
-}
-fn generic_end(t: &[Token<'_>], open: usize) -> usize {
-    let (mut at, mut depth) = (open + 1, 1usize);
-    while at < t.len() {
-        match t[at].text {
-            "<" => depth += 1,
-            ">" if t[at - 1].text != "-" => {
-                depth -= 1;
-                if depth == 0 {
-                    return at;
-                }
-            }
-            "(" | "[" | "{" => at = close(t, at),
-            _ => {}
-        }
-        at += 1;
-    }
-    t.len()
 }
 // Definition positions establish ownership; every reference is still searched.
 fn declarations<'a>(t: &[Token<'a>]) -> (Vec<&'a str>, Vec<&'a str>) {

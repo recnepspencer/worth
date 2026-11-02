@@ -234,6 +234,28 @@ cursor, subjects and returned entries/pages to release their
 native retention leases and charged backing. The older eager branch-wide history
 selectors retain their existing contract.
 
+## Conservative managed index caches
+
+Platform integrations can retain pure opaque index material with
+`read_truth().retain_public_managed_index_cache(execution, snapshot, &payload)`.
+The returned `ManagedIndexPublicCache` is issued from the actual selected Native
+image and current companion registration. It grants neither principal READ nor
+invariant Source membership. The installed companion must already publish that
+managed image; an arbitrary root identifier cannot substitute for its custody.
+
+Use `public_managed_index_cache_payload(execution, snapshot, &cache)` to reborrow
+at that exact selected image, including a retained predecessor. A Native successor
+and fork start with a cold public directory. Keep completed read terminals and
+World observations outside the stored payload: retaining the owning root through
+its own cache would create a cycle. Query stores only disclosed row material and
+provider nodes there, with completed READ custody in its external attachment.
+
+`cache.retire()` removes the exact disposable slot without allocation. Keep its
+`ManagedIndexPublicCacheRetirement` until after leaving runtime, registry and cache
+state guards, then drop it. Original entry and token reservations follow their
+last retained owners. `is_at_head()` reports cache metadata only; selected reads
+must still use the snapshot-bearing receiver and their own READ admission.
+
 ## Contained real lanes
 
 These are real public capabilities, but not the default first-contact story:
@@ -299,3 +321,88 @@ inventory; original request stops refuse without a partial successful result.
 Application invariants must declare member/source applicability through Query's
 [typed factory binding](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#ordinary-invariant-component-reads)
 so genuine create/delete/coupling changes schedule fresh preparation.
+
+
+## Managed Source authored impact candidates
+
+`authored_managed_source_selector(execution, &program, scope)` accepts an actual
+installed Source program and a full-generation scope. Supported projections use
+its existing scalar-valued Struct fields and direct/Reverse endpoint routes;
+this does not add scalar-aspect or deeper Source reads. The opaque selector is live roster metadata. It admits no
+Source READ, principal, Query dependency proof or mutation eligibility.
+
+`authored_managed_source_history_cursor(execution, &original_basis,
+selected_target, &[selector])` uses the existing authored-history page lifecycle.
+It emits complete conservative canonical impact candidates in the open interval
+of a single-parent selected prefix. Actual authored lifecycle, field commands and relation incidence include no-op
+fields, whole-aspect operations and transient membership. Actual canonical
+publication changes and adjacency also cover owner-induced physical changes.
+Field commands are limited to kinds with actual declared row/endpoint fields;
+disjoint fields/aspects on those kinds can remain conservative candidates.
+Membership-only programs omit entity scalar-only commands. A shared-row scope
+can be included when only its neighbor's edge was authored; these candidates do
+not establish exact Query relevance or performed cancellation.
+
+Live metadata is bound to the actual frozen canonical envelope. Deep cloning,
+serialization and decoded recovery cannot recreate it. Memory history retains
+the envelope; journal settlement can release it while postings remain. Missing
+live metadata returns `IncompleteManagedSourceHistory`, including during page
+preparation, without advancing the cursor. Explicit generation rebuild may
+succeed with marked gaps; managed admission still refuses those intervals.
+Merge, schema and materialization transitions have no supported coverage in
+this profile. Ordinary authored record/index/adjacency history keeps its own
+contract. Query owns relevance, performed cancellation and paired-support comparison;
+the conservative Query integration below does not establish exact relevance.
+
+A genuine `ManagedIndexSourceObservation` can call
+`authored_history_selector(runtime, execution)` to issue that same opaque selector
+using its private observed Source program and scope. Issuance checks the actual
+observation/runtime correspondence and original controls. This is metadata only;
+Query must still admit its retained influence, require canonical performed
+cancellation and compare support before correction.
+
+## Historical Source material metadata
+
+A genuine `ManagedIndexSourceObservation::authored_history_impact(runtime,
+execution, &occurrence)` binds an actual authored canonical occurrence to its
+actual runtime, frozen Source catalog, branch and cell affinity. It returns
+`Unaffected`, `Conservative`, or `Retained(metadata)`. The owned metadata carries
+actual program/full-generation scope and affected rows plus funded weak payload
+receipts. It grants no historical READ or Query correction permission.
+
+The canonical sidecar keeps no opaque payload alive. Both prepared sides must be
+present/available; birth, retirement, cold/unsupported or missing material stays
+conservative. A completed preparation roster may carry unchanged selected
+material for authored no-ops. Exact dynamic outer Arc allocations remain funded
+through weak expiration, including over-aligned values; recursively freed heaps
+remain with strong owners. Context and history share internal custody mechanics,
+with distinct public contracts.
+
+Leave all Native/runtime/attempt gates before calling
+`metadata.acquire_payloads(execution)`. Keep and release its returned strong
+carrier at that outside boundary, including failure/cancellation. `None` means
+expired data and requires conservative selection; it never proves empty Source.
+Native acquisition itself performs no opaque upgrade. Metadata's program/rows
+are immutable owner-carried cells, and callers admit the roster count before
+traversal. No serialization/deep clone can recreate live issuance. Query's
+historical relevance consumer remains unfinished; existing recorded managed
+correction still requires every conservative candidate to cancel.
+
+
+## Borrow a prepared managed Source row
+
+`ManagedIndexSourceRows::prepare_row_from_read(&forward, &occurrence)` validates
+the actual current `acquire_all()` ticket, Source program/scope, view and complete
+full-generation row membership. Its opaque `PreparedManagedIndexSourceRowRead`
+borrows both that loan and ticket. Call `with_field(column, callback)` for each
+declared field; the actual audience, row kind and original request are still
+checked and values remain callback confined. A ticket from a foreign scope or a
+different committed/proposed view refuses as `ForeignObservation`.
+
+A retained occurrence has no current membership ticket. Use
+`prepare_row(&occurrence)` to acquire its actual current inverse membership once;
+a removed row refuses as `RecordUnavailable`. Existing `with_field` and
+`admit_occurrence` use this same inverse issuer. Neither preparation nor the
+borrowed token grants principal READ or Query authorization. Query's cold Source
+projection carries its actual forward ticket; warm retained coordinates acquire
+current inverse membership, with no coordinate-only fallback.

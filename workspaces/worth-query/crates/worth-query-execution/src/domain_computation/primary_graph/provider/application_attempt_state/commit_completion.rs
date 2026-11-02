@@ -2,17 +2,14 @@
 
 use super::{
     WorthQueryApplicationAttemptEntry, WorthQueryApplicationAttemptLookupKey,
-    WorthQueryPrimaryGraphApplicationAttemptStore,
+    WorthQueryApprovedApplicationCandidate, WorthQueryPrimaryGraphApplicationAttemptStore,
 };
-use crate::domain_computation::primary_graph::provider::{
-    mutation_work::WorthQueryPrimaryMutationWorkCounters, WorthQueryPrimaryGraphApplicationAttempt,
-};
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
 use std::sync::{Arc, Mutex};
 
 pub(super) struct WorthQueryPreparedProviderApplicationAttempt {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
-    candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
-    work: WorthQueryPrimaryMutationWorkCounters,
+    approved: WorthQueryApprovedApplicationCandidate,
     completion: WorthQueryApplicationAttemptCompletion,
 }
 
@@ -25,16 +22,14 @@ pub(super) struct WorthQueryApplicationAttemptCompletion {
 impl WorthQueryPreparedProviderApplicationAttempt {
     pub(super) fn new(
         attempt: WorthQueryPrimaryGraphApplicationAttempt,
-        candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
-        work: WorthQueryPrimaryMutationWorkCounters,
+        approved: WorthQueryApprovedApplicationCandidate,
         attempts: Arc<Mutex<WorthQueryPrimaryGraphApplicationAttemptStore>>,
         key: WorthQueryApplicationAttemptLookupKey,
         identity: u64,
     ) -> Self {
         Self {
             attempt,
-            candidate,
-            work,
+            approved,
             completion: WorthQueryApplicationAttemptCompletion {
                 attempts,
                 key,
@@ -47,11 +42,10 @@ impl WorthQueryPreparedProviderApplicationAttempt {
         self,
     ) -> (
         WorthQueryPrimaryGraphApplicationAttempt,
-        worth_relational::facade::mvcc::ValidatedRelationalProposal,
-        WorthQueryPrimaryMutationWorkCounters,
+        WorthQueryApprovedApplicationCandidate,
         WorthQueryApplicationAttemptCompletion,
     ) {
-        (self.attempt, self.candidate, self.work, self.completion)
+        (self.attempt, self.approved, self.completion)
     }
 }
 

@@ -14,6 +14,7 @@ use worth_query_host::facade::worth_query_conditional_node as conditional_node;
 
 mod alternate_output;
 mod application_program;
+pub mod candidate_source_changes;
 mod contribution;
 mod final_output;
 mod handler;
@@ -44,6 +45,7 @@ mod planar_islands;
 mod planar_output_read;
 mod planar_read;
 mod planar_topology;
+mod planar_vertex;
 mod principal;
 mod prior_cycle_adjustment;
 mod producer;
@@ -72,6 +74,9 @@ pub use source_adjustment::*;
 
 mod base_model;
 pub use base_model::*;
+pub mod domain_values;
+mod length_binding;
+pub use length_binding::TopologyLengthBinding;
 mod schema_binding;
 pub use schema_binding::TopologySchemaBinding;
 

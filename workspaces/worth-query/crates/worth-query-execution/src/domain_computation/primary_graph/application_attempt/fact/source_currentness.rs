@@ -1,12 +1,13 @@
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 mod comparison;
 use super::{FactMovement, WorthQueryApplicationObservedFact};
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnessFailure {
     /// The fact's own recorded bound refuses the comparison.
     WorkBudgetExceeded,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Unavailable,
+    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
 }
 
@@ -36,7 +37,10 @@ impl WorthQueryApplicationObservedFact {
         }
         if !matches!(
             self,
-            Self::ComponentSelection { .. } | Self::Aggregate { .. } | Self::StructuralWalk { .. }
+            Self::ComponentSelection { .. }
+                | Self::Aggregate { .. }
+                | Self::StructuralWalk { .. }
+                | Self::DerivedSource { .. }
         ) {
             return self.source_currentness_in(runtime, execution, snapshot);
         }
@@ -60,6 +64,9 @@ impl WorthQueryApplicationObservedFact {
             }
             Self::Aggregate { observation } => {
                 reads.check_aggregate(observation, execution, control)
+            }
+            Self::DerivedSource { observation } => {
+                reads.check_derived(observation, execution, control)
             }
             Self::StructuralWalk { observation } => {
                 reads.check_walk(observation, execution, control)

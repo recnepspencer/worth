@@ -46,6 +46,7 @@ impl RootSelectionWork<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         path_index: usize,
         step_index: usize,
+        source_kind: worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind,
         traversal: ApplicationQueryRootPathTraversal,
         direction: RelationDirection,
         reads: WorthQueryInvariantProjectionWork,
@@ -56,6 +57,7 @@ impl RootSelectionWork<'_> {
             if let Some(step) = self.steps.iter_mut().find(|step| {
                 step.path_index() == path_index
                     && step.step_index() == step_index
+                    && step.source_kind() == source_kind
                     && step.traversal() == traversal
                     && step.direction() == direction
             }) {
@@ -63,14 +65,26 @@ impl RootSelectionWork<'_> {
                     .reads()
                     .checked_combined(reads)
                     .ok_or(Cause::ChargedBytesOverflow)?;
-                *step = Step::new(path_index, step_index, traversal, direction, combined);
+                *step = Step::new(
+                    path_index,
+                    step_index,
+                    source_kind,
+                    traversal,
+                    direction,
+                    combined,
+                );
                 return Ok(());
             }
             if self.steps.len() >= self.step_limit {
                 return Err(Cause::ExpectedIdentitiesNotCanonical);
             }
             self.steps.push(Step::new(
-                path_index, step_index, traversal, direction, reads,
+                path_index,
+                step_index,
+                source_kind,
+                traversal,
+                direction,
+                reads,
             ));
             Ok::<(), Cause>(())
         });
@@ -91,16 +105,17 @@ impl RootSelectionWork<'_> {
         })
     }
 
-    pub(super) fn charge_walk(
+    pub(super) fn charge_native_source(
         &mut self,
-        reads: worth_relational::facade::runtime::PinnedStructuralWalkReads,
+        lists: usize,
+        records: usize,
+        entities: usize,
         work: usize,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         // Acquired Native work survives a later caller stop or charge refusal.
-        self.reads
-            .record_adjacencies(reads.adjacency_lists, reads.relation_records);
-        self.reads.record_endpoints(reads.entity_records);
+        self.reads.record_adjacencies(lists, records);
+        self.reads.record_endpoints(entities);
         self.work_units = self.work_units.checked_add(work).ok_or_else(|| {
             read_execution_denial(
                 WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,

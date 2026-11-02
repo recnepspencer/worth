@@ -45,7 +45,9 @@ pub(super) fn relations<Stop>(
             .ok_or(WorthQueryCanonicalIdentityStop::AccountingOverflow)?;
         admit(work, scratch).map_err(WorthQueryCanonicalIdentityStop::Admission)?;
         has_many |= relation.cardinality == ApplicationQueryCardinality::Many;
-        let mut operators = vec![if relation.complete_closure {
+        let mut operators = vec![if relation.source_kind == worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived {
+            WorthQueryGraphReadTraversalOperator::CompleteDerivedSource
+        } else if relation.complete_closure {
             WorthQueryGraphReadTraversalOperator::CompleteClosure
         } else {
             WorthQueryGraphReadTraversalOperator::DirectEdge

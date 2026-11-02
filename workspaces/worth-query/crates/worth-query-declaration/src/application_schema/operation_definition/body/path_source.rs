@@ -59,12 +59,15 @@ impl ApplicationOperationBodyPathFieldSource {
 }
 
 pub(super) fn supported_path(path: &ApplicationQueryRootPathMeaning) -> bool {
-    if !path.guards().is_empty() {
+    if !path.is_well_formed() || !path.guards().is_empty() {
         return false;
     }
     let mut current = path.start_entity();
     for step in path.steps() {
-        if step.traversal() != crate::application_query::ApplicationQueryRootPathTraversal::OneHop
+        if step.source_kind()
+            != crate::application_query::ApplicationQueryRootPathSourceKind::Stored
+            || step.traversal()
+                != crate::application_query::ApplicationQueryRootPathTraversal::OneHop
             || current != step.parent_entity()
         {
             return false;

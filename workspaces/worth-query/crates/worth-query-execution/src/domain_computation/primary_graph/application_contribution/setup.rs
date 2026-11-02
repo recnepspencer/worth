@@ -2,6 +2,7 @@ mod collection;
 mod derived_relation;
 mod feature;
 mod managed_index;
+pub use managed_index::WorthQueryManagedIndexProviderRegistration;
 mod resource;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

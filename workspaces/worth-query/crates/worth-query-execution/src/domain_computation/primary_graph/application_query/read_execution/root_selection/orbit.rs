@@ -77,7 +77,7 @@ pub(super) fn select(
             Ok(body) => (body.native().reads(), body.native().work_units()),
             Err(stop) => (stop.reads, stop.work),
         };
-        let charged = work.charge_walk(reads, units, subject);
+        let charged = work.charge_native_source(reads.adjacency_lists, reads.relation_records, reads.entity_records, units, subject);
         if let Some(stop) = interruption.denial() {
             return Err(stop);
         }

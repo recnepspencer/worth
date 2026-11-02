@@ -5,6 +5,7 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    ManagedIndexSourceDenied,
     /// The producer returned actual managed cleanup custody; ordinary rerun is not authorized.
     ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
     /// The product root retained the precise delivery admission cause.

@@ -65,11 +65,12 @@ impl WorthQueryPrincipalCurrentnessDependency {
 
     pub(super) fn source_query_facts(
         &self,
+        admit: impl FnOnce(usize) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop>,
     ) -> Result<
         Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
         worth_relational::facade::mvcc::CompanionPreflightStop,
     > {
-        self.freshness.source_query_facts(&self.layout)
+        self.freshness.source_query_facts(&self.layout, admit)
     }
 
     pub(in crate::domain_computation) fn remains_current_in(

@@ -341,6 +341,7 @@ fn assert_expected(observed: &Observed, scenario: Scenario, values: &[u64]) {
 
 #[test]
 fn owned_map_send_only_inputs_and_results_compile_and_run() {
+    #[derive(Debug)]
     struct Local(std::cell::Cell<u64>);
     impl ChargedBytes for Local {
         fn additional_charged_bytes(&self) -> u64 {
@@ -348,7 +349,10 @@ fn owned_map_send_only_inputs_and_results_compile_and_run() {
         }
     }
     let _lock = TEST_LOCK.lock().unwrap();
-    let lease = authority().request_lease(request(4, 2_000, 100)).unwrap();
+    // This court proves Send-only ownership, independently of framework layout.
+    let lease = authority()
+        .request_lease(accounted_request(4, 100))
+        .unwrap();
     let result = map((0..COUNT as u64).map(|v| Local(std::cell::Cell::new(v)))).run_owned(
         Some(&lease),
         |value, context| {
@@ -362,6 +366,6 @@ fn owned_map_send_only_inputs_and_results_compile_and_run() {
             values.iter().map(|v| v.0.get()).collect::<Vec<_>>(),
             vec![1, 2, 3, 4]
         ),
-        MapOutcome::Stopped { .. } => panic!("Send-only map must run"),
+        MapOutcome::Stopped { reason, .. } => panic!("Send-only map must run: {reason:?}"),
     }
 }

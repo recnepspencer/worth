@@ -155,6 +155,9 @@ pub fn assert_decision_reads(
 
 pub fn decision_read_target(target: &ApplicationOperationDecisionReadTarget) -> String {
     match target {
+        ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
+            format!("managed-index:{}", parent.parts().query_name)
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => {
             format!("entity:{entity}")
         }

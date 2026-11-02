@@ -148,6 +148,8 @@ impl RelationalBranchRoot {
             ),
         };
         Ok(Arc::new(Self {
+            // Reconstructed storage has no live companion association.
+            managed_source_image: std::sync::OnceLock::new(),
             id: root_id,
             regions,
             entity_slot_count,
@@ -272,6 +274,8 @@ impl RelationalBranchRoot {
 
     fn with_committed(&self, committed: RelationalCommittedBranchRoot) -> Arc<Self> {
         Arc::new(Self {
+            // The callers preserve this exact root, schema and content binding.
+            managed_source_image: self.managed_source_image.clone(),
             id: self.id,
             regions: Arc::clone(&self.regions),
             entity_slot_count: self.entity_slot_count,

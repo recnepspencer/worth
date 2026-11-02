@@ -11,7 +11,9 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
     let identity = fork_branch(execution, &world.runtime, "storm");
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let immutable_observation = basis.observation();
-    let retained_commit = immutable_observation.canonical_commit().cloned();
+    let retained_commit = immutable_observation
+        .canonical_commit()
+        .map(|envelope| rmp_serde::to_vec_named(envelope).unwrap());
     let retained_index = immutable_observation.correctness_index();
     let retained_root = immutable_observation.selected_root_identity();
     let snapshot = world
@@ -53,8 +55,10 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
     world.runtime.archive_branch(execution, &identity).unwrap();
     assert_eq!(basis.observation().selected_root_identity(), retained_root);
     assert_eq!(
-        immutable_observation.canonical_commit(),
-        retained_commit.as_ref()
+        immutable_observation
+            .canonical_commit()
+            .map(|envelope| rmp_serde::to_vec_named(envelope).unwrap()),
+        retained_commit
     );
     assert_eq!(immutable_observation.correctness_index(), retained_index);
     assert!(snapshot_contains_entity(

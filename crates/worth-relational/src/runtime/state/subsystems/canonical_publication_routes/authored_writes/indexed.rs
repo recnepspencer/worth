@@ -1,6 +1,7 @@
 //! Derive selected-prefix postings only from actual verified canonical owners.
 use super::*;
 use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::RelationalAuthoredWriteSelector as Selector;
 
 pub(super) fn append(
     generation: &mut AuthoredWriteGeneration,
@@ -50,11 +51,11 @@ pub(super) fn append(
             generation.append(
                 execution,
                 context,
-                &Key::EntityFieldIndex {
+                &Key::Ordinary(Selector::EntityFieldIndex {
                     definition: entry.definition.clone(),
                     kind,
                     value: value.clone(),
-                },
+                }),
                 envelope.commit.commit_id,
             )?;
         }

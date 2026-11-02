@@ -27,6 +27,24 @@ pub(super) fn validate_influence<Schema, Query, Parameters, QueryResult, Scope, 
     results: &BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
 ) -> Result<(), CompilationStop<E>> {
+    // Implicit managed inputs influence observable membership. Exact Parents
+    // require the same closure even without a Live lane; installation separately
+    // verifies their complete Source/Parent projection correspondence.
+    let managed_inputs = query.read_graph().managed_index_selection().is_some_and(|selection| {
+        query.lanes().live_enabled() || selection.posture() ==
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture::Refined
+    });
+    if managed_inputs {
+        for projection in query.read_graph().projections() {
+            admit_cone(admit)?;
+            require_field_influence(
+                fields,
+                (projection.entity(), projection.aspect(), projection.field()),
+                membership_surfaces(query),
+                admit,
+            )?;
+        }
+    }
     for predicate in query.read_graph().predicates() {
         admit_cone(admit)?;
         require_field_influence(fields, predicate.field(), membership_surfaces(query), admit)?;

@@ -6,8 +6,20 @@ mod attempt_registration;
 pub(in crate::domain_computation::primary_graph) use attempt_registration::WorthQueryApplicationAttemptOperationControl;
 pub use attempt_registration::WorthQueryApplicationAttemptRegistrationPauseForTest;
 pub use attempt_registration::WorthQueryApplicationCandidatePreparationPauseForTest;
+pub use attempt_registration::WorthQueryManagedSourceRevalidationPauseForTest;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Parks a successfully revalidated managed target before its atomic Native pin.
+    #[doc(hidden)]
+    pub fn pause_after_managed_source_revalidation_for_test(
+        &self,
+        attempts: std::num::NonZeroUsize,
+    ) -> WorthQueryManagedSourceRevalidationPauseForTest {
+        self.primary_provider
+            .application_attempt_operation_control
+            .pause_after_managed_source_revalidation(attempts)
+    }
+
     /// Observes the once-published activation-record identity for certification.
     #[doc(hidden)]
     pub fn program_activation_entity_for_test(

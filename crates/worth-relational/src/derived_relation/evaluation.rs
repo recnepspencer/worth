@@ -1,6 +1,7 @@
 //! One iterative endpoint evaluator for physical and projected member domains.
 mod memo;
 mod navigation;
+mod ordered_events;
 mod physical;
 
 use super::read::{DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data};
@@ -10,13 +11,24 @@ use crate::graph_member::NativeMemberKey as Member;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::data::StructuralRelationRecord;
-use memo::Key;
+use memo::{Key, MemoValues};
 use navigation::Frame;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(crate) trait SourceRead {
+    fn admit_definition(
+        &mut self,
+        registry: &RelationalSchemaRegistry,
+        handle: &Handle,
+    ) -> Result<(), Denial>
+    where
+        Self: Sized,
+    {
+        admit_definition(registry, handle, self)
+    }
     fn checkpoint(&mut self, units: usize) -> Result<(), Denial>;
     fn retain(&mut self, bytes: usize) -> Result<(), Denial>;
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial>;
     fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial>;
     fn adjacency(&mut self, probe: Adjacency) -> Result<Vec<StructuralRelationRecord>, Denial>;
     fn reads(&self) -> DerivedRelationReads;
@@ -24,9 +36,10 @@ pub(crate) trait SourceRead {
 
 struct Evaluation<'a, Port> {
     registry: &'a RelationalSchemaRegistry,
+    root_definition: Handle,
     read: &'a mut Port,
     pending: Vec<Frame>,
-    values: BTreeMap<Key, BTreeSet<Member>>,
+    values: MemoValues,
     entities: BTreeMap<EntityId, KindId>,
     relations: BTreeMap<RelationId, StructuralRelationRecord>,
     adjacency: BTreeSet<Adjacency>,
@@ -71,18 +84,14 @@ pub(crate) fn evaluate_position(
     root: Member,
     read: &mut impl SourceRead,
 ) -> Result<Data, Denial> {
-    admit_definition(registry, handle, read)?;
-    let key = Key {
-        definition: handle.clone(),
-        node,
-        anchor: root,
-        reverse,
-    };
+    read.admit_definition(registry, handle)?;
+    let key = Key::root(handle.clone(), node, root, reverse);
     let mut evaluation = Evaluation {
         registry,
+        root_definition: handle.clone(),
         read,
         pending: Vec::new(),
-        values: BTreeMap::new(),
+        values: MemoValues::default(),
         entities: BTreeMap::new(),
         relations: BTreeMap::new(),
         adjacency: BTreeSet::new(),
@@ -101,10 +110,9 @@ pub(crate) fn evaluate_position(
         evaluation.read.checkpoint(1)?;
         evaluation.step(frame)?;
     }
-    evaluation.memo_key_work(&key)?;
     let endpoints = evaluation
         .values
-        .remove(&key)
+        .remove(&key, evaluation.read)?
         .expect("complete root evaluation");
     let output_bytes = endpoints
         .len()

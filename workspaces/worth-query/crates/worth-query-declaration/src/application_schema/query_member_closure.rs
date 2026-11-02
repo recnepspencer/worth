@@ -11,6 +11,7 @@ mod components;
 mod disclosure;
 mod history;
 mod inspection;
+mod invariant_source;
 mod managed_index;
 
 use super::schema_read_closure::{entity_exists, field_matches, relation_exists};
@@ -27,7 +28,8 @@ pub(super) fn validate_application_query_members(
     }
     history::validate(members)?;
     inspection::validate(members)?;
-    managed_index::validate(members)
+    managed_index::validate(members)?;
+    invariant_source::validate(members)
 }
 
 fn query_definition(member: &ApplicationSchemaMember) -> Option<&ErasedApplicationQueryDefinition> {

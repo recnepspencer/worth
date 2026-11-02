@@ -46,6 +46,13 @@ pub enum DerivedRelationNode {
         left: usize,
         right: usize,
     },
+    /// Newest-first physical event chain. Retirement precedes introduction at
+    /// each event; these indices must name three earlier literal Stored leaves.
+    OrderedEvents {
+        predecessor: usize,
+        introduced: usize,
+        retired: usize,
+    },
 }
 
 /// Portable Native meaning, never a registered binding or prepared read.
@@ -102,6 +109,9 @@ impl Eq for DerivedRelationHandle {}
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct RegisteredDerivedRelation {
+    /// Memoization follows this exact registered path owner across clones and
+    /// registry composition. It contributes no descriptive schema meaning.
+    pub(crate) managed_source_binding: crate::validation::candidate_source::SourceBindingCache,
     pub(crate) parts: DerivedRelationDefinitionParts,
     pub(crate) leaves: Vec<(KindId, KindId, KindId)>,
     pub(crate) domains: Vec<ProjectedMemberDomainIdentity>,
@@ -143,4 +153,5 @@ pub enum DerivedRelationDenial {
     InvalidMemberDomain,
     InvalidMemberCase,
     InvalidGraphLaws,
+    InvalidEventChain,
 }

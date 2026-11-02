@@ -39,6 +39,31 @@ pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityCont
     entity: String,
 }
 
+impl WorthQueryCapabilityContextKey {
+    pub(in crate::domain_computation::authorization) fn meaning_parts(&self) -> [&str; 5] {
+        [
+            &self.context,
+            &self.context_type,
+            &self.slot,
+            &self.slot_type,
+            &self.entity,
+        ]
+    }
+    pub(in crate::domain_computation::authorization) fn owned_allocation_capacity_bytes(
+        &self,
+    ) -> Option<usize> {
+        [
+            &self.context,
+            &self.context_type,
+            &self.slot,
+            &self.slot_type,
+            &self.entity,
+        ]
+        .into_iter()
+        .try_fold(0usize, |total, value| total.checked_add(value.capacity()))
+    }
+}
+
 impl<Schema, Scope> WorthQueryResolvedCapabilityRequest<Schema, Scope> {
     pub(in crate::domain_computation::authorization) fn resource(
         &self,

@@ -208,6 +208,7 @@ impl PreparedCustomInvariantScope {
 }
 
 pub struct CustomInvariantScopePlanner<'runtime> {
+    pub(super) managed_scope: Option<super::managed_source::ManagedSourceInvocation>,
     execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     observation_kind: InvariantObservationKind,
     version_id: VersionId,
@@ -278,6 +279,7 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         );
         Self {
             execution,
+            managed_scope: None,
             observation_kind: observation.kind(),
             version_id,
             current_version_id,

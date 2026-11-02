@@ -9,7 +9,7 @@ use super::{
 use crate::domain_computation::primary_graph::{
     application_query::{
         authorized_read::execute_authorized_read,
-        one_shot::{self, outcome::finalize_one_shot},
+        one_shot::{self},
         read_execution::{self, read_plan::ReadPlan, ReadInterruption},
         WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationOneShotResult,
         WorthQueryApplicationProjection,
@@ -26,7 +26,13 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 mod context;
+mod eviction;
 mod lifecycle;
+mod watch;
+pub use watch::{
+    WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
+    WorthQueryManagedIndexWatchUpdate,
+};
 
 pub(super) type ResultValue<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
@@ -37,6 +43,17 @@ pub(super) type BoundPlan<'a, S, B> = WorthQueryAdmittedApplicationQueryPlan<
     <B as ApplicationQueryBinding<S>>::PrincipalIdentity,
     <<B as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope,
 >;
+enum ManagedParentCapture {
+    None,
+    Watch,
+}
+struct ManagedParentRead<'plan, S: ApplicationSchema, B: ApplicationQueryBinding<S>> {
+    plan: BoundPlan<'plan, S, B>,
+    kernel: read_execution::RawNonLiveKernelOutcome,
+    authorization: super::super::WorthQueryApplicationAuthorizationWorkEvidence,
+    proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
+    selection: Option<super::selection::MaintainedWatchSelection>,
+}
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// Executes this actual typed binding. A committed managed selector uses
@@ -76,7 +93,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
-        _external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         mut plan: BoundPlan<'_, S, B>,
         allocation: &Arc<SourceFactsAllocation>,
     ) -> Result<WorthQueryApplicationOneShotResult<B::Query, ResultValue<S, B>>, ReceiverCause>
@@ -85,6 +102,90 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let context = context::prepare(execution, self, binding, &mut plan, allocation)?;
+        let read = self.read_managed_parent::<B>(
+            execution,
+            plan,
+            context,
+            external,
+            allocation,
+            ManagedParentCapture::None,
+        )?;
+        self.finish_managed_parent::<B>(
+            execution,
+            read,
+            watch::ManagedParentCompletionCapture::None,
+        )
+        .map(|completed| completed.read)
+    }
+
+    fn finish_managed_parent<B>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        read: ManagedParentRead<'_, S, B>,
+        capture: watch::ManagedParentCompletionCapture,
+    ) -> Result<
+        one_shot::outcome::CompletedOneShotRead<
+            B::Query,
+            ResultValue<S, B>,
+            watch::ManagedParentCompletionCapture,
+        >,
+        ReceiverCause,
+    >
+    where
+        B: ApplicationQueryBinding<S>,
+        ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
+        let decode = crate::domain_computation::primary_graph::value_decode::ValueDecodeState::new(
+            self.installed_schema().value_bindings().clone(),
+        );
+        one_shot::outcome::complete_one_shot_with_capture(
+            execution,
+            self,
+            &decode,
+            read.plan,
+            read.kernel,
+            read.authorization,
+            read.proof,
+            |kernel, governance, request, query| {
+                read_execution::project_non_live_kernel_with_decode::<
+                    S,
+                    B::Query,
+                    ResultValue<S, B>,
+                    _,
+                >(
+                    execution,
+                    &decode,
+                    kernel,
+                    governance,
+                    || one_shot::plan_admission::admit_request(request, query),
+                    |projection| {
+                        one_shot::denial(
+                            super::super::WorthQueryApplicationOneShotDenialKind::Projection(
+                                projection.kind(),
+                            ),
+                            query,
+                            projection.subject(),
+                        )
+                    },
+                )
+            },
+            |_, _| Ok(capture),
+        )
+    }
+
+    fn read_managed_parent<'plan, B>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: BoundPlan<'plan, S, B>,
+        context: context::ParentContext<'_, S>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        allocation: &Arc<SourceFactsAllocation>,
+        capture: ManagedParentCapture,
+    ) -> Result<ManagedParentRead<'plan, S, B>, ReceiverCause>
+    where
+        B: ApplicationQueryBinding<S>,
+        ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
         let adapter = self
             .managed_indexes
             .executor(execution, &context.association, allocation)?
@@ -119,7 +220,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 plan.controls.request_scope(),
                 &context.association,
                 &context.selected,
+                external,
+                &context.selector,
                 probe,
+                &plan.parameters,
+                &plan.governance,
                 allocation,
             )
             .map_err(ReceiverCause::Provider)?;
@@ -149,10 +254,25 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         lease
             .rows(&plan.graph_work, plan.controls.request_scope())
             .map_err(|cause| ReceiverCause::Provider(ProviderExecutionDenial::Selection(cause)))?;
+        let selection = match capture {
+            ManagedParentCapture::None => None,
+            ManagedParentCapture::Watch => Some(
+                lease
+                    .capture_watch(&plan.graph_work, plan.controls.request_scope())
+                    .map_err(|cause| {
+                        ReceiverCause::Provider(ProviderExecutionDenial::Selection(cause))
+                    })?,
+            ),
+        };
         // The genuine SDK request/session loan never enters the Sync read plan
         // and ends before the Parent's consuming Query terminal.
         drop(lease);
-        finalize_one_shot(execution, self, plan, kernel, authorization, proof)
-            .map_err(ReceiverCause::Read)
+        Ok(ManagedParentRead {
+            plan,
+            kernel,
+            authorization,
+            proof,
+            selection,
+        })
     }
 }

@@ -23,6 +23,8 @@ pub(in crate::domain_computation::primary_graph) fn map_admission_stop(
         CompanionPreflightStop::SelectedSourceMismatch
         | CompanionPreflightStop::SelectedPositionUnavailable { .. }
         | CompanionPreflightStop::ForeignCell
+        | CompanionPreflightStop::ManagedSourceNotPrepared
+        | CompanionPreflightStop::ManagedSourceChanged
         | CompanionPreflightStop::RegistrationChanged => {
             ConsumedOutputVerificationStop::Unavailable
         }
@@ -39,6 +41,9 @@ pub(in crate::domain_computation::primary_graph) fn map_verification_stop(
     stop: SettlementVerificationStop,
 ) -> ConsumedOutputVerificationStop {
     match stop {
+        SettlementVerificationStop::SourceRead(
+            WorthQuerySourceCurrentnessFailure::ManagedIndex(cause),
+        ) => ConsumedOutputVerificationStop::ManagedIndex(cause),
         SettlementVerificationStop::SourceRead(
             WorthQuerySourceCurrentnessFailure::OutputObservation(stop),
         ) => stop,
@@ -70,7 +75,7 @@ pub(in crate::domain_computation::primary_graph) fn reserve_pending<T>(
     let needed = pending
         .len()
         .checked_add(additional)
-        .ok_or(unrepresentable)?;
+        .ok_or_else(|| unrepresentable.clone())?;
     if needed <= pending.capacity() {
         return Ok(());
     }
@@ -81,7 +86,7 @@ pub(in crate::domain_computation::primary_graph) fn reserve_pending<T>(
     let bytes = target
         .checked_mul(size_of::<T>())
         .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(unrepresentable)?;
+        .ok_or_else(|| unrepresentable.clone())?;
 
     pending
         .try_reserve_exact(target - pending.len())
@@ -103,6 +108,9 @@ pub(super) fn fact_is_current(
         .map_err(map_admission_stop)?
     {
         Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => Err(stop),
+        Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => {
+            Err(ConsumedOutputVerificationStop::ManagedIndex(cause))
+        }
         Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
             Err(ConsumedOutputVerificationStop::Execution(cause))
         }

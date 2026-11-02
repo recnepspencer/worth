@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::application_query::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 mod material_ordering;
 mod material_storage;
+mod traversal;
 use material_storage::MaterialFootprintStorage;
 
 pub(super) fn collect_source_footprints(
@@ -36,6 +37,7 @@ pub(super) fn collect_source_footprints(
     >,
 ) -> Result<Vec<WorthQueryObservedSourceFootprint>, WorthQueryApplicationReadExecutionDenial> {
     let storage = MaterialFootprintStorage::new(execution, material_source);
+    let mut traversal = traversal::FootprintTraversal::admitted(execution, contract)?;
     storage.slots::<WorthQueryObservedSourceFootprint>(roots.len())?;
     let mut footprints = allocate_result_vector(roots.len(), "source")?;
     for root in roots {
@@ -54,7 +56,7 @@ pub(super) fn collect_source_footprints(
                 })
                 .transpose()?,
         };
-        collect_node(
+        traversal.collect(
             execution,
             projection,
             graph,
@@ -112,7 +114,7 @@ fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint)
 }
 
 #[allow(clippy::too_many_arguments)]
-fn collect_node(
+fn collect_node_content(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &VisibilityProjectionView,
     graph: &WorthQueryPrimaryGraphLayout,
@@ -289,11 +291,6 @@ fn collect_node(
                 comparison_work_limit: revision.work_units(),
                 endpoints,
             });
-        for child in projected.rows() {
-            collect_node(
-                execution, projection, graph, contract, governance, child, work, footprint, storage,
-            )?;
-        }
     }
     Ok(())
 }

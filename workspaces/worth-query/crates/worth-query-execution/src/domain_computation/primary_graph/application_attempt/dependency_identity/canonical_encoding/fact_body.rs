@@ -6,6 +6,74 @@ pub(super) fn append_fact(
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::SourceReadAuthorization { observation } => {
+            kind(entries, prefix, "source-read-authorization-v1");
+            entity(entries, prefix, "principal", observation.key().principal);
+            entity(entries, prefix, "scope", observation.key().scope);
+            push(
+                entries,
+                format!("{prefix}.source"),
+                CanonicalBasisEntryKind::Value,
+                CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(observation.key().source)),
+            );
+            push(
+                entries,
+                format!("{prefix}.support"),
+                CanonicalBasisEntryKind::Value,
+                CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(observation.identity())),
+            );
+        }
+        WorthQueryApplicationObservedFact::ManagedIndexSource { observation } => {
+            kind(
+                entries,
+                prefix,
+                if observation.has_verified_realized_footprint() {
+                    "managed-verified-projected-candidate-content-v1"
+                } else {
+                    "managed-complete-source"
+                },
+            );
+            if let Some(origin) = observation.key().influence {
+                push(
+                    entries,
+                    format!("{prefix}.managed-parameters"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(origin.parameters)),
+                );
+            }
+            entity(entries, prefix, "scope", observation.key().scope);
+            push(
+                entries,
+                format!("{prefix}.source"),
+                CanonicalBasisEntryKind::Value,
+                CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(
+                    observation.key().obligation,
+                )),
+            );
+            if let Some(origin) = observation.key().influence {
+                push(
+                    entries,
+                    format!("{prefix}.admitted-query-influence-v1"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(origin.audience)),
+                );
+                push(
+                    entries,
+                    format!("{prefix}.projected-candidate-content-v1"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(
+                        origin.content.bytes(),
+                    )),
+                );
+            } else {
+                number_u64(
+                    entries,
+                    prefix,
+                    "revision",
+                    observation.native().source_revision().0,
+                );
+            }
+        }
         WorthQueryApplicationObservedFact::ComponentSelection { observation } => {
             kind(entries, prefix, "scoped-native-components");
             push(
@@ -17,6 +85,9 @@ pub(super) fn append_fact(
         }
         WorthQueryApplicationObservedFact::Aggregate { observation } => {
             aggregate::append_values(entries, prefix, observation)
+        }
+        WorthQueryApplicationObservedFact::DerivedSource { observation } => {
+            derived_source::append_values(entries, prefix, observation)
         }
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => {
             structural_walk::append_values(entries, prefix, observation)

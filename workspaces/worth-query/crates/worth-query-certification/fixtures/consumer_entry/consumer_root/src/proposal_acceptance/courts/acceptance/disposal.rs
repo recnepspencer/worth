@@ -11,6 +11,7 @@ use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_contribution::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
+        WorthQueryManagedComputationResourceDenial,
     },
 };
 mod preparation;
@@ -209,8 +210,60 @@ fn registered_disposal_uses_owned_custody_after_storage_has_really_retired() {
         )
     ));
     let cleanup = blocked.into_cleanup();
+    let pending = cleanup.pending_work();
+    let foreign = host::install();
+    let refused = foreign
+        .with_application_advancement(&scope, |phase| cleanup.retry_in_advancement(&phase))
+        .unwrap()
+        .expect_err("a foreign phase cannot release the original cleanup");
+    assert!(matches!(
+        refused.denial(),
+        WorthQueryApplicationProductBranchCleanupDenial::Product(
+            WorthQueryProductBranchOwnerCleanupDenial::Execution(
+                WorthQueryAdvancementDenial::Resource(
+                    WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase
+                )
+            )
+        )
+    ));
+    let cleanup = refused.into_cleanup();
+    assert_eq!(cleanup.pending_work(), pending);
+    let cancellation = WorthQueryCancellationSource::new();
+    let interrupted = WorthQueryRequestScope::new(None, cancellation.token());
+    let mut attempted = None;
+    let handoff = host.with_application_advancement(&interrupted, |phase| {
+        cancellation.cancel();
+        attempted = Some(cleanup.retry_in_advancement(&phase));
+    });
+    assert!(matches!(
+        handoff,
+        Err(WorthQueryAdvancementDenial::Interrupted(
+            WorthQueryManagedComputationInterruption::Cancelled
+        ))
+    ));
+    let refused = attempted
+        .expect("receiver was called before handoff")
+        .unwrap_err();
+    assert!(matches!(
+        refused.denial(),
+        WorthQueryApplicationProductBranchCleanupDenial::Product(
+            WorthQueryProductBranchOwnerCleanupDenial::Execution(
+                WorthQueryAdvancementDenial::Interrupted(
+                    WorthQueryManagedComputationInterruption::Cancelled
+                )
+            )
+        )
+    ));
+    let cleanup = refused.into_cleanup();
+    assert_eq!(cleanup.pending_work(), pending);
     drop(reader);
-    assert_eq!(cleanup.retry().unwrap().retired_component_count(), 1);
+    assert_eq!(
+        host.with_application_advancement(&scope, |phase| { cleanup.retry_in_advancement(&phase) })
+            .unwrap()
+            .unwrap()
+            .retired_component_count(),
+        1
+    );
     assert_eq!(model.branch(), source);
     assert_eq!(model.describe(&reviewer).unwrap(), before);
     assert_eq!(model.read(&reviewer).unwrap().days, 7);

@@ -12,12 +12,14 @@ use worth_foundational::facade::{AspectFieldLocator, AspectKey};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::DerivedIndexId;
 
+mod complete_sources;
+
 type FieldOrdinals = BTreeMap<EntityId, BTreeMap<AspectFieldLocator, Vec<usize>>>;
 pub(in crate::domain_computation::primary_graph) struct FactRoutes {
     ordinals: FieldOrdinals,
     aspects: BTreeMap<EntityId, BTreeMap<AspectKey, Option<bool>>>,
     entities: BTreeMap<EntityId, usize>,
-    walk_entities: BTreeMap<EntityId, usize>,
+    complete_entities: BTreeMap<EntityId, usize>,
     relations: BTreeMap<RelationId, usize>,
     selections: BTreeMap<
         (
@@ -60,19 +62,14 @@ impl FactRoutes {
             })
             .ok_or(StoreDenial::Representability)?;
         for fact in body.iter() {
-            if let Fact::StructuralWalk { observation } = fact {
-                let entries = observation
-                    .native()
-                    .visits()
-                    .len()
-                    .checked_add(observation.native().relations().len())
-                    .and_then(|n| u64::try_from(n).ok())
-                    .and_then(|n| n.checked_mul(2048))
-                    .ok_or(StoreDenial::Representability)?;
-                bytes = bytes
-                    .checked_add(entries)
-                    .ok_or(StoreDenial::Representability)?;
-            }
+            let entries = complete_sources::entry_count(fact)?;
+            bytes = bytes
+                .checked_add(
+                    entries
+                        .checked_mul(2048)
+                        .ok_or(StoreDenial::Representability)?,
+                )
+                .ok_or(StoreDenial::Representability)?;
             control.check_live()?;
             super::super::super::fact_verification_observation::effect_index_fact();
             super::super::super::fact_verification_observation::content_field_index();
@@ -100,7 +97,7 @@ impl FactRoutes {
             ordinals: BTreeMap::new(),
             aspects: BTreeMap::new(),
             entities: BTreeMap::new(),
-            walk_entities: BTreeMap::new(),
+            complete_entities: BTreeMap::new(),
             relations: BTreeMap::new(),
             selections: BTreeMap::new(),
             _memory: memory,
@@ -131,20 +128,8 @@ impl FactRoutes {
                     })
                     .or_insert(Some(present));
             }
+            routes.index_complete_sources(fact, ordinal, control)?;
             match fact {
-                Fact::StructuralWalk { observation } => {
-                    for visit in observation.native().visits() {
-                        control.check_live()?;
-                        routes
-                            .walk_entities
-                            .entry(visit.entity.entity_id)
-                            .or_insert(ordinal);
-                    }
-                    for edge in observation.native().relations() {
-                        control.check_live()?;
-                        routes.relations.entry(edge.relation_id).or_insert(ordinal);
-                    }
-                }
                 Fact::Entity { entity_id, .. } => {
                     routes.entities.entry(*entity_id).or_insert(ordinal);
                 }
@@ -206,7 +191,7 @@ impl FactRoutes {
         self.entities.get(&id).copied()
     }
     pub(in crate::domain_computation::primary_graph) fn walk_entity(&self, id: EntityId) -> bool {
-        self.walk_entities.contains_key(&id)
+        self.complete_entities.contains_key(&id)
     }
     pub(in crate::domain_computation::primary_graph) fn relation(
         &self,
@@ -255,6 +240,10 @@ impl FactRoutes {
             (
                 Some(Fact::Aggregate { observation: a }),
                 Some(Fact::Aggregate { observation: b }),
+            ) => Arc::ptr_eq(a, b),
+            (
+                Some(Fact::DerivedSource { observation: a }),
+                Some(Fact::DerivedSource { observation: b }),
             ) => Arc::ptr_eq(a, b),
             (
                 Some(Fact::StructuralWalk { observation: a }),
@@ -308,6 +297,7 @@ impl FactRoutes {
             (
                 Some(
                     Fact::Entity { .. }
+                    | Fact::DerivedSource { .. }
                     | Fact::StructuralWalk { .. }
                     | Fact::ComponentSelection { .. }
                     | Fact::Aggregate { .. }
@@ -322,6 +312,7 @@ impl FactRoutes {
                 Some(
                     Fact::Entity { .. }
                     | Fact::Relation { .. }
+                    | Fact::DerivedSource { .. }
                     | Fact::StructuralWalk { .. }
                     | Fact::ComponentSelection { .. }
                     | Fact::Aggregate { .. }

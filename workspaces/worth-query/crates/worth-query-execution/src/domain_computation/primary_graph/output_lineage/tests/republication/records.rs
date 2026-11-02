@@ -93,7 +93,8 @@ pub(super) fn continues_input(
     row.prepared_input_reuse_key
         .as_ref()
         .unwrap()
-        .same_prepared_input_as(&input_key(selection, input))
+        .same_prepared_input_as(&input_key(selection, input), &mut |_| Ok(()))
+        .unwrap()
 }
 
 /// A real completed boundary refuses reuse when its context is untracked.

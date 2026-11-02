@@ -91,6 +91,13 @@ worth_query_application_schema! {
                 .relation(complete_closure::AccountNext::reference(), Account::reference(), Account::reference())
                 .application_query(complete_closure::definition(complete_closure::ClosureQuery::reference(), false))
                 .application_query(complete_closure::definition(complete_closure::ReverseClosureQuery::reference(), true))
+                .derived_relation(
+                    complete_closure::source(),
+                    worth_query_declaration::facade::application_schema::ApplicationDerivedRelation::compose(complete_closure::AccountNext::reference(), complete_closure::AccountNext::reference()),
+                    worth_query_declaration::facade::application_schema::ApplicationRelationGraphLaws::unbounded(),
+                )
+                .application_query(complete_closure::derived_definition(complete_closure::ForwardQuery::reference(), false))
+                .application_query(complete_closure::derived_definition(complete_closure::ReverseQuery::reference(), true))
                 .application_query(query_definition())
         }
     }

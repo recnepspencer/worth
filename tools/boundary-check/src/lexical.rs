@@ -176,6 +176,70 @@ pub fn test_modules<'a>(tokens: &'a [Token<'a>]) -> Vec<(&'a str, usize, usize)>
     }
     result
 }
+pub fn generic_end(t: &[Token<'_>], open: usize) -> usize {
+    let (mut at, mut depth) = (open + 1, 1usize);
+    while at < t.len() {
+        match t[at].text {
+            "<" => depth += 1,
+            ">" if t[at - 1].text != "-" => {
+                depth -= 1;
+                if depth == 0 {
+                    return at;
+                }
+            }
+            "(" | "[" | "{" => at = close(t, at),
+            _ => {}
+        }
+        at += 1;
+    }
+    t.len()
+}
+/// Actual top-level enum variants; payload fields and types are not variants.
+pub fn enum_variants<'a>(t: &[Token<'a>]) -> Vec<(&'a str, &'a str)> {
+    let mut found = Vec::new();
+    for (i, pair) in t
+        .windows(2)
+        .enumerate()
+        .filter(|(_, w)| w[0].text == "enum")
+    {
+        let owner = pair[1].text;
+        let mut at = i + 2;
+        while at < t.len() && t[at].text != ";" {
+            match t[at].text {
+                "<" => at = generic_end(t, at),
+                "{" => {
+                    let end = close(t, at);
+                    let mut first = true;
+                    at += 1;
+                    while at < end {
+                        if t[at].text == "#" && t.get(at + 1).is_some_and(|t| t.text == "[") {
+                            at = close(t, at + 1) + 1;
+                            continue;
+                        }
+                        if first && t[at].text != "," {
+                            found.push((owner, t[at].text));
+                            first = false;
+                        }
+                        if t[at].text == "," {
+                            first = true;
+                        }
+                        at = if t[at].text == "<" {
+                            generic_end(t, at)
+                        } else {
+                            close(t, at)
+                        } + 1;
+                    }
+                    break;
+                }
+                "(" | "[" => at = close(t, at),
+                _ => {}
+            }
+            at += 1;
+        }
+    }
+    found
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

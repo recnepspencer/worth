@@ -51,6 +51,14 @@ Use these entry points to find an API and its worked use.
 
 ## Task index
 
+Choose [native representations](native-representations.md) before a durable
+value binding: flat scalar fields, named entities and actual typed relations.
+The [candidate-only one-of pattern](native-representations.md#one-class-one-optional-aspect)
+includes required class payloads, complete rule scope and atomic transitions;
+its lawful at-pin refusal requires the repin. The
+[source-subgraph contract and court](source-subgraphs.md) cover partial member
+edit, pinned previous state, recorded undo and a generated-member witness.
+
 For a new installed feature, use the
 [complete feature definition](build-an-application.md#complete-feature-definitions)
 first: `host::worth_query_application_contribution! { pub feature ... }` projects
@@ -206,6 +214,12 @@ actual detached cell with `insert_owned_vacant_prepared` on their unique map.
 `remove_owned_retaining_unique` preserves the actual retired allocation for
 payload disposal outside the owner gate. Payload heap admission remains with
 its concrete owner. See [execution backing admission](../crates/worth-execution/README.md).
+Platform owners of exact contiguous request storage use
+`ExecutionRequestArrayBuilder::allocate(original_request, count)`. Push initializes
+its prefix; `replace_initialized(index, value)` moves within that prefix without
+new allocation or custody. Both consult the original request. Seal consumes the
+builder into the same immutable `ExecutionArray`; a stopped request cannot seal.
+See [fixed payload custody](../crates/worth-execution/README.md).
 
 Platform pre-effect entries use `ExecutionRequest::prepare_native` to prepare
 dependent values under one supplied request: standalone entry establishes its
@@ -253,9 +267,34 @@ propagate stopped-prefix or missing-qualification refusals. Accounted reuse foll
 the original receipt at its work boundary. See
 [persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
 
-For nested persisted values, use the existing value-binding macro's
-`scalar: String, canonical,` arm with Query-free
-`WorthValue` derivation. The installed value-binding catalog retains the derived
+Platform scalar owners can carry opaque atoms using `ScalarAspectType::InlineBytes`
+and the immutable `InlineBytes` carrier. Its native framing ceiling is
+4,294,967,290 payload bytes; oversized lengths return `InlineBytesLengthDenial`
+before admission. The carrier supplies no domain comparison or index hooks.
+See [inline opaque values](build-an-application.md#inline-opaque-values).
+
+Applications adopt an identity-free, reference-free leaf through the existing
+value-binding macro's `binary: OwnerDelegate` arm. Its Query-free pure owner
+keeps normalization, canonical bytes, admission and terminal rendering; the entry
+delegate supplies finite bounds, identity, unit and frame. Binary and explicitly
+marked canonical domain atoms require the same per-binding source guard and have
+distinct portable protocols from established structured canonical artifacts.
+Ordinary domain field writes must pass the installed owner's admitted
+reader and canonical byte comparison under the original request before provider
+lowering or publication; an unreadable encoding returns a typed commit refusal.
+See the [compiled entry delegate](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs)
+and [representation and guard guidance](build-an-application.md#inline-opaque-values).
+
+For independently edited persisted structure, use the
+[native representation table](native-representations.md). For an intentional identity-free, reference-free canonical atom or
+an explicit document boundary, use
+`decl::worth_query_value_binding!`'s `scalar: String, canonical,` arm with
+`decl::application_schema::WorthValue` derivation (or the pure owner's existing
+value). Record the owner, representation policy, reason and reference guard.
+The entire atom is one native field: its nested grammar grants no inner-field
+read, patch, touch or invalidation. See the
+[Store grain contract](../plans/worth-store/storage-foundation-aspect-native-gate.md#current-value-grain-contract).
+The installed value-binding catalog retains the derived
 shape and any explicit domain representation policy. Fixed arrays, checked
 indices, `Box`, exact
 pairs and tagged named variants use the checked seed path. Complete closure
@@ -384,7 +423,26 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Conditionally emit the exact operation input | `body.emit_external_input(effect, Some(native_condition))`, the operation's `.external_effect(effect, correlation_family)`, and normal `setup.operation_body::<Binding>()`. Met emits; Unmet/NotApplicable suppresses only that effect. Guard facts remain publication obligations. | [Authored conditional effects](../workspaces/worth-query/crates/worth-query/docs/authoring/conditional-body-effects.md) |
 | Emit graph data absent from the command or public DTO | `body.emit_external_query_context::<Binding, _, _, _, _, _>(effect, exact_query_definition, condition)`, a payload binding with Value `ApplicationQueryExpressionSnapshot`, `execute_with_expression_context()` and the actual `expect_source`. The query is parameter-free and ExactlyOne. Query funds/prepares once and publishes the ordinary outbox with all native source facts. | [Native query-backed effect payloads](../workspaces/worth-query/crates/worth-query/docs/authoring/conditional-body-effects.md#real-example) |
 | Share one computed revision across business, audit and payload | `ApplicationOperationBodyValue::admit`, `body.assign_value`, `creation.initialize_value`, and `emit_external_evaluation` with `ApplicationOperationBodyEvaluationSnapshot`. Native Foundation evaluation prepares once and validates every installed destination codec. Unitless UInt64 results; at least one field sink. Computed scope bookkeeping may accompany signing, with old revision captured as AuditContext; computed signed-artifact initializers remain refused. | [Shared Computed Body Values](../workspaces/worth-query/crates/worth-query/docs/authoring/computed-body-values.md) |
-| Index committed Public query rows | Declare an `ApplicationManagedIndexBinding` and exact Source/Probe contracts, install with `setup.managed_index`, then use authenticated `open_index`, explicit `rebuild_index` and ordinary `execute`. Created/evicted reads return `NotReady`; sibling handles share eviction/close. Source requires Public authorization/disclosure; governed Parent entrances retain independent capability and READ admission. Consume managed row/result-set observations with request-bearing `expect_source`/`expect_result_set`. Complete Source dependencies include nonmatches and empty membership. Handles retain their installed provider version, runtime, branch and full-generation scope. Prefix and closed-box providers use the same Decl/Host contract. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Index committed Public query rows | Declare an `ApplicationManagedIndexBinding` and exact Source/Probe contracts, install with `setup.managed_index`, then use authenticated `open_index`, explicit `rebuild_index` and ordinary `execute`. Native retains each selected public cache and publishes a cold successor; pending World reads retain their genuine predecessor. Cold selected images return `NotReady`; sibling handles share eviction/close. Source requires Public disclosure and either Public authorization or conventional READ ability. Ability-authorized Sources require a current-only Parent; original Source READ support remains independent through cache use, expectations and correction history. Governed Parent entrances retain independent capability and READ admission. Consume managed row/result-set observations with request-bearing `expect_source`/`expect_result_set`. Complete Source dependencies include nonmatches and empty membership. Handles retain their installed provider version, runtime, branch and full-generation scope. Prefix and closed-box providers use the same Decl/Host contract. Repeated required String reads use `SourceRow::with_text(selector, callback)` to borrow invocation/image-confined decoded text with per-use admission. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Declare newest-first event-chain membership | `ApplicationDerivedRelation::ordered_events(previous, introduces, retires)` accepts typed stored Event->Event and Event->Row references. The named recipe survives canonical identity, portable archive and actual Native registry installation. Native proves the physical chain and folds retirement before introduction; malformed chains retain a typed refusal. Native pinned acquisition preserves narrowing caller stops and failed-read work/read receipts. Named recipes can enter physical query root paths and maintained Sources through `forward_derived`/`reverse_derived`; private CAD adoption and its scale evidence remain unfinished. | [Derived relation meaning](../workspaces/worth-query/crates/worth-query/docs/domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning), [typed recipe evidence](../plans/WORTH-query/milestone-9.19-phase6-query-ordered-event-evidence.md), [controlled acquisition evidence](../plans/WORTH-query/milestone-9.19-phase6-controlled-derived-read-evidence.md) |
+| Select physical roots through a named derived source | `ApplicationQueryRootPath::from(scope).forward_derived(source)` and `reverse_derived(source)` preserve the Derived namespace, registered Native handle and complete positive/negative support. Compose ordinary query paths with physical hops and guards. Maintained Sources retain their existing guard/predicate restrictions. Ordinary queries, maintained Sources, watches and Source expectations consume the same acquisition. Equal rendered rows cannot erase changed physical history. Projected source domains and Derived closure steps refuse at this entrance. | [Derived query root paths](build-an-application.md#derived-query-root-paths), [root-path evidence](../plans/WORTH-query/milestone-9.19-phase6-derived-root-path-evidence.md) |
+| Qualify an index's complete Source structure | Declare `ApplicationManagedIndexSourceStructure::BinarySourceTree` and implement the provider's `decompose` callback. Query checks actual node/Source bijection and connected acyclic topology before retaining the root, then carries it through local warm edits. Opaque providers remain conservative. This does not qualify candidate completeness, pruning, refined influence or live predicate routing. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Execute complete exhaustive provider membership | Declare `ApplicationManagedIndexMembership::ExhaustiveSourceTree` with `BinarySourceTree`; implement `validate_probe` and the pure `matches_source` predicate. Query visits every checked Source region, selects/emits genuine rows and refuses interrupted partial traversal. v1/v2 retain candidate-only membership. This explicit full traversal keeps complete Source dependencies and provides no pruning, locality, exact-contact or narrowed-footprint authority. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Prune checked managed Source subtrees | Declare `CheckedSummarySourceTree` with `BinarySourceTree` and provide the pure `Summary` algebra. Query recomputes Source/child summaries bottom-up, checks the actual cached Node value and propagates Native Source changes through all ancestors before root retention. Summary row lookup is confined to the actual region. Query owns visit/skip and genuine-row matching; mismatch or interrupted work refuses. Prefix extrema and closed-box unions use the same contract. Complete conservative Source dependencies remain; this supplies no exact-contact, retained predicate-routing or narrowed-footprint authority. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Retain checked managed traversal coverage | Exhaustive and checked-summary strategies record the actual visited cut. Query checks root, parent/child coverage, Source dispositions and the matched-slot bijection before its receivers release slots. The private executable issuer and actual borrowed Source/root, probe and read-session correspondence bind consumption. Public Source observations retain the verified frontier; Native committed/proposed correctness reads require complete evidence. Rebuild shape stays outside semantic Source equality. The supported Public maintained-watch profile adds inverse routing; explicit row-local exact refinement uses separate complete evidence; finer field influence remains unfinished. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Page a governed ordered child collection | Declare an ExactlyOne root with one ordered Many continuation collection and pinned support. `page_governed` / `resume_governed` (or `_approved`) freshly admit current capability and independent READ before all page metadata. Hidden ordering inputs need Ordering/Pagination influence and permitted hidden outputs stay omitted. Move-only tokens retain the exact old World/parameters/Native ordering generation; denial consumes the token. Requested width cannot widen the binding maximum. Managed root selection plus continuation remains a typed declaration refusal. | [Protected continuation pages](build-an-application.md#protected-continuation-pages) |
+| Watch a complete maintained Parent | Implement the pure `WorthQueryManagedIndexPredicateProvider` on the forward provider; configure `setup.managed_index_with_predicate_routing`, declare Public Parent Live eligibility, then call `watch_index::<Index>()`. Initial full read and registration join the actual World image. Each fresh `next_watch` request admits the complete original Parent before metadata; Delivered carries separate notification B and current full read/receipt C, acknowledging only B. Query owns inverse routing, exact close and bounded queue custody. Projected root filters use conservative candidate routing; separately declared exact refinement uses the same row evaluator for each actual record mode. Unsupported/untracked, candidate-only and continuation profiles refuse. Whole-Source correctness dependencies remain. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Refine complete managed candidates exactly | Declare a separately versioned row-local `REFINEMENT`, implement `WorthQueryManagedIndexRefinementProvider`, and install the same provider through `managed_index_provider(...).with_refinement().install()`. Explicit Parent `managed_index_refined` and Native `refined_managed_index` preserve candidate access as a distinct meaning. Query verifies the full candidate cut, evaluates every genuine candidate once, and retains all decisions plus the accepted subset before release. Empty candidate sets still validate the probe; domain/controlled refusal cannot become empty success. Exact Parents require full Source/Parent projection correspondence. Governed exact inputs require membership influence even without Live. Qualified complete Native-maintained Parents may retain the verified candidate influence described below with actual passive audience correspondence; unsupported profiles remain conservative. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Watch a governed maintained Parent | Use `watch_index_governed` / `next_watch_governed` (or `_approved`) with the actual capability, operation and original purpose input. Every call freshly admits capability and independent Parent READ before metadata or ACK. Query retains exact passive request correspondence without an old grant/decision; revoke/regrant can retry the same queued notification. All projected provider inputs require explicit membership and Live influence, combined with the exact Source/Parent profile. Permitted hidden values remain omitted through normal disclosure projection. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Preserve qualified managed Source expectations across irrelevant edits | Complete Native-maintained Parents with the installed full projection profile and actual passive audience correspondence retain every actual candidate body, including exact rejects, plus complete negative coverage and exact decisions. The same installed forward provider verifies only the target cut; shared complete bodies provide the fast path and nonshared bodies require paid exact occurrence/dependency/full one-hop projection comparison. Commitments only shortlist equality; restored content never proves authored-history cancellation. Independent ordinary field/adjacency revision facts can still refuse populated observations. Ordinary source/result-set expectations pin the checked target through Native commit preflight. Typed provider/refusal/request causes survive comparison. Qualified governed captures retain full passive use/disclosure without old READ; unsupported profiles remain whole-Source. Qualified semantic identity and actual output reuse cover unchanged complete candidate inputs; qualified canonical input cutoff is documented below; qualified Public prefix and indirect box/contact correction uses actual canonical history, historical predicate relevance, genuine performed cancellation and strict paired support. | [Currentness evidence](../plans/WORTH-query/milestone-9.19-phase4-currentness-evidence.md) |
+| Reuse outputs of a qualified managed Source | In the supported Public producer pipeline, full candidate content, including exact rejects, supplies descriptive semantic identity. Actual complete capture/cell/body comparison and retained output verification decide reuse under fresh READ/disclosure. Reused committed output retains its original receipt with zero producer contacts; successful regeneration still requires the declared lifecycle. Exact-current retained one-shot reads keep read-only custody; moved historical images refuse. Typed managed Source read errors remain available on output demand/availability denials. | [Semantic reuse plan](../plans/WORTH-query/milestone-9.19-phase4-semantic-reuse-plan.md) |
+| Avoid a managed producer handler for equal canonical input | Qualified complete Public captures retain fresh invocation custody and compare complete candidate IDs/decisions plus outer field/relation membership and exact query affinity. The existing installed-input, decision-context, handler-prefix, consumed-output and Native witness gates decide StableReused. Conservative stable rows carry authentic output facts and retain full verification, with no clean equality links or downstream discharge. Changed inputs, generations, incomplete/restored or unqualified captures do not qualify. | [Selected-membership plan](../plans/WORTH-query/milestone-9.19-phase4-membership-plan.md) |
+| Retain governed managed influence without retaining READ | The actual authorization/disclosure owner checks session, installed capability, query/parameters and principal/scope, then retains paid passive full capability-use and admitted disclosure meaning under the exact installed Parent. Tagged canonical Source material separates different audiences; full passive bodies remain compared. Hidden/rejected candidate inputs stay influence despite omitted DTO fields. Fresh public query/watch/disclosure still admits current capability and independent READ; descriptive mutation expectations do not replay a Query grant. Governed producer/output-demand readmission and canonical cutoff remain unqualified; their selected execution mode still refuses governance. | [Governed influence plan](../plans/WORTH-query/milestone-9.19-phase4-governed-plan.md) |
+| Check managed membership qualification and limits | Both providers have complete coverage, exact-refinement, protected metadata and maintained-watch courts. Genuine empty-read/entrant interference refuses stale registration; equal-value commits preserve rows without promising notification suppression; completed recovery replay preserves World/provider/notice state. The Phase4 currentness row above qualifies complete maintained Parents with the supported projection/predicate profile and actual Public or governed passive audience. | [Phase 3 evidence and supported contracts](../plans/WORTH-query/milestone-9.19-phase3-closure.md) |
+| Locate a checked predecessor Source node | In a BinarySourceTree warm edit, `nodes.before_source_node(slot)` uses the existing qualified Source correspondence and original request to locate that occurrence's node. Ordinary staged `get` still checks liveness; read its old key before editing the occurrence. Cold/opaque and missing/foreign slots refuse. This adds no Source projection, second provider locator, READ or publication authority. | [Construct committed provider indexes](build-an-application.md#construct-committed-provider-indexes) |
+| Prepare structural candidate Source changes in an installed invariant | Resolve the typed derived relation binding; `planner.prepare_derived_relation_changes(&binding)` retains Native-issued paired Source custody in the rule Scope. `context.derived_relation_changes(&binding, &prepared)` reborrows only at that exact proposal/version/definition and current audience. Structural before/after pullback retains empty support. Declare the complete read and affected kinds; this structural loan does not admit scalar row reads or index-root publication. | [Candidate Source custody](build-an-application.md#prepare-candidate-structural-source-changes) |
+| Maintain a provider Source across public and candidate reads | Declare the invariant's `managed_index_source` and cold policy; install the same provider and implement `update` over real before/after occurrences. Native prepares every affected scope before validation, including unopened scopes. Use `DecisionReader::index_query` for a freshly admitted committed read and `retain_managed_index`/`context.managed_index` for exact Native candidate observations. Committed opens attach maintained roots without a cold build. Whole-Source dependencies include nonmatches and empty membership; source availability and READ remain independent. Unsupported Source shapes refuse installation. | [Maintained invariant Sources](build-an-application.md#maintain-a-provider-source-for-an-invariant) |
+| Project nested maintained Source rows | Declare matching finite Source/Parent relation forests with existing typed nested shape builders. Native preserves forward/reverse physical occurrences and complete descendant/empty dependencies; candidate influence, expectations and watches consume the full declared tree under original controls. Child predicates and OptionalAspect Source fields remain unsupported. No new Source READ, historical policy or CAD authority follows. | [Nested Source profile](build-an-application.md#construct-committed-provider-indexes) |
 | Retain correlated native query values for expressions | `request.query(intent).execute_with_expression_context()`; inspect `observed_source.expression_context()`. Exactly-one one-shot result; values stay attached to recursive dependencies before any domain projector. The original row or `result_set_observation()` supplies them through `expect_source` or `expect_result_set`; these source contracts remain distinct. | [Native expression contexts](../workspaces/worth-query/crates/worth-query/docs/authoring/native-query-expression-contexts.md) |
 | Inspect nested snapshot data in a pure payload codec | `ApplicationQueryExpressionSnapshot::field_path(&["owner", "name"])` follows actual nominal record types and schema field order, unwraps intermediate optional-one records, and preserves a final option. `ExpressionValue::record_fields()` distinguishes records from lists/entries. Lists are never implicitly indexed. | [Native expression contexts](../workspaces/worth-query/crates/worth-query/docs/authoring/native-query-expression-contexts.md#inspection-and-debugging) |
 | Require correlated native query information | `operation.requirement_operands().query_context::<Binding, _, _, _, _>(name, query_definition)` consumes the exact parameter-free, exactly-one query declaration. Supply its sealed source with `expect_source` to guidance and execution; native facts remain publication obligations. | [Authored context requirements](../workspaces/worth-query/crates/worth-query/docs/authoring/native-query-expression-contexts.md#real-example) |
@@ -405,7 +463,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Store fixed or discovered work beyond construction | `WorthQueryFixedOperation<S, Intent, Program, Root, Action>` and `WorthQueryDiscoveredOperation<S, Intent, Program, Root, Action>` retain the authentic runtime allocation and complete installed action. Keep an independent genuine runtime handle for fresh requests on `owner.branch()`. All refusals return actual custody; runtime close refuses `RuntimeKeepaliveRetained` while operation keepalive remains. | [Owning actions](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#retained-runtime-and-configuration-custody) |
 | Observe a required output without driving its producer | Candidate `DecisionReader::output_availability(&native_producer, typed_demand)` and checked `WorthQueryComputationReader` equivalent retain the fresh source Query and native completion dependency in the same attempt; Current or positively qualified Pending, with typed refusal otherwise. The retained owner supplies native source/completion evidence and original-image retry; this route does not promise Fresh readiness after checkpoint restore | [Source-aligned availability](../workspaces/worth-query/crates/worth-query/docs/capabilities/source-aligned-output-availability.md), compiling `topology_entry/.../output_availability/collection.rs` |
 | Run a mutation | Declare an exact `ApplicationActionReference` and delivery; `request.mutate(intent)…idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)`. No-output actions use SourceOnly; fixed output actions own their required set. | [Build §5.3](build-an-application.md#53-execute-through-the-program) |
-| Configure application compute placement | `host::runtime::ExecutionRequestPolicy::for_workers(posture, determinism, workers)` selects placement, determinism and width; start with Serial. Pass the policy through application resources. Platform stages use `ExecutionRequest::run_native`, `run_native_with_checkpoint` and `KernelContext::poll`; propagate typed request and allocation failures. | [One process execution service](build-an-application.md#one-process-execution-service) |
+| Configure application compute placement | `host::runtime::ExecutionRequestPolicy::for_workers(posture, determinism, workers)` selects placement, determinism and width; start with Serial. Pass the policy through application resources. Platform stages use `ExecutionRequest::run_native`, `run_native_with_checkpoint` and `KernelContext::poll`; scoped visitors use `KernelContext::work_loan` to charge the original account. Propagate typed request and allocation failures. | [One process execution service](build-an-application.md#one-process-execution-service), [Original-scoped work](../crates/worth-execution/README.md#original-scoped-work) |
 | Share workers across applications and checkpoint reopen | Construct `ExecutionAuthority::try_construct(ExecutionAuthorityConfig::for_workers(workers))` once at process startup, retain its `Arc` above sessions, and pass clones through installation's `with_execution_authority`. A final handle drop does not authorize constructing another physical authority in that process. | [Shared service and runnable example](build-an-application.md#one-process-execution-service) |
 | Configure explicit request-memory accounting | `ExecutionBudget::new(workers, memory, work)` and `SerialMemoryBudget::new(memory)` accept optional memory ceilings. `Some(bytes)` selects a finite ceiling. Retain each reservation with its payload and handle finite-capacity or counter-overflow denials. | [Explicit request-memory policy](build-an-application.md#optional-request-memory-policy) |
 | Retain a result whose heap size is not known before evaluation | Original `ExecutionRequest::run_measured_result(ceiling, known_bytes, &mut reservation, kernel)` reuses Scope admission and lends `ExecutionResultMemory` on that same reservation for before-growth claims. It measures opaque callback results/errors before framework retention and leaves their actual heap charged until release. This is post-materialization admission unless the source cooperates before allocation; declared Scan/Map maxima remain separate real contracts. | [Request-memory policy](build-an-application.md#optional-request-memory-policy) |
@@ -490,6 +548,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Survive a restart | The app owns the artifact. Capture: inside `runtime.with_host_advancement(..)`, call `runtime.capture_application_checkpoint_with_sections(&phase, policy)` with a `host::application_installation::WorthQueryCheckpointCapturePolicy`. Restore: `in_memory_program_from_checkpoint(..)` or `in_memory_rostered_program_from_checkpoint(..)` | [Front door: capture and reopen](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#capture-and-reopen-cost-boundary), [Build §4.4](build-an-application.md#44-checkpoint-program-transitions) |
 | Work on a branch or move it to a new program under its declared capability | `runtime.branches().fork(runtime.current_world()).components(..).create(&phase)`; `request(..).on_branch(branch)`; `.programs()` then `compare(&target)`, `adopt(&requirements)?.prepare(max)`, `programs.publish(prepared)` | [Branches](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#application-product-branches-host), [Build §7](build-an-application.md#7-adopt-a-new-program-on-a-branch) |
 | Run isolated transaction steps on a fork | `runtime.branches().fork(head).components(..).create(&phase)`, then `request(..).on_branch(fork)`. The application's model-state owner selects the branch for subsequent requests; `runtime.on_branch(discarded).close(&phase)` retires discarded branches. The fork retains its parent's history for corrections. | [Branches](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#application-product-branches-host), [Fork transaction example](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_adoption.rs) |
+| Retry retired application product cleanup under a fresh admitted request | Keep the `WorthQueryApplicationProductBranchCleanup` from `OwnerCleanupPending`. Inside the original runtime's `with_application_advancement(scope, \|phase\| ...)`, call `cleanup.retry_in_advancement(&phase)`. Foreign or interrupted phases return the same cleanup owner; retained readers may still refuse. Release those readers and retry that owner. Keep the actual completed receipt even if the outer request later stops. | [Build: retired cleanup](build-an-application.md#register-attempts-on-a-stable-product), [Compiled control and release court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/acceptance/disposal.rs) |
 | Fork the exact source already selected by the application | Pass the owned selection to `runtime.branches().fork_expected(selected)`, choose components, then `create(&phase)`. Keep the returned candidate and use `candidate.branch()` for ordinary requests. Adopt with `candidate.adopt(&mut model.head, &phase)` while the exact source remains current, or discard with `candidate.close(&phase)`. Refusals retain the candidate and typed denial. Close the previous branch separately after adoption. | [Fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection) |
 | Store an expected basis and freshly select it | Serialize `selected.describe_basis()` as ordinary application data. After a fresh ordinary READ of that record, deserialize `WorthQueryExpectedProductBasisDescription` and call `runtime.branches().select_expected(&description, &phase)`. World and Native admit the original exact current basis; stale, retired, foreign and unsupported descriptions refuse. The data retains no lease and grants no READ or mutation permission. Consume the returned selection with `fork_expected`. | [Stored expected basis](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again) |
 | Record typed comparison data without moving the model basis | Create a separately owned storage branch with `parts.fork_relational()`. Write and read records through ordinary requests on that branch, with a canonical declared field codec for structured values. Retain its branch owner for explicit close. | [Storage and typed records](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again) |
@@ -516,6 +575,69 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Produce derived or computed outputs | Feature spec `provides::<Port>()`, `derived_artifact`, `managed_computation`; demand with `request.demand(demand).controls(controls).start()`. The handle or retained continuation owns actual failed producer cleanup; `release_managed_cleanup(&fresh_request)` on the handle releases it without output settlement. Diagnostic denial clones carry no cleanup authority | [Build §3.4](build-an-application.md#34-ports-connections-and-the-output-graph), [Build §3.6](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation) |
 | Produce from authentic sources and declare artifact lifecycle | `WorthQueryApplicationProducerProvider` supplies semantic identity, operation input and idempotency from the original source, and declares its typed domain denial value. `ApplicationDerivedArtifact` declares output/locality, retention, succession, required posture, producer, dependencies, reuse and stopped outcome. The installed mutation path enforces source/currentness and publication contracts. | [Producer source and publication](build-an-application.md#producer-source-and-publication) |
 | Reverse a business change | Declare a domain action with its required source, authorization and effects, then execute it through the ordinary owning request path. | [Owning actions](build-an-application.md#53-execute-through-the-program) |
+
+Use the committed construction and explicit cold-refusal contract above.
+Structural candidate Source loans do not grant scalar or managed-index reads.
+Declare an invariant's managed Source requirement separately: supported scalar
+and direct-endpoint Sources use the same maintained resource through committed
+DecisionReader and candidate invariant reads. Optional parent-aspect result fields
+are not supported by maintained Sources. Unsupported projection, predicate
+and ordering shapes return `UnsupportedInvariantSource` at installation. See
+[maintained Source authoring](build-an-application.md#maintain-a-provider-source-for-an-invariant).
+Native `ForkExact` creates a branch-specific managed Source association while
+sharing immutable material; `ReuseExact` reads its actual selected component.
+Sibling edits remain isolated, and cross-branch Source expectations refuse
+before provider execution.
+Use the freshly admitted Parent's `evict_index(&handle)` (or its governed/approved
+variant) for selected maintained cache cleanup. Cold content returns typed
+`RootUnavailable`; admitted candidate reconstruction preserves unchanged Source
+conditions. Retained historical images remain valid shares. The request-free
+handle eviction retains `InvariantOwned`; fresh `rebuild_index(&handle)` refills
+the selected maintained Native cache after independent Source READ and provider
+purpose admission. Cancellation before install preserves the previous cache; an intervening
+cache edit refuses the stale build. `ReuseExact` rebuilds its selected older
+component while newer main and fork material remain unchanged. The explicit cold
+lane pays for the ordinary Source query plus Native occurrence projection.
+After its Native component deletion completes, closing the owning product
+retires its live Source lookup; an existing
+`ReuseExact` alias can still read, evict and refill its retained selected image.
+Retained immutable custody does not permit fresh Native branch admission or writes.
+For default `Refuse`, fresh unpublished bootstrap explicitly calls
+`graph.initialize_managed_index::<Index>(phase)` for new scopes in its next seed
+attempt. Normal rules still judge it; selection is consumed even by an empty
+(refused) or unrelated batch. Installed/recovered runtime cannot borrow that
+permission, and ordinary new/cold scopes keep their declared refusal.
+A retained logical Source during
+generated-output suspension does not make a current public physical read Ready.
+The generated Catalog prefix journey uses actual producer/reconstruction custody:
+logical rules preserve suspended rows, an exact manifest cannot bypass the
+reconstructed proposed-domain check, and valid restoration serves fresh reads.
+Exact authoritative-record correspondence can share the selected suspended
+Source payload without provider construction or maintenance, while publication
+mints a fresh available association. Any authoritative field difference declines
+this conservative proof and uses the declared cold policy. Original-request
+cancellation after a real rule query returns suspension custody for retry.
+Its generated geometry counterpart declares the Edge and both Vertex roles in
+one real output publication, reconstructs actual endpoint relations and both
+memberships, and rejects B's third enclosure. Exact geometry restoration performs
+no build/update. Original suspension cancellation retains the available basis and
+fresh physical reads; `execution_control_stop()` exposes the typed stop while
+preserving the owning Native preparation denial.
+Generated cold-B coverage evicts a previously attached B and closes its public
+registration. Cold construction cancellation leaves it cold; retry builds it
+before either rule. Fresh pinned ordinary Source queries keep current principal
+admission: they refuse during suspension, then read the original endpoint after
+a changed lawful restoration. Retained managed Parent mode remains unsupported;
+old data cannot supply fresh security or select a current managed root.
+Generated suspension and restoration also qualify real Native-ahead/World-pending
+recovery. Live publication preserves typed activation exclusion. After its actual
+unpublished carrier returns, fresh reads select the predecessor World image;
+cancelled continuation returns custody and fresh continuation adopts the settled
+Native image with no provider/rule replay. This is pending recovery evidence,
+not competing-winner interference or crash persistence.
+See the
+[current limits](build-an-application.md#prepare-candidate-structural-source-changes)
+and [Native audience](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md).
 
 For managed or partitioned handler computation, use the installed
 `decision_plan` entrance described in [Build §3.6](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
@@ -1022,6 +1144,89 @@ revision verification and canonical performed cancellation remain required;
 matching values alone do not authorize restoration. Unsupported shapes and
 unavailable canonical evidence retain typed refusals under the original request.
 
+
+### Native public-only Source maintenance
+
+The Native compiler substrate can register an exact schema-bound program with
+`RelationalRuntimeBuilder::managed_index_source` or the initial installer's
+`install_with_managed_sources`, without inventing an invariant. The receiving
+registry validates actual membership/projection owners and derives structural
+access; original request controls and the existing Source participant own all
+maintenance. Live installation receipts bind the complete Source roster through
+checkpoint readmission; Source-affected codec transitions remain unsupported.
+Query bindings can request `ApplicationManagedIndexMaintenance::Native { cold }`
+through their defaulted `MAINTENANCE` constant and existing provider installation
+entrance. One combined roster supplies public and invariant audiences; Refuse
+wins. Explicit portable v5 supports optional refinement; default v3/v4 meanings
+remain unchanged. One-shot Parents can use `ApplicationQueryBasisSupport::current_only()`;
+explicit retained reads refuse before provider execution. See the
+[public maintenance plan](../plans/WORTH-query/milestone-9.19-phase5-query-maintenance-plan.md)
+and [authoring guide](build-an-application.md#construct-committed-provider-indexes).
+Bank's current-account Parent is qualified on its existing v1 Native Source.
+Actual topology face discovery remains unfinished. The topology entry's existing
+positive-turn invariant now uses the shared exact integer orientation predicate
+over its full u64 metre/model-local domain; opposite and zero turns retain typed
+invariant refusal. This numerical prerequisite does not supply spatial discovery.
+See the [orientation evidence](../plans/WORTH-query/milestone-9.19-phase5-topology-integer-orientation-evidence.md).
+
+The existing Query-free box/tree/segment-contact owner supports the sealed signed
+fixture and full-u64 Metre/model-local coordinate classes through one typed
+`IntegerBox2<Space>` implementation. Cross-domain operations are type errors;
+a unit/frame class alone does not establish model-instance affinity. The concrete
+`TopologyLengthBinding` also retains its original UInt64/nonzero wire meaning and
+supplies bounded admitted decoding with the original refusal. These generic fixes
+remain qualified independently of the removed public Scene/Face application.
+
+Phase5 qualifies Bank and the existing bounded box/prefix provider contracts.
+Real CAD geometry/topology/contact integration and actual-face scale acceptance
+belong to Phase6 in the private application. See the
+[public cleanup evidence](../plans/WORTH-query/milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+The [Phase5 contract matrix](../plans/WORTH-query/milestone-9.19-phase5-closure.md)
+records the qualified public boundary, evidence provenance and remaining private gate.
+
+### Native managed Source impact history
+
+Native `authored_managed_source_selector` accepts the actual installed
+Source program and full-generation scope; use
+`authored_managed_source_history_cursor` with genuine original/selected bases
+and the existing staged page lifecycle. This is complete conservative canonical
+impact-candidate history, including actual field/whole-aspect no-ops, endpoint
+writes and transient membership, unioned with actual physical publication changes.
+Existing scalar-valued Struct fields and direct/Reverse endpoint routes are
+supported. Shared-row neighbors and disjoint fields on declared field kinds can
+remain conservative candidates; membership-only programs omit entity scalar-only
+commands. It supplies no exact Query
+relevance, READ grant or correction cancellation. Arbitrary scalar-aspect/deeper Source reads, merges and schema/materialization
+transitions are not covered. Live envelope
+custody is required: deep clone, decoded recovery and journal settlement cannot
+recreate sidecar issuance, and missing metadata refuses as
+`IncompleteManagedSourceHistory`. See the [Native API contract](../crates/worth-relational/API_OVERVIEW.md#managed-source-authored-impact-candidates)
+and [slice plan](../plans/WORTH-query/milestone-9.19-phase4-membership-history-plan.md).
+
+### Qualified managed Source correction
+
+Qualified retained managed Source facts join ordinary recorded correction through
+existing receipt selection and preparation. Actual Native scope candidates for
+Public Parents can be narrowed by the same installed forward predicate on both
+historical affected row images. Opaque acquisition/use/disposal happens outside
+runtime/attempt gates under the original request. Exact refinement never excludes
+matching history. Missing/expired material and governed Parents stay conservative;
+wrong association refuses. Ordinary history, performed cancellation, strict
+original and complete target support remain independent requirements. No historical
+READ is granted. Prefix and indirect box/contact correction use the same generic
+history consumer; governed historical relevance stays conservative. See
+the [correction contract](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
+
+### Native historical Source material receipts
+
+An actual Source observation may call `authored_history_impact` on a genuine
+canonical occurrence. The sealed view validates actual Native ownership and
+carries affected rows plus funded weak before/after material receipts. Opaque
+payload acquisition/use/release occurs outside all runtime/attempt gates; expiry
+is conservative. This admits no historical READ. Query's qualified Public
+correction consumer interprets this metadata at its outside-guard boundary. See the [Native API](../crates/worth-relational/API_OVERVIEW.md#historical-source-material-metadata)
+and [foundation plan](../plans/WORTH-query/milestone-9.19-phase4-historical-candidate-plan.md).
+
 ### Retain an accepted physical Store close
 
 Platform workers already inside an admitted kernel can retain its immutable
@@ -1379,3 +1584,17 @@ returns after genuine bootstrap publication, so its first manual checkpoint
 is post-bootstrap. This fresh-data contract does not qualify selected Complete
 Home reconstruction or physical Directory close. See [Native fresh admission](../crates/worth-relational/README.md#admit-the-original-fresh-home-source)
 and [World fresh attachment](../crates/worth-runtime-world/README.md#attach-a-genuinely-fresh-home).
+
+### Read the Bank current account roster through a managed Source
+
+Bank's `queries::current_accounts()` is a current-only managed Parent over the
+unchanged v1 account-discovery binding. It uses the actual principal mapping and
+`DiscoverOwnAccounts` ability, with personal ownership, authorized-user and
+business-owner paths deduplicated by account. The existing `queries::accounts()`
+and its pinned reads retain their contract. All-account output visits every
+matching Source row; this does not claim selective pruning or continuation.
+The Bank contribution installs its finite provider through the ordinary
+configuration owner. Actual grant/revoke and creation maintain stable occurrence
+slots without rebuilding warm roots. See the [Bank declaration](../workspaces/worth-query-bank-world/crates/bank-domain/src/queries/current_accounts.rs),
+[provider](../workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/current_accounts/provider.rs)
+and [ordinary receiver courts](../workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_reads/current_accounts/mod.rs).

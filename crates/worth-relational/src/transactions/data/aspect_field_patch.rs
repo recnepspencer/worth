@@ -128,7 +128,7 @@ impl<'de> Deserialize<'de> for AspectFieldPatch {
     where
         D: Deserializer<'de>,
     {
-        let bytes = Vec::<u8>::deserialize(deserializer)?;
+        let bytes = crate::aspect_wire::read_canonical_bytes(deserializer)?;
         Self::from_canonical_bytes(&bytes).map_err(serde::de::Error::custom)
     }
 }

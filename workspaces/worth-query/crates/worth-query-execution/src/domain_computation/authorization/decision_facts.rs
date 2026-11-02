@@ -7,7 +7,11 @@ use super::{
     WorthQueryRetainedCapabilityAuthorization,
 };
 mod admitted_currentness;
+mod source_read_support;
 pub(in crate::domain_computation) use admitted_currentness::AuthorizationCurrentnessStop;
+pub(in crate::domain_computation) use source_read_support::{
+    SourceAuthorizationLocus, SourceReadSupport, SourceReadSupportCurrentnessStop,
+};
 pub(super) mod authorization;
 mod principal_currentness;
 mod provider_binding;

@@ -14,6 +14,9 @@ mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
 mod phase;
+pub(super) use phase::{
+    WorthQueryApprovedApplicationCandidate, WorthQueryRetiredApplicationAttemptPhase,
+};
 mod registered_reads;
 mod registration;
 mod retained_basis;
@@ -75,6 +78,7 @@ enum WorthQueryApplicationAttemptEntry {
         identity: u64,
     },
 }
+pub(super) struct WorthQueryRetiredApplicationAttempt(WorthQueryApplicationAttemptEntry);
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptReservation {
     key: WorthQueryApplicationAttemptLookupKey,
@@ -189,13 +193,12 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
     pub(super) fn retain_invariant_approved(
         &mut self,
         session: WorthQueryProviderSessionView<'_>,
-        candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
-        work: WorthQueryPrimaryMutationWorkCounters,
+        incoming: &mut Option<WorthQueryApprovedApplicationCandidate>,
     ) -> Result<(), &'static str> {
         let state = self
             .attempt_state_mut(session)
             .ok_or("provider session has no registered application attempt")?;
-        state.approve(candidate, work)
+        state.approve(incoming)
     }
 
     pub(super) fn is_staged_session_preparable(
@@ -240,7 +243,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         else {
             unreachable!("commit readiness excludes reservation entries")
         };
-        let (attempt, candidate, work) = state
+        let (attempt, approved) = state
             .take_commit_parts()
             .expect("commit-ready state retains its prepared parts");
         self.attempts.insert(
@@ -248,14 +251,14 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             WorthQueryApplicationAttemptEntry::Committing { identity },
         );
         Some(WorthQueryPreparedProviderApplicationAttempt::new(
-            attempt, candidate, work, attempts, key, identity,
+            attempt, approved, attempts, key, identity,
         ))
     }
 
     pub(super) fn discard_overlay(
         &mut self,
         evidence: crate::domain_computation::provider_session::WorthQueryProvisionalOverlayEvidenceView<'_>,
-    ) -> bool {
+    ) -> Option<WorthQueryRetiredApplicationAttemptPhase> {
         let cleanup = evidence.cleanup_binding();
         let Some(WorthQueryApplicationAttemptEntry::Registered { state, .. }) = self
             .attempts
@@ -263,12 +266,15 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
                 cleanup.affinity_identity(),
             ))
         else {
-            return false;
+            return None;
         };
         state.discard_overlay(cleanup, evidence.physical_overlay_identity())
     }
 
-    pub(super) fn abort(&mut self, session: WorthQueryProviderSessionView<'_>) {
+    pub(super) fn abort(
+        &mut self,
+        session: WorthQueryProviderSessionView<'_>,
+    ) -> Option<WorthQueryRetiredApplicationAttempt> {
         let key = WorthQueryApplicationAttemptLookupKey::from_identity(session.affinity_identity());
         let admitted = self.attempts.get(&key).is_some_and(|entry| match entry {
             WorthQueryApplicationAttemptEntry::Reserved { terminal, .. } => {
@@ -279,9 +285,13 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             }
             WorthQueryApplicationAttemptEntry::Committing { .. } => false,
         });
-        if admitted {
-            self.attempts.remove(&key);
-        }
+        admitted
+            .then(|| {
+                self.attempts
+                    .remove(&key)
+                    .map(WorthQueryRetiredApplicationAttempt)
+            })
+            .flatten()
     }
 
     #[cfg(test)]

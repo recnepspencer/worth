@@ -45,6 +45,16 @@ pub(crate) fn update_digest(hasher: &mut Sha256, definitions: &[Parts]) {
                     count(hasher, case.len());
                     hasher.update(case.as_bytes());
                 }
+                Node::OrderedEvents {
+                    predecessor,
+                    introduced,
+                    retired,
+                } => {
+                    hasher.update([9]);
+                    for index in [predecessor, introduced, retired] {
+                        count(hasher, *index);
+                    }
+                }
                 Node::Union { left, right } | Node::Intersection { left, right } => {
                     hasher.update([if matches!(node, Node::Union { .. }) {
                         7

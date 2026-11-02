@@ -27,6 +27,7 @@ pub struct RelationalRuntimeBuilder {
     profile: RelationalRuntimeProfile,
     overrides: RelationalConfigOverride,
     custom_invariants: Vec<CustomInvariantRegistration>,
+    managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
     post_commit_consumer: std::sync::Arc<dyn crate::publication::PostCommitConsumer>,
 }
@@ -37,6 +38,7 @@ impl Default for RelationalRuntimeBuilder {
             profile: RelationalRuntimeProfile::CertificationCore,
             overrides: RelationalConfigOverride::default(),
             custom_invariants: Vec::new(),
+            managed_sources: Vec::new(),
             commit_strategy_executors: Vec::new(),
             post_commit_consumer: crate::publication::production_post_commit_consumer(),
         }
@@ -105,6 +107,16 @@ impl RelationalRuntimeBuilder {
 
     pub fn custom_invariant(mut self, custom_invariant: CustomInvariantRegistration) -> Self {
         self.custom_invariants.push(custom_invariant);
+        self
+    }
+
+    /// Maintain an exact schema-bound Source without registering an invariant.
+    /// Preparation retains the original request's controls and publication owner.
+    pub fn managed_index_source(
+        mut self,
+        program: crate::validation::candidate_source::ManagedIndexSourceProgram,
+    ) -> Self {
+        self.managed_sources.push(program);
         self
     }
 
@@ -236,6 +248,7 @@ impl RelationalRuntimeBuilder {
         RelationalRuntimeDefinition::new(
             RelationalRuntimeConfig::resolved(self.profile, self.overrides),
             RuntimeExtensions::new(self.custom_invariants, self.commit_strategy_executors)
+                .with_managed_index_sources(self.managed_sources)
                 .with_post_commit_consumer(self.post_commit_consumer),
         )
     }

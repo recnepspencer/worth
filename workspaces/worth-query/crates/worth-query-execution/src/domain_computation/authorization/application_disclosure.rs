@@ -19,6 +19,7 @@ pub(in crate::domain_computation) use decision::{
     WorthQueryApplicationGovernanceBinding, WorthQueryApplicationInternalProjectionAdmission,
     WorthQueryApplicationQueryGovernance, WorthQueryApplicationQueryGovernanceDenialKind,
     WorthQueryPendingApplicationQueryGovernance, WorthQueryPreparedApplicationGovernance,
+    WorthQueryRetainedQueryInfluence, WorthQueryRetainedQueryInfluenceDenial,
 };
 pub use receipt::{
     WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,

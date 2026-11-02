@@ -1,6 +1,7 @@
 //! Count real request checks; callbacks may only signal external cancellation.
 use std::cell::RefCell;
 struct Probe {
+    scope: Option<crate::backend::ObservationScope>,
     count: usize,
     charges: Vec<(usize, u64)>,
     checkpoint_stops: std::collections::HashMap<usize, usize>,
@@ -15,9 +16,28 @@ pub struct RequestConsultObservationForTest {
 }
 impl RequestConsultObservationForTest {
     pub fn install_on_this_thread_for_test(observe: impl FnMut(usize) + 'static) -> Self {
+        Self::install(None, observe)
+    }
+    /// Observe only the actual current root and its genuine active descendants.
+    /// Nested or noncurrent receivers refuse; prefixes keep their root meaning.
+    /// Detached diagnostics are excluded. Weak metadata retains no live meter.
+    pub fn install_in_scope_on_this_thread_for_test(
+        context: &crate::MapKernelContext<'_, '_>,
+        observe: impl FnMut(usize) + 'static,
+    ) -> Result<Self, crate::WorkCeilingDenial> {
+        let scope = crate::backend::ObservationScope::current(context).ok_or(
+            crate::WorkCeilingDenial::Admission(crate::LeaseDenial::NoActiveExecutionScope),
+        )?;
+        Ok(Self::install(Some(scope), observe))
+    }
+    fn install(
+        scope: Option<crate::backend::ObservationScope>,
+        observe: impl FnMut(usize) + 'static,
+    ) -> Self {
         Self {
             previous: PROBE.with(|p| {
                 p.replace(Some(Probe {
+                    scope,
                     count: 0,
                     charges: Vec::new(),
                     checkpoint_stops: Default::default(),
@@ -37,6 +57,10 @@ impl RequestConsultObservationForTest {
     pub fn stop_origins_for_test(&self) -> Vec<(usize, usize)> {
         PROBE.with(|p| p.borrow().as_ref().unwrap().stop_origins.clone())
     }
+    /// Passive marker admission; reading saved records needs no active scope.
+    pub fn is_current_scope_observed_for_test(&self) -> bool {
+        is_installed()
+    }
     pub fn count_for_test(&self) -> usize {
         PROBE.with(|p| p.borrow().as_ref().unwrap().count)
     }
@@ -47,7 +71,14 @@ impl Drop for RequestConsultObservationForTest {
     }
 }
 fn is_installed() -> bool {
-    PROBE.with(|p| p.borrow().is_some())
+    PROBE.with(|p| {
+        p.borrow().as_ref().is_some_and(|probe| {
+            probe
+                .scope
+                .as_ref()
+                .is_none_or(|scope| scope.admits_current())
+        })
+    })
 }
 pub(crate) fn reached() {
     if !is_installed() {
@@ -85,6 +116,9 @@ pub(crate) fn charged_prefix(required: impl FnOnce() -> u64) {
 }
 
 pub(crate) fn stopped(checkpoint: Option<(usize, bool)>) {
+    if !is_installed() {
+        return;
+    }
     PROBE.with(|p| {
         if let Some(probe) = p.borrow_mut().as_mut() {
             let origin = match checkpoint {

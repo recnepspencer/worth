@@ -17,6 +17,12 @@ use crate::{BankCommitDenialKind, BankCommitDenialStage};
 
 #[derive(Debug)]
 pub enum BankEstateElevationRequestOutcome {
+    ProductPreparationPending(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationPending,
+    ),
+    ProductPreparationRefused(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationRefused,
+    ),
     CleanupRequired(crate::BankManagedCleanup),
     ProductStale(WorthQueryProductStaleApplication),
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
@@ -39,6 +45,12 @@ pub enum BankEstateElevationRequestOutcome {
 
 #[derive(Debug)]
 pub enum BankEstateElevationApprovalOutcome {
+    ProductPreparationPending(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationPending,
+    ),
+    ProductPreparationRefused(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationRefused,
+    ),
     CleanupRequired(crate::BankManagedCleanup),
     ProductStale(
         WorthQueryProductStaleApplication,
@@ -69,6 +81,12 @@ pub enum BankEstateElevationApprovalOutcome {
 
 #[derive(Debug)]
 pub enum BankEstateElevationCloseOutcome {
+    ProductPreparationPending(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationPending,
+    ),
+    ProductPreparationRefused(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationRefused,
+    ),
     CleanupRequired(crate::BankManagedCleanup),
     ProductStale(
         WorthQueryProductStaleApplication,
@@ -99,6 +117,12 @@ pub enum BankEstateElevationCloseOutcome {
 
 #[derive(Debug)]
 pub enum BankEstateMandatoryReviewOutcome {
+    ProductPreparationPending(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationPending,
+    ),
+    ProductPreparationRefused(
+        worth_query_host::facade::primary_graph::WorthQueryProductPreparationRefused,
+    ),
     CleanupRequired(crate::BankManagedCleanup),
     ProductStale(WorthQueryProductStaleApplication, BankEstateMandatoryReview),
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
@@ -127,6 +151,12 @@ pub enum BankEstateMandatoryReviewOutcome {
 impl BankEstateElevationRequestOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationRequestOutcome) -> Self {
         match outcome {
+            WorthQueryElevationRequestOutcome::ProductPreparationPending(pending) => {
+                Self::ProductPreparationPending(pending)
+            }
+            WorthQueryElevationRequestOutcome::ProductPreparationRefused(refused) => {
+                Self::ProductPreparationRefused(refused)
+            }
             WorthQueryElevationRequestOutcome::CleanupRequired(owner) => {
                 Self::CleanupRequired(owner.into())
             }
@@ -162,6 +192,12 @@ impl BankEstateElevationRequestOutcome {
 impl BankEstateElevationApprovalOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationApprovalOutcome) -> Self {
         match outcome {
+            WorthQueryElevationApprovalOutcome::ProductPreparationPending(pending) => {
+                Self::ProductPreparationPending(pending)
+            }
+            WorthQueryElevationApprovalOutcome::ProductPreparationRefused(refused) => {
+                Self::ProductPreparationRefused(refused)
+            }
             WorthQueryElevationApprovalOutcome::CleanupRequired(owner) => {
                 Self::CleanupRequired(owner.into())
             }
@@ -206,6 +242,12 @@ impl BankEstateElevationApprovalOutcome {
 impl BankEstateElevationCloseOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationCloseOutcome) -> Self {
         match outcome {
+            WorthQueryElevationCloseOutcome::ProductPreparationPending(pending) => {
+                Self::ProductPreparationPending(pending)
+            }
+            WorthQueryElevationCloseOutcome::ProductPreparationRefused(refused) => {
+                Self::ProductPreparationRefused(refused)
+            }
             WorthQueryElevationCloseOutcome::CleanupRequired(owner) => {
                 Self::CleanupRequired(owner.into())
             }
@@ -250,6 +292,12 @@ impl BankEstateElevationCloseOutcome {
 impl BankEstateMandatoryReviewOutcome {
     pub(crate) fn from_query(outcome: WorthQueryMandatoryReviewOutcome) -> Self {
         match outcome {
+            WorthQueryMandatoryReviewOutcome::ProductPreparationPending(pending) => {
+                Self::ProductPreparationPending(pending)
+            }
+            WorthQueryMandatoryReviewOutcome::ProductPreparationRefused(refused) => {
+                Self::ProductPreparationRefused(refused)
+            }
             WorthQueryMandatoryReviewOutcome::CleanupRequired(owner) => {
                 Self::CleanupRequired(owner.into())
             }

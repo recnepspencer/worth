@@ -274,22 +274,7 @@ where
                 let entity = writer
                     .create_entity(Body::reference(), key)
                     .map_err(HandlerExecutionDenial::new)?;
-                writer
-                    .initialize_field(&entity, BodyKey::reference(), vertex.body_key.clone())
-                    .map_err(HandlerExecutionDenial::new)?;
-                writer
-                    .initialize_field(&entity, PositionX::reference(), vertex.x)
-                    .map_err(HandlerExecutionDenial::new)?;
-                writer
-                    .initialize_field(&entity, PositionY::reference(), vertex.y)
-                    .map_err(HandlerExecutionDenial::new)?;
-                writer
-                    .initialize_field(
-                        &entity,
-                        Length::reference(),
-                        worth_query_consumer_values::PositiveLength::new(1).unwrap(),
-                    )
-                    .map_err(HandlerExecutionDenial::new)?;
+                super::planar_vertex::initialize_planar_vertex(writer, &entity, vertex)?;
                 writer
                     .create_member::<PlanarCreatedOutputs<Schema>>(&vertex.body_key, &entity)
                     .map_err(HandlerExecutionDenial::new)?;
