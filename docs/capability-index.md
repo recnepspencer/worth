@@ -51,6 +51,14 @@ Use these entry points to find an API and its worked use.
 
 ## Task index
 
+Choose [native representations](native-representations.md) before a durable
+value binding: flat scalar fields, named entities and actual typed relations.
+The [candidate-only one-of pattern](native-representations.md#one-class-one-optional-aspect)
+includes required class payloads, complete rule scope and atomic transitions;
+its lawful at-pin refusal requires the repin. The
+[source-subgraph contract and court](source-subgraphs.md) cover partial member
+edit, pinned previous state, recorded undo and a generated-member witness.
+
 For a new installed feature, use the
 [complete feature definition](build-an-application.md#complete-feature-definitions)
 first: `host::worth_query_application_contribution! { pub feature ... }` projects
@@ -226,9 +234,16 @@ lowering or publication; an unreadable encoding returns a typed commit refusal.
 See the [compiled entry delegate](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs)
 and [representation and guard guidance](build-an-application.md#inline-opaque-values).
 
-For nested persisted values, use the existing value-binding macro's
-`scalar: String, canonical,` arm with Query-free
-`WorthValue` derivation. The installed value-binding catalog retains the derived
+For independently edited persisted structure, use the
+[native representation table](native-representations.md). For an intentional identity-free, reference-free canonical atom or
+an explicit document boundary, use
+`decl::worth_query_value_binding!`'s `scalar: String, canonical,` arm with
+`decl::application_schema::WorthValue` derivation (or the pure owner's existing
+value). Record the owner, representation policy, reason and reference guard.
+The entire atom is one native field: its nested grammar grants no inner-field
+read, patch, touch or invalidation. See the
+[Store grain contract](../plans/worth-store/storage-foundation-aspect-native-gate.md#current-value-grain-contract).
+The installed value-binding catalog retains the derived
 shape and any explicit domain representation policy. Fixed arrays, checked
 indices, `Box`, exact
 pairs and tagged named variants use the checked seed path. Complete closure

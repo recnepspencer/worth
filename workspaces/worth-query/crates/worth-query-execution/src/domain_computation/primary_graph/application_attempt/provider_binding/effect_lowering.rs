@@ -33,6 +33,11 @@ pub(super) use unique_values::UniqueValueWrites;
 
 #[derive(Clone)]
 pub(super) enum WorthQueryLoweredProviderEffect {
+    EntityAspectPatch {
+        steps: Vec<WorthQueryProvisionalEffectStep>,
+        entity_id: EntityId,
+        operations: Vec<worth_foundational::facade::PortableAspectPatchOperation>,
+    },
     Mutation {
         steps: Vec<WorthQueryProvisionalEffectStep>,
         intent: MutationIntent,
@@ -111,6 +116,7 @@ pub(super) fn lower_provider_effect(
     contracts: &AspectContracts<'_>,
     created: &CreatedEffectReferences,
     mutation_partition: worth_relational::facade::identity::PartitionId,
+    composed_aspect_patch: bool,
     effect: WorthQueryApplicationRealizedEffect,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     match effect {
@@ -133,7 +139,7 @@ pub(super) fn lower_provider_effect(
             let absent = fields.keys().try_fold(false, |absent, field| {
                 facts.aspect_absent(entity_id, field).map(|v| absent || v)
             })?;
-            if absent {
+            if absent || composed_aspect_patch {
                 entity_field_patch::ordinary(facts, unique, contracts, &entity, entity_id, fields)
             } else {
                 lower_update_entity(facts, unique, entity_id, fields)
@@ -147,7 +153,7 @@ pub(super) fn lower_provider_effect(
             let absent = fields.keys().try_fold(false, |absent, field| {
                 facts.aspect_absent(entity_id, field).map(|v| absent || v)
             })?;
-            if absent {
+            if absent || composed_aspect_patch {
                 entity_field_patch::optional(facts, unique, contracts, &entity, entity_id, fields)
             } else {
                 optional_field_patch::lower(facts, unique, entity_id, fields)
