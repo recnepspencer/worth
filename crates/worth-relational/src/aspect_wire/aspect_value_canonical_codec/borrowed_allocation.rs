@@ -13,6 +13,13 @@ pub(crate) fn body_decoded_bytes<E>(
         malformed,
     };
     let bytes = match input.byte()? {
+        tags::INLINE_BYTES => {
+            let length = input.length()?;
+            worth_foundational::InlineBytes::admit_length(length)
+                .map_err(|_| (input.malformed)())?;
+            input.skip(length)?;
+            length
+        }
         tags::NULL => 0,
         tags::BOOL | tags::INT8 | tags::UINT8 => {
             input.skip(1)?;
@@ -102,11 +109,13 @@ impl<E, F: FnMut() -> Result<u8, E>, M: Fn() -> E> Input<F, M> {
         Ok(())
     }
     fn string(&mut self) -> Result<usize, E> {
-        let length =
-            u32::from_le_bytes([self.byte()?, self.byte()?, self.byte()?, self.byte()?]) as usize;
+        let length = self.length()?;
         self.skip(length)?;
         // Canonical numeric constructors only move their validated String;
         // raw text similarly owns exactly this decoded spelling.
         Ok(length)
+    }
+    fn length(&mut self) -> Result<usize, E> {
+        Ok(u32::from_le_bytes([self.byte()?, self.byte()?, self.byte()?, self.byte()?]) as usize)
     }
 }
