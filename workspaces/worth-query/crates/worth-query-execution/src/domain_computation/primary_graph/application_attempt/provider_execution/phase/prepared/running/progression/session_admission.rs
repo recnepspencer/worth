@@ -42,8 +42,7 @@ pub(super) fn admit_provider_session<'run>(
         Err(cause) => {
             return Err(WorthQueryProviderSessionAdmissionFailure {
                 outcome: WorthQueryProviderProgressionOutcome::Denied(
-                    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                        DenialStage::ProviderPlan,format!("provider session admission: {cause:?}"))),
+                    crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_admission_denied(cause)),
                 mutation_run,
             })
         }

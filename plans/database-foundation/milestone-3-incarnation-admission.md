@@ -333,3 +333,20 @@ It retains the existing typed request-authorization cause at BasisAdmission.
 This is a further narrow P-D call-admission seam; current and foreign-owner
 policy handling remains unchanged. The earlier shared disclosure/recovery
 correction passes 213 selected controls before this additional entry correction.
+
+
+## Provider-session receiver correction
+
+The fourth fresh review of ddc5ca19a9 rejected two permitted owner defects:
+provider-plan readmission compared phase equality before Home incarnation, and
+plan/commit outcome projection erased a plain typed StaleIncarnation cause.
+Readmission now compares the carried actual product/run owner with the actual
+phase owner before generic phase custody, and checks the actual run owner before
+product binding can classify it generically, preserving foreign-phase semantics
+and returning before provider calls on stale authority. Both consumer stages
+retain StaleIncarnation in execution_denial_cause. The focused projection test
+stale_provider_session_cause_survives_plan_and_commit_projection is pure error
+metadata evidence; actual filesystem N+1 session qualification remains blocked
+by reserved readmission. Existing selected-product current/foreign courts
+exercise unchanged affinity and zero-provider-call behavior. No installation,
+Native, Store Section or Host-opening implementation changes are made.

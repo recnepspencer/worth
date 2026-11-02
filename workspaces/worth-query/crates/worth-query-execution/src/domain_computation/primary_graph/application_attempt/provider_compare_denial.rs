@@ -105,7 +105,10 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         Kind::ForeignExecutionBasis => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
-        Kind::ForeignGraphAuthority | Kind::StaleIncarnation => {
+        Kind::StaleIncarnation => {
+            Denial::provider_execution_denied(Stage::ProviderCommit, Ok(kind), detail)
+        }
+        Kind::ForeignGraphAuthority => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
         Kind::UndeclaredOperationScope => {
@@ -156,6 +159,21 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn read_se
 
 #[cfg(test)]
 mod tests;
+
+pub(in crate::domain_computation::primary_graph) fn provider_session_admission_denied(
+    failure: crate::domain_computation::WorthQueryProviderSessionFailure,
+) -> Denial {
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    if failure.kind() == Kind::StaleIncarnation {
+        Denial::provider_execution_denied(Stage::ProviderPlan, Ok(failure.kind()), failure.detail())
+            .with_provider_session_failure(failure)
+    } else {
+        Denial::provider_rejected_with_detail(
+            Stage::ProviderPlan,
+            format!("provider session admission: {failure:?}"),
+        )
+    }
+}
 
 pub(in crate::domain_computation::primary_graph) fn provider_session_execution_denied(
     stop: Result<

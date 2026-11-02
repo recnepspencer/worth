@@ -248,6 +248,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         mut self,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryProviderSessionFailure> {
+        self.require_current_home(Some(product.observation().owner_identity()))?;
         let Some(expected_product) = self.contract.application_product_identity() else {
             return Err(failure(
                 WorthQueryProviderSessionDenialKind::ForeignExecutionBasis,
@@ -283,6 +284,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
                 run.execution_owner_identity(),
             ),
         };
+        self.require_current_home(phase.world_owner())?;
         let request = match &self.product {
             WorthQueryProviderProductAffinity::Standalone => match owner_identity {
                 Some(owner) => phase.request_for_owner(owner),
@@ -360,5 +362,6 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
     }
 }
 
+mod incarnation;
 mod validation;
 use validation::{failure, retain_session_provider, undeclared_scope, validate_common_authority};
