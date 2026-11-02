@@ -31,7 +31,8 @@ pub use worth_runtime_bridge::facade::{
 
 pub use worth_signal::facade::branch::{
     AdmittedSignalBranchBasis, SignalBranchAdvanceOutcome, SignalBranchBasisAdmissionIdentity,
-    SignalBranchForkOutcome, SignalOwnerCancellationToken, SignalOwnerServicePorts,
+    SignalBranchForkOutcome, SignalInitialEmptyRootRefusal, SignalOwnerCancellationToken,
+    SignalOwnerServicePorts,
 };
 
 pub use worth_signal::facade::{SignalError, SignalTransaction};

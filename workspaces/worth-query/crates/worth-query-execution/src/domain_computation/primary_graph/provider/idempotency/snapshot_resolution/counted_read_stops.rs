@@ -5,33 +5,41 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 #[test]
 fn durable_idempotency_door_preserves_stops_at_every_consult() {
+    // The selected original and source bytes are immutable. Reuse that truth,
+    // but open a fresh real parent for EACH read rather than billing the whole
+    // sweep to one ancestor or rebuilding installation for every cancellation.
+    let world = installed_authorization_world(true);
+    let provider = &world.application.primary_provider;
+    let layout = provider.graph.layout.provider_idempotency().clone();
+    let binding = WorthQueryApplicationIdempotencyBinding::new([9; 32], [7; 32]);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            publish_relational_mutation(
+                &phase.borrowed_request_for_test(),
+                &world,
+                worth_relational::facade::transactions::WorkerIntentBatch::new(
+                    "paid-idempotency-proof",
+                )
+                .push(super::super::idempotency_create_intent(
+                    &layout,
+                    binding,
+                    WorthQueryApplicationCommitOutcomeIdentity::restore(1).unwrap(),
+                    0,
+                    worth_relational::facade::identity::PartitionId(1),
+                    None,
+                    false,
+                )),
+            );
+        })
+        .unwrap();
     crate::test_read_stops::every_consult_in_fresh_scope(
         16 << 20,
         |counted| {
-            let world = installed_authorization_world(true);
             world
                 .application
                 .with_host_advancement(|phase| {
                     let execution = phase.borrowed_request_for_test();
-                    let provider = &world.application.primary_provider;
-                    let layout = provider.graph.layout.provider_idempotency().clone();
-                    let binding = WorthQueryApplicationIdempotencyBinding::new([9; 32], [7; 32]);
-                    publish_relational_mutation(
-                        &execution,
-                        &world,
-                        worth_relational::facade::transactions::WorkerIntentBatch::new(
-                            "paid-idempotency-proof",
-                        )
-                        .push(super::super::idempotency_create_intent(
-                            &layout,
-                            binding,
-                            WorthQueryApplicationCommitOutcomeIdentity::restore(1).unwrap(),
-                            0,
-                            worth_relational::facade::identity::PartitionId(1),
-                            None,
-                            false,
-                        )),
-                    );
                     let selected = world.selected_product(&phase.test_host_request());
                     let snapshot = selected.application_basis().snapshot_handle();
                     let product = selected.product().publication_binding();
