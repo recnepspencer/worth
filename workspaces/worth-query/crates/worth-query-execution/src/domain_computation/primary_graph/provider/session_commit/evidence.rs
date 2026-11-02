@@ -8,11 +8,13 @@ use super::super::idempotency::WorthQueryIdempotencyLookupKey;
 use super::super::WorthQueryPrimaryGraphCommittedApplication;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold;
 mod correction_witness;
+mod home_retirement;
 
 /// Immutable owner evidence indexed by the Relational commit that produced it.
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommitEvidenceStore {
     by_commit: BTreeMap<CommitId, WorthQueryPrimaryGraphCommittedApplication>,
+    home_retired_through: Option<CommitId>,
     by_dispatch_correlation: BTreeMap<
         crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
         BTreeSet<CommitId>,

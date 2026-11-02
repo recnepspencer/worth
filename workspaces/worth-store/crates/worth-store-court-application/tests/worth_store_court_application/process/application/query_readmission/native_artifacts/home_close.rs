@@ -217,3 +217,102 @@ fn assert_checkpoint_memory_failure(cause: &ApplicationHomeCheckpointDenial) {
         "expected the actual memory ceiling refusal: {cause:?}"
     );
 }
+
+#[test]
+fn ordinary_mutation_host_physically_closes_with_original_retired_allocations_alive() {
+    let path = tempfile::tempdir().unwrap();
+    let live = serial(None, None);
+    let execution = ExecutionRequest::serial(&live);
+    let initialized = Arc::new(AtomicUsize::new(0));
+    let contacts = Arc::new(AtomicUsize::new(0));
+    let home = open(
+        path.path(),
+        execution,
+        initialized.clone(),
+        contacts.clone(),
+    );
+    assert!(matches!(
+        set(home.runtime(), 8),
+        WorthQueryApplicationMutationOutcome::Committed { result: 8, .. }
+    ));
+    assert_eq!(balance(home.runtime()), 8);
+    let closed = home.close(&execution).unwrap_or_else(|refused| {
+        panic!("original mutation Home must physically close: {refused:?}")
+    });
+    assert!(matches!(
+        closed.outcome(),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Ok(_),
+            ..
+        }
+    ));
+    assert_eq!(initialized.load(Ordering::SeqCst), 1);
+    assert_eq!(
+        contacts.load(Ordering::SeqCst),
+        1,
+        "retirement never reexecutes a supplier"
+    );
+    assert_physical_lease_released(path.path(), &execution);
+    assert!(closed.is_closed());
+    closed.reclaim();
+}
+
+#[test]
+fn held_original_publication_receipt_refuses_close_and_same_home_resumes() {
+    use worth_query_host::facade::primary_graph::{
+        WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
+    };
+    let path = tempfile::tempdir().unwrap();
+    let live = serial(None, None);
+    let execution = ExecutionRequest::serial(&live);
+    let initialized = Arc::new(AtomicUsize::new(0));
+    let contacts = Arc::new(AtomicUsize::new(0));
+    let home = open(
+        path.path(),
+        execution,
+        initialized.clone(),
+        contacts.clone(),
+    );
+    let WorthQueryApplicationMutationOutcome::Committed { receipt, result: 8 } =
+        set(home.runtime(), 8)
+    else {
+        panic!("one actual original publication");
+    };
+    let original_commit = receipt.commit_reference().clone();
+    let refused = home
+        .close(&execution)
+        .err()
+        .expect("actual retained publication receipt refuses before World seal");
+    assert!(
+        matches!(
+            refused.query_denial(),
+            Some(Denial::Busy(Owner::PublicationReceipts))
+        ),
+        "{refused:?}"
+    );
+    let home = refused.resume().unwrap_or_else(|refused| {
+        panic!("same receipt refusal must preserve serving Home: {refused:?}")
+    });
+    assert_eq!(balance(home.runtime()), 8);
+    assert_eq!(receipt.commit_reference(), &original_commit);
+    assert!(matches!(
+        operations::set_key(home.runtime(), 0xd11_ace, 9),
+        WorthQueryApplicationMutationOutcome::Committed { result: 9, .. }
+    ));
+    assert_eq!(balance(home.runtime()), 9);
+    assert_eq!(initialized.load(Ordering::SeqCst), 1);
+    assert_eq!(contacts.load(Ordering::SeqCst), 2);
+    assert!(matches!(
+        physical_media_admission().qualify_home(path.path()),
+        Err(
+            worth_store::physical_runtime::RecoveryFilesystemQualificationError::OwnershipContended
+        )
+    ));
+    drop(receipt);
+    let closed = home.close(&execution).unwrap_or_else(|refused| {
+        panic!("same Home closes after the original receipt releases: {refused:?}")
+    });
+    assert!(closed.is_closed());
+    assert_physical_lease_released(path.path(), &execution);
+    closed.reclaim();
+}

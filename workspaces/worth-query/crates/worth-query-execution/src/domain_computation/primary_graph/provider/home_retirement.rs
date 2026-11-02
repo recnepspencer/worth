@@ -15,6 +15,7 @@ pub(crate) struct PrimaryProviderCustody {
 }
 enum ProviderRetirementStage {
     ReceiptBases,
+    Publications,
     Source,
     Complete,
 }
@@ -69,6 +70,17 @@ impl PrimaryProviderCustody {
                     .map_err(|_| Denial::Busy(Owner::ReceiptBases))?
                     .advance_home_retirement(request)?;
                 if progress == Progress::Complete {
+                    self.stage = ProviderRetirementStage::Publications;
+                }
+                Ok(Progress::Advanced)
+            }
+            ProviderRetirementStage::Publications => {
+                let progress = provider
+                    .completed_commit_evidence
+                    .try_lock()
+                    .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?
+                    .advance_home_retirement(request, native)?;
+                if progress == Progress::Complete {
                     self.stage = ProviderRetirementStage::Source;
                 }
                 Ok(Progress::Advanced)
@@ -120,6 +132,10 @@ impl WorthQueryPrimaryGraphProvider {
             return Err(Denial::Busy(Owner::GraphProvider));
         }
         drop(unpublished);
+        self.completed_commit_evidence
+            .try_lock()
+            .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?
+            .preflight_home_retirement(request)?;
         self.outstanding_dispatch.preflight_home_retirement()?;
         self.receipt_basis_retention
             .try_lock()

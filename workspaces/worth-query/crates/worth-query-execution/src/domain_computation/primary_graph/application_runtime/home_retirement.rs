@@ -22,6 +22,7 @@ pub enum WorthQueryHomeRetirementOwner {
     RelationalSource,
     GraphProvider,
     ReceiptBases,
+    PublicationReceipts,
     HomeMaintenance,
 }
 
@@ -42,6 +43,7 @@ pub enum WorthQueryHomeRetirementDenial {
     BridgeBasis(worth_runtime_bridge::facade::RelationalBridgeBasisRetirementDenial),
     CanonicalSubscription(worth_relational::facade::mvcc::PublicationCompanionRetirementDenial),
     Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
+    Publication(worth_runtime_world::facade::ConsumedPublicationRetirementDenial),
     Execution(worth_execution::WorkCeilingDenial),
 }
 
