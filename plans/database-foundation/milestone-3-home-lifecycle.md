@@ -2023,3 +2023,21 @@ libtest stack in `integration-accounting-empty-owner-qualified.log`.
 The same-harness fixture boundary correction is committed in `a6fbfc05a8`;
 it retires the prerequisite-projection claims/tests of the two named abandoned
 commits, with the original independent process guards restored.
+
+
+### Default-stack reopening phase returns
+
+The selected-Complete Host court, invoked directly with RUST_MIN_STACK unset,
+exposed a real default-stack overflow in Store planning: the captured debugger
+instruction is __chkstk entered by blob-reclaim verification (219,032 bytes).
+Host's opening dispatcher previously retained its 298,296-byte frame through
+physical recovery and every later origin-specific phase. The authorized Host
+correction returns physical/Native preparation before entering the Store origin
+gate, and returns existing Native finalization, World/source attachment, and
+Query attachment before entering the next phase. Each return carries the same
+actual owner/proof types; no authority, source, request, or initializer is
+replaced. The Store initialization callback still returns (), retaining its
+owning result in Host. Memory-only preparation has its own returning frame.
+Explicit non-inlined boundaries follow integration commit 95536adbf8. Static
+frame observations establish the defect, not sufficiency: direct unset-stack
+controls must qualify the resulting binary.

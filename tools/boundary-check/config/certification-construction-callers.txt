@@ -34,7 +34,8 @@ native-recovered-inventory crates/worth-runtime-world/src/lifecycle/builder/home
 native-recovered-inventory crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recovered_associated_effects.rs
 native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint.rs
 # D1/D17: only Host opening composes the consuming fresh-Home Query stages.
-query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/memory.rs
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
 query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs
@@ -42,7 +43,7 @@ query-home-preparation workspaces/worth-store/crates/worth-store-court-applicati
 # The source attachment derives Native custody from the actual registered source.
 query-registered-native workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/attachment.rs
 # The actual Home retains raw Native custody through schema and Query preparation.
-native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs
 native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
 native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
 native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs
