@@ -43,10 +43,7 @@ impl WorthQueryApplicationRuntimeCore {
         )
         .and_then(|()| core.validate_current_authority())
         .map_err(|denial| {
-            WorthQuerySourceExpectationDenial::new(
-                WorthQuerySourceExpectationDenialKind::AdmissionAuthorization(denial.kind()),
-                subject,
-            )
+            WorthQuerySourceExpectationDenial::admission_authorization(subject, denial)
         })
     }
 }

@@ -155,10 +155,9 @@ fn check(fault: Fault, pending_entry: bool) {
                 )),
                 Fault::Input => Authorization::Refused(Refusal::InputNotAdmitted),
             };
-            assert_eq!(
-                outcome.unwrap_err().kind(),
-                Denial::AdmissionAuthorization(expected)
-            );
+            let denial = outcome.unwrap_err();
+            assert_eq!(denial.kind(), Denial::AdmissionAuthorization);
+            assert_eq!(denial.authorization_denial().unwrap().kind(), expected);
             assert_eq!(admission.source_partition_identity(), partition);
             assert_eq!(fact_work().source_admission_visits, 0);
             assert_eq!(consult_count_for_test(&consults), 0);
