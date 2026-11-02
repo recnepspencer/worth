@@ -1,5 +1,7 @@
 use super::*;
-pub trait Scenario: ApplicationSchema {
+pub trait Scenario:
+    ApplicationSchema + ApplicationSchemaComposition<Contributions = (Contribution,)>
+{
     const MODE: u8;
 }
 pub struct Model<const MODE: u8>;
@@ -88,7 +90,7 @@ impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
     fn register_members(
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
-        lifecycle::declare(producer::declare(
+        let schema = lifecycle::declare(producer::declare(
             schema
                 .entity(Mapping::reference())
                 .entity(Node::reference())
@@ -105,8 +107,20 @@ impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
                 .application_query(query::definition())
                 .application_query_binding::<query::Binding<S>>(),
         ))
-        .correction::<correction::UndoCreate<S>>()
-        .correction::<correction::UndoRetire<S>>()
+        .correction::<correction::UndoCreate<S>>();
+        if S::MODE == 4 {
+            // The inverse Retire has no correction declaration: only the
+            // prepared retire_created correction can supply its anchor.
+            schema.declared_operation(
+                lifecycle::RetireOp::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+        } else {
+            schema.correction::<correction::UndoRetire<S>>()
+        }
     }
     fn visit_correction<V: ApplicationCorrectionVisitor<S>>(
         source: std::any::TypeId,
@@ -119,7 +133,7 @@ impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
                 V,
             >(visitor));
         }
-        if source == std::any::TypeId::of::<lifecycle::RetireBinding<S>>() {
+        if S::MODE != 4 && source == std::any::TypeId::of::<lifecycle::RetireBinding<S>>() {
             return Ok(dispatch_application_correction::<
                 S,
                 correction::UndoRetire<S>,

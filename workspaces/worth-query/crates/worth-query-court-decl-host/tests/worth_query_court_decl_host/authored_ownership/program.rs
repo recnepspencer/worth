@@ -6,19 +6,19 @@ pub struct Parent;
 pub struct Input;
 pub struct Output;
 pub struct Start;
-impl ApplicationFeature<Schema> for Entry {
+impl<S: Scenario> ApplicationFeature<S> for Entry {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "ownership.entry.v1";
 }
-impl ApplicationFeature<Schema> for Parent {
+impl<S: Scenario> ApplicationFeature<S> for Parent {
     type Inputs = ApplicationFeatureInputList<Input, ApplicationFeatureInputLeaf>;
     const IDENTITY: &'static str = "ownership.parent.v1";
 }
-impl ApplicationOutputPort<Schema, Entry> for Output {
+impl<S: Scenario> ApplicationOutputPort<S, Entry> for Output {
     type Value = query::RowBinding;
     const IDENTITY: &'static str = "ownership.entry.output.v1";
 }
-impl ApplicationInputPort<Schema, Parent> for Input {
+impl<S: Scenario> ApplicationInputPort<S, Parent> for Input {
     type Value = query::RowBinding;
     const IDENTITY: &'static str = "ownership.parent.input.v1";
     const REQUIRED: bool = false;
@@ -26,10 +26,10 @@ impl ApplicationInputPort<Schema, Parent> for Input {
 impl ApplicationConnectionIdentity for Start {
     const IDENTITY: &'static str = "ownership.start.v1";
 }
-impl ApplicationOccurrenceConnectionBinding<Schema, Entry, Parent> for Start {}
-pub type Connection = ApplicationConnectionRef<Schema, Entry, Output, Parent, Input, Start>;
-impl WorthQueryApplicationRequiredOutputConnection<Schema> for Start {
-    type Source = producer::Binding<Schema>;
+impl<S: Scenario> ApplicationOccurrenceConnectionBinding<S, Entry, Parent> for Start {}
+pub type Connection<S = Schema> = ApplicationConnectionRef<S, Entry, Output, Parent, Input, Start>;
+impl<S: Scenario> WorthQueryApplicationRequiredOutputConnection<S> for Start {
+    type Source = producer::Binding<S>;
     type Demand = Demand;
     const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
     fn demand_from_source(
@@ -40,34 +40,34 @@ impl WorthQueryApplicationRequiredOutputConnection<Schema> for Start {
 }
 #[derive(Clone)]
 pub struct Demand(pub u64);
-impl WorthQueryApplicationOutputDemand<Schema> for Demand {
+impl<S: Scenario> WorthQueryApplicationOutputDemand<S> for Demand {
     type OutputFamily = producer::Family;
     fn source_intent(&self) -> query::Input {
         query::Input { id: self.0 }
     }
 }
-pub type Graph = ApplicationDemandOutputGraph<Connection, ApplicationOutputLeaf>;
+pub type Graph<S = Schema> = ApplicationDemandOutputGraph<Connection<S>, ApplicationOutputLeaf>;
 pub struct Program;
-impl ApplicationProgramDefinition<Schema> for Program {
+impl<S: Scenario> ApplicationProgramDefinition<S> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<Graph>;
+    type Outputs = ApplicationProgramOutputs<Graph<S>>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("ownership.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
-            ApplicationFeatureSpec::root::<Schema, Entry>()
+            ApplicationFeatureSpec::root::<S, Entry>()
                 .provides::<Output>()
-                .native_action::<lifecycle::CreateBinding<Schema>>()
+                .native_action::<lifecycle::CreateBinding<S>>()
                 .finish_action()
-                .native_action::<lifecycle::RetireBinding<Schema>>()
+                .native_action::<lifecycle::RetireBinding<S>>()
                 .finish_action()
-                .native_action::<lifecycle::RestoreBinding<Schema>>()
+                .native_action::<lifecycle::RestoreBinding<S>>()
                 .finish_action()
-                .native_action::<lifecycle::PlainBinding<Schema>>()
+                .native_action::<lifecycle::PlainBinding<S>>()
                 .finish_action()
                 .finish(),
-            ApplicationFeatureSpec::root::<Schema, Parent>()
+            ApplicationFeatureSpec::root::<S, Parent>()
                 .conditional_operation::<producer::Operation>()
                 .finish(),
         ]

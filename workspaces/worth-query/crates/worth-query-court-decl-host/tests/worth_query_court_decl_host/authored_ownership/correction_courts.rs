@@ -2,13 +2,13 @@
 use super::{lifecycle::*, program::*, *};
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::*;
-type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
-fn install_program() -> Host {
+type Host<S = Schema> = WorthQueryProgramApplicationRuntime<S, Program>;
+fn install_program<S: Scenario>() -> Host<S> {
     in_memory_program(
-        ApplicationProgramAuthoring::<Schema, Program>::begin()
+        ApplicationProgramAuthoring::<S, Program>::begin()
             .validated_program()
             .unwrap(),
-        Schema::declaration().unwrap(),
+        S::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("919b0039-0000-0000-0000-000000000002").unwrap(),
         host_limits(),
@@ -24,8 +24,8 @@ fn install_program() -> Host {
     )
     .unwrap()
 }
-fn require_lifecycle(depth: u64, expected: &[u64], retire_from_created: bool) {
-    let host = install_program();
+fn require_lifecycle<S: Scenario>(depth: u64, expected: &[u64], retire_from_created: bool) {
+    let host = install_program::<S>();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
@@ -50,7 +50,7 @@ fn require_lifecycle(depth: u64, expected: &[u64], retire_from_created: bool) {
     for _ in 0..depth {
         let mut operation = request
             .demand(Demand(source))
-            .retain_program_outputs::<Program, Graph>(&host)
+            .retain_program_outputs::<Program, Graph<S>>(&host)
             .unwrap_or_else(|error| panic!("{:?}", error.denial()));
         let mut settled = false;
         for _ in 0..32 {
@@ -103,13 +103,13 @@ fn require_lifecycle(depth: u64, expected: &[u64], retire_from_created: bool) {
             receipt
                 .outputs_of::<RetiredOutputs>()
                 .unwrap()
-                .entity::<Retired<Schema>>()
+                .entity::<Retired<S>>()
                 .unwrap()
                 .entity_id(),
             created
                 .outputs_of::<CreatedOutputs>()
                 .unwrap()
-                .entity::<Created<Schema>>()
+                .entity::<Created<S>>()
                 .unwrap()
                 .entity_id()
         );
@@ -134,13 +134,13 @@ fn require_lifecycle(depth: u64, expected: &[u64], retire_from_created: bool) {
         restored
             .outputs_of::<CreatedOutputs>()
             .unwrap()
-            .entity::<Created<Schema>>()
+            .entity::<Created<S>>()
             .unwrap()
             .entity_id(),
         created
             .outputs_of::<CreatedOutputs>()
             .unwrap()
-            .entity::<Created<Schema>>()
+            .entity::<Created<S>>()
             .unwrap()
             .entity_id()
     );
@@ -156,9 +156,9 @@ fn require_lifecycle(depth: u64, expected: &[u64], retire_from_created: bool) {
         );
     }
 }
-fn route_choice_refusal(
-    host: &Host,
-    request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+fn route_choice_refusal<S: Scenario>(
+    host: &Host<S>,
+    request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     depth: u64,
 ) {
     let ids = if depth == 1 {
@@ -207,16 +207,16 @@ fn route_choice_refusal(
 #[test]
 fn query_authored_correction_retires_and_restores_source_and_realization() {
     // S=10; publication {R=101,C=102}.
-    require_lifecycle(1, &[10, 101, 102], false);
+    require_lifecycle::<Schema>(1, &[10, 101, 102], false);
 }
 #[test]
 fn query_authored_correction_retires_and_restores_parent_child_and_leaf() {
     // S; {Rp,Sc}; {Rc,Sl}; {Rl,C} are seven independently resolved logical keys.
-    require_lifecycle(3, &[10, 101, 102, 1021, 1022, 10221, 10222], false);
+    require_lifecycle::<Schema>(3, &[10, 101, 102, 1021, 1022, 10221, 10222], false);
 }
 
-fn reverse(
-    request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+fn reverse<S: Scenario>(
+    request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     receipt: &WorthQueryApplicationCommitReceipt,
     key: &str,
 ) -> WorthQueryApplicationCommitReceipt {
@@ -241,9 +241,18 @@ fn reverse(
 
 #[test]
 fn query_retire_created_carries_the_authored_source_anchor() {
-    require_lifecycle(1, &[10, 101, 102], true);
+    require_lifecycle::<Schema>(1, &[10, 101, 102], true);
 }
 #[test]
 fn query_retire_created_carries_the_nested_authored_source_anchor() {
-    require_lifecycle(3, &[10, 101, 102, 1021, 1022, 10221, 10222], true);
+    require_lifecycle::<Schema>(3, &[10, 101, 102, 1021, 1022, 10221, 10222], true);
+}
+
+#[test]
+fn retire_created_supplies_the_anchor_without_an_inverse_correction_declaration() {
+    require_lifecycle::<Model<4>>(1, &[10, 101, 102], true);
+}
+#[test]
+fn nested_retire_created_supplies_the_anchor_without_an_inverse_correction_declaration() {
+    require_lifecycle::<Model<4>>(3, &[10, 101, 102, 1021, 1022, 10221, 10222], true);
 }
