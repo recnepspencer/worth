@@ -3,6 +3,7 @@ use super::*;
 use crate::identity::data::{EntityId, RelationId};
 use crate::indexes::data::*;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
+use std::sync::Arc;
 
 pub(in super::super) fn quote(
     value: BorrowedPayload<'_>,

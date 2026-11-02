@@ -139,6 +139,9 @@ impl RelationalCommitEnvelopeResidency {
             .canonical_read
             .read_member(&directory.source, execution, member, limit)
             .map_err(crate::durability::checkpoint_history::capture::owned_stop)?;
+        // Only this consumer read a canonical body; generic selected reads
+        // also carry derived-index members and cannot certify this event.
+        directory.source.observe_canonical_member_read(member);
         if <[u8; 32]>::from(<sha2::Sha256 as sha2::Digest>::digest(bytes.bytes())) != member.sha256
             || bytes.len() as u64 != member.length
         {

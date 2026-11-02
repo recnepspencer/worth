@@ -46,7 +46,6 @@ impl SelectedCheckpointRead {
             .0
             .original
             .read_selected_member(source, request, member, limit)?;
-        source.observe_canonical_member_read(member);
         Ok(bytes)
     }
     pub(crate) fn into_retirement(self) -> SelectedCheckpointReadRetirement {
