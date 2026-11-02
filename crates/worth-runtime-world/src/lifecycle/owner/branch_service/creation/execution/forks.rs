@@ -248,6 +248,12 @@ fn relational_fork_stop(
         RelationalBranchTransitionStop::RequestStopped(_) => {
             RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
         }
+        RelationalBranchTransitionStop::OriginalInputsStopped(stop) => {
+            return ForkFailure {
+                denial: original_input_denial(stop),
+            }
+            .into();
+        }
         RelationalBranchTransitionStop::DurabilityUnresolved(unresolved) => {
             return RelationalForkFailure::Unresolved(unresolved);
         }
@@ -279,4 +285,48 @@ fn signal_fork_failure(
         _ => RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
     };
     ForkFailure { denial }
+}
+
+fn original_input_denial(
+    stop: worth_relational::facade::durability::RelationalRecoveryStop,
+) -> RuntimeWorldBranchAdmissionDenial {
+    use worth_relational::facade::{
+        durability::RelationalRecoveryStop as Stop,
+        transactions::RelationalExecutionDenialCause as Cause,
+    };
+    match stop {
+        Stop::Allocation(_) => RuntimeWorldBranchAdmissionDenial::CapacityExhausted,
+        Stop::Durability(_) => RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
+        Stop::Request(cause) => match cause {
+            Cause::DeadlineElapsed => RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
+            Cause::Cancelled | Cause::NestedStopped => {
+                RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect
+            }
+            Cause::PolicyMemoryExhausted { .. }
+            | Cause::ProcessMemoryExhausted { .. }
+            | Cause::DeclaredMemoryExhausted { .. }
+            | Cause::ChargedBytesOverflow
+            | Cause::ResultCapacityExceeded
+            | Cause::AllocationFailed
+            | Cause::ScratchCapacityExceeded
+            | Cause::MemoryOverflow => RuntimeWorldBranchAdmissionDenial::CapacityExhausted,
+            Cause::HistoricalVisibility(_)
+            | Cause::ProjectionContract(_)
+            | Cause::StorageUnavailable(_)
+            | Cause::WorkerLimitExceedsParent
+            | Cause::MemoryLimitExceedsParent
+            | Cause::WorkLimitExceedsParent
+            | Cause::UnrelatedNestedLease
+            | Cause::NoActiveExecutionScope
+            | Cause::EquivalenceContractUnavailable
+            | Cause::WorkCounterOverflow
+            | Cause::AccountingUnavailable
+            | Cause::WorkExhausted
+            | Cause::WorkerFailed
+            | Cause::UncheckedCustomKernel
+            | Cause::ExpectedIdentitiesNotCanonical => {
+                RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
+            }
+        },
+    }
 }
