@@ -9,6 +9,22 @@ pub(in super::super) fn install(
     install_program::<CheckpointProgram>(checkpoint, Default::default(), contacts)
 }
 
+pub(in super::super) fn install_with_limits(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    limits: WorthQueryInMemoryApplicationLimits,
+    contacts: &ProviderContacts,
+) -> Application {
+    installation::try_install_program_with_limits_and_domain_denial::<CheckpointProgram>(
+        checkpoint,
+        Default::default(),
+        limits,
+        seed_cycle,
+        Arc::new(AtomicBool::new(false)),
+        Some(contacts.clone()),
+    )
+    .expect("the observed checkpoint restores under its original finite request policy")
+}
+
 pub(in super::super) fn install_program<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
