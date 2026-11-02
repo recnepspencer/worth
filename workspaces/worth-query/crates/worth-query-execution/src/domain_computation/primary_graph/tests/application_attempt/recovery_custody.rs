@@ -15,6 +15,8 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
+#[path = "recovery_custody/handle_precedence.rs"]
+mod handle_precedence;
 #[path = "recovery_custody/issuance.rs"]
 mod issuance;
 
