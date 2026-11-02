@@ -20,11 +20,18 @@ use worth_query_testkit_host::facade::host::{
 use worth_store_application::*;
 mod administration;
 mod idempotency;
-mod maintenance;
 mod operations;
 mod selected;
 mod stops;
 use operations::{balance, fresh_closed, set};
+#[derive(Debug)]
+struct ObservationMaintenanceMustRemainUnentered;
+impl WorthQueryHomeMaintenance for ObservationMaintenanceMustRemainUnentered {
+    fn after_advancement(&self, _: &ExecutionRequest<'_, '_>) {
+        panic!("the observational attachment must never advance or schedule maintenance");
+    }
+}
+
 type Existing = PreparedExistingHomeQueryRuntime<HomeIdentitySchema, HomeProgram>;
 type NativePreparation = PreparedHomeNativeMeaning<HomeIdentitySchema, HomeProgram>;
 type NativeMeaning = ReadmittedExistingHomeNativeMeaning<HomeIdentitySchema, HomeProgram>;
@@ -284,7 +291,7 @@ fn unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bri
                 ports.recovery_port(),
                 root.clone(),
                 no_operation_admission,
-                maintenance::prepare(&home, &execution),
+                Arc::new(ObservationMaintenanceMustRemainUnentered),
             )
             .unwrap_or_else(|refused| {
                 panic!("same selected World attachment: {}", refused.detail())
@@ -361,7 +368,7 @@ fn another_actual_home_world_basis_cannot_attach_to_this_existing_source() {
                 ports.recovery_port(),
                 root_a.clone(),
                 no_operation_admission,
-                maintenance::prepare(&home_b, &execution),
+                Arc::new(ObservationMaintenanceMustRemainUnentered),
             )
             .err()
             .expect("a genuine foreign Native observation is not this source's basis");

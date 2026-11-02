@@ -40,7 +40,10 @@ impl<Schema, Operation, Input, Scope>
             Ok(memory) => memory,
             Err(stop) => {
                 return Err((
-                    super::super::relational_read_denial(stop.into(), &self.operation),
+                    crate::domain_computation::authorization::denial::relational_read_denial(
+                        stop.into(),
+                        &self.operation,
+                    ),
                     binding,
                 ))
             }
@@ -70,10 +73,19 @@ impl<Schema, Operation, Input, Scope>
             WorthQueryOperationAuthorizationBasis::Conventional,
         );
         match basis {
-            WorthQueryOperationAuthorizationBasis::ElevationClose { input, binding, .. } => {
+            WorthQueryOperationAuthorizationBasis::ElevationClose {
+                input,
+                binding,
+                _binding_memory: memory,
+            } => {
                 self.authorization_basis =
                     WorthQueryOperationAuthorizationBasis::Capability { input };
-                Some(*binding)
+                let binding = {
+                    let backing = binding;
+                    *backing
+                };
+                drop(memory);
+                Some(binding)
             }
             other => {
                 self.authorization_basis = other;

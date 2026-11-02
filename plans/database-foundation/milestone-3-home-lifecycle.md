@@ -1840,3 +1840,9 @@ allocate nothing for this lifecycle. This is a runtime-custody representation
 change, not a receipt-format, replay-authority or capability-lifecycle cutover.
 Handler-plan preparation also uses an Infallible completed value on its stop
 report, making a completed candidate impossible before the handler runs.
+
+The WIP Store observation-only attachments keep the merged candidate's
+`ObservationMaintenanceMustRemainUnentered` sentinel: unexpectedly scheduling
+maintenance must fail these courts. The duplicate WIP maintenance adapter is
+removed; no test or assertion is retired. Actual Host and Store checkpoint
+controls continue to use their genuine same-Home maintenance operations.
