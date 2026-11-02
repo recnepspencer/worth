@@ -43,14 +43,22 @@ fn concurrent_identical_directory_keys_publish_one_original_receipt() {
     let lease = checkpoint_capture::lease(128 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let home = pending_support::open(execution, contacts.clone());
+    let before = home
+        .runtime()
+        .runtime()
+        .world_history_snapshot_for_test()
+        .installed_commits();
+    let fresh = AtomicUsize::new(0);
     let receipts = std::thread::scope(|threads| {
         let threads = (0..4)
             .map(|_| {
                 let runtime = home.runtime();
+                let fresh = &fresh;
                 threads.spawn(move || {
                     let (_, live) = scope();
                     match set(runtime, &live, 0x7265747279, 8).unwrap() {
                         Outcome::Committed { receipt, result: 8 } => {
+                            fresh.fetch_add(1, Ordering::SeqCst);
                             let recorded = match set(runtime, &live, 0x7265747279, 8).unwrap() {
                                 Outcome::RecoveredCommitted(recorded) => recorded,
                                 other => {
@@ -80,7 +88,25 @@ fn concurrent_identical_directory_keys_publish_one_original_receipt() {
             receipt_fields::projection(&receipts[0])
         );
     }
-    assert_eq!(contacts.load(Ordering::SeqCst), 1);
+    assert_eq!(fresh.load(Ordering::SeqCst), 1);
+    assert_eq!(
+        home.runtime()
+            .runtime()
+            .world_history_snapshot_for_test()
+            .installed_commits(),
+        before + 1
+    );
+    // Concurrent unseen requests may prepare pure candidates (the declaration
+    // promises no external effect). The branch commit lane publishes one.
+    let prepared = contacts.load(Ordering::SeqCst);
+    let (_, replay_scope) = scope();
+    let Outcome::RecoveredCommitted(replay) =
+        set(home.runtime(), &replay_scope, 0x7265747279, 8).unwrap()
+    else {
+        panic!("sequential retry reads the existing original");
+    };
+    assert_eq!(replay, receipts[0]);
+    assert_eq!(contacts.load(Ordering::SeqCst), prepared);
     let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 8);
     drop(receipts);

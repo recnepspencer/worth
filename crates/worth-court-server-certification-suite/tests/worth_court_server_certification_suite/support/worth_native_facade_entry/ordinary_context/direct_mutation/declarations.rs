@@ -96,12 +96,14 @@ pub(crate) fn build_dual_surface_mutation_server() -> worth_server::WorthServer 
 
 pub(crate) fn compat_mutation_success(
     outcome: worth_server::WorthServerCompatibilityMutationOutcome<
-        worth_server::WorthServerCompatibilityMutation,
+        worth_server::WorthServerCompatibilityMutationExecution,
     >,
 ) -> worth_server::WorthServerCompatibilityMutation {
     match outcome {
-        worth_proof::TransitionOutcome::Success(value) => value,
-        other => panic!("expected compatibility mutation success, got {other:?}"),
+        worth_proof::TransitionOutcome::Success(
+            worth_server::WorthServerCompatibilityMutationExecution::Direct(value),
+        ) => value,
+        other => panic!("expected unkeyed direct compatibility mutation success, got {other:?}"),
     }
 }
 

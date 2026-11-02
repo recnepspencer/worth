@@ -89,7 +89,8 @@ fn kill_and_read(behavior: &str) {
         .expect("fresh reader process starts");
     assert!(
         reader.status.success(),
-        "reader for {behavior}: {}\n{}",
+        "reader for {behavior} exited {}: {}\n{}",
+        reader.status,
         String::from_utf8_lossy(&reader.stdout),
         String::from_utf8_lossy(&reader.stderr)
     );

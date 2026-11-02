@@ -65,12 +65,19 @@ fn concurrent_server_identical_keys_publish_one_original_occurrence() {
     let contacts = Arc::new(AtomicUsize::new(0));
     let home = open(contacts.clone());
     let server = server(home.runtime());
+    let before = home
+        .runtime()
+        .runtime()
+        .world_history_snapshot_for_test()
+        .installed_commits();
+    let fresh = std::sync::atomic::AtomicUsize::new(0);
     let receipts = std::thread::scope(|scope| {
         (0..4)
             .map(|_| {
                 scope.spawn(|| {
                     match execute(&server, "concurrent-key", 8, "same-request").unwrap() {
                         Outcome::Committed { .. } => {
+                            fresh.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                             match execute(&server, "concurrent-key", 8, "fresh-response").unwrap() {
                                 Outcome::RecoveredCommitted(receipt) => receipt,
                                 other => panic!(
@@ -91,6 +98,21 @@ fn concurrent_server_identical_keys_publish_one_original_occurrence() {
     for receipt in &receipts[1..] {
         assert_eq!(receipt, &receipts[0]);
     }
-    assert_contacts(&contacts, 1);
+    assert_eq!(fresh.load(std::sync::atomic::Ordering::SeqCst), 1);
+    assert_eq!(
+        home.runtime()
+            .runtime()
+            .world_history_snapshot_for_test()
+            .installed_commits(),
+        before + 1
+    );
+    let prepared = contacts.load(std::sync::atomic::Ordering::SeqCst);
+    let Outcome::RecoveredCommitted(replay) =
+        execute(&server, "concurrent-key", 8, "sequential-replay").unwrap()
+    else {
+        panic!("sequential Server retry reads its original");
+    };
+    assert_eq!(replay, receipts[0]);
+    assert_contacts(&contacts, prepared);
     assert_eq!(balance(home.runtime()), 8);
 }
