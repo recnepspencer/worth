@@ -9,9 +9,9 @@ from test_compiler_units import event, graph, unit
 
 
 class CargoDependencyFeaturesTests(unittest.TestCase):
-    def fixture(self, root):
-        owner = unit('owner', mode='build', dependencies=[3])
-        other = unit('owner', mode='build', dependencies=[4])
+    def fixture(self, root, mode='build'):
+        owner = unit('owner', mode=mode, dependencies=[3])
+        other = unit('owner', mode=mode, dependencies=[4])
         rows = declarations(graph(unit('root', dependencies=[1, 2]), owner, other,
                                   unit('digest', features=['std']),
                                   unit('digest', features=['mac', 'std'])))
@@ -59,11 +59,8 @@ class CargoDependencyFeaturesTests(unittest.TestCase):
 
     def test_metadata_only_artifact_retains_actual_dependency_features(self):
         with tempfile.TemporaryDirectory() as temporary:
-            observed, declaration, _ = self.fixture(Path(temporary))
+            observed, declaration, _ = self.fixture(Path(temporary), mode='check')
             observed['filenames'][0] = observed['filenames'][0].replace('.rlib', '.rmeta')
-            # Only the evidence locator changes; these graph units are now checks.
-            for row in declaration['units']:
-                row['output'] = 'check'
             enriched = json.loads(retain_dependencies(json.dumps(observed), declaration))
             self.assertEqual(enriched['cargo_dependency_features'], [['digest', ['std']]])
             self.assertEqual(attribute(enriched, declaration)['dependency_units'],

@@ -1846,3 +1846,21 @@ The WIP Store observation-only attachments keep the merged candidate's
 maintenance must fail these courts. The duplicate WIP maintenance adapter is
 removed; no test or assertion is retired. Actual Host and Store checkpoint
 controls continue to use their genuine same-Home maintenance operations.
+
+Qualification mapping for this integration slice:
+
+- Phase 3 / D12 ordinary default-stack opening and mutation:
+  `host::application_home::fresh_directory_home_journey`.
+- Phase 3 / D12 authored checkpoint and automatic maintenance preserve the
+  original business result:
+  `host::application_home::fresh_source::authored_fresh_home_postbootstrap_complete_and_automatic_maintenance_preserve_business_value`.
+- D12 C0, manual and automatic complete capture:
+  `world_section::readmission::tests::composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt`.
+- D17 preparation cannot report a completed candidate: the Infallible report
+  type and exhaustive consuming conversion; existing mutation, producer and
+  capability-elevation courts cover the actual success and stopped routes.
+- Charged capability-lifecycle custody: the original request issues the retained
+  reservation before allocation; the same enum variant owns binding and grant,
+  and consuming extraction ends the backing scope before releasing its grant.
+  Existing capability-elevation approval/close/review, adversarial and replay
+  courts remain the semantic controls, alongside external custody controls.
