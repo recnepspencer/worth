@@ -31,6 +31,7 @@ impl ApplicationHomeCheckpointOperation {
             Some(&observer),
         )
     }
+    #[cfg(feature = "certification-test-authority")]
     pub fn checkpoint_input_memory_bytes_for_test(&self) -> Option<u64> {
         self.owner.input_memory_bytes_for_test()
     }

@@ -230,10 +230,10 @@ fn abandoned_world_delivery_refuses_before_close_and_can_be_delivered_then_close
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("Native close refused: {reason:?}")
         }
-        ApplicationHomeCloseOutcome::Closed {
+        Ok(ApplicationHomeCloseOutcome::Closed {
             checkpoint: Err(cause),
             ..
-        } => {
+        }) => {
             panic!("close must retain the successful coupled World checkpoint report: {cause:?}")
         }
     }
