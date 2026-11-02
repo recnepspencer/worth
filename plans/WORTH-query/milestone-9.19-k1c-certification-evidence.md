@@ -423,3 +423,42 @@ The same reviewer independently read the complete production/court diff and
 passed qa-loop, qa-tests and code-quality-qa after all receipts. It requested
 only the staged-diff receipt above, now recorded. No behavior expectation was weakened. Remaining full Native reds
 are tracked separately. This closes the R5 correction-staging regression.
+
+# R8: atomic inline meaning and exhaustive consumer review
+
+Retained InlineBytes for the three concrete generic certification bindings:
+InlineCounterBinding, RatioBinding and BrokenBinaryBinding. The counter's real
+conditional reader receives the complete scalar without Native resolver
+capability. ContentRef cannot serve that contract without changing its authority;
+this is a meaning distinction, never a size threshold. Capability index,
+application guidance and both owners' READMEs name that consumer and reserve
+ordered numerical data and splines at every size for Native content. The public
+inventory separates 51 lexical scalar paths and 27 broader binary route paths
+from semantic adopters and unrelated lexical matches. These are78 path
+observations, not78 unique consumers. No code, aspect shape or test was added.
+
+| R8 exact command or experiment | Result |
+| --- | --- |
+| Fetch master/provider; merge each with `--no-edit` | Three successes; already up to date. |
+| `python target/k1c-repair-logs/r8-inventory-check.py`, PYTHONUTF8=1 | Four count/path assertions;78 path observations verified. |
+| Initial `cargo fmt --check -p worth-relational`; Query execution fmt check with explicit manifest | One success each. |
+| Initial generated launcher | Contained a later Clippy command missing its package selector. Caught before that command executed (no log/cargo child for it); stopped only launcher. Its active scoped Native Clippy child was left alive; no completion receipt, so no result credited. The first stop-selector also matched the current control shell, ending it with exit-1; corrected selector excludes its own PID. No build was killed. Replaced launcher with explicit scoped commands and a Python scope assertion. |
+| `cargo fmt --check -p worth-foundational -p worth-relational` | Success. |
+| `cargo clippy -p worth-relational --all-targets` | Failed only untouched payload.rs:34,1 error/8 warnings. |
+| `cargo clippy -p worth-foundational --all-targets --no-deps` | Success; no errors. |
+
+The reviewer found no ownership or composition defect and requested direct
+links to the conditional reader and schema that establish the authority gap;
+those are now present. This prose-only slice adds no court and claims no new
+mutation result. Full-binary qualification remains pending subsequent repairs.
+
+| R8 remaining exact gates | Result |
+| --- | --- |
+| Boundary check; context check | One success each. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | Success,0 Rust files. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | One success each, zero whitespace errors. |
+| Python lint-scope check with PYTHONUTF8=1 | Four assertions passed. |
+| `git diff --cached --check` | Success, zero errors. |
+
+The same reviewer passed R8 under qa-loop, qa-tests and code-quality-qa after
+independently checking the staged docs, consumer links and final receipts.

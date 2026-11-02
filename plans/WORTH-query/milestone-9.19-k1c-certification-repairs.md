@@ -236,3 +236,23 @@ work for fixed authored/demanded inputs must remain constant. Acquisition still
 admits the complete availability and is not claimed local. Check release with
 available custody already retained, restore exact mutant bytes, rerun Native's
 content portfolio and the public content court, then all required gates.
+
+# R8 boundary and implementation plan
+
+The actual counter conditional decodes a complete nine-byte atomic field with
+no Native resolver authority; the ratio delegate is a standalone pure rational
+atom and the broken encoder is a negative admission fixture. All concrete
+adopters found are generic certification fixtures. Native's digest-only content
+reference cannot supply a pure atomic decode without changing that contract's
+authority. Keep InlineBytes for this meaning, not for datasets or blob size.
+Foundation owns the complete scalar representation; Native owns retained,
+format-bound content. Query's installed binary decoder seal stays unchanged.
+
+Document this exact distinction in the capability index, application guidance
+and both owners' READMEs. Publish the complete 51-path inline symbol inventory
+and 27-path broader route inventory, distinguishing carriers and lexical false
+positives from the three semantic bindings. Ordered numerical data and splines
+use ContentRef at every size; above16MiB refuses before effects. No code, test,
+shape, API or codec changes are needed; existing courts are not rerun for prose.
+Verify inventory paths/counts, scoped formatting, boundary/context, caps and
+whitespace, then obtain the same reviewer's three-skill gate before committing.

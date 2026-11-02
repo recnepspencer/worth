@@ -223,13 +223,22 @@ propagate stopped-prefix or missing-qualification refusals. Accounted reuse foll
 the original receipt at its work boundary. See
 [persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
 
-Platform scalar owners can carry opaque atoms using `ScalarAspectType::InlineBytes`
-and the immutable `InlineBytes` carrier. Its native framing ceiling is
+Platform scalar owners carry complete canonical atomic domain values using
+`ScalarAspectType::InlineBytes` and the immutable `InlineBytes` carrier. This
+serves pure observations that receive the whole scalar without Native resolver
+authority. The actual generic certification consumers are InlineCounterBinding
+(the conditional counter), RatioBinding and the deliberately broken binary
+write-admission binding; see the [complete consumer and route inventory](inline-atomic-content-boundary.md).
+Native content owns ordered numerical data and splines at every size through
+ContentRef, including admission, integrity, retention and reconstruction. Size
+never chooses between these meanings; frames above 16 MiB refuse at admission
+before effects. Inline bytes are not an alternative dataset or blob path.
+Its native framing ceiling is
 4,294,967,290 payload bytes; oversized lengths return `InlineBytesLengthDenial`
 before admission. The carrier supplies no domain comparison or index hooks.
 See [inline opaque values](build-an-application.md#inline-opaque-values).
 
-Applications adopt an identity-free, reference-free leaf through the existing
+Applications adopt a complete canonical atomic value through the existing
 value-binding macro's `binary: OwnerDelegate` arm. Its Query-free pure owner
 keeps normalization, canonical bytes, admission and terminal rendering; the entry
 delegate supplies finite bounds, identity, unit and frame. Binary and explicitly
