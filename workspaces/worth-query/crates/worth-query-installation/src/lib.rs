@@ -103,8 +103,9 @@ pub mod facade {
     pub use worth_foundational::facade::{
         AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision, AspectEvolutionPolicy,
         AspectIdentity, AspectKey, AspectMask, AspectValue, AuthoritativeAspectChangeKind,
-        CanonicalFieldPath, ContractValidatedAspectValueView, FieldDeclaration, FieldKey,
-        FieldRequirement, InternedString, ProjectionMask, ScalarAspectType, StructAspectShape,
+        CanonicalDigestDerivationDenial, CanonicalFieldPath, ContractValidatedAspectValueView,
+        FieldDeclaration, FieldKey, FieldRequirement, InternedString, ProjectionMask,
+        ScalarAspectType, StructAspectShape,
     };
     pub use worth_query_declaration::facade::application_capability::{
         ApplicationCapabilityRef, ErasedApplicationCapabilityContract,
