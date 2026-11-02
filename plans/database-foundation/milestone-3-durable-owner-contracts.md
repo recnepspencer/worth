@@ -2550,3 +2550,49 @@ value has no valid v5 commitment shape. The retained negative now agrees with th
 header length, preserves all three original commitments, and requires
 `InvalidPayloadShape` before decoding. The independent outer-frame trailing-byte
 and reordered-map negatives remain separate assertions.
+
+
+### Granted owner continuation: deferred index DATA and journal-only cutover
+
+The coordinator grants the World typed caller migration, Native index owner
+continuation, and finished integration merge. The original Complete input and
+wire decisions remain unchanged.
+
+Boundary: an index checkpoint cut consists of the exact immutable definition
+catalog, generation frontier, live generation roster, and optional retained
+`DeferredIndexImage`. Capturing that Arc under the logical cut performs no
+provider call and does not demand or replace live cache state. The directory
+already owns its original selected-read and placement custody. After both
+logical epochs end, the continuation reads the exact derived-index member via
+that custody under the invoking request, verifies its frame, and decodes its
+original cache DATA. It then combines those generations with the frozen live
+roster by exact generation identity, with the actual live owner taking precedence
+for a repeated identity. It preserves the frozen catalog and frontiers.
+
+Funding precedes growth: allocation-free borrowed wire traversal quotes the
+concrete full-generation or supported delta tuple, generation headers/strings,
+persistent entry-map and row geometry, and canonical aspect-value owners.
+Retained and simultaneous decode scratch reservations live with the resulting
+captured DATA until serialization releases the last owner. Delta reconstruction
+also reserves each actual reconstructed byte buffer before growth and applies
+the same entry-owner quote before decoding it. Shared provider placement is not
+recharged. The continuation never installs into the live index subsystem or its
+admission cache. Existing generation validation remains one owner rule shared
+with ordinary checkpoint restoration. Cancellation or denial drops only this
+attempt's DATA; retry uses the original frozen/read custody.
+
+Implementation order: merge the finished opening/default-stack integration;
+project the Native typed World stop; implement this frozen index continuation
+and its request-funded decode; repair journal-only source synchronization;
+then execute the retained second-Complete assertion and real filesystem Host
+qualification. The normal-stack controls run directly with `RUST_MIN_STACK`
+unset, without ignored or exhaustive courts.
+
+Journal-only boundary: recovery's provisional replay artifact is not the source
+artifact. Source synchronization may replace the former using the actual
+admitted durable source, but must not transfer original-input custody across
+those distinct envelope cells. The same-cell preservation guard remains strict
+for ordinary publication. Home recovery installs reconstructed original inputs
+from its admitted schema/chronology graph after source routes are finalized.
+The Host reproducer must kill a filesystem writer with only a journal, reopen
+without initializing, read its committed value and commit again.

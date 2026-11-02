@@ -31,6 +31,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
         WorthQueryApplicationMutationOutcome::Committed { .. }
     ));
     let generation = match case {
+        Case::JournalOnly => 0,
         Case::InterruptedAck => {
             let original = interrupt(&home, &execution);
             let resumed = home.recover_checkpoint(&execution).unwrap();
@@ -51,6 +52,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
     let first_covered = home.inspect_checkpoint(&execution).unwrap().journals[0].covered;
     let additional = match case {
         Case::Image | Case::InterruptedAck => 0,
+        Case::JournalOnly => 2,
         Case::ImageAndTail => 3,
         Case::BoundedTail => 37,
     };
@@ -73,6 +75,11 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
         .unwrap();
     match case {
         Case::Image => assert!(observed.pending.is_none()),
+        Case::JournalOnly => {
+            assert!(observed.pending.is_none());
+            assert_eq!(observed.journals[0].covered, 0);
+            assert!(observed.journals[0].head > 0);
+        }
         Case::ImageAndTail => assert!(observed.journals[0].head > observed.journals[0].covered),
         Case::InterruptedAck => {
             let pending = observed.pending.as_ref().unwrap();
@@ -92,7 +99,9 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
     // image nevertheless covers the actual current Native head.
     let covered = match case {
         Case::InterruptedAck => observed.journals[0].head,
-        Case::Image | Case::ImageAndTail | Case::BoundedTail => observed.journals[0].covered,
+        Case::Image | Case::JournalOnly | Case::ImageAndTail | Case::BoundedTail => {
+            observed.journals[0].covered
+        }
     };
     let ready = path.with_extension("complete-home-ready");
     let pending = ready.with_extension("pending");

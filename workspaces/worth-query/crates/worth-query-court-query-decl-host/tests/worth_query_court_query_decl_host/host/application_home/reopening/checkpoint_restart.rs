@@ -9,11 +9,19 @@ mod writer;
 #[derive(Clone, Copy)]
 enum Case {
     Image,
+    JournalOnly,
     ImageAndTail,
     InterruptedAck,
     BoundedTail,
 }
 
+#[test]
+fn journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing() {
+    restart(
+        Case::JournalOnly,
+        "journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing",
+    );
+}
 #[test]
 fn selected_complete_home_reopens_and_selects_another_complete_checkpoint() {
     restart(
@@ -100,11 +108,19 @@ fn restart(case: Case, test: &str) {
     let [generation, covered, head, value, tail] = observed.as_slice() else {
         panic!("five actual writer facts required");
     };
-    assert!(*covered > 0 && *head >= *covered);
+    assert!(*head >= *covered);
     match case {
-        Case::Image | Case::InterruptedAck => assert_eq!(head, covered),
-        Case::ImageAndTail => assert!(head > covered && *tail > 0),
-        Case::BoundedTail => assert!(head >= covered),
+        Case::JournalOnly => {
+            assert_eq!(*generation, 0);
+            assert_eq!(*covered, 0);
+            assert!(*head > 0 && *tail > 0);
+        }
+        Case::Image | Case::InterruptedAck => {
+            assert!(*covered > 0);
+            assert_eq!(head, covered);
+        }
+        Case::ImageAndTail => assert!(*covered > 0 && head > covered && *tail > 0),
+        Case::BoundedTail => assert!(*covered > 0 && head >= covered),
     }
     let contacts = Arc::new(AtomicUsize::new(0));
     let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
