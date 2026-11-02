@@ -46,19 +46,23 @@ pub struct RetiredConsumedPublication {
 }
 
 impl ConsumedCompositePublication {
-    pub fn prepare_home_retirement(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<PreparedConsumedPublicationRetirement, ConsumedPublicationRetirementDenial> {
+    fn preflight_home_retirement(&self) -> Result<(), ConsumedPublicationRetirementDenial> {
         use ConsumedPublicationRetirementDenial as Denial;
-        request.consult().map_err(Denial::Execution)?;
         self.delivery
             .preflight_home_retirement()
             .map_err(|()| Denial::UndeliveredCustody)?;
         self.facts()
             .component_results
             .preflight_home_retirement()
-            .map_err(|()| Denial::UnsettledComponent)?;
+            .map_err(|()| Denial::UnsettledComponent)
+    }
+    pub fn prepare_home_retirement(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<PreparedConsumedPublicationRetirement, ConsumedPublicationRetirementDenial> {
+        use ConsumedPublicationRetirementDenial as Denial;
+        request.consult().map_err(Denial::Execution)?;
+        self.preflight_home_retirement()?;
         let funding = request
             .reserve_retained_memory(std::mem::size_of::<Backing>() as u64)
             .map_err(Denial::Execution)?;
@@ -73,13 +77,25 @@ impl ConsumedCompositePublication {
     }
 }
 impl PreparedConsumedPublicationRetirement {
+    /// Prepaid storage is not permission to retire another delivery. Refusal
+    /// returns both original owners, so the caller can finish its handoffs.
     pub fn begin(
         mut self,
         publication: ConsumedCompositePublication,
-    ) -> ConsumedPublicationRetirement {
+    ) -> Result<
+        ConsumedPublicationRetirement,
+        (
+            Self,
+            ConsumedCompositePublication,
+            ConsumedPublicationRetirementDenial,
+        ),
+    > {
+        if let Err(cause) = publication.preflight_home_retirement() {
+            return Err((self, publication, cause));
+        }
         assert!(self.backing.original.is_none());
         self.backing.original = Some(publication);
-        ConsumedPublicationRetirement { allocation: self }
+        Ok(ConsumedPublicationRetirement { allocation: self })
     }
 }
 impl ConsumedPublicationRetirement {
@@ -135,3 +151,6 @@ impl RetiredConsumedPublication {
         drop(self);
     }
 }
+
+#[cfg(test)]
+mod tests;

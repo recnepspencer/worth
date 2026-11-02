@@ -374,3 +374,12 @@ without looking up or cloning the main branch. This keeps the post-checkpoint
 step free of that live-table lookup and String allocation, while preserving
 its exact ForeignOwner refusal. The original Native guard and registry lease
 remain the release authority.
+
+The prepaid World frame carries storage, not retirement authority. Its consuming
+begin rechecks the actual publication's settled component and delivered handoffs;
+refusal returns both original owners. D11/D17 map to
+prepaid_retirement_refuses_another_undelivered_publication_and_returns_both_original_owners.
+Unclaimed history and successor observations are one-shot delivery obligations,
+not disposable caches: evidence.rs::claim_fresh_history and the live/output/client
+observation take ports complete them on the resumed Home. The preflight preserves
+those obligations and refuses pending work rather than silently dropping it.

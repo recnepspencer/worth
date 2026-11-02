@@ -86,16 +86,28 @@ impl WorthQueryProductPublicationReceipt {
                     .publication
                     .take()
                     .expect("original publication moves once");
-                *original
-                    .fresh_delivery_available
-                    .get_mut()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner) = false;
-                original.retirement = PublicationReceiptRetirement::Retiring(Some(
-                    prepared
-                        .take()
-                        .expect("same prepaid original slot")
-                        .begin(publication),
-                ));
+                match prepared
+                    .take()
+                    .expect("same prepaid original slot")
+                    .begin(publication)
+                {
+                    Ok(task) => {
+                        *original
+                            .fresh_delivery_available
+                            .get_mut()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner) = false;
+                        original.retirement = PublicationReceiptRetirement::Retiring(Some(task));
+                    }
+                    Err((same_prepared, same_publication, cause)) => {
+                        *prepared = Some(same_prepared);
+                        original
+                            .terminal
+                            .get_mut()
+                            .expect("same original terminal")
+                            .publication = Some(same_publication);
+                        return Err(Denial::Publication(cause));
+                    }
+                }
                 Ok(Progress::Advanced)
             }
             PublicationReceiptRetirement::Retiring(task) => {
