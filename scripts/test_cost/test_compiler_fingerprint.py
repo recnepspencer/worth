@@ -8,6 +8,29 @@ from test_compiler_units import event, graph, unit
 
 
 class CompilerDependencyFingerprintTests(unittest.TestCase):
+    def test_conflicting_dependency_edges_cannot_select_first_agreeing_parent(self):
+        first = unit('parent', mode='build', dependencies=[2, 3])
+        other = unit('parent', mode='build', dependencies=[5, 6])
+        rows = declarations(graph(unit('root', dependencies=[1, 4]), first,
+            unit('digest', mode='build'), unit('bridge', mode='build'), other,
+            unit('digest', mode='build', features=['mac']),
+            unit('bridge', mode='build', features=['other'])))
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / 'debug'
+            own = base / '.fingerprint/parent-observed/lib-parent.json'
+            own.parent.mkdir(parents=True)
+            own.write_text(json.dumps({'features': '[]', 'deps': [
+                [0, 'digest', False, 42], [0, 'bridge', False, 43]]}))
+            for name, fingerprint, features in [('digest', 42, ['mac']), ('bridge', 43, [])]:
+                child = base / f'.fingerprint/{name}-real/lib-{name}.json'
+                child.parent.mkdir(parents=True)
+                child.write_text(json.dumps({'features': json.dumps(features), 'deps': []}))
+                child.with_suffix('').write_text(fingerprint.to_bytes(8, 'little').hex())
+            observed = event(first, linked=True)
+            observed['filenames'] = [str(base / 'deps/libparent-observed.rlib')]
+            with self.assertRaises(CompilerUnitRefusal):
+                attribute(observed, {'units': rows, 'compiler_inputs': 'flags'})
+
     def test_real_dependency_fingerprint_distinguishes_equal_parent_features(self):
         parent = unit('sha2', mode='build', dependencies=[2])
         other = unit('sha2', mode='build', dependencies=[3])

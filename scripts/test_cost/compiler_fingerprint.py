@@ -77,11 +77,12 @@ def resolve(event, candidates, declaration):
             return next(iter(rows))
         if not rows or set(rows) <= active:
             raise FingerprintRefusal('Cargo dependency observations do not distinguish units')
+        alternatives = dict(rows)
         observed_dependencies = {name: value for _, name, _, value in node['deps']}
-        names = {crate_name(units[key]) for row in rows.values()
+        names = {crate_name(units[key]) for row in alternatives.values()
                  for key in row['dependency_units'] if key in units}
         for name in sorted(names):
-            choices = {key: units[key] for row in rows.values()
+            choices = {key: units[key] for row in alternatives.values()
                        for key in row['dependency_units']
                        if key in units and crate_name(units[key]) == name}
             if len(choices) < 2:
@@ -92,8 +93,8 @@ def resolve(event, candidates, declaration):
             selected = select(choices.values(), child, active | set(rows))
             rows = {key: row for key, row in rows.items()
                     if selected in row['dependency_units']}
-            if len(rows) == 1:
-                return next(iter(rows))
+        if len(rows) == 1:
+            return next(iter(rows))
         raise FingerprintRefusal('Cargo dependency graph remains ambiguous')
 
     return select(candidates, observed, set())
