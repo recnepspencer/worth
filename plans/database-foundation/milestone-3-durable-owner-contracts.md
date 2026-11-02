@@ -2508,3 +2508,28 @@ reader reports completed body reads to its actual source; bounded prefix probes
 never count as full bodies. Host inspection names this observation
 `native_canonical_body_reads`, so the bounded-tail court cannot hide historical
 body replay behind checkpoint member placement. This is passive DATA only.
+
+
+### Deferred-index original-input handoff still required
+
+The new cold-plan retry court remains red at its final repeat-Complete capture.
+Cancellation, retained-plan recovery and canonical export precede that retained
+assertion. Source-freeze diagnostics show original input capture, branch metadata
+and component capture all succeed. The index owner's
+`runtime/state/subsystems/indexing/checkpoint_inputs.rs` then deliberately
+refuses while `cold_checkpoint` remains present. The exact guard is not bypassed.
+The diagnostic edits are removed; their source and full logs remain in lane
+evidence. The committed court keeps the failing assertion.
+
+An honest continuation requires the Native index owner to freeze its actual
+admitted-or-deferred original index input under the same publication snapshot.
+The deferred case retains the actual image/read custody; after logical epochs
+are released, its original bytes are read and decoded under the SAME invoking
+request. Complete serialization consumes that captured DATA. No runtime demand,
+cache rebuild, omission or fresh replacement occurs inside the frozen cut.
+Artifact wire formats do not change for this handoff.
+
+That owner is `runtime/state/subsystems/indexing.rs` and `indexing/`, outside
+P-A's current granted paths. A coordinator decision is pending for this exact
+owner integration and for the World fork-stop projection already recorded
+above. Filesystem qualification and approving final review remain outstanding.
