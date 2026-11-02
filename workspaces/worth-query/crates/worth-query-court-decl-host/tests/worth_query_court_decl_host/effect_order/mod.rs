@@ -9,6 +9,7 @@ use worth_relational::facade::{
     symbols::ClientKey,
     transactions::*,
 };
+mod merged_intent;
 mod native_commit;
 mod schema;
 mod world;
