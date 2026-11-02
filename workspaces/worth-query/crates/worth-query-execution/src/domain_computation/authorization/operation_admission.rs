@@ -48,6 +48,8 @@ mod graph_work_inspection;
 mod idempotency_binding;
 #[path = "operation_admission/identity_admitted.rs"]
 mod identity_admitted;
+#[path = "operation_admission/incarnation.rs"]
+mod incarnation;
 #[path = "operation_admission/mandatory_review.rs"]
 mod mandatory_review;
 #[path = "operation_admission/original_input.rs"]
@@ -131,6 +133,7 @@ use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 /// }
 /// ```
 pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope> {
+    home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,

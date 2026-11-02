@@ -30,6 +30,7 @@ where
             Scope,
         >,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        admission.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())?;
         let authorization = admission
             .authorization()
             .ok_or_else(inconsistent_authorization)?;
@@ -118,6 +119,11 @@ where
                 Capability,
             >,
     {
+        super::super::refuse_stale_home_authority(
+            self.product_runtime.owner.owner_identity(),
+            access.home_owner(),
+            "capability read access",
+        )?;
         let authorization = access.read_authorization();
         if access.runtime_authority() != self.runtime.authority_identity()
             || access.binding_identity() != &self.installed_schema.binding_identity()

@@ -1370,7 +1370,8 @@ memory ownership returns `None`; unavailable, foreign or inconsistent ownership
 returns its typed refusal before any I/O. Publication still authenticates through
 its original effectful preparation doors.
 World live selectors and recovery handles carry the admitted Home incarnation.
-Query capability progression and primary-provider sessions compare that same
+Query capability reads, operation progression, admitted-operation consumption
+and primary-provider sessions compare that same
 owner-issued fence before effects and expose typed `StaleIncarnation` refusals.
 Durable occurrence descriptions remain data and require fresh owner readmission.
 Filesystem qualification across reopen remains blocked on Native

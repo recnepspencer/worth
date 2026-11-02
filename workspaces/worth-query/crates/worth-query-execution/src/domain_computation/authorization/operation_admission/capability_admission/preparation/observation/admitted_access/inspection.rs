@@ -13,6 +13,11 @@ impl<Schema, Capability, Operation, Input>
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
+    pub(in crate::domain_computation) fn home_owner(
+        &self,
+    ) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
+        self.home_owner
+    }
     pub(in crate::domain_computation) fn read_product(
         &self,
     ) -> Option<&crate::basis::WorthQueryProductBranchLease> {

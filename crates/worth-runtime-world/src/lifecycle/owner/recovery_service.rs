@@ -200,6 +200,10 @@ where
     > {
         use crate::lifecycle::ports::RuntimeWorldPreparationService;
         use crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial as Denial;
+        self.state
+            .recovery
+            .admit_handle(&effects.recovery_handle())
+            .map_err(Denial::Recovery)?;
         if self.state.durable.is_some() {
             return Err(Denial::Recovery(
                 crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired,
@@ -248,6 +252,7 @@ where
         crate::recovery::ProductUnpublishedCleanup,
         crate::recovery::RuntimeWorldRecoveryDenial,
     > {
+        self.state.recovery.admit_handle(handle)?;
         if self.state.durable.is_some() {
             return Err(crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired);
         }
@@ -276,6 +281,9 @@ where
         &self,
         effects: ProductUnpublishedOwnerEffects,
     ) -> Result<RecoveryContinuationContract, crate::recovery::RuntimeWorldRecoveryDenial> {
+        self.state
+            .recovery
+            .admit_handle(&effects.recovery_handle())?;
         if self.state.durable.is_some() {
             return Err(crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired);
         }

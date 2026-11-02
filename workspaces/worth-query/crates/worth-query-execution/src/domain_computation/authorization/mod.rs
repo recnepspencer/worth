@@ -1,5 +1,7 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod admission;
+mod home_incarnation;
+pub(in crate::domain_computation) use home_incarnation::refuse_stale_home_authority;
 mod application_commit_authorization;
 pub(in crate::domain_computation) mod application_disclosure;
 mod authorization_revalidation;

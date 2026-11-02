@@ -187,6 +187,9 @@ where
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         {
             admission
+                .refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+                .map_err(Denial::Authorization)?;
+            admission
                 .validate_current_authority()
                 .map_err(Denial::Authorization)?;
             if !admission.belongs_to(

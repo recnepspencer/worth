@@ -260,6 +260,7 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
     );
     Ok(WorthQueryAdmittedApplicationOperation {
         runtime_authority: preparation.runtime.runtime.authority_identity(),
+        home_owner: preparation.runtime.product_runtime.owner.owner_identity(),
         binding_identity: preparation.operation.binding_identity().clone(),
         operation: preparation.operation.operation().to_string(),
         operation_authority_identity: preparation.operation.authority_identity().into(),

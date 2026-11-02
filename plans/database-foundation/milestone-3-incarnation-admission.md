@@ -180,3 +180,43 @@ No ignored test, exhaustive Home oracle or Store scenario lane was run.
 These results qualify the implemented owner checks and component behavior;
 they do not close the outstanding filesystem fencing, serving-after-kill,
 changed-build Host, preview-session or normal-stack reopen obligations.
+
+
+## Independent review correction
+
+The first independent reviewer rejected f5d91091b8 with these findings:
+
+1. P2: directory World recovery release, continuation and settled adoption
+   returned ReopenRequired before the catalog's incarnation comparison. This
+   was a product design gap: fencing only at the deeper lookup missed the
+   receiver's earlier durable-route return. All three receiver entries now
+   admit their original handle before that return. Current and foreign owner
+   handling remains at the actual catalog owner. Five recovery-service owner
+   controls pass; filesystem N+1 assertions remain blocked as recorded above.
+2. P2: capability read revalidation and admitted-operation read consumption
+   reached generic runtime refusals before the Home fence. This was a product
+   design gap: the capability-to-operation transition dropped explicit Home
+   carriage and the guard covered only progression. Admitted operations now
+   retain their issuing World owner. Capability read validation, read-attempt
+   admission, idempotency read admission, managed recovery, migration and
+   transaction receiver paths check stale incarnation before their existing
+   affinity checks. Projection reuses the actual World owner already carried
+   by its advancement phase. The separate stale-only guard grants no admission;
+   foreign-owner checks remain mandatory at each receiver. Qualification follows
+   this coherent correction batch.
+3. P1: normal-stack Host reopen aborts. The reviewer located the public seam at
+   admission/mod.rs calling Host opening.rs, but did not establish the precise
+   overflowing production frame. This remains an unresolved product failure
+   in reserved Host-opening ownership. A coordinator scope question is pending;
+   no larger-stack result is substituted for normal-stack qualification.
+
+The correction also adds a narrow pre-effect check in
+`application_attempt/idempotency_resolution.rs` (P-D merge seam). No receipt
+resolution algorithm changes. `read_set.rs` moves its ordinary/projected
+admission methods into `read_set/admission.rs` to retain the line cap.
+`WorthQueryProductTransactionCommitError::StaleIncarnation` uses the existing
+product facade. No new construction door or Cargo feature is introduced.
+
+Broader handle families, including preview installation and external recovery
+handle admission, have not acquired full filesystem N+1 qualification in this
+candidate. The new operation checks do not imply those families are complete.

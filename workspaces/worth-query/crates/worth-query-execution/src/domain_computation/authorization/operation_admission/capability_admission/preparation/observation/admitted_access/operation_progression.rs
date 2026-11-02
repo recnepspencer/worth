@@ -208,6 +208,7 @@ where
         retain_original_scope(execution, access.resolved.resource(), operation.contracts())?;
     let super::WorthQueryAdmittedApplicationCapabilityAccess {
         input,
+        home_owner,
         governed_input_identity,
         canonical_work,
         authorization,
@@ -241,6 +242,7 @@ where
     );
     Ok(OwnerAdmittedOperation {
         runtime_authority: runtime.runtime.authority_identity(),
+        home_owner,
         binding_identity: operation.binding_identity().clone(),
         operation: operation.operation().to_string(),
         operation_authority_identity: operation.authority_identity().into(),
