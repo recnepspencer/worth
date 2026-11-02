@@ -744,7 +744,9 @@ current Native content. A restored maintained Source without its live World imag
 returns RootUnavailable until an opted-in authored cold staging transition; bytes
 do not mint that image. Checkpoints do not persist
 live correction occurrences or preimage carriers. Missing live history remains an
-explicit refusal. K1c's bounded-cost courts measure complete frames at 1/2/4 MiB
+explicit refusal. A decoded or cold Native envelope without its admitted historical
+content directory returns HistoryNotResident. A dangling identity in an admitted
+directory still returns MissingContent. K1c's bounded-cost courts measure complete frames at 1/2/4 MiB
 and local reads/edits against 100/1,000/10,000 unrelated retained entries;
 [qualification evidence](../plans/WORTH-query/milestone-9.19-k1c-content-slice5-evidence.md)
 records exact invoices and typed bounds. Ordered numerical content uses ContentRef

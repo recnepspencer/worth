@@ -7,7 +7,7 @@ use super::{
 use worth_execution::{CancellationSource, ExecutionRequest};
 use worth_foundational::facade::*;
 use worth_relational::facade::{content::*, identity::KindId, mvcc::*, transactions::*};
-fn locator(field: &str) -> AspectFieldLocator {
+pub(super) fn locator(field: &str) -> AspectFieldLocator {
     AspectFieldLocator::new(
         LocatorAuthority::Planned,
         AspectKey::new("samples").unwrap(),
@@ -177,7 +177,7 @@ fn content_transport_envelope_cannot_masquerade_as_complete_historical_custody()
         decoded
             .content_for_field(&execution, entity, "test.entity", &locator("left"))
             .unwrap_err(),
-        RelationalContentDenial::MissingContent
+        RelationalContentDenial::HistoryNotResident
     );
     cancel.cancel();
     assert_eq!(

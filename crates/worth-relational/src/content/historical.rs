@@ -8,7 +8,8 @@ use crate::{
 };
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 impl CanonicalCommitEnvelope {
-    /// Data custody only. A decoded envelope without complete admission refuses.
+    /// Data custody only. Without an admitted historical directory, returns
+    /// HistoryNotResident rather than claiming that referenced bytes are missing.
     pub fn content_for_field(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

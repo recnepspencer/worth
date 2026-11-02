@@ -43,7 +43,7 @@ impl ContentPublication {
         Denial,
     > {
         Ok((
-            self.admitted.as_ref().ok_or(Denial::MissingContent)?,
+            self.admitted.as_ref().ok_or(Denial::HistoryNotResident)?,
             self.schema.as_ref().ok_or(Denial::FormatBindingMissing)?,
         ))
     }

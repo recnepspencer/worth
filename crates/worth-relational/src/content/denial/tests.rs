@@ -11,6 +11,7 @@ fn semantic_content_causes_keep_literal_payloads_and_execution_keeps_its_origina
     let identity = worth_foundational::facade::ContentRefId([0x5f; 32]);
     for (denial, expected) in [
         (Denial::MissingContent, Rejection::MissingContent),
+        (Denial::HistoryNotResident, Rejection::HistoryNotResident),
         (
             Denial::BackingUnavailable {
                 identity,

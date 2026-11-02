@@ -66,6 +66,70 @@ fn bounded(bytes: &[u8], limit: u64) -> Result<Vec<u8>, RelationalStorageUnavail
     Ok(bytes.to_vec())
 }
 
+impl Source {
+    fn capture(
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &ExecutionRequest<'_, '_>,
+        checkpoint: &RelationalNativeCheckpoint,
+        older_position: PatchStreamPosition,
+    ) -> Self {
+        let members = checkpoint
+            .members()
+            .iter()
+            .map(|member| match member {
+                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.to_vec()),
+                _ => panic!("initial capture owns its members"),
+            })
+            .collect();
+        let commits: BTreeMap<_, _> = runtime
+            .durability()
+            .canonical_commit_artifacts(execution.allocation_policy())
+            .map(|artifact| {
+                let artifact = artifact.unwrap();
+                (artifact.position(), artifact.as_bytes().to_vec())
+            })
+            .collect();
+        Self {
+            members,
+            commits,
+            older: older_position,
+            reads: AtomicUsize::new(0),
+        }
+    }
+}
+
+fn reopen(
+    execution: &ExecutionRequest<'_, '_>,
+    checkpoint: &RelationalNativeCheckpoint,
+    manifest: Vec<u8>,
+    source: Arc<Source>,
+) -> worth_relational::facade::runtime::RelationalRuntime {
+    let recovery = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            checkpoint.covered_position().unwrap(),
+            checkpoint.covered_branch_transitions().unwrap(),
+            RelationalNativeCheckpoint::from_untrusted_bytes(manifest),
+        )),
+        vec![],
+        vec![],
+        source.clone(),
+    );
+    let (mut target, _) = fixture();
+    let plan = target
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            recovery,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    target
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+    target
+}
+
 #[test]
 fn content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_history() {
     let cancellation = CancellationSource::new();
@@ -88,23 +152,8 @@ fn content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_h
             },
         )
         .unwrap();
-    let members = checkpoint
-        .members()
-        .iter()
-        .map(|member| match member {
-            RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.to_vec()),
-            _ => panic!("initial capture owns its members"),
-        })
-        .collect();
-    let mut commits: BTreeMap<_, _> = runtime
-        .durability()
-        .canonical_commit_artifacts(execution.allocation_policy())
-        .map(|artifact| {
-            let artifact = artifact.unwrap();
-            (artifact.position(), artifact.as_bytes().to_vec())
-        })
-        .collect();
-    let bytes = commits.get_mut(&older_position).unwrap();
+    let mut backing = Source::capture(&runtime, &execution, &checkpoint, older_position);
+    let bytes = backing.commits.get_mut(&older_position).unwrap();
     let previous_digest: [u8; 32] = bytes[26..58].try_into().unwrap();
     let at = bytes
         .windows(super::expected::FRAME.len())
@@ -119,35 +168,8 @@ fn content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_h
     assert_eq!(physical.position(), older_position);
     let mut manifest = checkpoint.bytes().to_vec();
     replace_index_digest(&mut manifest, previous_digest, digest);
-    let source = Arc::new(Source {
-        members,
-        commits,
-        older: older_position,
-        reads: AtomicUsize::new(0),
-    });
-    let recovery = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            checkpoint.covered_position().unwrap(),
-            checkpoint.covered_branch_transitions().unwrap(),
-            RelationalNativeCheckpoint::from_untrusted_bytes(manifest),
-        )),
-        vec![],
-        vec![],
-        source.clone(),
-    );
-    let (mut target, _) = fixture();
-    let plan = target
-        .durability()
-        .recovery_plan_from_source(
-            &execution,
-            recovery,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    target
-        .durability_recovery()
-        .recover(&execution, plan)
-        .unwrap();
+    let source = Arc::new(backing);
+    let target = reopen(&execution, &checkpoint, manifest, source.clone());
     assert_eq!(
         source.reads.load(Ordering::SeqCst),
         0,
@@ -179,6 +201,114 @@ fn content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_h
             selected.descriptor()
         );
     }
+}
+
+// A decoded historical body cannot certify field-content absence.
+#[test]
+fn content_cold_history_is_unavailable_while_a_genuine_dangling_reference_is_missing() {
+    use worth_foundational::facade::ContentRefId;
+    use worth_relational::facade::{
+        content::RelationalContentDenial as Denial,
+        mvcc::RelationalTransactionIntent,
+        transactions::{ConflictClass, TransactionCommitError},
+    };
+    let cancellation = CancellationSource::new();
+    let original =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
+    let execution = ExecutionRequest::serial(&original);
+    let (runtime, contract) = fixture();
+    let (identity, entity) = publish(&runtime, &execution, &contract);
+    let older = runtime.history().latest_patch_stream_position().unwrap();
+    publish(&runtime, &execution, &contract);
+    let checkpoint = runtime
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            &execution,
+            execution.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
+        .unwrap();
+    let source = Arc::new(Source::capture(&runtime, &execution, &checkpoint, older));
+    let target = reopen(
+        &execution,
+        &checkpoint,
+        checkpoint.bytes().to_vec(),
+        source.clone(),
+    );
+    drop(runtime);
+    drop(checkpoint);
+    assert_eq!(
+        source.reads.load(Ordering::SeqCst),
+        0,
+        "the historical body starts cold"
+    );
+    let artifact = target
+        .durability()
+        .canonical_commit_artifacts(execution.allocation_policy())
+        .next()
+        .unwrap()
+        .unwrap();
+    assert_eq!(artifact.position(), older);
+    assert_eq!(
+        source.reads.load(Ordering::SeqCst),
+        1,
+        "a genuine cold journal demand ran"
+    );
+    let decoded =
+        RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), &execution).unwrap();
+    assert_eq!(
+        decoded
+            .envelope()
+            .content_for_field(
+                &execution,
+                entity,
+                "test.entity",
+                &super::historical_custody::locator("left"),
+            )
+            .unwrap_err(),
+        Denial::HistoryNotResident,
+    );
+    let (_, basis) = target
+        .observe_branch(&target.main_branch_identity())
+        .unwrap();
+    assert_eq!(
+        basis
+            .read_content(&execution, identity, super::transaction::FORMAT)
+            .unwrap()
+            .bytes(),
+        super::expected::FRAME
+    );
+    let mut transaction = target
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    transaction
+        .push_batch(
+            super::transaction::batch(&contract, ContentRefId([0xff; 32])),
+            execution.allocation_policy(),
+        )
+        .unwrap();
+    let TransactionCommitError::Conflict { error, .. } =
+        transaction.commit(&execution, &target).unwrap_err()
+    else {
+        panic!("a genuine dangling field must refuse before publication")
+    };
+    assert_eq!(
+        error.class,
+        ConflictClass::ContentAdmission {
+            denial: Denial::MissingContent
+        }
+    );
+    assert_eq!(
+        target
+            .observe_branch(&target.main_branch_identity())
+            .unwrap()
+            .1
+            .descriptor(),
+        basis.descriptor()
+    );
 }
 
 // Test-side MessagePack framing of the specific index field, not its decoder.

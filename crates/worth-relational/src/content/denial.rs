@@ -61,6 +61,7 @@ content_rejections! {
         maximum: usize,
     },
     ArithmeticOverflow,
+    HistoryNotResident,
 }
 
 impl From<RelationalExecutionDenialCause> for RelationalContentDenial {

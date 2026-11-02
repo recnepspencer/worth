@@ -87,3 +87,47 @@ the new pure conversion court; the compiled payload mutation, exact restoration
 and rebuilt passing unit closed that gap. It independently inspected both valid
 mutation failures, restored sources and passing rebuilds. Approval covers R1's
 separate commit; full-binary qualification remains required later.
+
+## R2: historical admission is unavailable, not missing
+
+Native's historical publication owner now refuses `HistoryNotResident` when its
+admitted directory is absent. Actual directory lookup still owns MissingContent.
+The new semantic case is appended, preserving existing serialized rejection tags.
+No AspectShape or generic engine body is added.
+
+`content_cold_history_is_unavailable_while_a_genuine_dangling_reference_is_missing`
+composes existing public boundaries: an external checkpoint reopens without
+reading an older journal body, counted cold artifact demand reads it once, and
+controlled artifact readmission produces a decoded envelope whose field-content
+read returns literal HistoryNotResident. This does not claim historical-directory
+reconstruction. Current admitted bytes remain readable, while an actual dangling
+field write refuses literal MissingContent and preserves the selected descriptor.
+The refusal literals and external source read counter are independent of the
+availability decision. The existing transport and conversion courts are extended.
+
+| Command or check | Exact result |
+| --- | --- |
+| `git fetch origin master codex/919-provider-lifecycle-20261027` | One success. |
+| `git merge --no-edit origin/master` | One success; already up to date. |
+| `git merge --no-edit origin/codex/919-provider-lifecycle-20261027` | One success; already up to date. |
+| `cargo fmt -p worth-relational -p worth-court-relational-certification` | Two successes. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::cold_envelope:: -- --nocapture` | First compile: one E0599, physical artifact has no envelope method, no tests. Corrected run through readmit: two passed, zero failed/ignored/measured, 210 filtered. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::historical_custody:: -- --nocapture` | First compile failed on the same E0599, no tests. Corrected run: two passed, zero failed/ignored/measured, 210 filtered. |
+| `cargo test -p worth-relational --lib semantic_content_causes_keep_literal_payloads_and_execution_keeps_its_original_cause -- --nocapture` | Two successful runs: one passed, zero failed/ignored/measured, 2,272 filtered each. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content_cold_history_is_unavailable_while_a_genuine_dangling_reference_is_missing -- --nocapture` | Compiled mutation restoring MissingContent: zero passed, one failed, zero ignored/measured, 211 filtered. Literal actual MissingContent versus expected HistoryNotResident. Killed. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | Restored source rebuilt: 63 passed, zero failed/ignored/measured, 149 filtered. |
+| `cargo fmt --check -p worth-relational -p worth-court-relational-certification` | One success. |
+| `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | One untouched-file let-and-return error at payload.rs:34, eight warnings, same diagnostic as R1. |
+| `cargo clippy -p worth-court-relational-certification --all-targets --no-deps` | The same four untouched errors in three files and two warnings listed under R1. Zero dirty overlap. |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | One success; repository boundaries valid. |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | One success; exit zero. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | One success; six Rust files. |
+| `git diff --check origin/master...HEAD` | One success; zero whitespace errors. |
+| `git diff --check` | One success; zero whitespace errors. |
+| Mutation restoration Python check, with PYTHONUTF8=1 | One exact original-byte equality assertion passed; source timestamp refreshed before rebuild. |
+| `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Four untouched lint-file scope assertions passed. |
+
+The same reviewer found a shifted-tag risk from inserting the new enum case; it
+closed by appending the case. It approved the corrected compositional cold proof
+and directory distinction, inspected the compiled mutation and restored 63-test
+run, and passed R2 under all three QA skills. No R2 findings remain open.

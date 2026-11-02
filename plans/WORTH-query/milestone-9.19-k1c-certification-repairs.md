@@ -79,3 +79,33 @@ receivers, genuine cold court and restored-source rebuild pass their focused
 checks and passed the same reviewer's three-skill gate. The full baseline's nine Native reds
 remain required work in subsequent repairs; the untouched lint debt is recorded
 separately and does not excuse them.
+
+## R2 boundary review
+
+ContentPublication owns historical directory/schema admission. Decoding keeps
+transport records while skipping both admitted coordinates; historical_parts
+currently calls that absence MissingContent. This cannot certify a dangling
+reference because no historical closure is available. The selected branch root's
+ContentDirectory remains the owner of genuinely missing identities and is not
+changed. History demand may load a canonical envelope without reconstructing its
+complete historical directory; transported frame admission is insufficient.
+
+## R2 implementation plan
+
+- Add HistoryNotResident to Native's existing semantic rejection vocabulary and
+  return it from historical_parts when its admitted directory is absent.
+- Extend the existing literal conversion family with this semantic case. Update
+  the old transport-envelope court's expected classification to the new explicit
+  refusal; its previous MissingContent expectation describes the specified bug.
+- Reuse the actual external-checkpoint/cold-source fixture in the cold-envelope
+  court. Demand a valid older artifact after reopen, prove an actual cold read,
+  then use existing controlled artifact readmission and expect literal
+  HistoryNotResident from content_for_field. This composes the public cold and
+  decoded-envelope boundaries; it does not reconstruct a historical directory. In the same
+  world, stage a genuinely dangling field reference and require literal
+  MissingContent with an unchanged selected root; current admitted content stays
+  readable.
+- Mutate only historical_parts back to MissingContent, require the new cold
+  classification court to fail, restore exact source with a fresh timestamp and
+  rebuild the passing court. Run affected Native checks and the same reviewer
+  before R2's separate commit. No Query engine body or AspectShape is added.
