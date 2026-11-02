@@ -2,9 +2,7 @@
 use super::*;
 use worth_foundational::facade::{
     AbsenceLaw, AspectShape, PortableAspectContractBasis, PortableAspectPatchOperation,
-    PortableRecordAspectPatch,
 };
-use worth_relational::facade::transactions::ApplyEntityAspectPatchIntent;
 pub(super) fn lower(
     facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     contracts: &AspectContracts<'_>,
@@ -50,15 +48,9 @@ pub(super) fn lower(
     if absent == Some(true) {
         return Ok(WorthQueryLoweredProviderEffect::ObservedNoop { steps });
     }
-    mutation(
+    Ok(WorthQueryLoweredProviderEffect::EntityAspectPatch {
         steps,
-        MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(
-            ApplyEntityAspectPatchIntent {
-                entity_id: id,
-                aspect_patch: PortableRecordAspectPatch::new(vec![
-                    PortableAspectPatchOperation::ClearWhole { basis },
-                ]),
-            },
-        )),
-    )
+        entity_id: id,
+        operations: vec![PortableAspectPatchOperation::ClearWhole { basis }],
+    })
 }
