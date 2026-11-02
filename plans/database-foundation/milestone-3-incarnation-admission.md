@@ -53,76 +53,130 @@ is introduced. Host opening, Query installation, Native durability, Store
 Section readmission and P-B close remain untouched. Any narrow P-D owner-side
 admission seam is recorded explicitly in the final handoff.
 
-## Qualification boundary in progress
+## Requirement map and qualification limits
 
-The first selected Store court prebuild found an owner-privacy error in the
-recovery cleanup check. That check now delegates to the catalog's own
-incarnation admission rather than reaching its private state. The subsequent
-Store Application library check passed. The next court prebuild reached Query
-and reported thirteen exhaustive-match omissions from the new typed outcomes.
-Permitted mappings have been updated; this successor has not yet rebuilt.
+| Requirement | Implementation / court | Qualification |
+| --- | --- | --- |
+| D7 one writer through public Host | `admission::ownership::competing_host_processes_admit_exactly_one_writer_until_process_death` | Real writer process serves; competing parent receives `MutationOwnerContended`. After kill, the third process acquires the lease and reaches Native readmission. Serving after kill remains blocked. |
+| D7 old World live selectors | `admission::world_incarnation::reopened_world_refuses_old_live_selectors_and_readmits_original_durable_occurrence` | Compiled, but actual reopen refuses `Relational(CompleteNativeRequired)` before stale-selector assertions. |
+| D7 old recovery handles | `world_durable_release::killed_native_effect_reopens_original_world_custody_releases_and_reopens_again` | Compiled; first recovery refuses `Relational(Native(Durability(...)))`, class `CorruptCheckpoint`, detail `recovered source synchronization denied: RootLinkage`, before the added stale-handle assertion. |
+| D7 Query capability progression and provider sessions | Original World owner carried at issuance; receiver checks it before progression/session work | Compiles and runs the affected ordinary owner targets. Actual N+1 capability/session refusal is not yet qualified through a filesystem Host. |
+| D17 immutable comparison | Proof `live_fences_refuse_both_directions_of_incarnation_drift` | Passes, including same-fence positive control. A fence alone is not authority. |
+| Changed build: binding and history | Existing `changed_implementation_build_preserves_authored_binding_and_exact_durable_history` | Passes in the 19-case Store Application owner target. |
+| Changed build: public Host | `admission::changed_build::changed_host_build_keeps_initializer_closed_and_reaches_native_readmission` | Build B passes descriptor admission without initializer execution, then Native refuses `CorruptCheckpoint` / `RootLinkage`. This does not certify a serving changed-build Host. |
+| Changed build: real derived lineage | `producer_predicate_checkpoint::changed_build::changed_build_preserves_recorded_output_and_reproduces_stale_output_only_on_demand` | Component court uses genuine producer output/checkpoint, compares the full accepted record and observes real producer phases. It does not replace the blocked directory Host journey. Both this changed-build case and the existing same-build reuse/source-change control pass (2/2). |
 
-One observed omission is in the reserved Query
-`application_installation/program/program_runtime.rs` support-retirement
-inventory mapping. It needs an explicit `AdmissionRefusal::StaleIncarnation`
-arm that refuses inventory. The coordinator approved exactly that arm and
-all exhaustive-match propagation required by the new variants. The arm is
-now present; installation/readmission behavior is unchanged. The compiler evidence is
-`target/lane-evidence/pc-incarnation-build-2/binaries-build.log`.
+The direct new Host controls were run with `RUST_MIN_STACK` absent. Fresh
+opening reaches serving and contention is typed, but both existing-Home paths
+overflow the normal test thread stack. The same cases reach the exact Native
+refusal under the committed Cargo stack setting. Observing opening custody in
+place reduced test-side copies but did not remove this failure. Host opening is
+reserved for P-A; this is an unresolved qualification block, not a passed lane.
+The existing discard/reinitialize public Host control passes directly with the
+stack override absent, preserving the fresh-Home regression control.
 
-Query preview sessions also live in that reserved installation owner. Their
-check remains outside this candidate. The public Host process and changed-build
-courts have not run; their source distinguishes known P-A Native refusal from
-service, and cannot certify a successful reopen or stale-output journey. The
-original descriptor/history test remains the starting control, not a substitute
-for that Host journey. Root owner tests are selected separately. Phase checks
-and independent review follow a compiling, qualified candidate.
+Query preview sessions remain in reserved installation ownership. Their
+existing foreign-runtime check was not changed. This candidate does not claim
+that every Query handle/session family is fully incarnation-qualified. D16,
+Query installation splitting, Native durability and Store Section readmission
+remain outside this candidate. No Close production module is changed.
 
-The initial root-owner run executed 523 cases: 521 passed and two exhausted
-fixture metadata capacity. The first fence representation duplicated Home
-bytes already held by the sealed owner scope, inflating every nested live
-identity. The fence now carries only the admitted nonzero incarnation; the
-owner admits the exact Home/slot before comparing it. No fixture budget or
-assertion was relaxed. The affected failures and the fence/identity controls
-are selected for a focused correction run, not another full suite.
+## Corrections exposed by qualification
 
-The reduced representation passed the stale-head failure and fence control.
-The two-attempt test still exhausted its unrelated history allocation. Its
-fixture claimed to isolate active-attempt capacity while funding only 8192
-bytes of retained root plus publication-envelope metadata. The nearest
-publication-service fixture already funds 16384 bytes for that responsibility.
-Preparation now uses that same history headroom; its active-attempt, recovery,
-observation and custody limits and every test assertion remain unchanged.
-The two-attempt independence and one-attempt capacity-refusal controls must
-both pass. This corrects the fixture's unrelated resource premise, without
-relaxing the product's metadata enforcement or the tested capacity boundary.
+- Recovery cleanup initially reached catalog-private state. The product check
+  now delegates to the catalog owner's incarnation admission.
+- New typed variants exposed exhaustive match omissions in Query, Publication
+  and Server. Each mapping preserves the original refusal or translates it to
+  the corresponding typed no-effect outcome. No fallback arm was introduced.
+- The first fence representation duplicated Home bytes already held by the
+  sealed owner scope. Removing that duplicate fixed one metadata-capacity
+  failure. The final fence carries only the nonzero admitted incarnation;
+  receiving owners admit exact Home/slot before comparing it.
+- The two-attempt preparation fixture still underfunded unrelated retained
+  history metadata at 8192 bytes. It now uses the nearest publication-service
+  fixture's 16384-byte history allocation. Active-attempt, recovery, observation
+  and custody limits and every assertion remain unchanged. All 14 preparation
+  and borrowed-call controls pass; product metadata enforcement is unchanged.
+- The first Host probe expected `CorruptCanonicalArtifact` for RootLinkage.
+  The actual Native adapter class is `CorruptCheckpoint`; the test expectation
+  now preserves that exact typed class and detail.
+- The old unavailable-World-checkpoint assertion in
+  `ordinary_occurrences_reopen_original_history_after_later_native_advance`
+  is retired by milestone-3 D12's implemented Complete Home checkpoint contract
+  (Native Complete integration `9429165bd3`). It now requires actual Closed
+  with a successful checkpoint. No history/occurrence assertion was removed.
+  Reopen then reaches the separate `CompleteNativeRequired` block. Restoring
+  its still-needed checkpoint-denial import fixed the successor compile.
+- The Query workspace has no committed `ci` nextest profile. The attempted
+  invocation ran no tests; its successor uses its available `default` profile.
 
-The permitted Query `provider/idempotency.rs` edit propagates an original typed
-provider-session refusal through its existing `ExecutionDenied` payload. It
-does not change receipt resolution or edit P-D's `provider/idempotency/`
-directory. This exact exhaustive mapping is a merge seam for P-D.
+## Facades and merge seams
 
-The changed-build output component court uses an actual producer publication
-and its genuine checkpoint through the existing checkpoint composition door.
-It compares the complete accepted record before demand and observes the real
-handler's decision/candidate contacts across readmission. Build B must retain
-A's record without either producer phase running, then reproduce it only when
-explicitly demanded. This is component evidence; the public directory Host
-journey is separately exercised and any P-A refusal remains explicit.
+Proof's facade exports `HomeIncarnationFence` and `HomeIncarnationDenial`.
+Foundation adds only `HomeIncarnation::fence`; existing World and Query facade
+exports carry their new refusal variants. No boundary configuration, Cargo
+manifest, feature, durable format, Host opening or Close module changed.
 
-The first public Host probes observed Native's exact
-`CorruptCheckpoint` / `recovered source synchronization denied: RootLinkage`.
-The probe initially expected `CorruptCanonicalArtifact`; its expectation is
-corrected to the actual typed adapter refusal. Genuine World readmission
-controls remain blocked by `CompleteNativeRequired` and RootLinkage.
+The coordinator approved the single inventory-refusal group arm in Query
+`application_installation/program/program_runtime.rs`. It is a P-A merge seam;
+no other change was made there. Query `provider/idempotency.rs` propagates the
+original typed session failure through existing `ExecutionDenied`; receipt
+resolution and the `provider/idempotency/` directory are untouched (P-D seam).
+World branch retirement's pre-effect incarnation check and Query's
+`product_world/branch_close.rs` outcome mapping are narrow lifecycle seams.
+Server's product-adapter diagnostic renders `stale_incarnation`; no
+`compat_http` file changed.
 
-The unavailable-World-checkpoint assertion in
-`ordinary_occurrences_reopen_original_history_after_later_native_advance`
-is retired by milestone-3 D12's implemented Complete Home checkpoint contract
-(Native Complete integration `9429165bd3` and the Phase 3 Home checkpoint
-composition). It is replaced with a stronger prerequisite: actual Closed with
-a successful checkpoint. No history or occurrence assertion is removed.
+Every exhaustive-match propagation site is listed below, relative to its
+crate's `src/` directory. The owner checks and newly declared variants are
+separate from these propagation-only changes.
 
-The Server product-adapter diagnostic mapping now renders the typed
-authorization refusal as `stale_incarnation`; this is exhaustive-match
-propagation, outside Server's compat_http owner.
+Query Execution:
+
+- `basis/product_branch/creation_recovery.rs`
+- `domain_computation/execution_runtime/product_world/admission.rs`
+- `domain_computation/execution_runtime/product_world/branch_close.rs`
+- `domain_computation/primary_graph/application_attempt/compare_and_commit/commit_outcome/denial/execution.rs`
+- `domain_computation/primary_graph/application_attempt/provider_compare_denial.rs`
+- `domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/commit_resolution/world_no_effect.rs`
+- `domain_computation/primary_graph/application_attempt/workflow_transition_program/publication/operation/approval_denial.rs`
+- `domain_computation/primary_graph/application_installation/program/program_runtime.rs`
+- `domain_computation/primary_graph/conditional_operation/application_operation_reentry/denial/authorization.rs`
+- `domain_computation/primary_graph/conditional_operation/application_operation_reentry/sealed_commit/denial.rs`
+- `domain_computation/primary_graph/product_operation/generated_materialization/restoration/no_effect.rs`
+- `domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs`
+- `domain_computation/primary_graph/provider/idempotency.rs`
+- `domain_computation/primary_graph/publication_request_denial.rs`
+
+Query Publication:
+
+- `application_entry/mutation/performed/denial/recovery_posture/query.rs`
+- `application_entry/mutation/recovery/interruption.rs`
+
+Server: `product_adapter/operation_custody/diagnostic.rs`.
+World: `recovery/cleanup.rs` maps its private cleanup denial.
+
+Full command headers, source revisions, clean flags, timings, exit codes and
+counts are indexed in `target/lane-evidence/pc-incarnation-lane-index.txt`.
+No ignored test, exhaustive Home oracle or Store scenario lane was run.
+
+## Final source qualification
+
+- Query Execution and Publication normal owner targets: 2230 passed, 0 failed,
+  0 ignored executed (3 skipped).
+- Changed-build producer component and same-build reuse control: 2 passed.
+- Final-source selected World/Server owner controls: 47 passed. Additional
+  World branch/publication/recovery service controls: 81 passed.
+- Store Application normal owner target: 19 passed. Store court ordinary
+  selection has no tests; only its named process courts were executed.
+- Host contention/native-boundary and changed-build/native-boundary controls:
+  2 passed under the committed runner. Their direct normal-stack executions
+  remain failed as documented above. The fresh public Host discard/reinitialize
+  regression passes directly with `RUST_MIN_STACK` absent.
+- Formatting, dirty and full-candidate line caps (66 Rust files), boundary-check
+  and agent-context freshness pass. The first line-cap launch selected absent
+  WSL; using the installed Git Bash ran the unchanged committed script green.
+
+These results qualify the implemented owner checks and component behavior;
+they do not close the outstanding filesystem fencing, serving-after-kill,
+changed-build Host, preview-session or normal-stack reopen obligations.
