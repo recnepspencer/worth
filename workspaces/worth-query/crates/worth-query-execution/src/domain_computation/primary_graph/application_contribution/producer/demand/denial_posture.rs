@@ -87,6 +87,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::ForeignDemand
             | Self::RequiredSuccessorStateUnavailable
             | Self::ForeignSettlement
+            | Self::RetainedVerificationFactUnavailable(_)
             | Self::SettlementProvenance(_)
             | Self::IncompleteDependencyCoverage
             | Self::RetainedBasisUnavailable

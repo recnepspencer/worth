@@ -7,8 +7,9 @@ Slice 1 is `c4b61d817783cb8e4f4ee973e414a3df73feb642` (items 1 and 2).
 The original continuation is `a26581c5aae28b02da91f5fba9a6d42e1d11e208` (items 3 through 6).
 The continuation implements items 3 through 6 and the remaining warnings in
 Execution-owned source outside pub-mono. Its completed evidence is recorded below.
-Both required sync branches were fetched and merged before each slice; both
-merges were already current. The governing external plan was read only.
+Both required sync branches were fetched and merged before each slice. The original
+two slices were already current; the second certification round merged current
+master in `9e3880f9074cba837b3254f6214d4ebda4c27a89`, then remained current. The governing external plan was read only.
 No consumer in this lane requires a change in pub-mono's reserved files.
 The same independent reviewer remains `/root/lane_reviewer` throughout.
 
@@ -20,7 +21,7 @@ explicit. Courts P1-P4, C, W, I and N are named in the next section.
 
 | Field | Outcome | Actual consumer | Court |
 |---|---|---|---|
-| DiagnosticPreparationDenial::Governance.0 | a | Public borrowed Governance refusal | I: diagnostic-preparation governance |
+| DiagnosticPreparationDenial::Governance.0 | a | Public borrowed DiagnosticPreparationGovernance refusal, distinct from admission | I: diagnostic-preparation governance |
 | InspectionAdmissionDenial::Authorization.0 | a | Public exact Authorization refusal | I: query authorization |
 | InspectionAdmissionDenial::CurrentAuthorization.0 | a | Public exact CurrentAuthorization refusal | I: current authorization |
 | InspectionAdmissionDenial::Capability.0 | a | Public exact Capability refusal | I: capability |
@@ -68,8 +69,9 @@ Both requested atomics use explicit compare_exchange_weak loops with Relaxed
 success/failure orderings and the original checked arithmetic. Their local
 courts check literal starting values, terminal MAX values, refusal without state
 change, and the 256-value lineage sequence. The new reservation identity's
-counter also refuses exhaustion precisely; six admission paths preserve
-IdentityExhausted instead of classifying it as capacity unavailability.
+counter also refuses exhaustion precisely; admission distinguishes
+CapacityReservationIdentityExhausted from PlanIdentityExhausted instead of
+classifying either as capacity unavailability.
 
 ## Courts and independent oracles
 
@@ -83,13 +85,15 @@ IdentityExhausted instead of classifying it as capacity unavailability.
 - **N:** handler_denial_preserves_native_decision_preparation_cause and handler_denial_preserves_native_managed_index_decision_cause.
 
 P1-P4 use genuine owner-issued settlements and disclosure from the existing
-runtime fixtures. They alter only retained descriptive provenance and call the
-actual current-settlement reader through an existing fixture's checking closure.
-The independent oracles are deliberately absent publication/settlement facts,
-a distinct earlier genuine settlement, an absent/present disclosure substitution (not two present owners), and a
-flipped checkpoint idempotency byte. Every corruption must return the existing
-typed ForeignSettlement refusal, while each unmodified counterpart succeeds.
-The comparison algorithm is not reproduced in a test oracle.
+runtime fixtures. They alter retained descriptive provenance and call the actual
+current-settlement reader through the fixture's checking closure. Current oracles
+include absent original versus absent receipt owners, two present foreign
+settlement/disclosure owners, publication disagreement and a changed checkpoint
+identity. Each expects its exact `SettlementProvenance(reason)` cause. A separate
+receipt-corruption case reaches the disclosure comparison through the real receipt
+reader, rather than calling only its helper. Initial coarse-refusal results below
+are historical; the second certification corrections supersede those causes and
+add literal-cause mutations. The oracle never reproduces owner comparison logic.
 
 C issues two genuine completions with the same provider label, distinct managed
 runs and distinct Native bases. It exchanges one completion fact at a time and
@@ -1377,3 +1381,201 @@ All seven slice 4 footer checks exit 0; dirty caps check 6 Rust files with 0 vio
 
 
 Final independent clearance: qa-loop, qa-tests and code-quality-qa all PASS for second correction 4. The same reviewer independently reconciled the exact final ledgers, compiler probe, masking limits, separate Digest mutation, restored readers, both Host runs and all seven footer checks. The Digest gap is closed; no in-scope blocker remains.
+
+
+### 5. Refuse unavailable retained fact coordinates and transferred operation custody.
+
+Boundary review and plan: the existing currentness owner previously substituted the plausible string `unavailable retained fact` when a native/indexed verification requirement named no retained fact. It now resolves that coordinate against the actual comparable native fact body before the witnessed-output/clean-mark success path. Missing coordinates return `RetainedVerificationFactUnavailable(RebaseVerificationReason)` with the exact native/indexed category and indexed denial; no internal ordinal is exposed as a public identity. Valid coordinates borrow the existing fact for the same diagnostic description, without flattening the native body. Adding a description consumes and returns the original denial, preserving its unique cleanup and other evidence. The ordinary no-requirement path performs only the match; the fact-specific path adds one existing native point lookup, no scan or materialization. Publication's exhaustive forwarding and terminal posture classification preserve the new typed cause; under the user's ruling they get no redundant forwarding court.
+
+The graph-plan owner now returns `Result<release receipt, WorthQueryGraphWorkReleaseDenial>` instead of expecting an operation reservation that may legally have transferred. All retained-capacity variants release normally; an actual transferred operation refuses as `OperationCapacityTransferred`. Its owner and existing explicit public facade export the refusal. The Host capability index documents both public diagnostics. No retained fact authority, invented coordinate identity, new Native shape, fallback or compatibility path is added. Admission, Execution and the necessary Publication forwarding owner are the only touched packages; no pub-mono-reserved file is needed.
+
+The currentness corruption court uses a genuinely performed producer, actual receipt, actual nonempty retained read and a passing real currentness baseline. It changes only retained verification metadata to an absent native/indexed coordinate and expects literal public causes. The existing genuine installed-operation court first releases an actual untransferred plan, then admits a second operation, actually transfers its capacity and expects the literal typed refusal while the capacity is still held. The mutation campaigns will remove coordinate consumption and restore the old panic respectively, with the other selected court serving as a passing control. These expected outcomes are independent fixture facts and literal categories, not copies of the production checks. No new forwarding-only court is claimed.
+
+Before this slice, fetch and both required sync merges exited 0 and were already current. Full Execution lib, full DeclHost binary and both actual inspection filters are scheduled after the focused mutation/restoration runs. They have not yet run for this final source at this point in the ledger.
+
+
+Exact second correction 5 initial source checks commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution -p worth-query-admission -p worth-query-publication` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 14 Rust files; 0 cap violations |
+
+
+Reviewer finding: the original currentness baseline used no descriptive verification requirement, so it did not guard against falsely refusing every present coordinate. The same-world court now first assigns each fact-specific descriptive requirement an in-bounds coordinate 0 and expects actual currentness success, then changes only that coordinate to MAX and expects its exact refusal. The native fact body is genuinely retained; these descriptive requirement values are test edits, not claimed genuine indexed-fact rebase evidence. Existing rebase courts separately prove real stage/ordinal issuance. The indexed-only consumer-removal campaign is separate from combined removal so a preceding native failure cannot mask it. Mutation and final results remain pending at this point in the ledger.
+
+
+Ordinary build failure, not mutation evidence: the first exact focused command was `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- retained_currentness_refuses_corrupted_fact_coordinates installed_operation_template_keeps_exact_operation`. It reports E0592, duplicate `with_subject`, between the existing `demand/denial_diagnostic.rs` and the newly added method in `denial/diagnostic_copy.rs`. The correction deletes the duplicate and extends the existing consuming diagnostic owner's argument to `Into<Cow<'static, str>>`, retaining the original kind and unique custody. The reviewer independently confirmed this is the correct single owner; the diagnostic-copy file retains only its previous non-authoritative clone responsibility. The complete exit/error count is recorded after the run finishes below.
+
+
+The initial focused compile completed with exit 101, 4 compiler errors (1 E0592 and 3 E0034), 0 tests executed. These are all consequences of the duplicate method. Corrected source removes that duplicate entirely and reuses the existing owner; this failed run is not included in semantic mutation counts.
+
+
+#### Readings I chose for this correction round
+
+- The latest zero-warning ruling excludes pub-mono-owned files; untouched warnings there are reported, not a reason to edit their owners or stop this lane. The physically mounted Certification fixture is attributed to its actual source. Upstream Relational warnings remain out of scope.
+- Full Execution lib and full DeclHost run once against the final fifth slice; each preceding slice runs its affected Execution court and actual Host inspection binary filter, plus every required footer. The same reviewer accepted this sequencing to preserve compile time; earlier slice ledgers do not claim unrun full suites.
+- Facts guaranteed by the private release issuer need no duplicated runtime refusal or manufactured court. Exact owner identity and live custody comparisons remain; real operation custody transfer gets a typed refusal.
+- Existing rebase registration policy retains its private broader requirement/ordinal beside the one public reason. It is not a second mirrored public-reason enum. Public reason movement and the user's type-forced caller forwarding get no invented behavioural court.
+- The currentness coordinate is private metadata over a real retained fact body. Missing coordinates retain the public native/indexed reason and exact indexed denial, without pretending a private position is a portable identity. The in-bounds controls use test-edited metadata and do not claim genuine indexed-fact issuance.
+- Required public facade exports and exhaustive Publication forwarding accompany the owning typed refusal. They do not create a second authority route. The two pub-mono handover expansions remain deferred as instructed.
+- No Native `AspectShape` form, authority constructor, stored migration, compatibility path or production cost parameter was added. Rust refusal vocabulary names facts consumers can act on. Checked coordinate resolution uses the existing native point reader and does not flatten or scan its body.
+
+The complete final counts, mutation outcomes, footer diagnostics and same-reviewer closure follow after their actual completion. No hard-rule or reserved-owner stop has been needed in this round.
+
+
+Exact second correction 5 corrected focused baseline commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution -p worth-query-admission -p worth-query-publication` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 14 Rust files; 0 cap violations |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution -p worth-query-admission -p worth-query-publication` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 14 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- retained_currentness_refuses_corrupted_fact_coordinates installed_operation_template_keeps_exact_operation` | 0 | 2/0/0/0/2332 (passed/failed/ignored/measured/filtered) |
+
+
+Exact second correction 5 isolated indexed mutation commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- retained_currentness_refuses_corrupted_fact_coordinates installed_operation_template_keeps_exact_operation` | 101 | 1/1/0/0/2332 (passed/failed/ignored/measured/filtered) |
+
+
+The isolated indexed mutation compiled and failed 1/1/0/0/2332, exit 101. It removed only indexed coordinate consumption; native in-bounds and absent-coordinate assertions ran first and passed, then the indexed in-bounds control passed and the indexed MAX case panicked with `absent retained coordinate: ()`. The genuine operation court passed as a separate control. Thus the failure is the intended silent success when the indexed check is removed, not an earlier native failure or a compiler error. The verification-context source was restored byte for byte before the general/native campaign started.
+
+
+Exact second correction 5 general/native coordinate mutation commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- retained_currentness_refuses_corrupted_fact_coordinates installed_operation_template_keeps_exact_operation` | 101 | 1/1/0/0/2332 (passed/failed/ignored/measured/filtered) |
+
+
+The general coordinate-consumer removal (`read.verification_requirement` replaced with `None` at its real currentness reader) compiled and failed 1/1/0/0/2332, exit 101. The native in-bounds control still succeeded, then its MAX case returned `Ok(())` and the court panicked with `absent retained coordinate: ()`; the genuine operation control passed. This campaign certifies the native/general seam only, because that failure stops the ordered court before its indexed case. Independent indexed sensitivity is established by the preceding isolated campaign, not inferred from this one. Exact currentness source bytes were restored before the operation-panic campaign.
+
+
+Exact second correction 5 transferred-capacity mutation commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- retained_currentness_refuses_corrupted_fact_coordinates installed_operation_template_keeps_exact_operation` | 101 | 1/1/0/0/2332 (passed/failed/ignored/measured/filtered) |
+
+
+The operation refusal mutation replaced only `OperationCapacityTransferred` with the former missing-custody panic. It compiled and failed 1/1/0/0/2332, exit 101: the genuine operation court panicked with `old missing-custody path` after actual reservation transfer; the full native/indexed currentness court passed. The failure occurs at the real plan release call, not in fabricated lifecycle data. Exact Admission production bytes were restored before the restored positive/package/full runs.
+
+
+Exact second correction 5 restored positives and Admission graph courts commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- retained_currentness_refuses_corrupted_fact_coordinates installed_operation_template_keeps_exact_operation` | 0 | 2/0/0/0/2332 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --lib graph_obligation` | 0 | 6/0/0/0/120 (passed/failed/ignored/measured/filtered) |
+
+
+Restored focused source passes 2/0/0/0/2332; Admission's actual graph-obligation filter passes 6/0/0/0/120. The same reviewer independently verified all three compiled semantic campaigns and restored production readers. It found a final verification scheduling omission: the two separately required Query/DeclHost and Query inspection binaries were missing from the driver. They are now scheduled after the full suites and local/DeclHost inspection filters, before all final footer gates. Only the idle footer-waiting Python helper was restarted; no Cargo/build/test was stopped. These two binaries are the brief's explicit inspection-proof requirement despite no manual source changes in their packages. Exact actual results follow when complete; earlier historical runs are not substituted for final-source evidence.
+
+
+Exact second correction 5 Publication library integration commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-publication --lib` | 0 | 27/0/0/0/0 (passed/failed/ignored/measured/filtered) |
+
+
+The same reviewer completed its final source/report composition audit before the final test logs: standalone function scan exit 0, 14 Rust files, 7 non-blocking advisory candidates, 0 scan errors. Each candidate remains within its named exhaustive owner or genuine fixture seam. The reviewer verified current capability rows and opening provenance/stage/counter descriptions against actual restored source, including the limited structural claim for annotation custody and the test-edited metadata oracle. It independently read the corrected 14-file dirty-cap pass. There is no source/report-content blocker; final three-skill commit clearance awaits actual full suites, both separately required inspection binaries and footer reconciliation.
+
+
+Exact second correction 5 full Execution library commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib` | 0 | 2333/0/1/0/0 (passed/failed/ignored/measured/filtered) |
+
+
+The final full Execution library run completed with exit 0: 2333/0/1/0/0 in 711.65 seconds. The long authority-evidence case completed successfully; no build/test was interrupted or replaced with an estimate. This actual complete result supersedes the historical 2323-pass library counts for this final source. Full DeclHost, final inspection binaries and footer checks remain pending at this point in the ledger.
+
+
+Exact second correction 5 full DeclHost and final local public inspection filters commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host` | 0 | 331/0/2/0/0 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection` | 0 | 96/0/0/0/2238 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/327 (passed/failed/ignored/measured/filtered) |
+
+
+Final full DeclHost completes with exit 0: 331/0/2/0/0 in 24.19 seconds after compilation. Its four new upstream tests explain the increase from the user's previous 327-pass result; no manual DeclHost source was added in this correction round. Final local inspection passes 96/0/0/0/2238 and Host inspection passes 6/0/0/0/327. These are actual final-source reruns. The two separate Query inspection binaries and final footer commands remain pending at this point in the ledger.
+
+
+Exact second correction 5 separately required Query inspection binaries commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query-decl-host --test worth_query_court_query_decl_host inspection` | 0 | 47/0/0/0/295 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query --test worth_query_court_query inspection` | 0 | 3/0/0/0/61 (passed/failed/ignored/measured/filtered) |
+
+
+The scheduling finding is closed with actual final-source runs: Query/DeclHost inspection 47/0/0/0/295 in 8.84 seconds; Query inspection 3/0/0/0/61 in 0.02 seconds; both exit 0. All required package/full/inspection tests are now complete and pass. Final footer diagnostics and independent commit clearance remain pending at this point in the ledger.
+
+
+Final Admission all-target Clippy exits 101 with exactly 1 error diagnostic, `clippy::disallowed_methods`, 0 warning diagnostics in this invocation and 0 dirty primary spans. Output:
+
+```text
+error: use of a disallowed method `std::thread::spawn`
+  --> crates/worth-query-admission/src/domain_computation/execution_resource_admission/capacity_tests.rs:81:13
+81 |             std::thread::spawn(move || {
+Threads and async executors belong only to the reviewed owning sites;
+computation belongs to worth-execution.
+```
+
+Both `git diff --quiet origin/master...HEAD -- workspaces/worth-query/crates/worth-query-admission/src/domain_computation/execution_resource_admission/capacity_tests.rs` and the same command with `HEAD` exit 0. The failing file is unchanged from current master and the lane, as well as outside the scoped dirty set. Per the supplied AGENTS.md, a pre-existing failure in an untouched file is reported as debt without expanding or blocking the scoped task. It is not called green or repaired. Separate Execution and Publication Clippy commands still run, so Admission's failure cannot skip them.
+
+
+Final Execution Clippy warning inventory (exact invocation multiplicities; normalized physical source paths):
+
+| Package | Count | Warning | Physical source |
+|---|---:|---|---|
+| worth-query-execution | 1 | associated constant `MIN` is never used | `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_values/src/integer_orientation.rs:13` |
+| worth-query-execution | 2 | function `query_execution_denial` is never used | `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/retained_read.rs:320` |
+| worth-query-execution | 2 | function `ready_work_denial` is never used | `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/execution/source_readmission/ready.rs:5` |
+| worth-query-execution | 2 | function `work_denial` is never used | `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/retained_read.rs:339` |
+| worth-query-execution | 2 | method `into_original` is never used | `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/navigation/output_correspondence.rs:18` |
+| worth-query-execution | 2 | method `resolve_encoded_entity_admitted` is never used | `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/admitted_scope.rs:25` |
+| worth-query-execution | 2 | method `seal_current_ready` is never used | `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission/permission/current_ready.rs:83` |
+| worth-relational | 1 | field `closure` is never read | `crates/worth-relational/src/validation/candidate_source/preparation.rs:225` |
+| worth-relational | 1 | fields `records` and `incidence` are never read | `crates/worth-relational/src/validation/candidate_source/authored_history.rs:54, crates/worth-relational/src/validation/candidate_source/authored_history.rs:55` |
+| worth-relational | 1 | type `companion::cell::CompanionBranchCellCore` is more private than the item `ManagedSourceReadConditions::matches_reserved` | `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:207` |
+| worth-relational | 1 | type `companion::cell::CompanionBranchCellCore` is more private than the item `companion::cell::managed_source::ManagedIndexSourceObservation::core` | `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:15` |
+| worth-relational | 1 | type `companion::cell::CompanionBranchCellCore` is more private than the item `companion::cell::managed_source::ManagedSourceRootImage::core` | `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:27` |
+| worth-relational | 1 | type `companion::cell::CompanionRootImage` is more private than the item `ManagedSourceReadConditions::matches_reserved` | `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:207` |
+| worth-relational | 1 | type `companion::cell::CompanionRootImage` is more private than the item `companion::cell::managed_source::ManagedSourceRootImage::image` | `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:29` |
+
+
+Exact second correction 5 final footer gates commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution -p worth-query-admission -p worth-query-publication --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --all-targets --message-format=json` | 101 | 1 error diagnostics from worth-query-admission |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-publication --all-targets --message-format=json` | 0 | 6 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 14 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |
+
+
+Final slice 5 reconciliation: full Execution 2333/0/1/0/0; full DeclHost 331/0/2/0/0; Admission graph 6/0/0/0/120; Publication lib 27/0/0/0/0; final inspection filters Execution 96/0/0/0/2238, DeclHost 6/0/0/0/327, Query/DeclHost 47/0/0/0/295, Query 3/0/0/0/61. Corrected/restored focused runs each pass 2/0/0/0/2332. Three final semantic mutations each compile and fail 1/1/0/0/2332 with the direct consumer and passing control stated above. The first ordinary compile failure is separately recorded as 4 errors and 0 tests, never a mutation kill.
+
+Formatting, Execution Clippy, Publication Clippy, boundary, context, dirty caps and both whitespace checks exit 0. Dirty caps check 14 Rust files. Execution Clippy emits 13 Execution-labelled warnings and 7 upstream Relational warnings, 0 errors and 0 dirty primary spans: 12 warnings are the six pub-mono methods emitted for lib/lib-test, and 1 resolves to the physically mounted Certification fixture's MIN constant. Thus there are zero warnings in Execution-owned source outside the excluded pub-mono files; no zero-total-diagnostics claim is made. Publication has 0 owned warnings/errors; its invocation re-emits 6 excluded Execution and 7 Relational dependency warnings. Admission Clippy's sole unchanged capacity-test error is the documented exception, not a green check. All three Clippy invocations have 0 dirty primary diagnostic spans. The fresh physical warning inventory above lists every upstream Relational warning and every excluded/mounted warning.
+
+A temporary, format-only warning-inventory helper initially failed before writing the inventory with `NameError: name 'Path' is not defined`, then after an import edit with `SyntaxError: invalid non-printable character U+FEFF`. The helper was corrected, its package-id parser was corrected, and the inventory was rebuilt from the completed JSON logs. No production code, Cargo check or test result changed or was substituted during this formatting correction.
+
+The same reviewer has already verified each actual final test log and all mutation/restoration boundaries, and completed the 14-file, 7-advisory, 0-error composition scan. Its receipt-settlement, Digest-route, valid-coordinate and missing-inspection-scheduling findings are closed by the actual additions and runs above. New categorical refusal vocabulary describes missing retained coordinates and already-transferred operation custody; Native AspectShape forms added: **none**. The ordinary currentness path avoids a new allocation/scan; fact-specific validation uses one existing native point lookup, and diagnostic strings allocate only on the existing error-description path. No new timing or growth benchmark for that point lookup is claimed. Full suites include the existing actual count/growth courts, and their results are not represented as a new coordinate-lookup benchmark.
+
+No consumer required a pub-mono-reserved edit. No hard-rule or scope stop occurred. The Native preparation and Graph handover expansions remain deferred under the user's explicit ruling. All changes and commits stay on this branch; no push, issue/PR action, migration, compatibility path, new dependency, authority constructor or MSRV change occurred. Final independent three-skill commit clearance follows below.
+
+
+Final independent clearance: qa-loop, qa-tests and code-quality-qa all PASS for second correction 5. The same reviewer independently reconciled every actual final test and footer log, all three compiled semantic mutations with their separate controls, the restored production readers, the exact physical warning inventory, capability index, 14-file cap and function scan, and report limits. It independently reran both quiet Admission-debt diffs with exit 0. Every reviewer finding is closed. There is no in-scope source, evidence, scope or report blocker; the single unchanged Admission Clippy failure remains reported debt. All five correction slices are separately reviewed and committed; this fifth slice is the commit containing this final ledger.

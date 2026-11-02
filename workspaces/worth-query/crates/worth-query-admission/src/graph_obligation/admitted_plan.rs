@@ -51,6 +51,12 @@ pub struct WorthQueryAdmittedGraphWorkPlan {
     mechanics: WorthQueryGraphWorkAdmissionMechanics,
 }
 
+/// No release receipt can be issued for custody already transferred to execution.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryGraphWorkReleaseDenial {
+    OperationCapacityTransferred,
+}
+
 impl WorthQueryAdmittedGraphWorkPlan {
     pub(super) fn seal(
         selected: WorthQuerySelectedGraphObligations,
@@ -231,22 +237,27 @@ impl WorthQueryAdmittedGraphWorkPlan {
     }
 
     #[doc(hidden)]
-    pub fn release(self) -> WorthQueryExecutionCapacityReleaseReceipt {
+    pub fn release(
+        self,
+    ) -> Result<WorthQueryExecutionCapacityReleaseReceipt, WorthQueryGraphWorkReleaseDenial> {
         match self.mechanics {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { capacity, .. } => {
-                capacity.release()
+                Ok(capacity.release())
             }
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { capacity } => {
-                capacity.release()
+                Ok(capacity.release())
             }
             WorthQueryGraphWorkAdmissionMechanics::ResourceRead { capacity }
             | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { capacity }
             | WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { capacity } => {
-                capacity.release()
+                Ok(capacity.release())
             }
-            WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => capacity
-                .expect("an untransferred operation plan retains its reservation")
-                .release(),
+            WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => {
+                match capacity {
+                    Some(capacity) => Ok(capacity.release()),
+                    None => Err(WorthQueryGraphWorkReleaseDenial::OperationCapacityTransferred),
+                }
+            }
         }
     }
 }
