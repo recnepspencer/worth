@@ -56,7 +56,7 @@ const preservedStageEntries = new Set([
 const packageJsonPath = path.join(pkgDir, "package.json");
 const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
 const cargoManifest = await readFile(cargoManifestPath, "utf8");
-const crateVersionMatch = cargoManifest.match(/^version\s*=\s*"([^"]+)"\s*$/mu);
+const crateVersionMatch = cargoManifest.match(/^(?:version|"version"|'version')\s*=\s*"([^"]+)"\s*$/mu);
 
 if (!crateVersionMatch) {
   throw new Error(`Could not determine worth-signals-wasm version from ${cargoManifestPath}`);
