@@ -323,3 +323,42 @@ literal408 refusals instead; do not route around original framework funding to
 force the old payload owner. Remove the unused envelope observer. Peak and
 retained-backing invoices remain separately verified. This is an explicit changed
 allocation bill, not a change to a semantic expectation or resource cause.
+
+# Store withdrawal and Native lifecycle boundary and plan
+
+Store is another team's root and K1c has no integrated Store content court.
+Delete only our four relational_home/content files, module registration, actual
+court dependency and eleven added lock lines. Preserve exactly the two Store
+source exhaustiveness repairs following Bytes deletion. Historical slice logs
+remain honest history, but their Store claims are explicitly superseded.
+Store test binaries will not run. Store formatting/Clippy are compile checks only.
+
+Existing Native courts separately prove checkpoint, journal and retained field
+custody. Add one combined Native certification court: create A, retain the actual
+admitted old commit envelope, capture C1, replace the same entity with B, export
+one physical journal tail, then drop runtime/bases/outcomes. Reopen C1 plus tail
+through real recovery admission and assert one replay, both selected fields B,
+frozen B identity/bytes, A absent from current resolution and the genuine old
+reader still yielding frozen A bytes. Capture C2, drop C1/first recovered runtime,
+reopen selecting C2 alone and repeat. This proves Native reconstruction and
+retained reader custody, not Store home publication or filesystem collection.
+
+Reuse only the existing counted physical Source and exact replacement helper.
+Make their sibling visibility narrow, extend reopen with tail input/count proof,
+and keep old callers on the zero-tail path. Independently freeze B's digest with
+Python hashlib over the literal A vector patched at its fixed sample offset.
+Mutate only journal replay's content attachment handoff to empty; real recovery
+must refuse MissingContent. Restore byte-exact source/fresh timestamp, rebuild
+and rerun Native content, scoped gates, same reviewer, then commit. Final full
+Native, certification and public Decl/Host binaries remain required afterward.
+
+The combined court's first real runs exposed two fixture facts: cold journal
+admission must first fund the 256MiB bounded physical read allowance (the shared
+64MiB fixture is too small), so this court uses an original512MiB grant; and C2
+has genuinely cold lineage membership, so a destination declaring no prior
+members correctly refuses SourceUnavailable. Preserve C1's actual member set
+and cold source in C2's existing policy, then populate C2's physical fixture from
+New bytes or exact bounded reads of Carried locators through that real preceding
+source. Never fabricate resident metadata or relax Native carry checks. Close
+all current runtimes/checkpoints and prove the actual old reader's last drop
+releases the final original-funded custody.

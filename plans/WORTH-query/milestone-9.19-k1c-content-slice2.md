@@ -1,5 +1,11 @@
 # K1c slice 2: durable closure and retention
 
+Current qualification is recorded in the [resumed repair ledger](milestone-9.19-k1c-certification-evidence.md).
+This document preserves historical slice receipts. Its Store content courts and
+Store qualification claims are withdrawn; K1c has no integrated Store content
+court. Combined checkpoint/tail/replacement/retained-reader proof now belongs to
+Native certification. Earlier filtered runs do not qualify the full binaries.
+
 This is the implementation-batch boundary review and plan for the second accepted
 slice. Slice 1 and the subsequent sync merge are committed. The governing content
 boundary and the CAD integration plan remain unchanged.

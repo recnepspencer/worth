@@ -111,7 +111,7 @@ fn content_original_field_custody_restores_after_current_root_collects_the_ident
         super::expected::FRAME
     );
 }
-fn replace(
+pub(super) fn replace(
     txn: &mut worth_relational::facade::mvcc::BranchBoundRelationalTransaction,
     execution: &ExecutionRequest<'_, '_>,
     contract: &AspectContract,

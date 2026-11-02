@@ -1,5 +1,11 @@
 # K1c implementation evidence
 
+Current qualification is recorded in the [resumed repair ledger](milestone-9.19-k1c-certification-evidence.md).
+This document preserves historical slice receipts. Its Store content courts and
+Store qualification claims are withdrawn; K1c has no integrated Store content
+court. Combined checkpoint/tail/replacement/retained-reader proof now belongs to
+Native certification. Earlier filtered runs do not qualify the full binaries.
+
 Slices 1–5 establish the Native content owner, durable reconstruction, typed
 Decl/Host door, Source/correction custody and bounded-cost qualification. The
 sections below preserve each slice's contemporaneous status and every logged

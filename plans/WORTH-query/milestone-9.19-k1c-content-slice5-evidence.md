@@ -1,5 +1,11 @@
 # K1c slice 5 evidence and lane closeout
 
+Current qualification is recorded in the [resumed repair ledger](milestone-9.19-k1c-certification-evidence.md).
+This document preserves historical slice receipts. Its Store content courts and
+Store qualification claims are withdrawn; K1c has no integrated Store content
+court. Combined checkpoint/tail/replacement/retained-reader proof now belongs to
+Native certification. Earlier filtered runs do not qualify the full binaries.
+
 Status: the same independent reviewer issued S5 PASS under qa-loop, qa-tests and
 code-quality-qa after reading final code, courts, plans, raw receipts and complete
 scoped lint paths. All caused findings are closed. The reviewer ran no builds and

@@ -582,3 +582,59 @@ repair under qa-loop, qa-tests and code-quality-qa after independently checking
 the final source, unchanged semantic oracles, exact resource invoices, all scoped
 receipts and the corrected funding reading. Full-binary qualification and the
 Store withdrawal/Native lifecycle proof remain required.
+
+## Native lifecycle and Store withdrawal
+
+The out-of-scope Store content court, module declaration, testkit dependency and
+its eleven lockfile additions are removed. Against master, Store retains only
+the two source compile fixes necessitated by deleting Bytes. No Store test
+binary was run during this repair. Store Clippy below compiles its targets.
+
+The new `checkpoint_tail_replacement_and_retained_history_keep_exact_native_content`
+court uses actual Native checkpoint members, one canonical journal-tail artifact,
+two destroyed/reopened runtimes and a replacement checkpoint. It retains the
+original admitted historical envelope across both reopens. Selected fields name
+the new frame; the current directory refuses the old identity as MissingContent;
+the retained historical reader returns the old exact bytes. C2 carries nine
+members and emits four new ones. Original custody retains exactly 1628 bytes
+until that reader drops, then releases the complete 536870912-byte budget.
+These are Native lifecycle assertions, not physical Store publication or GC.
+
+The independent byte oracle is the literal 75-byte frame in expected.rs, with
+Python hashlib verifying its frozen digest and the separately frozen digest
+after replacing the first sample at the fixed format offset. The selected-field
+reader checks field identity separately from the content-directory reader.
+
+| Lifecycle command or attempt | Exact result |
+| --- | --- |
+| Fetch master/provider and merge both | Three successes, already up to date. |
+| `cargo fmt -p worth-court-relational-certification` | Three successes. |
+| Exact lifecycle filter, initial 64 MiB original | 0 passed, 1 failed, 214 filtered: RequestPolicyMemoryExhausted requested268435456/admitted67100398/ancestor0. The Native cold source reserves a bounded 256 MiB read ceiling before its callback. |
+| Exact lifecycle filter, 512 MiB original but empty C2 membership | 0 passed, 1 failed, 214 filtered: ColdStorageUnavailable, Lineage1..1, SourceUnavailable. C2 must receive genuine C1 membership and its source. |
+| Exact lifecycle filter, corrected genuine membership/source | 1 passed, 0 failed/ignored/measured, 214 filtered, 0.17s. |
+| Compiled mutation: journal recovery installs an empty attachment directory instead of admitted envelope content | 0 passed, 1 failed, 214 filtered, 0.10s; typed Content(MissingContent) kills the lifecycle court. |
+| Byte-exact source restoration and fresh modification time | One restoration assertion passed. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` rebuilt after restore | 66 passed, 0 failed/ignored/measured, 149 filtered, 18.74s. |
+| `PYTHONUTF8=1` lifecycle-oracle.py | Three assertions passed: frame length and both independent SHA-256 digests. |
+| Native court `cargo fmt --check -p worth-court-relational-certification` | Success. |
+| Store `cargo fmt --manifest-path workspaces/worth-store/Cargo.toml --check -p worth-store-court-relational` | Success. |
+| Native court Clippy all-targets | Failed at untouched Native payload.rs:34, 1 error/8 warnings. |
+| Native court Clippy all-targets `--no-deps` | Failed at the four previously recorded untouched court lint sites, 4 errors/2 warnings. |
+| Store `cargo clippy --manifest-path workspaces/worth-store/Cargo.toml -p worth-store-court-relational --all-targets` | Success; compilation only, no Store test execution. |
+| Boundary check; context check | One success each. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | Success, 5 Rust files. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | One success each, zero errors. |
+| `PYTHONUTF8=1` lint-scope check | Four assertions passed. |
+
+The same reviewer passed this slice under qa-loop, qa-tests and code-quality-qa.
+The first full qualification run has Native 2241 passed, 2 failed, 31 ignored
+(296.67s) and Native certification 214 passed, 0 failed, 1 ignored (61.81s).
+Both Native failures remain active follow-up work: the explicitly retired old
+serialization shape expectation and a persisted CDC checkpoint leaf invariant.
+All nine original reported Native failures pass. Public qualification is still
+running at this slice's evidence cut; this is not an overall green claim.
+
+Process deviation: sync merge 99b9277d25 used Git's default merge message without
+the required full sentence and coauthor trailer. The no-amend/no-rewrite rule
+prevents repairing that existing commit. It is preserved and disclosed; future
+merge commits must supply the required message explicitly.

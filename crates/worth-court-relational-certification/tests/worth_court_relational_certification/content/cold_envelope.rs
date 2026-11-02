@@ -15,7 +15,7 @@ use worth_relational::facade::{
 };
 
 #[derive(Debug)]
-struct Source {
+pub(super) struct Source {
     members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
     older: PatchStreamPosition,
@@ -67,18 +67,25 @@ fn bounded(bytes: &[u8], limit: u64) -> Result<Vec<u8>, RelationalStorageUnavail
 }
 
 impl Source {
-    fn capture(
+    pub(super) fn capture(
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,
         checkpoint: &RelationalNativeCheckpoint,
         older_position: PatchStreamPosition,
+        preceding: Option<&Self>,
     ) -> Self {
         let members = checkpoint
             .members()
             .iter()
             .map(|member| match member {
                 RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.to_vec()),
-                _ => panic!("initial capture owns its members"),
+                RelationalCheckpointMember::Carried { locator } => (
+                    *locator,
+                    preceding
+                        .expect("carried members require the actual preceding source")
+                        .read_member(*locator, locator.length)
+                        .unwrap(),
+                ),
             })
             .collect();
         let commits: BTreeMap<_, _> = runtime
@@ -104,13 +111,24 @@ fn reopen(
     manifest: Vec<u8>,
     source: Arc<Source>,
 ) -> worth_relational::facade::runtime::RelationalRuntime {
+    reopen_with_tail(execution, checkpoint, manifest, source, vec![])
+}
+
+pub(super) fn reopen_with_tail(
+    execution: &ExecutionRequest<'_, '_>,
+    checkpoint: &RelationalNativeCheckpoint,
+    manifest: Vec<u8>,
+    source: Arc<Source>,
+    tail: Vec<RelationalCanonicalCommitArtifact>,
+) -> worth_relational::facade::runtime::RelationalRuntime {
+    let expected_replays = tail.len();
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
             checkpoint.covered_position().unwrap(),
             checkpoint.covered_branch_transitions().unwrap(),
             RelationalNativeCheckpoint::from_untrusted_bytes(manifest),
         )),
-        vec![],
+        tail,
         vec![],
         source.clone(),
     );
@@ -123,10 +141,11 @@ fn reopen(
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    target
+    let recovered = target
         .durability_recovery()
         .recover(execution, plan)
         .unwrap();
+    assert_eq!(recovered.coverage.replayed_tail_commits, expected_replays);
     target
 }
 
@@ -152,7 +171,7 @@ fn content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_h
             },
         )
         .unwrap();
-    let mut backing = Source::capture(&runtime, &execution, &checkpoint, older_position);
+    let mut backing = Source::capture(&runtime, &execution, &checkpoint, older_position, None);
     let bytes = backing.commits.get_mut(&older_position).unwrap();
     let previous_digest: [u8; 32] = bytes[26..58].try_into().unwrap();
     let at = bytes
@@ -231,7 +250,13 @@ fn content_cold_history_is_unavailable_while_a_genuine_dangling_reference_is_mis
             },
         )
         .unwrap();
-    let source = Arc::new(Source::capture(&runtime, &execution, &checkpoint, older));
+    let source = Arc::new(Source::capture(
+        &runtime,
+        &execution,
+        &checkpoint,
+        older,
+        None,
+    ));
     let target = reopen(
         &execution,
         &checkpoint,
