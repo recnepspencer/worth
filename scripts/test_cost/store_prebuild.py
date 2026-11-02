@@ -74,9 +74,11 @@ def prepare(repository, output_directory, cargo_runner, profile='dev', *, native
     output.mkdir(parents=True, exist_ok=True)
     if native.workspace != workspace.resolve():
         raise NativeFeatureRefusal('independent executable graph belongs to another workspace')
-    receipt = {'schema': 1, 'features': native.features, 'inputs': native.inputs}
+    receipt = {'schema': 1, 'features': native.features, 'inputs': native.inputs,
+               'native_packages': native.packages}
     (output / 'native-feature-graph.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
-    selection = [argument for package in dict.fromkeys(request['package'] for request in REQUESTS)
+    packages = dict.fromkeys([*(request['package'] for request in REQUESTS), *native.packages])
+    selection = [argument for package in packages
                  for argument in ('--package', package)]
     selection.extend(argument for request in REQUESTS for argument in ('--bin', request['binary']))
     result = cargo_runner(['cargo', 'build', *selection, '--locked',

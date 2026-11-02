@@ -18,6 +18,7 @@ class NativeFeatureGraph:
     features: tuple
     libraries: dict
     inputs: tuple
+    packages: tuple
 
 
 def library_identity(event):
@@ -36,7 +37,8 @@ def load(directory, workspace):
     if directory is None:
         raise NativeFeatureRefusal('Store executable preparation requires the native build directory')
     directory, workspace = Path(directory), Path(workspace).resolve()
-    paths = [directory / 'cargo-metadata.json', directory / 'binaries-build.log']
+    paths = [directory / 'cargo-metadata.json', directory / 'binaries-build.log',
+             directory / 'native-selection.json']
     try:
         metadata = json.loads(paths[0].read_text(encoding='utf-8'))
         if Path(metadata['workspace_root']).resolve() != workspace:
@@ -45,6 +47,19 @@ def load(directory, workspace):
         packages = {row['id']: row for row in metadata['packages'] if row['id'] in members}
         if set(packages) != members:
             raise NativeFeatureRefusal('native workspace package inventory is incomplete')
+        selection = json.loads(paths[2].read_text(encoding='utf-8'))
+        names = {package['name'] for package in packages.values()}
+        if selection['scope'] == 'workspace':
+            roots = names
+        elif selection['scope'] == 'selected-packages':
+            roots = selection['selection']['packages']
+            if not isinstance(roots, list) or not roots or any(not isinstance(root, str) for root in roots):
+                raise NativeFeatureRefusal('native package selection is malformed')
+            roots = set(roots)
+            if roots - names:
+                raise NativeFeatureRefusal('native selection includes a foreign package')
+        else:
+            raise NativeFeatureRefusal('native package selection has unknown scope')
         observed, libraries = defaultdict(set), defaultdict(set)
         events = list(json_objects(paths[1].read_text(encoding='utf-8')))
         count = 0
@@ -73,7 +88,8 @@ def load(directory, workspace):
                 features.append(package['name'] + '/' + feature)
         inputs = tuple({'path': str(path.resolve()), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
                        for path in paths)
-        return NativeFeatureGraph(workspace, tuple(sorted(features)), dict(libraries), inputs)
+        return NativeFeatureGraph(workspace, tuple(sorted(features)), dict(libraries), inputs,
+                                  tuple(sorted(roots)))
     except (OSError, KeyError, TypeError, ValueError) as error:
         if isinstance(error, NativeFeatureRefusal):
             raise
