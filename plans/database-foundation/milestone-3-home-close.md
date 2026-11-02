@@ -368,3 +368,9 @@ ordinary_mutation_host_physically_closes_with_original_retired_allocations_alive
 and existing expired/checkpoint-memory Host close controls. D17 original Native
 basis retirement is traced to original_basis_retirement_preserves_independent_reads_and_retained_payload.
 The tests must exercise actual owners, not copied receipt descriptions.
+
+Native basis retirement validates the authentic runtime's stable instance ID
+without looking up or cloning the main branch. This keeps the post-checkpoint
+step free of that live-table lookup and String allocation, while preserving
+its exact ForeignOwner refusal. The original Native guard and registry lease
+remain the release authority.

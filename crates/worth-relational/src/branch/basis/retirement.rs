@@ -54,7 +54,7 @@ impl RelationalBranchBasisRetirement {
     {
         use RelationalBranchBasisRetirementDenial as Denial;
         use RelationalBranchBasisRetirementProgress as Progress;
-        if owner.main_branch_identity().runtime_instance_id() != self.owner {
+        if owner.runtime_instance_id() != self.owner {
             return Err(Denial::ForeignOwner);
         }
         if self.complete {
