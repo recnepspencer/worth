@@ -352,5 +352,11 @@ mod decision_entry;
 #[path = "erased_core_forgery_tests/precedence.rs"]
 mod precedence;
 
+#[path = "erased_core_forgery_tests/commit_entries.rs"]
+mod commit_entries;
 #[path = "erased_core_forgery_tests/installed_seal.rs"]
 mod installed_seal;
+#[path = "erased_core_forgery_tests/recovery_entries.rs"]
+mod recovery_entries;
+#[path = "erased_core_forgery_tests/workflow_entry.rs"]
+mod workflow_entry;

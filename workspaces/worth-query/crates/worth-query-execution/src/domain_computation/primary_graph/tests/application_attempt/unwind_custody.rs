@@ -165,3 +165,37 @@ fn assert_idempotency_refuses_unpublished(outcome: WorthQueryApplicationCommitOu
         WorthQueryApplicationCommitDenialKind::ProviderRejected
     );
 }
+
+/// A real interrupted owner effect retained by World, without fabricated parts.
+pub(super) fn retained_recovery_after_application_unwind(
+    world: &super::super::fixture::AuthorizationWorld,
+    commit: impl FnOnce() -> WorthQueryApplicationCommitOutcome,
+) -> crate::domain_computation::WorthQueryProductUnpublishedRecovery {
+    world
+        .application
+        .product_runtime()
+        .operation_control_for_test()
+        .panic_before_product_compare_once_for_test();
+    let outcome = catch_unwind(AssertUnwindSafe(commit))
+        .expect("the application boundary isolates the actual World interruption");
+    assert!(
+        matches!(
+            outcome,
+            WorthQueryApplicationCommitOutcome::Indeterminate(_)
+        ),
+        "real post-effect unwind retains its typed unresolved outcome: {outcome:?}"
+    );
+    let page = world
+        .application
+        .product_publication_recovery_page(None, NonZeroUsize::MIN)
+        .unwrap();
+    let [row] = page.rows() else {
+        panic!("the actual interrupted owner effect appears on this bounded page")
+    };
+    let recovery = world
+        .application
+        .readmit_product_publication_recovery(row.handle())
+        .unwrap();
+    assert_eq!(recovery.inspect().unwrap().owner_effect_count(), 1);
+    recovery
+}

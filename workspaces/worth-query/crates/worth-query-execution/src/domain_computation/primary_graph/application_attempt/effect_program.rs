@@ -7,6 +7,8 @@ mod entity_creation;
 mod entity_retirement;
 mod entity_selection;
 mod field_observation;
+#[cfg(test)]
+mod forgery;
 mod installed_reentry;
 mod model;
 mod operation_body;
