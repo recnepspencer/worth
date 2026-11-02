@@ -113,7 +113,7 @@ impl RowAllocation {
 // Single vectors own one Chunk<Arc<R>>: 64 Arc slots, the Chunk's two
 // offsets, and the allocating Arc's two counts. Full RRB trees additionally
 // own 64-entry branch chunks and size tables (332 machine words per branch).
-pub(super) fn row_copy_bounds<R>(length: usize, inline: bool) -> Result<(usize, usize), Denial> {
+pub(crate) fn row_copy_bounds<R>(length: usize, inline: bool) -> Result<(usize, usize), Denial> {
     let capacity = sized_chunks::InlineArray::<Arc<R>, im::vector::Rrb<Arc<R>>>::CAPACITY;
     if inline && length <= capacity {
         return Ok((0, 0));
@@ -176,7 +176,7 @@ pub(super) fn prepare_empty_map<K: Ord + Clone, R: Clone>(
     work.prepare(5 * 64, node as u64)
 }
 
-fn persistent_map_path_bytes<K: Ord + Clone, R: Clone>(
+pub(crate) fn persistent_map_path_bytes<K: Ord + Clone, R: Clone>(
     keys: usize,
 ) -> Result<(usize, usize), Denial> {
     // im 15 copies a path, sibling and split/rebalance node at each level,

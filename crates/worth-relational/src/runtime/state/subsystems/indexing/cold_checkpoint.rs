@@ -1,4 +1,5 @@
 //! A retained index image is admitted explicitly, before an operation uses it.
+mod captured_inputs;
 mod member_export;
 use super::super::RuntimeOwnedState;
 use super::{IndexDefinitionReadBinding, IndexingState, IndexingSubsystem};

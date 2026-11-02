@@ -23,6 +23,7 @@ pub(super) fn prepare(
     }
     let mut frozen = FrozenCompleteMetadata::capture(runtime, execution)?;
     frozen.original.protect_original_read(execution)?;
+    frozen.indexes.resolve_for_request(execution)?;
     let commits = frozen.original.read_canonical(execution, 1 << 30)?;
     let dictionary =
         OriginalSymbolDictionary::capture(&frozen.original.symbols, &commits, execution)?;

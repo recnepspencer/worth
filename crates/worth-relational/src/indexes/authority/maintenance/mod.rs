@@ -12,6 +12,7 @@ mod field_keys;
 mod join;
 mod ordering;
 mod persistent_allocation;
+pub(crate) use persistent_allocation::{persistent_map_path_bytes, row_copy_bounds};
 mod preparation;
 mod publication;
 mod refresh_preparation;

@@ -54,6 +54,21 @@ impl<'a> BorrowedPayload<'a> {
         cursor.finish()
     }
 
+    pub(crate) fn pairs(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+        mut visit: impl FnMut(Self, Self) -> Result<(), Refusal>,
+    ) -> Result<usize, Refusal> {
+        let mut cursor = Cursor::new(self.0, request);
+        let count = cursor.map_length()?;
+        for _ in 0..count {
+            let key = Self(cursor.value()?);
+            visit(key, Self(cursor.value()?))?;
+        }
+        cursor.finish()?;
+        Ok(count)
+    }
+
     pub(crate) fn elements(
         self,
         execution: &ExecutionRequest<'_, '_>,
@@ -75,7 +90,7 @@ impl<'a> BorrowedPayload<'a> {
         Ok(text)
     }
 
-    pub(super) fn octets<'request, 'authority>(
+    pub(crate) fn octets<'request, 'authority>(
         self,
         execution: &'request ExecutionRequest<'request, 'authority>,
     ) -> Result<Octets<'a, 'request, 'authority>, Refusal> {
@@ -138,27 +153,27 @@ impl<'a> BorrowedPayload<'a> {
         matches!(self.0.first(), Some(0x80..=0x8f | 0xde..=0xdf))
     }
 
-    pub(super) fn is_none(self) -> bool {
+    pub(crate) fn is_none(self) -> bool {
         self.0 == [0xc0]
     }
 }
 
 /// A borrowed Native binary subcodec, whether Serde emitted bin or a byte array.
 /// No intermediate byte Vec is constructed by the allocation preflight.
-pub(super) struct Octets<'a, 'request, 'authority> {
+pub(crate) struct Octets<'a, 'request, 'authority> {
     cursor: Cursor<'a, 'request, 'authority>,
     binary: bool,
     remaining: usize,
     count: usize,
 }
 impl Octets<'_, '_, '_> {
-    pub(super) fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.count
     }
     pub(super) fn remaining(&self) -> usize {
         self.remaining
     }
-    pub(super) fn byte(&mut self) -> Result<u8, Refusal> {
+    pub(crate) fn byte(&mut self) -> Result<u8, Refusal> {
         self.cursor.check_live()?;
         self.remaining = self.remaining.checked_sub(1).ok_or_else(malformed)?;
         let marker = self.cursor.marker()?;
@@ -179,7 +194,7 @@ impl Octets<'_, '_, '_> {
             self.byte()?,
         ]))
     }
-    pub(super) fn skip(&mut self, count: usize) -> Result<(), Refusal> {
+    pub(crate) fn skip(&mut self, count: usize) -> Result<(), Refusal> {
         if count > self.remaining {
             return Err(malformed());
         }
@@ -193,7 +208,7 @@ impl Octets<'_, '_, '_> {
         }
         Ok(())
     }
-    pub(super) fn finish(self) -> Result<(), Refusal> {
+    pub(crate) fn finish(self) -> Result<(), Refusal> {
         if self.remaining != 0 {
             return Err(malformed());
         }
@@ -201,7 +216,7 @@ impl Octets<'_, '_, '_> {
     }
 }
 
-pub(super) fn malformed() -> Refusal {
+pub(crate) fn malformed() -> Refusal {
     Refusal::PayloadDecode {
         detail: "invalid canonical allocation-quote input".to_owned(),
     }
