@@ -19,8 +19,6 @@ mod head_metadata_tests;
 mod history_fold_refusals;
 #[path = "history_prefix_tests.rs"]
 mod history_prefix_tests;
-#[path = "kind_admission_tests.rs"]
-mod kind_admission_tests;
 #[path = "layered_history_tests.rs"]
 mod layered_history_tests;
 #[path = "lease_transfer_tests.rs"]

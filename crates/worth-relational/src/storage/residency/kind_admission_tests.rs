@@ -41,23 +41,45 @@ fn normalize(
 ) -> Result<super::super::RelationalRegionKindCommitment, Cause> {
     // Actual reservation values fund this fixture without driving SDK work.
     kind_admission::normalize_value(partition, &mut |_, _| Ok(()), &mut |prior, bytes| {
-        if let Some(prior) = prior {
-            let mut ticket = prior.lock().unwrap();
-            let total = ticket
-                .bytes()
-                .checked_add(bytes)
-                .ok_or(Cause::MemoryExhausted)?;
-            ticket.resize(total).map_err(|_| Cause::MemoryExhausted)?;
-            return Ok(Some(prior.clone()));
-        }
-        let bytes = bytes
-            .checked_add(HistoricalKindCustody::layout_bytes())
-            .ok_or(Cause::MemoryExhausted)?;
-        let ticket = budget.reserve(bytes).map_err(|_| Cause::MemoryExhausted)?;
-        Ok(Some(HistoricalKindCustody::new(std::sync::Mutex::new(
-            ticket,
-        ))))
+        let custody = super::retained_admission::admit(prior, bytes, &mut |bytes| {
+            budget.reserve(bytes).map(Some).map_err(|denial| {
+                crate::execution::denial::lease_denial(
+                    worth_execution::LeaseDenial::MemoryExhausted(denial),
+                )
+            })
+        })
+        .expect("positive value fixture funding must admit");
+        Ok(custody)
     })
+}
+
+#[test]
+fn custody_admission_grows_the_same_prior_allocation_without_a_fresh_ticket() {
+    let budget = SerialMemoryBudget::new(Some(1 << 20));
+    let mut calls = 0;
+    let mut reserve = |bytes| {
+        calls += 1;
+        budget.reserve(bytes).map(Some).map_err(|denial| {
+            crate::execution::denial::lease_denial(worth_execution::LeaseDenial::MemoryExhausted(
+                denial,
+            ))
+        })
+    };
+    let first = super::retained_admission::admit(None, 64, &mut reserve)
+        .unwrap()
+        .unwrap();
+    let grown = super::retained_admission::admit(Some(&first), 32, &mut reserve)
+        .unwrap()
+        .unwrap();
+    assert_eq!(grown.id(), first.id());
+    assert_eq!(calls, 1);
+    let expected = HistoricalKindCustody::layout_bytes() + 96;
+    assert_eq!(grown.lock().unwrap().bytes(), expected);
+    assert_eq!(budget.charged_memory_bytes(), expected);
+    drop(first);
+    assert_eq!(budget.charged_memory_bytes(), expected);
+    drop(grown);
+    assert_eq!(budget.charged_memory_bytes(), 0);
 }
 
 #[test]

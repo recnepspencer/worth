@@ -3,9 +3,12 @@ use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::storage::partition::HistoricalKindCustody;
 
 pub(super) fn admit(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     prior: Option<&HistoricalKindCustody>,
     bytes: u64,
+    reserve: &mut dyn FnMut(
+        u64,
+    )
+        -> Result<Option<worth_execution::ExecutionMemoryReservation>, Cause>,
 ) -> Result<Option<HistoricalKindCustody>, Cause> {
     if let Some(prior) = prior {
         let mut ticket = prior.lock().map_err(|_| Cause::WorkerFailed)?;
@@ -29,10 +32,7 @@ pub(super) fn admit(
         .ok_or(Cause::ChargedBytesOverflow)?;
     // None is the SDK's explicit native-only accounting mode. It creates no
     // free replacement account. Accounted originals retain their own ticket.
-    execution
-        .reserve_retained_memory(bytes)
-        .map_err(Cause::from)
-        .map(|ticket| {
-            ticket.map(|ticket| HistoricalKindCustody::new(std::sync::Mutex::new(ticket)))
-        })
+    reserve(bytes).map(|ticket| {
+        ticket.map(|ticket| HistoricalKindCustody::new(std::sync::Mutex::new(ticket)))
+    })
 }

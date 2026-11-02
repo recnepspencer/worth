@@ -7,6 +7,9 @@ use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
 use crate::storage::partition::AdjacencyKindBasis;
 mod retained_admission;
+#[cfg(test)]
+#[path = "kind_admission_tests.rs"]
+mod tests;
 
 pub(super) fn normalize(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -34,7 +37,11 @@ pub(super) fn normalize(
                 if first_stop.get().is_some() {
                     return Err(Cause::SourceUnavailable);
                 }
-                match retained_admission::admit(execution, prior, bytes) {
+                match retained_admission::admit(prior, bytes, &mut |bytes| {
+                    execution
+                        .reserve_retained_memory(bytes)
+                        .map_err(crate::execution::RelationalExecutionDenialCause::from)
+                }) {
                     Ok(custody) => Ok(custody),
                     Err(cause) => {
                         first_stop.set(Some(cause));
