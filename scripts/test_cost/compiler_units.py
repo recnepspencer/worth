@@ -125,6 +125,13 @@ def attribute(event, declaration):
                   and row['output'] == output(event)
                   and matches_profile(row['profile'], event['profile'], row['mode'], row['target']['kind'])]
     unique = {row['identity']: row for row in candidates}
+    if len(unique) > 1:
+        from compiler_fingerprint import FingerprintRefusal, resolve
+        try:
+            identity = resolve(event, unique.values(), declaration)
+            unique = {identity: unique[identity]}
+        except FingerprintRefusal:
+            pass  # Preserve the typed refusal and complete candidate inventory.
     if len(unique) != 1:
         raise CompilerUnitRefusal('artifact does not identify exactly one predeclared compiler unit: '
                                   + encoded({'package': event['package_id'], 'target': target,
