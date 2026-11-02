@@ -32,5 +32,5 @@ fn checkpoint_origin_keeps_exact_component_leases_after_history_claims_retire() 
         .owner
         .reclaim_keys(retired.retention_keys(), 2)
         .unwrap();
-    assert_eq!(reclaimed.reclaimed, 2);
+    assert_eq!(reclaimed.reclaimed(), 2);
 }
