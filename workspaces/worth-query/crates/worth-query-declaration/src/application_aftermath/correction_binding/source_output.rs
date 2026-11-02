@@ -56,6 +56,7 @@ impl DeclaredCorrectionOutputField {
             scalar_family: parts.scalar_family,
             value_type: parts.value_binding.as_str().to_owned(),
             canonical: parts.canonical.clone(),
+            content_format: None,
             unit: parts.unit.clone(),
             frame: parts.frame.clone(),
             writable: false,
@@ -74,6 +75,7 @@ impl DeclaredCorrectionOutputField {
             scalar_family,
             value_type,
             canonical,
+            content_format,
             unit,
             frame,
             ..
@@ -82,7 +84,8 @@ impl DeclaredCorrectionOutputField {
             return false;
         };
         let expected = &self.parts;
-        expected.entity == *entity
+        content_format.is_none()
+            && expected.entity == *entity
             && expected.aspect == *aspect
             && expected.field == *field
             && expected.presence == *presence

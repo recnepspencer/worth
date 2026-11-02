@@ -19,7 +19,7 @@ pub(crate) fn replay_commit_stop(
             })
         }
         TransactionCommitError::Conflict { error, .. } => match &error.class {
-            crate::transactions::data::ConflictClass::ContentAdmission { denial } => denial.clone().into(),
+            crate::transactions::data::ConflictClass::ContentAdmission { denial } => (*denial).into(),
             _ => match error.allocation_denial() {
             Some(denial) => crate::symbols::data::field_text_recovery_stop(
                 crate::symbols::data::RelationalFieldTextAdmissionDenial::Allocation(

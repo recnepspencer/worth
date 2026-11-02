@@ -13,7 +13,7 @@ pub(super) struct ContentResolution<'a> {
     staged: &'a ContentFrameAdmission,
     current: &'a ContentDirectory,
     source: Option<&'a ContentDirectory>,
-    resolved: ExecutionOrderedMap<ContentRefId, RelationalContentFrame>,
+    resolved: &'a mut ExecutionOrderedMap<ContentRefId, RelationalContentFrame>,
 }
 impl<'a> ContentResolution<'a> {
     pub(super) fn new(
@@ -21,13 +21,14 @@ impl<'a> ContentResolution<'a> {
         staged: &'a ContentFrameAdmission,
         current: &'a ContentDirectory,
         source: Option<&'a ContentDirectory>,
+        resolved: &'a mut ExecutionOrderedMap<ContentRefId, RelationalContentFrame>,
     ) -> Self {
         Self {
             formats,
             staged,
             current,
             source,
-            resolved: ExecutionOrderedMap::default(),
+            resolved,
         }
     }
     pub(super) fn resolve(

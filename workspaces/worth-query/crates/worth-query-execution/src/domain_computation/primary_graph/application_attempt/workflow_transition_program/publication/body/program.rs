@@ -52,10 +52,11 @@ where
         retain_client_observation,
         producer_required_invariants,
         output_currentness_facts,
+        content_attachments,
     } = program;
     // Native approval has no application outputs/emissions/conditional definition.
     // Refuse an unimplemented future profile rather than erase its carried state.
-    if conditional_definition.is_some() || !output_correspondence.is_empty()
+    if !content_attachments.is_empty() || conditional_definition.is_some() || !output_correspondence.is_empty()
         || !producer_required_invariants.is_empty()
         || effect_posture != crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform {
         return Err(WorkflowApprovalBodyDenial::UnsupportedProfile);

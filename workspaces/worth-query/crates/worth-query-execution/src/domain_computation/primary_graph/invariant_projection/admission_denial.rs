@@ -73,6 +73,11 @@ impl WorthQueryInvariantProjectionDenial {
             | Decode::Reservation(_)
             | Decode::AccountingOverflow
             | Decode::BindingContractMismatch
+            | Decode::Content(_)
+            | Decode::RequiredContentFieldAbsent
+            | Decode::ContentBasisUnavailable
+            | Decode::ContentProjectionWorkExceeded
+            | Decode::ContentProjectionWorkOverflow
             | Decode::CodecRejected => Self::value_decode_stopped(cause, work),
         }
     }

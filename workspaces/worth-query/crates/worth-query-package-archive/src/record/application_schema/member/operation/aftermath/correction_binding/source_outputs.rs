@@ -56,6 +56,7 @@ pub(super) fn decode(
             scalar_family,
             value_type,
             canonical,
+            content_format: None,
             unit,
             frame,
             writable: false,

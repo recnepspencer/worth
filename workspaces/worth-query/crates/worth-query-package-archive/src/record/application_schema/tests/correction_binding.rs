@@ -33,6 +33,7 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
                 source_posture: worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Retire,
                 binding_unit: None,
                 logical_key: Box::new(ApplicationSchemaMember::Field {
+                    content_format: None,
                     entity: "Account".to_owned(), aspect: "State".to_owned(), field: "name".to_owned(),
                     presence: ApplicationFieldPresence::Required, scalar_family: worth_foundational::facade::ScalarAspectType::String,
                     value_type: "worth.string".to_owned(), canonical: None, unit: None, frame: None,

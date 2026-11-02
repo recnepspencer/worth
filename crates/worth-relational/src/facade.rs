@@ -1,9 +1,10 @@
 //! Public API boundary for `worth-relational`.
 pub mod content {
     pub use crate::content::{
-        RelationalContentCodec, RelationalContentControl, RelationalContentDenial,
-        RelationalContentFieldBinding, RelationalContentFormat, RelationalContentFormatDeclaration,
-        RelationalContentFormatRegistry, RelationalContentFrame, RelationalContentSchemaSnapshot,
+        RelationalContentAttachments, RelationalContentCodec, RelationalContentControl,
+        RelationalContentDenial, RelationalContentFieldBinding, RelationalContentFormat,
+        RelationalContentFormatDeclaration, RelationalContentFormatRegistry,
+        RelationalContentFrame, RelationalContentReadClosure, RelationalContentSchemaSnapshot,
         RelationalContentSink, MAXIMUM_CONTENT_FRAME_BYTES, MAXIMUM_STAGED_CONTENT_BYTES,
     };
 }

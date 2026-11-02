@@ -138,6 +138,11 @@ fn validate_source(
     let name = &index.parts().name;
     let query = source.query();
     let definition = query.definition();
+    if query.read_graph().projections().iter().any(|projection| {
+        projection.scalar_family() == worth_foundational::facade::ScalarAspectType::ContentRef
+    }) {
+        return Err(denied(Kind::ManagedIndexSourceUnsupported, name));
+    }
     let disclosure = definition.disclosure();
     if disclosure.posture() != ApplicationQueryDisclosurePosture::Public
         || disclosure.capability_name().is_some()

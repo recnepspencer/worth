@@ -33,6 +33,7 @@ fn prepared(posture: Posture) -> PreparedAuthoredIdentity {
                     scalar_family: worth_foundational::facade::ScalarAspectType::String,
                     value_type: "worth.string".to_owned(),
                     canonical: None,
+                    content_format: None,
                     unit: None,
                     frame: None,
                     writable: false,

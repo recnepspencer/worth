@@ -36,8 +36,9 @@ pub use denial::{
 };
 pub use encoded_scalar::ApplicationEncodedScalarValue;
 pub use primitive::{
-    BoolApplicationValueBinding, I64ApplicationValueBinding, InternedStringApplicationValueBinding,
-    StringApplicationValueBinding, U64ApplicationValueBinding,
+    BoolApplicationValueBinding, ContentRefApplicationValueBinding, I64ApplicationValueBinding,
+    InternedStringApplicationValueBinding, StringApplicationValueBinding,
+    U64ApplicationValueBinding,
 };
 pub use recipe::{
     ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,

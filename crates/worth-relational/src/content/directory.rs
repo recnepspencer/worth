@@ -10,7 +10,7 @@ use crate::{
     validation::engine::state_view::InvariantStateView,
 };
 use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionRequest};
-use worth_foundational::facade::{ContentFormat, ContentRefId};
+use worth_foundational::facade::ContentRefId;
 
 type Occurrence = (ContentRefId, Option<RecordRef>);
 type Identities = ExecutionOrderedMap<ContentRefId, ()>;
@@ -36,12 +36,12 @@ impl ContentDirectory {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         identity: ContentRefId,
-        expected: &ContentFormat,
+        expected: &super::RelationalContentFormat,
     ) -> Result<RelationalContentFrame, Denial> {
         let frame = self
             .find(execution, identity)?
             .ok_or(Denial::MissingContent)?;
-        require_format(&frame, expected)?;
+        require_format(execution, &frame, expected)?;
         Ok(frame)
     }
     pub(crate) fn prepare(
@@ -62,7 +62,14 @@ impl ContentDirectory {
             self.clone()
         };
         let view = InvariantStateView::new(state, version);
-        let mut resolution = ContentResolution::new(&schema.content_formats, &staged, self, source);
+        let mut resolved = ExecutionOrderedMap::default();
+        let mut resolution = ContentResolution::new(
+            &schema.content_formats,
+            &staged,
+            self,
+            source,
+            &mut resolved,
+        );
         if complete {
             super::reconstruction::visit_records(execution, state, &mut |record| {
                 next.replace_record(execution, schema, &view, record, &mut resolution)
@@ -86,7 +93,7 @@ impl ContentDirectory {
         let mut identities = Identities::default();
         field_references::visit(execution, schema, view, record, &mut |identity, format| {
             let frame = resolution.resolve(execution, identity)?;
-            require_format(&frame, format.descriptor())?;
+            require_format(execution, &frame, format)?;
             visit_directory(execution, identities.len())?;
             if !identities.contains_key(&identity) {
                 identities
@@ -177,14 +184,17 @@ impl ContentDirectory {
         Ok(records)
     }
 }
-fn require_format(frame: &RelationalContentFrame, expected: &ContentFormat) -> Result<(), Denial> {
-    if frame.format().name() != expected.name() {
-        return Err(Denial::FormatMismatch);
-    }
-    if frame.format().version() != expected.version() {
-        return Err(Denial::UnsupportedVersion);
-    }
-    Ok(())
+pub(super) fn require_format(
+    execution: &ExecutionRequest<'_, '_>,
+    frame: &RelationalContentFrame,
+    expected: &super::RelationalContentFormat,
+) -> Result<(), Denial> {
+    frame.require_contract(
+        execution,
+        expected.descriptor().name(),
+        expected.descriptor().version(),
+        expected.maximum_frame_bytes(),
+    )
 }
 
 pub(super) fn visit_directory(

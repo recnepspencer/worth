@@ -329,6 +329,7 @@ fn lower_layout<Schema: ApplicationSchema>(
         installed.installed_declaration(),
         installed.native_contracts(),
         &RelationalSchemaRegistry::new(),
+        installed.value_bindings(),
     )
     .unwrap()
     .0

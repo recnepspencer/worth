@@ -18,13 +18,13 @@ impl<'borrow, 'scope, 'lease> RelationalContentControl<'borrow, 'scope, 'lease> 
 
     pub fn checkpoint(&mut self, units: u64) -> Result<(), Denial> {
         if let Some(cause) = &self.first_stop {
-            return Err(cause.clone());
+            return Err(*cause);
         }
         match checkpoint(self.context, units) {
             Ok(()) => Ok(()),
             Err(cause) => {
                 let cause = Denial::Execution(cause.into());
-                self.first_stop = Some(cause.clone());
+                self.first_stop = Some(cause);
                 Err(cause)
             }
         }

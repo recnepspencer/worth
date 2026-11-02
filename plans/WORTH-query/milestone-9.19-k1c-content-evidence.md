@@ -874,3 +874,784 @@ error: could not compile `worth-court-relational-certification` (test "worth_cou
 previous errors; 2 warnings emitted
 
 ```
+
+## Slice 3 Decl and Host content evidence ledger
+
+The original build identity was `11111111-1111-1111-1111-111111111111`.
+Commands ran as hidden background processes with output retained under
+`target/k1c-logs`; each process wrote its exit before the log was inspected.
+No workspace-wide build or test ran. Rows include unsuccessful development
+runs, not only final gates. Filtered counts describe the actual executed binary.
+The affected packages are Native, its certification court, Query declaration,
+installation, execution, package archive, package-archive testkit, and the
+Decl/Host, Installation and package-archive courts. Execution engines are concrete;
+typed permission/format shells remain generic. The produced rlib is measured below.
+
+| Log | Exact command | Exit | Result |
+|---|---|---:|---|
+| `slice3-fmt1` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration` | 0 | Completed successfully (no test count). |
+| `slice3-decl-check1` | `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration` | 101 | error[E0063]: missing field `content_format` in initializer of `schema_member::ApplicationSchemaMember`; error[E0616]: field `members` of struct `application_schema::declaration::ApplicationSchemaDeclarationBuilder` is ; error[E0004]: non-exhaustive patterns: `&schema_member::ApplicationSchemaMember::ContentFormat { .. }` not covered; error: could not compile `worth-query-declaration` (lib) due to 4 previous errors |
+| `slice3-fmt2` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration` | 0 | Completed successfully (no test count). |
+| `slice3-decl-check2` | `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration` | 101 | error[E0560]: struct `DeclaredCorrectionOutputFieldParts` has no field named `content_format`; error: could not compile `worth-query-declaration` (lib) due to 1 previous error |
+| `slice3-fmt3` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration` | 0 | Completed successfully (no test count). |
+| `slice3-decl-install-check1` | `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation` | 0 | Completed successfully (no test count). |
+| `slice3-fmt4` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation` | 0 | Completed successfully (no test count). |
+| `slice3-nativefmt1` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice3-decl-install-check2` | `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation` | 101 | error[E0004]: non-exhaustive patterns: ; error: could not compile `worth-query-installation` (lib) due to 1 previous error |
+| `slice3-nativefmt2` | `cargo fmt -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice3-fmt5` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation` | 0 | Completed successfully (no test count). |
+| `slice3-decl-install-check3` | `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation` | 101 | error[E0308]: mismatched types; error: could not compile `worth-query-installation` (lib) due to 3 previous errors |
+| `slice3-native-check1` | `cargo check -p worth-relational` | 0 | Completed successfully (no test count). |
+| `slice3-fmt6` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution` | 0 | Completed successfully (no test count). |
+| `slice3-nativefmt3` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice3-execution-check1` | `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 101 | error[E0004]: non-exhaustive patterns: `RelationalNativeCheckpointCaptureDenial::ArtifactFrame(_)` and ; error[E0004]: non-exhaustive patterns: `RelationalRecoveryStop::Content(_)` not covered; error: could not compile `worth-query-execution` (lib) due to 2 previous errors; 8 warnings emitted |
+| `slice3-native-ceiling1` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::schema_transition -- --nocapture` | 0 | test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 193 filtered out; finished in 0.03s |
+| `slice3-fmt7` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution` | 0 | Completed successfully (no test count). |
+| `slice3-execution-check2` | `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 101 | error[E0432]: unresolved import `worth_relational::facade::content::RelationalContentAttachments`; error[E0425]: cannot find type `RelationalContentAttachments` in module `worth_relational::facade::content`; error[E0063]: missing field `content_attachments` in initializer of ; error[E0027]: pattern does not mention field `content_attachments`; error[E0004]: non-exhaustive patterns: ; error: could not compile `worth-query-execution` (lib) due to 37 previous errors; 10 warnings emitted |
+| `slice3-fmt8` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host` | 0 | Completed successfully (no test count). |
+| `slice3-public1` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 101 | error[E0062]: field `content_attachments` specified more than once; error[E0063]: missing field `content_attachments` in initializer of ; error: could not compile `worth-query-execution` (lib) due to 19 previous errors; 8 warnings emitted |
+| `slice3-archive-check1` | `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-package-archive` | 101 | error[E0027]: pattern does not mention field `content_format`; error: could not compile `worth-query-package-archive` (lib) due to 1 previous error |
+| `slice3-fmt9` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive` | 0 | Completed successfully (no test count). |
+| `slice3-archive1` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-package-archive --test worth_query_court_package_archive application_schema_record -- --nocapture` | 101 | error[E0027]: pattern does not mention field `content_format`; error: could not compile `worth-query-package-archive` (lib) due to 1 previous error |
+| `slice3-caps1` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 121 Rust files |
+| `slice3-public2` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 101 | error[E0432]: unresolved import `worth_query_installation::facade::ContentRefApplicationValueBinding`; error: could not compile `worth-query-execution` (lib) due to 1 previous error; 8 warnings emitted |
+| `slice3-fmt10` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive` | 0 | Completed successfully (no test count). |
+| `slice3-archive2` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-package-archive --test worth_query_court_package_archive application_schema_record -- --nocapture` | 0 | test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 76 filtered out; finished in 0.00s |
+| `slice3-public3` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 101 | error[E0659]: `WorthQueryApplicationReadObservation` is ambiguous; error[E0716]: temporary value dropped while borrowed; error: could not compile `worth-query-court-decl-host` (test "worth_query_court_decl_host") due to 5 previous errors;  |
+| `slice3-fmt11` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation` | 0 | Completed successfully (no test count). |
+| `slice3-install1` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-installation --test worth_query_court_installation content_ -- --nocapture` | 0 | test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.01s |
+| `slice3-public4` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 101 | error[E0277]: `worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource` doesn't ; error: could not compile `worth-query-court-decl-host` (test "worth_query_court_decl_host") due to 1 previous error; 1  |
+| `slice3-recipe-doc1` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration --doc ApplicationContentBindingRecipe` | 0 | test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.00s; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 68 filtered out; finished in 0.11s |
+| `slice3-fmt12` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation` | 0 | Completed successfully (no test count). |
+| `slice3-install2` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-installation --test worth_query_court_installation content_ -- --nocapture` | 0 | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.01s |
+| `slice3-public5` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 101 | test result: FAILED. 0 passed; 11 failed; 0 ignored; 0 measured; 327 filtered out; finished in 0.01s; error: test failed, to rerun pass `-p worth-query-court-decl-host --test worth_query_court_decl_host` |
+| `slice3-native-content1` | `cargo test -p worth-relational --lib content:: -- --nocapture` | 0 | test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 2261 filtered out; finished in 1.26s |
+| `slice3-query-clippy1` | `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation --all-targets` | 101 | error[E0063]: missing field `content_format` in initializer of ; error: this `if` statement can be collapsed; error: could not compile `worth-query-declaration` (lib) due to 1 previous error; error: could not compile `worth-query-declaration` (lib test) due to 4 previous errors |
+| `slice3-native-fmt4` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice3-fmt13` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation` | 0 | Completed successfully (no test count). |
+| `slice3-public6` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 101 | test result: FAILED. 1 passed; 10 failed; 0 ignored; 0 measured; 327 filtered out; finished in 0.15s; error: test failed, to rerun pass `-p worth-query-court-decl-host --test worth_query_court_decl_host` |
+| `slice3-decl-doc2` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration --doc content -- --nocapture` | 0 | test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.01s; test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 68 filtered out; finished in 0.10s; error[E0308]: mismatched types; error: aborting due to 1 previous error |
+| `slice3-native-fmt5` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice3-fmt14` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation` | 0 | Completed successfully (no test count). |
+| `slice3-native-contract2` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::schema_transition -- --nocapture` | 0 | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 193 filtered out; finished in 0.02s |
+| `slice3-caps2` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 153 Rust files |
+| `slice3-diff-dirty1` | `git diff --check` | 0 | Completed successfully (no test count). |
+| `slice3-public7` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 101 | test result: FAILED. 1 passed; 11 failed; 0 ignored; 0 measured; 327 filtered out; finished in 0.02s; error: test failed, to rerun pass `-p worth-query-court-decl-host --test worth_query_court_decl_host` |
+| `slice3-query-clippy2` | `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation --all-targets` | 101 | error: this `if` statement can be collapsed; error: use of a disallowed method `std::any::TypeId::of`; error: could not compile `worth-query-installation` (lib) due to 4 previous errors; error: could not compile `worth-query-installation` (lib test) due to 4 previous errors |
+| `slice3-native-clippy1` | `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | 101 | error: using `clone` on type `RelationalContentDenial` which implements the `Copy` trait; error: returning the result of a `let` binding from a block; error: could not compile `worth-relational` (lib) due to 2 previous errors; 8 warnings emitted |
+| `slice3-boundary1` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | boundary-check: repository boundaries are valid |
+| `slice3-context1` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `slice3-native-fmt6` | `cargo fmt -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice3-fmt15` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation` | 0 | Completed successfully (no test count). |
+| `slice3-native-contract3` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content::schema_transition -- --nocapture` | 0 | test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 193 filtered out; finished in 0.02s |
+| `slice3-public8` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 101 | error[E0308]: mismatched types; error: could not compile `worth-query-execution` (lib) due to 1 previous error; 8 warnings emitted |
+| `slice3-execution-doc1` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --doc content -- --nocapture` | 101 | error[E0308]: mismatched types; error: could not compile `worth-query-execution` (lib) due to 1 previous error; 8 warnings emitted |
+| `slice3-query-clippy3` | `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation --all-targets` | 101 | error: this OR pattern can be rewritten using a range; error: called `.err().expect()` on a `Result` value; error: could not compile `worth-query-court-installation` (test "worth_query_court_installation") due to 2 previous  |
+| `slice3-fmt16` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation` | 0 | Completed successfully (no test count). |
+| `slice3-caps3` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 154 Rust files |
+| `slice3-public9` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door -- --nocapture` | 0 | test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 327 filtered out; finished in 0.46s |
+| `slice3-execution-doc2` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --doc content -- --nocapture` | 0 | test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 43 filtered out; finished in 0.00s; test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 100 filtered out; finished in 0.18s; error[E0277]: the trait bound `F: OperationReads<<B as ApplicationMutationBinding<S>>::Operation>` is not satisfied; error: aborting due to 1 previous error; error[E0308]: mismatched types |
+| `slice3-query-clippy4` | `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation --all-targets` | 101 | error[E0063]: missing field `content_format` in initializer of ; error: could not compile `worth-query-execution` (lib test) due to 1 previous error; 11 warnings emitted |
+| `slice3-native-clippy2` | `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | 101 | error: returning the result of a `let` binding from a block; error: could not compile `worth-relational` (lib) due to 1 previous error; 8 warnings emitted |
+| `slice3-native-fmtcheck1` | `cargo fmt --check -p worth-relational -p worth-court-relational-certification` | 0 | Completed successfully (no test count). |
+| `slice3-query-fmtcheck1` | `cargo fmt --check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation` | 0 | Completed successfully (no test count). |
+| `slice3-native-all1` | `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 0 | test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 149 filtered out; finished in 1.05s |
+| `slice3-install3` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-installation --test worth_query_court_installation content_ -- --nocapture` | 0 | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.01s |
+| `slice3-install-profiles1` | `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-installation --test worth_query_court_installation managed_index_parent_profiles -- --nocapture` | 0 | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.02s |
+| `slice3-boundary2` | `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | boundary-check: repository boundaries are valid |
+| `slice3-context2` | `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | Completed successfully (no test count). |
+| `slice3-execution-fmt1` | `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Completed successfully (no test count). |
+| `slice3-diff-head1` | `git diff --check origin/master...HEAD` | 0 | Completed successfully (no test count). |
+| `slice3-diff-dirty2` | `git diff --check` | 0 | Completed successfully (no test count). |
+| `slice3-caps4` | `scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | PASS: checked 155 Rust files |
+| `slice3-query-clippy5` | `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation --all-targets` | 101 | error: unnecessary use of `clone` to create a slice from a reference; error: use of a disallowed method `std::thread::scope`; error: use of a disallowed method `std::thread::Scope::spawn`; error: called `.err().expect()` on a `Result` value; error: using `clone` on type `CommitId` which implements the `Copy` trait; error: the loop variable `member_index` is only used to index `samples`; error: manual implementation of `.is_multiple_of()`; error: call to `std::mem::drop` with a value that does not implement `Drop`. Dropping such a type only extends its ; error: could not compile `worth-query-court-decl-host` (test "worth_query_court_decl_host") due to 64 previous errors;  |
+| `slice3-query-fmtcheck2` | `cargo fmt --check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration -p worth-query-installation -p worth-query-execution -p worth-query-package-archive -p worth-query-court-decl-host -p worth-query-testkit-package-archive -p worth-query-court-package-archive -p worth-query-court-installation` | 0 | Completed successfully (no test count). |
+| `slice3-native-court-clippy1` | `cargo clippy -p worth-court-relational-certification --all-targets --no-deps` | 101 | error: unnecessary `>= y + 1` or `x - 1 >=`; error: unnecessary closure used with `bool::then`; error: called `.err().expect()` on a `Result` value; error: this `if` statement can be collapsed; error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 6  |
+| `slice3-diff-dirty3` | `git diff --check` | 0 | Completed successfully (no test count). |
+| `slice3-diff-dirty4` | `git diff --check` | 0 | Completed successfully (no test count). |
+| `slice3-diff-cached1` | `git diff --cached --check` | 0 | Completed successfully (no test count). |
+
+### Slice 3 court map and failed-run outcomes
+
+The final accepted production/court claims are documented in
+[milestone-9.19-k1c-content-slice3.md](milestone-9.19-k1c-content-slice3.md).
+Expected compiler diagnostics inside successful compile-fail rustdocs are not
+failed runs; their process exit and test counts identify the distinction.
+
+Development failures were surfaced and corrected, including missing new member
+initializers, builder/module placement, exhaustive denial mappings, attachment
+plumbing initializers, archive correction-output patterns, public fixture type
+and borrow errors, missing declared operation/read permissions, lost Native
+registry composition, exact contract equality at the typed handoff, and the
+function-pointer lifetime mismatch during concrete-engine extraction. No failed
+public run is treated as behavioral evidence. Native's final all-target lint
+failure is the untouched retained-selection `let_and_return` debt, with its exact
+location/output retained below; caused scoped lints were fixed.
+
+The final execution artifact is **318,207,646 bytes**, SHA-256
+`ecba15068e1d81ce6f6a7a346a8cf4ab5a9b5130112282653747d5267626b9c5`.
+This is telemetry from the successful public9 unoptimized test build, not a
+controlled before/after comparison. Engine work is concrete; typed permission,
+format-predicate and wrapping shells remain generic.
+
+The final Query all-target run completed with **64** lint errors, all in untouched
+Decl/Host history/workflow court files; **zero** diagnostic paths intersect the
+scoped dirty set. Native's second required all-target run had **one** untouched
+`let_and_return` error. These use AGENTS.md's explicit untouched-debt exception.
+The exact Query diagnostics are:
+
+| Diagnostic output | Location |
+|---|---|
+| error: unnecessary use of `clone` to create a slice from a reference | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/cell_history/checkpoint_cases.rs:52` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/capability/grant_commands/mod.rs:40` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/capability/grant_commands/mod.rs:41` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs:63` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs:64` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs:120` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs:122` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/retained_capacity/mod.rs:24` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/retained_capacity/mod.rs:27` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/native_postures/mod.rs:59` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/native_postures/mod.rs:60` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/retained/native_postures/mod.rs:20` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/retained/native_postures/mod.rs:21` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/native_workflow_operations/capability/grant_commands/mod.rs:40` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/native_workflow_operations/capability/grant_commands/mod.rs:41` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs:19` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs:20` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs:57` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs:58` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/cancellation.rs:158` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/cancellation.rs:160` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs:58` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs:60` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs:118` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs:120` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs:87` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs:90` |
+| error: called `.err().expect()` on a `Result` value | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/resources.rs:48` |
+| error: using `clone` on type `CommitId` which implements the `Copy` trait | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/mod.rs:154` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/cancellation.rs:98` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/cancellation.rs:99` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:45` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:46` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:98` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:99` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:165` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:166` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/recovery.rs:82` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/recovery.rs:83` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:332` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:333` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:337` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:351` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:352` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:356` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs:26` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs:27` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs:60` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs:61` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/capture_race.rs:40` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/capture_race.rs:41` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/handoff.rs:29` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/handoff.rs:31` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/recovery.rs:35` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/recovery.rs:36` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/redo/handoff.rs:35` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/redo/handoff.rs:36` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs:92` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs:93` |
+| error: use of a disallowed method `std::thread::scope` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs:167` |
+| error: use of a disallowed method `std::thread::Scope::spawn` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs:168` |
+| error: the loop variable `member_index` is only used to index `samples` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/group.rs:180` |
+| error: manual implementation of `.is_multiple_of()` | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/growth/scenario.rs:72` |
+| error: call to `std::mem::drop` with a value that does not implement `Drop`. Dropping such a type only extends its  | `workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/growth/scenario.rs:217` |
+
+The direct Native court `--no-deps` lint pass completed with **6** errors in
+untouched files, **zero** diagnostic paths in the dirty set. It was run because
+the required Native dependency lint failed before reaching the court. Its exact
+output locations are:
+
+| Diagnostic output | Location |
+|---|---|
+| error: unnecessary `>= y + 1` or `x - 1 >=` | `crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account/public_only.rs:38` |
+| error: unnecessary `>= y + 1` or `x - 1 >=` | `crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account.rs:292` |
+| error: unnecessary closure used with `bool::then` | `crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account.rs:104` |
+| error: called `.err().expect()` on a `Result` value | `crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/nested.rs:110` |
+| error: called `.err().expect()` on a `Result` value | `crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/row_read.rs:48` |
+| error: this `if` statement can be collapsed | `crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/owner.rs:267` |
+
+### Development failure excerpts
+
+These are excerpts from unsuccessful development runs; the ledger preserves each
+exit and exact command/count. Final lint diagnostic inventories above are complete.
+
+`slice3-decl-check1` (exit 101):
+
+```text
+error[E0063]: missing field `content_format` in initializer of `schema_member::ApplicationSchemaMember`
+  --> crates\worth-query-declaration\src\application_aftermath\correction_binding\authored_identity\key.rs:28:21
+   |
+28 |             member: ApplicationSchemaMember::Field {
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `content_format`
+
+error[E0063]: missing field `content_format` in initializer of `schema_member::ApplicationSchemaMember`
+  --> crates\worth-query-declaration\src\application_aftermath\correction_binding\source_output.rs:51:9
+   |
+51 |         ApplicationSchemaMember::Field {
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `content_format`
+error[E0616]: field `members` of struct `application_schema::declaration::ApplicationSchemaDeclarationBuilder` is
+private
+  --> crates\worth-query-declaration\src\application_schema\content\declaration.rs:15:14
+   |
+15 |         self.members.push(ApplicationSchemaMember::ContentFormat {
+   |              ^^^^^^^ private field
+
+error[E0004]: non-exhaustive patterns: `&schema_member::ApplicationSchemaMember::ContentFormat { .. }` not covered
+   --> crates\worth-query-declaration\src\application_schema\identifier_validation.rs:43:15
+    |
+ 43 |         match member {
+error[E0004]: non-exhaustive patterns: `&schema_member::ApplicationSchemaMember::ContentFormat { .. }` not covered
+   --> crates\worth-query-declaration\src\application_schema\identifier_validation.rs:43:15
+    |
+ 43 |         match member {
+    |               ^^^^^^ pattern `&schema_member::ApplicationSchemaMember::ContentFormat { .. }` not covered
+    |
+note: `schema_member::ApplicationSchemaMember` defined here
+   --> crates\worth-query-declaration\src\application_schema\schema_member.rs:74:10
+    |
+ 74 | pub enum ApplicationSchemaMember {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^
+error: could not compile `worth-query-declaration` (lib) due to 4 previous errors
+```
+
+`slice3-decl-check2` (exit 101):
+
+```text
+error[E0560]: struct `DeclaredCorrectionOutputFieldParts` has no field named `content_format`
+   --> crates\worth-query-declaration\src\application_aftermath\correction_binding\source_output.rs:188:21
+    |
+188 |                     content_format: None,
+    |                     ^^^^^^^^^^^^^^ `DeclaredCorrectionOutputFieldParts` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+For more information about this error, try `rustc --explain E0560`.
+error: could not compile `worth-query-declaration` (lib) due to 1 previous error
+error: could not compile `worth-query-declaration` (lib) due to 1 previous error
+```
+
+`slice3-decl-install-check2` (exit 101):
+
+```text
+error[E0004]: non-exhaustive patterns:
+`WorthQueryApplicationValueBindingInstallationDenialKind::DuplicateContentFormat`,
+`WorthQueryApplicationValueBindingInstallationDenialKind::MissingContentBinding` and
+`WorthQueryApplicationValueBindingInstallationDenialKind::ContentFormatMismatch` not covered
+   --> crates\worth-query-installation\src\installed_index\application_schema\denial_mapping.rs:102:30
+    |
+102 |             let kind = match denial.kind() {
+    |                              ^^^^^^^^^^^^^ patterns
+`WorthQueryApplicationValueBindingInstallationDenialKind::DuplicateContentFormat`,
+`WorthQueryApplicationValueBindingInstallationDenialKind::MissingContentBinding` and
+`WorthQueryApplicationValueBindingInstallationDenialKind::ContentFormatMismatch` not covered
+error: could not compile `worth-query-installation` (lib) due to 1 previous error
+```
+
+`slice3-decl-install-check3` (exit 101):
+
+```text
+error[E0308]: mismatched types
+  --> crates\worth-query-installation\src\installed_index\application_schema\denial_mapping.rs:30:17
+   |
+29 |             let kind = match denial.kind() {
+   |                              ------------- this expression has type
+`WorthQueryApplicationCapabilityInstallationDenialKind`
+30 |                 ValueBindingDenialKind::MissingContentBinding =>
+WorthQueryInstalledApplicationSchemaDenialKind::ContentBindingMissing,
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected
+`WorthQueryApplicationCapabilityInstallationDenialKind`, found
+`WorthQueryApplicationValueBindingInstallationDenialKind`
+error: could not compile `worth-query-installation` (lib) due to 3 previous errors
+```
+
+`slice3-execution-check1` (exit 101):
+
+```text
+error[E0004]: non-exhaustive patterns: `RelationalNativeCheckpointCaptureDenial::ArtifactFrame(_)` and
+`RelationalNativeCheckpointCaptureDenial::Content(_)` not covered
+  --> crates\worth-query-execution\src\domain_computation\primary_graph\application_checkpoint\denial.rs:21:15
+   |
+21 |         match error {
+   |               ^^^^^ patterns `RelationalNativeCheckpointCaptureDenial::ArtifactFrame(_)` and
+`RelationalNativeCheckpointCaptureDenial::Content(_)` not covered
+   |
+note: `RelationalNativeCheckpointCaptureDenial` defined here
+  --> C:\forge_workspace\worth-cut-k1c-content\crates\worth-relational\src\durability\data\native_checkpoint_capture_de
+nial.rs:7:1
+error[E0004]: non-exhaustive patterns: `RelationalRecoveryStop::Content(_)` not covered
+   --> crates\worth-query-execution\src\domain_computation\primary_graph\bootstrap\preparation.rs:237:11
+    |
+237 |     match stop {
+    |           ^^^^ pattern `RelationalRecoveryStop::Content(_)` not covered
+    |
+note: `RelationalRecoveryStop` defined here
+   --> C:\forge_workspace\worth-cut-k1c-content\crates\worth-relational\src\durability\data\recovery_stop.rs:18:1
+    |
+ 18 | pub enum RelationalRecoveryStop {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+error: could not compile `worth-query-execution` (lib) due to 2 previous errors; 8 warnings emitted
+```
+
+`slice3-execution-check2` (exit 101):
+
+```text
+error[E0432]: unresolved import `worth_relational::facade::content::RelationalContentAttachments`
+  -->
+crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\effect_program\content.rs:14:5
+   |
+14 | use worth_relational::facade::content::RelationalContentAttachments;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^----------------------------
+   |                                        |
+   |                                        no `RelationalContentAttachments` in `facade::content`
+   |
+help: a similar name exists in the module
+   |
+error[E0425]: cannot find type `RelationalContentAttachments` in module `worth_relational::facade::content`
+   -->
+crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\effect_program\model.rs:116:44
+    |
+116 |         worth_relational::facade::content::RelationalContentAttachments,
+    |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: C:\forge_workspace\worth-cut-k1c-content\crates\worth-relational\src\content\frame\mod.rs:21:1
+    |
+ 21 | pub struct RelationalContentFrame(Arc<AdmittedFrame>);
+    | --------------------------------- similarly named struct `RelationalContentFrame` defined here
+error[E0063]: missing field `content_attachments` in initializer of
+`application_attempt::effect_program::model::WorthQueryApplicationEffectProgram<_, _, _, _>`
+  --> crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\capability_revocation_progr
+am.rs:53:22
+   |
+53 |             program: WorthQueryApplicationEffectProgram {
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `content_attachments`
+
+error[E0063]: missing field `content_attachments` in initializer of
+`application_attempt::effect_program::model::WorthQueryApplicationEffectProgram<_, _, _, _>`
+  --> crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\delegation_activation_progr
+error: could not compile `worth-query-execution` (lib) due to 37 previous errors; 10 warnings emitted
+```
+
+`slice3-public1` (exit 101):
+
+```text
+error[E0062]: field `content_attachments` specified more than once
+  --> crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\capability_revocation_progr
+am.rs:64:13
+   |
+63 |             content_attachments: Default::default(),
+   |             --------------------------------------- first use of `content_attachments`
+64 |             content_attachments: Default::default(),
+   |             ^^^^^^^^^^^^^^^^^^^ used more than once
+
+error[E0062]: field `content_attachments` specified more than once
+  --> crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\delegation_activation_progr
+error[E0063]: missing field `content_attachments` in initializer of
+`application_attempt::effect_program::model::WorthQueryApplicationEffectProgram<_, _, _, _>`
+  --> crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\workflow_transition_program
+\approval_decision\materialization.rs:38:18
+   |
+38 |         program: WorthQueryApplicationEffectProgram {
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `content_attachments`
+
+error[E0063]: missing field `content_attachments` in initializer of
+`application_attempt::effect_program::model::WorthQueryApplicationEffectProgram<_, _, _, _>`
+   --> crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\workflow_transition_progra
+error: could not compile `worth-query-execution` (lib) due to 19 previous errors; 8 warnings emitted
+```
+
+`slice3-archive-check1` (exit 101):
+
+```text
+error[E0027]: pattern does not mention field `content_format`
+  --> crates\worth-query-package-archive\src\record\application_schema\member\operation\aftermath\correction_binding\so
+urce_outputs.rs:51:13
+   |
+51 |           let ApplicationSchemaMember::Field {
+   |  _____________^
+52 | |             entity,
+53 | |             aspect,
+54 | |             field,
+...  |
+63 | |             unique: false,
+error: could not compile `worth-query-package-archive` (lib) due to 1 previous error
+```
+
+`slice3-archive1` (exit 101):
+
+```text
+error[E0027]: pattern does not mention field `content_format`
+  --> crates\worth-query-package-archive\src\record\application_schema\member\operation\aftermath\correction_binding\so
+urce_outputs.rs:51:13
+   |
+51 |           let ApplicationSchemaMember::Field {
+   |  _____________^
+52 | |             entity,
+53 | |             aspect,
+54 | |             field,
+...  |
+63 | |             unique: false,
+error: could not compile `worth-query-package-archive` (lib) due to 1 previous error
+```
+
+`slice3-public2` (exit 101):
+
+```text
+error[E0432]: unresolved import `worth_query_installation::facade::ContentRefApplicationValueBinding`
+ -->
+crates\worth-query-execution\src\domain_computation\primary_graph\invariant_projection\locked_reader\content.rs:8:59
+  |
+8 | use worth_query_installation::facade::{ApplicationSchema, ContentRefApplicationValueBinding};
+  |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no
+`ContentRefApplicationValueBinding` in `facade`
+
+warning: unused import: `field_masks::admit_field_mask_categories`
+  --> crates\worth-query-execution\src\domain_computation\authorization\application_disclosure\contract.rs:22:39
+   |
+error: could not compile `worth-query-execution` (lib) due to 1 previous error; 8 warnings emitted
+```
+
+`slice3-public3` (exit 101):
+
+```text
+error[E0659]: `WorthQueryApplicationReadObservation` is ambiguous
+   --> crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:104:28
+    |
+104 | pub fn pin(host: &Host) -> WorthQueryApplicationReadObservation {
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ambiguous name
+    |
+    = note: ambiguous because of multiple glob imports of a name in the same module
+note: `WorthQueryApplicationReadObservation` could refer to the struct imported here
+   --> crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\mod.rs:9:34
+    |
+  9 |     application_contribution::*, application_entry::*, application_installation::*,
+error[E0716]: temporary value dropped while borrowed
+   --> crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\courts.rs:89:22
+    |
+ 89 |         let before = world::pin(&host).selected_commit();
+    |                      ^^^^^^^^^^^^^^^^^                  - temporary value is freed at the end of this statement
+    |                      |
+    |                      creates a temporary value which is freed while still in use
+...
+104 |         assert_eq!(world::pin(&host).selected_commit(), before);
+    |         ------------------------------------------------------- borrow later used here
+    |
+error: could not compile `worth-query-court-decl-host` (test "worth_query_court_decl_host") due to 5 previous errors;
+```
+
+`slice3-public4` (exit 101):
+
+```text
+error[E0277]: `worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource` doesn't
+implement `Debug`
+  --> crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\codec.rs:13:5
+   |
+ 6 | #[derive(Clone, Debug)]
+   |                 ----- in this derive macro expansion
+...
+13 |     pub cancel_during_encoding: Option<WorthQueryCancellationSource>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Debug` is not implemented for
+`worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource`
+   |
+error: could not compile `worth-query-court-decl-host` (test "worth_query_court_decl_host") due to 1 previous error; 1
+```
+
+`slice3-public5` (exit 101):
+
+```text
+
+thread 'content_door::courts::content_duplicate_format_declarations_refuse_before_installation' (23580) panicked at
+crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\courts.rs:159:5:
+assertion `left == right` failed
+  left: DuplicateMember
+ right: DuplicateContentFormat
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test content_door::courts::content_duplicate_format_declarations_refuse_before_installation ... FAILED
+thread 'content_door::courts::content_raw_missing_reference_is_refused_and_the_selected_value_stays_unchanged' (48960)
+panicked at crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:39:31:
+called `Result::unwrap()` on an `Err` value: MissingApplicationMutationDependency
+
+thread 'content_door::courts::content_public_door_preserves_exact_order_and_deduplicates_equal_payloads' (56500)
+panicked at crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:39:31:
+called `Result::unwrap()` on an `Err` value: MissingApplicationMutationDependency
+
+thread 'content_door::courts::content_public_door_preserves_exact_order_and_deduplicates_equal_payloads' (56500)
+panicked at crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:39:31:
+called `Result::unwrap()` on an `Err` value: MissingApplicationMutationDependency
+
+thread 'content_door::courts::content_projection_budget_refuses_the_call_instead_of_returning_optional_absence' (6140)
+panicked at crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:39:31:
+called `Result::unwrap()` on an `Err` value: MissingApplicationMutationDependency
+
+test result: FAILED. 0 passed; 11 failed; 0 ignored; 0 measured; 327 filtered out; finished in 0.01s
+```
+
+`slice3-query-clippy1` (exit 101):
+
+```text
+error[E0063]: missing field `content_format` in initializer of
+`application_schema::schema_member::ApplicationSchemaMember`
+  --> crates\worth-query-declaration\src\application_schema\operation_definition\body\signing_lifecycle\validation\test
+s.rs:75:9
+   |
+75 |         Member::Field {
+   |         ^^^^^^^^^^^^^ missing `content_format`
+
+error[E0063]: missing field `content_format` in initializer of
+`application_schema::schema_member::ApplicationSchemaMember`
+  --> crates\worth-query-declaration\src\application_schema\operation_definition\body\signing_validation\tests.rs:41:63
+error: this `if` statement can be collapsed
+  --> crates\worth-query-declaration\src\application_schema\content\validation.rs:12:9
+   |
+12 | /         if let Member::ContentFormat { declaration } = member {
+13 | |             if formats.insert(declaration.identity, declaration).is_some()
+14 | |                 || !names.insert((&declaration.name, declaration.version))
+...  |
+18 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+error: could not compile `worth-query-declaration` (lib) due to 1 previous error
+error: could not compile `worth-query-declaration` (lib test) due to 4 previous errors
+```
+
+`slice3-public6` (exit 101):
+
+```text
+thread 'content_door::courts::content_corrupted_callback_result_is_caught_by_independent_numeric_correspondence'
+(63316) panicked at crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\courts.rs:194:5:
+assertion failed: matches!(cause.downcast::<ContentWriteDenial>().unwrap(),
+    ContentWriteDenial::Content(RelationalContentDenial::EncodingInconsistency))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'content_door::courts::content_original_cancellation_during_encoding_refuses_before_publication_then_fresh_reque
+st_succeeds' (23636) panicked at
+thread 'content_door::courts::content_original_cancellation_during_encoding_refuses_before_publication_then_fresh_reque
+st_succeeds' (23636) panicked at
+crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\courts.rs:269:13:
+assertion failed: matches!(cause.downcast::<ContentWriteDenial>().unwrap(),
+    ContentWriteDenial::Content(RelationalContentDenial::Execution(RelationalExecutionDenialCause::Cancelled)))
+
+thread 'content_door::courts::content_sink_refusal_cannot_be_swallowed_by_a_successful_callback' (54408) panicked at
+crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\courts.rs:212:5:
+
+thread 'content_door::courts::content_sink_refusal_cannot_be_swallowed_by_a_successful_callback' (54408) panicked at
+crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\courts.rs:212:5:
+assertion failed: matches!(cause.downcast::<ContentWriteDenial>().unwrap(),
+    ContentWriteDenial::Content(RelationalContentDenial::EncodingInconsistency))
+
+thread 'content_door::courts::content_callback_refusal_cannot_be_swallowed_into_publication' (25172) panicked at
+crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\courts.rs:69:5:
+test result: FAILED. 1 passed; 10 failed; 0 ignored; 0 measured; 327 filtered out; finished in 0.15s
+```
+
+`slice3-public7` (exit 101):
+
+```text
+
+thread 'content_door::courts::content_sink_refusal_cannot_be_swallowed_by_a_successful_callback' (22744) panicked at
+crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:39:31:
+called `Result::unwrap()` on an `Err` value: MissingOperationProgramDependency { operation: "Change", dependency:
+ProgramTarget(RemoveAspect { entity: "Record", aspect: "Samples" }) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'content_door::courts::content_unbound_reference_is_refused_by_the_existing_publication_seal' (21796) panicked
+thread 'content_door::courts::content_raw_missing_reference_is_refused_and_the_selected_value_stays_unchanged' (23784)
+panicked at crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:39:31:
+called `Result::unwrap()` on an `Err` value: MissingOperationProgramDependency { operation: "Change", dependency:
+ProgramTarget(RemoveAspect { entity: "Record", aspect: "Samples" }) }
+
+thread 'content_door::courts::content_equal_descriptors_cannot_substitute_another_binding_type_at_either_door' (37648)
+panicked at crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:39:31:
+called `Result::unwrap()` on an `Err` value: MissingOperationProgramDependency { operation: "Change", dependency:
+thread 'content_door::courts::content_equal_descriptors_cannot_substitute_another_binding_type_at_either_door' (37648)
+panicked at crates\worth-query-court-decl-host\tests\worth_query_court_decl_host\content_door\world.rs:39:31:
+called `Result::unwrap()` on an `Err` value: MissingOperationProgramDependency { operation: "Change", dependency:
+ProgramTarget(RemoveAspect { entity: "Record", aspect: "Samples" }) }
+test content_door::courts::content_duplicate_format_declarations_refuse_before_installation ... ok
+test content_door::courts::content_sink_refusal_cannot_be_swallowed_by_a_successful_callback ... FAILED
+test content_door::courts::content_raw_missing_reference_is_refused_and_the_selected_value_stays_unchanged ... FAILED
+test content_door::courts::content_unbound_reference_is_refused_by_the_existing_publication_seal ... FAILED
+test result: FAILED. 1 passed; 11 failed; 0 ignored; 0 measured; 327 filtered out; finished in 0.02s
+```
+
+`slice3-query-clippy2` (exit 101):
+
+```text
+error: this `if` statement can be collapsed
+  --> crates\worth-query-installation\src\application_schema\value_binding\content.rs:27:9
+   |
+27 | /         if let Member::ContentFormat { declaration } = member {
+28 | |             if declared.insert(declaration.identity, declaration).is_some() {
+29 | |                 return Err(Denial::new(Kind::DuplicateContentFormat, &declaration.name));
+30 | |             }
+31 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+error: use of a disallowed method `std::any::TypeId::of`
+  --> crates\worth-query-installation\src\application_schema\value_binding\content.rs:83:40
+   |
+83 |         if primitive.binding_type() != std::any::TypeId::of::<ContentRefApplicationValueBinding>() {
+   |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: Type identity is for point lookup; canonical order uses declared identity
+   = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+   = note: `-D clippy::disallowed-methods` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::disallowed_methods)]`
+error: could not compile `worth-query-installation` (lib) due to 4 previous errors
+error: could not compile `worth-query-installation` (lib test) due to 4 previous errors
+```
+
+`slice3-native-clippy1` (exit 101):
+
+```text
+error: using `clone` on type `RelationalContentDenial` which implements the `Copy` trait
+  --> crates\worth-relational\src\durability\authority\runtime_rebuild\envelope_replay\commit_stop.rs:22:86
+   |
+22 |             crate::transactions::data::ConflictClass::ContentAdmission { denial } => denial.clone().into(),
+   |                                                                                      ^^^^^^^^^^^^^^ help: try
+dereferencing it: `(*denial)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#clone_on_copy
+   = note: `-D clippy::clone-on-copy` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::clone_on_copy)]`
+
+error: returning the result of a `let` binding from a block
+  --> crates\worth-relational\src\mvcc\retained_entity_selection\payload.rs:34:5
+   |
+20 | /     let source = crate::storage::residency::probe_head(
+21 | |         execution,
+22 | |         &historical.with_symbol_admission(&runtime.services.symbols),
+23 | |         |source| {
+...  |
+33 | |     .map_err(|failure| storage(&input.historical, failure))?;
+   | |_____________________________________________________________- unnecessary `let` binding
+34 |       source
+error: could not compile `worth-relational` (lib) due to 2 previous errors; 8 warnings emitted
+```
+
+`slice3-public8` (exit 101):
+
+```text
+error[E0308]: mismatched types
+  -->
+crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\effect_program\content.rs:72:32
+   |
+72 |         .prepare(locus, input, ValueDecodeSession::content_binding::<C>)
+   |          -------               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one type is more general than the other
+   |          |
+   |          arguments to this method are incorrect
+   |
+   = note: expected fn pointer `for<'a, 'b, 'c, 'd, 'e> fn(&'a ValueDecodeSession<'b>, &'c _, &'d _, &'e _) ->
+Result<_, _>`
+error: could not compile `worth-query-execution` (lib) due to 1 previous error; 8 warnings emitted
+```
+
+`slice3-execution-doc1` (exit 101):
+
+```text
+error[E0308]: mismatched types
+  -->
+crates\worth-query-execution\src\domain_computation\primary_graph\application_attempt\effect_program\content.rs:72:32
+   |
+72 |         .prepare(locus, input, ValueDecodeSession::content_binding::<C>)
+   |          -------               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one type is more general than the other
+   |          |
+   |          arguments to this method are incorrect
+   |
+   = note: expected fn pointer `for<'a, 'b, 'c, 'd, 'e> fn(&'a ValueDecodeSession<'b>, &'c _, &'d _, &'e _) ->
+Result<_, _>`
+error: could not compile `worth-query-execution` (lib) due to 1 previous error; 8 warnings emitted
+```
+
+`slice3-query-clippy3` (exit 101):
+
+```text
+error: this OR pattern can be rewritten using a range
+  --> crates\worth-query-court-installation\tests\worth_query_court_installation\installation\managed_index_parent_prof
+iles\queries.rs:32:84
+   |
+32 |     const STRUCTURE: ApplicationManagedIndexSourceStructure = if matches!(S::MODE, 5 | 6 | 7) {
+   |                                                                                    ^^^^^^^^^ help: try: `5..=7`
+   |
+   = help: for further information visit
+https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#manual_range_patterns
+   = note: `-D clippy::manual-range-patterns` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::manual_range_patterns)]`
+error: called `.err().expect()` on a `Result` value
+  --> crates\worth-query-court-installation\tests\worth_query_court_installation\installation\managed_index_parent_prof
+iles\mod.rs:83:10
+   |
+83 |           .err()
+   |  __________^
+84 | |         .expect("an input-field operation cannot borrow a principal-scoped Parent");
+   | |_______________^ help: try: `expect_err`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect
+   = note: `-D clippy::err-expect` implied by `-D clippy::all`
+errors
+warning: build failed, waiting for other jobs to finish...
+warning: unused import: `worth_query_declaration::facade::application_schema::ApplicationFieldPresence`
+ --> crates\worth-query-package-archive\src\record\application_schema\tests\fixture\query.rs:3:5
+  |
+3 | use worth_query_declaration::facade::application_schema::ApplicationFieldPresence;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `worth-query-package-archive` (lib test) generated 1 warning (run `cargo clippy --fix --lib -p
+error: could not compile `worth-query-court-installation` (test "worth_query_court_installation") due to 2 previous
+```
+
+`slice3-query-clippy4` (exit 101):
+
+```text
+error[E0063]: missing field `content_format` in initializer of
+`worth_query_installation::facade::ApplicationSchemaMember`
+  --> crates\worth-query-execution\src\domain_computation\primary_graph\product_operation\correction_source\authored_id
+entity\candidate_tests.rs:28:39
+   |
+28 |                 logical_key: Box::new(ApplicationSchemaMember::Field {
+   |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `content_format`
+
+warning: type
+`domain_computation::primary_graph::application_attempt::fact::source_read_authorization::SourceReadAuthorization` is
+more private than the item `domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObserved
+error: could not compile `worth-query-execution` (lib test) due to 1 previous error; 11 warnings emitted
+```
+
+`slice3-native-clippy2` (exit 101):
+
+```text
+error: returning the result of a `let` binding from a block
+  --> crates\worth-relational\src\mvcc\retained_entity_selection\payload.rs:34:5
+   |
+20 | /     let source = crate::storage::residency::probe_head(
+21 | |         execution,
+22 | |         &historical.with_symbol_admission(&runtime.services.symbols),
+23 | |         |source| {
+...  |
+33 | |     .map_err(|failure| storage(&input.historical, failure))?;
+   | |_____________________________________________________________- unnecessary `let` binding
+34 |       source
+error: could not compile `worth-relational` (lib) due to 1 previous error; 8 warnings emitted
+```
+
+The same independent lane reviewer gave explicit **PASS** under qa-loop,
+qa-tests and code-quality-qa after reading the final code, courts, plan and logs.
+All findings were closed. It independently verified all final lint diagnostic
+paths have zero overlap with the scoped dirty set and committed branch diff.
+The reviewer ran no builds and made no mutations. Source/correction and slice 5
+qualification remain outstanding.

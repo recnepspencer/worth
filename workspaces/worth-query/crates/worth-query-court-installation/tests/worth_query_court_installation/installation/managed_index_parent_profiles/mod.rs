@@ -79,9 +79,9 @@ fn installed_parent_profiles_preserve_identity_and_refuse_codec_or_disclosure_dr
         declared.operation().contracts().managed_index_reads().len(),
         1
     );
-    let foreign_scope = bind::<4>()
-        .err()
-        .expect("an input-field operation cannot borrow a principal-scoped Parent");
+    let Err(foreign_scope) = bind::<4>() else {
+        panic!("an input-field operation cannot borrow a principal-scoped Parent");
+    };
     assert_eq!(
         foreign_scope.kind(),
         SchemaKind::OperationInstallationDenied
@@ -263,4 +263,13 @@ fn installed_exhaustive_membership_binds_its_profile_without_changing_parent_mea
             .installed_query_binding::<queries::ParentBinding<Checked>>()
             .unwrap()
     ));
+}
+
+#[test]
+fn content_managed_source_projection_refuses_until_its_byte_acquisition_contract_is_installed() {
+    let denied = match bind::<8>() {
+        Ok(_) => panic!("an unsupported content Source installed"),
+        Err(cause) => cause,
+    };
+    assert_eq!(denied.kind(), SchemaKind::ManagedIndexSourceUnsupported);
 }

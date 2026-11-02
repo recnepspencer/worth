@@ -24,7 +24,14 @@ impl ContentDirectory {
         let empty = Self::default();
         let mut directory = Self::default();
         let view = InvariantStateView::new(state, version);
-        let mut resolution = ContentResolution::new(&schema.content_formats, &frames, &empty, None);
+        let mut resolved = ExecutionOrderedMap::default();
+        let mut resolution = ContentResolution::new(
+            &schema.content_formats,
+            &frames,
+            &empty,
+            None,
+            &mut resolved,
+        );
         crate::content::reconstruction::visit_records(execution, state, &mut |record| {
             directory.replace_record(execution, schema, &view, record, &mut resolution)
         })?;

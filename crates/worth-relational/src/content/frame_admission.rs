@@ -73,6 +73,17 @@ impl ContentFrameAdmission {
             .map_err(map_denial)?;
         Ok(())
     }
+    pub(super) fn visit(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        callback: &mut dyn FnMut(&RelationalContentFrame) -> Result<(), Denial>,
+    ) -> Result<(), Denial> {
+        for frame in self.0.values() {
+            control::run(execution, |control| control.checkpoint(1))?;
+            callback(frame)?;
+        }
+        Ok(())
+    }
     pub(super) fn find(
         &self,
         execution: &ExecutionRequest<'_, '_>,

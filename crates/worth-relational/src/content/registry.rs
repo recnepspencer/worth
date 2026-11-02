@@ -1,4 +1,5 @@
 //! Format admission and field-binding aliases are separate schema coordinates.
+mod composition;
 mod readmission;
 use super::{RelationalContentCodec as Codec, RelationalContentDenial as Denial};
 use std::{collections::BTreeMap, sync::Arc};
@@ -58,9 +59,16 @@ impl RelationalContentFormatRegistry {
     ) -> Result<(), Denial> {
         let descriptor = codec.format().clone();
         descriptor.validate().map_err(|_| Denial::InvalidFormat)?;
-        let maximum = codec
-            .maximum_frame_bytes()
-            .min(super::MAXIMUM_CONTENT_FRAME_BYTES);
+        let maximum = codec.maximum_frame_bytes();
+        if maximum == 0 {
+            return Err(Denial::InvalidFormat);
+        }
+        if maximum > super::MAXIMUM_CONTENT_FRAME_BYTES {
+            return Err(Denial::SizeLimit {
+                observed: maximum,
+                maximum: super::MAXIMUM_CONTENT_FRAME_BYTES,
+            });
+        }
         if self.formats.contains_key(&identity)
             || self
                 .names

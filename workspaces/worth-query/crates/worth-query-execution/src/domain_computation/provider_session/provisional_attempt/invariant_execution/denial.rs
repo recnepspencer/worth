@@ -182,6 +182,20 @@ impl WorthQueryInvariantExecutionFailure {
     ) -> Self {
         Self::native_denied(NativeDenial::Staging(denial), detail)
     }
+    pub(crate) fn content(
+        cause: worth_relational::facade::content::RelationalContentDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::Content(cause), detail)
+    }
+    pub fn content_denial(
+        &self,
+    ) -> Option<worth_relational::facade::content::RelationalContentDenial> {
+        match self.native.as_ref() {
+            Some(NativeDenial::Content(cause)) => Some(*cause),
+            _ => None,
+        }
+    }
     pub(crate) fn managed_source(
         denial: worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
         detail: impl Into<Arc<str>>,

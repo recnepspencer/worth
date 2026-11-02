@@ -113,6 +113,7 @@ impl WorthQueryExecutionInstallationAuthority {
             installed_schema.installed_declaration(),
             installed_schema.native_contracts(),
             &relational_runtime.config().schema.registry,
+            installed_schema.value_bindings(),
         )?;
         let (registrations, managed_sources, source_initializer) =
             invariant_factories.lower(&execution, installed_schema.binding_identity(), &layout)?;
@@ -234,6 +235,11 @@ pub(super) fn map_checkpoint_recovery_stop(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::durability::RelationalRecoveryStop;
     match stop {
+        RelationalRecoveryStop::Content(cause) => primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::ContentAdmissionRejected,
+            "native checkpoint content refused",
+        )
+        .with_content_cause(cause),
         RelationalRecoveryStop::Durability(error) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("native checkpoint recovery denied: {error:?}"),

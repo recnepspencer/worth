@@ -9,8 +9,10 @@ mod field_references;
 mod frame;
 mod frame_admission;
 mod publication;
+mod read_closure;
 mod reconstruction;
 mod registry;
+pub use read_closure::RelationalContentReadClosure;
 mod resolution;
 mod schema;
 pub use schema::{

@@ -1,3 +1,7 @@
+mod content;
+pub use content::{
+    AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
+};
 mod access_strategy;
 mod facade;
 pub use facade::*;

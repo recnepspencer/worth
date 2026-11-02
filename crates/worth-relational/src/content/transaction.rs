@@ -4,6 +4,23 @@ use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{CanonicalDigestId, ContentRefId};
 
 impl crate::mvcc::BranchBoundRelationalTransaction {
+    /// Attach through this transaction's actual schema, atomically and before effects.
+    pub fn attach_content(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        attachments: &super::RelationalContentAttachments,
+    ) -> Result<(), Denial> {
+        let admitted = super::frame_admission::ContentFrameAdmission::admit(
+            execution,
+            &self.schema_authority.registry().content_formats,
+            attachments,
+        )?;
+        let mut next = self.content.clone();
+        admitted.visit(execution, &mut |frame| next.attach(execution, frame))?;
+        self.content = next;
+        self.last_merged_plan = None;
+        Ok(())
+    }
     pub fn admit_content(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
@@ -44,7 +61,7 @@ impl crate::branch::AdmittedRelationalBranchBasis {
             self.inner
                 .root
                 .retained_content()
-                .read(execution, identity, codec.descriptor())
+                .read(execution, identity, codec)
         })
     }
 }

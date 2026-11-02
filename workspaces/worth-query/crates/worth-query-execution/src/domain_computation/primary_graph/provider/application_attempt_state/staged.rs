@@ -1,6 +1,12 @@
 use super::{WorthQueryProposedFact, WorthQueryStagedApplicationAttempt};
 
 impl WorthQueryStagedApplicationAttempt<'_> {
+    pub(in crate::domain_computation::primary_graph::provider) fn content_attachments(
+        &self,
+    ) -> &worth_relational::facade::content::RelationalContentAttachments {
+        self.attempt.content_attachments()
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn validation_request(
         &self,
     ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {

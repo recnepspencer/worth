@@ -31,6 +31,7 @@ where
     let WorthQueryApplicationEffectProgram {
         read_set,
         mut effects,
+        content_attachments,
         conditional_definition,
         effect_posture,
         output_correspondence,
@@ -164,6 +165,8 @@ where
         application.installed_schema.value_bindings(),
         &lease.layout,
         &effects,
+        lease.product().relational_basis(),
+        &content_attachments,
     ) {
         return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
     }
@@ -195,6 +198,7 @@ where
                 consumed_outputs: read_set.consumed_outputs,
                 application_effect_count: effects.len(),
                 effects,
+                content_attachments,
                 preimage_demand,
                 conditional_definition,
                 effect_posture,

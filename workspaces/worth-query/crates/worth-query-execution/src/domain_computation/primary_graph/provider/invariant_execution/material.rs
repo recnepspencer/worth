@@ -11,6 +11,7 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
     pub(super) producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    pub(super) content_attachments: worth_relational::facade::content::RelationalContentAttachments,
     pub(super) batch: worth_relational::facade::transactions::WorkerIntentBatch,
     pub(super) branch: worth_relational::facade::history::BranchId,
     pub(super) product:
@@ -43,6 +44,7 @@ impl ApplicationInvariantCandidateMaterial {
             requirements: staged.invariant_requirements().to_vec(),
             producer_required_invariants: staged.producer_required_invariants(),
             batch: staged.batch().clone(),
+            content_attachments: staged.content_attachments().clone(),
             branch: staged.branch().clone(),
             product: staged.product_publication().clone(),
             decision_facts: staged.decision_fact_count(),

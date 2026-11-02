@@ -12,6 +12,7 @@ use worth_query_installation::facade::{
 mod admitted;
 mod admitted_projection;
 mod borrowed;
+mod content;
 mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
