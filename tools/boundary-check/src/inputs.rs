@@ -1,8 +1,8 @@
 //! The only effect boundary: Git enumeration, shared reads and Cargo metadata.
+mod source_files;
 use crate::config::{string, table, workspace_manifest, Files, Metadata, CONFIG};
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fs,
     path::Path,
     process::Command,
     thread,
@@ -34,55 +34,7 @@ fn command(root: &Path, program: &str, args: &[&str]) -> Result<Vec<u8>, String>
 }
 impl Inputs {
     pub fn read(root: &Path, config: &str) -> Result<Self, String> {
-        let mut paths = BTreeSet::new();
-        for args in [
-            vec!["ls-files", "-z"],
-            vec!["ls-files", "-z", "-o", "--exclude-standard"],
-        ] {
-            let output = command(root, "git", &args)?;
-            for path in output.split(|b| *b == 0).filter(|p| !p.is_empty()) {
-                let path = String::from_utf8(path.to_vec()).map_err(|e| e.to_string())?;
-                paths.insert(path);
-            }
-        }
-        for path in command(root, "git", &["ls-files", "--deleted", "-z"])?
-            .split(|b| *b == 0)
-            .filter(|p| !p.is_empty())
-        {
-            paths.remove(std::str::from_utf8(path).map_err(|e| e.to_string())?);
-        }
-        let needed: Vec<_> = paths
-            .iter()
-            .filter(|p| {
-                p.ends_with(".rs")
-                    || p.ends_with(".md")
-                    || p.ends_with(".toml")
-                    || p.starts_with(CONFIG)
-            })
-            .collect();
-        let width = thread::available_parallelism().map_or(1, usize::from);
-        let files = thread::scope(|s| {
-            let handles: Vec<_> = needed
-                .chunks(needed.len().div_ceil(width).max(1))
-                .map(|chunk| {
-                    s.spawn(move || {
-                        chunk
-                            .iter()
-                            .map(|p| {
-                                fs::read_to_string(root.join(p))
-                                    .map(|text| ((***p).to_owned(), text.replace("\r\n", "\n")))
-                                    .map_err(|e| format!("{p}: {e}"))
-                            })
-                            .collect::<Result<Vec<_>, _>>()
-                    })
-                })
-                .collect();
-            handles
-                .into_iter()
-                .map(|h| h.join().expect("file reader panicked"))
-                .collect::<Result<Vec<_>, _>>()
-                .map(|v| v.into_iter().flatten().collect::<Files>())
-        })?;
+        let (paths, files) = source_files::read(root)?;
         let config: toml::Value = toml::from_str(
             files
                 .get(config)
@@ -131,6 +83,10 @@ impl Inputs {
             })
             .collect::<Result<_, _>>()?;
         let mut workspaces = BTreeSet::from(["Cargo.toml".to_owned()]);
+        workspaces.extend(crate::domain_values::workspace_manifests(
+            &files,
+            &format!("{CONFIG}domain-values.toml"),
+        )?);
         for key in ["subworkspaces", "context_workspaces"] {
             workspaces.extend(
                 table(&config, key)
@@ -168,29 +124,7 @@ impl Inputs {
             let handles: Vec<_> = workspaces
                 .iter()
                 .map(|manifest| {
-                    s.spawn(move || {
-                        let output = command(
-                            root,
-                            "cargo",
-                            &[
-                                "metadata",
-                                "--offline",
-                                "--format-version",
-                                "1",
-                                "--manifest-path",
-                                manifest,
-                            ],
-                        )?;
-                        let mut graph: Metadata =
-                            decode_metadata(&output).map_err(|e| format!("{manifest}: {e}"))?;
-                        for package in &mut graph.packages {
-                            package.manifest_path = relative(root, &package.manifest_path);
-                            for target in &mut package.targets {
-                                target.src_path = relative(root, &target.src_path);
-                            }
-                        }
-                        Ok((manifest.clone(), graph))
-                    })
+                    s.spawn(move || metadata(root, manifest).map(|graph| (manifest.clone(), graph)))
                 })
                 .collect();
             handles
@@ -206,6 +140,22 @@ impl Inputs {
             config,
         })
     }
+    /// External consumers use the identical source checker, without WORTH's
+    /// repository policy/configuration. Only a Git-owned manifest is admitted.
+    pub fn read_domain_sources(root: &Path, manifest: &str) -> Result<Self, String> {
+        let (paths, files) = source_files::read(root)?;
+        if !files.contains_key(manifest) {
+            return Err("consumer manifest is outside the Git input set".into());
+        }
+        let graph = metadata(root, manifest)?;
+        Ok(Self {
+            paths,
+            files,
+            manifests: BTreeMap::new(),
+            graphs: BTreeMap::from([(manifest.to_owned(), graph)]),
+            config: toml::Value::Table(Default::default()),
+        })
+    }
     pub fn text(&self, name: &str) -> &str {
         self.files.get(name).map_or("", String::as_str)
     }
@@ -219,6 +169,28 @@ impl Inputs {
     }
 }
 
+fn metadata(root: &Path, manifest: &str) -> Result<Metadata, String> {
+    let output = command(
+        root,
+        "cargo",
+        &[
+            "metadata",
+            "--offline",
+            "--format-version",
+            "1",
+            "--manifest-path",
+            manifest,
+        ],
+    )?;
+    let mut graph = decode_metadata(&output).map_err(|error| format!("{manifest}: {error}"))?;
+    for package in &mut graph.packages {
+        package.manifest_path = relative(root, &package.manifest_path);
+        for target in &mut package.targets {
+            target.src_path = relative(root, &target.src_path);
+        }
+    }
+    Ok(graph)
+}
 fn relative(root: &Path, name: &str) -> String {
     let root = root
         .to_string_lossy()

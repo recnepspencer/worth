@@ -297,6 +297,81 @@ identity serves digests and change detection. The owner remains responsible
 for canonical encoding, domain admission, and terminal rendering. Independently
 editable objects and graph references belong in entities and relations.
 
+Choose a representation by ownership and change granularity:
+
+| Meaning | Representation |
+|---|---|
+| Independently named or editable object | Entity with stable semantic identity |
+| Link to another object | Typed relation to its actual entity |
+| Fact with an existing scalar meaning | Native scalar field |
+| Identity-free, reference-free leaf with owner-defined meaning | Versioned domain-value binding; one opaque native atom |
+
+Declare a binary atom with `worth_query_value_binding!` and `binary: OwnerDelegate`,
+plus its intrinsic `unit:` and `frame:` when applicable. The delegate implements
+`BinaryValueDelegate` through `worth_query_decl::facade::application_schema`;
+its associated value needs no Query or Serde implementation. The
+[compiled entry binding](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs)
+adopts a [pure Ratio owner](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_values/src/ratio.rs).
+Its nine-byte maximum is its complete versioned representation, rather than
+an arbitrary payload policy. `worth_query_decl::facade::typed` also exposes
+`InlineBytes` and `InlineBytesLengthDenial` for scalar-boundary input.
+
+The owner normalizes authored values through its constructor and encodes only
+canonical bytes. Incoming bytes must already be canonical: admission refuses
+alternate spellings, malformed data and unsupported versions. Every binary decode
+checks that encoding the admitted result reproduces the input exactly; a corrupt
+owner result returns `ValueCodecDenial::InternalInconsistency`. Size refusals retain
+the binding identity and precede mutation effects. Decoding and the independent
+byte comparison share the original request's work, memory and cancellation loan.
+There is no replacement request or representation-only decoder fallback. Declare
+fields with `no_equality`; domain equality and ordering remain with the owner.
+Render terminal values through the owner's reader/renderer, as the Ratio example does.
+
+Canonical text can explicitly claim the same leaf posture with
+`canonical: FINITE_BOUNDS, domain_value,` and optional `unit:` and `frame:`.
+Binary atoms use `worth.domain-binary.v1`; canonical atoms use
+`worth.domain-canonical-json.v1`. Existing structured canonical artifacts retain
+`worth.canonical-json.v1` and their existing complete grammar. Those artifacts
+make no domain-leaf claim and cannot satisfy a domain-atom contract. An immutable
+operation artifact's established structured protocol is distinct from a leaf value;
+neither posture licenses hiding independently editable objects or graph links.
+
+Every explicit domain binding must have a source-guard registration, including
+canonical and manual bindings. Register its actual Rust source, binding name
+(including inline module names), and the owner's key/name/object types:
+
+```toml
+[[binding]]
+source = "app/src/value_binding.rs"
+binding = "RatioBinding"
+forbidden_types = ["app::graph::NodeKey", "app::names::StableName"]
+```
+
+The guard follows Cargo library roots, actual modules, explicit imports, aliases,
+all fields and enum variants, and concrete generic arguments. Platform entity and
+content references are always refused. Unknown types, ambiguous imports, transforming
+attributes, generated bindings and unsupported local scopes refuse a proof. The
+guard does not infer reference-free meaning from an innocent type name. Keep the
+owner's forbidden list complete; a primitive string or integer is not permission
+to encode a graph link. In WORTH this runs as part of `boundary-check`. An external
+consumer runs the same checker from its Git root, with its own registry and manifest:
+
+```text
+cargo run --manifest-path path/to/worth/tools/boundary-check/Cargo.toml -- --root . --domain-values domain-values.toml --manifest-path app/Cargo.toml
+```
+
+A repository whose bindings live in a separate consumer workspace can list its actual
+Git-owned `Cargo.toml` paths in the registry's optional `workspace_manifests` array.
+This extends Cargo metadata discovery; module and type names still come from the
+actual library roots and Rust declarations. It does not register generated context
+workspaces or supply alternate type roots.
+
+
+Both source and registry must be in Git's tracked or unignored source inventory.
+Unresolved external opaque types require a source representation the guard can
+inspect; they receive no automatic exemption. Installation independently refuses
+a mismatch between the declared domain posture, carrier and executable binding.
+
 ### Canonical nested values and derived readiness
 
 A pure value owner can derive `worth_foundational::facade::WorthValue` to emit

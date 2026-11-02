@@ -122,12 +122,21 @@ fn collect_declared_fields(
             frame,
             canonical,
             presence,
+            equality_queryable,
             ..
         } = member
         else {
             continue;
         };
         let locus = ApplicationFieldBindingLocus::new(entity, aspect, field);
+        if *equality_queryable
+            && (*scalar_family == worth_foundational::facade::ScalarAspectType::InlineBytes
+                || canonical
+                    .as_ref()
+                    .is_some_and(|contract| contract.is_domain_value()))
+        {
+            return Err(denial(DenialKind::ContractMismatch, &locus));
+        }
         let codec = if canonical.is_some() {
             Some(
                 ApplicationFieldValueMeaning::from_member(member)
@@ -163,9 +172,16 @@ fn validate_contract(
     let (scalar_family, identity, unit, frame, canonical, codec, presence) = declared;
     if recipe.scalar_family() != scalar_family
         || recipe.canonical_contract() != canonical
-        || (recipe.canonical_contract().is_some()
-            && (scalar_family != worth_foundational::facade::ScalarAspectType::String
-                || !recipe.supports_admitted_decode()))
+        || recipe.canonical_contract().is_some_and(|contract| {
+            scalar_family != contract.scalar_family()
+                || !recipe.supports_admitted_decode()
+                || contract.is_domain_value() != recipe.is_domain_value()
+                || (contract.is_domain_value()
+                    && (contract.bounds().maximum_wire_bytes().is_none()
+                        || recipe.identity_capable()
+                        || recipe.signed_aggregate_decode().is_some()))
+        })
+        || (recipe.is_domain_value() && recipe.canonical_contract().is_none())
         || recipe.binding_identity().as_str() != identity
         || recipe.unit().map(|unit| unit.as_str()) != unit
         || recipe.frame().map(|frame| frame.as_str()) != frame
