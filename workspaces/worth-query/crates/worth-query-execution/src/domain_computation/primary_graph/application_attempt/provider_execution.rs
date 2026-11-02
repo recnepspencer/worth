@@ -35,3 +35,5 @@ pub(in crate::domain_computation) use phase::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
 };
 pub(in crate::domain_computation) use resource_request::application_resource_request;
+
+pub(in crate::domain_computation::primary_graph) use phase::ReadmittedCommitProgram;

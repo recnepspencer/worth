@@ -56,10 +56,11 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 let phase = &active_phase;
                 let prepared = prepare_application_commit(
                     &phase.borrowed_request_for_test(),
-                    phase,
-                    &world.application,
                     WorthQueryApplicationCommitPreparationRequest::new(
-                        program,
+                        world
+                            .application
+                            .validate_commit_program_in_advancement(phase, program)
+                            .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
                         idempotency(187, 188),
                         None,
                         None,

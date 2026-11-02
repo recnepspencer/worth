@@ -11,19 +11,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) = self.validate_commit_program(None, &program) {
-            return outcome;
-        }
-        let request = program.read_set.admission.publication_request().clone();
-        self.with_funded_application_advancement(&request, allocation_policy, |phase| {
-            self.compare_and_commit_application_in_advancement(
-                &phase,
-                program,
-                idempotency,
-                allocation_policy,
-            )
-        })
-        .unwrap_or_else(|denial| denial.into_commit_outcome())
+        let entry = match self.validate_commit_program(program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
+        };
+        entry.compare_and_commit_application(idempotency, allocation_policy)
     }
 
     #[doc(hidden)]
@@ -38,16 +30,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
-            return outcome;
-        }
-        self.compare_and_commit_application_in_advancement_with_history(
-            phase,
-            program,
-            idempotency,
-            None,
-            allocation_policy,
-        )
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
+        };
+        entry.compare_and_commit_application_in_advancement(idempotency, allocation_policy)
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_in_advancement_with_history<
@@ -66,27 +53,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) = self.validate_commit_program(Some(phase), &program) {
-            return outcome;
-        }
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
-                    cause,
-                )
-                .into_commit_outcome()
-            }
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
         };
-        if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
-            return WorthQueryApplicationCommitOutcome::Denied(denial);
-        }
-        self.compare_and_commit_application_with_output_observation(
-            &execution,
-            phase,
-            program,
+        entry.compare_and_commit_application_in_advancement_with_history(
             idempotency,
-            false,
             history,
             allocation_policy,
         )

@@ -88,7 +88,7 @@ where
             .runtime
             .backing
             .runtime
-            .readmit_elevation_request_installation(None, program)
+            .readmit_elevation_request_installation(program)
         {
             Ok(program) => program,
             Err(outcome) => return outcome,
@@ -104,24 +104,23 @@ where
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
-                Ok(self
-                    .runtime
-                    .backing
-                    .runtime
-                    .compare_and_commit_elevation_request_for_program(
-                        &execution,
-                        &active_phase,
-                        candidate.take().expect("candidate admitted once"),
-                        idempotency,
-                    ))
+                Ok(
+                    match candidate
+                        .take()
+                        .expect("candidate admitted once")
+                        .in_advancement(&active_phase)
+                    {
+                        Ok(entry) => entry.compare_and_commit_elevation_request_for_program(
+                            &execution,
+                            idempotency,
+                        ),
+                        Err(outcome) => outcome,
+                    },
+                )
             })
             .and_then(std::convert::identity)
             .unwrap_or_else(|denial| match candidate.take() {
-                Some(candidate) => self
-                    .runtime
-                    .backing
-                    .runtime
-                    .refuse_elevation_request(candidate, denial),
+                Some(candidate) => candidate.refuse_advancement(denial),
                 None => WorthQueryElevationRequestOutcome::Indeterminate,
             })
     }
@@ -138,7 +137,7 @@ where
             .runtime
             .backing
             .runtime
-            .readmit_elevation_approval_installation(None, program)
+            .readmit_elevation_approval_installation(program)
         {
             Ok(program) => program,
             Err(outcome) => return outcome,
@@ -154,25 +153,24 @@ where
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
-                Ok(self
-                    .runtime
-                    .backing
-                    .runtime
-                    .compare_and_commit_elevation_approval_for_program(
-                        &execution,
-                        &active_phase,
-                        candidate.take().expect("candidate admitted once"),
-                        idempotency,
-                        None,
-                    ))
+                Ok(
+                    match candidate
+                        .take()
+                        .expect("candidate admitted once")
+                        .in_advancement(&active_phase)
+                    {
+                        Ok(entry) => entry.compare_and_commit_elevation_approval_for_program(
+                            &execution,
+                            idempotency,
+                            None,
+                        ),
+                        Err(outcome) => outcome,
+                    },
+                )
             })
             .and_then(std::convert::identity)
             .unwrap_or_else(|denial| match candidate.take() {
-                Some(candidate) => self
-                    .runtime
-                    .backing
-                    .runtime
-                    .refuse_elevation_approval(candidate, denial),
+                Some(candidate) => candidate.refuse_advancement(denial),
                 None => WorthQueryElevationApprovalOutcome::Indeterminate,
             })
     }
@@ -189,7 +187,7 @@ where
             .runtime
             .backing
             .runtime
-            .readmit_elevation_close_installation(None, program)
+            .readmit_elevation_close_installation(program)
         {
             Ok(program) => program,
             Err(outcome) => return outcome,
@@ -205,25 +203,24 @@ where
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
-                Ok(self
-                    .runtime
-                    .backing
-                    .runtime
-                    .compare_and_commit_elevation_close_for_program(
-                        &execution,
-                        &active_phase,
-                        candidate.take().expect("candidate admitted once"),
-                        idempotency,
-                        None,
-                    ))
+                Ok(
+                    match candidate
+                        .take()
+                        .expect("candidate admitted once")
+                        .in_advancement(&active_phase)
+                    {
+                        Ok(entry) => entry.compare_and_commit_elevation_close_for_program(
+                            &execution,
+                            idempotency,
+                            None,
+                        ),
+                        Err(outcome) => outcome,
+                    },
+                )
             })
             .and_then(std::convert::identity)
             .unwrap_or_else(|denial| match candidate.take() {
-                Some(candidate) => self
-                    .runtime
-                    .backing
-                    .runtime
-                    .refuse_elevation_close(candidate, denial),
+                Some(candidate) => candidate.refuse_advancement(denial),
                 None => WorthQueryElevationCloseOutcome::Indeterminate,
             })
     }
@@ -240,7 +237,7 @@ where
             .runtime
             .backing
             .runtime
-            .readmit_mandatory_review_installation(None, program)
+            .readmit_mandatory_review_installation(program)
         {
             Ok(program) => program,
             Err(outcome) => return outcome,
@@ -256,25 +253,24 @@ where
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
-                Ok(self
-                    .runtime
-                    .backing
-                    .runtime
-                    .compare_and_commit_mandatory_review_for_program(
-                        &execution,
-                        &active_phase,
-                        candidate.take().expect("candidate admitted once"),
-                        idempotency,
-                        None,
-                    ))
+                Ok(
+                    match candidate
+                        .take()
+                        .expect("candidate admitted once")
+                        .in_advancement(&active_phase)
+                    {
+                        Ok(entry) => entry.compare_and_commit_mandatory_review_for_program(
+                            &execution,
+                            idempotency,
+                            None,
+                        ),
+                        Err(outcome) => outcome,
+                    },
+                )
             })
             .and_then(std::convert::identity)
             .unwrap_or_else(|denial| match candidate.take() {
-                Some(candidate) => self
-                    .runtime
-                    .backing
-                    .runtime
-                    .refuse_mandatory_review(candidate, denial),
+                Some(candidate) => candidate.refuse_advancement(denial),
                 None => WorthQueryMandatoryReviewOutcome::Indeterminate,
             })
     }
@@ -287,14 +283,15 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) = self
+        let program = match self
             .runtime
             .backing
             .runtime
-            .validate_commit_program(None, program.application_program())
+            .validate_commit_program(program)
         {
-            return outcome;
-        }
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
@@ -306,16 +303,19 @@ where
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
-                Ok(self
-                    .runtime
-                    .backing
-                    .runtime
-                    .compare_and_commit_capability_delegation_for_program(
-                        &execution,
-                        &active_phase,
-                        candidate.take().expect("candidate admitted once"),
-                        idempotency,
-                    ))
+                Ok(
+                    match candidate
+                        .take()
+                        .expect("candidate admitted once")
+                        .in_advancement(&active_phase)
+                    {
+                        Ok(entry) => entry.compare_and_commit_capability_delegation_for_program(
+                            &execution,
+                            idempotency,
+                        ),
+                        Err(outcome) => outcome,
+                    },
+                )
             })
             .and_then(std::convert::identity)
             .unwrap_or_else(|denial| denial.into_commit_outcome())
@@ -329,14 +329,15 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) = self
+        let program = match self
             .runtime
             .backing
             .runtime
-            .validate_commit_program(None, program.application_program())
+            .validate_commit_program(program)
         {
-            return outcome;
-        }
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.runtime
@@ -348,16 +349,19 @@ where
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
-                Ok(self
-                    .runtime
-                    .backing
-                    .runtime
-                    .compare_and_commit_capability_revocation_for_program(
-                        &execution,
-                        &active_phase,
-                        candidate.take().expect("candidate admitted once"),
-                        idempotency,
-                    ))
+                Ok(
+                    match candidate
+                        .take()
+                        .expect("candidate admitted once")
+                        .in_advancement(&active_phase)
+                    {
+                        Ok(entry) => entry.compare_and_commit_capability_revocation_for_program(
+                            &execution,
+                            idempotency,
+                        ),
+                        Err(outcome) => outcome,
+                    },
+                )
             })
             .and_then(std::convert::identity)
             .unwrap_or_else(|denial| denial.into_commit_outcome())

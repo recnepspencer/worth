@@ -39,7 +39,7 @@ fn foreign_installed_seal_is_stale_at_elevation_request_readmission_before_work(
         let consults = observe_consults_for_test(|_| {});
         let result = world
             .application
-            .readmit_elevation_request_installation(None, program);
+            .readmit_elevation_request_installation(program);
         if forged {
             let Err(WorthQueryElevationRequestOutcome::Denied(denial)) = result else {
                 panic!("a stale installed seal refuses the consuming lifecycle entry");

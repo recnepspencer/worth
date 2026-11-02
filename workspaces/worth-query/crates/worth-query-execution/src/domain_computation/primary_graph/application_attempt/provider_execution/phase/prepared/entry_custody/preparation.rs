@@ -7,30 +7,39 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    phase: &WorthQueryAdvancementPhase<'_>,
-
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    request: WorthQueryApplicationCommitPreparationRequest<Schema, Operation, Input, Scope>,
+    request: WorthQueryApplicationCommitPreparationRequest<
+        '_,
+        '_,
+        '_,
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
 ) -> WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    if let Err(cause) = phase.execution_request_for(&application.runtime.product_runtime) {
-        return terminal(
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
-                .into_commit_outcome(),
-        );
-    }
-    if let Err(outcome) = application.validate_commit_program(Some(phase), &request.program) {
-        return terminal(outcome);
-    }
     let WorthQueryApplicationCommitPreparationRequest {
-        program,
+        entry,
         idempotency,
         elevation_currentness,
         aftermath_causality,
     } = request;
+    let (core, _) = entry.program.read_set.admission.reentry_parts();
+    if let Err(outcome) = entry
+        .application
+        .runtime
+        .validate_commit_lapse_in_advancement(entry.phase, core)
+    {
+        return terminal(outcome);
+    }
+    let CurrentCommitProgram {
+        application,
+        program,
+        phase,
+    } = entry;
     let WorthQueryApplicationEffectProgram {
         read_set,
         mut effects,
@@ -162,7 +171,7 @@ where
                 WorthQueryApplicationCommitDenial::signing_lifecycle_attempt(cause.into_attempt_denial(admission.operation())))),
         }
     };
-    if let Err(denial) = super::domain_value_write::admit(
+    if let Err(denial) = super::super::domain_value_write::admit(
         execution,
         application.installed_schema.value_bindings(),
         &lease.layout,

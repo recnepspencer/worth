@@ -20,9 +20,10 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) = self.validate_commit_program(None, program.application_program()) {
-            return outcome;
-        }
+        let program = match self.validate_commit_program(program) {
+            Ok(program) => program,
+            Err(outcome) => return outcome,
+        };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
         self.with_application_advancement(&request, |active_phase| {
@@ -34,12 +35,19 @@ where
             if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
                 return Ok(WorthQueryApplicationCommitOutcome::Denied(denial));
             }
-            Ok(self.compare_and_commit_capability_revocation_for_program(
-                &execution,
-                &active_phase,
-                candidate.take().expect("candidate admitted once"),
-                idempotency,
-            ))
+            Ok(
+                match candidate
+                    .take()
+                    .expect("candidate admitted once")
+                    .in_advancement(&active_phase)
+                {
+                    Ok(entry) => entry.compare_and_commit_capability_revocation_for_program(
+                        &execution,
+                        idempotency,
+                    ),
+                    Err(outcome) => outcome,
+                },
+            )
         })
         .and_then(std::convert::identity)
         .unwrap_or_else(|denial| denial.into_commit_outcome())
@@ -60,18 +68,10 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) =
-            self.validate_commit_program(Some(phase), program.application_program())
-        {
-            return outcome;
-        }
-
-        self.compare_and_commit_application_inner(
-            execution,
-            phase,
-            program.into_inner(),
-            idempotency,
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
+        };
+        entry.compare_and_commit_capability_revocation_for_program(execution, idempotency)
     }
 }

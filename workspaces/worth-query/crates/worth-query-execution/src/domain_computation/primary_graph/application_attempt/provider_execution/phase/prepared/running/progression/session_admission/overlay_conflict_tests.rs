@@ -50,10 +50,11 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
             );
             let prepared = prepare_application_commit(
                 &phase.borrowed_request_for_test(),
-                phase,
-                &world.application,
                 WorthQueryApplicationCommitPreparationRequest::new(
-                    program,
+                    world
+                        .application
+                        .validate_commit_program_in_advancement(phase, program)
+                        .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
                     idempotency(185, 186),
                     None,
                     None,

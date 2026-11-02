@@ -37,9 +37,9 @@ fn foreign_installed_seal_is_stale_at_commit_validation_before_work() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let consults = observe_consults_for_test(|_| {});
-    let result = world.application.validate_commit_program(None, &program);
+    let result = world.application.validate_commit_program(program);
     let Err(WorthQueryApplicationCommitOutcome::Denied(denial)) = result else {
-        panic!("foreign seal must refuse at commit validation: {result:?}");
+        panic!("foreign seal must refuse at commit validation");
     };
     assert_eq!(
         denial.authorization_denial_kind(),
@@ -66,4 +66,30 @@ fn foreign_installed_seal_is_stale_at_migration_before_work() {
     );
     assert_eq!(consult_count_for_test(&consults), 0);
     assert!(charged_prefixes_for_test(&consults).is_empty());
+}
+
+#[test]
+fn foreign_installed_seal_is_stale_at_commit_validation_in_advancement_before_work() {
+    let world = installed_authorization_world(true);
+    let program = forged_program(&world);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let _observation =
+                crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+            let consults = observe_consults_for_test(|_| {});
+            let result = world
+                .application
+                .validate_commit_program_in_advancement(&phase, program);
+            let Err(WorthQueryApplicationCommitOutcome::Denied(denial)) = result else {
+                panic!("the in-advancement producer must refuse the foreign seal");
+            };
+            assert_eq!(
+                denial.authorization_denial_kind(),
+                Some(refused(AuthorizationRefusal::StaleInstalledOperation))
+            );
+            assert_eq!(consult_count_for_test(&consults), 0);
+            assert!(charged_prefixes_for_test(&consults).is_empty());
+        })
+        .unwrap();
 }

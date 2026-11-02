@@ -76,11 +76,6 @@ impl<Schema, Operation, Input, Scope>
     ) {
         self.program.forge_installed_seal_for_test(donor);
     }
-    pub(in crate::domain_computation::primary_graph) fn request_scope(
-        &self,
-    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
-        self.program.request_scope()
-    }
 
     #[inline]
     pub(in crate::domain_computation::primary_graph) fn application_program(

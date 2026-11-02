@@ -33,36 +33,32 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
-    #[inline]
-    pub(in crate::domain_computation::primary_graph) fn validate_commit_program<
-        Operation,
-        Input,
-        Scope,
-    >(
-        &self,
-        phase: Option<&WorthQueryAdvancementPhase<'_>>,
-        program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-    ) -> Result<(), WorthQueryApplicationCommitOutcome> {
-        let (core, tag) = program.read_set.admission.reentry_parts();
-        self.runtime.validate_commit_program(
-            phase,
-            core,
-            tag,
-            &self.installed_schema.binding_identity(),
-        )
-    }
-}
-
 impl WorthQueryApplicationRuntimeCore {
-    fn validate_commit_program(
+    pub(in crate::domain_computation::primary_graph) fn validate_commit_program(
         &self,
         phase: Option<&WorthQueryAdvancementPhase<'_>>,
         core: &WorthQueryAdmittedOperation,
         tag: &BrandTag,
         binding: &ApplicationSchemaBindingIdentity,
+    ) -> Result<(), WorthQueryApplicationCommitOutcome> {
+        self.validate_commit_phase(phase)?;
+        self.validate_commit_installation(core, tag, binding)
+            .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
+        core.validate_current_authority()
+            .map_err(current_authority_outcome)
+    }
+    pub(in crate::domain_computation::primary_graph) fn validate_commit_lapse_in_advancement(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        core: &WorthQueryAdmittedOperation,
+    ) -> Result<(), WorthQueryApplicationCommitOutcome> {
+        self.validate_commit_phase(Some(phase))?;
+        core.validate_current_authority()
+            .map_err(current_authority_outcome)
+    }
+    fn validate_commit_phase(
+        &self,
+        phase: Option<&WorthQueryAdvancementPhase<'_>>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome> {
         if let Some(phase) = phase {
             phase
@@ -74,10 +70,7 @@ impl WorthQueryApplicationRuntimeCore {
                     .into_commit_outcome()
                 })?;
         }
-        self.validate_commit_installation(core, tag, binding)
-            .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
-        core.validate_current_authority()
-            .map_err(current_authority_outcome)
+        Ok(())
     }
     fn validate_commit_installation(
         &self,

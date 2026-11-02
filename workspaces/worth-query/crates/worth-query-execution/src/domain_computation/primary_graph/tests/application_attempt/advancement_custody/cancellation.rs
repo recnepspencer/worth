@@ -56,3 +56,56 @@ fn cancelled_commit_is_refused_before_any_advancement_is_funded() {
         }
     }
 }
+
+fn requested_program(
+    world: &crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld,
+    request: &WorthQueryRequestScope,
+) -> program_fixture::Program {
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let principal = authenticated_principal(&phase.test_host_request(), world, request);
+            let account = resolved_account(&phase.test_host_request(), world, "open", request);
+            admitted_program(&phase, world, &principal, &account, request, "closed")
+        })
+        .unwrap()
+}
+
+#[test]
+fn entry_custody_refreshes_lapse_after_advancement_is_funded() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let world = installed_authorization_world(true);
+    let cancellation = WorthQueryCancellationSource::new();
+    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let program = requested_program(&world, &request);
+    let entry = world
+        .application
+        .validate_commit_program(program)
+        .unwrap_or_else(|outcome| panic!("fresh: {outcome:?}"));
+    reports();
+    let before = reads();
+    world
+        .application
+        .with_funded_application_advancement(
+            &request,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            |phase| {
+                cancellation.cancel();
+                assert!(matches!(
+                    entry.in_advancement(&phase),
+                    Err(WorthQueryApplicationCommitOutcome::Cancelled)
+                ));
+                assert_eq!(
+                    reads(),
+                    before,
+                    "a lapse while opening stops before provider work"
+                );
+            },
+        )
+        .unwrap();
+    assert!(
+        !reports().is_empty(),
+        "the owner completed the advancement opened before cancellation"
+    );
+}

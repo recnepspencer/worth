@@ -25,6 +25,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod entry_custody;
+pub(in crate::domain_computation::primary_graph) use entry_custody::{
+    CurrentCommitProgram, ReadmittedCommitProgram,
+};
 mod currentness;
 mod domain_value_write;
 mod local_workflow_settlement;
@@ -84,28 +88,51 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryApplicationCommitPreparationRequest<
+    'a,
+    'phase,
+    'request,
     Schema,
     Operation,
     Input,
     Scope,
 > {
-    program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    entry: CurrentCommitProgram<
+        'a,
+        'phase,
+        'request,
+        Schema,
+        WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    >,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
     aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
 }
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryApplicationCommitPreparationRequest<Schema, Operation, Input, Scope>
+impl<'a, 'phase, 'request, Schema, Operation, Input, Scope>
+    WorthQueryApplicationCommitPreparationRequest<
+        'a,
+        'phase,
+        'request,
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >
 {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn new(
-        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        entry: CurrentCommitProgram<
+            'a,
+            'phase,
+            'request,
+            Schema,
+            WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
     ) -> Self {
         Self {
-            program,
+            entry,
             idempotency,
             elevation_currentness,
             aftermath_causality,
@@ -152,8 +179,8 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
 
-mod commit_preparation;
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use commit_preparation::prepare_application_commit;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use entry_custody::prepare_application_commit;
 
 fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

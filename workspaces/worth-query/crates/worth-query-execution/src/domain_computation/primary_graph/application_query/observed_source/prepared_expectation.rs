@@ -272,46 +272,8 @@ where
             Schema,
         >,
     {
-        self.validate_source_admission(admission, Binding::IDENTITY)?;
-        let identity = source.idempotency_identity().bytes();
-        let checked = self.checked_source_affinity::<Binding, Scope>(
-            admission,
-            &source,
-            input,
-            |parameters, expected| {
-                parameters
-                    .matches_expected(expected)
-                    .map_err(|denial| parameter_denial(Binding::IDENTITY, denial))
-            },
-        )?;
-        let control = SourceFactExpansionControl::for_phase(
-            self,
-            phase,
-            Some(admission.publication_request()),
-            Binding::IDENTITY,
-        )?;
-        let prepared_facts =
-            source.admit_fact_materialization(checked.layout, Binding::IDENTITY, control)?;
-        let partition_identity = source.partition_identity();
-        let facts = prepared_facts.into_facts()?;
-        let context = source.retain_expression_binding();
-        let super::WorthQueryApplicationBasisSelectionIdentity::Product(observed_product) =
-            source.selection
-        else {
-            unreachable!("validated product source retains its selected observation")
-        };
-        Ok(PreparedObservedSourceExpectation {
-            context,
-            admission_identity: admission.admission_identity(),
-            selected_product: checked.selected_product,
-            observed_product,
-            bound: WorthQueryBoundSourceExpectation {
-                kind: WorthQuerySourceExpectationKind::Row,
-                identity,
-                partition_identity,
-            },
-            facts,
-        })
+        self.validate_source_admission(admission, Binding::IDENTITY)?
+            .prepare::<Binding>(phase, source, input)
     }
 
     fn bind_checked_source_expectation<Binding, Scope>(
@@ -325,40 +287,7 @@ where
     ) -> Result<WorthQueryPendingSourceExpectation<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>, WorthQuerySourceExpectationDenial>
     where Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<Schema>,
 {
-        self.validate_source_admission(admission, Binding::IDENTITY)?;
-        let checked = self.checked_source_affinity::<Binding, Scope>(
-            admission,
-            &source,
-            input,
-            |parameters, expected| {
-                parameters
-                    .matches_expected(expected)
-                    .map_err(|denial| parameter_denial(Binding::IDENTITY, denial))
-            },
-        )?;
-        source.validate_fact_retention(
-            checked.layout,
-            checked.expected_query_identifier,
-            SourceFactExpansionControl::for_phase(
-                self,
-                phase,
-                Some(admission.publication_request()),
-                Binding::IDENTITY,
-            )?,
-        )?;
-        let bound = WorthQueryBoundSourceExpectation {
-            kind,
-            identity,
-            partition_identity: source.partition_identity(),
-        };
-        admission.bind_source_partition(bound.partition_identity);
-        admission.bind_source_expectation_kind(bound.kind);
-        Ok(WorthQueryPendingSourceExpectation {
-            admission_identity: admission.admission_identity(),
-            selected_product: checked.selected_product,
-            expected_query_identifier: checked.expected_query_identifier,
-            bound,
-            source,
-        })
+        self.readmit_mutable_source_admission(admission, Binding::IDENTITY)?
+            .bind::<Binding>(phase, source, identity, input, kind)
     }
 }
