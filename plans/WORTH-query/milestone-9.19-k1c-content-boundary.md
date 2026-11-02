@@ -1,9 +1,10 @@
 # K1c: Native content boundary review
 
-Status: proposed implementation boundary, not implemented or qualified. Reviewed
-checkout: `567b4f8abbb38a96e651fb8bdadeaf2a1d2c9e66`, including the two required
-sync branches. This document is the single documentation slice requested after
-the initial boundary discovery. Implementation waits for the user's review.
+Status: accepted implementation boundary, not implemented or qualified. Initial
+reviewed checkout: `567b4f8abbb38a96e651fb8bdadeaf2a1d2c9e66`. Before implementation,
+master carrying K1b, K1e, and the issue 36 repairs was merged at
+`09e6b497484b14a57e77dc9173fd5c9f117583d8`. The user authorized the five slices
+after the corrections recorded here land in their own documentation commit.
 
 The user clarified that establishing Native content authority is in scope.
 K1c in [milestone 9.19](milestone-9.19.md#phase-6-proprietary-cutover-and-integrated-cad-acceptance)
@@ -82,6 +83,16 @@ retain a second u64-to-digest authority. The portable identity and format
 descriptor belong in worth-foundational; constructing a descriptive digest grants
 no access or publication authority.
 
+The sole new production frame-hashing owner is
+`crates/worth-relational/src/content/frame/integrity.rs`. In the slice that adds
+it, extend the exact-owner guard in
+`worth-query-installation/src/application_query/tests/canonical_basis_residue.rs`
+to inspect Native's content tree and permit SHA tokens only in that exact file,
+alongside its existing exact projected-content and retained-capability owners.
+Require the new owner's original-request chunk admission; do not exempt the
+directory or permit a second Query-side hasher. The court's raw SHA implementation
+checks the written frame independently and is not used by the production writer.
+
 The frame is `WRTHCONT` (8 ASCII bytes), envelope version (u16), format-name length
 (u16), that many ASCII format-name bytes, format version (u32), payload length
 (u64), then exactly that many canonical payload bytes. All integers are
@@ -108,11 +119,17 @@ issues the completed read. Unknown format, wrong version, or absent content
 returns a typed refusal. Equality with a caller-supplied digest never supplies
 the proof. Raw scalar writes undergo the same Native check.
 
-Changing ContentRefId also changes the representation currently shared by the
-legacy Bytes reference arm. Update its mechanical codecs and fixtures in the
-same carrier cutover, without adding an inline arm or giving Bytes a second byte
-resolver. Explicitly inventory foundational identity material, Native scalar
-codec, Query portable schema/archive, and contract revisions before that slice.
+The legacy `AspectValue::Bytes(ContentRefId)` arm has no byte owner or production
+consumer; the application/example searches find no use beyond scalar plumbing
+and certification fixtures. K1e's landed InlineBytes supplies inline values.
+Retire the legacy arm and its scalar/declaration/codecs in the identity slice;
+do not leave an unchecked reference arm or replace it with another resolver.
+If that slice discovers a genuine remaining consumer, it must instead route
+the arm through the identical Native field-format and closure admission, with
+the same refusal courts, before it can land. Nothing is deployed, so retirement
+requires no legacy Bytes decoder. Explicitly inventory foundational identity
+material, Native scalar codec, Query portable schema/archive, and contract
+revisions before that slice.
 Write new current artifact versions; refuse obsolete runtime content-reference
 versions before effects. Preserve declared historical archive bytes as historical
 data, never reinterpret their old u64 as a new digest. If a supported archive
@@ -256,9 +273,18 @@ is permitted on cancellation.
 Proposed K1c ceilings are 16 MiB per complete canonical content frame and 64 MiB
 of newly staged frame bytes per transaction, including duplicates before reuse
 is established. Each installed format may lower the frame ceiling. Identifiers
-are at most 256 UTF-8 bytes; versions are nonzero u32. These are new proposed
+are at most 256 ASCII bytes; versions are nonzero u32. These are new proposed
 bounds, not measurements or existing constants. The grid limit is derived from
 the complete frame ceiling, not merely its sample payload.
+
+ContentRef is the ordinary representation for ordered identity-free numerical
+data at every size. There is no small-value inline or bounded-canonical fallback.
+The consuming spline contract permits up to 1,048,576 controls of four exact
+rationals each; that count does not imply the encoded frame fits 16 MiB. Above
+the frame ceiling, admission returns typed SizeLimit before attachment, geometry,
+index publication, or durable effects. The caller must reduce the input or seek
+an explicitly revised content bound; no silent truncation, segmentation scheme,
+lossy numeric conversion, or alternate storage representation is selected.
 
 The complete `RelationalCanonicalCommitArtifact::as_bytes()` also has a 256 MiB
 ceiling, including its 66-byte outer frame and all ordinary field, content, and
@@ -298,6 +324,16 @@ IntegrityMismatch, ContentIdentityConflict, EncodingInconsistency, SizeLimit, an
 stops (cancellation, deadline, work, memory, overflow) with original cause.
 The public denial must preserve which boundary failed, not stringify it into an
 ordinary provider rejection.
+
+Query content field writes extend the one landed pre-publication owner at
+`application_attempt/provider_execution/phase/prepared/domain_value_write.rs`.
+Its current domain-value predicate must also reach content field contracts;
+missing/wrong-format/wrong-version content refuses there and preserves the
+selected commit. Do not add a parallel content publication validator. Read
+corruption courts flip a stored byte, swap to another format's reference, and
+remove retained backing; each must yield its typed refusal and no plausible
+value. Their digest oracle hashes literal frame bytes independently of the
+production writer.
 
 ## Smallest Decl and Host door
 
