@@ -1,5 +1,5 @@
 //! The shared field-mask policy, admitted before schema and mask validation.
-use super::admission::{pay, unmetered, CompilationStop, CompilationWork};
+use super::admission::{pay, CompilationStop, CompilationWork};
 use super::*;
 use worth_foundational::facade::{AspectKey, AspectShape};
 
@@ -24,6 +24,7 @@ pub(super) fn admit_field_masks<E>(
     })
 }
 
+#[cfg(test)]
 pub(in crate::domain_computation) fn admit_field_mask_categories(
     layout: &WorthQueryPrimaryGraphLayout,
     selector: &ApplicationQueryDisclosureSelector,
@@ -32,7 +33,7 @@ pub(in crate::domain_computation) fn admit_field_mask_categories(
     (AspectMask<ProjectionMask>, AspectMask<DiagnosticMask>),
     WorthQueryApplicationDisclosureContractDenial,
 > {
-    unmetered(admit_categories(layout, selector, field, &mut |_| {
+    super::admission::unmetered(admit_categories(layout, selector, field, &mut |_| {
         Ok::<_, std::convert::Infallible>(())
     }))
     .map(|(projection, diagnostic, _)| (projection, diagnostic))

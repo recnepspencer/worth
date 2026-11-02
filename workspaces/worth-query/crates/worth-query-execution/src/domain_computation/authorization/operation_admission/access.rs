@@ -9,7 +9,7 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
 
-use super::WorthQueryAdmittedApplicationOperation;
+use super::WorthQueryAdmittedOperation;
 use crate::domain_computation::authorization::{
     WorthQueryAdmissionLapse, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationScopeBinding,
@@ -35,10 +35,10 @@ pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalAuthority {
     pub expiry: worth_foundational::facade::AspectValue,
 }
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
-    pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
+impl WorthQueryAdmittedOperation {
+    pub(in crate::domain_computation) fn binding_identity(
+        &self,
+    ) -> &ApplicationSchemaBindingIdentity {
         &self.binding_identity
     }
 
@@ -50,7 +50,9 @@ impl<Schema, Operation, Input, Scope>
         self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
     }
 
-    pub(in crate::domain_computation) fn validate_projection_authority(
+    /// Ownership precedes lapse and every read: nothing about a foreign
+    /// admission is judged before it is known to be this runtime's.
+    pub(in crate::domain_computation) fn validate_runtime_ownership(
         &self,
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
@@ -71,7 +73,7 @@ impl<Schema, Operation, Input, Scope>
                 &self.operation,
             ));
         }
-        self.validate_current_authority()
+        Ok(())
     }
 
     pub(in crate::domain_computation) const fn runtime_authority(
@@ -102,11 +104,13 @@ impl<Schema, Operation, Input, Scope>
         &self.scope_entity_name
     }
 
-    pub fn operation(&self) -> &str {
+    pub(in crate::domain_computation) fn operation(&self) -> &str {
         &self.operation
     }
 
-    pub fn allowed_graph_contract(&self) -> &WorthQueryCompiledApplicationOperationContracts {
+    pub(in crate::domain_computation) fn allowed_graph_contract(
+        &self,
+    ) -> &WorthQueryCompiledApplicationOperationContracts {
         &self.contracts
     }
 
@@ -124,41 +128,33 @@ impl<Schema, Operation, Input, Scope>
         &self.mutation_preconditions
     }
 
-    pub const fn canonical_work(&self) -> WorthQueryCanonicalWorkPhases {
+    pub(in crate::domain_computation) const fn canonical_work(
+        &self,
+    ) -> WorthQueryCanonicalWorkPhases {
         self.canonical_work
     }
 
-    pub fn authorization_requirement_count(&self) -> usize {
+    pub(in crate::domain_computation) fn authorization_requirement_count(&self) -> usize {
         self.authorization.as_ref().map_or(
             0,
             WorthQueryRetainedAuthorizationDecisionFacts::policy_count,
         )
     }
 
-    pub fn authorization_decision_fact_count(&self) -> usize {
+    pub(in crate::domain_computation) fn authorization_decision_fact_count(&self) -> usize {
         self.authorization.as_ref().map_or(
             0,
             WorthQueryRetainedAuthorizationDecisionFacts::exact_fact_count,
         )
     }
 
-    pub fn capability_input(&self) -> Option<&Input> {
-        self.authorization_basis.capability_input()
-    }
-
-    pub(in crate::domain_computation) fn shared_capability_input(
-        &self,
-    ) -> Option<
-        &worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-    > {
-        self.authorization_basis.shared_capability_input()
-    }
-
     pub(in crate::domain_computation) const fn has_elevation_lifecycle_binding(&self) -> bool {
         self.authorization_basis.is_elevation_lifecycle()
     }
 
-    pub fn installed_capability_authority_identity(&self) -> Option<&str> {
+    pub(in crate::domain_computation) fn installed_capability_authority_identity(
+        &self,
+    ) -> Option<&str> {
         self.authorization
             .as_ref()?
             .capability_authorization()
@@ -183,7 +179,7 @@ impl<Schema, Operation, Input, Scope>
             .map(WorthQueryRetainedCapabilityAuthorization::installed_capability_identity)
     }
 
-    pub fn capability_time_timeline(
+    pub(in crate::domain_computation) fn capability_time_timeline(
         &self,
     ) -> Option<
         worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline,
@@ -194,7 +190,9 @@ impl<Schema, Operation, Input, Scope>
             .map(WorthQueryRetainedCapabilityAuthorization::timeline)
     }
 
-    pub fn capability_time_sample(&self) -> Option<&worth_foundational::facade::AspectValue> {
+    pub(in crate::domain_computation) fn capability_time_sample(
+        &self,
+    ) -> Option<&worth_foundational::facade::AspectValue> {
         self.authorization
             .as_ref()?
             .capability_authorization()
@@ -218,14 +216,16 @@ impl<Schema, Operation, Input, Scope>
         })
     }
 
-    pub fn relational_counters(&self) -> RelationalAuthorizationObservationCounters {
+    pub(in crate::domain_computation) fn relational_counters(
+        &self,
+    ) -> RelationalAuthorizationObservationCounters {
         self.authorization
             .as_ref()
             .map(WorthQueryRetainedAuthorizationDecisionFacts::relational_counters)
             .unwrap_or_default()
     }
 
-    pub fn signal_dependency_count(&self) -> usize {
+    pub(in crate::domain_computation) fn signal_dependency_count(&self) -> usize {
         self.authorization
             .as_ref()
             .map(WorthQueryRetainedAuthorizationDecisionFacts::signal_dependency_count)
@@ -272,7 +272,7 @@ impl<Schema, Operation, Input, Scope>
 
     /// Descriptive fingerprint of the exact installed operation authority
     /// retained by this proof. The string does not itself grant authority.
-    pub fn installed_operation_fingerprint(&self) -> &str {
+    pub(in crate::domain_computation) fn installed_operation_fingerprint(&self) -> &str {
         &self.operation_authority_identity
     }
 
@@ -280,7 +280,9 @@ impl<Schema, Operation, Input, Scope>
     ///
     /// Carried onto commit receipts (R8.62 / C1). Descriptive fingerprints are
     /// not a substitute for this identity.
-    pub const fn installed_operation_identity_bytes(&self) -> &[u8; 32] {
+    pub(in crate::domain_computation) const fn installed_operation_identity_bytes(
+        &self,
+    ) -> &[u8; 32] {
         &self.operation_authority_identity_bytes
     }
 
@@ -297,7 +299,9 @@ impl<Schema, Operation, Input, Scope>
     ///
     /// Later governed phases must call this rather than accepting a detached
     /// timestamp or caller assertion.
-    pub fn validate_current_authority(&self) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+    pub(in crate::domain_computation) fn validate_current_authority(
+        &self,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         match self.current_authority_lapse() {
             Some(lapse) => Err(WorthQueryOperationAuthorizationDenial::new(
                 lapse.denial_kind(),
@@ -383,7 +387,9 @@ impl<Schema, Operation, Input, Scope>
     /// Stable identity of the authenticated runtime, installed operation,
     /// principal, and typed scope. It intentionally excludes snapshot identity
     /// so an equivalent authorized retry can retain one idempotency intent.
-    pub const fn operation_scope_binding(&self) -> &WorthQueryOperationScopeBinding {
+    pub(in crate::domain_computation) const fn operation_scope_binding(
+        &self,
+    ) -> &WorthQueryOperationScopeBinding {
         &self.operation_scope_binding
     }
 }

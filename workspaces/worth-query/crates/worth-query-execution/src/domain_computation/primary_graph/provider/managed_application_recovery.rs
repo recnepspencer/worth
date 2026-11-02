@@ -187,15 +187,15 @@ where
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         {
-            admission
-                .validate_current_authority()
-                .map_err(Denial::Authorization)?;
             if !admission.belongs_to(
                 self.runtime.authority_identity(),
                 &self.installed_schema.binding_identity(),
             ) {
                 return Err(Denial::ForeignAdmission);
             }
+            admission
+                .validate_current_authority()
+                .map_err(Denial::Authorization)?;
             let product = admission
                 .graph_work()
                 .mutation_product()

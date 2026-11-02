@@ -19,6 +19,7 @@ mod compilation;
 mod field_masks;
 mod result_rules;
 pub(in crate::domain_computation) use compilation::compile_disclosure_contract;
+#[cfg(test)]
 pub(in crate::domain_computation) use field_masks::admit_field_mask_categories;
 pub(super) use result_rules::selector_parts;
 mod diagnostic;

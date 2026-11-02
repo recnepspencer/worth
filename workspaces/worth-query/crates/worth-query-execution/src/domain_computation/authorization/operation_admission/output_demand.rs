@@ -1,12 +1,10 @@
-use super::WorthQueryAdmittedApplicationOperation;
+use super::WorthQueryAdmittedOperation;
 use crate::domain_computation::primary_graph::{
     application_attempt::CompletedHandlerFactBoundary, ComputationPrior,
     RequiredOutputDemandContext, SealedComputationRetention,
 };
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
+impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn record_decision_context_use(
         &mut self,
         use_mask: crate::domain_computation::primary_graph::DecisionContextUse,

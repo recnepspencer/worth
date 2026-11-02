@@ -16,6 +16,8 @@ use crate::domain_computation::primary_graph::{
 };
 #[path = "application_attempt/authority_lifecycle.rs"]
 mod authority_lifecycle;
+#[path = "application_attempt/authority_precedence.rs"]
+mod authority_precedence;
 #[path = "application_attempt/authorization_causality.rs"]
 mod authorization_causality;
 #[path = "application_attempt/correction_output_preflight.rs"]
@@ -28,6 +30,9 @@ mod decision_manifest_ceiling;
 mod effect_authority;
 #[path = "application_attempt/emitted_effects.rs"]
 mod emitted_effects;
+// The court sits beside the brand it forges and drives these fixtures.
+#[path = "../../authorization/operation_admission/erased_core_forgery_tests.rs"]
+mod erased_core_forgery;
 #[path = "application_attempt/guarded_operation_custody.rs"]
 mod guarded_operation_custody;
 #[path = "application_attempt/guarded_publication_pending.rs"]

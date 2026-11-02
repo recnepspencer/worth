@@ -11,6 +11,7 @@ use schema::*;
 mod outputs;
 use outputs::*;
 mod field_patch_cases;
+mod foreign_admission;
 mod operation;
 mod ordinary;
 mod own_effect;

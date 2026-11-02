@@ -2,7 +2,6 @@ mod change_summary;
 mod dependency;
 mod publication;
 pub(in crate::domain_computation::primary_graph::application_query) use dependency::ViewDependency;
-pub(in crate::domain_computation::primary_graph::application_query) use publication::DependencyIndex;
 pub(in crate::domain_computation::primary_graph::application_query) mod reconstruction_denial;
 mod registration;
 mod registry;
@@ -17,7 +16,6 @@ pub(in crate::domain_computation::primary_graph) use publication::{
     ViewChange, ViewPublicationBasis,
 };
 pub(in crate::domain_computation::primary_graph::application_query) use registry::PredicateRegistration;
-pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredDerivedView;
 pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredManagedIndex;
 pub(in crate::domain_computation::primary_graph::application_query) use registry::{
     mark_prepared_predicates_unavailable, route_prepared_predicates,

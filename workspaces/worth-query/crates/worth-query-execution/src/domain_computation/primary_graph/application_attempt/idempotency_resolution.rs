@@ -91,15 +91,15 @@ where
         if !binding.matches_guarded_workflow_effect(transition_identity) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
-        admission
-            .validate_current_authority()
-            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
         ) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let scope = admission.operation_scope_binding();
         let original_scope = if let Some(receipt) = completed {
             let original = receipt.principal_scope();
@@ -282,15 +282,15 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        admission
-            .validate_current_authority()
-            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
         ) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let bindings = bindings
             .into_iter()
             .map(|read_for| {

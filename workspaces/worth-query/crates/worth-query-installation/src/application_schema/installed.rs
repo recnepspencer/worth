@@ -172,6 +172,15 @@ where
         self.mutation_catalog.descriptors()
     }
 
+    /// The installed descriptor of one mutation binding, by its identity.
+    #[doc(hidden)]
+    pub fn installed_mutation_binding_descriptor(
+        &self,
+        identity: &str,
+    ) -> Option<&ApplicationMutationBindingDescriptor> {
+        self.mutation_catalog.descriptor(identity)
+    }
+
     pub(crate) fn retain_native_contracts(
         &self,
     ) -> Arc<WorthQueryInstalledApplicationSchemaContractCatalog> {

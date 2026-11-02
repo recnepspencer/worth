@@ -1,5 +1,6 @@
 //! Admission-owned access to actual retained observations for cancellation proofs.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind as Kind,
     WorthQueryPrimaryGraphApplicationDecisionFact as Fact,
@@ -19,7 +20,7 @@ impl<Schema, Operation, Input, Scope>
         let Some(WorthQueryRetainedAuthorizationDecisionFacts::Abilities {
             principal,
             decisions,
-        }) = &self.authorization
+        }) = &self.core.authorization
         else {
             panic!("ViewAccount must retain conventional observations");
         };
@@ -52,7 +53,7 @@ impl<Schema, Operation, Input, Scope>
         source: &CancellationSource,
     ) {
         let Some(WorthQueryRetainedAuthorizationDecisionFacts::Abilities { decisions, .. }) =
-            &self.authorization
+            &self.core.authorization
         else {
             panic!("ViewAccount must retain conventional observations");
         };

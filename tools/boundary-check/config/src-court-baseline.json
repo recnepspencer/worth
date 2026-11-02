@@ -2349,6 +2349,7 @@
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/authorization_world_installation/preparation.rs","module":"file","roots":["RelationalRuntime"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/capability_status_mutation.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/commit_snapshot_closeout.rs","module":"file","roots":["RelationalRuntime"]},
+{"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/decision_read_world.rs","module":"file","roots":["WorthQueryPrimaryGraphApplicationRuntime"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/product_publication.rs","module":"file","roots":["ExecutionRequest","WorthQueryPrimaryGraphApplicationRuntime"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/program_activation.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/schema_types.rs","module":"file","roots":["WorthQueryPrimaryGraphApplicationRuntime"]},
