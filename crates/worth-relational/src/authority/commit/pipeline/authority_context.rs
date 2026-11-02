@@ -73,7 +73,7 @@ impl AuthoritativeCommitContext {
     pub(crate) fn from_validated_proposal(
         candidate: crate::mvcc::ValidatedRelationalProposal,
     ) -> Self {
-        let crate::mvcc::ValidatedRelationalProposal {
+        let crate::mvcc::ValidatedProposalState {
             caller_association,
             required_output_publication,
             required_output_materialization,
@@ -95,7 +95,7 @@ impl AuthoritativeCommitContext {
             validation_complexity_delta,
             commit_work_budget,
             ..
-        } = candidate;
+        } = candidate.into_state();
         let bulk_mutation_telemetry = strategy_bulk_mutation_batch
             .as_ref()
             .map(telemetry_from_strategy_batch)

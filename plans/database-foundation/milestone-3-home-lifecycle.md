@@ -1883,3 +1883,20 @@ and `durable/completion.rs` calls. Opening temporaries return before progression
 terminal handback locals exist only after it returns. All actual terminal
 custody still wins over a late framework stop. No owner, grant or World phase
 is replaced, and no allocation is introduced by this split.
+
+
+The remaining reservation overflow exposed repeated by-value carriage of the
+original Native proposal through Query and World phases. The compile-only
+layout probe measures `ValidatedRelationalProposal` at 10,240 bytes
+(`target/lane-evidence/integration-native-layout-diagnostic-cargo.log`). Native
+now owns its exact accepted proposal state in unique retained backing from
+successful validation until Native commit preparation consumes it. The public
+move-only proposal and its original identities, invariant results and mutation
+authority remain unchanged. The original execution request admits the actual
+backing before allocation; the backing is released before its charge. This is
+not a second proposal, a reconstructed state or an uncharged result allocation.
+The runtime-private state does not introduce another public authority type.
+`validated_proposal_backing_charges_original_request_until_native_consumption`
+and `unfunded_validated_proposal_backing_refuses_and_releases_original_custody`
+cover retained accounting and refusal, alongside the actual sibling, stale and
+canonical proposal controls in the same court.

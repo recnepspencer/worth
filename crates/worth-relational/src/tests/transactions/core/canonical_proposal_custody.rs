@@ -16,11 +16,11 @@ fn validated_sibling_proposals_keep_their_observed_identity_through_reverse_comm
 
     let a = propose(execution, &runtime, "custody-a", "a-record");
     let a_id = proposed_record(&a, "a-record");
-    let a_occurrence = a.proposal_identity.commit_id();
-    let a_version = a.proposal_identity.proposed_version_id();
+    let a_occurrence = a.state.proposal_identity.commit_id();
+    let a_version = a.state.proposal_identity.proposed_version_id();
     let b = propose(execution, &runtime, "custody-b", "b-record");
     let b_id = proposed_record(&b, "b-record");
-    let b_occurrence = b.proposal_identity.commit_id();
+    let b_occurrence = b.state.proposal_identity.commit_id();
     assert_ne!(a_id, b_id, "live proposals own different real slots");
     assert!(a_occurrence < b_occurrence);
     assert_eq!(runtime.record_identity.pending_snapshot().len(), 2);
@@ -58,7 +58,7 @@ fn discarded_and_stale_validated_proposals_release_custody_and_burn_append_gaps(
     let before = runtime.history().immutable_commit_count();
     let discarded = propose(execution, &runtime, "main", "discarded-record");
     let discarded_id = proposed_record(&discarded, "discarded-record");
-    let discarded_occurrence = discarded.proposal_identity.commit_id();
+    let discarded_occurrence = discarded.state.proposal_identity.commit_id();
     assert_eq!(runtime.record_identity.pending_snapshot().len(), 1);
     assert_eq!(runtime.history().immutable_commit_count(), before);
     drop(discarded);
@@ -66,7 +66,7 @@ fn discarded_and_stale_validated_proposals_release_custody_and_burn_append_gaps(
 
     let stale = propose(execution, &runtime, "main", "stale-record");
     let stale_id = proposed_record(&stale, "stale-record");
-    let stale_occurrence = stale.proposal_identity.commit_id();
+    let stale_occurrence = stale.state.proposal_identity.commit_id();
     assert_ne!(stale_id, discarded_id);
     assert!(stale_occurrence > discarded_occurrence);
     let winner = create_entity_outcome(execution, &runtime, "winner-record");
@@ -146,6 +146,62 @@ fn runtime_fork_releases_only_its_copied_pending_entries_while_source_keeps_cust
     release_test_commit_snapshot(&detached, &detached_commit);
 }
 
+#[test]
+fn validated_proposal_backing_charges_original_request_until_native_consumption() {
+    let host = crate::test_execution_policy::serial_request();
+    let runtime = runtime_with_test_schema();
+    let original = propose(
+        &ExecutionRequest::serial(&host),
+        &runtime,
+        "main",
+        "charged",
+    );
+    let identity = original.proposal_identity().clone();
+    let state = original.into_state();
+    let bytes = std::mem::size_of_val(&state) as u64;
+    let budget = worth_execution::SerialMemoryBudget::new(Some(bytes));
+    let request = worth_execution::SerialRequest::from_memory(
+        budget.clone(),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let proposal =
+        ValidatedRelationalProposal::retain(&ExecutionRequest::serial(&request), state).unwrap();
+    assert_eq!(budget.charged_memory_bytes(), bytes);
+    assert_eq!(proposal.proposal_identity(), &identity);
+    assert_eq!(runtime.record_identity.pending_snapshot().len(), 1);
+    let state = proposal.into_state();
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    assert_eq!(runtime.record_identity.pending_snapshot().len(), 1);
+    drop(state);
+    assert!(runtime.record_identity.pending_snapshot().is_empty());
+}
+
+#[test]
+fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
+    let host = crate::test_execution_policy::serial_request();
+    let runtime = runtime_with_test_schema();
+    let state = propose(
+        &ExecutionRequest::serial(&host),
+        &runtime,
+        "main",
+        "unfunded",
+    )
+    .into_state();
+    let bytes = std::mem::size_of_val(&state) as u64;
+    let budget = worth_execution::SerialMemoryBudget::new(Some(bytes - 1));
+    let request = worth_execution::SerialRequest::from_memory(
+        budget.clone(),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let denied = ValidatedRelationalProposal::retain(&ExecutionRequest::serial(&request), state)
+        .unwrap_err();
+    assert!(matches!(denied, TransactionCommitError::Execution { .. }));
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    assert!(runtime.record_identity.pending_snapshot().is_empty());
+}
+
 fn reference(key: &str) -> CreatedEntityRef {
     CreatedEntityRef {
         partition_id: PartitionId::main(),
@@ -167,14 +223,15 @@ fn propose(
 }
 fn proposed_record(proposal: &ValidatedRelationalProposal, key: &str) -> EntityId {
     let id = proposal
+        .state
         .proposed_mutation
         .outcome
         .created_entities
         .resolve(&reference(key))
         .unwrap();
     let view = crate::validation::engine::state_view::InvariantStateView::new(
-        proposal.proposed_mutation.state(),
-        proposal.proposal_identity.proposed_version_id(),
+        proposal.state.proposed_mutation.state(),
+        proposal.state.proposal_identity.proposed_version_id(),
     );
     assert!(
         view.entity_metadata(id).is_some(),
