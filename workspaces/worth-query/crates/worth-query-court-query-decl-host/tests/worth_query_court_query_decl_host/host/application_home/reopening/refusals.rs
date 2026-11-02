@@ -1,12 +1,12 @@
 //! Early partial artifacts must retain their actual owning refusal.
 use super::*;
 use worth_query_host::facade::{
-    primary_graph::WorthQueryPrimaryGraphInstallationDenialKind,
-    WorthQueryApplicationHomeOpenRefused,
+    runtime::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial},
+    ApplicationHomeQueryRootDenial, WorthQueryApplicationHomeOpenRefused,
 };
 
 #[test]
-fn initializer_refusal_without_canonical_indexes_reopens_at_require_recovered_without_replay() {
+fn initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer() {
     let location = fixture::location();
     let contacts = Arc::new(AtomicUsize::new(0));
     let callbacks = Arc::new(AtomicUsize::new(0));
@@ -48,23 +48,17 @@ fn initializer_refusal_without_canonical_indexes_reopens_at_require_recovered_wi
     })
     .unwrap()
     .err()
-    .expect("actual recovered index definitions are absent");
+    .expect("the closed partial Home still has no World origin");
     match &refused {
-        WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization { query, .. } => {
-            assert_eq!(
-                query.reason().kind(),
-                WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected
-            );
-            assert!(
-                query.reason().subject().starts_with(
-                    "recovered runtime omitted Query index definition 'application-principal."
-                ),
-                "{:?}",
-                query.reason()
-            );
-        }
+        WorthQueryApplicationHomeOpenRefused::ExistingWorldRoot {
+            cause:
+                ApplicationHomeQueryRootDenial::ExistingRoot(RuntimeWorldServiceDenial::Denied(
+                    RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
+                )),
+            ..
+        } => {}
         other => {
-            panic!("RequireRecovered must refuse before World/selected publication: {other:?}")
+            panic!("the missing original World root must refuse without initialization: {other:?}")
         }
     }
     assert_eq!(callbacks.load(Ordering::SeqCst), 1);

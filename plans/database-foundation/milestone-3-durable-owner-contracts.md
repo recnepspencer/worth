@@ -2834,3 +2834,33 @@ cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history
 uses a real selected source with its actual History member unavailable, checks
 the pre-I/O budget refusal, then requires changed current entries, actual Head
 reads, no History read, no Full admission and no canonical publication.
+
+The accepted coupled-close checkpoint contract (integration 6750f1376f and the
+original-input design f8c881ba9a) retires the refusal fixture's assumption that
+closing after an initializer panic loses the Query index definitions. Native
+finalization registers those definitions before the callback; owning close can
+checkpoint that actual catalog even with no seed publication. The old behaviour
+name initializer_refusal_without_canonical_indexes_reopens_at_require_recovered_without_replay
+is therefore replaced by
+initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer.
+It requires the exact typed ExistingWorldRoot/ExistingRoot/Denied/OwnerUnavailable
+refusal and retains every callback, contact, mutation-lease and owning-close
+assertion. RequireRecovered is unchanged; the existing owner court
+recovered_index_name_without_matching_kind_cannot_bind still refuses a missing
+matching definition. No World origin is synthesized and initialization never
+replays. The existing public refusal now exposes its exact Root denial and World
+denial types through the Host audience facade, without a new dependency.
+
+The final-frame capture fixture uses its existing funded original bootstrap
+request for Native metadata/consolidation. A child of that SAME lease grants
+only the independently observed Native backing quote, then Native-plus-frame
+quotes for successful repair. Thus the intended child allocation boundary still
+has zero room while original owner work remains funded. The zero-root admission,
+exact refusal, backing refund and single callback assertions are unchanged.
+
+Strict original-artifact validation also exposed a scalar preflight omission:
+the normal decoder already accepts INLINE_BYTES (tag24), while its allocation
+preflight rejected that same wire body. The preflight now uses the existing
+InlineBytes length authority, checks the whole body and quotes the exact retained
+payload vector. This repairs the existing format rather than adding a new tag
+or changing a persisted version.

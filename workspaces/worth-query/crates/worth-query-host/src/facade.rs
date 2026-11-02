@@ -369,3 +369,4 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpeningCloseRefused,
     WorthQueryApplicationHomeOpeningClosed, WorthQueryApplicationHomeRequest,
 };
+pub use worth_store_application::facade::ApplicationHomeQueryRootDenial;

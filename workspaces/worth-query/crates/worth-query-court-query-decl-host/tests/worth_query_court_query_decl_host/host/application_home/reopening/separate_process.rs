@@ -38,7 +38,8 @@ fn child(path: &std::path::Path, mode: &str) -> String {
         .unwrap();
     assert!(
         output.status.success(),
-        "{mode}: {}\n{}",
+        "{mode} exited {}: {}\n{}",
+        output.status,
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );

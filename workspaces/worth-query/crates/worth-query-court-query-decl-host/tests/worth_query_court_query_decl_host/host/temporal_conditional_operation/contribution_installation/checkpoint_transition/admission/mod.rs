@@ -1,5 +1,9 @@
 pub(crate) use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation::checkpoint_transition::admission::*;
 use worth_query_host::facade::runtime::{ExecutionAllocationDenialClass, WorkCeilingDenial};
+use worth_query_testkit_host::facade::host::checkpoint_capture;
+use worth_execution::{CancellationToken, ExecutionRequest, LeaseRequest};
+use worth_foundational::{ExecutionBudget, ExecutionRequestPolicy};
+use std::num::NonZeroUsize;
 
 #[test]
 fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair() {
@@ -63,12 +67,34 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         }
     } = cause.kind() else { panic!("typed original request memory refusal: {cause:?}"); };
     assert!(admission_bytes > 0);
-    let native_only = worth_query_testkit_host::facade::host::checkpoint_capture::lease(
-        admission_bytes + native_quote,
-    );
-    let pending = pending
-        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&native_only))
-        .expect_err("the final frame is admitted while native backing remains live");
+    let original = checkpoint_capture::lease(64 * 1024 * 1024);
+    let child = |bytes| {
+        original
+            .child(LeaseRequest {
+                policy: ExecutionRequestPolicy::new(
+                    original.policy().posture(),
+                    original.policy().determinism(),
+                    ExecutionBudget::new(NonZeroUsize::MIN, Some(bytes), None),
+                ),
+                cancellation: CancellationToken::new(),
+                deadline: None,
+            })
+            .unwrap()
+    };
+    let native_only = child(native_quote);
+    let pending = checkpoint_capture::with_bootstrap_advancement_from_request(
+        ExecutionRequest::leased(&original),
+        |phase| {
+            pending.repair_to_checkpoint(
+                &phase,
+                application_installation::WorthQueryCheckpointCapturePolicy::Execution(
+                    &native_only,
+                ),
+            )
+        },
+    )
+    .unwrap()
+    .expect_err("the final frame is admitted while native backing remains live");
     let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
         panic!("exact final-frame allocation cause must survive: {pending:?}");
     };
@@ -93,12 +119,18 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let released = native_only.reserve_memory(native_quote).unwrap();
     drop(released);
     drop(native_only);
-    let repair = worth_query_testkit_host::facade::host::checkpoint_capture::lease(
-        admission_bytes + native_quote.checked_add(frame_quote).unwrap(),
-    );
-    let checkpoint = pending
-        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&repair))
-        .expect("a fresh funded request captures the same acknowledged successor");
+    let repair = child(native_quote.checked_add(frame_quote).unwrap());
+    let checkpoint = checkpoint_capture::with_bootstrap_advancement_from_request(
+        ExecutionRequest::leased(&original),
+        |phase| {
+            pending.repair_to_checkpoint(
+                &phase,
+                application_installation::WorthQueryCheckpointCapturePolicy::Execution(&repair),
+            )
+        },
+    )
+    .unwrap()
+    .expect("a fresh funded request captures the same acknowledged successor");
     assert_eq!(checkpoint.bytes().len() as u64, frame_quote);
     assert_eq!(checkpoint.charged_payload_bytes(), Some(frame_quote));
     assert_target_record(checkpoint, 127);
