@@ -109,3 +109,20 @@ handler's decision/candidate contacts across readmission. Build B must retain
 A's record without either producer phase running, then reproduce it only when
 explicitly demanded. This is component evidence; the public directory Host
 journey is separately exercised and any P-A refusal remains explicit.
+
+The first public Host probes observed Native's exact
+`CorruptCheckpoint` / `recovered source synchronization denied: RootLinkage`.
+The probe initially expected `CorruptCanonicalArtifact`; its expectation is
+corrected to the actual typed adapter refusal. Genuine World readmission
+controls remain blocked by `CompleteNativeRequired` and RootLinkage.
+
+The unavailable-World-checkpoint assertion in
+`ordinary_occurrences_reopen_original_history_after_later_native_advance`
+is retired by milestone-3 D12's implemented Complete Home checkpoint contract
+(Native Complete integration `9429165bd3` and the Phase 3 Home checkpoint
+composition). It is replaced with a stronger prerequisite: actual Closed with
+a successful checkpoint. No history or occurrence assertion is removed.
+
+The Server product-adapter diagnostic mapping now renders the typed
+authorization refusal as `stale_incarnation`; this is exhaustive-match
+propagation, outside Server's compat_http owner.

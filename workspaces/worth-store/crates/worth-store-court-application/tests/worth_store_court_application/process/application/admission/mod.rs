@@ -50,7 +50,7 @@ fn assert_known_native_readmission_block(
     match cause {
         Cause::Relational(Native::CompleteNativeRequired) => {}
         Cause::Relational(Native::Native(RelationalRecoveryStop::Durability(cause))) => {
-            assert_eq!(cause.class, RecoveryFailureClass::CorruptCanonicalArtifact);
+            assert_eq!(cause.class, RecoveryFailureClass::CorruptCheckpoint);
             // The current Native adapter renders this particular artifact
             // refusal inside its typed corruption class. P-A owns that path.
             assert!(

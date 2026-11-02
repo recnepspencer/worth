@@ -2,7 +2,7 @@
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::DurableCompositeCommitIdentity;
 use worth_runtime_world::facade::*;
-use worth_store_application::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseOutcome};
+use worth_store_application::ApplicationHomeCloseOutcome;
 
 fn open(
     location: &std::path::Path,
@@ -23,14 +23,18 @@ fn close(
 ) {
     match home.close(execution) {
         Ok(ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
-            ..
+            checkpoint: Ok(_), ..
         }) => {}
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("actual Native close refused: {reason:?}")
         }
         Err(refused) => panic!("actual World close refused: {:?}", refused.reason()),
-        _ => panic!("World checkpoint coverage remains explicitly unavailable"),
+        Ok(ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        }) => {
+            panic!("the settled World Home must checkpoint at close: {cause:?}")
+        }
     }
 }
 
