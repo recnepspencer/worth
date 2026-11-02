@@ -12,10 +12,11 @@ mod canonical;
 pub use canonical::WorthQueryApplicationInspectionCanonicalRefusal;
 mod owner;
 pub use owner::{
-    IndexedSelectionReobserveDenial, OutputFieldCaptureFailure, OwnEffectOnReads,
-    RebaseVerificationReason, StoreDenial, WorthQueryApplicationDisclosureContractDenial,
-    WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationQueryGovernanceDenialKind,
-    WorthQueryManagedGraphWorkSessionStartDenial,
+    FactlessCurrentness, IndexedSelectionReobserveDenial, OutputFieldCaptureFailure,
+    OwnEffectOnReads, RebaseVerificationReason, StoreDenial,
+    WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationInspectionOwnerRefusal,
+    WorthQueryApplicationQueryGovernanceDenialKind, WorthQueryApplicationQueryInstallationDenial,
+    WorthQueryApplicationQueryInstallationDenialKind, WorthQueryManagedGraphWorkSessionStartDenial,
 };
 #[cfg(test)]
 mod output_tests;

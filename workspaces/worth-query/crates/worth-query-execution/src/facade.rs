@@ -24,7 +24,7 @@ pub mod causal_inspection {
 /// Fresh application inspection; only its supported result and request vocabulary.
 pub mod application_inspection {
     pub use crate::domain_computation::primary_graph::causal_inspection::{
-        CausalInspectionReason, CausalObservationMissingReferencePosture,
+        CausalInspectionReason, CausalObservationMissingReferencePosture, FactlessCurrentness,
         IndexedSelectionReobserveDenial, OutputFieldCaptureFailure, OwnEffectOnReads,
         RebaseVerificationReason, StoreDenial, WorthQueryApplicationDisclosureContractDenial,
         WorthQueryApplicationEvidenceFamily, WorthQueryApplicationInspectionCanonicalRefusal,
@@ -33,12 +33,13 @@ pub mod application_inspection {
         WorthQueryApplicationInspectionStopKind, WorthQueryApplicationMaterializationPolicy,
         WorthQueryApplicationMaterializationRequest, WorthQueryApplicationProducerConnection,
         WorthQueryApplicationProducerEvaluation, WorthQueryApplicationQueryGovernanceDenialKind,
-        WorthQueryApplicationQueryObservation, WorthQueryApplicationRichMaterialization,
-        WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,
-        WorthQueryComparedApplicationInspection, WorthQueryConditionalHistoryAvailability,
-        WorthQueryConditionalHistoryDecisionClass, WorthQueryConditionalHistoryOutcome,
-        WorthQueryConnectedApplicationInspection, WorthQueryConnectedInspectionRequest,
-        WorthQueryConnectedReferenceOnlyInspectionRequest,
+        WorthQueryApplicationQueryInstallationDenial,
+        WorthQueryApplicationQueryInstallationDenialKind, WorthQueryApplicationQueryObservation,
+        WorthQueryApplicationRichMaterialization, WorthQueryChangedInspectionRequest,
+        WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryComparedApplicationInspection,
+        WorthQueryConditionalHistoryAvailability, WorthQueryConditionalHistoryDecisionClass,
+        WorthQueryConditionalHistoryOutcome, WorthQueryConnectedApplicationInspection,
+        WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest,
         WorthQueryEvaluatedApplicationInspection, WorthQueryEvaluatedInspectionRequest,
         WorthQueryEvaluatedReferenceOnlyInspectionRequest,
         WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionRetainedEvidence,

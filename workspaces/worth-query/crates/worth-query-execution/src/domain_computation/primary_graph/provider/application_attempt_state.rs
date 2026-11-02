@@ -24,12 +24,13 @@ pub(in crate::domain_computation) use registered_reads::RegisteredPrimaryRead;
 mod staged;
 use commit_completion::WorthQueryPreparedProviderApplicationAttempt;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::commit_prepared_application;
+pub(in crate::domain_computation::primary_graph) use commit_preparation::RebaseVerificationFailure;
 pub(crate) use commit_preparation::WorthQueryRetainedPreImageSeal;
+pub use commit_preparation::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use commit_preparation::{
-    FactlessCurrentness, WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
+    WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
     WorthQueryPrimaryGraphCommittedApplication,
 };
-pub use commit_preparation::{OwnEffectOnReads, RebaseVerificationReason};
 #[cfg(test)]
 use phase::WorthQueryApplicationAttemptPhase;
 use phase::{WorthQueryApplicationAttemptState, WorthQueryPrimaryGraphOverlay};

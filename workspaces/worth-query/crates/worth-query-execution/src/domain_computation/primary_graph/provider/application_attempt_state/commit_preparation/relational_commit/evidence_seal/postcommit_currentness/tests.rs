@@ -155,7 +155,7 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
     assert!(matches!(
         rebased,
         RebasedSourceFacts::VerificationRequired {
-            reason: RebaseVerificationReason::NativeFactRevisionUnavailable(0),
+            reason: RebaseVerificationFailure::NativeFactRevisionUnavailable(0),
             ..
         }
     ));

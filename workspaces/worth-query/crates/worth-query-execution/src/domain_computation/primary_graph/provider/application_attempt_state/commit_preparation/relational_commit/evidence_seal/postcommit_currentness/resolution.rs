@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQuerySou
 
 use super::adjacency;
 use super::retirement;
-use super::RebaseVerificationReason;
+use super::RebaseVerificationFailure;
 use super::WorthQueryApplicationObservedFact as Fact;
 
 /// A fact a source query read. It stays at the revision it was read at, so
@@ -68,8 +68,8 @@ impl PreparedFactRebase {
         prepared_endpoints: Option<
             crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
         >,
-    ) -> Result<Result<Self, RebaseVerificationReason>, CompanionPreflightStop> {
-        let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
+    ) -> Result<Result<Self, RebaseVerificationFailure>, CompanionPreflightStop> {
+        let unavailable = RebaseVerificationFailure::NativeRevisionUnavailable;
         if let Some(retirement) =
             retirement::structural::prepare(runtime, execution, snapshot, fact, retired)?
         {
@@ -93,7 +93,7 @@ impl PreparedFactRebase {
             match crate::domain_computation::primary_graph::application_attempt::observe_aspect_absence(
                 runtime, execution, snapshot, *entity_id, *kind, locator,
             ) {
-                Err(cause) => return Ok(Err(RebaseVerificationReason::Execution(cause))),
+                Err(cause) => return Ok(Err(RebaseVerificationFailure::Execution(cause))),
                 Ok(Some(true)) => {},
                 Ok(Some(false)) => return Ok(Ok(Self::KeepSuperseded)),
                 Ok(None) => return Ok(Err(unavailable.clone())),
@@ -105,15 +105,15 @@ impl PreparedFactRebase {
         {
             return Ok(
                 match fact.source_currentness_in(runtime, execution, snapshot)? {
-                    Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => Err(RebaseVerificationReason::ManagedIndex(cause)),
+                    Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => Err(RebaseVerificationFailure::ManagedIndex(cause)),
                     Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => match stop {
-                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause) => Err(RebaseVerificationReason::ManagedIndex(cause)),
-                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Execution(cause) => Err(RebaseVerificationReason::Execution(cause)),
+                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause) => Err(RebaseVerificationFailure::ManagedIndex(cause)),
+                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Execution(cause) => Err(RebaseVerificationFailure::Execution(cause)),
                         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Interrupted(event) => return Err(CompanionPreflightStop::Interrupted(event)),
                         _ => Err(unavailable.clone()),
                     },
                     Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
-                        Err(RebaseVerificationReason::Execution(cause))
+                        Err(RebaseVerificationFailure::Execution(cause))
                     }
                     Ok(movement) => Ok(match movement.movement() {
                         Movement::Unmoved => Self::Keep,
@@ -147,8 +147,8 @@ impl PreparedFactRebase {
         prepared_endpoints: Option<
             crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
         >,
-    ) -> Result<Self, RebaseVerificationReason> {
-        let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
+    ) -> Result<Self, RebaseVerificationFailure> {
+        let unavailable = RebaseVerificationFailure::NativeRevisionUnavailable;
         match fact {
             Fact::OptionalAspectAbsent {
                 entity_id, locator, ..
@@ -159,7 +159,7 @@ impl PreparedFactRebase {
                 view.read_entity_aspect_version(execution, *entity_id, locator.aspect().aspect_key())
                     .map_err(|denial| match denial {
                         worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable.clone(),
-                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationReason::Execution(cause),
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationFailure::Execution(cause),
                     })?
                     .map(Self::Aspect)
                     .ok_or_else(|| unavailable.clone())
@@ -172,7 +172,7 @@ impl PreparedFactRebase {
             } => {
                 let present = crate::domain_computation::primary_graph::application_attempt::observe_aspect_presence(
                     runtime, execution, snapshot, *entity_id, *kind, aspect,
-                ).map_err(RebaseVerificationReason::Execution)?.ok_or_else(|| unavailable.clone())?;
+                ).map_err(RebaseVerificationFailure::Execution)?.ok_or_else(|| unavailable.clone())?;
                 Ok(Self::Replace(Fact::AspectPresence {
                     entity_id: *entity_id,
                     kind: *kind,
@@ -194,7 +194,7 @@ impl PreparedFactRebase {
                 let revision = match runtime.read_truth().project_snapshot(snapshot) {
                     Some(view) => view
                         .entity_field_revision(execution, *entity_id, &locator)
-                        .map_err(RebaseVerificationReason::Execution)?,
+                        .map_err(RebaseVerificationFailure::Execution)?,
                     None => None,
                 };
                 match revision {
@@ -210,7 +210,7 @@ impl PreparedFactRebase {
                     .map(|view| view.read_entity_aspect_version(execution, *entity_id, aspect))
                     .transpose().map_err(|denial| match denial {
                         worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable.clone(),
-                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationReason::Execution(cause),
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationFailure::Execution(cause),
                     })?.flatten();
                 match revision {
                     Some(revision) => Ok(Self::Aspect(revision)),
@@ -240,7 +240,7 @@ impl PreparedFactRebase {
                     *comparison_work_limit,
                 ) {
                     Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => {
-                        Err(RebaseVerificationReason::Execution(cause))
+                        Err(RebaseVerificationFailure::Execution(cause))
                     }
                     Ok(comparison) => Ok(Self::Adjacency(comparison.revision())),
                     // The request paid the lookup above; a refusal here is
@@ -266,7 +266,7 @@ impl PreparedFactRebase {
                     fact,
                     prepared_endpoints,
                 )
-                .map_err(RebaseVerificationReason::Execution)?
+                .map_err(RebaseVerificationFailure::Execution)?
                 {
                     Some(rebased) => Ok(Self::Replace(rebased)),
                     None if producer_output => Err(unavailable.clone()),
@@ -289,16 +289,16 @@ impl PreparedFactRebase {
                 );
                 match observed {
                     Ok(observed) => Ok(Self::Replace(observed)),
-                    Err(IndexedSelectionReobserveDenial::Lookup(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause)))=>Err(RebaseVerificationReason::Execution(cause)),
+                    Err(IndexedSelectionReobserveDenial::Lookup(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause)))=>Err(RebaseVerificationFailure::Execution(cause)),
                     Err(denial) if producer_output => {
-                        Err(RebaseVerificationReason::IndexedSelectionDenied(denial))
+                        Err(RebaseVerificationFailure::IndexedSelectionDenied(denial))
                     }
                     Err(_) => Ok(Self::Keep),
                 }
             }
             Fact::RetiredOutputEntity { .. } => Ok(Self::Keep),
             read if reads_source(read) => Ok(Self::Keep),
-            _ if producer_output => Err(RebaseVerificationReason::UnsupportedDecisionFact),
+            _ if producer_output => Err(RebaseVerificationFailure::UnsupportedDecisionFact),
             _ => Ok(Self::Keep),
         }
     }

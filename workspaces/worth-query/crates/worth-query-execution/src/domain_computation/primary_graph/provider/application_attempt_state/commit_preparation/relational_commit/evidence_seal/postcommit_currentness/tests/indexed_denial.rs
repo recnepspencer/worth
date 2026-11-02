@@ -154,7 +154,7 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
             matches!(
                 &outcome,
                 RebasedSourceFacts::VerificationRequired {
-                    reason: RebaseVerificationReason::IndexedSelectionFactDenied(
+                    reason: RebaseVerificationFailure::IndexedSelectionFactDenied(
                         actual_ordinal,
                         IndexedSelectionReobserveDenial::Lookup(
                             BoundedEntityFieldLookupDenialKind::IndexNotInstalled

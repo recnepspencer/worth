@@ -56,9 +56,9 @@ pub(super) fn rebase(
                     actions.push(action);
                 }
             }
-            Err(RebaseVerificationReason::Execution(cause)) => {
+            Err(RebaseVerificationFailure::Execution(cause)) => {
                 return RebasedSourceFacts::VerificationRequired {
-                    reason: RebaseVerificationReason::Execution(cause),
+                    reason: RebaseVerificationFailure::Execution(cause),
                     own_effect: own_effect.with_unanswered(
                         unasked,
                         producer_output,
@@ -68,11 +68,11 @@ pub(super) fn rebase(
             }
             Err(reason) => {
                 let reason = match reason {
-                    RebaseVerificationReason::NativeRevisionUnavailable => {
-                        RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal)
+                    RebaseVerificationFailure::NativeRevisionUnavailable => {
+                        RebaseVerificationFailure::NativeFactRevisionUnavailable(ordinal)
                     }
-                    RebaseVerificationReason::IndexedSelectionDenied(denial) => {
-                        RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial)
+                    RebaseVerificationFailure::IndexedSelectionDenied(denial) => {
+                        RebaseVerificationFailure::IndexedSelectionFactDenied(ordinal, denial)
                     }
                     reason => reason,
                 };
@@ -117,14 +117,14 @@ pub(super) fn rebase(
 /// superseded and refreshes, and its recompute pays for its own rebase. Only
 /// a comparison that cannot answer leaves the effect undecidable.
 fn stopped(
-    failure: Option<RebaseVerificationReason>,
+    failure: Option<RebaseVerificationFailure>,
     stop: CompanionPreflightStop,
     own_effect: OwnEffectOnReads,
     unasked: &[WorthQueryApplicationObservedFact],
     producer_output: bool,
 ) -> RebasedSourceFacts {
     RebasedSourceFacts::VerificationRequired {
-        reason: failure.unwrap_or(RebaseVerificationReason::AdmissionDenied(stop)),
+        reason: failure.unwrap_or(RebaseVerificationFailure::AdmissionDenied(stop)),
         own_effect: own_effect.with_unanswered(unasked, producer_output, OwnEffect::Moved),
     }
 }
@@ -139,12 +139,12 @@ pub(super) fn storage_stopped(
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
     let reason = match cause.classify() {
         Class::Request(Request::Stopped(Stop::Cancelled)) => {
-            RebaseVerificationReason::Execution(Native::Cancelled)
+            RebaseVerificationFailure::Execution(Native::Cancelled)
         }
         Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
-            RebaseVerificationReason::Execution(Native::DeadlineElapsed)
+            RebaseVerificationFailure::Execution(Native::DeadlineElapsed)
         }
-        class => RebaseVerificationReason::NativePayloadStorage {
+        class => RebaseVerificationFailure::NativePayloadStorage {
             class,
             requested: cause.requested_payload_bytes(),
         },

@@ -24,7 +24,11 @@ fn inspection_refusal_types_are_nameable_and_comparable_through_host() {
     diagnostic::<StoreDenial>();
     diagnostic::<IndexedSelectionReobserveDenial>();
     diagnostic::<OwnEffectOnReads>();
+    diagnostic::<FactlessCurrentness>();
     diagnostic::<RebaseVerificationReason>();
     diagnostic::<WorthQueryApplicationDisclosureContractDenial>();
     diagnostic::<WorthQueryManagedGraphWorkSessionStartDenial>();
 }
+
+#[path = "worth_query_court_decl_host/inspection_refusal.rs"]
+mod inspection_refusal;

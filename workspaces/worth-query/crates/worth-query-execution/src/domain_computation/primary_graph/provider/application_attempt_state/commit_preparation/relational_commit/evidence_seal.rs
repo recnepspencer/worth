@@ -1,10 +1,10 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
 mod postcommit_currentness;
+pub use postcommit_currentness::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
-    FactlessCurrentness, FailedRebase,
+    FailedRebase, RebaseVerificationFailure,
 };
-pub use postcommit_currentness::{OwnEffectOnReads, RebaseVerificationReason};
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
 use crate::domain_computation::primary_graph::provider::{
@@ -101,7 +101,7 @@ pub(super) fn seal(
     let performed_output_fields = if retain_output_field_evidence {
         use crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure as Failure;
         Some(match observed_source_facts.retained() {
-            Err(cause) => Err(Failure::Rebase { reason: cause.reason, own_effect: cause.own_effect }),
+            Err(cause) => Err(Failure::Rebase { reason: cause.reason.into_diagnostic(), own_effect: cause.own_effect }),
             Ok(facts) => crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::copy_performed_field_reads(
                 &facts,
                 crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
@@ -246,7 +246,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         match self.observed_source_facts.retained() {
             Err(FailedRebase {
-                reason: RebaseVerificationReason::Execution(cause),
+                reason: RebaseVerificationFailure::Execution(cause),
                 ..
             }) => Some(cause),
             _ => None,

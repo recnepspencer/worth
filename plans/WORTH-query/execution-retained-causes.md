@@ -722,3 +722,104 @@ Exact s2 commands and results:
 | `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 1 Rust files; 0 cap violations |
 | `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
 | `git diff --check` | 0 | 0 whitespace errors |
+
+
+### 3. Actionable public diagnostics
+
+Finding 2 landed in 614045a007ec32478792ebbd6749b0e3582ad280. Both required sync
+branches were fetched and merged before this correction, both already current.
+
+OwnEffectOnReads remains public because its information changes the diagnosis:
+its existing real at_own_publication reader is now public, with the already
+existing typed FactlessCurrentness answer nameable through Host. Actual rebase
+courts read the genuine unmoved/moved effects and assert Current/Superseded;
+the undecidable family retains its existing coverage. This is a read-only
+conditional diagnostic, with existing runtime consumers and no new authority.
+
+The public RebaseVerificationReason no longer exposes two unusable ordinals.
+Its private RebaseVerificationFailure retains both exact positions, and the
+existing FullVerificationReason path consumes them against genuine retained facts
+in currentness.rs. Only duplicate public positional slots are deleted. Native
+fact versus general revision and indexed fact versus general indexed denial stay
+distinct public cases; exact indexed denial values also survive. No protected
+predicate value, raw fact payload, substitute digest or opaque token is published.
+
+| Field | Outcome | Reason or consumer | Court |
+|---|---|---|---|
+| OwnEffectOnReads.0 | a | Public existing at_own_publication returns typed FactlessCurrentness, also used by runtime currentness | Genuine failed-rebase effect court and undecidable family |
+| Public NativeFactRevisionUnavailable ordinal | b | Private failure/full-verification carrier already resolves the position against retained fact identity; public slot is not an actionable identity | Private native ordinal court retained; public cause-stage court |
+| Public IndexedSelectionFactDenied ordinal | b | Same real private fact-reader ownership; preserve public fact-stage and exact indexed refusal | Existing nonzero indexed ordinal court; public indexed cause-stage court |
+
+inspection_capacity_identity stays public: Execution calls it across the Admission
+crate boundary to bind a report to its live session before consuming the plan.
+The user's conditional narrowing rule therefore does not apply. Its integration
+purpose is documented; no wrapper or unused alternative is introduced.
+
+The new Host court installs the existing cell-history program, executes a real
+bound query, then requests inspection with a genuinely uninstalled binding. It
+reads owner_refusal through Host and checks the literal BindingQueryNotInstalled
+cause and exact declared binding subject. It constructs no public refusal enum.
+The installation diagnostic and kind become nameable through the same facade.
+docs/capability-index.md documents the retained public vocabulary and reader.
+
+The focused library positive run passed 20/0/0/0/2240. The combined public
+reader/stage mutant compiled and failed 16/4/0/0/2240: native fact versus general
+revision, indexed fact versus general denial, Superseded, and Undecidable.
+These are literal expected public outcomes; the genuine effect courts derive
+their source histories independently of the public reader under test.
+
+The genuine Host positive run passed 6/0/0/0/323. Removing only Installation's
+owner projection compiled and failed 5/1/0/0/323 at exactly "Host must preserve
+the original installation cause". The other five inspection courts passed.
+This is behavioral facade evidence, beyond the retained name-compilation court.
+Saved source bytes are restored before clean verification; final restored runs,
+inspection courts and footer results follow below. This correction leaves the
+two explicitly deferred pub-mono handover causes unchanged.
+
+
+Exact s3 commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission -p worth-query-execution -p worth-query-court-decl-host` | 0 | Formatting applied |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib postcommit_currentness` | 0 | 20/0/0/0/2240 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/323 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib postcommit_currentness` | 101 | 16/4/0/0/2240 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 101 | 5/1/0/0/323 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib postcommit_currentness` | 0 | 20/0/0/0/2240 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/323 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query-decl-host --test worth_query_court_query_decl_host inspection` | 0 | 47/0/0/0/295 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query --test worth_query_court_query inspection` | 0 | 3/0/0/0/61 (passed/failed/ignored/measured/filtered) |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission -p worth-query-execution -p worth-query-court-decl-host --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --all-targets --message-format=json` | 101 | 1 error diagnostics from worth-query-admission |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --all-targets --message-format=json` | 101 | 64 error diagnostics from worth-query-court-decl-host; 1 warning diagnostics from worth-query-court-decl-host; 6 warning diagnostics from worth-query-execution; 1 warning diagnostics from worth-query-testkit-document-retention; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 23 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |
+
+The fresh restored library and Host runs reproduce their positive counts.
+Both inspection binaries pass on this restored source. All new production and
+test files are free of Clippy diagnostics. Execution's exact 13/7 warning
+ownership inventory above is unchanged.
+
+Admission and Decl/Host all-target Clippy are **failed checks**, not green gates.
+Admission emits exactly `error: use of a disallowed method std::thread::spawn`
+at untouched execution_resource_admission/capacity_tests.rs:81. Decl/Host emits
+64 errors across 25 untouched physical files: 58 disallowed-method errors and
+one each of cloned_ref_to_slice_refs, err_expect, clone_on_copy,
+needless_range_loop, manual_is_multiple_of and drop_non_drop. Its warning counts
+are 7 Relational, 6 reserved Execution, 1 document-retention testkit and 1
+untouched court import. The reviewer independently compared primary spans with
+the complete tracked/untracked dirty set: zero matches. These are pre-existing
+repository debt under AGENTS.md; no exception or suppression is added.
+
+No AspectShape form or authority door is added. The public change is actionable
+read-only diagnostics. The same reviewer independently checked source, literal
+oracles, all five semantic mutation failures, restored bytes, and test results;
+final footer/report gate precedes this separate commit.
+
+The same reviewer issued the final slice-3 PASS under qa-loop, qa-tests and
+code-quality-qa after checking all source, evidence, debt and report entries.

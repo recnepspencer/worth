@@ -7,10 +7,12 @@ pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
 };
 mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::FactlessCurrentness;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationFailure;
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
-pub use application_attempt_state::{OwnEffectOnReads, RebaseVerificationReason};
+pub use application_attempt_state::{
+    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
+};
 mod application_attempt_work;
 mod application_decision_fact;
 mod application_touch_admission;

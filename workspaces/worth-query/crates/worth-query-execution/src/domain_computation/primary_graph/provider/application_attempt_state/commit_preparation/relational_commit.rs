@@ -6,10 +6,11 @@ pub(in crate::domain_computation::primary_graph::provider) use commit_execution:
 
 pub(in crate::domain_computation::primary_graph) use commit_execution::WorthQueryPrimaryGraphCommittedApplication;
 
+pub(in crate::domain_computation::primary_graph) use evidence_seal::RebaseVerificationFailure;
+pub use evidence_seal::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{
-    FactlessCurrentness, WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommitEvidence,
+    WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommitEvidence,
 };
-pub use evidence_seal::{OwnEffectOnReads, RebaseVerificationReason};
 
 use super::super::super::WorthQueryPrimaryGraphProvider;
 use super::WorthQueryPreparedApplicationCommit;

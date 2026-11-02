@@ -10,10 +10,13 @@ pub use crate::domain_computation::primary_graph::{
     application_attempt::{
         IndexedSelectionReobserveDenial, OutputFieldCaptureFailure, StoreDenial,
     },
-    provider::{OwnEffectOnReads, RebaseVerificationReason},
+    provider::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason},
 };
 pub use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSessionStartDenial;
 use worth_execution::{MapKernelFailure, ScopeStop};
+pub use worth_query_installation::facade::{
+    WorthQueryApplicationQueryInstallationDenial, WorthQueryApplicationQueryInstallationDenialKind,
+};
 
 /// The retained owner cause; no protected observation payload is projected.
 #[derive(Clone, Copy, Debug)]

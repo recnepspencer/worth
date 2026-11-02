@@ -98,6 +98,8 @@ impl WorthQueryAdmittedGraphWorkPlan {
     }
 
     /// Readonly provenance of the exact capacity reservation held by this plan.
+    /// Execution consumes this across the crate boundary when binding a report
+    /// to its live inspection session, before consuming the admitted plan.
     #[doc(hidden)]
     pub fn inspection_capacity_identity(&self) -> Option<crate::domain_computation::execution_resource_admission::WorthQueryGraphCapacityReservationIdentity>{
         match &self.mechanics {

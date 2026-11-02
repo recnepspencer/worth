@@ -9,6 +9,8 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::fact_verification_observation;
 
+mod diagnostic;
+pub use diagnostic::RebaseVerificationReason;
 mod adjacency;
 mod resolution;
 mod retirement;
@@ -37,7 +39,7 @@ pub(super) enum RebasedSourceFacts {
     /// and no verifier compares it. One thing is carried out instead: what
     /// the committed effect did to the facts its source query read.
     VerificationRequired {
-        reason: RebaseVerificationReason,
+        reason: RebaseVerificationFailure,
         own_effect: OwnEffectOnReads,
     },
 }
@@ -65,7 +67,7 @@ enum OwnEffect {
 
 /// What a commit that kept no fact answers at an observation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FactlessCurrentness {
+pub enum FactlessCurrentness {
     /// Its own publication is selected and its effect moved none of its reads.
     Current,
     /// A later publication is selected, its effect moved one of its reads, or
@@ -82,12 +84,12 @@ pub(in crate::domain_computation::primary_graph) enum FactlessCurrentness {
 /// reads. No caller holds the one without the other.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct FailedRebase {
-    pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationReason,
+    pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationFailure,
     pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum RebaseVerificationReason {
+pub(in crate::domain_computation::primary_graph) enum RebaseVerificationFailure {
     ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeRevisionUnavailable,
@@ -141,10 +143,7 @@ impl OwnEffectOnReads {
 
     /// The commit's answer where `selected` says whether its own publication
     /// is the one selected.
-    pub(in crate::domain_computation::primary_graph) const fn at_own_publication(
-        self,
-        selected: bool,
-    ) -> FactlessCurrentness {
+    pub const fn at_own_publication(self, selected: bool) -> FactlessCurrentness {
         match (selected, self.0) {
             (true, OwnEffect::Unmoved) => FactlessCurrentness::Current,
             (true, OwnEffect::Undecidable) => FactlessCurrentness::Undecidable,

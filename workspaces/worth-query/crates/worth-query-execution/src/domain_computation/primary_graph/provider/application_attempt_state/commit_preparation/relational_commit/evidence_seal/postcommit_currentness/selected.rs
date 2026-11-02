@@ -148,23 +148,23 @@ impl SelectedRebase {
             match prepared {
                 Err(stop) => {
                     return RebasedSourceFacts::VerificationRequired {
-                        reason: failure.unwrap_or(RebaseVerificationReason::AdmissionDenied(stop)),
+                        reason: failure.unwrap_or(RebaseVerificationFailure::AdmissionDenied(stop)),
                         own_effect: self.unanswered(ordinal, producer, own, OwnEffect::Moved),
                     }
                 }
-                Ok(Err(RebaseVerificationReason::Execution(cause))) => {
+                Ok(Err(RebaseVerificationFailure::Execution(cause))) => {
                     return RebasedSourceFacts::VerificationRequired {
-                        reason: RebaseVerificationReason::Execution(cause),
+                        reason: RebaseVerificationFailure::Execution(cause),
                         own_effect: self.unanswered(ordinal, producer, own, OwnEffect::Undecidable),
                     }
                 }
                 Ok(Err(reason)) => {
                     let reason = match reason {
-                        RebaseVerificationReason::NativeRevisionUnavailable => {
-                            RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal)
+                        RebaseVerificationFailure::NativeRevisionUnavailable => {
+                            RebaseVerificationFailure::NativeFactRevisionUnavailable(ordinal)
                         }
-                        RebaseVerificationReason::IndexedSelectionDenied(denial) => {
-                            RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial)
+                        RebaseVerificationFailure::IndexedSelectionDenied(denial) => {
+                            RebaseVerificationFailure::IndexedSelectionFactDenied(ordinal, denial)
                         }
                         reason => reason,
                     };
@@ -239,7 +239,7 @@ impl SelectedRebase {
                         if let Err(interrupted) = control.check_live() {
                             return storage_stop(interrupted, own);
                         }
-                        let reason = RebaseVerificationReason::NativeRevisionUnavailable;
+                        let reason = RebaseVerificationFailure::NativeRevisionUnavailable;
                         return RebasedSourceFacts::VerificationRequired {
                             reason,
                             own_effect: own,
@@ -282,13 +282,13 @@ impl SelectedRebase {
 fn storage_stop(cause: StoreDenial, own_effect: OwnEffectOnReads) -> RebasedSourceFacts {
     use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
     let reason = match cause {
-        StoreDenial::ExecutionRequest(cause) => RebaseVerificationReason::Execution(cause.into()),
+        StoreDenial::ExecutionRequest(cause) => RebaseVerificationFailure::Execution(cause.into()),
         StoreDenial::Allocation(cause) => return rebase_walk::storage_stopped(cause, own_effect),
-        StoreDenial::RequestInterruption(stop) => RebaseVerificationReason::Execution(match stop {
+        StoreDenial::RequestInterruption(stop) => RebaseVerificationFailure::Execution(match stop {
             Stop::Cancelled => worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled,
             Stop::DeadlineExceeded => worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed,
         }),
-        _ => RebaseVerificationReason::NativeRevisionUnavailable,
+        _ => RebaseVerificationFailure::NativeRevisionUnavailable,
     };
     RebasedSourceFacts::VerificationRequired { reason, own_effect }
 }
