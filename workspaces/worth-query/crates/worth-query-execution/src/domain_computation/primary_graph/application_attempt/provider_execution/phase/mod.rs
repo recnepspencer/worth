@@ -22,5 +22,4 @@ pub(super) use prepared::running::progression::progressed::finish_application_co
 pub(super) use prepared::running::{
     start_managed_application_commit,
 };
-#[cfg(test)]
 pub(super) use prepared::running::WorthQueryRunningApplicationCommit;

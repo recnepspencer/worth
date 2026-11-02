@@ -1900,3 +1900,12 @@ The runtime-private state does not introduce another public authority type.
 and `unfunded_validated_proposal_backing_refuses_and_releases_original_custody`
 cover retained accounting and refusal, alongside the actual sibling, stale and
 canonical proposal controls in the same court.
+
+The Native custody change reduces durable progression from 183,880 to 82,920
+bytes, reaching actual Native history preparation before the next overflow
+(`target/lane-evidence/integration-native-custody-stack.log`). That trace shows
+the outer Query entry retaining 229,448 bytes across provider I/O. Admission
+and managed-start temporaries now return through `entry/managed_start.rs`
+before progression enters. The original Running phase remains the sole input
+to the same progression and completion functions; no owner is cloned and no
+new allocation is introduced by this phase cut.
