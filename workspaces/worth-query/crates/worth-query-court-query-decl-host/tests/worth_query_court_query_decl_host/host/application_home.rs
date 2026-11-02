@@ -8,16 +8,10 @@ use std::{
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
-    application_contribution::{
-        with_bootstrap_advancement_from_request, WorthQueryAdvancementDenial,
-        WorthQueryManagedComputationResourceDenial,
-    },
-    application_entry::{
-        WorthQueryApplicationRequestExt, WorthQueryApplicationRequestQueryDenialKind,
-    },
+    application_contribution::with_bootstrap_advancement_from_request,
+    application_entry::WorthQueryApplicationRequestExt,
     application_installation::ApplicationBuildIdentity,
     primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind,
-    WorldCompositionRetained,
 };
 use worth_query_testkit_host::facade::host::{
     application_home as fixture, application_runtime_surface as identity, checkpoint_capture,
@@ -97,11 +91,19 @@ fn fresh_directory_home_journey() {
     let refused = home
         .close(&execution)
         .err()
-        .expect("the actual retained Query runtime keeps Store's composition alive");
+        .expect("the actual retained Query runtime refuses before World seal");
+    use worth_query_host::facade::primary_graph::{
+        WorthQueryHomeRetirementDenial as CloseDenial, WorthQueryHomeRetirementOwner as CloseOwner,
+        WorthQueryOperationHomeRetirementDenial as HandlerDenial,
+    };
     assert!(
-        matches!(refused.directory_denial(), Some(WorldCompositionRetained)),
-        "same retained-runtime close: {refused:?}"
+        matches!(
+            refused.query_denial(),
+            Some(CloseDenial::Busy(CloseOwner::ProgramRuntime))
+        ),
+        "the exact aliased owner refuses before seal: {refused:?}"
     );
+    assert!(refused.directory_denial().is_none());
     {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
@@ -112,25 +114,14 @@ fn fresh_directory_home_journey() {
             retained_runtime.runtime().installed_schema(),
             &scope,
         );
-        let denial = retained_runtime
+        let observed = retained_runtime
             .request(&principal, &scope)
             .query(fixture::balance_query::AccountRead(
                 "account-001".to_owned(),
             ))
             .execute()
-            .err()
-            .expect("ordinary weak World execution stays inert after sealing");
-        assert!(
-            matches!(
-                denial.kind(),
-                WorthQueryApplicationRequestQueryDenialKind::ExecutionRequest(
-                    WorthQueryAdvancementDenial::Resource(
-                        WorthQueryManagedComputationResourceDenial::NoActiveExecutionScope
-                    )
-                )
-            ),
-            "{denial:?}"
-        );
+            .expect("pre-seal refusal preserves the original serving Home");
+        assert_eq!(observed.rows(), &[8]);
     }
     let legacy_denial = retained_runtime
         .close_conditional_runtime()
@@ -141,10 +132,17 @@ fn fresh_directory_home_journey() {
         WorthQueryConditionalRuntimeInstallationDenialKind::ApplicationHomeOwnsLifecycle,
     );
     drop(retained_runtime);
-    let closed = refused
+    let refused = refused
         .try_close(&execution)
-        .unwrap_or_else(|refused| panic!("same owning recovery closes: {refused:?}"));
-    assert!(closed.is_closed());
+        .err()
+        .expect("the actual opaque supplier cannot claim completed retirement");
+    use worth_query_decl::facade::application_operation::ApplicationMutationBinding;
+    assert!(matches!(refused.query_denial(),
+        Some(CloseDenial::Handler { binding, cause: HandlerDenial::Unsupported })
+        if *binding == fixture::native_mutation::SetBalanceBinding::IDENTITY));
+    let home = refused.resume().unwrap();
+    assert!(home.is_directory());
+    drop(home);
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
 }
 

@@ -1924,3 +1924,19 @@ finite ceiling, overlooking the execution framework's temporary 392-byte charge.
 Its retention oracle now uses an unbounded accounting budget and still checks
 the exact retained byte count; the separate finite refusal control checks the
 actual requested size and typed policy-memory denial.
+
+
+Fresh-journey assertion migration: ancestor `aac750b1ca` introduced original
+Query `prepare_home_retirement` admission before World seal. Its actual
+`Arc::get_mut` admission returns `Busy(ProgramRuntime)` for a retained Query
+clone; after uniqueness, this fixture's opaque BalanceHandler returns its
+exact `Handler { binding: SetBalanceBinding::IDENTITY, cause: Unsupported }`.
+The old fresh-journey claims that this alias first seals World, makes weak reads
+inert, then completes full close were superseded by that explicit pre-seal
+contract. This change retires those stale assertions only, with this written
+justification naming the governing commit. No test is removed or ignored: the
+journey now asserts both exact refusals, continued original balance 8 before
+seal, its same lifecycle-owned conditional-runtime refusal, and the original
+resumed directory. Successful post-seal/full retirement belongs to the
+separately owned D11 qualification; this integration introduces no retirement,
+reopen or discard implementation.
