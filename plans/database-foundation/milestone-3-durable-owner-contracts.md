@@ -2048,6 +2048,11 @@ Exact commands and final counts belong in target/lane-evidence logs.
 | D12 process kill, normalized image plus nonempty tail | `killed_home_reopens_normalized_image_plus_nonempty_tail` |
 | D12 original ACK resume and killed unacknowledged selection | `interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection` |
 | Phase 3 bounded Host tail, actual body-read counts with headroom | `automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom` |
+| D12 journal-only process kill without checkpoint or initializer replay | `journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing` |
+| D17 source admission validates original bytes despite a resident body | `associated_effects_read_exact_source_and_report_actual_pending_and_settled_routes` |
+| D17 selected original frame binds its indexed subject and retains proven damage | `selected_original_export_binds_its_indexed_subject_and_preserves_proven_damage` |
+| D17 invoking request stop precedes retained damage | `strict_original_capture_keeps_work_stop_precedence_over_retained_damage` |
+| D12 deferred image recapture and actual rebuilt live-tail generations | `cold_complete_recapture_preserves_original_index_generations_and_live_tail` |
 
 These are implementation obligations, not a pass ledger. Real Host reopen,
 process-kill/tail, ACK and bounded-tail executions remain required above; their exact
@@ -2759,3 +2764,40 @@ request, allocation and retryable storage failures retain their prior topology.
 Both selected and strict journal original reads invoke the existing scalar
 index/frame subject checker before returning original bytes. Locator integrity
 alone never establishes indexed position, commit or canonical payload binding.
+
+
+Source-bound associated-effect and recorded-component admission validate original
+frames even if their logical body is resident. They consult the invoking request
+first, then the cell's retained proven damage, before capturing any new Journal
+read protection. Selected sources use their held directory cut. Recorded basis
+export uses this route only for Journal/Selected; descriptive Memory export
+keeps its existing contract. The exact export caller is a merge seam with
+P-D b84a8953d0, whose request-funded payload comparisons must compose with it.
+
+A derived EntityField generation is cache state, not an implicit canonical-tail
+effect. The cold index continuation court first recaptures and compares complete
+original generation DATA before any warming build. It then invokes the actual
+recovered index owner at the verified tail basis and checks another Complete
+contains both original and real live-tail generations. It never assumes recovery
+can manufacture a producer's unjournaled cache generation.
+
+The coordinator's additional handoffs are recorded in orchestration/m3/prompts/
+p3_reopen_grants.md (outside git). Storage's kind-commitment reuse requires an
+unchanged relation-slot axis as well as unchanged outgoing/incoming incidence:
+relation history can change kind claims even with two remote endpoints. The
+original CDC property and saved failing seed are retained. The proposed whole-
+arena replacement correction was superseded by that directly observed cause;
+no unsupported arena change is part of this slice. Query frontier setup derives
+its work grant from independent actual Native applications and installed reads;
+its explicit short caller ceilings and typed stop/prefix assertions remain. The
+301-publication history fixture keeps accounting and all other policy axes but
+sets no unrelated aggregate work ceiling.
+
+The original Host split still overflowed on the default stack. Actual captured
+AMD64 unwind evidence showed source selection and planning frames retained by
+Store recovery through terminal verification. The exact recovery dispatcher
+now returns the selected source and planned owner before progressing stage,
+publish and reopen. All original owners, effects and refusal returns remain;
+this structural change has no stack-size or profile override. Default-stack
+sufficiency remains a qualification obligation until the named direct controls
+complete successfully.
