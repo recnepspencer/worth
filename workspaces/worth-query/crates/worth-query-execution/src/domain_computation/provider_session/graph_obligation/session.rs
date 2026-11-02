@@ -365,5 +365,4 @@ pub enum WorthQueryManagedGraphReadDenial {
     ForeignGraph,
     ForeignReadProof,
     ForeignReadIntent,
-    TerminalReleaseMismatch,
 }

@@ -31,9 +31,9 @@ impl WorthQueryInspectionReadCompletion {
         basis: &WorthQueryApplicationBasisIdentity,
         capacity_identity: worth_query_admission::integration::WorthQueryGraphCapacityReservationIdentity,
     ) -> bool {
-        // Construction checks local basis custody. The sealed graph reservation
-        // terminal guarantees release scope/count; exact identities consume those
-        // proofs without repeating their shape checks here.
+        // Construction checks local basis custody. Admission owns the graph
+        // reservation issuer, which only releases GraphWork with count one.
+        // Match its exact identity rather than repeat the issuer invariant.
         self.session == session
             && self.managed_run == managed_run
             && self.plan == plan

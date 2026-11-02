@@ -1114,3 +1114,86 @@ The same reviewer issued final PASS under qa-loop, qa-tests and code-quality-qa
 after reconciling source, all mutation failures, restored tests, footer logs,
 capability vocabulary, report corrections and untouched debt. All five findings
 are independently cleared, with no remaining in-scope blocker.
+
+## Second certification corrections
+
+The user's review of 512c521a51..0722b70629 accepted the earlier work and named
+five further corrections. History stays intact, including the subject BOM that
+the user will strip at landing. The same independent reviewer continues under
+qa-loop, qa-tests and code-quality-qa. All Cargo commands use PYTHONUTF8=1 and
+the existing lane target directory, run in the background into logs, and finish
+before their logs are read. No workspace-wide Cargo command is run.
+
+### 1. Remove unreachable graph-release shape refusals
+
+Before this slice, both sync branches were fetched. origin/master advanced to
+e04dc5b176dde6fa52ff36e88b576b807e287cdb and merged cleanly as
+9e3880f9074cba837b3254f6214d4ebda4c27a89. Its ten changed Decl/Host pattern and
+effect-order files are upstream changes. The lifecycle branch was current.
+
+Boundary review follows all four actual graph-read terminals to Admission's
+private WorthQueryReservedGraphProviderCapacity::release. That issuer only
+constructs GraphWork/count-one receipts. The terminals consume that proof and
+retain actual session, plan, basis and purpose refusals. Rechecking the issuer's
+fixed release shape added no reachable denial. The plan is to remove those four
+checks, the shared read TerminalReleaseMismatch case and its fabricated local
+court input, while leaving each remaining identity consumer intact.
+
+The managed-index session's separate TerminalReleaseMismatch also classified a
+wrong-purpose plan OptionNone. That surviving condition is now ForeignReadIntent
+and projects to the existing managed-index refusal of that name. The watch
+lifecycle's distinct TerminalReleaseMismatch has real receiver/termination
+callers and remains untouched. The completion comment now names Admission as
+the release-shape issuer, instead of claiming a removed terminal shape check.
+
+No retained semantic fact is deleted. The eight remaining read causes, terminal
+wrappers and diagnostic causes retain their original literal projection courts.
+The existing genuine completion court remains the oracle: it exchanges an
+actual foreign reservation with the same provider label and must refuse it by
+exact reservation identity. Removing that comparison must still fail this court.
+No new court tries to fabricate a shape that Admission cannot issue.
+
+Readings I chose: remove the obsolete array case rather than delete the useful
+lifecycle court covering the other read causes. Preserve the watch's different
+reachable mismatch cause. Keep the previously accepted focused-per-slice,
+full-final test sequencing to avoid recompiling the same broad court worlds
+after every consecutive diagnostic change. Every prescribed footer gate runs
+before each commit. No AspectShape form or authority door is added.
+
+
+Exact round-2-slice-1 commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 10 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- cancelled_after_consuming_completion stop::owner managed_index` | 0 | 109/0/0/0/2215 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib cancelled_after_consuming_completion` | 101 | 0/1/0/0/2323 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- cancelled_after_consuming_completion stop::owner managed_index` | 0 | 109/0/0/0/2215 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/327 (passed/failed/ignored/measured/filtered) |
+
+
+Exact round-2-slice-1-footer commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 10 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |
+
+The reservation comparison removal compiles and produces exactly the intended
+failure at result.rs:108, "foreign release" (0/1/0/0/2323). Restoring it passes
+all 109 focused cases and six actual Host inspection cases. Removing the four
+shape checks adds no forged release-shape test: there is no such issued value.
+Clippy's 13 Execution-labelled and seven Relational warnings are unchanged,
+with zero dirty primary-span diagnostics. Their ownership inventory remains
+the six reserved pub-mono methods and the externally mounted fixture, plus
+the seven upstream Relational entries listed earlier. All footer exits are zero,
+and the dirty cap covers ten Rust files. No scope stop occurred.
+
+The same reviewer issued final PASS under all three QA skills after independently
+reconciling the source, mutation, restored tests, Host result, footer and report.

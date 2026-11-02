@@ -26,7 +26,6 @@ fn inspection_preserves_every_read_cause_and_its_original_owner() {
         Read::ForeignGraph,
         Read::ForeignReadProof,
         Read::ForeignReadIntent,
-        Read::TerminalReleaseMismatch,
     ] {
         let denied = denial(Admission::Read(expected));
         let Some(Refusal::Read(actual)) = denied.owner_refusal() else {

@@ -26,7 +26,7 @@ pub(in crate::domain_computation) enum WorthQueryManagedIndexSessionDenial {
     Parent(WorthQueryManagedGraphReadDenial),
     AuthorityMismatch,
     Product(ProductDenial),
-    TerminalReleaseMismatch,
+    ForeignReadIntent,
 }
 
 /// No Native read port: the borrowed Parent retains its own Product loan.
@@ -207,11 +207,7 @@ impl<'a, 'request, 'authority> WorthQueryManagedIndexReadSession<'a, 'request, '
         let (plan, release) = self
             .plan
             .complete_managed_index()
-            .ok_or(Denial::TerminalReleaseMismatch)?;
-        if release.scope() != worth_query_admission::integration::WorthQueryExecutionCapacityReservationScope::GraphWork
-            || release.released_reservation_count() != 1 {
-            return Err(Denial::TerminalReleaseMismatch);
-        }
+            .ok_or(Denial::ForeignReadIntent)?;
         Ok(WorthQueryManagedIndexSelectionProof {
             execution: self.execution,
             parent: self.parent,
