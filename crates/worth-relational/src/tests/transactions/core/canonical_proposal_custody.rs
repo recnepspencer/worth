@@ -146,68 +146,6 @@ fn runtime_fork_releases_only_its_copied_pending_entries_while_source_keeps_cust
     release_test_commit_snapshot(&detached, &detached_commit);
 }
 
-#[test]
-fn validated_proposal_backing_charges_original_request_until_native_consumption() {
-    let host = crate::test_execution_policy::serial_request();
-    let runtime = runtime_with_test_schema();
-    let original = propose(
-        &ExecutionRequest::serial(&host),
-        &runtime,
-        "main",
-        "charged",
-    );
-    let identity = original.proposal_identity().clone();
-    let state = original.into_state();
-    let bytes = std::mem::size_of_val(&state) as u64;
-    let budget = worth_execution::SerialMemoryBudget::new(None);
-    let request = worth_execution::SerialRequest::from_memory(
-        budget.clone(),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
-    let proposal =
-        ValidatedRelationalProposal::retain(&ExecutionRequest::serial(&request), state).unwrap();
-    assert_eq!(budget.charged_memory_bytes(), bytes);
-    assert_eq!(proposal.proposal_identity(), &identity);
-    assert_eq!(runtime.record_identity.pending_snapshot().len(), 1);
-    let state = proposal.into_state();
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    assert_eq!(runtime.record_identity.pending_snapshot().len(), 1);
-    drop(state);
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
-}
-
-#[test]
-fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
-    let host = crate::test_execution_policy::serial_request();
-    let runtime = runtime_with_test_schema();
-    let state = propose(
-        &ExecutionRequest::serial(&host),
-        &runtime,
-        "main",
-        "unfunded",
-    )
-    .into_state();
-    let bytes = std::mem::size_of_val(&state) as u64;
-    let budget = worth_execution::SerialMemoryBudget::new(Some(bytes - 1));
-    let request = worth_execution::SerialRequest::from_memory(
-        budget.clone(),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
-    let denied = ValidatedRelationalProposal::retain(&ExecutionRequest::serial(&request), state)
-        .unwrap_err();
-    let TransactionCommitError::Execution { denial, .. } = denied else {
-        panic!("unfunded original backing must return the typed execution denial");
-    };
-    assert!(matches!(denial.kind,
-        crate::transactions::data::CommitExecutionDenialKind::Cause(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted, ancestor: 0 }
-        ) if requested == bytes && admitted < bytes));
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
-}
-
 fn reference(key: &str) -> CreatedEntityRef {
     CreatedEntityRef {
         partition_id: PartitionId::main(),

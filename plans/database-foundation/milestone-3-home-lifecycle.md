@@ -1993,3 +1993,16 @@ selected qualification: the new unrelated-root/metadata-projection tests and
 new exact-four-command assertions described that abandoned algorithm, so they
 are removed with it. Existing tests and drift assertions remain intact. The
 manifest-backed prerequisite-declaration regression remains.
+
+
+Accounting evidence placement: BC9002 refused the new SerialRequest root in
+source canonical-proposal tests. The two named controls move to the existing
+relational certification court; no baseline or enforcement rule is changed.
+They now use actual public transaction validation and consuming Native
+admission rather than directly calling the private retain/into_state methods.
+A finite 4 KiB original budget refuses the actual larger state admission with
+its exact typed policy-memory cause; the unbounded control retains the real
+bill until the same cancelled request consumes the proposal. Both require
+zero remaining charge and an unchanged actual branch after refusal. The three
+existing source custody controls retain their private pending-slot/identity
+assertions. The two migrated test names are unchanged; module paths change.

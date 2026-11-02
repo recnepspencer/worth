@@ -11,3 +11,5 @@ pub(crate) mod managed_source;
 mod derived_relation_changes;
 
 mod compound_publication;
+
+mod validated_proposal_memory;
