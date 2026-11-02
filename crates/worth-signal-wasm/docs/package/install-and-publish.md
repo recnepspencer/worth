@@ -30,6 +30,21 @@ If you just want to start coding, you only need:
 
 The rest of this guide is for local package work and publishing from this repo.
 
+Release tooling uses Node 24.22.2 or later on the 24.x line and npm 12.2.1 or
+later on the 12.x line. The exact starting versions are recorded in
+`.node-version` and `package.json` next to the crate. Before building, run:
+
+```powershell
+node scripts/wasm/verify-worth-signals-release-toolchain.mjs
+```
+
+Node 24.22.2 includes the October 2026 Brotli decoder security backport
+(CVE-2026-111497), OpenSSL 3.5.9, and the other Node security updates. Its
+reported Brotli version remains 1.2.0; the release check uses the patched Node
+version and decoder boundary rather than treating that string as patch status.
+See the [Node security release](https://nodejs.org/en/blog/release/v24.22.1).
+Updating a standalone npm package named `brotli` does not patch Node's decoder.
+
 Package contract note:
 
 - the published package is ESM-first

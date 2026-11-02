@@ -174,6 +174,13 @@ stayed asleep.
 
 ## Aspects Are Not Fields, Selectors, or Regions
 
+Explicit `RecipeReadSpec` reads can additionally carry a
+`SignalScopeSubscription`: `scope: { path: ["items", "row-7"], coverage: "Exact" }`.
+The path contains one to eight opaque segments; `"Subtree"` includes descendants.
+Keyed-family `RecipeFamilyReadScopeSpec.matchMode` is `"WholePartition"` or
+`"PartitionAndDetail"`. These scope contracts describe where a read depends;
+aspect selection still describes which meaning it consumes.
+
 **Fields describe storage shape.** An aspect describes meaning. Several fields
 can belong to one aspect, and one conceptual aspect can survive a complete
 storage redesign.

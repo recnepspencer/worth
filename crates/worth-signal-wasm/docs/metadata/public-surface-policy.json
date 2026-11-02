@@ -29,7 +29,7 @@
       "canonicalDocs": ["core/README", "core/aspects"],
       "truthOwners": ["package/types/model.d.ts", "src/expression/model.rs", "src/recipe"],
       "evidence": ["package/product/signals.runtime.test.mjs"],
-      "baseline": { "declarationCount": 24, "directMemberCount": 72, "signatureDigest": "1f624103e5b89f76e672c03b6aa8f01b1634d726b5f78382db12c34207667ea8", "declarationFileCount": 1, "declarationFileDigest": "ff6a30bc33a1a605c53cd97f3c1ff321b7e5d72d47fdd417cf43090acec8bac9" }
+      "baseline": {"declarationCount":25,"directMemberCount":74,"signatureDigest":"4b0bd7d9ea24ed113efcb2a0042a6d5bcb2ffc75ae6d4e226935ef46995f5598","declarationFileCount":1,"declarationFileDigest":"6e9329e6d553fb0638a772b67f3913477c78d70cf902cd3ed3223077ae4597df"}
     },
     {
       "id": "core.callable",
@@ -65,15 +65,15 @@
       "id": "core.diagnostics",
       "title": "Diagnostics And Proof Artifacts",
       "entrypoints": ["root"],
-      "sourcePrefixes": ["package/types/diagnostics.d.ts"],
-      "filePrefixes": ["package/types/diagnostics.d.ts"],
+      "sourcePrefixes": ["package/types/diagnostics.d.ts", "package/types/diagnostics/"],
+      "filePrefixes": ["package/types/diagnostics.d.ts", "package/types/diagnostics/"],
       "status": "mixed",
       "guideStatus": "current",
       "referenceStatus": "incomplete",
       "canonicalDocs": ["core/diagnostics", "reference/support-status"],
       "truthOwners": ["src/boundary/diagnostics.rs", "src/runtime/core/diagnostics", "package-src/product/canonical_diagnostic_digest.ts"],
       "evidence": ["package/product/signals_runtime/entrypoint/sessions/worker_first_diagnostics.test.mjs"],
-      "baseline": { "declarationCount": 126, "directMemberCount": 772, "signatureDigest": "6db11d5ecdd709644b6fcfd69199d520c9ffd6d904e421974c51b467bc4fcbb4", "declarationFileCount": 1, "declarationFileDigest": "c4881e8c44d55a430432ab0037ad009d475599d269d96f13a832113fc47c644a" }
+      "baseline": {"declarationCount":127,"directMemberCount":781,"signatureDigest":"7875a1725ff2168ee141f410aec0096446a540703ded6ca8fa738379bfaf5d74","declarationFileCount":13,"declarationFileDigest":"925dc0ecff4624de8fc65e84ecd000b9a6ddb1b428198da01f065a7ed4cb19a9"}
     },
     {
       "id": "core.history",
