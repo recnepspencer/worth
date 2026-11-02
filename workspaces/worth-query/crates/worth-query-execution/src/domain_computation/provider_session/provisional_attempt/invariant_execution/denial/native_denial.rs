@@ -15,12 +15,14 @@ use worth_relational::facade::mvcc::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum NativeDenial {
     Staging(RelationalTransactionStagingDenial),
+    AuthoredRetirement(Box<worth_relational::facade::publication::PublicationError>),
     Allocation(ExecutionAllocationDenial),
     RelationLaw(Box<worth_relational::facade::transactions::InvariantViolationFields>),
 }
 impl NativeDenial {
     pub(super) fn allocation(&self) -> Option<&ExecutionAllocationDenial> {
         match self {
+            Self::AuthoredRetirement(_) => None,
             Self::Staging(denial) => denial.allocation_denial(),
             Self::Allocation(denial) => Some(denial),
             Self::RelationLaw(_) => None,

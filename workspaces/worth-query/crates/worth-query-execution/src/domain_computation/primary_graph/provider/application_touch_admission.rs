@@ -90,7 +90,7 @@ fn admit_in_scope(
     validate_overlap_basis(graph_reads, touch_contract, overlap)?;
     let installed = resolve_installed_touches(layout, touch_contract)?;
     let validated = candidate
-        .mutation_touches(execution)
+        .application_mutation_touches(execution)
         .map_err(TouchAdmissionFailure::Projection)?;
     let mut validated_application_touches = 0usize;
     let mut read_touch_overlaps = 0usize;
@@ -336,6 +336,8 @@ impl TouchAdmissionFailure {
     ) -> crate::domain_computation::WorthQueryInvariantExecutionFailure {
         use worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError as Error;
         match self {
+            Self::Projection(Error::AuthoredRestoration(error)) =>
+                crate::domain_computation::WorthQueryInvariantExecutionFailure::authored_retirement(error),
             Self::Projection(Error::Execution(denial)) =>
                 super::invariant_execution_failure::map_execution_failure(denial),
             Self::Projection(Error::Allocation(cause)) => {

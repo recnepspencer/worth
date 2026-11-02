@@ -172,3 +172,5 @@ where
         WorthQueryInMemoryApplicationDenial::Graph(super::bootstrap::request_denial(cause))
     })?
 }
+
+mod source_scope_ownership;

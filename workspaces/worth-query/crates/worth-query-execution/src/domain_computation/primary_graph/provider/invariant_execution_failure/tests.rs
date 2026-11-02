@@ -274,3 +274,41 @@ fn publication_transport_error(
         },
     ))
 }
+
+#[test]
+fn authored_retirement_transport_preserves_typed_refusal_and_record_subject() {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryApplicationCommitDenial as Denial,
+        WorthQueryApplicationCommitDenialStage as Stage,
+    };
+    use worth_relational::facade::{
+        publication::{AuthoredRetirementRefusal, PublicationError, PublicationStage},
+        transactions::TransactionCommitError,
+    };
+    // Wire readmission supplies the same owner error shape; no authority is constructed.
+    let mut original = PublicationError::new(PublicationStage::BundleAssembly, "opaque detail");
+    original.context = original.context.with_records(vec![
+        worth_relational::facade::transactions::RecordRef::Entity(
+            worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId(2),
+                5,
+                3,
+            ),
+        ),
+    ]);
+    let mut wire = serde_json::to_value(original).unwrap();
+    wire["authored_retirement_refusal"] = serde_json::json!("MissingMember");
+    let original: PublicationError = serde_json::from_value(wire).unwrap();
+    let invariant = Denial::invariant_execution_denied(
+        Stage::InvariantExecution,
+        super::map_validation_failure(TransactionCommitError::publication(original.clone())),
+    );
+    assert_eq!(invariant.authored_retirement_error(), Some(&original));
+    assert_eq!(
+        invariant
+            .authored_retirement_error()
+            .unwrap()
+            .authored_retirement_refusal(),
+        Some(AuthoredRetirementRefusal::MissingMember)
+    );
+}

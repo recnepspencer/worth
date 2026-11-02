@@ -4,6 +4,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryFeatureDefinition, WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime,
     WorthQueryFeatureRuntime, WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
+pub use worth_foundational::facade::ProducerPublicationOwnership;
 
 pub use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,

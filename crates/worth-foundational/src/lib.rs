@@ -50,6 +50,7 @@ mod locators;
 mod performance;
 pub mod performance_api;
 pub mod physical_integrity_observation;
+mod producer_publication_ownership;
 mod profiles;
 pub mod profiles_api;
 mod relations;

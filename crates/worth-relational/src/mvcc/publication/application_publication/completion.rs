@@ -28,7 +28,7 @@ pub enum RequiredOutputRolePosture {
     Retire,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RequiredOutputRoleTarget {
     pub role: String,
     pub entity_name: String,
@@ -51,6 +51,14 @@ pub enum RequiredOutputPublication {
         meaning: RequiredOutputPublicationMeaning,
         roles: Vec<RequiredOutputRoleTarget>,
     },
+    AuthoredCascadeRestoration {
+        admission: worth_proof::AdmittedAuthoredOutputRetirement,
+        restoration: super::RelationalAuthoredRestoration,
+    },
+    AuthoredCascadeRetirement {
+        admission: worth_proof::AdmittedAuthoredOutputRetirement,
+        predecessor: super::RelationalAuthoredRetirement,
+    },
     AuthoredRetirement {
         admission: worth_proof::AdmittedAuthoredOutputRetirement,
         predecessor: super::RelationalRequiredOutputPublication,
@@ -59,6 +67,17 @@ pub enum RequiredOutputPublication {
 }
 
 impl RequiredOutputPublication {
+    pub(crate) fn admission_work(&self) -> u64 {
+        let count = match self {
+            Self::AuthoredCascadeRetirement { predecessor, .. } => predecessor.publications.len(),
+            Self::AuthoredCascadeRestoration { restoration, .. } => restoration.publications.len(),
+            _ => 0,
+        };
+        count
+            .saturating_mul(count.saturating_add(1))
+            .saturating_add(1) as u64
+    }
+
     pub(crate) fn admitted_by(
         &self,
         installed: &super::RelationalInstalledApplicationPublicationAuthority,
@@ -72,6 +91,29 @@ impl RequiredOutputPublication {
             } => installed
                 .authority
                 .admits_required_output_succession(admission, predecessor.authority()),
+            Self::AuthoredCascadeRestoration {
+                admission,
+                restoration,
+            } => {
+                admission.publication_count() == restoration.publications.len()
+                    && restoration.publications.iter().all(|prior| {
+                        installed
+                            .authority
+                            .admits_authored_output_retirement(admission, prior.authority())
+                    })
+            }
+            Self::AuthoredCascadeRetirement {
+                admission,
+                predecessor,
+                ..
+            } => {
+                admission.publication_count() == predecessor.publications.len()
+                    && predecessor.publications.iter().all(|prior| {
+                        installed
+                            .authority
+                            .admits_authored_output_retirement(admission, prior.authority())
+                    })
+            }
             Self::AuthoredRetirement {
                 admission,
                 predecessor,
@@ -82,24 +124,23 @@ impl RequiredOutputPublication {
         }
     }
 
-    pub(crate) fn lineage_attribution(&self) -> (&str, [u8; 32]) {
+    pub(crate) fn lineage_attribution(&self) -> Option<(&str, [u8; 32])> {
         match self {
             Self::Birth { admission, .. } => {
-                (admission.producer(), *admission.dependency_identity())
+                Some((admission.producer(), *admission.dependency_identity()))
             }
-            Self::Preserve { admission, .. } => (
+            Self::Preserve { admission, .. } => Some((
                 admission.running().producer(),
                 *admission.running().dependency_identity(),
-            ),
+            )),
+            Self::AuthoredCascadeRetirement { .. } | Self::AuthoredCascadeRestoration { .. } => {
+                None
+            }
             Self::AuthoredRetirement { predecessor, .. } => {
                 // Provenance of the retired lineage, not a claim that the
                 // authored mutation ran this producer again.
-                let origin = predecessor
-                    .envelope
-                    .required_output_origin
-                    .as_ref()
-                    .expect("Native custody retains its canonical publication");
-                (&origin.producer, origin.dependency_identity)
+                let origin = &predecessor.origin;
+                Some((&origin.producer, origin.dependency_identity))
             }
         }
     }
