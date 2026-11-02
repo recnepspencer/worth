@@ -44,6 +44,7 @@ pub enum WorthQueryApplicationOperationInstallationDenialKind {
 pub struct WorthQueryApplicationOperationInstallationDenial {
     kind: WorthQueryApplicationOperationInstallationDenialKind,
     operation: String,
+    canonical_denial: Option<worth_foundational::facade::CanonicalDigestDerivationDenial>,
 }
 
 impl WorthQueryApplicationOperationInstallationDenial {
@@ -54,6 +55,7 @@ impl WorthQueryApplicationOperationInstallationDenial {
         Self {
             kind,
             operation: operation.into(),
+            canonical_denial: None,
         }
     }
 
@@ -64,6 +66,22 @@ impl WorthQueryApplicationOperationInstallationDenial {
     pub fn operation(&self) -> &str {
         &self.operation
     }
+
+    /// Exact canonical refusal, including requested and maximum entry/byte counts.
+    /// The cause type is available through `worth_query_host::facade::domain`.
+    pub const fn canonical_denial(
+        &self,
+    ) -> Option<&worth_foundational::facade::CanonicalDigestDerivationDenial> {
+        self.canonical_denial.as_ref()
+    }
+
+    pub(super) fn with_canonical_denial(
+        mut self,
+        denial: worth_foundational::facade::CanonicalDigestDerivationDenial,
+    ) -> Self {
+        self.canonical_denial = Some(denial);
+        self
+    }
 }
 
 impl std::fmt::Display for WorthQueryApplicationOperationInstallationDenial {
@@ -72,7 +90,11 @@ impl std::fmt::Display for WorthQueryApplicationOperationInstallationDenial {
             formatter,
             "installed application operation denied: {:?} ({})",
             self.kind, self.operation
-        )
+        )?;
+        if let Some(denial) = self.canonical_denial {
+            write!(formatter, ": {denial:?}")?;
+        }
+        Ok(())
     }
 }
 
