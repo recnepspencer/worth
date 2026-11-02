@@ -17,7 +17,7 @@ pub(super) fn validate(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), Stop> {
-    let origin = selected.validate_output_membership_header()?;
+    let origin = selected.output_origin_for_relation(id, context)?;
     charge(context, origin.relations.len())?;
     let entry = origin
         .relations
@@ -98,7 +98,7 @@ pub(super) fn reconstruct(
         if chain.len() >= bound {
             return Err("relation succession incomplete or cyclic".into());
         }
-        let origin = current.validate_output_membership_header()?;
+        let origin = current.output_origin_for_relation(id, context)?;
         charge(context, origin.relations.len())?;
         let relation = origin
             .relations
@@ -107,6 +107,22 @@ pub(super) fn reconstruct(
             .ok_or("relation predecessor membership absent")?;
         chain.push(Arc::clone(&current));
         let Some(before) = relation.before_write else {
+            if let crate::history::data::CanonicalOutputPublication::AuthoredRestoration {
+                retirement,
+                predecessor,
+            } = origin.publication
+            {
+                super::restoration_payload::validate_relation(
+                    runtime,
+                    &current,
+                    id,
+                    retirement,
+                    predecessor,
+                    plan,
+                    context,
+                    lease,
+                )?;
+            }
             if relation.birth != current.commit.commit_id {
                 return Err("relation birth differs".into());
             }
@@ -119,7 +135,7 @@ pub(super) fn reconstruct(
             .history
             .canonical_envelope(predecessor)
             .ok_or("relation predecessor absent")?;
-        let old = previous.validate_output_membership_header()?;
+        let old = previous.output_origin_for_relation(id, context)?;
         charge(context, old.relations.len())?;
         let old = old
             .relations
@@ -144,7 +160,7 @@ pub(super) fn reconstruct(
     }
     let mut state: Option<super::payload_reconstruction::ReconstructedPayload> = None;
     for envelope in chain.iter().rev() {
-        let origin = envelope.validate_output_membership_header()?;
+        let origin = envelope.output_origin_for_relation(id, context)?;
         charge(
             context,
             origin.relations.len() + envelope.patch.authoritative_record_patches.len(),

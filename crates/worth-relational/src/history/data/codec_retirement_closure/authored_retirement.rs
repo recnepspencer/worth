@@ -2,7 +2,7 @@
 use super::{charge, require_linear_history, CodecRetirementClosureStop as Stop};
 use crate::{
     branch::AdmittedRelationalBranchBasis,
-    history::data::{CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin},
+    history::data::{CanonicalRequiredOutputOrigin, SelectedOutputPublication},
     mvcc::{RequiredOutputRolePosture as Posture, RequiredOutputRoleTarget},
     runtime::RelationalRuntime,
     transactions::data::EntityReference,
@@ -19,16 +19,17 @@ pub(crate) fn select_authored_retirement(
     runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
     roles: &[RequiredOutputRoleTarget],
-) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop> {
+    owned_only: bool,
+) -> Result<Option<SelectedOutputPublication>, Stop> {
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
             None,
             |context| {
-                if !has_owned_birth(execution, runtime, basis, roles, context)? {
+                if !has_owned_birth(execution, runtime, basis, roles, owned_only, context)? {
                     return Ok(None);
                 }
-                select(runtime, basis, roles, context, lease)
+                select(runtime, basis, roles, owned_only, context, lease)
             },
         )
     });
@@ -40,9 +41,10 @@ fn select(
     runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
     roles: &[RequiredOutputRoleTarget],
+    owned_only: bool,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop> {
+) -> Result<Option<SelectedOutputPublication>, Stop> {
     // The private caller has verified current full-GEN Retire targets at birth.
     let mut next = basis.inner.root.commit_id();
     let bound = runtime.history.catalog_len();
@@ -54,7 +56,7 @@ fn select(
             .canonical_envelope(commit)
             .ok_or("authored retirement lost selected canonical history")?;
         require_linear_history(&envelope)?;
-        if let Some(origin) = &envelope.required_output_origin {
+        for (ordinal, origin) in envelope.output_origins().enumerate() {
             let comparisons =
                 roles
                     .len()
@@ -69,9 +71,20 @@ fn select(
                     .iter()
                     .any(|member| role.target == EntityReference::Existing(member.id))
             }) {
-                envelope.validate_output_membership_header()?;
-                require_complete_membership(origin, roles)?;
-                return Ok(Some(envelope));
+                envelope.output_origin_for_route(&origin.meaning, context)?;
+                if owned_only && !origin.source_scope_owned {
+                    continue;
+                }
+                // The caller must report the owned publication and source even for
+                // partial rosters; completeness is the independent legacy contract.
+                if !origin.source_scope_owned {
+                    require_complete_membership(origin, roles)?;
+                }
+                return Ok(Some(SelectedOutputPublication {
+                    origin: Arc::clone(origin),
+                    envelope: Arc::clone(&envelope),
+                    ordinal,
+                }));
             }
         }
         if let Some(event) = &envelope.required_output_materialization {
@@ -126,6 +139,7 @@ fn has_owned_birth(
     runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
     roles: &[RequiredOutputRoleTarget],
+    owned_only: bool,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
     use crate::{
@@ -199,9 +213,11 @@ fn has_owned_birth(
         {
             return Err("retirement lacks exact canonical full-generation allocation".into());
         }
-        if let Some(origin) = &envelope.required_output_origin {
-            envelope.validate_output_membership_header()?;
-            owned |= origin.outputs.binary_search(&id).is_ok();
+        for origin in envelope.output_origins() {
+            charge(context, origin.members.len() + origin.outputs.len() + 1)?;
+            envelope.output_origin_for_route(&origin.meaning, context)?;
+            owned |= (!owned_only || origin.source_scope_owned)
+                && origin.outputs.binary_search(&id).is_ok();
         }
     }
     Ok(owned)

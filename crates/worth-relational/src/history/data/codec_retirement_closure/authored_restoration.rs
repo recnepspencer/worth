@@ -1,0 +1,294 @@
+//! Restore plans reconstruct exactly recorded members and owned edges, with fresh generations.
+use super::{authored_cascade::reject, charge, CodecRetirementClosureStop as Stop};
+use crate::{
+    branch::AdmittedRelationalBranchBasis, history::data::CommitId, identity::data::EntityId,
+    mvcc::*, publication::data::AuthoredRetirementRefusal as Cause, runtime::RelationalRuntime,
+    storage::overlay::PartitionAccess, symbols::data::ClientKey, transactions::data::*,
+};
+use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
+use worth_foundational::facade::*;
+
+fn failure(stop: Stop) -> TransactionCommitError {
+    match stop {
+        Stop::Payload(detail) => crate::mvcc::origin_denial(detail),
+        Stop::Request(cause) => TransactionCommitError::execution(CommitExecutionDenial {
+            kind: CommitExecutionDenialKind::Cause(cause),
+            partition_identity: None,
+        }),
+    }
+}
+
+impl RelationalRuntime {
+    pub fn prepare_authored_source_restoration(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+        basis: &AdmittedRelationalBranchBasis,
+        retirement: CommitId,
+        original: EntityId,
+        anchor: CreatedEntityRef,
+    ) -> Result<Option<RelationalAuthoredRestoration>, TransactionCommitError> {
+        if installed.runtime_instance_id != self.runtime_instance_id() || !basis.is_current() {
+            return Err(reject(Cause::InvalidAuthoredAnchor, original));
+        }
+        // All publication readmissions and inverse reconstruction draw from the same request.
+        execution
+            .in_scope(|_| {
+                let selected = execution.in_scope(|lease| {
+                    ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
+                        lease,
+                        None,
+                        |context| {
+                            charge(context, self.history.catalog_len().saturating_add(1))
+                                .map_err(failure)?;
+                            self.history
+                                .canonical_envelope(retirement)
+                                .ok_or_else(|| reject(Cause::CorruptPublication, original))
+                        },
+                    )
+                });
+                let envelope = selected
+                    .map_err(|cause| failure(super::request(cause)))?
+                    .map_err(|cause| failure(super::request(cause)))?
+                    .0?;
+                let Some(event) = &envelope.authored_cascade_retirement else {
+                    return Ok(None);
+                };
+                if event.anchor != original {
+                    return Err(reject(Cause::InvalidAuthoredAnchor, original));
+                }
+                let mut publications = Vec::with_capacity(event.publications.len());
+                for origin in &event.publications {
+                    publications.push(
+                        self.readmit_authored_output_retirement_successor(
+                            execution,
+                            installed,
+                            basis,
+                            &origin.meaning,
+                        )?
+                        .ok_or_else(|| reject(Cause::IncompleteRestoration, original))?,
+                    );
+                }
+                let result = execution.in_scope(|lease| {
+                    ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
+                        lease,
+                        None,
+                        |context| {
+                            basis
+                                .inner
+                                .root
+                                .demand_full_partition(execution, original.partition_id)
+                                .map_err(|cause| failure(super::request(cause)))?;
+                            let partition = basis
+                                .inner
+                                .root
+                                .partition_state(original.partition_id)
+                                .map_err(|cause| failure(cause.into()))?
+                                .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, original))?;
+                            let row = partition
+                                .entity_arena
+                                .get(&original)
+                                .filter(|row| {
+                                    row.retired_at() == Some(envelope.commit.version_id)
+                                        && row.kind_id() == Some(anchor.kind_id)
+                                })
+                                .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, original))?;
+                            let _ = row;
+                            // Fund the fixed-width multi-publication proof comparisons before returning custody.
+                            charge(
+                                context,
+                                publications
+                                    .len()
+                                    .saturating_mul(publications.len().saturating_add(1)),
+                            )
+                            .map_err(failure)?;
+                            let mut entities = vec![(original, anchor.clone())];
+                            for prior in &publications {
+                                for member in &prior.origin.members {
+                                    charge(context, 1).map_err(failure)?;
+                                    entities.push((
+                                        member.id,
+                                        CreatedEntityRef {
+                                            partition_id: member.id.partition_id,
+                                            kind_id: member.kind,
+                                            client_key: ClientKey::raw(format!(
+                                                "authored-restore:{}:{}:{}",
+                                                member.id.partition_id.0,
+                                                member.id.local_slot_value(),
+                                                member.id.generation_value()
+                                            )),
+                                        },
+                                    ));
+                                }
+                            }
+                            let mut inverse = Vec::new();
+                            let mut relations = Vec::new();
+                            for prior in &publications {
+                                let predecessor =
+                                    prior.origin.publication.predecessor().ok_or_else(|| {
+                                        reject(Cause::CorruptPublication, original)
+                                    })?;
+                                let live = self
+                                    .history
+                                    .canonical_envelope(predecessor)
+                                    .ok_or_else(|| reject(Cause::CorruptPublication, original))?;
+                                for member in &prior.origin.members {
+                                    let plan = basis
+                                        .inner
+                                        .root
+                                        .schema_authority()
+                                        .entity_aspect_plan(member.kind)
+                                        .ok_or_else(|| {
+                                            reject(Cause::CorruptPublication, member.id)
+                                        })?;
+                                    let payload = super::membership::reconstruct(
+                                        self, &live, member.id, plan, context, lease,
+                                    )
+                                    .map_err(failure)?;
+                                    charge(context, entities.len()).map_err(failure)?;
+                                    let target = entities
+                                        .iter()
+                                        .find(|(old, _)| *old == member.id)
+                                        .expect("complete original roster")
+                                        .1
+                                        .clone();
+                                    let aspect_patch = creation_patch(
+                                        payload.as_ref().and_then(|p| p.state.as_ref()),
+                                        plan,
+                                        context,
+                                    )
+                                    .map_err(failure)?;
+                                    inverse.push(MutationIntent::Create(
+                                        CreateIntent::EntityAspects(EntityAspectCreateIntent {
+                                            partition_id: target.partition_id,
+                                            kind_id: target.kind_id,
+                                            client_key: target.client_key,
+                                            aspect_patch,
+                                        }),
+                                    ));
+                                }
+                                let live_origin = live
+                                    .output_origin_for_route(&prior.origin.meaning, context)
+                                    .map_err(failure)?;
+                                for edge in &live_origin.relations {
+                                    let plan = basis
+                                        .inner
+                                        .root
+                                        .schema_authority()
+                                        .relation_aspect_plan(edge.kind)
+                                        .ok_or_else(|| {
+                                            reject(Cause::CorruptPublication, original)
+                                        })?;
+                                    let payload = super::relation_payload::reconstruct(
+                                        self, &live, edge.id, plan, context, lease,
+                                    )
+                                    .map_err(failure)?;
+                                    charge(context, entities.len().saturating_mul(2))
+                                        .map_err(failure)?;
+                                    let resolve = |id| {
+                                        entities
+                                            .iter()
+                                            .find(|(old, _)| *old == id)
+                                            .map_or(EntityReference::Existing(id), |(_, target)| {
+                                                EntityReference::Created(target.clone())
+                                            })
+                                    };
+                                    let target = CreatedRelationRef {
+                                        partition_id: edge.id.partition_id,
+                                        kind_id: edge.kind,
+                                        client_key: ClientKey::raw(format!(
+                                            "authored-restore-edge:{}:{}:{}",
+                                            edge.id.partition_id.0,
+                                            edge.id.local_slot_value(),
+                                            edge.id.generation_value()
+                                        )),
+                                        source: resolve(edge.source),
+                                        target: resolve(edge.target),
+                                    };
+                                    inverse.push(MutationIntent::Create(
+                                        CreateIntent::RelationAspects(RelationAspectCreateIntent {
+                                            partition_id: target.partition_id,
+                                            kind_id: target.kind_id,
+                                            client_key: target.client_key.clone(),
+                                            source: target.source.clone(),
+                                            target: target.target.clone(),
+                                            aspect_patch: creation_patch(
+                                                payload.as_ref().and_then(|p| p.state.as_ref()),
+                                                plan,
+                                                context,
+                                            )
+                                            .map_err(failure)?,
+                                        }),
+                                    ));
+                                    relations.push((edge.id, target));
+                                }
+                            }
+                            Ok::<_, TransactionCommitError>((entities, relations, inverse))
+                        },
+                    )
+                });
+                execution
+                    .consult()
+                    .map_err(|cause| failure(super::request(cause)))?;
+                let (entities, relations, inverse) = result
+                    .map_err(|cause| failure(super::request(cause)))?
+                    .map_err(|cause| failure(super::request(cause)))?
+                    .0?;
+                Ok(Some(RelationalAuthoredRestoration {
+                    before: basis.clone(),
+                    retirement: envelope,
+                    anchor,
+                    entities,
+                    relations,
+                    publications,
+                    inverse,
+                }))
+            })
+            .map_err(|cause| failure(super::request(cause)))?
+    }
+}
+
+pub(super) fn creation_patch(
+    state: Option<&AuthoritativeRecordAspectState>,
+    plan: &crate::schema::data::LoweredAspectContractPlan,
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+) -> Result<PortableRecordAspectPatch, Stop> {
+    let Some(state) = state else {
+        return Ok(PortableRecordAspectPatch::new([]));
+    };
+    charge(
+        context,
+        state.owned_allocation_capacity_bytes().saturating_add(
+            state
+                .aspects()
+                .len()
+                .saturating_mul(plan.executable_bindings.len()),
+        ),
+    )?;
+    Ok(PortableRecordAspectPatch::new(
+        state
+            .aspects()
+            .entries()
+            .filter(|(key, _)| {
+                !plan.executable_bindings.iter().any(|binding| {
+                    binding.aspect_key() == *key
+                        && matches!(
+                            binding.target,
+                            crate::schema::data::AspectBinding::RelationSourceEndpoint
+                                | crate::schema::data::AspectBinding::RelationTargetEndpoint
+                        )
+                })
+            })
+            .map(|(_, value)| PortableAspectPatchOperation::SetWhole {
+                basis: PortableAspectContractBasis::from_contract(value.contract()),
+                value: match value.view() {
+                    ContractValidatedAspectValueView::Scalar(value) => {
+                        ContractValidationInput::Scalar(value.clone())
+                    }
+                    ContractValidatedAspectValueView::Struct(value) => {
+                        ContractValidationInput::Struct(value.clone())
+                    }
+                },
+            }),
+    ))
+}

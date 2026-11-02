@@ -80,7 +80,25 @@ pub(super) fn select_at(
             super::codec_disposition::validate(runtime, &envelope, context, lease)?;
             return Ok(Some(RequiredOutputRoutePosition::CodecRetired(commit)));
         }
-        if let Some(origin) = &envelope.required_output_origin {
+        if let Some(restored) = &envelope.authored_cascade_restoration {
+            charge(context, bound.saturating_add(1))?;
+            let retired = runtime
+                .history
+                .canonical_envelope(restored.retirement)
+                .ok_or("restoration retirement absent")?;
+            for origin in retired.output_origins() {
+                charge(
+                    context,
+                    origin.meaning.family.len() + meaning.family.len() + 64,
+                )?;
+                if origin.meaning.same_route(meaning) {
+                    retired.output_origin_for_route(meaning, context)?;
+                    envelope.validate_restoration_header(context)?;
+                    return Ok(Some(RequiredOutputRoutePosition::Published(commit)));
+                }
+            }
+        }
+        for origin in envelope.output_origins() {
             charge(
                 context,
                 origin
@@ -91,7 +109,7 @@ pub(super) fn select_at(
                     .saturating_add(64),
             )?;
             if origin.meaning.same_route(meaning) {
-                envelope.validate_output_membership_header()?;
+                envelope.output_origin_for_route(meaning, context)?;
                 return Ok(Some(RequiredOutputRoutePosition::Published(commit)));
             }
         }

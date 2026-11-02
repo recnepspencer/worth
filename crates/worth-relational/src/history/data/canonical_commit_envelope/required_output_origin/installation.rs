@@ -5,6 +5,10 @@ use crate::storage::overlay::WorkingState;
 use crate::transactions::data::{CommitCreatedEntityBindings, CommitCreatedRelationBindings};
 use worth_execution::{ExecutionRequest, MapKernelContext};
 mod predecessor;
+mod relation_failure;
+mod scope_dependents;
+use relation_failure::relation_context;
+pub(super) use relation_failure::relation_stop;
 mod retained_origin;
 use retained_origin::compare_retained_origin;
 
@@ -21,6 +25,9 @@ impl CanonicalCommitEnvelope {
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
     {
+        admission
+            .installed
+            .demand_source_scope(execution, basis, &admission.publication)?;
         let result = execution
             .in_scope(|lease| {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
@@ -45,7 +52,7 @@ impl CanonicalCommitEnvelope {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn install_completion(
+    pub(super) fn install_completion(
         &mut self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
         basis: &AdmittedRelationalBranchBasis,
@@ -61,7 +68,9 @@ impl CanonicalCommitEnvelope {
             installed,
             publication,
         } = admission;
-        context.checkpoint(1).map_err(origin_request)?;
+        context
+            .checkpoint(publication.admission_work())
+            .map_err(origin_request)?;
         if installed.runtime_instance_id != runtime.runtime_instance_id()
             || installed.custom_invariant_generation
                 != runtime.schema_contract_runtime.custom_invariant_generation
@@ -77,7 +86,50 @@ impl CanonicalCommitEnvelope {
                 "required-output installation changed before native preparation",
             ));
         }
-        let (producer, dependency_identity) = publication.lineage_attribution();
+        if let Publication::AuthoredCascadeRestoration {
+            admission,
+            restoration,
+        } = publication
+        {
+            return super::authored_restoration::install(
+                self,
+                runtime,
+                basis,
+                created,
+                created_relations,
+                state,
+                installed,
+                admission,
+                restoration,
+                lease,
+                context,
+            );
+        }
+        if let Publication::AuthoredCascadeRetirement {
+            admission,
+            predecessor,
+        } = publication
+        {
+            return super::authored_cascade::install(
+                self,
+                runtime,
+                basis,
+                created,
+                created_relations,
+                state,
+                installed,
+                admission,
+                predecessor,
+                lease,
+                context,
+            );
+        }
+        let (producer, dependency_identity) =
+            publication.lineage_attribution().ok_or_else(|| {
+                crate::mvcc::origin_denial(
+                    "cascade attribution requires per-publication provenance",
+                )
+            })?;
         let mut after_codec_retirement = None;
         let (meaning, roles, previous) = match &publication {
             Publication::Birth {
@@ -113,15 +165,14 @@ impl CanonicalCommitEnvelope {
                 )?;
                 (meaning, roles, Some(origin))
             }
+            Publication::AuthoredCascadeRetirement { .. }
+            | Publication::AuthoredCascadeRestoration { .. } => {
+                unreachable!("cascade consumed before ordinary installation")
+            }
             Publication::AuthoredRetirement {
                 predecessor, roles, ..
             } => {
-                let meaning = &predecessor
-                    .envelope
-                    .required_output_origin
-                    .as_ref()
-                    .expect("Native custody retains canonical membership")
-                    .meaning;
+                let meaning = &predecessor.origin.meaning;
                 let origin = predecessor::validate(
                     self,
                     runtime,
@@ -131,23 +182,30 @@ impl CanonicalCommitEnvelope {
                     lease,
                     context,
                 )?;
-                if roles
-                    .iter()
-                    .any(|role| role.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
-                    || roles.len()
-                        != origin
-                            .members
-                            .iter()
-                            .filter(|member| {
-                                member.posture != crate::mvcc::RequiredOutputRolePosture::Retire
-                            })
-                            .count()
-                {
-                    return Err(crate::mvcc::origin_denial("authored retirement requires every prior live member and only Retire roles"));
-                }
+                super::source_scope_ownership::require_cascade(
+                    origin,
+                    self.authored_cascade_retirement.as_deref(),
+                )?;
+                predecessor::require_complete_retirement(origin, roles)?;
                 (meaning, roles, Some(origin))
             }
         };
+        if let Some(prior) = previous {
+            scope_dependents::require_retained_sources(
+                self, runtime, &installed, prior, roles, context,
+            )?;
+        }
+        super::source_scope_ownership::validate(
+            basis,
+            &installed,
+            producer,
+            meaning,
+            previous,
+            self.commit.commit_id,
+            state,
+            matches!(&publication, Publication::AuthoredRetirement { .. }),
+            context,
+        )?;
         if roles.is_empty() {
             return Err(crate::mvcc::origin_denial(
                 "empty producer publication membership",
@@ -269,6 +327,15 @@ impl CanonicalCommitEnvelope {
         self.required_output_origin = Some(std::sync::Arc::new(CanonicalRequiredOutputOrigin {
             commit: self.commit.clone(),
             basis: recorded_basis,
+            source_scope_owned: previous.map_or_else(
+                || {
+                    installed
+                        .source_scope_ownership
+                        .scope_kind(producer)
+                        .is_some()
+                },
+                |prior| prior.source_scope_owned,
+            ),
             producer: producer.to_owned(),
             dependency_identity,
             outputs,
@@ -323,34 +390,5 @@ impl CanonicalCommitEnvelope {
             ));
         }
         Ok(positions)
-    }
-}
-
-pub(super) fn relation_stop(
-    stop: crate::history::data::CodecRetirementClosureStop,
-) -> TransactionCommitError {
-    match stop {
-        crate::history::data::CodecRetirementClosureStop::Request(cause) => origin_request(cause),
-        crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
-            crate::mvcc::origin_denial(detail)
-        }
-    }
-}
-
-fn relation_context(
-    stop: crate::history::data::CodecRetirementClosureStop,
-    stage: &str,
-    basis: &AdmittedRelationalBranchBasis,
-    candidate: &CanonicalCommitEnvelope,
-) -> TransactionCommitError {
-    match stop {
-        crate::history::data::CodecRetirementClosureStop::Request(cause) => origin_request(cause),
-        crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
-            crate::mvcc::origin_denial(format!(
-                "{detail}; publication_stage={stage}; before={:?}; candidate={:?}",
-                basis.descriptor(),
-                candidate.commit
-            ))
-        }
     }
 }

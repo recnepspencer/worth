@@ -37,6 +37,7 @@ pub use crate::mvcc::{
     ValidatedMutationTouches, ValidatedRelationalProposal,
 };
 pub use crate::mvcc::{
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RequiredOutputProducingImplementation, RequiredOutputPublication,
     RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,

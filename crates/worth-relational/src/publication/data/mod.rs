@@ -1,3 +1,5 @@
+mod authored_retirement_refusal;
+pub use authored_retirement_refusal::AuthoredRetirementRefusal;
 mod artifact_snapshot;
 mod observation_snapshot;
 mod publication_error;
