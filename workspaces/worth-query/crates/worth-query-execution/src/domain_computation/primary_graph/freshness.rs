@@ -67,9 +67,7 @@ fn principal_description_is_portable(
         && [mapping, principal].iter().all(|value| {
             !matches!(
                 value,
-                AspectValue::String(InternedString::Symbol(_))
-                    | AspectValue::Bytes(_)
-                    | AspectValue::ContentRef(_)
+                AspectValue::String(InternedString::Symbol(_)) | AspectValue::ContentRef(_)
             )
         })
 }

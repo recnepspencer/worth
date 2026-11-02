@@ -66,6 +66,7 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     SlotCountOverflow,
     CanonicalEnvelopeMismatch,
+    UnadmittedContent,
     StorageContentMismatch {
         descriptor_root: [u8; 32],
         reconstructed_root: [u8; 32],
@@ -130,6 +131,7 @@ struct RelationalCommittedBranchRoot {
 /// reuse.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRoot {
+    content: crate::content::ContentDirectory,
     id: u64,
     regions: Arc<RelationalPersistentRegionSet>,
     entity_slot_count: usize,
@@ -182,6 +184,7 @@ impl RelationalBranchRoot {
             id: 0,
             regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
                 .expect("empty test root has reachability capacity"),
+            content: Default::default(),
             entity_slot_count: 0,
             relation_slot_count: 0,
             content_accumulator: [0; 32],
@@ -207,6 +210,7 @@ impl RelationalBranchRoot {
                 .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has reachability capacity"),
             entity_slot_count: 0,
             relation_slot_count: 0,
+            content: Default::default(),
             content_accumulator: [0; 32],
             output_publication_positions: Default::default(),
             schema_authority: RelationalBranchRootSchemaAuthority::capture(
@@ -239,6 +243,9 @@ impl RelationalBranchRoot {
             registry,
             symbols,
         )
+    }
+    pub(crate) fn retained_content(&self) -> &crate::content::ContentDirectory {
+        &self.content
     }
     pub(crate) const fn id(&self) -> u64 {
         self.id

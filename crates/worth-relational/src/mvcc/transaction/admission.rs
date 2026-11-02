@@ -153,6 +153,7 @@ impl crate::runtime::RelationalRuntime {
             0
         };
         Ok(super::BranchBoundRelationalTransaction {
+            content: Default::default(),
             symbols: self.services.symbols.clone(),
             read_leases: Default::default(),
             basis: basis.clone(),

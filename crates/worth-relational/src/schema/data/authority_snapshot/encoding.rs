@@ -5,11 +5,12 @@ use serde::{Serialize, Serializer};
 
 impl Serialize for SchemaAuthoritySnapshot {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let domains = !self.projected_member_domains.is_empty();
+        let content = !self.content_formats.is_empty();
+        let domains = content || !self.projected_member_domains.is_empty();
         let derived = domains || !self.derived_relations.is_empty();
         let mut output = serializer.serialize_struct(
             "SchemaAuthoritySnapshot",
-            4 + usize::from(derived) + usize::from(domains),
+            4 + usize::from(derived) + usize::from(domains) + usize::from(content),
         )?;
         output.serialize_field("primary_schema_id", &self.primary_schema_id)?;
         output.serialize_field("primary_schema_version_id", &self.primary_schema_version_id)?;
@@ -22,6 +23,9 @@ impl Serialize for SchemaAuthoritySnapshot {
         }
         if domains {
             output.serialize_field("projected_member_domains", &self.projected_member_domains)?;
+        }
+        if content {
+            output.serialize_field("content_formats", &self.content_formats)?;
         }
         output.end()
     }

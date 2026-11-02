@@ -115,6 +115,7 @@ impl RelationalBranchRoot {
             relation_slot_count,
             mut publication_cost,
         } = prepared;
+        crate::content::require_content_free_readmission(schema_authority.registry())?;
         validate_schema_root(&envelope, &descriptor)?;
         let (storage_root, content_accumulator) = axes::storage_root_for(&regions);
         require_descriptor_content(&descriptor, storage_root)?;
@@ -147,6 +148,7 @@ impl RelationalBranchRoot {
         };
         Ok(Arc::new(Self {
             // Reconstructed storage has no live companion association.
+            content: envelope.content.directory()?.clone(),
             managed_source_image: std::sync::OnceLock::new(),
             id: root_id,
             regions,
@@ -174,6 +176,7 @@ impl RelationalBranchRoot {
         envelope: Arc<CanonicalCommitEnvelope>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        crate::content::require_content_free_readmission(self.schema_authority.registry())?;
         let mut committed = self
             .committed
             .clone()
@@ -196,6 +199,7 @@ impl RelationalBranchRoot {
         source: &crate::history::data::PositionedCanonicalCommit,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        crate::content::require_content_free_readmission(self.schema_authority.registry())?;
         let mut committed = self
             .committed
             .clone()
@@ -227,6 +231,7 @@ impl RelationalBranchRoot {
         descriptor: RelationalBranchRootDescriptor,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        crate::content::require_content_free_readmission(self.schema_authority.registry())?;
         let mut committed = self
             .committed
             .clone()
@@ -271,6 +276,7 @@ impl RelationalBranchRoot {
 
     fn with_committed(&self, committed: RelationalCommittedBranchRoot) -> Arc<Self> {
         Arc::new(Self {
+            content: self.content.clone(),
             // The callers preserve this exact root, schema and content binding.
             managed_source_image: self.managed_source_image.clone(),
             id: self.id,

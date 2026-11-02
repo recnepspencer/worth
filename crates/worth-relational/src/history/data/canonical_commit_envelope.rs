@@ -51,6 +51,7 @@ pub(crate) use required_output_origin::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalCommitEnvelope {
+    pub(crate) content: crate::content::ContentPublication,
     /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
     #[serde(skip)]
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
@@ -116,6 +117,7 @@ pub(crate) struct CommittedRecordChange<'a> {
 impl CanonicalCommitEnvelope {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
+        content: crate::content::ContentPublication,
         commit: RelationalCommitReceipt,
         branch_context: BranchId,
         authority_kind: CanonicalCommitAuthorityKind,
@@ -137,6 +139,7 @@ impl CanonicalCommitEnvelope {
         descriptor_semantics_version: DescriptorSemanticsVersion,
     ) -> Self {
         Self {
+            content,
             authored_index_writes: CanonicalAuthoredIndexWrites::default(),
             live_managed_source_history: LiveManagedSourceHistory::default(),
             required_output_codec_retirements: Vec::new(),

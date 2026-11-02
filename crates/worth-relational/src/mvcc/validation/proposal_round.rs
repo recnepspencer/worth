@@ -135,6 +135,7 @@ impl RelationalPreparationRuntime {
                         &identity,
                         symbols,
                         source_interpretation,
+                        &validation_input.content,
                     )?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
                     mutation.prepare_managed_sources(

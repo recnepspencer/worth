@@ -94,7 +94,6 @@ fn display_text_for_test_aspect_value(value: AspectValue) -> String {
             value.denominator.as_str()
         ),
         AspectValue::String(value) => display_text_for_test_interned_string(value),
-        AspectValue::Bytes(value) => format!("bytes-ref:{}", value.0),
         AspectValue::Uuid(value) => value.iter().map(|byte| format!("{byte:02x}")).collect(),
         AspectValue::Date(value) => value.days_from_unix_epoch.to_string(),
         AspectValue::Time(value) => value.nanos_since_midnight.to_string(),
@@ -107,7 +106,7 @@ fn display_text_for_test_aspect_value(value: AspectValue) -> String {
             "entity:{}:{}:{}",
             value.partition_id.0, value.local_slot.0, value.generation.0
         ),
-        AspectValue::ContentRef(value) => format!("content-ref:{}", value.0),
+        AspectValue::ContentRef(value) => format!("content-ref:{value}"),
     }
 }
 

@@ -706,6 +706,12 @@ explicit bootstrap request and capture policy. See [original-request transitions
 
 ## Known gaps
 
+The K1c Native content owner admits immutable typed frames and closes Native
+transaction references before publication. The controlled Decl/Host content door
+and durable reconstruction are still being cut over; applications must not
+introduce a separate byte store while that work is incomplete. See the
+[content boundary and slice order](../plans/WORTH-query/milestone-9.19-k1c-content-boundary.md).
+
 For implementation identity, use the whole-application
 [`ApplicationBuildIdentity`](build-an-application.md#application-build-identity).
 The build pipeline embeds one UUID; installation binds it to every producer.

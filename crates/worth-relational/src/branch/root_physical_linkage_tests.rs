@@ -64,6 +64,7 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
 
 fn envelope_input() -> CanonicalCommitEnvelope {
     CanonicalCommitEnvelope::new(
+        Default::default(),
         RelationalCommitReceipt {
             commit_id: CommitId(1),
             version_id: VersionId(1),

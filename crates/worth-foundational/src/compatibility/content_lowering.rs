@@ -9,10 +9,11 @@ pub(super) fn lower_json_content_ref(
     value: &Value,
 ) -> Result<AspectValue, JsonCompatibilityLoweringDenial> {
     value
-        .as_u64()
-        .map(|value| AspectValue::ContentRef(ContentRefId(value)))
+        .as_str()
+        .and_then(ContentRefId::from_hex)
+        .map(AspectValue::ContentRef)
         .ok_or_else(|| JsonCompatibilityLoweringDenial::JsonShapeNotAdmitted {
             source: source.clone(),
-            expected: "content reference id",
+            expected: "lowercase 32-byte content digest",
         })
 }

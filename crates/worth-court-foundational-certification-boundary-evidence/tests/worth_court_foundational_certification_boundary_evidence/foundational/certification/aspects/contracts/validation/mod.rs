@@ -141,11 +141,19 @@ fn reference_and_content_contracts_validate_only_their_declared_families() {
     );
     let content_outcome = validate_aspect_value(
         &content_contract,
-        worth_foundational::AspectValue::ContentRef(ContentRefId(9)).into(),
+        worth_foundational::AspectValue::ContentRef(ContentRefId([
+            9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ]))
+        .into(),
     );
     let denied = validate_aspect_value(
         &entity_contract,
-        worth_foundational::AspectValue::ContentRef(ContentRefId(9)).into(),
+        worth_foundational::AspectValue::ContentRef(ContentRefId([
+            9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ]))
+        .into(),
     );
 
     assert!(matches!(

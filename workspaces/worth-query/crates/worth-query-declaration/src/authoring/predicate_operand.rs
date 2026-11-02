@@ -91,10 +91,6 @@ impl WorthQueryPredicateOperand {
         Self(AspectValue::Rational(value))
     }
 
-    pub fn bytes(value: ContentRefId) -> Self {
-        Self(AspectValue::Bytes(value))
-    }
-
     pub fn uuid(value: [u8; 16]) -> Self {
         Self(AspectValue::Uuid(value))
     }

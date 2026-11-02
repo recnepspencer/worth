@@ -154,7 +154,6 @@ const fn scalar_code(value: ScalarAspectType) -> u8 {
         ScalarAspectType::BigInt => 14,
         ScalarAspectType::Rational => 15,
         ScalarAspectType::String => 16,
-        ScalarAspectType::Bytes => 17,
         ScalarAspectType::Uuid => 18,
         ScalarAspectType::Date => 19,
         ScalarAspectType::Time => 20,

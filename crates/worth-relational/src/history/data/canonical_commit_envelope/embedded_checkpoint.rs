@@ -22,6 +22,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
         S: serde::Serializer,
     {
         let CanonicalCommitEnvelope {
+            content,
             live_managed_source_history: _,
             authored_index_writes,
             required_output_codec_retirements,
@@ -51,7 +52,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
             schema_reconciliation_descriptor,
             descriptor_semantics_version,
         } = self.envelope;
-        let field_count = 26 + usize::from(!authored_index_writes.is_unavailable());
+        let field_count = 27 + usize::from(!authored_index_writes.is_unavailable());
         let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
         if !authored_index_writes.is_unavailable() {
             fields.serialize_field("authored_index_writes", authored_index_writes)?;
@@ -65,6 +66,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
             "required_output_materialization",
             required_output_materialization,
         )?;
+        fields.serialize_field("content", content)?;
         fields.serialize_field("commit", commit)?;
         fields.serialize_field("branch_context", branch_context)?;
         fields.serialize_field("branch_cell_checkpoint", branch_cell_checkpoint)?;

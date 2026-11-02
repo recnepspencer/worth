@@ -41,7 +41,6 @@ pub(super) fn scalar_aspect_type_name(value: ScalarAspectType) -> &'static str {
         ScalarAspectType::BigInt => "big_int",
         ScalarAspectType::Rational => "rational",
         ScalarAspectType::String => "string",
-        ScalarAspectType::Bytes => "bytes",
         ScalarAspectType::Uuid => "uuid",
         ScalarAspectType::Date => "date",
         ScalarAspectType::Time => "time",

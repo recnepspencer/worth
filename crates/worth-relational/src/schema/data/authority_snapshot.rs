@@ -22,6 +22,8 @@ pub struct SchemaAuthoritySnapshot {
     /// and digests acquire no new field or suffix.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub projected_member_domains: Vec<crate::projected_member_domain::ProjectedMemberDomainParts>,
+    #[serde(default)]
+    pub content_formats: crate::content::RelationalContentSchemaSnapshot,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -77,7 +79,8 @@ impl SchemaAuthoritySnapshot {
                 entity_storage
                     .saturating_add(relation_storage)
                     .saturating_add(derived_storage)
-                    .saturating_add(domain_storage),
+                    .saturating_add(domain_storage)
+                    .saturating_add(self.content_formats.owned_bytes()),
                 |bytes, kind| bytes.saturating_add(kind.kind_name.capacity() as u64),
             )
             .saturating_add(
@@ -137,6 +140,21 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
         &mut hasher,
         &snapshot.projected_member_domains,
     );
+    if !snapshot.content_formats.is_empty() {
+        hasher.update(b"worth.native.content-schema.v1\0");
+        update_count(&mut hasher, snapshot.content_formats.formats().len());
+        for format in snapshot.content_formats.formats() {
+            hasher.update(format.identity);
+            update_bytes(&mut hasher, format.descriptor.name().as_bytes());
+            hasher.update(format.descriptor.version().to_le_bytes());
+            hasher.update(format.maximum_frame_bytes.to_le_bytes());
+        }
+        update_count(&mut hasher, snapshot.content_formats.fields().len());
+        for field in snapshot.content_formats.fields() {
+            hasher.update(field.field_meaning);
+            hasher.update(field.format);
+        }
+    }
     let digest = hasher.finalize();
     let mut out = [0_u8; 32];
     out.copy_from_slice(&digest);

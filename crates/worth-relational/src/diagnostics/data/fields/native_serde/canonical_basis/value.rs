@@ -29,7 +29,7 @@ pub(super) enum NativeValue {
         denominator: InternedString,
     },
     BytesRefId(u64),
-    ContentRefId(u64),
+    ContentRefId([u8; 32]),
     EntityRef {
         partition_id: u32,
         local_slot: u64,

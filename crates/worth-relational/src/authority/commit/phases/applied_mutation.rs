@@ -83,6 +83,7 @@ pub(crate) fn apply_mutation_draft(
     source_interpretation: std::sync::Arc<
         crate::validation::candidate_source::NativeManagedSourceInterpretation,
     >,
+    content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
     if !identity
         .source_interpretation()
@@ -94,6 +95,12 @@ pub(crate) fn apply_mutation_draft(
                     detail: "candidate Source belongs to another proposal owner".into(),
                 },
             ),
+        )
+        .into());
+    }
+    if runtime.durability_admission.has_medium() && !content.is_empty() {
+        return Err(crate::content::commit_denial(
+            crate::content::RelationalContentDenial::DurabilityNotReady,
         )
         .into());
     }
@@ -135,6 +142,16 @@ pub(crate) fn apply_mutation_draft(
         crate::authority::commit::pipeline::request_lease(execution),
         runtime.commit_work_budget.clone(),
     )?;
+    state.content = crate::content::prepare_publication(
+        execution,
+        selected_state.selected().state().root(),
+        schema.registry(),
+        content,
+        &state,
+        &outcome.effect.publication.changed_records,
+        version_id,
+    )
+    .map_err(crate::content::commit_denial)?;
     crate::authority::mutation::apply_adjacency_deltas(
         &mut state,
         &outcome.effect.adjacency.deltas,

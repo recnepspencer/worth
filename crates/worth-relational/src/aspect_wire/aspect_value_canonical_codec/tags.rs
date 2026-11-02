@@ -14,14 +14,14 @@ pub(super) const STRING: u8 = 12;
 pub(super) const DECIMAL: u8 = 13;
 pub(super) const BIG_INT: u8 = 14;
 pub(super) const RATIONAL: u8 = 15;
-pub(super) const BYTES: u8 = 16;
 pub(super) const UUID: u8 = 17;
 pub(super) const DATE: u8 = 18;
 pub(super) const TIME: u8 = 19;
 pub(super) const TIMESTAMP: u8 = 20;
 pub(super) const TIMESTAMP_TZ: u8 = 21;
 pub(super) const ENTITY_REF: u8 = 22;
-pub(super) const CONTENT_REF: u8 = 23;
+// Former u64 reference tag 23 is retired; it has no digest interpretation.
+pub(super) const CONTENT_REF: u8 = 25;
 pub(super) const INLINE_BYTES: u8 = 24;
 
 pub(super) const RAW_STRING: u8 = 0;

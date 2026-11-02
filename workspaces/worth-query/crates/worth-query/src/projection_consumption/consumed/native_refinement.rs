@@ -104,7 +104,6 @@ impl ConsumedFieldValueFact {
     scalar_refinement!(as_big_int, CanonicalBigInt, BigInt, BigInt);
     scalar_refinement!(as_rational, CanonicalRational, Rational, Rational);
     scalar_refinement!(as_interned_string, InternedString, String, String);
-    scalar_refinement!(as_bytes, ContentRefId, Bytes, Bytes);
     scalar_refinement!(as_uuid, [u8; 16], Uuid, Uuid);
     scalar_refinement!(as_date, CanonicalDate, Date, Date);
     scalar_refinement!(as_time, CanonicalTime, Time, Time);
@@ -202,7 +201,6 @@ mod tests {
                 AspectValue::String(expected) => {
                     assert_eq!(fact.as_interned_string(), Ok(&expected))
                 }
-                AspectValue::Bytes(expected) => assert_eq!(fact.as_bytes(), Ok(&expected)),
                 AspectValue::Uuid(expected) => assert_eq!(fact.as_uuid(), Ok(&expected)),
                 AspectValue::Date(expected) => assert_eq!(fact.as_date(), Ok(&expected)),
                 AspectValue::Time(expected) => assert_eq!(fact.as_time(), Ok(&expected)),
@@ -325,7 +323,6 @@ mod tests {
                     .unwrap(),
             ),
             AspectValue::String(InternedString::Raw("alpha".into())),
-            AspectValue::Bytes(ContentRefId(41)),
             AspectValue::Uuid([7; 16]),
             AspectValue::Date(CanonicalDate {
                 days_from_unix_epoch: 20_000,
@@ -339,7 +336,10 @@ mod tests {
                 offset_minutes: -360,
             }),
             AspectValue::EntityRef(EntityId::new(PartitionId(9), 10, 11)),
-            AspectValue::ContentRef(ContentRefId(42)),
+            AspectValue::ContentRef(ContentRefId([
+                42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+            ])),
             AspectValue::InlineBytes(
                 worth_foundational::InlineBytes::try_new(vec![0, 128, 255]).unwrap(),
             ),
