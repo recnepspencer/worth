@@ -300,3 +300,19 @@ unqualified, with exact test names/stdout in native-normal-unqualified.json.
 Query execution normal recorded 2208/0/1; Host/installation/testkit unit targets
 367/0/0; Store application/section units 36/0/0; Query Host courts 340/12/2.
 These recorded failures prohibit a full green-lane claim.
+
+The remaining normal courts exposed another P-B design flaw: the source-close
+preflight refused Native's retained immutable indeterminate outcome as though
+it were running work. Its original binding and outcome already remain in the
+retired Native allocation; the original physical dispatcher owns effect
+settlement and inspection. Stopped-business admission still fences active
+Native work. Removing the blanket UnresolvedPublication veto permits the
+physical owner to return its actual InspectionRequired custody without losing
+the original uncertain outcome. The existing failed-completion court remains
+unchanged and requires that precise physical inspection result.
+
+The two World close helpers in world_durable_release and
+world_occurrence_readmission also still asserted that coupled World checkpointing
+was unsupported. D12 retires that expectation; their close branches now require
+Ok checkpoint results. The bare Native cleanup branch retains its original
+WorldSectionRequired assertion. All reopen and original custody assertions stay.

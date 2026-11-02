@@ -25,9 +25,10 @@ impl RelationalDurableMediumBinding {
         {
             return Err(Denial::ForeignSource);
         }
-        if self.unresolved.get().is_some() {
-            return Err(Denial::UnresolvedPublication);
-        }
+        // An immutable indeterminate outcome is retained evidence, not running
+        // Native work. The stopped-business preflight fences accepted work;
+        // the original physical owner must classify its unresolved effects.
+        // Keep this binding and its outcome through that inspection posture.
         let state = match self.state.try_lock() {
             Ok(state) => state,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),

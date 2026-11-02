@@ -10,7 +10,6 @@ pub enum RelationalMediumRetirementDenial {
     MissingBinding,
     SharedBinding,
     MediumMoved,
-    UnresolvedPublication,
     TransitionReaderAttached,
     Execution(worth_execution::WorkCeilingDenial),
 }
