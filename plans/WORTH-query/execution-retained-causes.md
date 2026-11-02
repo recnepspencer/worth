@@ -4,7 +4,7 @@
 
 The lane starts at `52e7dba3dc` on `codex/cut-pub-causes-20261101`.
 Slice 1 is `c4b61d817783cb8e4f4ee973e414a3df73feb642` (items 1 and 2).
-The continuation is the commit containing this report (items 3 through 6).
+The original continuation is `a26581c5aae28b02da91f5fba9a6d42e1d11e208` (items 3 through 6).
 The continuation implements items 3 through 6 and the remaining warnings in
 Execution-owned source outside pub-mono. Its completed evidence is recorded below.
 Both required sync branches were fetched and merged before each slice; both
@@ -48,8 +48,8 @@ explicit. Courts P1-P4, C, W, I and N are named in the next section.
 | OriginalSettledProducerSource::Restored.checkpoint | a | Same reader compares complete restored checkpoint identity | P3 |
 | WorthQueryInspectionReadCompletion.managed_run | a | matches_report compares the report's actual managed run | C |
 | WorthQueryInspectionReadCompletion.basis | a | matches_report compares the report's actual basis | C |
-| WorthQueryInspectionReadCompletion.basis_release | a | Exact basis identity and valid local custody release | C |
-| WorthQueryInspectionReadCompletion.release | a | Exact owner-minted reservation identity, GraphWork scope and count one | C |
+| WorthQueryInspectionReadCompletion.basis_release | a | Exact basis identity; local custody validated by sealed completion construction | C |
+| WorthQueryInspectionReadCompletion.release | a | Exact owner-minted reservation identity; GraphWork scope/count guaranteed by its private terminal | C |
 | MaintainedWatchSelection.association | a | Refresh compares fresh context with retained selection association before poll/ACK | W |
 | MaintainedWatchSelection.scope | a | Refresh compares retained scope with watch audience | W |
 | MaintainedWatchSelection.native | a | native_custody keeps immutable Native backing alive after row loan ends; release at close | W: separate Weak observation |
@@ -681,3 +681,44 @@ mutation assertions and restored run; final gate review precedes the commit.
 Per-slice focused library courts and footer gates run before each fix commit.
 Full Execution library, full Decl/Host and both inspection binaries run at final
 round closure; they are not claimed re-run for this first correction.
+
+
+### 2. Consume the sealed completion proof
+
+Finding 1 landed in d0dde53d7b0a2cfd061165881ed7bfb39dc2e957. Both sync branches
+were fetched and merged before this correction; both were already current.
+
+matches_report no longer re-checks basis_release.custody_released(), graph release
+scope or released reservation count. complete_inspection_read already validates
+local basis custody before constructing its private completion, and the private
+WorthQueryReservedGraphProviderCapacity::release constructor always creates a
+GraphWork receipt with exactly one released reservation. No other path can
+construct the matching owner-issued graph reservation identity. These immutable
+construction invariants are not three independently forgeable completion facts.
+The matcher still checks the exact basis-release identity and graph reservation
+identity, as well as session, managed run, plan, target and basis.
+
+No new court is added for guaranteed shape. The existing genuine-completion C
+court remains the independent issuer-history oracle and reaches validate_report.
+The reservation-identity removal mutation compiles and fails C at exactly
+"foreign release": 0/1/0/0/2257, exit 101. Positive and freshly restored runs
+both pass 1/0/0/0/2257, exit 0. All footer gates pass; Clippy retains only the
+known 13 Execution-labelled and 7 Relational warnings. The same reviewer independently accepted
+these results and this correction before committing. No new shape is added.
+
+
+Exact s2 commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib cancelled_after_consuming_completion` | 0 | 1/0/0/0/2257 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib cancelled_after_consuming_completion` | 101 | 0/1/0/0/2257 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib cancelled_after_consuming_completion` | 0 | 1/0/0/0/2257 (passed/failed/ignored/measured/filtered) |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 1 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |

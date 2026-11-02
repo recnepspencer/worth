@@ -31,17 +31,16 @@ impl WorthQueryInspectionReadCompletion {
         basis: &WorthQueryApplicationBasisIdentity,
         capacity_identity: worth_query_admission::integration::WorthQueryGraphCapacityReservationIdentity,
     ) -> bool {
+        // Construction checks local basis custody. The sealed graph reservation
+        // terminal guarantees release scope/count; exact identities consume those
+        // proofs without repeating their shape checks here.
         self.session == session
             && self.managed_run == managed_run
             && self.plan == plan
             && std::sync::Arc::ptr_eq(&self.target, target)
             && self.basis == *basis
             && self.basis_release.identity() == basis
-            && self.basis_release.custody_released()
             && self.release.graph_reservation_identity() == Some(capacity_identity)
-            && self.release.scope()
-                == worth_query_admission::integration::WorthQueryExecutionCapacityReservationScope::GraphWork
-            && self.release.released_reservation_count() == 1
     }
 }
 
