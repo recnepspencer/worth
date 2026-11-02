@@ -108,13 +108,14 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
     WorthQueryApplicationCommittedChanges, WorthQueryApplicationLandedCommit,
     WorthQueryApplicationManagedCleanup, WorthQueryApplicationManagedCleanupFailure,
-    WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
-    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
-    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryCommittedProductPublication,
+    WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationNoEffectCause, WorthQueryApplicationStaleAttempt,
+    WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCleanupDispatchDenial, WorthQueryCleanupDispatchPosture,
+    WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
-    WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
-    WorthQueryProgramActivationUnresolved,
+    WorthQueryCommittedReceiptProjection, WorthQueryProgramActivationUnresolved,
 };
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{
@@ -240,3 +241,5 @@ pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entit
 pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScopes;
 
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
+
+pub(in crate::domain_computation) use compare_and_commit::WorthQueryPendingApplicationCommitReceipt;

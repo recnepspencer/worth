@@ -32,7 +32,7 @@ fn cleanup_failure_keeps_heads_indeterminate_posture_for_execution_refusals() {
                 Default::default(),
             ));
             let Outcome::Indeterminate(evidence) =
-                cleanup_failed_outcome(Progression::Denied(denial))
+                cleanup_failed_outcome(Progression::Denied(denial)).0
             else {
                 panic!("failed cleanup changed HEAD's indeterminate posture: {kind:?}");
             };
@@ -59,7 +59,7 @@ fn cleanup_failure_preserves_the_complete_interrupted_commit_evidence() {
         let evidence =
             Evidence::from_provider_session_failure(Recovery::CommitRecoveryRequired, &failure);
         let Outcome::Indeterminate(retained) =
-            cleanup_failed_outcome(Progression::Indeterminate(evidence.clone()))
+            cleanup_failed_outcome(Progression::Indeterminate(evidence.clone())).0
         else {
             panic!("cleanup must retain indeterminate evidence")
         };

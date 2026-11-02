@@ -4,22 +4,28 @@ use worth_query_execution::facade::domain_computation::WorthQueryProductUnpublis
 /// Completion of this cleanup collection alone, never whole-operation completion.
 pub struct WorthQueryOperationCleanupReceipt {
     managed: Option<
-        worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
     >,
     retired_component_count: usize,
 }
 impl WorthQueryOperationCleanupReceipt {
     /// Actual native cleanup evidence, including any remaining logical recovery disposition.
+    /// Lends the actual remaining original dispatch/recovery owner.
+    pub fn managed_cleanup_receipt_mut(&mut self) -> Option<&mut worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt>{
+        self.managed.as_mut()
+    }
     pub fn managed_cleanup_receipt(
         &self,
-    ) -> Option<&worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
-    {
+    ) -> Option<
+        &worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    > {
         self.managed.as_ref()
     }
     pub(super) fn into_managed_receipt(
         self,
-    ) -> Option<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
-    {
+    ) -> Option<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    > {
         self.managed
     }
 
@@ -35,7 +41,7 @@ pub struct WorthQueryOperationCleanup {
     // The existing installed allocation remains owned after descriptor abandonment.
     keepalive: Option<Box<dyn std::any::Any + Send + Sync>>,
     managed_receipt: Option<
-        worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
     >,
     managed:
         Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup>,

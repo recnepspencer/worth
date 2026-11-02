@@ -44,9 +44,17 @@ impl WorthQueryOutputReadCleanup {
     pub fn retired_component_count(&mut self) -> usize {
         self.custody.retired_components()
     }
+    pub fn receipt_mut(
+        &mut self,
+    ) -> Option<
+        &mut crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    > {
+        self.custody.receipt_mut()
+    }
     pub fn receipt(
         &mut self,
-    ) -> Option<&crate::domain_computation::WorthQueryDirectRunCleanupReceipt> {
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
+    {
         self.custody.receipt()
     }
 }

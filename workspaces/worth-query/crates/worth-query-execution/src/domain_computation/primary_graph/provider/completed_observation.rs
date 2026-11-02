@@ -2,6 +2,16 @@ use super::{WorthQueryPrimaryGraphCommittedApplication, WorthQueryPrimaryGraphPr
 
 impl WorthQueryPrimaryGraphProvider {
     #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn discard_receipt_basis_window_for_test(
+        &self,
+    ) {
+        *self
+            .receipt_basis_retention
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
+    }
+
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn discard_completed_evidence_for_test(&self) {
         *self
             .completed_commit_evidence

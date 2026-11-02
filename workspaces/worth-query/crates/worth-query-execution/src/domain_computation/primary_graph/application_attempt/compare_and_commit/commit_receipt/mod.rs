@@ -28,7 +28,7 @@ use super::super::{
     WorthQueryMutationPreconditionComparisonEvidence,
 };
 
-pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingApplicationCommitReceipt;
+pub(in crate::domain_computation) use pending::WorthQueryPendingApplicationCommitReceipt;
 pub(in crate::domain_computation::primary_graph) use projection::WorthQueryCommittedReceiptProjection;
 pub use publication_source::WorthQueryApplicationCommitPublicationSource;
 

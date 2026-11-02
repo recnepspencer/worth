@@ -1,5 +1,10 @@
 //! Compare-and-commit receipt and outcome surface.
+mod cleanup_receipt;
 mod cleanup_required;
+pub use cleanup_receipt::{
+    WorthQueryApplicationManagedCleanupReceipt, WorthQueryCleanupDispatchDenial,
+    WorthQueryCleanupDispatchPosture,
+};
 pub use cleanup_required::{
     WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
 };
@@ -21,13 +26,13 @@ pub use commit_outcome::{
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationStaleAttempt,
     WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
 };
+pub(in crate::domain_computation::primary_graph) use commit_receipt::WorthQueryCommittedReceiptProjection;
 pub use commit_receipt::{
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationCommittedChanges,
 };
-pub(in crate::domain_computation::primary_graph) use commit_receipt::{
-    WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
-};
 pub use committed_publication::WorthQueryCommittedProductPublication;
 
 pub(in crate::domain_computation::primary_graph) use commit_receipt::MaterializedCommittedField;
+
+pub(in crate::domain_computation) use commit_receipt::WorthQueryPendingApplicationCommitReceipt;

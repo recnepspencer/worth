@@ -144,7 +144,7 @@ impl WorthQueryApplicationAttemptBasis {
             return Err(());
         }
         let (completion, receiver) =
-            super::super::super::provider::OriginalCompletionPublisher::channel();
+            super::super::super::provider::OriginalCompletionPublisher::pending_slot();
         Ok(Self {
             original_completion: Some(receiver),
             core: WorthQueryApplicationAttemptCore {

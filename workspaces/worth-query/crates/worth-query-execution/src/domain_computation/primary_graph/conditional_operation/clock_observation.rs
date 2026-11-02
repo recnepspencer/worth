@@ -267,6 +267,18 @@ impl<'runtime, Schema, Node, Clock>
 where
     Schema: ApplicationSchema,
 {
+    /// Transfers one actual completed cleanup's remaining original effect
+    /// custody. The operation lock ends before this returns; resume delivery
+    /// explicitly through the application owner with a fresh request.
+    pub fn take_released_managed_cleanup(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
+    {
+        self.operation
+            .lock_operation()
+            .take_released_managed_cleanup()
+    }
+
     pub fn observe(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

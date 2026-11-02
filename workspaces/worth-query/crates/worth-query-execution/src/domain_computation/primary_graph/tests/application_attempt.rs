@@ -65,6 +65,7 @@ mod producer_invariant_publication;
 #[path = "application_attempt/program_fixture.rs"]
 mod program_fixture;
 pub(in crate::domain_computation::primary_graph) use program_fixture::admitted_operation;
+mod cleanup_dispatch;
 #[path = "application_attempt/native_preparation.rs"]
 mod native_preparation;
 #[path = "application_attempt/program_lane.rs"]
@@ -217,7 +218,7 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
             idempotency(31, 31),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
+        WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let after_commit = crate::execution_digest::test_hash_parts_call_count();
     assert_eq!(

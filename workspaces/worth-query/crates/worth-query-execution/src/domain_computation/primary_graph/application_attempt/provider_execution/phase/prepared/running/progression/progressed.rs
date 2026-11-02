@@ -44,9 +44,9 @@ where
     ) {
         Ok(completion) => completion,
         Err(failure) => {
-            let evidence = cleanup_failure::cleanup_failed_outcome(outcome);
+            let (evidence, original) = cleanup_failure::cleanup_failed_outcome(outcome);
             return WorthQueryApplicationCommitOutcome::CleanupRequired(Box::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.product_runtime.clone(), application.bridge.conditional_operations()),
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.product_runtime.clone(), original, application.bridge.conditional_operations()),
             ));
         }
     };

@@ -100,7 +100,12 @@ impl WorthQueryOutputDemandDenial {
     pub(super) fn release_managed_cleanup(
         &mut self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    ) -> Result<Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>, Self> {
+    ) -> Result<
+        Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+        >,
+        Self,
+    > {
         match self.cleanup.as_mut().map(|custody| custody.release(phase)) {
             Some(Err(denial)) => Err(denial),
             Some(Ok(receipt)) => Ok(receipt),

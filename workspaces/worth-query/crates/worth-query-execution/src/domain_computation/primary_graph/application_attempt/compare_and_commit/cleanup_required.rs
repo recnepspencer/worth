@@ -17,6 +17,7 @@ impl WorthQueryApplicationCleanupRequired {
         outcome: WorthQueryApplicationCommitOutcome,
         failure: WorthQueryMutationCleanupFailure,
         runtime: WorthQueryProductRuntime,
+        original: Option<super::WorthQueryPendingApplicationCommitReceipt>,
         bridge: std::sync::Arc<
             std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
         >,
@@ -25,6 +26,7 @@ impl WorthQueryApplicationCleanupRequired {
             outcome,
             cleanup: WorthQueryApplicationManagedCleanup {
                 failure,
+                original,
                 runtime,
                 last_denial: None,
                 bridge,
@@ -71,14 +73,15 @@ impl WorthQueryApplicationCleanupRequired {
 /// ```
 /// use worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup;
 /// use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
-/// use worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt;
-/// fn cleanup(owner: WorthQueryApplicationManagedCleanup, phase: &WorthQueryAdvancementPhase<'_>) -> Result<WorthQueryDirectRunCleanupReceipt, WorthQueryApplicationManagedCleanup> {
+/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt;
+/// fn cleanup(owner: WorthQueryApplicationManagedCleanup, phase: &WorthQueryAdvancementPhase<'_>) -> Result<WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationManagedCleanup> {
 ///     owner.retry_in_advancement(phase)
 /// }
 /// ```
 #[must_use = "cleanup refusal returns this original owner"]
 pub struct WorthQueryApplicationManagedCleanup {
     failure: WorthQueryMutationCleanupFailure,
+    original: Option<super::WorthQueryPendingApplicationCommitReceipt>,
     runtime: WorthQueryProductRuntime,
     bridge: std::sync::Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>,
     last_denial: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial>,
@@ -96,7 +99,7 @@ impl WorthQueryApplicationManagedCleanup {
     pub fn retry_in_advancement(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-    ) -> Result<crate::domain_computation::WorthQueryDirectRunCleanupReceipt, Self> {
+    ) -> Result<super::WorthQueryApplicationManagedCleanupReceipt, Self> {
         use crate::domain_computation::primary_graph::application_contribution::execution_denial;
         let execution = match phase.checked_execution_request_for(&self.runtime) {
             Ok(execution) => execution,
@@ -114,18 +117,25 @@ impl WorthQueryApplicationManagedCleanup {
                         .map_err(execution_denial::advancement_checkpoint_stop)?;
                     let Self {
                         failure,
+                        original,
                         runtime,
                         bridge,
                         ..
                     } = owner
                         .take()
                         .expect("checked cleanup owns its native terminal");
-                    Ok(failure.retry().map_err(|failure| Self {
-                        failure,
-                        runtime,
-                        bridge,
-                        last_denial: None,
-                    }))
+                    Ok(match failure.retry() {
+                        Ok(native) => Ok(super::WorthQueryApplicationManagedCleanupReceipt::new(
+                            native, original,
+                        )),
+                        Err(failure) => Err(Self {
+                            failure,
+                            original,
+                            runtime,
+                            bridge,
+                            last_denial: None,
+                        }),
+                    })
                 })
         });
         match result {

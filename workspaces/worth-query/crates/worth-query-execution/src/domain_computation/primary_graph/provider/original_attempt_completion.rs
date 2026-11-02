@@ -1,21 +1,22 @@
-//! One original attempt's direct result handoff, never an idempotency index.
+//! Preallocated one-shot transfer from publication to its original active attempt.
 use super::WorthQueryPrimaryGraphCommittedApplication as Completed;
 use crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding;
-use std::sync::{mpsc, Mutex};
+use std::sync::{Arc, Mutex};
 
+type OriginalSlot = Arc<Mutex<Option<Completed>>>;
 pub(in crate::domain_computation::primary_graph) struct OriginalCompletionPublisher(
-    Mutex<Option<mpsc::Sender<Completed>>>,
+    Mutex<Option<OriginalSlot>>,
 );
-pub(in crate::domain_computation::primary_graph) struct OriginalCompletionReceiver(
-    mpsc::Receiver<Completed>,
-);
+pub(in crate::domain_computation::primary_graph) struct OriginalCompletionReceiver(OriginalSlot);
 impl OriginalCompletionPublisher {
-    pub(in crate::domain_computation::primary_graph) fn channel(
+    pub(in crate::domain_computation::primary_graph) fn pending_slot(
     ) -> (Self, OriginalCompletionReceiver) {
-        let (sender, receiver) = mpsc::channel();
+        // Allocate before the provider can perform an effect. Cutover only moves
+        // the actual result into this fixed slot; it allocates no message queue.
+        let slot = Arc::new(Mutex::new(None));
         (
-            Self(Mutex::new(Some(sender))),
-            OriginalCompletionReceiver(receiver),
+            Self(Mutex::new(Some(Arc::clone(&slot)))),
+            OriginalCompletionReceiver(slot),
         )
     }
     pub(in crate::domain_computation::primary_graph) fn take(&self) -> Self {
@@ -27,14 +28,19 @@ impl OriginalCompletionPublisher {
         ))
     }
     pub(in crate::domain_computation::primary_graph) fn complete(self, completed: Completed) {
-        if let Some(sender) = self
+        if let Some(slot) = self
             .0
             .into_inner()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
         {
-            // A later recovery can complete publication after the original call
-            // ended. That cannot resurrect its original managed completion.
-            let _ = sender.send(completed);
+            let mut target = slot
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            assert!(
+                target.is_none(),
+                "one original performing owner fills its slot once"
+            );
+            *target = Some(completed);
         }
     }
 }
@@ -43,7 +49,11 @@ impl OriginalCompletionReceiver {
         &self,
         session: &WorthQueryProviderSessionTerminalBinding,
     ) -> Option<Completed> {
-        let completed = self.0.try_recv().ok()?;
+        let completed = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()?;
         assert!(
             completed
                 .commit_evidence()

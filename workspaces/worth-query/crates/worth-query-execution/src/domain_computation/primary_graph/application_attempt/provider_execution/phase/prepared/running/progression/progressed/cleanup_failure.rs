@@ -11,8 +11,11 @@ use crate::domain_computation::{
     WorthQueryProviderSessionProtocolStage,
 };
 
-pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
-    match outcome {
+pub(super) fn cleanup_failed_outcome(outcome: Progression) -> (
+    Outcome, Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryPendingApplicationCommitReceipt>,
+){
+    let evidence = match outcome {
+        Progression::Committed(original) => return (cleanup_indeterminate(), Some(original)),
         Progression::RecoveredCommitted(receipt) => Outcome::RecoveredCommitted(receipt),
         Progression::ProductPreparationPending(owner) => Outcome::ProductPreparationPending(owner),
         Progression::ProductPreparationRefused(owner) => Outcome::ProductPreparationRefused(owner),
@@ -111,11 +114,11 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
         Progression::TimedOut => cleanup_execution_indeterminate(Err(
             crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
-        Progression::Committed(_)
-        | Progression::Stale(_)
-        | Progression::Aborted
-        | Progression::Deferred(_) => cleanup_indeterminate(),
-    }
+        Progression::Stale(_) | Progression::Aborted | Progression::Deferred(_) => {
+            cleanup_indeterminate()
+        }
+    };
+    (evidence, None)
 }
 
 // The existing unresolved evidence already holds a provider-session kind.

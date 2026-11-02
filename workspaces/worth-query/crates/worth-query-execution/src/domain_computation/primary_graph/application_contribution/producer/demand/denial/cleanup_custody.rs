@@ -1,9 +1,9 @@
 //! Unique native cleanup transfer; diagnostic copies never contain authority.
+use crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt as Receipt;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCleanupRequired as Required,
     WorthQueryApplicationCommitOutcome,
 };
-use crate::domain_computation::WorthQueryDirectRunCleanupReceipt as Receipt;
 type Recovery = crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 type ReleaseFailure = crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure;
 type ReleaseReceipt = crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt;
@@ -18,6 +18,7 @@ trait CleanupOwner: std::fmt::Debug + Send + Sync {
         release: &mut ReadRelease<'_>,
     ) -> Result<(), super::super::WorthQueryOutputReadCloseDenial>;
     fn receipt(&mut self) -> Option<&Receipt>;
+    fn receipt_mut(&mut self) -> Option<&mut Receipt>;
     fn outcome(&mut self) -> Option<&WorthQueryApplicationCommitOutcome>;
     fn retired_components(&mut self) -> usize;
     fn release(
@@ -121,6 +122,13 @@ impl CleanupOwner for NativeCleanupOwner {
             .map(|required| required.outcome())
             .or(state.outcome.as_ref())
     }
+    fn receipt_mut(&mut self) -> Option<&mut Receipt> {
+        self.0
+            .get_mut()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .released_receipt
+            .as_mut()
+    }
     fn receipt(&mut self) -> Option<&Receipt> {
         self.0
             .get_mut()
@@ -162,8 +170,9 @@ impl CleanupOwner for NativeCleanupOwner {
         match cleanup.retry_in_advancement(phase) {
             Ok(receipt) => {
                 state.outcome = Some(outcome);
-                state.released_receipt = Some(receipt.clone());
-                Ok(Some(receipt))
+                let diagnostic = receipt.clone();
+                state.released_receipt = Some(receipt);
+                Ok(Some(diagnostic))
             }
             Err(cleanup) => {
                 let denial = cleanup
@@ -218,6 +227,11 @@ impl DemandCleanupCustody {
         release: &mut ReadRelease<'_>,
     ) -> Result<(), super::super::WorthQueryOutputReadCloseDenial> {
         self.0.read_close(phase, release)
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn receipt_mut(
+        &mut self,
+    ) -> Option<&mut Receipt> {
+        self.0.receipt_mut()
     }
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn receipt(
         &mut self,

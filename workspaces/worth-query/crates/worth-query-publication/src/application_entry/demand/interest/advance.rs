@@ -197,10 +197,10 @@ where
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         Option<
-            worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
         >,
         WorthQueryApplicationOutputDemandDenial,
-    > {
+    >{
         self.continuation
             .release_managed_cleanup(self.application, request)
     }

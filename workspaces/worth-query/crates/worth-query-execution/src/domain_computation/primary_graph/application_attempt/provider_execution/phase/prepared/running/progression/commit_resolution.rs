@@ -184,6 +184,16 @@ fn resolve_indeterminate_commit(
         WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired,
         &failure,
     );
+    if let Some(completed) = context.original_completion.take(&context.provider_session) {
+        return resolve_committed_components(&context, completed).map_or_else(
+            |denial| {
+                WorthQueryProviderProgressionOutcome::Indeterminate(
+                    committed_component_recovery_evidence(denial),
+                )
+            },
+            |resolved| seal_committed_outcome(context, resolved),
+        );
+    }
     let resolution = context.provider.resolve_idempotency_binding_at_product(
         execution,
         context.idempotency,

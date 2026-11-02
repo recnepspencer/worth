@@ -18,6 +18,51 @@ pub(in crate::domain_computation) struct WorthQueryPendingApplicationCommitRecei
 }
 
 impl WorthQueryPendingApplicationCommitReceipt {
+    pub(in crate::domain_computation::primary_graph) fn original_provider(&self) -> &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication{
+        &self.provider
+    }
+    pub(in crate::domain_computation) fn original_runtime_instance_id(&self) -> u64 {
+        self.provider.runtime_instance_id()
+    }
+    pub(in crate::domain_computation) fn original_commit(
+        &self,
+    ) -> &worth_relational::facade::history::RelationalCommitReceipt {
+        self.provider.commit_reference()
+    }
+    pub(in crate::domain_computation) fn original_publication(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        self.provider.committed_product_publication()
+    }
+    pub(in crate::domain_computation) fn original_work(
+        &self,
+    ) -> Option<
+        &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryMutationWorkEvidence,
+    > {
+        self.provider.mutation_work()
+    }
+    pub(in crate::domain_computation) fn original_preimage(
+        &self,
+    ) -> Option<&WorthQueryRetainedPreImage> {
+        self.retained_preimage.as_ref()
+    }
+    pub(in crate::domain_computation) fn original_outbox_binding(&self) -> Option<&crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxBinding>{
+        self.committed_dispatch_outbox.as_ref()
+    }
+    pub(in crate::domain_computation) fn original_authority(
+        &self,
+    ) -> &super::WorthQueryApplicationCommitAuthorityBinding {
+        &self.authority_binding
+    }
+    pub(in crate::domain_computation) fn canonical_work(
+        &self,
+    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
+        self.canonical_work
+    }
+    pub(in crate::domain_computation::primary_graph) fn dispatch_binding(&self) -> Option<&crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxBinding>{
+        self.committed_dispatch_outbox.as_ref()
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_projection(
         permit: super::super::super::provider_execution::WorthQueryFreshCommitReceiptPermit,
         projection: WorthQueryCommittedReceiptProjection,

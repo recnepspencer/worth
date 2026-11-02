@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 mod correlation;
 #[cfg(test)]
 mod layout_tests;
+mod original_attempt;
 mod original_row;
 #[cfg(test)]
 mod owner_test_support;
@@ -185,11 +186,12 @@ impl WorthQueryPrimaryGraphProvider {
         let Some(binding) = receipt.committed_dispatch_outbox() else {
             return Ok(None);
         };
-        self.observe_expected(
+        self.observe_held_original(
             execution,
             binding,
             receipt.commit_reference(),
             receipt.provider_runtime_instance_id(),
+            receipt.committed_product_publication(),
         )
         .map(|owner| {
             WorthQueryCommittedDispatchOutboxObservation::seal(
@@ -206,11 +208,12 @@ impl WorthQueryPrimaryGraphProvider {
         binding: &crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleBinding,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         let committed = binding.committed_dispatch_outbox().ok_or(Denial::Missing)?;
-        self.observe_expected(
+        self.observe_held_original(
             execution,
             committed,
             binding.commit_reference(),
             binding.runtime_instance_id(),
+            binding.committed_product_publication(),
         )
         .map(|owner| {
             WorthQueryCommittedDispatchOutboxObservation::seal(
@@ -243,7 +246,7 @@ impl WorthQueryPrimaryGraphProvider {
                 binding,
                 expected_commit: &expected_commit,
                 expected_runtime,
-                retained_basis: &retained_basis,
+                retained_basis: retained_basis.lease(),
             }
             .resolve(execution, )
         })

@@ -57,7 +57,7 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
-    let completed = dispatch_external_effect(&transport, admitted).unwrap();
+    let completed = dispatch_external_effect(&transport, admitted, || {}).unwrap();
     world
         .application
         .record_installed_transport_completion(

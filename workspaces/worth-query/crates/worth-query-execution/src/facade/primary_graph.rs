@@ -385,16 +385,8 @@ pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryI
 pub use worth_runtime_bridge::facade::BridgeConditionalDenialKind;
 pub use worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop;
 
-pub use crate::domain_computation::{
-    primary_graph::{
-        WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
-        WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
-    },
-    WorthQueryManagedRunCleanupFailureKind, WorthQueryMutationCleanupFailure,
-    WorthQueryMutationCleanupFailureKind,
-};
-
-pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
+mod managed_cleanup;
+pub use managed_cleanup::*;
 
 mod product;
 pub use product::*;

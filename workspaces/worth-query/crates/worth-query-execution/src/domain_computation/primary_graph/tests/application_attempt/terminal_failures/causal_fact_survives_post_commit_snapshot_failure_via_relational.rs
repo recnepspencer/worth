@@ -10,8 +10,11 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
     let pending = prepared.pending();
     let parent = pending.parent().clone();
     world.faults.fail_next_post_commit_snapshot();
-    let crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) = correction_source::publish(&world, prepared) else {
-        panic!("the snapshot failure resolves the original causal data");
+    let crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Committed(
+        receipt,
+    ) = correction_source::publish(&world, prepared)
+    else {
+        panic!("the original performing owner transfers its actual completion");
     };
     assert_eq!(
         world.faults.failed_post_commit_snapshot_consumption_count(),
@@ -26,7 +29,7 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
     );
     assert_eq!(carried.parent(), &parent);
     assert_eq!(carried.child(), receipt.commit_reference());
-    assert_eq!(carried.source(), &source.correction_source().coordinates());
+    assert_eq!(carried.recorded_source(), &source.correction_source());
     let reread = world
         .application
         .with_host_advancement(|phase| {
@@ -45,7 +48,5 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
             })
         })
         .unwrap();
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_causality(
-        carried, &reread,
-    );
+    assert_eq!(carried, &reread);
 }

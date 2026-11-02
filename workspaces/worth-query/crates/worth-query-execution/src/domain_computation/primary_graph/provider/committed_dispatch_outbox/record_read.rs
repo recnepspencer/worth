@@ -7,7 +7,7 @@ pub(super) struct CommittedOutboxRead<'a> {
     pub(super) binding: &'a super::super::WorthQueryCommittedDispatchOutboxBinding,
     pub(super) expected_commit: &'a worth_relational::facade::history::RelationalCommitReceipt,
     pub(super) expected_runtime: u64,
-    pub(super) retained_basis: &'a super::super::WorthQueryRetainedApplicationCommitBasis,
+    pub(super) retained_basis: &'a worth_relational::facade::branch::RelationalBranchRetentionLease,
 }
 
 impl CommittedOutboxRead<'_> {
@@ -71,7 +71,7 @@ impl CommittedOutboxRead<'_> {
             .project_retained_entity_for_commit(
                 self.expected_runtime,
                 self.expected_commit,
-                self.retained_basis.lease(),
+                self.retained_basis,
                 entity_id,
                 self.layout.entity_kind,
                 scope,
