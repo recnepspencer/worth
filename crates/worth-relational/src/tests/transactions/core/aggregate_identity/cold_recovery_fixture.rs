@@ -21,6 +21,33 @@ pub(super) struct ColdSource {
     pub(super) histories: BTreeSet<RelationalDurableMemberLocator>,
 }
 impl RelationalDurableColdSource for ColdSource {
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalDurableReadPayload, RelationalDurableOwnedReadRefusal> {
+        request
+            .check_live()
+            .map_err(|cause| RelationalDurableOwnedReadRefusal::Request(cause.into()))?;
+        // Every member belongs to this immutable source for its Arc lifetime.
+        Ok(Box::new(()))
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        id: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
+        request
+            .check_live()
+            .map_err(|cause| RelationalDurableOwnedReadRefusal::Request(cause.into()))?;
+        if !original.is::<()>() {
+            return Err(RelationalDurableOwnedReadRefusal::ForeignProtection);
+        }
+        self.member(id, limit)
+            .cloned()
+            .map_err(RelationalDurableOwnedReadRefusal::Storage)
+    }
     fn retain_members(
         &self,
         _: &[RelationalDurableMemberLocator],
@@ -32,6 +59,25 @@ impl RelationalDurableColdSource for ColdSource {
         id: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
+        self.member(id, limit).map(|bytes| bytes.to_vec())
+    }
+    fn read_commit(&self, id: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        let bytes = self.commits.get(&id).ok_or(Cause::MissingMember)?;
+        if bytes.len() as u64 > limit {
+            return Err(Cause::LimitExceeded {
+                length: bytes.len() as u64,
+                limit,
+            });
+        }
+        Ok(bytes.clone())
+    }
+}
+impl ColdSource {
+    fn member(
+        &self,
+        id: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<&worth_execution::ExecutionImmutableBytes, Cause> {
         self.reads.lock().unwrap().push(id);
         let bytes = self.members.get(&id).ok_or(Cause::MissingMember)?;
         if self.fail_regions.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG") {
@@ -43,17 +89,7 @@ impl RelationalDurableColdSource for ColdSource {
                 limit,
             });
         }
-        Ok(bytes.to_vec())
-    }
-    fn read_commit(&self, id: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        let bytes = self.commits.get(&id).ok_or(Cause::MissingMember)?;
-        if bytes.len() as u64 > limit {
-            return Err(Cause::LimitExceeded {
-                length: bytes.len() as u64,
-                limit,
-            });
-        }
-        Ok(bytes.clone())
+        Ok(bytes)
     }
 }
 pub(super) fn reopen(
