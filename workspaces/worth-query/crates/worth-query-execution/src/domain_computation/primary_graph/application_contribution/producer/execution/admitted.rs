@@ -13,7 +13,7 @@ pub(super) fn execute_fresh<Schema, Binding>(
     provider: &std::sync::Arc<Binding::Provider>,
     disclosure: FreshOutputDisclosure<SourceQuery<Schema, Binding>, SourceValue<Schema, Binding>>,
     successor_of: Option<[u8; 32]>,
-    commit_authority: WorthQueryProducerCommitAuthority,
+    commit_authority: ProducerInvocationAuthority<'_>,
     edition: super::super::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop>
@@ -48,8 +48,46 @@ where
         )
         .into());
     }
+    let disclosure = commit_authority.confirm_source(execution, runtime, disclosure)?;
     let (source, observed_source) = disclosure.into_parts();
     let input = provider.operation_input(&source);
+    if let Some(control) = super::select_invocation_control(execution, runtime, &commit_authority)?
+    {
+        let shared = selected.prepare_shared_query_basis().map_err(|(_, stop)| {
+            source_readmission::ready_resource_denial(Binding::IDENTITY, stop)
+        })?;
+        let prepared = super::selected_public::prepare_selected_public_mutation::<Schema, Binding>(
+            execution,
+            installed,
+            runtime,
+            &shared,
+            Some(&control),
+            external_principal,
+            request_scope,
+            &input,
+        )
+        .map_err(super::selected_public::preparation_stop::<Schema, Binding>)?;
+        return post_authorization::execute_authorized::<Schema, Binding>(
+            phase,
+            runtime,
+            &shared,
+            Some(&control),
+            external_principal,
+            request_scope,
+            prepared.principal.principal(),
+            prepared.operation,
+            required_output,
+            provider,
+            source,
+            observed_source,
+            input,
+            None,
+            successor_of,
+            commit_authority,
+            edition,
+            producer_contacts,
+        );
+    }
     // The producer installed this exact binding once. Ordinary authorization
     // below still checks its current runtime/schema/operation authority; fresh
     // principal and graph-work sessions are issued for this request. Rebuilding
@@ -95,6 +133,7 @@ where
         phase,
         runtime,
         &shared,
+        None,
         external_principal,
         request_scope,
         &principal,

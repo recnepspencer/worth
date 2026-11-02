@@ -31,11 +31,55 @@ pub use correction::{
     WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
 };
 mod demand;
+pub use worth_query_execution::facade::primary_graph::WorthQueryCompletedOriginalReadOutputs;
+pub use worth_query_execution::facade::primary_graph::WorthQueryCompletedReadOutputs;
 mod denial;
 mod elevation_approval;
 mod elevation_close;
 mod elevation_request;
+mod history;
 mod inbound_occurrence;
+#[doc(hidden)]
+pub use history::WorthQueryHistoryEditHandoffPauseForTest;
+pub use history::{
+    OrdinaryHistoryPayload, WorthQueryApplicationHistoryAttachmentFailure,
+    WorthQueryApplicationHistoryCloseFailure, WorthQueryApplicationHistoryDenial,
+    WorthQueryApplicationHistoryDocument, WorthQueryApplicationHistoryPreview,
+    WorthQueryDocumentHistoryCandidateDenial, WorthQueryDocumentHistoryCloseReceipt,
+    WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
+    WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryIdentity,
+    WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryFixedHistoryEditOutcome,
+    WorthQueryGovernedHistoryPayload, WorthQueryGroupedHistoryDocument,
+    WorthQueryHistoryCheckoutDescription, WorthQueryHistoryCheckoutTarget,
+    WorthQueryHistoryClosingOutputs, WorthQueryHistoryCommandContextDenial,
+    WorthQueryHistoryCommands, WorthQueryHistoryContextRefreshDenial,
+    WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryDescriptionContext,
+    WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder,
+    WorthQueryHistoryEditCaptureDenial, WorthQueryHistoryEditCaptureFailure,
+    WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish,
+    WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture, WorthQueryHistoryExpectedCheckout,
+    WorthQueryHistoryGroupCompletionIter, WorthQueryHistoryGroupCompletionKind,
+    WorthQueryHistoryGroupCompletions, WorthQueryHistoryGroupDenial,
+    WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish, WorthQueryHistoryGroupPosture,
+    WorthQueryHistoryNavigation, WorthQueryHistoryNavigationAdvance,
+    WorthQueryHistoryNavigationAdvanceDenial, WorthQueryHistoryNavigationBuilder,
+    WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
+    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
+    WorthQueryHistoryNavigationPosture, WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId,
+    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputDenial,
+    WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode, WorthQueryHistoryPage,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry,
+    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary,
+    WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice,
+    WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
+    WorthQueryHistoryRetentionStatus, WorthQueryHistoryRootOutputAdmissionDenial,
+    WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryWindowChange,
+    WorthQueryHistoryWithOutputs,
+};
+#[doc(hidden)]
+pub use history::{
+    WorthQueryHistoryGroupHandoffPauseForTest, WorthQueryHistoryGroupHandoffPointForTest,
+};
 mod live;
 mod mandatory_review;
 mod mutation;
@@ -45,11 +89,11 @@ mod operation;
 #[doc(hidden)]
 pub use operation::WorthQuerySourceCompletionHandoffPauseForTest;
 pub use operation::{
-    WorthQueryClosedFixedDelivery, WorthQueryClosedOperation, WorthQueryCompletedSourceOperation,
-    WorthQueryCompletedWorkflowOperation, WorthQueryCompletedWorkflowSelection,
-    WorthQueryDiscoveredOperation, WorthQueryFixedOperation, WorthQueryOperationAdvance,
-    WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
-    WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
+    WorthQueryClosedFixedDelivery, WorthQueryClosedFixedTerminal, WorthQueryClosedOperation,
+    WorthQueryCompletedSourceOperation, WorthQueryCompletedWorkflowOperation,
+    WorthQueryCompletedWorkflowSelection, WorthQueryDiscoveredOperation, WorthQueryFixedOperation,
+    WorthQueryHistoryOperationMode, WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial,
+    WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
     WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
     WorthQueryOperationDeliveryPolicy, WorthQueryOperationDescription,
     WorthQueryOperationInputCaptureDenial, WorthQueryOperationInputCaptureRefusal,
@@ -131,13 +175,13 @@ pub use mutation::{
     WorthQueryDiscoveredProgramOutputProgress, WorthQueryDiscoveredProgramOutputSettlement,
     WorthQueryDiscoveredRecoveryProgress, WorthQueryMutationSourcePrepared,
     WorthQueryPerformedApplicationMutation, WorthQueryPerformedDiscoveredApplicationMutation,
-    WorthQueryPerformedMutationExecutionDenial, WorthQueryPreparedProgramMutation,
-    WorthQueryProgramSourceRecoveryProgress, WorthQueryRecoveredDiscoveredOutputs,
-    WorthQueryRecoveredRequiredOutputs, WorthQueryRequiredOutputPreparation,
-    WorthQueryRequiredOutputPreparationDenial, WorthQueryRequiredOutputRecoveryPosture,
-    WorthQueryRequiredOutputRetentionFailure, WorthQueryRequiredOutputStartFailure,
-    WorthQueryStartedDiscoveredOutputs, WorthQueryStartedRequiredOutputs,
-    WorthQueryUnpublishedDiscoveredApplicationMutation,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryPerformedProgramOutputSource,
+    WorthQueryPreparedProgramMutation, WorthQueryProgramSourceRecoveryProgress,
+    WorthQueryRecoveredDiscoveredOutputs, WorthQueryRecoveredRequiredOutputs,
+    WorthQueryRequiredOutputPreparation, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputRetentionFailure,
+    WorthQueryRequiredOutputStartFailure, WorthQueryStartedDiscoveredOutputs,
+    WorthQueryStartedRequiredOutputs, WorthQueryUnpublishedDiscoveredApplicationMutation,
     WorthQueryUnpublishedRequiredApplicationMutation,
 };
 pub use programs::{

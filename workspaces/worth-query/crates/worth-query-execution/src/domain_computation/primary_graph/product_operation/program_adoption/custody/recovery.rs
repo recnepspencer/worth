@@ -258,7 +258,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(product) => product,
                 Err(denial) => return Err((denial, recovery)),
             };
-            let selected = match self.on_product_for_adoption_recovery(execution, product) {
+            let selected = match self.on_product_for_owner_recovery(execution, product) {
                 Ok(selected) => selected,
                 Err(denial) => return Err((denial, recovery)),
             };

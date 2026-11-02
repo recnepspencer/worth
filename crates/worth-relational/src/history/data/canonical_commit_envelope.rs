@@ -27,8 +27,10 @@ pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
 mod payload_digest;
+mod retained_entity_selection;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
+pub use retained_entity_selection::CanonicalRetainedEntitySelection;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
 mod required_output_codec_retirement;
@@ -98,13 +100,31 @@ pub struct CanonicalCommitEnvelope {
     pub descriptor_semantics_version: DescriptorSemanticsVersion,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CanonicalCommitAuthorityKind {
     VersionedTransaction,
     /// A canonical branch-reference movement that carries no new relational
     /// version. Recovery may readmit legacy metadata publications here after
     /// translating their obsolete lineage vocabulary.
     BranchReferenceMovement,
+    /// A fresh version selecting one retained authoritative entity payload.
+    RetainedEntitySelection(std::sync::Arc<CanonicalRetainedEntitySelection>),
+}
+
+impl CanonicalCommitAuthorityKind {
+    pub fn advances_version(&self) -> bool {
+        match self {
+            Self::VersionedTransaction | Self::RetainedEntitySelection(_) => true,
+            Self::BranchReferenceMovement => false,
+        }
+    }
+
+    pub fn retained_entity_selection(&self) -> Option<&CanonicalRetainedEntitySelection> {
+        match self {
+            Self::RetainedEntitySelection(selection) => Some(selection),
+            Self::VersionedTransaction | Self::BranchReferenceMovement => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -216,7 +236,7 @@ impl CanonicalCommitEnvelope {
     }
 
     pub fn authority_kind(&self) -> CanonicalCommitAuthorityKind {
-        self.authority_kind
+        self.authority_kind.clone()
     }
 
     pub(crate) fn published_lineage(&self) -> &PublishedLineageArtifact {
@@ -239,7 +259,25 @@ impl CanonicalCommitEnvelope {
                 touched.insert(target);
             }
         }
+        if let Some(selection) = self.authority_kind.retained_entity_selection() {
+            touched.insert(RecordRef::Entity(selection.entity()));
+        }
         touched
+    }
+
+    /// Borrow authored targets too: an equal-valued authored update can have
+    /// no surviving field patch and still be a distinct record occurrence.
+    pub(crate) fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_ {
+        self.authority_kind
+            .retained_entity_selection()
+            .map(|selection| Some(RecordRef::Entity(selection.entity())))
+            .into_iter()
+            .chain(
+                self.merged_plan
+                    .merged_intents
+                    .iter()
+                    .map(intent_record_ref),
+            )
     }
 
     /// Canonical bytes for owner truth only. Diagnostics and optional derived
@@ -357,7 +395,6 @@ pub struct RelationalReplayRecord {
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]
 mod tests;
-
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
 pub(crate) use text_wire::CanonicalEnvelopeWire;

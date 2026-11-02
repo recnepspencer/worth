@@ -313,6 +313,10 @@ impl PreparedCommitPublicationExecution {
         self.publication.prepared_root()
     }
 
+    pub(crate) fn is_retained_entity_selection(&self) -> bool {
+        self.admitted.semantic_plan().selection().is_some()
+    }
+
     pub(crate) fn release_transaction_retention(&mut self) {
         self.admitted.release_transaction_retention();
     }

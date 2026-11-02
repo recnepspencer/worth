@@ -22,6 +22,7 @@ pub(super) use semantic_join::newest_semantic_key;
 mod cached_ready;
 mod selected_output;
 pub(super) use obligation_capacity::performed_obligation_capacity_denial;
+pub(super) use obligation_capacity::prepare_performed_obligation_slots;
 pub(in crate::domain_computation::primary_graph) use selected_output::SelectedOutputAdmission;
 
 impl WorthQueryOutputDemandRegistry {

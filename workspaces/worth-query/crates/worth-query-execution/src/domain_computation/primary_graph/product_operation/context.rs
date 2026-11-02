@@ -153,7 +153,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn on_product_for_adoption_recovery(
+    pub(in crate::domain_computation::primary_graph) fn on_product_for_owner_recovery(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: WorthQueryProductBranchLease,

@@ -17,6 +17,9 @@ use worth_query_topology_entry::{
 };
 mod construction;
 mod exact_observation;
+mod original_endpoint;
+mod phase_cleanup;
+mod qualification;
 mod selected_meaning;
 mod transitions;
 type World = installation::ConsumerWorld;
@@ -108,7 +111,12 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             length(3)
         );
         change_suffix(&world, &request);
+        let read_source = request.retain_current_read().unwrap();
         let settled = settle_tree(&world, &request);
+        assert!(
+            settled.settlement().performed_source().is_none(),
+            "the genuine read-origin tree has no source action receipt"
+        );
         assert_eq!(
             settled.settlement().output_count(),
             4,
@@ -127,6 +135,13 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
             0
         );
         let closed_tree = transitions::close_tree_after_cancelled_refusal(settled, &world);
+        let common = request.retain_current_read().unwrap();
+        let qualified = closed_tree.qualify_at(&request.at(&common)).unwrap();
+        assert_eq!(
+            qualified.source_commit(),
+            read_source.selected_commit(),
+            "close refusal/retry retains original source provenance without reselection"
+        );
         (closed_fixed, closed_tree)
     };
     assert_eq!(
@@ -259,10 +274,20 @@ fn settle_fixed(
     panic!("original finite fixed tree settles")
 }
 fn settle_tree(world: &World, request: &Request<'_, '_, '_>) -> Tree {
-    let mut operation = request
+    let operation = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .retain_program_outputs::<ConsumerProgram, ConsumerProgramRoot>(&world.application)
         .unwrap_or_else(|stop| panic!("tree construction: {:?}", stop.denial()));
+    settle_original_tree(operation, request)
+}
+fn settle_original_tree(
+    mut operation: worth_query_host::facade::application_entry::WorthQueryProgramOutputOperation<
+        ConsumerSchema,
+        ConsumerProgram,
+        ConsumerProgramRoot,
+    >,
+    request: &Request<'_, '_, '_>,
+) -> Tree {
     for _ in 0..256 {
         operation = match operation.advance(request) {
             TreeAdvance::Pending(next) => next,

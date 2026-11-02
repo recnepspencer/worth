@@ -53,6 +53,13 @@ fn demand_posture(
 ) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryApplicationOutputDemandDenial as Denial;
     match denial {
+        Denial::HistoryRead(cause) => history_read_posture(cause),
+        Denial::History(cause) => match cause {
+            worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputAdvanceDenial::Demand(cause) => output_posture(cause),
+            // Current authority is borrowed for this call. A fresh admitted
+            // request must be able to retain and resume the original owner.
+            worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputAdvanceDenial::Authority(_) => WorthQueryRequiredOutputRecoveryPosture::Retryable,
+        },
         Denial::Source(query) => query_posture(query),
         Denial::Demand(denial) => output_posture(denial),
         Denial::MissingSource
@@ -60,6 +67,16 @@ fn demand_posture(
         | Denial::ProgramOutputUndeclared
         | Denial::Superseded
         | Denial::Closed => WorthQueryRequiredOutputRecoveryPosture::Terminal,
+    }
+}
+
+fn history_read_posture(
+    cause: &worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial,
+) -> WorthQueryRequiredOutputRecoveryPosture {
+    match cause {
+        worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial::Demand(cause) => output_posture(cause),
+        // This is a call's fresh C admission, not a negative producer result.
+        _ => WorthQueryRequiredOutputRecoveryPosture::Retryable,
     }
 }
 

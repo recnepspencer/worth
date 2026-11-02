@@ -112,14 +112,36 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
         argument: Argument,
         install: impl for<'guard> FnOnce(Argument, CurrentProductHead<'guard>) -> Output,
     ) -> Result<Output, ProductBranchCurrentnessFailure<Argument>> {
-        let callback = |argument| {
-            install(
-                argument,
-                CurrentProductHead {
-                    expected: self.expected,
-                },
-            )
-        };
+        let expected = self.expected;
+        let callback = |argument| install(argument, CurrentProductHead { expected });
+        self.while_locked(argument, callback)
+    }
+
+    /// Consume only Native's already-prepared memory cutover under this exact
+    /// World head. Native may perform its bounded publication mechanics here;
+    /// companion preparation, user payload destruction, settlement, Signal and
+    /// World reference movement stay outside this guard. No caller callback is
+    /// accepted by this purpose-specific receiver.
+    pub(crate) fn perform_memory_publication(
+        self,
+        cutover: worth_relational::facade::mvcc::PreparedMemoryRelationalCutover<'_, '_, '_>,
+        deadline: Option<std::time::Instant>,
+    ) -> Result<(), crate::publication::CurrentProductReadDependencyDenial> {
+        self.while_locked(cutover, |cutover| match deadline {
+            Some(deadline) => cutover.perform_before(deadline),
+            None => cutover.perform(),
+        })
+        .map_err(|failure| {
+            drop(failure);
+            crate::publication::CurrentProductReadDependencyDenial::WorldHeadUnavailable
+        })
+    }
+
+    fn while_locked<Argument, Output>(
+        self,
+        argument: Argument,
+        callback: impl FnOnce(Argument) -> Output,
+    ) -> Result<Output, ProductBranchCurrentnessFailure<Argument>> {
         let result = match self.control {
             None => self.cell.while_current(self.expected, argument, callback),
             Some(control) => {

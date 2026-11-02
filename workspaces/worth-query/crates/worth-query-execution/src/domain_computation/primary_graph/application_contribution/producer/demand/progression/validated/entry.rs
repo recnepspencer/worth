@@ -23,7 +23,7 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         entry: &InstalledProducerProvider<Schema>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
         performed: &std::cell::RefCell<super::super::required_wave::performed::PerformedMembers>,
     ) -> Result<
         CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -72,6 +72,10 @@ where
                         &demand.selected.identity,
                         claim,
                         checkpoint,
+                        principal,
+                        request_scope,
+                        &wave_authority,
+                        &mut demand.unpublished_selected_checkpoint,
                     )? {
                         return Ok(waiting());
                     }

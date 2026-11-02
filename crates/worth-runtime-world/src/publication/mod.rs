@@ -4,6 +4,7 @@ mod conditional_definition;
 mod conditional_recovery;
 pub use conditional_recovery::PreparedConditionalDefinitionRecovery;
 mod cost_counters;
+mod current_read;
 mod custody;
 #[cfg(test)]
 pub(crate) use custody::AttemptProductMovementFailure;
@@ -36,6 +37,7 @@ pub use conditional_definition::{
     RuntimeWorldUnpublishedConditionalDefinition,
 };
 pub use cost_counters::CompositePublicationCostCounters;
+pub use current_read::CurrentProductReadDependencyDenial;
 pub(crate) use intent::CompositePublicationStage;
 pub use intent::{
     CompositeComponentIntent, CompositePublicationIntent, PreparedCompositePublicationWithSignal,

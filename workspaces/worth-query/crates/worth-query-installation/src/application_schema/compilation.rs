@@ -31,6 +31,7 @@ use crate::package::{
 };
 
 pub(crate) enum ApplicationSchemaCompilationDenial {
+    History(crate::application_history::WorthQueryDocumentHistoryInstallationDenial),
     Resource(crate::application_resource::WorthQueryApplicationResourceInstallationDenial),
     Capability(WorthQueryApplicationCapabilityInstallationDenial),
     Canonical(CanonicalDigestDerivationDenial),

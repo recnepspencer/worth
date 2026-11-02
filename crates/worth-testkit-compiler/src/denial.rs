@@ -53,7 +53,7 @@ pub(crate) fn check_outcome(
     let mut attributed = false;
     let mut error_count = 0;
     for (index, message) in messages.iter().enumerate() {
-        if message["level"] == "failure-note" {
+        if message["level"] == "failure-note" || crate::driver_summary::is_abort_summary(message) {
             continue;
         }
         let rendered = message["rendered"]

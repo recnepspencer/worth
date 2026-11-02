@@ -10,6 +10,7 @@ pub(crate) fn publication(
         NoEffectCause::ExecutionRequest(cause) => Err(cause),
         ordinary @ (NoEffectCause::StaleExpectedProductHead
         | NoEffectCause::OwnerDeniedBeforeEffect
+        | NoEffectCause::CurrentReadDependency(_)
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted
@@ -56,6 +57,7 @@ mod tests {
         for cause in [
             NoEffectCause::StaleExpectedProductHead,
             NoEffectCause::OwnerDeniedBeforeEffect,
+            NoEffectCause::CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial::WorldHeadUnavailable),
             NoEffectCause::CorrespondenceRebindRequired,
             NoEffectCause::ReferenceGenerationExhausted,
             NoEffectCause::CapacityExhausted,

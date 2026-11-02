@@ -60,7 +60,7 @@ adapter traits and zero hand-fabricated mutation receipts.
 
 ## Defended Exclusion
 
-Durable persisted kit archives remain Milestone 10/11 scope.
+Durable persisted kit archives remain Store execution/durability integration scope.
 
 ## Public DX
 

@@ -1081,10 +1081,10 @@ continuation, preview discard, and delivery windows belong to Milestone 9.2.
 
 - Runtime-backed subscription declaration, bridge lowering, basis request, and
   admission are not blocked on `worth-store`.
-- Store-backed subscription execution parity remains Milestone 10 scope.
+- Store-backed subscription execution parity remains Store execution/historical integration scope.
 - Durable subscription artifact persistence, durable subscription reload,
   durable continuation checkpoints, and restart-stable subscription metadata
-  remain Milestone 11 scope.
+  remain Store Milestone 11 scope.
 - Milestone 9.1 may emit store/debt posture artifacts, but it may not claim
   durable replay or restart survival.
 
@@ -1106,7 +1106,7 @@ metadata, or denial rows rather than left as implementer intuition.
   Milestone 9.2/9.3 debt
 - runtime-historical snapshot subscription declaration is a snapshot-basis
   declaration, not durable historical replay; durable restart and
-  snapshot-plus-tail survival remain Milestone 10/11 scope
+  snapshot-plus-tail survival remain Store execution/durability integration scope
 - policy, tenant, and relationship-proof drift after live admission are not
   repaired inside subscription declaration; Milestone 9.1 consumes immutable
   admitted digests, rejects relationship-proof posture drift before family
@@ -1182,7 +1182,7 @@ meaning from runtime handles.
 It belongs before Milestone 9.3 because diagnostics and bridge parity can only
 certify a subscription surface after declaration and admission artifacts exist.
 
-It belongs before Milestone 10 because store-backed parity should extend one
+It belongs before Store execution/historical integration because store-backed parity should extend one
 already bridge-honest runtime-backed subscription declaration model rather than
 discovering subscription families per backend.
 

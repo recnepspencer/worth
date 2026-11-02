@@ -26,32 +26,8 @@ pub use crate::domain_computation::{
     WorthQueryRelationLawDenial,
 };
 
-pub use crate::domain_computation::primary_graph::{
-    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    bound_advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, conditional_intent_read_is_active_for_test,
-    fact_verification_on_this_thread_for_test,
-    full_partitioned_computation_preparations_on_this_thread_for_test,
-    inexact_native_deliveries_on_this_thread_for_test, native_marking_on_this_thread_for_test,
-    partitioned_computation_runs_on_this_thread_for_test,
-    partitioned_computation_tree_work_on_this_thread_for_test,
-    place_managed_computations_on_this_thread_for_test,
-    principal_target_reads_on_this_thread_for_test,
-    query_read_kernel_entries_by_root_on_this_thread_for_test,
-    query_read_kernel_entries_on_this_thread_for_test, query_test_execution_authority_for_test,
-    test_execution_workers_for_test, WorthQueryAdvancementEventForTest,
-    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
-    WorthQueryAdvancementObservationForTest, WorthQueryExecutionPlacementForTest,
-    WorthQueryFactVerificationForTest, WorthQueryInputCutoffCandidateForTest,
-    WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
-    WorthQueryInputCutoffNativeBasisForTest, WorthQueryInputCutoffNoRowReasonForTest,
-    WorthQueryInputCutoffOutcomeForTest, WorthQueryInputCutoffSettlementForTest,
-    WorthQueryInputCutoffSettlementPostureForTest, WorthQueryMarkedOutputForTest,
-    WorthQueryNativeMarkingForTest, WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
-    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
-    WorthQueryRecoveredProgramSourceDeliveryForTest, WorthQueryRegistryCustodyForTest,
-    WorthQueryRegistryCustodyTransitionForTest,
-};
+mod controls;
+pub use controls::*;
 
 pub use worth_relational::facade::{
     indexes::{
@@ -169,7 +145,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCommittedDispatchOutboxReadWork, WorthQueryCommittedProductPublication,
     WorthQueryCompleteApplicationReadSet, WorthQueryCompletedGeneratedOutputReconstruction,
     WorthQueryCompletedInvariantProjection, WorthQueryCompletedMutationCandidate,
-    WorthQueryCompletedOperationInvariantProjection,
+    WorthQueryCompletedOperationInvariantProjection, WorthQueryCompletedOriginalReadOutputs,
+    WorthQueryCompletedReadOutputs, WorthQueryCompletedRequiredOutputs,
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalAuthoritativeDeliveryFailure, WorthQueryConditionalClockHandle,
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,
@@ -200,8 +177,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryEntityResolutionDenialKind, WorthQueryEntityResolutionRefusalKind,
     WorthQueryExecutionLeaseDenial, WorthQueryExternalDispatchAttemptDenial,
     WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
-    WorthQueryExternalTransportInstallationDenial, WorthQueryGeneratedEntity,
-    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryExternalTransportInstallationDenial, WorthQueryFulfilledRequiredRoot,
+    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
     WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,

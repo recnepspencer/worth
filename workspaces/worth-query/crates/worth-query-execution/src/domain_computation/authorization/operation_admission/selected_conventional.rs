@@ -35,6 +35,24 @@ use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedScope;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::provider_session::WorthQueryGraphWorkAccessContextAffinity;
 
+#[path = "selected_conventional/current_control.rs"]
+mod current_control;
+#[path = "selected_conventional/ordinary.rs"]
+mod ordinary;
+pub(in crate::domain_computation) use current_control::authorize_current_control_mutation_on_selected;
+pub(in crate::domain_computation) use ordinary::authorize_public_mutation_on_selected;
+
+struct SelectedMutationProducts<'selected, 'runtime, Schema: ApplicationSchema> {
+    mutation: &'selected SharedSelectedProductOperation<'runtime, Schema>,
+    control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+}
+
+impl<Schema: ApplicationSchema> SelectedMutationProducts<'_, '_, Schema> {
+    fn security(&self) -> &SharedSelectedProductOperation<'_, Schema> {
+        self.control.unwrap_or(self.mutation)
+    }
+}
+
 pub(in crate::domain_computation) enum SelectedConventionalAdmissionStop {
     ForeignIssuedSource,
     UnsupportedAuthorization,
@@ -50,10 +68,10 @@ pub(in crate::domain_computation) enum SelectedConventionalAdmissionStop {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(in crate::domain_computation) fn authorize_public_mutation_on_selected<Schema, Binding, Scope>(
+fn authorize_mutation_products<Schema, Binding, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    shared: &SharedSelectedProductOperation<'_, Schema>,
+    products: SelectedMutationProducts<'_, '_, Schema>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
     prepared: &WorthQueryPreparedApplicationOperationGraphWork,
     principal: &WorthQueryIssuedSelectedPrincipal<
@@ -77,8 +95,8 @@ where
 {
     use SelectedConventionalAdmissionStop as Stop;
 
-    if !std::ptr::eq(principal.selected(), shared.selected())
-        || !std::ptr::eq(scope.selected(), shared.selected())
+    if !std::ptr::eq(principal.selected(), products.security().selected())
+        || !std::ptr::eq(scope.selected(), products.security().selected())
         || !principal.request().same_request(request)
         || !scope.request().same_request(request)
     {
@@ -123,7 +141,14 @@ where
 
     let mut graph_work = start_selected_operation_graph_work_admitted(
         runtime,
-        shared,
+        products.mutation,
+        products.control.map(|control| {
+            control
+                .selected()
+                .product()
+                .read_lease_ref()
+                .retained_clone()
+        }),
         current,
         prepared,
         &resource_binding_identity,

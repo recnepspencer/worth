@@ -20,6 +20,7 @@ use crate::domain_computation::{
 };
 
 mod performed;
+mod producer;
 mod publication;
 pub use performed::WorthQueryManagedApplicationRecoveryPerformed;
 

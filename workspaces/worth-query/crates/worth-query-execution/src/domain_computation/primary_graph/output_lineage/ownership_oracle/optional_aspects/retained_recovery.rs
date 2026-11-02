@@ -95,8 +95,8 @@ fn tracked_aspect_absence_survives_query_checkpoint_then_invalidates_on_other_fi
             panic!("actual checkpoint restoration cannot manufacture a Native conditional observer")
         };
         let source = retained.restored_source.as_ref().unwrap();
-        assert_eq!(checkpoint.scope, source.scope);
-        assert_eq!(checkpoint.source_partition, source.partition);
+        assert_eq!(checkpoint.scope, source.source_scope);
+        assert_eq!(checkpoint.source_partition, source.checkpoint.source_partition);
         assert_eq!(seed.read().selected_commit(), read.selected_commit());
     }).unwrap();
     materialize_source(&restored);

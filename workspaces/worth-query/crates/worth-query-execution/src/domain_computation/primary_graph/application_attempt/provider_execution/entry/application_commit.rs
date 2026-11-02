@@ -35,6 +35,31 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        self.compare_and_commit_application_in_advancement_with_history(
+            phase,
+            program,
+            idempotency,
+            None,
+            allocation_policy,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_in_advancement_with_history<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        history: Option<HistoryProducerInvocation<'_>>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
@@ -53,6 +78,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             program,
             idempotency,
             false,
+            history,
             allocation_policy,
         )
     }

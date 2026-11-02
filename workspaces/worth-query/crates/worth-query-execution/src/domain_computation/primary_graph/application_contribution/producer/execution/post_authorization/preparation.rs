@@ -1,5 +1,6 @@
 //! Prepare a producer once and retain owner completion until canonical apply.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn prepare_authorized<
     'owner,
@@ -11,6 +12,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
         '_,
         Schema,
+    >,
+    control: Option<
+        &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
     >,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
@@ -34,7 +38,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     input: <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
     matched_predecessors: Option<super::super::super::demand::MatchedRequiredPredecessors<'_>>,
     successor_of: Option<[u8; 32]>,
-    commit_authority: WorthQueryProducerCommitAuthority,
+    commit_authority: ProducerInvocationAuthority<'owner>,
     edition: super::super::super::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<super::super::prepared_plan::ProducerExecutionPlan<'owner>, ProducerExecutionStop>
@@ -48,7 +52,7 @@ where
         >,
 {
     let selected = shared.selected();
-    require_selected_program(selected, &commit_authority)?;
+    require_selected_program(selected, commit_authority.mode())?;
 
     let application_identity = crate::domain_computation::execution_observation::is_installed().then(|| {
         crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
@@ -61,10 +65,22 @@ where
     });
     let source_epoch = observed_source.idempotency_identity();
     let key = provider.idempotency_key(&source, &source_epoch.bytes());
-    let owned_identities = super::super::input_identity::encode_owned_input::<
-        Schema,
-        Operation<Schema, Binding>,
-    >(Binding::IDENTITY, key, input)?;
+    let input_execution = phase
+        .checked_execution_request_for(&runtime.product_runtime)
+        .map_err(|stop| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(stop),
+                Binding::IDENTITY,
+            )
+        })?;
+    let (owned_identities, recovery_input) =
+        super::super::unpublished::prepare_input::<Schema, Binding>(
+            &input_execution,
+            key,
+            input,
+            edition,
+            commit_authority.mode().clone(),
+        )?;
     let identities = owned_identities.borrow();
     let prepared_key = prepared_key(&observed_source, *identities.input_identity(), edition)?;
     let prepared_context = if let Some(contract) = Binding::INPUT_REUSE.filter(|contract| {
@@ -154,12 +170,15 @@ where
         .consume_into(&mut admission)
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     let source_query =
-        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess {
-            application: runtime,
+        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::new(
+            runtime,
             shared,
-            principal: external_principal,
-            request: request_scope,
-        };
+            control,
+            commit_authority.history_control(),
+            external_principal,
+            request_scope,
+        )
+        .map_err(super::super::denial::request_admission_rejected)?;
     let prepared = runtime
         .prepare_mutation_handler_plan_with_source_access::<Operation<Schema, Binding>>(
             phase,
@@ -177,6 +196,9 @@ where
             },
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
+    if let Some(stop) = source_query.take_history_failure() {
+        return Err(super::super::denial::request_admission_rejected(stop));
+    }
     let (requests, completion, inputs) = match prepared {
         Ok(prepared) => prepared.into_parts(&runtime.output_demands)?,
         Err(report) => {
@@ -245,12 +267,13 @@ where
             let program = program
                 .with_output_demand_observation()
                 .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
-            let outcome = match commit_authority {
+            let outcome = match commit_authority.mode() {
                 WorthQueryProducerCommitAuthority::Ordinary => runtime
-                    .compare_and_commit_application_in_advancement(
+                    .compare_and_commit_application_in_advancement_with_history(
                         phase,
                         program,
                         idempotency,
+                        commit_authority.history_control(),
                         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                     ),
                 WorthQueryProducerCommitAuthority::ProgramOutput => runtime
@@ -260,6 +283,7 @@ where
                         program,
                         idempotency,
                         None,
+                        commit_authority.history_control(),
                     ),
                 WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => {
                     runtime.compare_and_commit_application_for_program_output_producer(
@@ -267,10 +291,16 @@ where
                         phase,
                         program,
                         idempotency,
-                        Some((&identity, &revision)),
+                        Some((identity, revision)),
+                        commit_authority.history_control(),
                     )
                 }
             };
+            if let WorthQueryApplicationCommitOutcome::ProductUnpublished(original) = outcome {
+                return Ok(ProducerExecutionOutcome::Unpublished(
+                    recovery_input.unpublished(idempotency, original),
+                ));
+            }
             commit_receipt(Binding::IDENTITY, outcome)
                 .map(ProducerExecutionOutcome::Committed)
                 .map_err(ProducerExecutionStop::ExecutionStopped)

@@ -55,6 +55,7 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop as Basis;
 
     let kind = match stop {
+        QueryStop::CurrentControl(stop) => return stop.clone(),
         QueryStop::ManagedIndex(stop) => {
             return WorthQueryOutputDemandDenial::managed_source_query(
                 std::sync::Arc::clone(stop),

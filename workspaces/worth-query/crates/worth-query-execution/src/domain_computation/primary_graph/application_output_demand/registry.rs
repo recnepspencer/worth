@@ -156,8 +156,8 @@ mod post_commit;
 mod prerequisite_claims;
 mod progression;
 mod unavailable;
+pub(in crate::domain_computation::primary_graph) use progression::CheckpointFinishStop;
 pub(in crate::domain_computation::primary_graph) use progression::PreparedSelectedCheckpointFinish;
-pub(in crate::domain_computation::primary_graph) use progression::SelectedCheckpointFinishStop;
 mod claim_readthrough;
 mod custody_visibility;
 mod ready_backing;
@@ -360,6 +360,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutput
 }
 
 mod advance_admission;
+mod fulfillment;
+mod performed_join;
 pub(in crate::domain_computation::primary_graph) use advance_admission::WorthQueryOutputDemandAdvanceAdmission;
 
 pub use source_custody::WorthQueryDiscoveredRetentionControlDenial;

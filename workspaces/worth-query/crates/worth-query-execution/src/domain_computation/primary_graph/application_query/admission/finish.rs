@@ -149,6 +149,7 @@ where
             prepared.disclosure,
         )?;
         Ok(WorthQueryAdmittedApplicationQueryPlan {
+            history_metadata: None,
             planned_batch_item: None,
             retain_expression_context: false,
             retain_projection_for_inspection: false,
@@ -168,6 +169,7 @@ where
             continuation_state: None,
             basis,
             index_posture,
+            security_basis: None,
             security_product,
             graph_work,
             authorization: authorities.authorization,

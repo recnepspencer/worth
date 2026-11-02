@@ -8,6 +8,46 @@ pub struct RuntimeWorldBranchPort {
     owner: Weak<dyn RuntimeWorldBranchService + Send + Sync>,
 }
 impl RuntimeWorldBranchPort {
+    /// Admit exact retained truth without claiming its source head is current.
+    /// No destination is reserved and no component fork runs during admission.
+    pub fn admit_retained_branch_source(
+        &self,
+        source: &crate::branch::ProductBranchObservation,
+    ) -> Result<
+        crate::branch::RetainedProductBranchCreationSource,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .admit_retained_branch_source(source)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    /// Create independent component forks from the admitted retained source.
+    /// This process-local profile requires ForkExact for both components and
+    /// Signal's original exact-source admission. Partial effects retain the
+    /// ordinary World recovery and cleanup owners.
+    pub fn create_product_branch_from_retained_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: crate::branch::RetainedProductBranchCreationSource,
+        intent: crate::branch::ProductBranchCreationIntent,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
+    ) -> Result<
+        super::super::ports::RuntimeWorldBranchCreationOutcome,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .create_product_branch(
+                super::super::ports::RuntimeWorldBranchCreationRequest::retained(
+                    execution,
+                    source,
+                    intent,
+                    cancellation,
+                ),
+            )
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
     pub(in crate::lifecycle) fn new(
         owner: Weak<dyn RuntimeWorldBranchService + Send + Sync>,
     ) -> Self {

@@ -32,7 +32,7 @@ pub(super) fn collect<'owner, 'custody, 'collection, Schema, Family>(
     caller_installed: &InstalledProducerProvider<Schema>,
     caller_contacts: usize,
     caller_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
-    authority: &WorthQueryProducerCommitAuthority,
+    authority: &ProducerInvocationAuthority<'owner>,
     performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
 ) -> Result<CollectedRequiredWave<'owner, 'collection, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -143,7 +143,11 @@ where
             let caller = member.caller;
             let queued = member.queued;
             if caller && wave.target == RequiredWaveTarget::Caller {
-                member.ready.selected().completion().advanced_in(authority);
+                member
+                    .ready
+                    .selected()
+                    .completion()
+                    .advanced_in(authority.mode());
             }
             let contacts = if index == 0 && wave.target == RequiredWaveTarget::Caller {
                 caller_contacts
@@ -179,6 +183,7 @@ where
                 view.as_ref(),
                 contacts,
                 permission,
+                authority.clone(),
                 performed,
             );
             match result {

@@ -80,14 +80,14 @@ pub mod history {
         AspectHistoryCommitSpan, AspectHistoryDigest, AspectHistoryEntry,
         AspectHistoryLineageEventSpan, AspectHistoryOrigin, AspectHistoryQueryResult,
         AspectHistoryResolutionTrace, AspectResolutionContext, BranchCreateError,
-        BranchCreateErrorClass, BranchId, CanonicalCommitEnvelope, CommitId,
-        CommittedVersionSummary, HistoryAspectQueryTarget, HistoryDriftClass,
-        HistoryRetentionClass, HistoryShapeClassification, LineageAspectHistory,
-        LineageAspectHistoryQueryResult, LineageAspectResolutionDigest, MergeConflictRecord,
-        MergeInspection, OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
-        RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
-        RelationalMergeBranchBasisDenial, RelationalReplayRetentionDenial,
-        RelationalTouchAdjacencyDirection, VersionGraphPolicy,
+        BranchCreateErrorClass, BranchId, CanonicalCommitEnvelope,
+        CanonicalRetainedEntitySelection, CommitId, CommittedVersionSummary,
+        HistoryAspectQueryTarget, HistoryDriftClass, HistoryRetentionClass,
+        HistoryShapeClassification, LineageAspectHistory, LineageAspectHistoryQueryResult,
+        LineageAspectResolutionDigest, MergeConflictRecord, MergeInspection, OrderedParentList,
+        RelationalCommitReceipt, RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
+        RelationalDescriptiveTouchPrecision, RelationalMergeBranchBasisDenial,
+        RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection, VersionGraphPolicy,
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
@@ -109,6 +109,7 @@ pub mod history {
         RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
         RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,
         RelationalCommitParentageDenial, RelationalCommitRootDescriptor,
+        RelationalRetainedSelectionArtifactDenial,
     };
 }
 

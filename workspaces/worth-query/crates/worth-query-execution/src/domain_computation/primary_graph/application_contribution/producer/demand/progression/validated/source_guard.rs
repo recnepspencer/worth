@@ -138,7 +138,8 @@ where
             OutputRowStage::Ready(completion) => Some(completion),
             OutputRowStage::Stopped(_)
             | OutputRowStage::BeforeReady
-            | OutputRowStage::Published => None,
+            | OutputRowStage::Published
+            | OutputRowStage::PublicationPending => None,
         };
         let held = ready.as_ref().map(|completion| &completion.authority);
         // A changed source at the Ready's own publication is born stale:

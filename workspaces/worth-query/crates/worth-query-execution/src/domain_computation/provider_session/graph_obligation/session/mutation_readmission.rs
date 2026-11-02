@@ -10,20 +10,21 @@ impl WorthQueryManagedGraphWorkSession {
         expected: &crate::basis::WorthQueryProductBranchLease,
         current: WorthQueryApplicationSnapshotLease,
     ) -> Result<(), WorthQueryApplicationSnapshotLease> {
-        let WorthQueryGraphWorkBasis::Mutation(Some(retained)) = &self.basis else {
+        let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis else {
+            return Err(current);
+        };
+        let Some(retained) = &basis.lease else {
             return Err(current);
         };
         if !retained.product().has_same_selected_occurrence(expected)
             || current.product().observation().lifecycle_incarnation()
                 != expected.observation().lifecycle_incarnation()
             || !self.branch.admits_snapshot(current.snapshot())
-            || !self
-                .authorization_branch
-                .admits_snapshot(current.snapshot())
+            || !basis.admits_replacement_authorization(&self.authorization_branch, &current)
         {
             return Err(current);
         }
-        self.basis = WorthQueryGraphWorkBasis::Mutation(Some(current));
+        basis.lease = Some(current);
         Ok(())
     }
 }

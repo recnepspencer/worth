@@ -18,6 +18,7 @@ use worth_query_installation::facade::{
 /// The kind of a `WorthQueryApplicationRequestQueryDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestQueryDenialKind {
+    HistoryOutput,
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -39,6 +40,7 @@ pub enum WorthQueryApplicationRequestQueryDenialKind {
 /// Why an application query request was refused before or during execution.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRequestQueryDenial {
+    HistoryOutput(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial),
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -62,6 +64,7 @@ pub enum WorthQueryApplicationRequestQueryDenial {
 impl WorthQueryApplicationRequestQueryDenial {
     pub const fn kind(&self) -> WorthQueryApplicationRequestQueryDenialKind {
         match self {
+            Self::HistoryOutput(_) => WorthQueryApplicationRequestQueryDenialKind::HistoryOutput,
             Self::ExecutionRequest(cause) => {
                 WorthQueryApplicationRequestQueryDenialKind::ExecutionRequest(*cause)
             }
@@ -173,11 +176,13 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     PreparationSpent,
     WorkflowTransitionCurrentness,
     SignedCreation,
+    DocumentHistory,
 }
 
 /// Why an application mutation request was refused before its commit was attempted.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRequestMutationDenial {
+    DocumentHistory(worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial),
     /// Request admission refused before any application effect.
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
@@ -225,6 +230,9 @@ pub enum WorthQueryApplicationRequestMutationDenial {
 impl WorthQueryApplicationRequestMutationDenial {
     pub fn kind(&self) -> WorthQueryApplicationRequestMutationDenialKind {
         match self {
+            Self::DocumentHistory(_) => {
+                WorthQueryApplicationRequestMutationDenialKind::DocumentHistory
+            }
             Self::InputCapture(_) => WorthQueryApplicationRequestMutationDenialKind::InputCapture,
             Self::WorkflowCapturedInput(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowCapturedInput

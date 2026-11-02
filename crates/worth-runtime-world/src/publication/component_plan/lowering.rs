@@ -29,17 +29,26 @@ pub(crate) fn lower_component_plans(
     prepared_candidate: Option<PreparedRelationalCommitCandidate>,
     settled_adoption: Option<crate::publication::SettledRelationalPublicationAdoption>,
     settled_signal_adoption: Option<crate::publication::SignalAttemptProgress>,
+    current_read: Option<ProductBranchObservation>,
 ) -> Result<LoweredOwnerComponentPlan, NoEffectCompositePublication> {
     let intent = expected.intent().clone();
     let expected_head = expected.expected().clone();
     let basis = expected_head.basis();
-    let relational = lower_relational_plan(
+    let mut relational = lower_relational_plan(
         basis.relational_basis().clone(),
         intent.changes_relational(),
         prepared_candidate,
         settled_adoption,
         &expected_head,
     )?;
+    if let Some(current) = current_read {
+        relational.require_current_read(current).map_err(|denial| {
+            NoEffectCompositePublication::new(
+                NoEffectCause::CurrentReadDependency(denial),
+                Some(expected_head.clone()),
+            )
+        })?;
+    }
     let signal = match settled_signal_adoption {
         Some(progress) if intent.changes_signal() && progress.successor_basis().is_some() => {
             SignalComponentPlan::adopt_settled(basis.signal_basis().clone(), progress)

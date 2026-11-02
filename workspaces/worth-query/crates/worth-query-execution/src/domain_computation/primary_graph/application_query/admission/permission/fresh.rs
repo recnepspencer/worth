@@ -55,6 +55,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         observed: &WorthQueryObservedSource<Binding::Query>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        truth: Option<&WorthQuerySelectedProductOperation<'_, Schema>>,
         controls: WorthQueryApplicationQueryControls<'a, Schema>,
         inspect: impl for<'prepared> FnOnce(
             PreparedApplicationQueryPermission<
@@ -89,6 +90,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         access,
                         source,
                         selected,
+                        truth,
                         request,
                         principal,
                         scope,

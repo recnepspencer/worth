@@ -134,6 +134,7 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
         .expect("real selected-head observation");
     let history_after_observe = catalog.counters();
     let retention_after_observe = fixture.owner.cost_snapshot();
+    assert!(initial.matches_observation(&observation));
     let second = observation.clone();
     let final_clone = second.clone();
     assert_eq!(
@@ -151,11 +152,16 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
     assert_eq!(fixture.owner.active_component_obligation_count(), 10);
 
     let successor_snapshot = fixture::successor_snapshot(&initial, Arc::clone(&successor));
+    assert!(!successor_snapshot.matches_observation(&observation));
     cell.compare_and_publish(
         &observation,
         fixture::product_head_protection(&fixture, &catalog, successor_snapshot),
     )
     .expect("move to sibling successor");
+    assert!(
+        initial.matches_observation(&observation),
+        "historical correspondence survives head movement"
+    );
     let history_after_move = catalog.counters();
     assert_eq!(
         history_after_move.direct_protection_releases(),

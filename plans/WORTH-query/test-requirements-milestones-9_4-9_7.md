@@ -1157,7 +1157,7 @@ Must verify
   mixed-cause families
 - durable restore, persisted inflight resource continuation, store-backed
   temporal replay, and durable mixed-cause continuation remain deferred or
-  denied until Milestones 10 and 11
+  denied until Store execution and durable-artifact integration
 - the reference workload emits machine-checkable bundles rather than relying on
   visual inspection, logs, or self-comparison within one run
 - exact counters prove certification coverage and support lookup cost are

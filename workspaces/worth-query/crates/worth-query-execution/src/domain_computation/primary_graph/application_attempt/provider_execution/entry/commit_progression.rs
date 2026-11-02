@@ -17,6 +17,7 @@ where
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
+        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -44,7 +45,14 @@ where
             execution,
             phase,
             self,
-            progress_application_commit(execution, phase, self, running, allocation_policy),
+            progress_application_commit(
+                execution,
+                phase,
+                self,
+                running,
+                history,
+                allocation_policy,
+            ),
         )
     }
 }

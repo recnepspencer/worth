@@ -70,6 +70,15 @@ pub type Scope = ApplicationQueryFieldScope<
     ReadOnly,
     NoApplicationUnit,
 >;
+impl ApplicationQueryIntent<DocumentRetentionSchema> for Input {
+    type Binding = Binding;
+    fn parameters(&self) -> ApplicationQueryParameterSet<Query> {
+        parameters(&self.identity)
+    }
+    fn into_scope(self) -> Scope {
+        Scope::new(DocumentIdentityField::reference(), self.identity)
+    }
+}
 impl ApplicationQueryBinding<DocumentRetentionSchema> for Binding {
     type Input = Input;
     type InputBinding = InputBinding;

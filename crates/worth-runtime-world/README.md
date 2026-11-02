@@ -57,6 +57,23 @@ World close does not close component owners.
 See [history](COMPOSITE_HISTORY.md), [publication](COORDINATED_PUBLICATION.md),
 and [retention/recovery](RETENTION_AND_RECOVERY.md) for exact contracts.
 
+## Create a branch from retained component truth
+
+Call `world.branch_port().admit_retained_branch_source(&observation)` with the
+original retained `ProductBranchObservation`, then consume the returned source
+with `create_product_branch_from_retained_source(execution, source, intent,
+cancellation)`. Supply `ForkExact` destinations for both Relational and Signal.
+The new branch owns independent component forks at the old source. Source-head
+movement is permitted; source retirement or incarnation replacement refuses.
+
+This process-local profile requires a memory-only Native owner and Signal's
+original exact source still to be available and current. A changed Signal
+source refuses; it is never replaced with a newer component. When a later leg
+refuses after a real fork, retain the returned `ProductUnpublished` owner and
+release its effects through the recovery port, then perform the returned
+component retirement work. Application permissions and model selection remain
+separate from component creation.
+
 ## Exact retained product history
 
 `observation_port().open_exact_product_history(execution, &observation)` retains

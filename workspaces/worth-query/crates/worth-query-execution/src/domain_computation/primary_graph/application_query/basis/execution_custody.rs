@@ -11,6 +11,14 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationQue
 }
 
 impl WorthQueryApplicationQueryBasisCustody {
+    pub(in crate::domain_computation::primary_graph) fn from_selected<Schema>(
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
+    ) -> Result<Self, crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop>{
+        let (product, application_basis) = runtime.retain_selected_query_basis_admitted(shared)?;
+        Ok(Self::new(product, application_basis))
+    }
+
     pub(super) fn new(
         product: crate::basis::WorthQueryProductObservationLease,
         application_basis: WorthQueryApplicationBasisLease,
@@ -19,6 +27,14 @@ impl WorthQueryApplicationQueryBasisCustody {
             product,
             application_basis,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn from_issued_selected<Schema>(
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>,
+    ) -> Result<Self, crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop>{
+        let (product, basis) = runtime.retain_issued_query_basis_admitted(selected)?;
+        Ok(Self::new(product, basis))
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn retained_product(

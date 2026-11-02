@@ -23,6 +23,13 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         fresh: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationIdempotencyBinding {
+        self.bind_original_definition(fresh)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn bind_original_definition(
+        &self,
+        fresh: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationIdempotencyBinding {
         if fresh.conditional_definition_identity().is_none() {
             fresh.bind_conditional_definition(self.conditional_definition_identity.as_ref())
         } else {
@@ -35,12 +42,24 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
         &mut self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
     ) -> Option<WorthQueryProductUnpublishedRecovery> {
+        self.take_original_cleanup()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_original_cleanup(
+        &mut self,
+    ) -> Option<WorthQueryProductUnpublishedRecovery> {
         self.pending_cleanup.take()
     }
 
     pub fn take_prior_cleanup_failure(
         &mut self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> Option<WorthQueryProductUnpublishedRecoveryReleaseFailure> {
+        self.take_original_cleanup_failure()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_original_cleanup_failure(
+        &mut self,
     ) -> Option<WorthQueryProductUnpublishedRecoveryReleaseFailure> {
         self.prior_cleanup_failure.take()
     }

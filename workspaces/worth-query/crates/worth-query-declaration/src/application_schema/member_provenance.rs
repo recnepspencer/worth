@@ -57,6 +57,7 @@ pub struct ApplicationSchemaMemberProvenance {
     managed_index_selections: Vec<crate::application_query::ApplicationManagedIndexSelectionRecipe>,
     histories: Vec<DeclaredApplicationMemberMarker>,
     resources: Vec<crate::application_resource::ApplicationResourceBindingDescriptor>,
+    document_histories: Vec<crate::application_history::ApplicationHistoryBindingDescriptor>,
 }
 
 impl ApplicationSchemaMemberProvenance {
@@ -97,6 +98,7 @@ impl ApplicationSchemaMemberProvenance {
             && self.managed_index_selections.is_empty()
             && self.histories.is_empty()
             && self.resources.is_empty()
+            && self.document_histories.is_empty()
     }
 
     pub(super) fn register_entity<Entity: 'static>(&mut self, name: &'static str) {
@@ -179,6 +181,19 @@ impl ApplicationSchemaMemberProvenance {
         self.resources.push(descriptor);
     }
 
+    pub(super) fn register_document_history(
+        &mut self,
+        descriptor: crate::application_history::ApplicationHistoryBindingDescriptor,
+    ) {
+        self.document_histories.push(descriptor);
+    }
+
+    pub fn document_history_bindings(
+        &self,
+    ) -> &[crate::application_history::ApplicationHistoryBindingDescriptor] {
+        &self.document_histories
+    }
+
     pub fn resource_bindings(
         &self,
     ) -> &[crate::application_resource::ApplicationResourceBindingDescriptor] {
@@ -234,6 +249,8 @@ impl ApplicationSchemaMemberProvenance {
         self.managed_index_selections
             .sort_by(|left, right| left.query_name().cmp(right.query_name()));
         self.resources
+            .sort_by(|left, right| left.identity().cmp(right.identity()));
+        self.document_histories
             .sort_by(|left, right| left.identity().cmp(right.identity()));
         self.field_bindings
             .sort_by(|left, right| left.locus().cmp(right.locus()));

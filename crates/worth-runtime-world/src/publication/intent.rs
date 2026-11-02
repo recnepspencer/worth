@@ -64,6 +64,7 @@ pub struct CompositePublicationIntent<S> {
     settled_relational_adoption: Option<SettledRelationalPublicationAdoption>,
     settled_signal_adoption: Option<super::SignalAttemptProgress>,
     successor_observation_requested: bool,
+    current_read: Option<crate::branch::ProductBranchObservation>,
     _stage: PhantomData<S>,
 }
 
@@ -78,6 +79,7 @@ impl CompositePublicationIntent<WithoutSignal> {
             settled_relational_adoption: None,
             settled_signal_adoption: None,
             successor_observation_requested: false,
+            current_read: None,
             _stage: PhantomData,
         }
     }
@@ -97,12 +99,29 @@ impl CompositePublicationIntent<WithSignal> {
             settled_relational_adoption: None,
             settled_signal_adoption: None,
             successor_observation_requested: false,
+            current_read: None,
             _stage: PhantomData,
         }
     }
 }
 
 impl<S> CompositePublicationIntent<S> {
+    /// Require this exact owner-issued control observation at the original
+    /// Relational memory cutover. This preserves the candidate's write target
+    /// and grants no Signal permission. A Signal-only or settled-adoption plan
+    /// refuses during preparation. The source must belong to this World and
+    /// Native owner; later displacement refuses before any owner effect.
+    pub fn require_current_read(
+        &mut self,
+        current: crate::branch::ProductBranchObservation,
+    ) -> Result<(), super::CurrentProductReadDependencyDenial> {
+        if self.current_read.is_some() {
+            return Err(super::CurrentProductReadDependencyDenial::AlreadyRequired);
+        }
+        self.current_read = Some(current);
+        Ok(())
+    }
+
     pub(crate) fn with_settled_signal_adoption(
         mut self,
         progress: super::SignalAttemptProgress,
@@ -149,6 +168,7 @@ impl<S> CompositePublicationIntent<S> {
         Option<SettledRelationalPublicationAdoption>,
         Option<super::SignalAttemptProgress>,
         bool,
+        Option<crate::branch::ProductBranchObservation>,
     ) {
         (
             self.change,
@@ -156,6 +176,7 @@ impl<S> CompositePublicationIntent<S> {
             self.settled_relational_adoption,
             self.settled_signal_adoption,
             self.successor_observation_requested,
+            self.current_read,
         )
     }
 }

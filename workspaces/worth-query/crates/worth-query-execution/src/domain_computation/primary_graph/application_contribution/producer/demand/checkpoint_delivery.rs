@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::application_output_demand::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 mod selected;
+mod unpublished;
 
 struct PreparedSelectedDelivery<'a> {
     lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
@@ -35,8 +36,28 @@ where
         producer_identity: &str,
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: Checkpoint,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        invocation: &super::super::ProducerInvocationAuthority<'_>,
+        returned: &mut Option<Checkpoint>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {
+            Checkpoint::PublicationPending {
+                owner,
+                ready_backing,
+            } => self.advance_unpublished_checkpoint(
+                phase,
+                producer_identity,
+                principal,
+                request,
+                invocation,
+                owner,
+                ready_backing,
+                |checkpoint| {
+                    self.finish_output_checkpoint(interest, claim, checkpoint, None, returned)
+                        .map(|_| ())
+                },
+            ),
             Checkpoint::Published {
                 receipt,
                 delivery,
@@ -57,7 +78,7 @@ where
                     None,
                     |checkpoint, denial| {
                         delivered = matches!(&checkpoint, Checkpoint::Delivered { .. });
-                        self.finish_output_checkpoint(interest, claim, checkpoint, denial)
+                        self.finish_output_checkpoint(interest, claim, checkpoint, denial, returned)
                     },
                 )?;
                 #[cfg(test)]
@@ -93,6 +114,7 @@ where
                                     ready_backing,
                                 },
                                 Some(cause),
+                                returned,
                             )
                             .map(|_| false)
                     }
@@ -108,6 +130,7 @@ where
                     claim,
                     Checkpoint::Ready(completion),
                     None,
+                    returned,
                 )?;
                 Ok(true)
             }
@@ -267,9 +290,23 @@ where
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: Checkpoint,
         denial: Option<WorthQueryOutputDemandDenial>,
+        returned: &mut Option<Checkpoint>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
-        self.output_demands
-            .finish_checkpoint(interest, claim, checkpoint, denial.as_ref())?;
+        use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
+        match self.output_demands.finish_checkpoint_owned(
+            interest,
+            claim,
+            checkpoint,
+            denial.as_ref(),
+        ) {
+            Ok(()) => {}
+            Err(CheckpointFinishStop::Restored(stop)) => return Err(stop),
+            Err(CheckpointFinishStop::Returned(stop, checkpoint)) => {
+                assert!(returned.is_none(), "one original checkpoint owner");
+                *returned = Some(checkpoint);
+                return Err(stop);
+            }
+        }
         match denial {
             Some(denial) => Err(denial),
             None => Ok(WorthQueryOutputDemandAdvance::Pending),

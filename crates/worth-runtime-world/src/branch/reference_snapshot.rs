@@ -118,4 +118,10 @@ impl ProductBranchReferenceSnapshot {
     pub fn basis(&self) -> &crate::basis::AdmittedCompositeRuntimeWorldBasis {
         self.commit.basis()
     }
+
+    /// Compares the complete captured reference, including exact component bases.
+    /// This is immutable correspondence, not a promise that the head is current.
+    pub fn matches_observation(&self, observation: &super::ProductBranchObservation) -> bool {
+        self == observation.snapshot()
+    }
 }

@@ -17,6 +17,7 @@ use super::program_occurrence_gate::{
     resolve_occurrence_program,
 };
 use crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality;
+use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -140,6 +141,7 @@ where
             program,
             idempotency,
             false,
+            None,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
@@ -152,6 +154,7 @@ where
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
+        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -164,6 +167,7 @@ where
             idempotency,
             retain_output_observation,
             ApplicationCommitCausality::Ordinary,
+            history,
             allocation_policy,
         )
     }
@@ -176,6 +180,7 @@ where
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
         causality: ApplicationCommitCausality,
+        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -212,6 +217,7 @@ where
             idempotency,
             None,
             pending,
+            history,
             allocation_policy,
         )
     }
@@ -261,6 +267,7 @@ where
             program,
             idempotency,
             elevation_currentness,
+            None,
             None,
             allocation_policy,
         )

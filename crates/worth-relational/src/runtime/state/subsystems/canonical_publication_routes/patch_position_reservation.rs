@@ -94,6 +94,10 @@ pub(super) struct PatchPositionReservationGuard<'reservation> {
 }
 
 impl PatchPositionReservation {
+    pub(super) fn waiting_publisher_count_for_test(&self) -> usize {
+        self.queue().waiting.len()
+    }
+
     /// Take the reservation as `admission` says.
     ///
     /// Cost: O(1) when free; a waiter wakes once per release and at most

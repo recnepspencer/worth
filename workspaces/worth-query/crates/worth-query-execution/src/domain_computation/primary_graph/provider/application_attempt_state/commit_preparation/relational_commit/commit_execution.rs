@@ -65,6 +65,7 @@ pub(super) fn commit(
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
     mint: super::WorthQueryCommitProgressionMint,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     WorthQueryCommittedApplicationSession,
@@ -176,6 +177,7 @@ pub(super) fn commit(
         &mut attempt,
         candidate,
         &mut required_prerequisites,
+        history,
     )?;
     let performed = match performed {
         product_publication::WorthQueryApplicationProductPublicationOutcome::Performed(
@@ -293,6 +295,7 @@ fn world_no_effect(
         )),
         NoEffectCause::ExecutionRequest(_)
         | NoEffectCause::OwnerDeniedBeforeEffect
+        | NoEffectCause::CurrentReadDependency(_)
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted

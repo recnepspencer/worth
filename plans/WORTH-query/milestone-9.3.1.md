@@ -1070,8 +1070,8 @@ operate over retained runtime, bridge, relational, and signal evidence already
 available in memory or runtime-backed artifacts.
 
 Store-backed reconstruction, durable replay across restart, archived expanded
-inspection narratives, and persisted causal-envelope reload remain Milestone 10
-and Milestone 11 scope.
+inspection narratives, and persisted causal-envelope reload remain Store execution/historical integration
+and Store Milestone 11 scope.
 
 ## Explicit Assumptions And Deferred Decisions
 

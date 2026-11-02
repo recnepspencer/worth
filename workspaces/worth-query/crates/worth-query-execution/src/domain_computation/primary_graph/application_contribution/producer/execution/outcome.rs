@@ -15,6 +15,7 @@ use graph::{
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum ProducerExecutionOutcome
 {
     Committed(ProducerCommitReceipt),
+    Unpublished(super::unpublished::PendingProducerPublication),
     Stable(graph::output_lineage::PublishedStableLineage),
 }
 

@@ -53,6 +53,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) basis: WorthQueryApplicationQueryBasisCustody,
     pub(super) index_posture: WorthQueryQueryIndexPosture,
     pub(super) security_product: crate::basis::WorthQueryProductObservationLease,
+    pub(super) security_basis: Option<super::basis::WorthQueryApplicationQueryBasisCustody>,
     pub(super) graph_work:
         crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(super) authorization:
@@ -62,6 +63,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
         super::admission::SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
     >,
     pub(super) governance: super::disclosure::WorthQueryApplicationQueryGovernance,
+    pub(super) history_metadata: Option<super::history::HistoryMetadataAdmission>,
 }
 
 pub(super) struct WorthQueryAdmittedContinuationState {

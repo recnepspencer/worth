@@ -48,8 +48,19 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         ),
         SelectedQueryBasisRetentionStop,
     > {
-        let selected = shared.selected();
+        self.retain_issued_query_basis_admitted(shared.selected())
+    }
 
+    pub(in crate::domain_computation::primary_graph) fn retain_issued_query_basis_admitted(
+        &self,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    ) -> Result<
+        (
+            WorthQueryProductObservationLease,
+            WorthQueryApplicationBasisLease,
+        ),
+        SelectedQueryBasisRetentionStop,
+    > {
         if !std::ptr::eq(self, selected.application()) {
             return Err(SelectedQueryBasisRetentionStop::Basis);
         }

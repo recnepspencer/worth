@@ -128,6 +128,7 @@ where
                 admission_kind,
                 restored.clone(),
                 &readmitted.settlement,
+                performed_source.as_ref(),
             )?;
             if newly_adopted {
                 self.record_restored_output(execution, source_scope, &readmitted)?;

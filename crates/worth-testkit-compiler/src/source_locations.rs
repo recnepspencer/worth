@@ -106,6 +106,22 @@ impl SourceContext {
             }
         }
         let key = source_key(Path::new(path));
+        if key.starts_with("crates/") {
+            let parts: Vec<_> = key.split('/').collect();
+            if parts.len() >= 4
+                && !parts[1].is_empty()
+                && parts[2] == "src"
+                && parts.iter().all(|part| {
+                    !part.is_empty() && !matches!(*part, "." | "..") && !part.contains(':')
+                })
+                && let Some(workspace) = &self.workspace
+            {
+                return self.path(&format!("{workspace}{key}"));
+            }
+            // A malformed workspace-relative path cannot gain a broader
+            // identity through the ordinary referenced-module resolver.
+            return key;
+        }
         if key.split('/').any(|part| matches!(part, "." | ".."))
             && let Some(resolved) = self.resolve_module_path(&key)
         {

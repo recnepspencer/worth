@@ -19,6 +19,7 @@ pub(super) fn query_posture(
 ) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryApplicationRequestQueryDenial as Denial;
     match denial {
+        Denial::HistoryOutput(cause) => super::history_read_posture(cause),
         Denial::ExecutionRequest(cause) => {
             if cause.is_transient() {
                 WorthQueryRequiredOutputRecoveryPosture::Retryable

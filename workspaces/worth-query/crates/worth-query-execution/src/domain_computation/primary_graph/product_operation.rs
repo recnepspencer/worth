@@ -3,12 +3,14 @@ mod shared_query_basis;
 pub(in crate::domain_computation::primary_graph) use shared_query_basis::SelectedQueryBasisRetentionStop;
 pub(in crate::domain_computation) use shared_query_basis::SharedSelectedProductOperation;
 mod branches;
+mod candidate_selectors;
 mod cleanup;
 mod close;
 mod conditional_definition;
 mod context;
 pub(in crate::domain_computation::primary_graph) use context::SelectedQueryOrigin;
 pub(in crate::domain_computation::primary_graph) mod correction_source;
+pub(in crate::domain_computation::primary_graph) mod document_history;
 pub use correction_source::{
     WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,
     WorthQueryCorrectionAlternativeResolution, WorthQueryCorrectionAlternativesContinuation,
@@ -39,7 +41,8 @@ pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
-    WorthQueryExpectedProductBranchFork,
+    WorthQueryExpectedProductBranchFork, WorthQueryOwnedProductHead,
+    WorthQueryOwnedProductHeadCloseFailure,
 };
 pub use cleanup::{
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
@@ -91,6 +94,9 @@ pub use program_adoption::{
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
     WorthQueryStoppedBranchSetAdoption, WorthQueryUnpublishedBranchAdoption,
 };
+pub use query::WorthQueryHistoryOutputControlDenial;
+pub use query::WorthQueryHistoryOutputReadDenial;
+pub use query::WorthQueryHistoryRootOutputRead;
 pub use query::WorthQueryProductQueryControls;
 pub use query::WorthQueryRetainedBatchQueryAdmissionDenial;
 pub use transaction::{

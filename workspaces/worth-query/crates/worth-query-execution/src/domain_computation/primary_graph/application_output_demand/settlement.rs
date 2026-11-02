@@ -1,3 +1,4 @@
+mod authority;
 mod producer_identity;
 use producer_identity::SettlementProducerIdentity;
 mod current_commit;
@@ -46,7 +47,7 @@ pub struct WorthQueryOutputDemandSettlement {
     pub(in crate::domain_computation::primary_graph) output_correspondence:
         Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(in crate::domain_computation::primary_graph) restored_source:
-        Option<WorthQueryRestoredOutputSource>,
+        Option<super::WorthQueryRestoredAcceptedOutput>,
     readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
     producer_contacts_in_this_demand: usize,
     observation: Arc<WorthQueryApplicationReadObservation>,
@@ -60,24 +61,6 @@ pub enum WorthQueryOutputSettlementPosture {
     StableReused,
     RecoveredPerformed,
     RecoveredStableReused,
-}
-
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredOutputSource {
-    pub(in crate::domain_computation::primary_graph) scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(in crate::domain_computation::primary_graph) identity:
-        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
-    pub(in crate::domain_computation::primary_graph) partition: [u8; 32],
-}
-
-impl From<&super::WorthQueryRestoredAcceptedOutput> for WorthQueryRestoredOutputSource {
-    fn from(restored: &super::WorthQueryRestoredAcceptedOutput) -> Self {
-        Self {
-            scope: restored.source_scope,
-            identity: restored.source_identity,
-            partition: restored.checkpoint.source_partition,
-        }
-    }
 }
 
 impl WorthQueryOutputDemandSettlement {

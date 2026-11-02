@@ -23,6 +23,26 @@ use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };
 
+impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn commit_prepared_application_in_history(
+        &self,
+        session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+        history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        crate::domain_computation::WorthQueryProviderTerminalDescription,
+        crate::domain_computation::WorthQueryProviderSessionCommitStop,
+    > {
+        self.application_attempt_work.observe_prepared_commit();
+        super::application_attempt_state::commit_prepared_application(
+            self,
+            session,
+            Some(history),
+            allocation_policy,
+        )
+    }
+}
+
 pub(super) fn commit_prepared_session(
     provider: &WorthQueryPrimaryGraphProvider,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
@@ -34,6 +54,7 @@ pub(super) fn commit_prepared_session(
     super::application_attempt_state::commit_prepared_application(
         provider,
         session,
+        None,
         allocation_policy,
     )
 }

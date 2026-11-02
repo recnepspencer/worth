@@ -19,6 +19,12 @@ mod application_output_demand;
 pub(in crate::domain_computation::primary_graph) use application_output_demand::PreparedPrerequisiteClaims;
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputDemandContext;
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputExecution;
+pub use application_output_demand::WorthQueryCompletedReadOutputs;
+pub use application_output_demand::WorthQueryCompletedRequiredOutputs;
+pub use application_output_demand::WorthQueryFulfilledRequiredRoot;
+pub use application_output_demand::{
+    WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
+};
 mod application_program;
 pub(crate) mod application_query;
 pub(crate) mod application_resource;
@@ -76,7 +82,46 @@ pub(in crate::domain_computation) use principal_currentness_capture::capture_pri
 pub(in crate::domain_computation) use principal_currentness_capture::PrincipalCurrentnessCaptureStop;
 pub(crate) mod product_activation;
 mod product_operation;
+pub use application_query::{
+    WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial,
+};
+pub use product_operation::document_history::{
+    WorthQueryAdmittedHistoryProgramOutput, WorthQueryCompletedHistoryOutputs,
+    WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
+    WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
+    WorthQueryDocumentHistoryCapturePauseForTest, WorthQueryDocumentHistoryCloseFailure,
+    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
+    WorthQueryDocumentHistoryClosingDenial, WorthQueryDocumentHistoryDenial,
+    WorthQueryDocumentHistoryGroupAborting, WorthQueryDocumentHistoryGroupAdoptionFailure,
+    WorthQueryDocumentHistoryGroupPreparation, WorthQueryDocumentHistoryGroupReservation,
+    WorthQueryDocumentHistoryIdentity, WorthQueryDocumentHistoryNavigation,
+    WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
+    WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
+    WorthQueryHistoryCommandContextDenial, WorthQueryHistoryContextRefreshDenial,
+    WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryContextRefreshPauseForTest,
+    WorthQueryHistoryDependentOutputRead, WorthQueryHistoryDescriptionContext,
+    WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
+    WorthQueryHistoryGroupCandidateCreation, WorthQueryHistoryGroupMemberAdmission,
+    WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
+    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
+    WorthQueryHistoryNavigationPauseForTest, WorthQueryHistoryNavigationPosture,
+    WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
+    WorthQueryHistoryOutputAuthority, WorthQueryHistoryOutputDiscovery,
+    WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
+    WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
+    WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
+    WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
+    WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPreview,
+    WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRedoChoice,
+    WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
+    WorthQueryHistoryRetentionChangePauseForTest, WorthQueryHistoryRetentionStatus,
+    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
+    WorthQuerySettledHistoryProgramOutput,
+};
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
+pub use product_operation::WorthQueryHistoryOutputControlDenial;
+pub use product_operation::WorthQueryHistoryOutputReadDenial;
+pub use product_operation::WorthQueryHistoryRootOutputRead;
 mod program_occurrence;
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 mod provider;

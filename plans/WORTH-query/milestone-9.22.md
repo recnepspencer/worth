@@ -140,7 +140,8 @@ alternate providers converge on semantic and evidence meaning.
 
 ## Handoff
 
-Milestone 13 consumes the provider-independent oracles exported by Milestones
-9.19 through 9.22 and proves parity across the completed runtime-backed Query
-framework. Later Store and cross-runtime milestones may supply durable
-mechanisms, but they may not reinterpret the semantics accepted here.
+The provider-independent cases exported by Milestones 9.19 through 9.22 remain
+part of those capabilities' own acceptance evidence. Store and cross-runtime
+integration may reuse them against another provider and supply durable
+mechanisms, but may not reinterpret the semantics accepted here. No separate
+Query certification milestone is a deferred completion gate.

@@ -2,7 +2,19 @@ pub(in crate::domain_computation::primary_graph) use registry::ConsumerCustody;
 pub(in crate::domain_computation::primary_graph) use registry::LivePublicationHead;
 pub(in crate::domain_computation::primary_graph) use registry::PublicationHeadSelection;
 pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedExecution;
+mod completed_outputs;
+mod completed_read;
+mod completed_set;
+mod original_endpoint;
+mod original_outputs;
+pub use original_outputs::{
+    WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
+};
 mod currentness;
+pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
+pub use completed_read::WorthQueryCompletedReadOutputs;
+mod fulfilled_root;
+pub use fulfilled_root::WorthQueryFulfilledRequiredRoot;
 mod readiness_delivery;
 mod recovered_outputs;
 mod registry;
@@ -15,6 +27,7 @@ pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
 pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
 pub(super) use registry::AcceptedCheckpointFactSource;
 pub(super) use registry::BoundOutputSource;
+pub(super) use registry::CheckpointFinishStop;
 pub(super) use registry::CheckpointOutputSlot;
 pub(super) use registry::DemandAdmissionKind;
 pub(in crate::domain_computation::primary_graph) use registry::HeldRequiredSuccessor;
@@ -34,7 +47,6 @@ pub(in crate::domain_computation::primary_graph) use registry::RequiredRefreshRe
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
-pub(super) use registry::SelectedCheckpointFinishStop;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedReadyReadmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredRefreshClaim;

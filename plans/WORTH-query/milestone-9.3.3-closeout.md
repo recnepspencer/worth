@@ -34,7 +34,7 @@ This closeout covers:
 
 This closeout does not claim store-backed effect execution parity, durable
 workflow continuation, restart-stable effect envelopes, portable receipt
-import/export, or durable replay. Those remain Milestone 10, Milestone 11, or
+import/export, or durable replay. Those remain Store execution/historical integration, Store Milestone 11, or
 later scope exactly as the 9.3.3 spec declared.
 
 ## Governing Source Summary
@@ -225,5 +225,5 @@ The following are not part of Milestone 9.3.3 closeout:
 - restart-stable effect envelopes
 - portable effect receipt import/export
 
-These remain Milestone 10, Milestone 11, or later effect-lifecycle scope
+These remain Store execution/historical integration, Store Milestone 11, or later effect-lifecycle scope
 exactly as the milestone spec declared.

@@ -34,8 +34,25 @@ impl DemandRecord {
             DemandState::Failed(_) => Retired(RowRetirement::Finished),
             DemandState::Output(output) => match output.advancement() {
                 WorthQueryOutputAdvancement::Claimed(_) => InFlight,
-                WorthQueryOutputAdvancement::Stopped { .. } => Retired(RowRetirement::Finished),
+                WorthQueryOutputAdvancement::Stopped {
+                    interrupted_claim, ..
+                } => {
+                    if matches!(&output.checkpoint, Some(WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) if !owner.is_closed())
+                        || (output.checkpoint.is_none() && interrupted_claim.is_some())
+                    {
+                        InFlight
+                    } else {
+                        Retired(RowRetirement::Finished)
+                    }
+                }
                 WorthQueryOutputAdvancement::Idle => match &output.checkpoint {
+                    Some(WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) => {
+                        if owner.is_closed() {
+                            Retired(RowRetirement::Finished)
+                        } else {
+                            InFlight
+                        }
+                    }
                     Some(WorthQueryOutputCheckpoint::Ready(_)) => KeptAnswer,
                     Some(WorthQueryOutputCheckpoint::Published { .. }) => {
                         if awaited_by_stale_owner {

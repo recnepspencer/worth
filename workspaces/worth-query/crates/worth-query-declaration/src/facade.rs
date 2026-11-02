@@ -31,6 +31,11 @@ pub mod application_query {
     pub use crate::application_query::*;
 }
 
+/// Model-history declarations, current READ bindings and ordinary operation membership.
+pub mod application_history {
+    pub use crate::application_history::*;
+}
+
 /// Typed managed-resource declarations, codec profiles and independent actions.
 pub mod application_resource {
     pub use crate::application_resource::*;

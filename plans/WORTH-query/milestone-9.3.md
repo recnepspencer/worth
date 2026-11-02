@@ -82,8 +82,8 @@ intentionally left narrow. It answers:
 - how diagnostics distinguish declaration-family drift from lifecycle-instance
   churn
 
-It intentionally stops before Milestone 10 store-backed execution parity and
-Milestone 11 durable replay/restart closure. Runtime-backed explanation and
+It intentionally stops before Store execution/historical integration store-backed execution parity and
+Store Milestone 11 durable replay/restart closure. Runtime-backed explanation and
 certification can close now; persisted subscription replay cannot.
 
 ## Governing Summaries
@@ -724,9 +724,9 @@ The topology must preserve:
 
 - Runtime-backed support reporting, diagnostic bundling, bridge parity
   explanation, and family certification are not blocked on `worth-store`.
-- Store-backed execution parity remains Milestone 10 scope.
+- Store-backed execution parity remains Store execution/historical integration scope.
 - Durable subscription replay, restart-stable continuation, and persisted
-  diagnostic replay remain Milestone 11 scope.
+  diagnostic replay remain Store Milestone 11 scope.
 
 ## Explicit Assumptions And Deferred Decisions
 
@@ -786,11 +786,11 @@ Milestone 9.3 belongs immediately after Milestone 9.2 because bridge parity and
 family-aware diagnostics are only honest once runtime-backed lifecycle,
 continuation, preview, and closeout evidence exist.
 
-It belongs before Milestone 10 because store-backed execution parity must build
+It belongs before Store execution/historical integration because store-backed execution parity must build
 on a surface where runtime-backed support and automatic family selection are
 already explainable and certified.
 
-It belongs before Milestone 11 because durable replay and restart-stable
+It belongs before Store Milestone 11 because durable replay and restart-stable
 subscription metadata cannot be certified honestly until runtime-backed family
 support closure exists.
 

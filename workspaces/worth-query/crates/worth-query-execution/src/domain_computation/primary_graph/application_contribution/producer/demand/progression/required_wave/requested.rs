@@ -19,7 +19,7 @@ pub(in super::super) fn advance_requested_output<Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
-    authority: &super::super::super::super::WorthQueryProducerCommitAuthority,
+    authority: &super::super::super::super::ProducerInvocationAuthority<'_>,
     stop: &mut WorthQueryOutputDemandDenial,
     performed: &std::cell::RefCell<performed::PerformedMembers>,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
@@ -48,6 +48,7 @@ where
                 principal,
                 request,
                 branch,
+                authority,
                 ContinuationCustody::Queue(&mut demand.required_continuations),
                 &head,
                 performed,

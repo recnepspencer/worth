@@ -1995,6 +1995,461 @@ Source movement also refuses creation, and a refused candidate close retains
 the candidate with its original denial. See
 [fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection).
 
+For a move-only application head, consume the initial candidate with
+`into_owned_head()`. Store the returned owner, target requests with
+`head.branch()`, and adopt subsequent candidates with `head.adopt(candidate,
+&phase)`. Success returns an owned previous head for explicit close. A close
+refusal returns either the live head (`Retained`) or its actual retired cleanup
+obligation (`Retired`). See
+[own an application branch head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#own-an-application-branch-head).
+
+To bind that head to one model, declare `ApplicationHistoryBinding` with the
+model's ordinary READ intent and register an `ApplicationHistoryDefinition` in
+its contribution. Pass an explicit metadata disclosure contract to
+`ApplicationHistoryDefinition::for_binding(..)`: use
+`ApplicationQueryDisclosureContract::public()` for public step metadata, or a
+governed contract covering the history's occurrence, ancestry and continuation
+facets. This policy is separate from payload READ and edit permission.
+On the head's branch call
+`request.attach_history::<Binding>(&phase, head, model_read)`. The returned
+document owns the slot; `document.read(&request)` freshly admits the original
+model READ. For an original retained no-output action,
+`document.assess_edit(&request, &operation)` observes current READ/action
+authorization, declared operation membership and exact model/head correspondence.
+It borrows both owners and grants no execution permission. An externally changed
+head or recreated model refuses. Close with
+`document.close(&phase)` and retain any live-document or retired-cleanup failure.
+See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
+
+To bound selectable history across all futures, declare separate
+`ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`
+recipes and install them with `.window_policy::<Window>()` and
+`.bookmark_policy::<Bookmark>()`. The default unpinned window is 200 steps;
+current and bookmarked steps are protected separately. Set a positive
+`ApplicationHistoryRecentSteps` with `document.set_history_window(target)`,
+then call the returned borrow's `advance::<Window>(&request)` until
+`pending_window` is empty. Each call has fresh READ, metadata and window
+admission and excludes at most one entry. Resume a dropped borrow with the same
+target. Use `set_history_bookmark::<Bookmark>(&request, node, true/false)`
+for independently admitted pin/unpin, `history_retention_status` for counts
+and pending ownership, and `maintain_history` for one release attempt.
+For governed metadata, use `advance_governed`,
+`set_history_bookmark_governed` and `history_retention_status_governed` with
+the fresh metadata capability, operation and input. The policy roles remain
+separately admitted. Cancellation after a batch can leave a committed prefix;
+inspect status and resume the same document and target with a fresh request.
+Pages distinguish `Root`, `Retained(parent)` and `Truncated`; do not invent
+an edge through an excluded node. Existing previews and registered checkout
+retain their original observations, while new requests refuse excluded IDs.
+Release holders independently and explicitly close the session, retaining
+refused cleanup. See the
+[window, bookmark and disposal example](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-a-navigation-window-and-bookmarks)
+and its linked compiled public journeys. This bounds availability, without
+promising storage reclamation or a byte limit.
+
+This compiled example uses the retention application's `Document`, `Request`
+and installed `Window`/`Bookmark` recipes. `Failure` is
+`WorthQueryApplicationHistoryDenial`. `protect_and_shrink` performs one bounded
+batch. If `pending_window` remains, resume `set_history_window(target)` with
+fresh requests until it clears; pinning succeeded even if the later window
+change refuses. Release independent previews, unpin unwanted bookmarks, and
+advance `maintain_history` before consuming the document for another edit.
+`dispose_document` returns the actual close failure owner: retain it and retry
+its cleanup after outstanding holders release.
+
+<!-- compiled: document_history_retention.rs -->
+```rust
+fn protect_and_shrink(
+    document: &mut Document<'_>,
+    request: &Request<'_, '_, '_>,
+    bookmark: WorthQueryHistoryNodeId,
+    target: ApplicationHistoryRecentSteps,
+) -> Result<WorthQueryHistoryRetentionStatus, Failure> {
+    document.maintain_history(request)?;
+    document.set_history_bookmark::<Bookmark>(request, bookmark, true)?;
+    document
+        .set_history_window(target)
+        .advance::<Window>(request)
+}
+
+fn dispose_document<'runtime>(
+    document: Document<'runtime>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+) -> Result<
+    WorthQueryDocumentHistoryCloseReceipt,
+    WorthQueryApplicationHistoryCloseFailure<'runtime, DocumentRetentionSchema, RetentionHistory>,
+> {
+    document.close(phase)
+}
+```
+
+The executable [document consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history.rs)
+uses [the ordinary installation and document setup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/setup.rs)
+and bounded pages as a disposable view. Each page and redo child page carries
+`context()`: a format version, the actual installed schema binding and an opaque
+process-local document identity. `document.commands(&context)` rejects unsupported
+formats, foreign bindings and foreign documents before dispatch. Its borrowed
+adapter grants no permission; preview, navigation and bookmark/window commands
+still freshly enter their existing READ, metadata and role admission.
+
+Keep a queued navigation's original intent, expected selection and key together.
+`prepare` returns the genuine navigation owner with its original document borrow;
+retain it when directly advancing or discarding an attempt. The borrowed command
+adapter transfers that borrow into the navigation builder. `advance` uses the
+same preparation path for one transient request.
+This consumer's `Command` does that. On advancement refusal, `advance` returns
+the original typed denial and posture. Between requests it drops only the frontend handle:
+the same document retains the real Native attempt and SDK output custody.
+Reusing the command never refreshes its expectation to a later selection.
+Inspect the cause as well as the posture before retrying. A retryable refusal
+before adoption can continue the same command with fresh admission. To abandon
+an unselected attempt, retain the owner returned by `prepare` and call its
+`discard`, preserving any refused cleanup owner. If only the command was kept,
+fresh admitted preparation recovers that same registered attempt; consuming
+the owning document for close also preserves its actual pending cleanup.
+
+A refusal with `posture: WorthQueryHistoryNavigationPosture::Selected` means
+adoption already occurred. A freshly admitted retry of the same command returns
+the original completion, including when another command has since selected a
+different node. It does not reset that later selection. Read
+`document.selection(&fresh_request)` to display the current head.
+
+Executable handling examples show [restoring current authority](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/authority.rs),
+[competing gestures and original disposal](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/selection.rs),
+[recovering lost delivery](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/delivery.rs)
+and [aborting a partially completed group](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/group.rs).
+
+The `Failure` and `Progress` variants below are defined beside the
+[compiled adapter](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/navigation.rs).
+
+<!-- compiled: document_history_commands.rs -->
+```rust
+pub(super) fn prepare<'d, 'r>(
+    document: &'d mut Configured<'r>,
+    request: &Request<'_, '_, '_>,
+    command: &Command,
+) -> Result<Navigation<'d, 'r>, Failure> {
+    let navigation = document
+        .commands(&command.context)
+        .map_err(Failure::Context)?
+        .navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+    let target = match command.intent {
+        WorthQueryHistoryNavigationIntent::Checkout(node) => navigation.checkout(node),
+        WorthQueryHistoryNavigationIntent::UndoStep => navigation.undo_step(),
+        WorthQueryHistoryNavigationIntent::RedoTo(child) => navigation.redo_to(child),
+    };
+    target
+        .expected_selection(command.expected.clone())
+        .idempotency(command.key)
+        .prepare(request)
+        .map_err(Failure::Preparation)
+}
+
+pub(super) fn advance(
+    document: &mut Configured<'_>,
+    request: &Request<'_, '_, '_>,
+    command: &Command,
+) -> Result<Progress, Failure> {
+    match prepare(document, request, command)?.advance(request) {
+        WorthQueryHistoryNavigationAdvance::Selected(done) => Ok(Progress::Selected(done)),
+        WorthQueryHistoryNavigationAdvance::Pending(owner) => {
+            Ok(Progress::Pending(owner.posture()))
+        }
+        WorthQueryHistoryNavigationAdvance::Refused { cause, owner } => Err(Failure::Advancement {
+            cause,
+            posture: owner.posture(),
+        }),
+    }
+}
+```
+
+For consuming edits and groups, check the same context with
+`check_history_command_context`, then transfer the original document into the
+ordinary typed builder or group. Preserve the returned owner on refusal. Run
+the complete example with
+`cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root -- --document-history`.
+Its renderer descriptions carry no historical payload lease and cannot reopen a
+document after process loss.
+
+To record an isolated edit, consume the attached document with
+`document.edit(intent).idempotency_owned(&request, key)?`, then
+`retain_in_program::<Program, Action>(host)`. Repeatedly call `advance(&request)`
+on the returned owner; retain that owner on every progress or refusal. The
+document's `read` continues to use its selected head until candidate adoption.
+When ready, `finish(&request)` returns the document and either its sealed step
+with the original action completion, the original step for an equivalent retry,
+or the original terminal action outcome. A refusal after adoption can still
+report `Selected`; preserve its completion and finish it with a fresh request.
+Use `discard(&request)` to explicitly abandon unselected candidate work, keeping
+the returned owner when cleanup refuses. This entry accepts declared
+source-completion actions and fixed required-output graphs with no mutation
+source, workflow control or external effects. A fixed graph returns
+`WorthQueryFixedHistoryEditOutcome::Recorded { step, delivery }`; `delivery` is
+the original `WorthQueryClosedFixedDelivery`, retaining its actual settlement
+and close evidence. A terminal fixed edit returns `NotRecorded { terminal }`;
+inspect `advance_denial()`, `source_outcome()`, `source_result()` and `close_evidence()` separately
+because a source can perform before its required output becomes unavailable.
+Unavailable completion keeps descriptive source-receipt evidence without
+retaining the discarded candidate's physical history.
+See [record an edit and retain its original outcome](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#record-an-edit-and-retain-its-original-outcome).
+
+This example uses the retention application's [installed history declaration](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs),
+[ordinary program installer](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/host.rs)
+and [head construction](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/mod.rs).
+`Action` names its declared `SetRetentionBinding` action with source-completion
+delivery. The original head and second document are retained here so the
+[complete executable journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/journeys.rs)
+can independently check isolation, advance the edit, inspect its exact result
+and dispose both documents.
+
+<!-- compiled: document_history_edit.rs -->
+```rust
+    let host = publish_on_first_program();
+    let owned = head(&host);
+    let original = owned.branch();
+    let untouched = attach(&host, head(&host), RELATED_DOCUMENT_IDENTITY);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
+    let document = host
+        .with_host_advancement(|phase| {
+            host.runtime()
+                .request(&principal, &scope)
+                .on_branch(owned.branch())
+                .attach_history::<RetentionHistory>(
+                    &phase,
+                    owned,
+                    DocumentRetentionRead {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                    },
+                )
+                .unwrap()
+        })
+        .unwrap();
+    let request = host.runtime().request(&principal, &scope);
+    let root = document.current_step(&request).unwrap();
+    let mut edit = document
+        .edit(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 3,
+            },
+        })
+        .idempotency_owned(&request, 0x9182_0400)
+        .unwrap()
+        .retain_in_program::<RetentionProgramP0, Action>(&host)
+        .unwrap_or_else(|(_, cause)| panic!("declared action constructs: {cause:?}"));
+```
+
+Closing a document releases its internal history pins and disposes all its
+owned heads. `Closing(owner)` retains unfinished disposal across multiple heads;
+retry `owner.retry(&phase)` after releasing blocking readers. A closing owner
+cannot read or edit the document. A successful close does not release history
+held independently by other consumers.
+
+Use `document.current_step(&request)` for public step metadata. For governed
+metadata, call `current_step_governed(&request, capability, operation, input)`
+with the declared metadata purpose. The ordinary model READ still executes its
+body and filters; payload permission alone cannot disclose a step. Each call
+checks the current metadata grant before looking up the journal.
+Fresh governed edit enrollment and attempt lookup use
+`edit.advance_with_metadata(&request, capability, operation, input)`; retain the
+returned edit on refusal. An authorized retry returns its original step without
+repeating the edit. See the [compiled metadata and retry journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/metadata.rs)
+and [metadata declarations](../workspaces/worth-query/crates/worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs).
+
+List completed steps with `document.history_page(&request, limits, after.as_ref())`.
+`WorthQueryHistoryPageLimits` requires positive `maximum_entries`,
+`maximum_examined_entries` and `maximum_owned_bytes`. Rows carry a sealed step
+with its parent, label and exact source description. `retained_source_at_read()`
+means the document held that source when this admitted page was assembled; the
+row does not hold a payload lease or promise later preview availability.
+
+Keep `page.continuation()` for the next fresh read. A cursor belongs to one
+document and completed view; a completed edit invalidates it with a typed
+`StaleCursor`, while a foreign cursor returns `ForeignCursor`. A refusal leaves
+the input cursor unchanged. Pending or discarded edits do not create page rows
+or change continuation hints. `edit.history_page(..)` lists the still-selected
+completed view during such work. Drop pages when finished to release their
+metadata backing; derived layout data can be rebuilt from fresh pages.
+Governed metadata uses `history_page_governed(&request, capability, operation,
+input, limits, after.as_ref())`. Both the original READ and current metadata
+permission run before cursor or storage diagnostics. See the
+[compiled bounded-page journeys](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs).
+
+Open a historical holder with `document.preview(&request, node_id)?`. Read it
+with `preview.read(&document, &request)?`, supplying the actual current document
+on every call. Later edits can move that document while the holder keeps its
+original composite source. The result exposes admitted `rows()`, the exact
+descriptive `source()` and the actual Native `basis()` used by the query.
+For a recorded fixed graph, `required_root_posture()` carries the original
+qualified root settlement. The step's endpoint is separately qualified against
+every completed root and dependent output and the original discovery evidence.
+The source action, root output and common endpoint can have different commits.
+`None` means the step carries no required-root settlement; it does not
+mean an output is unavailable. Preview reads execute no source command or producer.
+The holder and result expose no retained-selection or mutation conversion.
+Call `result.close()` and `preview.close()` when finished; another independently
+opened holder remains usable. Governed metadata uses `preview_governed(..)` and
+`read_governed(..)` with its current capability purpose on each call. See the
+[compiled historical-read journey](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/preview/mod.rs).
+
+To edit from an old node, explicitly declare an entity-record history domain and
+an `ApplicationHistoryNavigationBinding` with its separate NAV capability.
+Start a new click with an actual current selection. This compiled callback uses
+the planar example's `ConsumerSchema` and `PlanarHistoryNavigation` declaration;
+use your own schema and navigation binding in an application. It returns the
+original expected selection and first advancement result:
+
+<!-- compiled: document_history_navigation.rs -->
+```rust
+    let expected = document.selection(request)?;
+    let navigation = document
+        .navigate::<PlanarHistoryNavigation<ConsumerSchema>>()
+        .checkout(node)
+        .expected_selection(expected.clone())
+        .idempotency(key)
+        .prepare(request)?;
+    Ok((expected, navigation.advance(request)))
+```
+
+Keep the original expected selection, node and key with the click. Advance a
+`Pending(owner)` or `Refused { cause, owner }` using that retained owner and a
+fresh request. After losing a handle, prepare the same original description;
+capturing a later selection under the old key changes the intent and refuses.
+Checkout creates a
+writable context and selects the existing node without adding an authored edit;
+the next edit becomes its child, preserving the original future. Current grants
+and other records outside the model remain current. Read the
+[checkout contract and supported component meaning](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#select-a-historical-step-for-editing)
+before enabling navigation. A retained preview or page supplies no NAV authority.
+
+Set `ApplicationHistoryBinding::NAVIGATION_RESOURCES.maximum_unfinished_attempts`
+to bound unfinished navigation attempts per attached document (default 8).
+At capacity a new key receives `UnfinishedAttemptLimitExceeded` before target
+lookup or candidate creation. Retrying an existing key shares its original slot.
+Selection or completed `discard(&request)` releases that slot; a dropped handle
+or refused disposal keeps the original attempt registered. Use a fresh request
+to finish or discard it. This limit does not bound completed history or its
+separately owned cleanup.
+
+For undo and redo buttons, capture the expected selection for each new click.
+Represent its command as `Button::Undo` or `Button::RedoTo(child)` and lower it
+through the same prepared navigation owner:
+
+<!-- compiled: document_history_buttons.rs -->
+```rust
+    let builder = document.navigate::<PlanarHistoryNavigation<ConsumerSchema>>();
+    let target = match button {
+        Button::Undo => builder.undo_step(),
+        Button::RedoTo(child) => builder.redo_to(child),
+    };
+    let navigation = target
+        .expected_selection(expected.clone())
+        .idempotency(key)
+        .prepare(request)?;
+    Ok((button, expected, navigation.advance(request)))
+```
+
+Keep the returned command, expected selection and key for retries. Use
+`document.redo_choices(&request, limits, after)` to read a bounded child page and
+its `NoChild`, `Single(child)` or `ChoiceRequired` hint. Offer an explicit child
+choice when several futures exist; preparation revalidates even a remembered
+single-child preference. The application keeps the actual pending/refused owner
+and preserves the document's output mode. Navigation selects an existing state;
+[semantic correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
+publishes a new inverse, compensation or reapplication under its own contract.
+
+For a gesture containing several ordinary actions, use an
+owning group. It keeps the original model selected until all members complete,
+then records one history edge:
+
+<!-- compiled: document_history_group_open.rs -->
+```rust
+    document.group_edits::<_, RetentionProgramP0, Action, 2>(
+        host,
+        request,
+        key,
+        [
+            (
+                SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 3,
+                    },
+                },
+                0x9182_5001,
+            ),
+            (
+                SetRetentionIntent {
+                    input: SetRetentionInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: second,
+                    },
+                },
+                0x9182_5002,
+            ),
+        ],
+    )
+```
+
+Advance the original group with fresh requests; this example uses `Posture` as
+an alias for `WorthQueryHistoryGroupPosture`:
+
+<!-- compiled: document_history_group_advance.rs -->
+```rust
+    let (document, execution) = group.parts();
+    let posture = execution.advance(document, request)?;
+    if posture == Posture::ReadyToComplete {
+        execution.complete(document, request)?;
+    }
+    Ok(group.posture())
+```
+
+The caller keeps `group` after every refusal. On a terminal member, inspect its
+original native outcome and abort the group; earlier candidate publications
+remain real effects with their own cleanup. After selection, finish the group
+to obtain its document, one history step and original member completions. Keep
+any returned cleanup owner on refusal. A group accepts a homogeneous list of
+source-completion or fixed required-output actions and preserves the document's
+payload and output modes. Each fixed member completes its actual root and
+children before the next member starts. Its completion is an original
+`WorthQueryClosedFixedDelivery`; earlier deliveries keep their historical
+settlements even when a later member makes current delivery stale. The final
+step names the last complete tree's endpoint.
+
+The group also checks every installed producer that its declared root and child
+families can select. A workflow or external-effect contract in one of those
+families refuses the group before candidate creation or source effects.
+An unrelated producer family does not prevent grouping. Installed
+`GROUP_RESOURCES` bounds members/results (64 each by default, one unfinished
+group). See
+[group completion, retries and disposal](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step)
+for cancellation, competing navigation and partial effects.
+
+For a fixed member, supply a fresh request on `delivery.branch()` and validate
+its original complete output set at the retained observation:
+
+<!-- compiled: document_history_group_fixed_delivery.rs -->
+```rust
+    let original = request.at(delivery.settlement().observation());
+    delivery.deliver_current_at(&original)
+```
+
+An ordinary retained query can then read that member's historical artifacts
+under its own READ contract. A later group member does not replace this
+delivery's original settlement.
+
+For a fixed required-output tree, configure the document with
+`document.with_outputs::<Program, Root>(&phase, &request, &application, demand, controls)`
+inside an advancement of its owning host. A refusal returns the original
+document with its cause. The successful document carries
+`WorthQueryHistoryWithOutputs<Schema, Program, Root>` as its fifth type argument;
+preserve that mode through application wrappers, edits and close results.
+Navigation then owns the original root, discovered children and pending recovery
+until all required outputs settle before adoption. See
+[configure required outputs](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-required-outputs)
+for retry and explicit close.
+
 To store the selected basis as application data, serialize
 `selected.describe_basis()` before releasing the selection. After loading that
 record through an ordinary READ request, deserialize it as
@@ -2835,6 +3290,10 @@ stays inside the attempt and requires ordinary admission to inspect.
 If candidate close returns `OwnerCleanupPending`, retry the retained cleanup
 owner rather than closing the retired branch again. Release external readers
 and disposed evidence receipts before expecting their retained history to clear.
+Inside `with_application_advancement`, pass its phase to
+`cleanup.retry_in_advancement(&phase)`. This borrows the receiving runtime's
+admitted request. Standalone callers can use `cleanup.retry()` outside an active
+advancement.
 Disposing a registered attempt leaves its real Claim row committed; the same key
 with no result or continuation still refuses. After adoption, disposal retains
 the committed continuation. Use acceptance for result recording and normal
@@ -2849,7 +3308,8 @@ custody and unresolved panicked handoffs remain retained rather than being
 discarded as owner-free refusals.
 
 For a preparation's `ProductUnpublished` creation failure, `dispose_pending`
-uses the actual creation recovery's `release_obligations`. A recovery refusal
+passes its phase to the actual creation recovery's
+`release_obligations_in_advancement(&phase, minimum_age_ticks)`. A recovery refusal
 retains that owner. Once release transfers work to owner cleanup, further
 disposal retries that cleanup instead of releasing creation again. The
 [compiled creation cleanup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/disposal/preparation.rs)
@@ -3565,6 +4025,24 @@ basis with fresh query authorization. Neither history nor close advances outputs
 For `ApplicationNoProjection`, `deliver_current` checks every settlement at one
 authentic observation and returns that observation without issuing a query.
 
+After a performed action's required tree settles, use
+`settled.settlement().performed_source()` to borrow its original source
+provenance. `source.receipt()` is the action's receipt before output production;
+`root_receipt()` describes the root producer and may name a later publication.
+The provenance holder retains the action's exact original read occurrence with
+the settled tree. `source.root_fulfillment()` borrows the actual required root's
+fulfillment of that action's output obligation. Its `source_commit()` names the
+action occurrence, `output_commit()` names the root's qualified output
+occurrence, and `posture()` preserves whether that output was performed, reused
+or recovered. Reuse and recovery do not imply that the producer ran again for
+this action. This fact describes the root; use ordinary settlement delivery to
+check the whole tree at the current observation.
+
+A tree started from a read returns `None` for
+`performed_source()`, including when its producer performs a new publication.
+The source receipt supplies descriptive evidence; inspecting it still requires
+fresh current access, and it grants no navigation or mutation permission.
+
 Use `WorthQueryOperationDeliveryPolicy::default()` for an attempt without an
 additional work ceiling. A caller may explicitly choose a finite attempt as below.
 This shape uses application-specific names;
@@ -3929,7 +4407,8 @@ When final publication must follow cleanup, call the settled parent's
 complete settlement, original installed meaning and authentic runtime, beside
 actual native close evidence. Its immutable `settlement()` includes the genuine
 root correspondence even for `StableReused` with `root_receipt() == None`.
-No original demand, controls or extra source-basis lease survives no-source close.
+No original demand or controls survive no-source close. The closed read-tree
+carrier retains its original readonly source basis as provenance.
 
 Close validates original allocation/branch and fresh cleanup authority; stale
 sources or changed selected programs do not prevent disposal. Fixed refusal
@@ -3937,6 +4416,17 @@ returns the same settled parent and typed cause. No-source refusal owns the
 positive settlement and all remaining native custody, including any discharged
 prefix; `WorthQueryProgramOutputDeliveryCloseRefusal::retry_close` is close-only.
 It cannot deliver, advance, or convert back into a live tree.
+
+For a complete no-source tree, an already-open live phase from the owning runtime
+can dispose of native custody without an application request. Use
+`operation.close_in_advancement(&phase)` for cleanup only, or
+`settled.close_for_delivery_in_advancement(&phase)` to keep the original readonly
+delivery. Their close-only refusals expose `retry_close_in_advancement(&phase)`.
+The phase must belong to the original runtime and remain live; an identically
+typed runtime's phase is refused. These calls open no nested advancement and
+admit no payload read or new output demand. If the enclosing advancement stops,
+retain the returned owner in your owned state before leaving its closure.
+Closed delivery still retains readonly history pins until you drop it.
 
 Only after actual native close succeeds, use the carrier's fresh `deliver_current`
 or `read_current`. Fixed declared query/batch shapes retain their original
@@ -3953,6 +4443,11 @@ old frozen views and descriptive commit equality provide no substitute.
 Closed carriers and returned observations pin readonly lineage/history and the
 runtime; they do not certify whole-application shutdown or own uncleared cleanup.
 Drop them promptly after final publication, before whole-runtime close or OS join.
+Use `receipt.descriptive_copy()` when you need original commit, intent and
+terminal evidence without retaining the publication's physical history. The
+copy carries no performed-change witness or full product basis. Ordinary
+`Clone` still retains its original publication custody. Making a descriptive
+copy does not retire the source or release another holder.
 The neutral `application_program::closed_delivery` fixture exercises both owners,
 including a real native source perturbation for Stable/no-receipt reuse. Its
 rostered-successor court selects compatible meaning before capturing the original
@@ -3966,7 +4461,7 @@ terminally unavailable (`RetainedBasisUnavailable`). Matching action meaning
 does not repair that basis; the application must run a fresh operation.
 
 To present several closed carriers together, retain one observation and deliver
-every carrier at it with `deliver_current_at(&request.at(&observation), policy)`.
+every carrier at it with `deliver_current_at(&request.at(&observation))`.
 It exists on closed no-projection Fixed and closed no-source carriers. It runs
 the same native gate as `deliver_current` at that caller's observation:
 no-projection Fixed re-resolves its original installed action, no-source checks
@@ -3991,13 +4486,64 @@ observation. Read every displayed fact at that same observation.
 let observation = request.retain_current_read()?;
 let pinned = request.at(&observation);
 for carrier in &closed_no_projection_fixed {
-    carrier.deliver_current_at(&pinned, policy)?; // installed action + full lineage
+    carrier.deliver_current_at(&pinned)?; // installed action + full lineage
 }
 for carrier in &closed_trees {
-    carrier.deliver_current_at(&pinned, policy)?; // selected typed root + full lineage
+    carrier.deliver_current_at(&pinned)?; // selected typed root + full lineage
 }
 let membership = pinned.query(membership_read).execute()?; // facts at the same basis
 ```
+
+For a retained record of a closed read tree's complete qualification, use
+`closed_tree.qualify_at(&request.at(&observation))`. It checks the selected typed
+root, every original root and dependent settlement, and original discovery at
+that exact observation under a fresh request scope. The returned
+`WorthQueryCompletedReadOutputs` retains readonly source and output history.
+Its `source_commit()` identifies the original read admission, `root_output_commit()`
+describes the root's own settlement, and `output_commit()` identifies the exact
+common observation you supplied. Those commits can differ. A receiptless
+`StableReused` root is legal; the fact does not assert producer reexecution.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let observation = request.retain_current_read()?;
+let pinned = request.at(&observation);
+let qualified = closed_tree.qualify_at(&pinned)?;
+let rows = pinned.query(output_read).execute()?;
+assert_eq!(qualified.output_commit(), observation.selected_commit());
+```
+
+Qualification is retrospective. A later edit does not change an issued fact;
+qualifying at the later observation must check the original whole tree again.
+A still-current root cannot stand in for stale dependents or discovery. Retaining
+an older genuine observation lets you qualify at that historical basis explicitly.
+The fact grants no current permission and cannot select, query or publish.
+Qualification never advances a producer or reopens cleanup. Refusal preserves
+the same closed carrier. Drop the carrier, facts and observations when finished
+to release their readonly history before closing the runtime.
+
+To qualify the original tree's own endpoint, call
+`closed_tree.qualify_original(&request)`. It follows the genuine retained output
+publications from the original read source, using World's exact before/after
+references, then checks the selected typed root and complete tree there. It
+never chooses an endpoint from the largest commit ordinal or a later current
+head. If no output publication follows the source, the endpoint stays at that
+source; retained or receiptless output reuse remains legal.
+
+The returned `WorthQueryCompletedOriginalReadOutputs` retains the original
+source, the genuine root read and the qualified endpoint separately. The root's
+producer correspondence remains bound to its own read basis. Ordinary
+`WorthQueryCompletedReadOutputs` cannot be converted into this original-endpoint
+fact. Both types are retrospective evidence and grant no selection permission.
+
+Later unrelated work can leave the original endpoint fully qualified while
+moving the current head elsewhere. An unrelated publication between original
+outputs cannot be used to connect their publication chain. If the reachable
+prefix cannot qualify the complete tree, or no original read retains its exact
+endpoint, qualification refuses and preserves the carrier. Qualification at an
+explicitly supplied later observation can still be lawful; use `qualify_at` for
+that distinct question. Neither call reruns producer work.
 
 A refusal for one carrier leaves every carrier closed and unchanged. Only a
 typed native `Superseded` (Fixed `Stale`, no-source `Currentness(Output(..))`

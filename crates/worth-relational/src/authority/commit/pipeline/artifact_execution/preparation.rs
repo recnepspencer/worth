@@ -3,6 +3,7 @@ use crate::authority::commit::phases::publication::{
 };
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
 use crate::authority::commit::publication::diagnostics_summary_artifact;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::history::data::RelationalCommitReceipt;
@@ -10,7 +11,7 @@ use crate::publication::patch::data::CanonicalAuthoritativePatch;
 use crate::publication::{bundle::PublicationStage, data::PublicationError};
 use crate::transactions::data::{
     AspectEvaluationTrace, CommitAspectSummary, CommitChangeSummary, CommitPublicationSummary,
-    MergedCommitPlan, PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
+    PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
 };
 mod summary;
 mod traces;
@@ -47,7 +48,7 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) version_id: crate::identity::data::VersionId,
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
-    pub(super) merged_plan: &'a MergedCommitPlan,
+    pub(super) merged_plan: RelationalSemanticPlan<'a>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
@@ -202,7 +203,7 @@ struct PublicationAuthorityInput<'a> {
     version_id: crate::identity::data::VersionId,
     merge_parent_branches: &'a [crate::history::data::BranchId],
     merge_base_commits: &'a [crate::history::data::CommitId],
-    merged_plan: &'a MergedCommitPlan,
+    merged_plan: RelationalSemanticPlan<'a>,
     record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
     merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
@@ -239,7 +240,7 @@ fn prepare_authoritative_publication(
         .ensure_lineage_for_commit(
             input.working_state,
             input.commit_reference,
-            &input.merged_plan.merged_intents,
+            &input.merged_plan.commands().merged_intents,
             input.changed_records,
         )
         .map_err(|detail| {
@@ -258,12 +259,12 @@ fn prepare_authoritative_publication(
         runtime,
         input.commit_reference,
         input.branch_id,
-        crate::history::data::CanonicalCommitAuthorityKind::VersionedTransaction,
+        input.merged_plan.canonical_authority_kind(),
         input.strategy_artifacts,
         input.merge_execution_authority,
         input.merge_parent_branches,
         input.merge_base_commits,
-        input.merged_plan,
+        input.merged_plan.commands(),
         input.patch.clone(),
         input.descriptive_touches,
         input.diagnostics_summary.clone(),

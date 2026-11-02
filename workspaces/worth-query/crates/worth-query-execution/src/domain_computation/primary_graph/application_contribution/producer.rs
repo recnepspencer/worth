@@ -26,8 +26,11 @@ pub use denial_value::{
     WorthQueryUndeclaredProducerDenial,
 };
 mod execution;
+pub(in crate::domain_computation::primary_graph) use execution::unpublished::PendingProducerPublication;
+mod invocation;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
+pub(in crate::domain_computation::primary_graph) use invocation::ProducerInvocationAuthority;
 mod output_equivalence_contract;
 mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
@@ -40,7 +43,7 @@ pub use input_reuse_contract::{
     WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerCommitAuthority {
     Ordinary,
     ProgramOutput,

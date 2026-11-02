@@ -62,6 +62,7 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
+    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     OwnerUnavailable,
     ForeignRecovery,
     Missing,
@@ -128,8 +129,48 @@ impl WorthQueryProductBranchCreationRecovery {
     }
 
     pub fn release_obligations(
+        self,
+        minimum_age_ticks: u64,
+    ) -> Result<
+        WorthQueryProductBranchCreationRecoveryRelease,
+        WorthQueryProductBranchCreationRecoveryReleaseFailure,
+    > {
+        self.release_obligations_with(minimum_age_ticks, |cleanup| cleanup.retry())
+    }
+
+    /// Release the original effects and cleanup within the admitted advancement.
+    pub fn release_obligations_in_advancement(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        minimum_age_ticks: u64,
+    ) -> Result<
+        WorthQueryProductBranchCreationRecoveryRelease,
+        WorthQueryProductBranchCreationRecoveryReleaseFailure,
+    > {
+        if let Err(denial) = phase.check_live_for(&self.runtime) {
+            return Err(
+                WorthQueryProductBranchCreationRecoveryReleaseFailure::Recovery(
+                    WorthQueryProductBranchCreationRecoveryFailure {
+                        denial: WorthQueryProductBranchRecoveryDenial::Execution(denial),
+                        recovery: self,
+                    },
+                ),
+            );
+        }
+        self.release_obligations_with(minimum_age_ticks, |cleanup| {
+            cleanup.retry_in_advancement(phase)
+        })
+    }
+
+    fn release_obligations_with(
         mut self,
         minimum_age_ticks: u64,
+        finish_cleanup: impl FnOnce(
+            WorthQueryProductBranchOwnerCleanup,
+        ) -> Result<
+            crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
+            WorthQueryProductBranchOwnerCleanupFailure,
+        >,
     ) -> Result<
         WorthQueryProductBranchCreationRecoveryRelease,
         WorthQueryProductBranchCreationRecoveryReleaseFailure,
@@ -154,12 +195,14 @@ impl WorthQueryProductBranchCreationRecovery {
         {
             Ok(cleanup) => {
                 let cleanup_identity = cleanup_reservation.install_unpublished(cleanup);
-                WorthQueryProductBranchOwnerCleanup::new(self.runtime.clone(), cleanup_identity)
-                    .retry()
-                    .map(|receipt| WorthQueryProductBranchCreationRecoveryRelease {
-                        retired_component_count: receipt.retired_component_count(),
-                    })
-                    .map_err(WorthQueryProductBranchCreationRecoveryReleaseFailure::OwnerCleanup)
+                finish_cleanup(WorthQueryProductBranchOwnerCleanup::new(
+                    self.runtime.clone(),
+                    cleanup_identity,
+                ))
+                .map(|receipt| WorthQueryProductBranchCreationRecoveryRelease {
+                    retired_component_count: receipt.retired_component_count(),
+                })
+                .map_err(WorthQueryProductBranchCreationRecoveryReleaseFailure::OwnerCleanup)
             }
             Err(denial) => Err(
                 WorthQueryProductBranchCreationRecoveryReleaseFailure::Recovery(

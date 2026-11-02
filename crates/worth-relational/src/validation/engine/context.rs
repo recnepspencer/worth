@@ -1,4 +1,5 @@
 mod created_kinds;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::identity::data::KindId;
 use crate::schema::data::LoweredAspectContractPlan;
 use crate::transactions::data::MergedCommitPlan;
@@ -14,7 +15,7 @@ pub struct InvariantExecutionContext<'runtime, 'budget> {
     observation: InvariantObservation<'runtime>,
     version_id: crate::identity::data::VersionId,
     current_version_id: crate::identity::data::VersionId,
-    merged_plan: Option<&'runtime MergedCommitPlan>,
+    semantic_plan: Option<RelationalSemanticPlan<'runtime>>,
     runtime: InvariantRuntimeView<'runtime>,
     relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
     current_version_minimum_index:
@@ -25,6 +26,7 @@ pub struct InvariantExecutionContext<'runtime, 'budget> {
 }
 
 impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
+    #[cfg(test)]
     pub fn new(
         runtime: &InvariantRuntimeView<'runtime>,
         observation: InvariantObservation<'runtime>,
@@ -36,11 +38,33 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
             std::sync::OnceLock<super::evaluator::CurrentVersionMinimumIndex>,
         >,
     ) -> Self {
+        Self::from_semantic_plan(
+            runtime,
+            observation,
+            version_id,
+            current_version_id,
+            merged_plan.map(RelationalSemanticPlan::Mutation),
+            relation_integrity_scopes,
+            current_version_minimum_index,
+        )
+    }
+
+    pub(crate) fn from_semantic_plan(
+        runtime: &InvariantRuntimeView<'runtime>,
+        observation: InvariantObservation<'runtime>,
+        version_id: crate::identity::data::VersionId,
+        current_version_id: crate::identity::data::VersionId,
+        semantic_plan: Option<RelationalSemanticPlan<'runtime>>,
+        relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
+        current_version_minimum_index: std::sync::Arc<
+            std::sync::OnceLock<super::evaluator::CurrentVersionMinimumIndex>,
+        >,
+    ) -> Self {
         Self {
             observation,
             version_id,
             current_version_id,
-            merged_plan,
+            semantic_plan,
             runtime: runtime.clone(),
             relation_integrity_scopes,
             current_version_minimum_index,
@@ -57,7 +81,7 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
     }
 
     pub(crate) fn with_created_endpoint_scope(mut self, kind: KindId) -> Self {
-        if let (Some(scopes), Some(plan)) = (&self.relation_integrity_scopes, self.merged_plan)
+        if let (Some(scopes), Some(plan)) = (&self.relation_integrity_scopes, self.merged_plan())
             && let Some(scope) = scopes.scope_for(kind)
         {
             let count = scopes.created_key_count() as u64;
@@ -157,7 +181,11 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
     }
 
     pub fn merged_plan(&self) -> Option<&'runtime MergedCommitPlan> {
-        self.merged_plan
+        self.semantic_plan.map(RelationalSemanticPlan::commands)
+    }
+
+    pub(crate) fn semantic_plan(&self) -> Option<RelationalSemanticPlan<'runtime>> {
+        self.semantic_plan
     }
 
     pub(crate) fn current_version_minimum_index(

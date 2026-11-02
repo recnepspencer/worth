@@ -3,6 +3,7 @@ mod component_scope;
 mod component_set;
 mod correction_binding;
 mod derived_relation;
+mod document_history;
 mod fixture;
 mod history;
 mod inspection;

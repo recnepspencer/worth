@@ -44,17 +44,52 @@ impl WorthQueryPreparedProductPublication {
             prepared,
             control,
         } = self;
-        match publication.execute_without_signal(execution, prepared, control.cancellation()) {
-            RuntimeWorldPublicationOutcome::Performed(performed) => {
-                Ok(Outcome::Performed(performed))
-            }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
-                Ok(Outcome::ProductUnpublished(effects))
-            }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
-                Err(Denial::publication(no_effect))
-            }
+        relational_outcome(publication.execute_without_signal(
+            execution,
+            prepared,
+            control.cancellation(),
+        ))
+    }
+
+    pub(crate) fn execute_with_memory_cutover<R>(
+        self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        handoff: impl for<'action, 'native, 'policy, 'request> FnOnce(
+            worth_runtime_world::facade::PreparedWorldRelationalCutover<
+                'action,
+                'native,
+                'policy,
+                'request,
+            >,
+        ) -> R,
+    ) -> (
+        Option<R>,
+        Result<Outcome, Denial<NoEffectCompositePublication>>,
+    ) {
+        let Self {
+            publication,
+            prepared,
+            control,
+        } = self;
+        let (handoff, outcome) = publication.execute_without_signal_with_memory_cutover(
+            execution,
+            prepared,
+            control.cancellation(),
+            handoff,
+        );
+        (handoff, relational_outcome(outcome))
+    }
+}
+
+fn relational_outcome(
+    outcome: RuntimeWorldPublicationOutcome,
+) -> Result<Outcome, Denial<NoEffectCompositePublication>> {
+    match outcome {
+        RuntimeWorldPublicationOutcome::Performed(performed) => Ok(Outcome::Performed(performed)),
+        RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            Ok(Outcome::ProductUnpublished(effects))
         }
+        RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Err(Denial::publication(no_effect)),
     }
 }
 
@@ -139,11 +174,31 @@ impl WorthQueryProductPublicationBinding {
         request: &WorthQueryRequestScope,
         successor_observation_requested: bool,
     ) -> Result<WorthQueryPreparedProductPublication, Denial<NoEffectCompositePublication>> {
+        self.prepare_relational_candidate_with_current_read(
+            candidate,
+            request,
+            successor_observation_requested,
+            None,
+        )
+    }
+
+    pub(crate) fn prepare_relational_candidate_with_current_read(
+        &self,
+        candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+        request: &WorthQueryRequestScope,
+        successor_observation_requested: bool,
+        current_read: Option<&worth_runtime_world::facade::ProductBranchObservation>,
+    ) -> Result<WorthQueryPreparedProductPublication, Denial<NoEffectCompositePublication>> {
         let control = self.request_control(request);
-        let intent = CompositePublicationIntent::without_signal(
+        let mut intent = CompositePublicationIntent::without_signal(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .with_prepared_relational_candidate(candidate);
+        if let Some(current) = current_read {
+            intent
+                .require_current_read(current.clone())
+                .expect("new intent has no current-read dependency");
+        }
         let intent = if successor_observation_requested {
             intent.with_successor_observation()
         } else {
@@ -199,7 +254,28 @@ pub(crate) fn publish_conditional_definition(
     >,
     Denial<NoEffectCompositePublication>,
 > {
-    match publication.publish_bridge_conditional_definition(execution, prepared, bridge_prepared, bridge, cancellation) {
+    conditional_outcome(publication.publish_bridge_conditional_definition(
+        execution,
+        prepared,
+        bridge_prepared,
+        bridge,
+        cancellation,
+    ))
+}
+
+pub(super) fn conditional_outcome(
+    outcome: worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome,
+) -> Result<
+    Outcome<
+        (
+            worth_runtime_world::facade::PerformedCompositePublication,
+            Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+        ),
+        worth_runtime_world::facade::RuntimeWorldUnpublishedConditionalDefinition,
+    >,
+    Denial<NoEffectCompositePublication>,
+> {
+    match outcome {
         worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering } => Ok(Outcome::Performed((publication, lowering))),
         worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => Ok(Outcome::ProductUnpublished(effects)),
         worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect) => Err(Denial::publication(no_effect)),

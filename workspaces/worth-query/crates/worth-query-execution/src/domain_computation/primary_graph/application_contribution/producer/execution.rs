@@ -1,5 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 mod contact_observation;
+mod current_control;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use current_control::{select_history_control, select_invocation_control};
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
@@ -10,6 +12,7 @@ use worth_query_declaration::facade::application_operation::WorthQueryApplicatio
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
+use super::ProducerInvocationAuthority;
 use super::ProducerSourceBinding as SourceBinding;
 use super::ProducerSourceQuery as SourceQuery;
 use super::ProducerSourceValue as SourceValue;
@@ -31,12 +34,12 @@ use super::demand::WorthQueryOutputDemandDenialKind;
 mod admitted;
 mod denial;
 mod input_cutoff;
-mod input_identity;
 mod input_reuse;
 mod installed;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod outcome;
 mod post_authorization;
 pub(in crate::domain_computation::primary_graph) mod prepared_plan;
+pub(in crate::domain_computation::primary_graph) mod unpublished;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use prepared_plan::canonical_apply;
 mod required_cue;
 mod selected;
@@ -78,6 +81,19 @@ type Operation<Schema, Binding> =
 pub(super) trait InstalledProducerExecutor<Schema>:
     InstalledSelectedProducerExecutor<Schema> + Send + Sync
 {
+    fn supports_history_group(&self) -> bool;
+
+    fn recover_publication(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        invocation: &ProducerInvocationAuthority<'_>,
+        edition: super::InstalledProducerEdition,
+        owner: &mut unpublished::PendingProducerPublication,
+    ) -> Result<Option<unpublished::RecoveredProducerPublication>, WorthQueryOutputDemandDenial>;
+
     fn execute(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -88,7 +104,7 @@ pub(super) trait InstalledProducerExecutor<Schema>:
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
         edition: super::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop>;
@@ -114,6 +130,35 @@ where
             > + 'static,
     SourceQuery<Schema, Binding>: 'static,
 {
+    fn supports_history_group(&self) -> bool {
+        use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+        !Operation::<Schema, Binding>::WORKFLOW_CONTROL
+            && !Operation::<Schema, Binding>::REQUIRES_WORKFLOW_AUTHORITY
+            && !Operation::<Schema, Binding>::workflow_execution_requirements().is_applicable()
+            && !self
+                .mutation
+                .operation()
+                .contracts()
+                .external_effect()
+                .is_declared()
+    }
+
+    fn recover_publication(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        invocation: &ProducerInvocationAuthority<'_>,
+        edition: super::InstalledProducerEdition,
+        owner: &mut unpublished::PendingProducerPublication,
+    ) -> Result<Option<unpublished::RecoveredProducerPublication>, WorthQueryOutputDemandDenial>
+    {
+        owner.state_mut().progress::<Schema, Binding>(
+            phase, self, runtime, principal, request, invocation, edition,
+        )
+    }
+
     fn readiness_record(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
@@ -146,7 +191,7 @@ where
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
         edition: super::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
@@ -193,7 +238,7 @@ where
             ),
             ValidatedOutputDisclosure::RetainedProgram(proof) => {
                 if matches!(
-                    commit_authority,
+                    commit_authority.mode(),
                     WorthQueryProducerCommitAuthority::Ordinary
                 ) || !proof.admits(principal, request_scope)
                 {

@@ -43,6 +43,10 @@ struct PerformedPublicationIndex {
 }
 
 impl PerformedPublicationStream {
+    pub(super) fn waiting_publisher_count_for_test(&self) -> usize {
+        self.reservation.waiting_publisher_count_for_test()
+    }
+
     pub(super) fn checkpoint_selection(
         &self,
         covered_transitions: crate::branch::RelationalBranchTransitionSequence,
@@ -91,6 +95,7 @@ impl PerformedPublicationStream {
         route: Arc<CanonicalPublicationRoute>,
         resident: Arc<CanonicalCommitEnvelope>,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
+        cutover_before: Option<std::time::Instant>,
         durable: impl FnOnce(
             &PositionedCanonicalCommit,
             &crate::branch::RelationalBranchRootDescriptor,
@@ -101,6 +106,23 @@ impl PerformedPublicationStream {
         cutover: impl FnOnce(PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
+        if let Some(deadline) = cutover_before {
+            // A memory publisher may have waited behind a lifecycle transition.
+            // Preserve the original request's first stop, then enforce the
+            // additional narrowing before assigning any canonical position.
+            match admission {
+                PatchPositionReservationAdmission::DeferWhenHeld => {}
+                PatchPositionReservationAdmission::DeferBehindCommit(execution)
+                | PatchPositionReservationAdmission::WaitWithin(execution) => {
+                    execution
+                        .consult()
+                        .map_err(CanonicalPublicationRecordError::ReservationWaitStopped)?
+                }
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err(CanonicalPublicationRecordError::CutoverDeadlineElapsed);
+            }
+        }
         let current = self.head.load_full();
         let prior_position = self.performed_head_position(&current);
         let Some(next_position) = prior_position.checked_add(1) else {

@@ -67,12 +67,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             }
         };
         let request = admission.publication_request().clone();
-        let access = SourceQueryReaderAccess {
-            application: self,
-            shared: &shared,
-            principal,
-            request: &request,
-        };
+        let access = SourceQueryReaderAccess::ordinary(self, &shared, principal, &request);
         match self.prepare_mutation_handler_plan_with_source_access::<B>(
             phase,
             identities,

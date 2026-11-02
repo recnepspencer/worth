@@ -1,7 +1,6 @@
 mod dispositions;
 mod migration;
 mod selection;
-mod selector_indexes;
 mod state;
 mod workflow;
 

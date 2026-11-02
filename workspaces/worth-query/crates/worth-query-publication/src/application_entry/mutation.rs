@@ -24,7 +24,6 @@ pub(in crate::application_entry) mod selected_program;
 mod staged;
 
 pub use attempt::WorthQueryApplicationMutationAttemptReport;
-pub(in crate::application_entry) use authorization_assessment::assess_owned;
 pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub(in crate::application_entry) use discovered::AdmittedDiscoveredRecoveryDenial;
 pub use discovered::{
@@ -56,6 +55,7 @@ pub use performed_source::{
 };
 pub use program_output_settlement::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
+    WorthQueryPerformedProgramOutputSource,
 };
 pub use program_output_work::WorthQueryApplicationProgramWork;
 pub use recovery::WorthQueryApplicationRecoveryRequestDenial;

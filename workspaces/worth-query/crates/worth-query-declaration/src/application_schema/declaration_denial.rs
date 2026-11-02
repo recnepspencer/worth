@@ -39,6 +39,8 @@ pub enum ApplicationSchemaDeclarationDenial {
     MissingApplicationQueryDependency,
     InvalidApplicationQuery,
     InvalidApplicationHistoryQuery,
+    InvalidApplicationHistory,
+    MissingApplicationDocumentHistoryDependency,
     InvalidApplicationResource,
     MissingApplicationResourceDependency,
     DuplicateApplicationResource,

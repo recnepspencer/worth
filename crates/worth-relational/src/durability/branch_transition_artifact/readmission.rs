@@ -69,6 +69,7 @@ fn check_header_agreement(
 fn check_canonical_frame(transition: &RelationalBranchTransition) -> Result<(), Refusal> {
     match transition {
         RelationalBranchTransition::Fork { source_head, .. }
+        | RelationalBranchTransition::RetainedFork { source_head, .. }
             if source_head.runtime_instance_id()
                 != crate::branch::CANONICAL_RUNTIME_INSTANCE_ID =>
         {
