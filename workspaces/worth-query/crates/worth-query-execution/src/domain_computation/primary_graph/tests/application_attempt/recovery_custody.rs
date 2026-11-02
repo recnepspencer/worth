@@ -15,6 +15,9 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
+#[path = "recovery_custody/issuance.rs"]
+mod issuance;
+
 pub(super) type RecoveryAdmission = WorthQueryAdmittedApplicationOperation<
     IdentityExecutionSchema,
     ExactStatusRetentionOperation,

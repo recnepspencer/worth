@@ -149,7 +149,7 @@ where
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
         admission
-            .validate_projection_authority(
+            .validate_installed_entry(
                 owner,
                 &self.installed_schema.binding_identity(),
                 self.runtime.installed_operations(),
@@ -176,7 +176,7 @@ where
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
         admission
-            .validate_projection_authority(
+            .validate_installed_entry(
                 owner,
                 &self.installed_schema.binding_identity(),
                 self.runtime.installed_operations(),
