@@ -12,14 +12,15 @@ pub(in crate::domain_computation) use contract::{
     compile_inspection_disclosure_contract, compile_resource_disclosure_contract,
     DiagnosticContractDenial,
 };
+pub use decision::WorthQueryApplicationQueryGovernanceDenialKind;
 pub(in crate::domain_computation) use decision::{
     admit_application_query_governance, admit_application_resource_governance,
     prepare_application_diagnostic_governance, prepare_application_inspection_governance,
     DiagnosticComparisonAdmission, DiagnosticComparisonDenial, DiagnosticPreparationDenial,
     WorthQueryApplicationGovernanceBinding, WorthQueryApplicationInternalProjectionAdmission,
-    WorthQueryApplicationQueryGovernance, WorthQueryApplicationQueryGovernanceDenialKind,
-    WorthQueryPendingApplicationQueryGovernance, WorthQueryPreparedApplicationGovernance,
-    WorthQueryRetainedQueryInfluence, WorthQueryRetainedQueryInfluenceDenial,
+    WorthQueryApplicationQueryGovernance, WorthQueryPendingApplicationQueryGovernance,
+    WorthQueryPreparedApplicationGovernance, WorthQueryRetainedQueryInfluence,
+    WorthQueryRetainedQueryInfluenceDenial,
 };
 pub use receipt::{
     WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,

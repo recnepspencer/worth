@@ -10,6 +10,10 @@ mod resource;
 pub use resource::WorthQueryApplicationInspectionResourceRefusal;
 mod canonical;
 pub use canonical::WorthQueryApplicationInspectionCanonicalRefusal;
+mod owner;
+pub use owner::{
+    WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationQueryGovernanceDenialKind,
+};
 #[cfg(test)]
 mod output_tests;
 
@@ -132,6 +136,11 @@ impl WorthQueryApplicationInspectionDenial {
     /// Canonical grammar/compiler refusal, distinct from the original resource stop.
     pub fn canonical_refusal(&self) -> Option<WorthQueryApplicationInspectionCanonicalRefusal<'_>> {
         canonical::cause(&self.cause)
+    }
+
+    /// The original owner's exact refusal, borrowed without replacing its cause.
+    pub fn owner_refusal(&self) -> Option<WorthQueryApplicationInspectionOwnerRefusal<'_>> {
+        owner::cause(&self.cause)
     }
 
     pub fn request_interruption(

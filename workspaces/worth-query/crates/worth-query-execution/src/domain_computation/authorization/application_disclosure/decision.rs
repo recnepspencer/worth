@@ -105,7 +105,7 @@ pub(in crate::domain_computation) enum WorthQueryApplicationQueryGovernance {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryApplicationQueryGovernanceDenialKind {
+pub enum WorthQueryApplicationQueryGovernanceDenialKind {
     Required,
     CapabilityMismatch,
     InternalComputationDenied,

@@ -51,7 +51,8 @@ pub use result::{
 };
 pub use stop::{
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
-    WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStopKind,
+    WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationInspectionResourceRefusal,
+    WorthQueryApplicationInspectionStopKind, WorthQueryApplicationQueryGovernanceDenialKind,
 };
 #[cfg(test)]
 #[path = "application_inspection/tests/scope_replacement.rs"]

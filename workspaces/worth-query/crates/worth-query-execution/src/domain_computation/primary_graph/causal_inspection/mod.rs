@@ -38,9 +38,10 @@ pub use anchor::{
 };
 pub use application_inspection::{
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
-    WorthQueryApplicationInspectionRequest, WorthQueryApplicationInspectionResourceRefusal,
-    WorthQueryApplicationInspectionStopKind, WorthQueryApplicationProducerConnection,
-    WorthQueryApplicationProducerEvaluation, WorthQueryChangedInspectionRequest,
+    WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationInspectionRequest,
+    WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStopKind,
+    WorthQueryApplicationProducerConnection, WorthQueryApplicationProducerEvaluation,
+    WorthQueryApplicationQueryGovernanceDenialKind, WorthQueryChangedInspectionRequest,
     WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryComparedApplicationInspection,
     WorthQueryConditionalHistoryAvailability, WorthQueryConditionalHistoryDecisionClass,
     WorthQueryConditionalHistoryOutcome, WorthQueryConnectedApplicationInspection,
