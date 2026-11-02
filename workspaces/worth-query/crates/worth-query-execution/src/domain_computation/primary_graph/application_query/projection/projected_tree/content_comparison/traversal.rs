@@ -1,5 +1,5 @@
 //! Finite original-funded traversal preserves complete Source provenance.
-use super::super::content_storage::ProjectionContentStorageFault as Fault;
+use super::ProjectionContentComparisonFault as Fault;
 use super::*;
 use worth_execution::ExecutionMemoryReservation;
 
@@ -47,7 +47,7 @@ impl WorthQueryApplicationDisclosedProjectionTree {
         }
         if maximum_depth <= 2 && maximum_depth != 0 {
             // Existing shallow profiles keep their exact allocation-free path.
-            return self.same_one_hop_content(other, admit);
+            return self.same_one_hop_content(other, admit, fault);
         }
         let mut frames = frames(maximum_depth, admit, reserve, fault)?;
         frames
@@ -65,7 +65,9 @@ impl WorthQueryApplicationDisclosedProjectionTree {
             let left = &frame.left[frame.row];
             let right = &frame.right[frame.row];
             if !frame.checked {
-                if !same_row(left, right, admit)? || left.relations.len() != right.relations.len() {
+                if !same_row(left, right, admit, fault)?
+                    || left.relations.len() != right.relations.len()
+                {
                     return Ok(false);
                 }
                 frame.checked = true;

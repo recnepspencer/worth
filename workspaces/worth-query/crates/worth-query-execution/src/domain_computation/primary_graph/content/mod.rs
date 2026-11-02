@@ -8,3 +8,6 @@ pub use worth_relational::facade::content::RelationalContentDenial;
 
 mod staging;
 pub(in crate::domain_computation::primary_graph) use staging::{require_contract, ContentStaging};
+
+mod retention_work;
+pub(in crate::domain_computation) use retention_work::checkpoint as retention_checkpoint;

@@ -19,6 +19,11 @@ pub(super) fn observe(
                 prepared.with_field(0, |value| value.is_none())?,
                 "optional projected field absence stays absent"
             );
+            assert!(
+                prepared
+                    .with_field_content(0, |value, frame| value.is_none() && frame.is_none())?,
+                "content acquisition preserves genuine optional absence"
+            );
             let inverse = rows
                 .prepare_occurrence(occurrence.entity())?
                 .expect("actual inverse membership");
@@ -39,15 +44,12 @@ pub(super) fn observe(
             if let Some(cancel) = court.cancel_row_field.lock().unwrap().take() {
                 prepared.with_field(0, |_| cancel.cancel())?;
                 let entered = std::cell::Cell::new(false);
-                let stopped = prepared.with_field(0, |_| entered.set(true));
+                let stopped = prepared.with_field_content(0, |_, _| entered.set(true));
                 assert!(
                     !entered.get(),
                     "original cancellation precedes field callback"
                 );
-                return Err(stopped
-                    .err()
-                    .expect("original ticket cannot outlive cancellation")
-                    .into());
+                return Err(stopped.expect_err("original ticket cannot outlive cancellation"));
             }
             if let Some(other) = scopes
                 .iter()

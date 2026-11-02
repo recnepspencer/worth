@@ -28,6 +28,7 @@ pub struct PreparedManagedIndexSourceRead {
 /// The payload and Source views are borrowed together under the current audience.
 pub struct ManagedIndexSourceRead<'a> {
     prepared: &'a PreparedManagedIndexSourceRead,
+    interpretation: Arc<super::NativeManagedSourceInterpretation>,
     views: SourceViews<'a>,
 }
 
@@ -99,6 +100,8 @@ impl ManagedIndexSourceRead<'_> {
                         &self.views.after_fields
                     },
                     audience: self.prepared.program.0.issuer.admit(),
+                    interpretation: &self.interpretation,
+                    before,
                 },
             },
         }
@@ -190,11 +193,16 @@ pub(crate) fn read<'a>(
     prepared: &'a PreparedManagedIndexSourceRead,
     views: SourceViews<'a>,
 ) -> Result<ManagedIndexSourceRead<'a>, Denial> {
-    let (_, before, after) = association(&prepared.program, &views.before, &views.after)?;
+    let (interpretation, before, after) =
+        association(&prepared.program, &views.before, &views.after)?;
     if before != prepared.before || after != prepared.after {
         return Err(DerivedRelationReadDenial::from(Definition::ForeignObservation).into());
     }
-    Ok(ManagedIndexSourceRead { prepared, views })
+    Ok(ManagedIndexSourceRead {
+        prepared,
+        views,
+        interpretation,
+    })
 }
 
 /// No public constructor supplies this association. The views were minted by

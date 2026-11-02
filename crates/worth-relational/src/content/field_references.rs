@@ -42,58 +42,98 @@ pub(super) fn visit(
                         let AspectValue::ContentRef(identity) = value else {
                             continue;
                         };
-                        let kind = kind.ok_or(Denial::EncodingInconsistency)?;
-                        control.checkpoint(
-                            (usize::BITS
-                                - (schema.entity_kinds.len() + schema.relation_kinds.len())
-                                    .leading_zeros()
-                                + 1) as u64
-                                * 8,
+                        let format = resolve_field_format(
+                            control,
+                            schema,
+                            record,
+                            kind.ok_or(Denial::EncodingInconsistency)?,
+                            aspect_key,
+                            key,
                         )?;
-                        let declarations = match record {
-                            RecordRef::Entity(_) => {
-                                &schema
-                                    .entity_kinds
-                                    .get(&kind)
-                                    .ok_or(Denial::FormatBindingMissing)?
-                                    .aspect_contract_declarations
-                            }
-                            RecordRef::Relation(_) => {
-                                &schema
-                                    .relation_kinds
-                                    .get(&kind)
-                                    .ok_or(Denial::FormatBindingMissing)?
-                                    .aspect_contract_declarations
-                            }
-                        };
-                        let height = usize::BITS - declarations.aspects.len().leading_zeros() + 1;
-                        control.checkpoint(u64::from(height) * aspect_key.as_str().len() as u64)?;
-                        let index = declarations
-                            .aspects
-                            .binary_search_by(|binding| binding.contract.key().cmp(aspect_key))
-                            .map_err(|_| Denial::FormatBindingMissing)?;
-                        let AspectShape::Struct(shape) =
-                            declarations.aspects[index].contract.shape()
-                        else {
-                            return Err(Denial::FormatBindingMissing);
-                        };
-                        let height = usize::BITS - shape.fields().len().leading_zeros() + 1;
-                        control.checkpoint(u64::from(height) * key.as_str().len() as u64)?;
-                        let index = shape
-                            .fields()
-                            .binary_search_by(|field| field.key().cmp(key))
-                            .map_err(|_| Denial::FormatBindingMissing)?;
-                        let field = &shape.fields()[index];
-                        if field.value_type() != ScalarAspectType::ContentRef {
-                            return Err(Denial::FormatBindingMissing);
-                        }
-                        let binding = field.codec().ok_or(Denial::FormatBindingMissing)?;
-                        control.checkpoint(schema.content_formats.lookup_bound())?;
-                        callback(*identity, schema.content_formats.resolve(binding)?)?;
+                        callback(*identity, format)?;
                     }
                 }
             }
         }
         Ok(())
     })
+}
+
+pub(super) fn resolve_field_format<'schema>(
+    control: &mut super::RelationalContentControl<'_, '_, '_>,
+    schema: &'schema RelationalSchemaRegistry,
+    record: &RecordRef,
+    kind: crate::identity::data::KindId,
+    aspect_key: &worth_foundational::facade::AspectKey,
+    key: &worth_foundational::facade::FieldKey,
+) -> Result<&'schema Format, Denial> {
+    let declared = resolve_aspect(control, schema, record, kind, aspect_key)?;
+    let AspectShape::Struct(shape) = declared.contract.shape() else {
+        return Err(Denial::FormatBindingMissing);
+    };
+    let height = usize::BITS - shape.fields().len().leading_zeros() + 1;
+    control.checkpoint(
+        u64::from(height)
+            .checked_mul(key.as_str().len() as u64)
+            .ok_or(Denial::ArithmeticOverflow)?,
+    )?;
+    let index = shape
+        .fields()
+        .binary_search_by(|field| field.key().cmp(key))
+        .map_err(|_| Denial::FormatBindingMissing)?;
+    let field = &shape.fields()[index];
+    if field.value_type() != ScalarAspectType::ContentRef {
+        return Err(Denial::FormatBindingMissing);
+    }
+    let binding = field.codec().ok_or(Denial::FormatBindingMissing)?;
+    control.checkpoint(schema.content_formats.lookup_bound())?;
+    schema.content_formats.resolve(binding)
+}
+
+pub(super) fn resolve_aspect<'schema>(
+    control: &mut super::RelationalContentControl<'_, '_, '_>,
+    schema: &'schema RelationalSchemaRegistry,
+    record: &RecordRef,
+    kind: crate::identity::data::KindId,
+    aspect_key: &worth_foundational::facade::AspectKey,
+) -> Result<&'schema crate::schema::data::DeclaredAspectContractBinding, Denial> {
+    control.checkpoint(
+        u64::from(
+            usize::BITS
+                - schema
+                    .entity_kinds
+                    .len()
+                    .checked_add(schema.relation_kinds.len())
+                    .ok_or(Denial::ArithmeticOverflow)?
+                    .leading_zeros()
+                + 1,
+        ) * 8,
+    )?;
+    let declarations = match record {
+        RecordRef::Entity(_) => {
+            &schema
+                .entity_kinds
+                .get(&kind)
+                .ok_or(Denial::FormatBindingMissing)?
+                .aspect_contract_declarations
+        }
+        RecordRef::Relation(_) => {
+            &schema
+                .relation_kinds
+                .get(&kind)
+                .ok_or(Denial::FormatBindingMissing)?
+                .aspect_contract_declarations
+        }
+    };
+    let height = usize::BITS - declarations.aspects.len().leading_zeros() + 1;
+    control.checkpoint(
+        u64::from(height)
+            .checked_mul(aspect_key.as_str().len() as u64)
+            .ok_or(Denial::ArithmeticOverflow)?,
+    )?;
+    let index = declarations
+        .aspects
+        .binary_search_by(|binding| binding.contract.key().cmp(aspect_key))
+        .map_err(|_| Denial::FormatBindingMissing)?;
+    Ok(&declarations.aspects[index])
 }

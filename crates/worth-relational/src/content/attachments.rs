@@ -45,6 +45,18 @@ impl RelationalContentAttachments {
         self.live.as_ref().map_or(0, |stage| stage.records.len())
             + self.transport.as_ref().map_or(0, |records| records.len())
     }
+    pub fn attach_retained(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        retained: &Self,
+    ) -> Result<(), Denial> {
+        let mut next = self.clone();
+        for record in retained.records() {
+            next.append_record(execution, record)?;
+        }
+        *self = next;
+        Ok(())
+    }
     pub fn attach(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

@@ -132,9 +132,24 @@ pub(crate) fn apply_mutation_draft(
         &state,
         &outcome.effect.publication.changed_records,
         version_id,
-        None,
+        source_interpretation.restoration_content(),
     )
     .map_err(crate::content::commit_denial)?;
+    state
+        .content
+        .bind_schema(schema)
+        .map_err(crate::content::commit_denial)?;
+    source_interpretation
+        .bind_content(
+            execution,
+            state.content.directory().map_err(|_| {
+                crate::content::commit_denial(
+                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                )
+            })?,
+            schema,
+        )
+        .map_err(crate::content::commit_denial)?;
     crate::authority::mutation::apply_adjacency_deltas(
         &mut state,
         &outcome.effect.adjacency.deltas,
@@ -206,6 +221,21 @@ pub(crate) fn apply_retained_entity_selection_draft(
         Some(retained._source.inner.root.retained_content()),
     )
     .map_err(crate::content::commit_denial)?;
+    state
+        .content
+        .bind_schema(schema)
+        .map_err(crate::content::commit_denial)?;
+    source_interpretation
+        .bind_content(
+            execution,
+            state.content.directory().map_err(|_| {
+                crate::content::commit_denial(
+                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                )
+            })?,
+            schema,
+        )
+        .map_err(crate::content::commit_denial)?;
     let aggregate = crate::aggregate_identity::AggregateProposal::capture(
         schema,
         selected_state.selected(),

@@ -164,8 +164,9 @@ impl CapturedCandidateRows {
                         .same_content(current, &mut |work| control.checkpoint(work),
                             &mut |bytes| control.reserve_content_memory(bytes),
                             &mut |cause| {
-                                use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
+                                use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
                                 control.refuse(match cause {
+                                    Fault::ContentInconsistency => Stop::Content(worth_relational::facade::content::RelationalContentDenial::EncodingInconsistency),
                                     Fault::CapacityOverflow => Stop::CapacityOverflow,
                                     Fault::AllocationFailed => Stop::MaterialStorage(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed),
                                 })

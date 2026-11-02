@@ -32,6 +32,7 @@ impl<'source> ManagedIndexSourceProjection<'source> {
                 relations,
                 aspects,
                 audience,
+                ..
             } => {
                 if !self.program.0.authority.admits(audience) {
                     return Err(Definition::OutsideDeclaredAccess.into());
@@ -73,6 +74,7 @@ fn field_value<'a>(
     Ok(fields.get(key))
 }
 mod access;
+mod content;
 pub use access::PreparedManagedIndexRelationRead;
 pub(crate) use access::SourceProjectionBacking;
 pub(in crate::validation::candidate_source) use access::SourceProjectionRetention;

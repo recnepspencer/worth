@@ -266,10 +266,20 @@ fn installed_exhaustive_membership_binds_its_profile_without_changing_parent_mea
 }
 
 #[test]
-fn content_managed_source_projection_refuses_until_its_byte_acquisition_contract_is_installed() {
-    let denied = match bind::<8>() {
-        Ok(_) => panic!("an unsupported content Source installed"),
-        Err(cause) => cause,
-    };
-    assert_eq!(denied.kind(), SchemaKind::ManagedIndexSourceUnsupported);
+fn content_managed_source_projection_installs_with_its_exact_field_recipe() {
+    type Content = model::ParentSchema<8>;
+    let installed = bind::<8>().expect("Native field-bound acquisition is installed");
+    let index = installed
+        .installed_managed_index::<queries::ModelIndex<Content>>()
+        .unwrap();
+    assert!(index.admits_parent(
+        &installed
+            .installed_query_binding::<queries::ParentBinding<Content>>()
+            .unwrap()
+    ));
+    let binding = installed
+        .value_bindings()
+        .field("Principal", "PrincipalFacts", "ContentSamples")
+        .unwrap();
+    assert!(binding.matches_content::<super::content_binding::codec::Good>());
 }

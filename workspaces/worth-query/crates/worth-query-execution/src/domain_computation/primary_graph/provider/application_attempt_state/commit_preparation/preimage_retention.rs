@@ -42,6 +42,7 @@ impl WorthQueryPreparedPreImageRetention {
 pub(super) fn retain_attempt_preimage(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryPreparedPreImageRetention, WorthQueryProviderSessionFailure> {
     let Some(demand) = attempt.preimage_demand() else {
@@ -63,10 +64,22 @@ pub(super) fn retain_attempt_preimage(
                 "preimage projection capacity exhausted"),
         })?;
     let examined = candidates.examined();
-    let (retained, candidates_materialized) =
+    let (mut retained, candidates_materialized) =
         selection::retain_from_attempt(demand, candidates.iter(), &footprint)
             .map_err(retention_failure)?
             .into_parts();
+    retained
+        .retain_content(
+            execution,
+            attempt
+                .affinity()
+                .product_publication()
+                .observation()
+                .basis()
+                .relational_basis(),
+            demand.maximum_encoded_bytes(),
+        )
+        .map_err(retention_failure)?;
     Ok(WorthQueryPreparedPreImageRetention {
         retained: Some(retained),
         work: WorthQueryPreImageRetentionWork {
@@ -117,6 +130,9 @@ fn retention_failure(
     provider_failure(
         WorthQueryProviderSessionProtocolStage::Commit,
         match denial {
+            WorthQueryPreImageRetentionDenial::Content(_) => {
+                "retained content failed its original Native field-bound admission"
+            }
             WorthQueryPreImageRetentionDenial::MissingDemandedField => {
                 "recorded inverse demands an unobserved exact mutated field"
             }
@@ -134,4 +150,5 @@ fn retention_failure(
             }
         },
     )
+    .with_preimage_retention_denial(denial)
 }

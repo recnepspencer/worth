@@ -11,6 +11,8 @@ pub(crate) struct ContentPublication {
     admitted: Option<ContentDirectory>,
     #[serde(skip)]
     source: Option<ContentDirectory>,
+    #[serde(skip)]
+    schema: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
 }
 
 impl PartialEq for ContentPublication {
@@ -21,11 +23,36 @@ impl PartialEq for ContentPublication {
 impl Eq for ContentPublication {}
 
 impl ContentPublication {
+    pub(crate) fn bind_schema(
+        &mut self,
+        schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    ) -> Result<(), Denial> {
+        if self.schema.is_some() {
+            return Err(Denial::EncodingInconsistency);
+        }
+        self.schema = Some(schema.clone());
+        Ok(())
+    }
+    pub(super) fn historical_parts(
+        &self,
+    ) -> Result<
+        (
+            &ContentDirectory,
+            &crate::branch::RelationalBranchRootSchemaAuthority,
+        ),
+        Denial,
+    > {
+        Ok((
+            self.admitted.as_ref().ok_or(Denial::MissingContent)?,
+            self.schema.as_ref().ok_or(Denial::FormatBindingMissing)?,
+        ))
+    }
     pub(super) fn from_readmitted_records(records: RelationalContentAttachments) -> Self {
         Self {
             records,
             admitted: None,
             source: None,
+            schema: None,
         }
     }
 
@@ -42,6 +69,7 @@ impl ContentPublication {
             records: self.records.clone(),
             admitted: Some(root.retained_content().clone()),
             source: None,
+            schema: Some(root.retained_schema_authority().as_ref().clone()),
         })
     }
     pub(crate) fn records(&self) -> &RelationalContentAttachments {
@@ -75,6 +103,7 @@ pub(crate) fn prepare_publication(
             records: records.clone(),
             admitted: Some(directory),
             source: source.cloned(),
+            schema: None,
         })
     })
 }
@@ -105,6 +134,7 @@ impl ContentPublication {
             records,
             admitted: Some(directory),
             source: None,
+            schema: self.schema.clone(),
         })
     }
 }

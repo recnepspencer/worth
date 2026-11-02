@@ -108,7 +108,7 @@ impl CapturedManagedInfluence {
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
-        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault) -> E,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
     ) -> Result<bool, E> {
         admit(self.comparison_work())?;
         admit(other.comparison_work())?;

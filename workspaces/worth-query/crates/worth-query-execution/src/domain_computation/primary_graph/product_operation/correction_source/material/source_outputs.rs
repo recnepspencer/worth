@@ -17,12 +17,14 @@ use worth_query_declaration::facade::{
     },
     application_schema::ApplicationSchema,
 };
+mod content;
 mod preflight;
 pub(in crate::domain_computation::primary_graph) use preflight::validate_witness;
 
 /// The original source field could not be lawfully projected.
 #[derive(Debug)]
 pub enum WorthQueryCorrectionOutputProjectionDenial {
+    Content(worth_relational::facade::content::RelationalContentDenial),
     UndeclaredField,
     ForeignWitness,
     FieldMeaningMismatch,
@@ -31,7 +33,14 @@ pub enum WorthQueryCorrectionOutputProjectionDenial {
     Stopped(MapKernelStop),
 }
 
-pub(super) struct SourceOutputs<'source, 'runtime, 'request, 'budget, S, C> {
+pub(in crate::domain_computation::primary_graph::product_operation::correction_source) struct SourceOutputs<
+    'source,
+    'runtime,
+    'request,
+    'budget,
+    S,
+    C,
+> {
     source: &'source WorthQuerySelectedCorrectionSource<'runtime, S>,
     request: ExecutionRequest<'request, 'budget>,
     failure: RefCell<Option<WorthQueryCorrectionOutputProjectionDenial>>,
@@ -44,7 +53,7 @@ where
     S: ApplicationSchema,
     C: ApplicationCorrectionBinding<S>,
 {
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn new(
         source: &'source WorthQuerySelectedCorrectionSource<'runtime, S>,
         request: ExecutionRequest<'request, 'budget>,
     ) -> Self {
@@ -59,6 +68,25 @@ where
         self.failure.borrow_mut().take()
     }
 
+    pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn retained_content(
+        &self,
+    ) -> Result<
+        worth_relational::facade::content::RelationalContentAttachments,
+        WorthQueryCorrectionOutputProjectionDenial,
+    > {
+        let fields = C::source_output_fields();
+        content::retain(&self.request, fields.len(), &mut |index| {
+            let field = &fields[index];
+            if field.content_recipe().is_none() {
+                return Ok(None);
+            }
+            self.read(field)?
+                .1
+                .map(Some)
+                .ok_or(WorthQueryCorrectionOutputProjectionDenial::MaterialUnavailable)
+        })
+    }
+
     #[expect(
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
@@ -66,7 +94,13 @@ where
     fn read(
         &self,
         field: &ApplicationCorrectionOutputField<S>,
-    ) -> Result<&AspectValue, WorthQueryCorrectionOutputProjectionDenial> {
+    ) -> Result<
+        (
+            &AspectValue,
+            Option<worth_relational::facade::content::RelationalContentFrame>,
+        ),
+        WorthQueryCorrectionOutputProjectionDenial,
+    > {
         use WorthQueryCorrectionOutputProjectionDenial as D;
         self.request.check_live().map_err(D::Stopped)?;
         let evidence = self.source.occurrence().commit_evidence();
@@ -106,11 +140,21 @@ where
             AspectKey::new(&parts.aspect).ok_or(D::FieldMeaningMismatch)?,
             CanonicalFieldPath::single(FieldKey::new(&parts.field).ok_or(D::FieldMeaningMismatch)?),
         );
-        evidence
+        let value = evidence
             .committed_changes()
             .committed_field_ref(&self.request, entity, &locator)
             .map_err(D::Stopped)?
-            .ok_or(D::MaterialUnavailable)
+            .ok_or(D::MaterialUnavailable)?;
+        let content = content::certify(
+            &self.request,
+            evidence.committed_changes(),
+            value,
+            entity,
+            &parts.entity,
+            &locator,
+            field.content_recipe(),
+        )?;
+        Ok((value, content))
     }
 }
 
@@ -121,7 +165,7 @@ impl<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>> ApplicationCorrec
         &self,
         field: &ApplicationCorrectionOutputField<S>,
     ) -> Result<&AspectValue, ApplicationCorrectionSourceFieldDenial> {
-        read_checked(&self.failure, || self.read(field))
+        read_checked(&self.failure, || self.read(field).map(|(value, _)| value))
     }
 }
 

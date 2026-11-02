@@ -19,8 +19,13 @@ pub use schema::{
     RelationalContentFieldBinding, RelationalContentFormatDeclaration,
     RelationalContentSchemaSnapshot,
 };
+mod historical;
+mod preimage;
+mod projection;
+mod source;
 mod transaction;
 pub(crate) use publication::{commit_denial, prepare_publication, ContentPublication};
+pub(crate) use source::NativeContentSourceView;
 
 pub use attachments::RelationalContentAttachments;
 pub use codec::{RelationalContentCodec, RelationalContentSink};

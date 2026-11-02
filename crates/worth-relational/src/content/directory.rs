@@ -25,7 +25,17 @@ impl ContentDirectory {
         execution: &ExecutionRequest<'_, '_>,
         identity: ContentRefId,
     ) -> Result<Option<RelationalContentFrame>, Denial> {
-        visit_directory(execution, self.occurrences.len())?;
+        control::run(execution, |control| self.find_controlled(control, identity))
+    }
+    pub(super) fn find_controlled(
+        &self,
+        control: &mut super::RelationalContentControl<'_, '_, '_>,
+        identity: ContentRefId,
+    ) -> Result<Option<RelationalContentFrame>, Denial> {
+        let height = 2 * (usize::BITS - self.occurrences.len().leading_zeros()) as u64 + 2;
+        control.checkpoint(
+            height * (size_of::<Occurrence>() + size_of::<RelationalContentFrame>()) as u64,
+        )?;
         match self.occurrences.first_at_or_after(&(identity, None)) {
             Some(((found, Some(_)), frame)) if *found == identity => Ok(Some(frame.clone())),
             Some(((found, None), _)) if *found == identity => Err(Denial::EncodingInconsistency),

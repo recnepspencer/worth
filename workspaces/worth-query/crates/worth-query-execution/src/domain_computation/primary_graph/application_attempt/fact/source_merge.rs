@@ -94,14 +94,7 @@ impl Fact {
                         .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
                 }, &mut |bytes| execution.reserve_retained_memory(bytes)
                     .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest),
-                    &mut |cause| {
-                        use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
-                        use super::super::retained_decision_facts::StoreDenial;
-                        match cause {
-                            Fault::CapacityOverflow => StoreDenial::Representability,
-                            Fault::AllocationFailed => StoreDenial::PhysicalAllocation,
-                        }
-                    })?;
+                    &mut comparison_fault)?;
                 control.check_live()?;
                 Ok(equal)
             }
@@ -286,5 +279,44 @@ mod tests {
                 entity_id: endpoint(1)
             }
         );
+    }
+}
+
+fn comparison_fault(
+    cause: crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault,
+) -> super::super::retained_decision_facts::StoreDenial {
+    use super::super::retained_decision_facts::StoreDenial;
+    use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
+    match cause {
+        Fault::ContentInconsistency => StoreDenial::ContentInconsistency,
+        Fault::CapacityOverflow => StoreDenial::Representability,
+        Fault::AllocationFailed => StoreDenial::PhysicalAllocation,
+    }
+}
+#[cfg(test)]
+mod content_tests {
+    #[test]
+    fn duplicate_source_fact_corruption_retains_its_exact_attempt_category() {
+        use super::super::super::retained_decision_facts::StoreDenial;
+        use crate::domain_computation::primary_graph::{
+            application_query::certify_frame_bytes, WorthQueryApplicationAttemptDenialKind as Kind,
+        };
+        let literal = [7, 0, 0, 0, 11, 0, 0, 0];
+        for at in 0..literal.len() {
+            let mut damaged = literal;
+            damaged[at] ^= 1;
+            let refusal = certify_frame_bytes(
+                &literal,
+                &damaged,
+                &mut |_| Ok(()),
+                &mut super::comparison_fault,
+            )
+            .unwrap_err();
+            assert_eq!(refusal, StoreDenial::ContentInconsistency);
+            assert_eq!(
+                refusal.into_attempt_denial("source").kind(),
+                Kind::ContentInconsistency
+            );
+        }
     }
 }

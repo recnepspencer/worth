@@ -6,7 +6,7 @@ mod checkpoint_capture_controls;
 mod checkpoint_controls;
 mod checkpoint_corruption;
 mod durable_publication;
-mod expected;
+pub(crate) mod expected;
 pub(crate) mod fixture;
 mod journal_recovery;
 mod raw_write;
@@ -166,3 +166,7 @@ fn content_identifiers_have_one_ascii_spelling() {
 }
 
 mod schema_transition;
+
+mod historical_custody;
+
+mod preimage_work;

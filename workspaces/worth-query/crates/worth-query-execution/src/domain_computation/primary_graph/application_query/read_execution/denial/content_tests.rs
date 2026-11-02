@@ -1,0 +1,69 @@
+//! Literal receiving vocabulary is independent of the conversion under test.
+use super::*;
+use crate::domain_computation::{
+    primary_graph::{
+        WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
+    },
+    WorthQueryProviderSessionDenialKind as Session,
+};
+use worth_relational::facade::{
+    content::RelationalContentDenial as Content,
+    transactions::RelationalExecutionDenialCause as Native,
+};
+#[test]
+fn content_read_keeps_original_execution_stops_out_of_semantic_content_refusal() {
+    use WorthQueryApplicationReadExecutionDenialKind as Kind;
+    for (cause, expected) in [
+        (Native::Cancelled, Kind::Cancelled),
+        (Native::DeadlineElapsed, Kind::DeadlineExceeded),
+        (
+            Native::WorkExhausted,
+            WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(
+                Session::ExecutionResource {
+                    denial: Resource::WorkExhausted,
+                    partition_identity: None,
+                    policy_ancestor: None,
+                },
+            ),
+        ),
+        (
+            Native::DeclaredMemoryExhausted {
+                requested: 43,
+                admitted: 17,
+            },
+            WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(
+                Session::ExecutionResource {
+                    denial: Resource::MemoryLimit {
+                        requested: 43,
+                        admitted: 17,
+                        level: Level::Declared,
+                    },
+                    partition_identity: None,
+                    policy_ancestor: None,
+                },
+            ),
+        ),
+        (
+            Native::ContentInconsistency,
+            WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(
+                Session::ContentInconsistency,
+            ),
+        ),
+    ] {
+        assert_eq!(
+            content_read_denial(Content::Execution(cause), "field").kind(),
+            expected
+        );
+    }
+    for cause in [
+        Content::MissingContent,
+        Content::FormatMismatch,
+        Content::UnsupportedVersion,
+        Content::IntegrityMismatch,
+    ] {
+        assert_eq!(
+            content_read_denial(cause, "field").kind(),
+            Kind::Content(cause)
+        );
+    }
+}

@@ -276,6 +276,7 @@ fn pending_publication_denial(
         }
         kind @ (Kind::ProjectionContract { .. }
         | Kind::HistoricalVisibility { .. }
+        | Kind::ContentInconsistency
         | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }

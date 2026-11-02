@@ -1655,3 +1655,12 @@ All findings were closed. It independently verified all final lint diagnostic
 paths have zero overlap with the scoped dirty set and committed branch diff.
 The reviewer ran no builds and made no mutations. Source/correction and slice 5
 qualification remain outstanding.
+
+
+## Slice 4: Source and correction
+
+The same lane reviewer passed Source and correction integration under qa-loop,
+qa-tests and code-quality-qa. See [the full slice 4 ledger](milestone-9.19-k1c-content-slice4-evidence.md)
+for exact commands, all failed attempts, final counts, independent oracles, scoped
+untouched lint debt and rlib telemetry. The pre-edit checkpoint RootUnavailable
+and absent live-history limitations are explicit. Slice 5 qualification remains.

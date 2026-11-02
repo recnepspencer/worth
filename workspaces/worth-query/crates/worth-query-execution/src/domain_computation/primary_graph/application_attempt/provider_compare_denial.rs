@@ -91,6 +91,7 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         }
         Kind::ProjectionContract { .. }
         | Kind::HistoricalVisibility { .. }
+        | Kind::ContentInconsistency
         | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }

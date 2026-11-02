@@ -2,8 +2,8 @@ use super::*;
 worth_query_application!(pub Schema { owner: "content-door", version: (1,0), contributions: [Contribution], });
 worth_query_application_contribution! {
     pub contribution Contribution in Schema {
-        identity: "content-door.contribution.v1", corrections: [],
-        members: |schema| { operation::declare(declare(schema)) }
+        identity: "content-door.contribution.v1", corrections: [revision::Restore, created_content::Capture],
+        members: |schema| { source::declare(created_content::declare(revision::declare(operation::declare(declare(schema))))) }
     }
 }
 worth_query_entity!(pub Mapping for Schema);
@@ -79,3 +79,5 @@ pub fn declare(
         )
         .principal_binding(Actor::reference())
 }
+
+worth_query_relation!(pub ContainsSamples in Schema,Record=>Record;integrity=same_context_unbounded_retain_dangling);

@@ -33,5 +33,13 @@ pub(in crate::domain_computation::primary_graph) fn validate_witness<S>(
     {
         return Err(Denial::FieldMeaningMismatch);
     }
+    match (field.content_recipe(), installed.content_format()) {
+        (None, None) => {}
+        (Some(a), Some(b))
+            if a.declaration() == b.declaration()
+                && a.binding_type() == b.binding_type()
+                && a.value_type() == b.value_type() => {}
+        _ => return Err(Denial::FieldMeaningMismatch),
+    }
     Ok(())
 }

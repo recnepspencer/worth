@@ -142,7 +142,7 @@ impl ManagedSourceRead {
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
-        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault) -> E,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
     ) -> Result<bool, E> {
         if self.key != other.key || !self.authorization.same_truth(&other.authorization, admit)? {
             return Ok(false);

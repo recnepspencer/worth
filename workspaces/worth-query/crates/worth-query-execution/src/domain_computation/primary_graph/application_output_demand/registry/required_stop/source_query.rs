@@ -59,7 +59,8 @@ pub(super) fn admission_is_row(kind: WorthQueryApplicationQueryAdmissionDenialKi
 pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> bool {
     use WorthQueryApplicationOneShotDenialKind as Kind;
     match kind {
-        Kind::ExecutionRequest(_)
+        Kind::Content(_)
+        | Kind::ExecutionRequest(_)
         | Kind::SourceObservationAllocation { .. }
         | Kind::StalePrincipal
         | Kind::StaleScope

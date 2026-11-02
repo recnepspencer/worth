@@ -15,8 +15,7 @@ use worth_query_declaration::facade::{
     portable_identity::WorthQueryPortableTypeIdentity,
 };
 
-#[test]
-fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
+fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> ApplicationSchemaMember {
     let binding = DeclaredCorrectionBinding::from_untrusted_parts(DeclaredCorrectionBindingParts {
         identity: identity("restore-amount.v1"),
         source: description("set-amount.v1", "SetAmount", "amount-input.v1"),
@@ -45,9 +44,9 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
             source_binding: identity("set-amount.v1"), role: "created-account".to_owned(),
             entity: "Account".to_owned(), aspect: "State".to_owned(), field: "id".to_owned(),
             presence: ApplicationFieldPresence::Required,
-            scalar_family: worth_foundational::facade::ScalarAspectType::UInt64,
-            value_binding: identity("worth.u64"), unit: Some("journal-number".to_owned()),
-            binding_unit: Some("journal-number".to_owned()), frame: Some("ledger".to_owned()), canonical: None,
+            scalar_family: if content_format.is_some() { worth_foundational::facade::ScalarAspectType::ContentRef } else { worth_foundational::facade::ScalarAspectType::UInt64 },
+            value_binding: identity(if content_format.is_some() { "worth.content_ref" } else { "worth.u64" }), unit: Some("journal-number".to_owned()),
+            binding_unit: Some("journal-number".to_owned()), frame, canonical: None, content_format,
         })],
         disclosure: DeclaredCorrectionDisclosure::from_untrusted_parts(DeclaredCorrectionDisclosureParts {
             binding: identity("amount-history.v1"), input: identity("history-input.v1"),
@@ -66,10 +65,15 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
         None,
     )
     .with_untrusted_correction_binding(binding);
-    let member = ApplicationSchemaMember::OperationAftermath {
+    ApplicationSchemaMember::OperationAftermath {
         operation: "SetAmount".to_owned(),
         contract,
-    };
+    }
+}
+
+#[test]
+fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
+    let member = member(None, Some("ledger".to_owned()));
     let bytes = encode_member(&member);
     assert_eq!(decode_member(&bytes), member);
     assert_eq!(encode_member(&decode_member(&bytes)), bytes);
@@ -128,4 +132,32 @@ fn description(binding: &str, operation: &str, input: &str) -> ApplicationMutati
 
 fn identity(value: &str) -> WorthQueryPortableTypeIdentity {
     WorthQueryPortableTypeIdentity::from_untrusted(value.to_owned())
+}
+
+#[test]
+fn correction_content_output_archive_retains_exact_format_with_and_without_frame() {
+    for (frame, tag) in [(None, 53u16), (Some("model".to_owned()), 54u16)] {
+        let member = member(Some([0x5B; 32]), frame);
+        let bytes = encode_member(&member);
+        let decoded = decode_member(&bytes);
+        assert_eq!(decoded, member);
+        assert_eq!(encode_member(&decoded), bytes);
+        // Independent local wire framing: the output role is followed by its binding-unit option,
+        // a big-endian u16 field tag and the standard field record. The literal format ID must survive.
+        let marker = b"created-account";
+        let role_end = bytes
+            .windows(marker.len())
+            .position(|w| w == marker)
+            .unwrap()
+            + marker.len();
+        let tag_start = role_end + 2 + 4 + b"journal-number".len();
+        assert_eq!(&bytes[tag_start..tag_start + 2], &tag.to_be_bytes());
+        assert!(bytes.windows(32).any(|w| w == [0x5B; 32]));
+        let mut damaged = bytes.clone();
+        damaged[tag_start..tag_start + 2].copy_from_slice(&55u16.to_be_bytes());
+        assert_eq!(
+            try_decode_member(&damaged).unwrap_err().kind(),
+            crate::facade::WorthQueryPackageArchiveDenialKind::UnsupportedRecordVariant
+        );
+    }
 }

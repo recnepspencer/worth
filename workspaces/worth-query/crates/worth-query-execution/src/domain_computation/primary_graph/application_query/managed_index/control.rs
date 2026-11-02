@@ -64,6 +64,12 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
         }
     }
 
+    pub(super) fn source_budget(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::CustomInvariantReadBudget<'_>> {
+        self.source
+    }
+
     pub(super) fn reserve_content_memory(
         &self,
         bytes: u64,

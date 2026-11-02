@@ -21,6 +21,8 @@ pub enum WorthQueryProviderSessionProtocolStage {
 /// A provider-session refusal that preserves its protocol or execution cause.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionDenialKind {
+    /// Retained content disagreed with its certified identity.
+    ContentInconsistency,
     /// The selected root refused the requested projection contract.
     ProjectionContract {
         denial: worth_relational::facade::runtime::RelationalProjectionContractDenial,
@@ -83,6 +85,8 @@ pub enum WorthQueryProviderSessionDenialKind {
 /// this description does not itself grant retry or cleanup authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionFailure {
+    preimage:
+        Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>,
     managed_index:
         Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryProviderSessionDenialKind,
@@ -108,6 +112,19 @@ pub struct WorthQueryProviderSessionFailure {
 }
 
 impl WorthQueryProviderSessionFailure {
+    pub(in crate::domain_computation) fn with_preimage_retention_denial(
+        mut self,
+        cause: crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial,
+    ) -> Self {
+        self.preimage = Some(cause);
+        self
+    }
+    pub fn preimage_retention_denial(
+        &self,
+    ) -> Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>
+    {
+        self.preimage
+    }
     pub fn new(
         kind: WorthQueryProviderSessionDenialKind,
         stage: WorthQueryProviderSessionProtocolStage,
@@ -115,6 +132,7 @@ impl WorthQueryProviderSessionFailure {
         counters: WorthQueryProviderSessionProtocolCounters,
     ) -> Self {
         Self {
+            preimage: None,
             managed_index: None,
             kind,
             stage,

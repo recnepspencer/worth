@@ -23,6 +23,7 @@ worth_query_operation_reads!(Change => [UnboundValues, Key, Values, OptionalValu
 worth_query_operation_writes!(Change => [UnboundValues, Key, Values, OptionalValues, OtherValues, VersionedValues]);
 worth_query_operation_creates!(Change => [Record]);
 worth_query_operation_removes_aspects!(Change => [Samples]);
+worth_query_operation_links!(Change=>[ContainsSamples]);
 fn key(_: &Edit) -> String {
     "record".into()
 }
@@ -73,6 +74,7 @@ impl ApplicationDeclaredOperation<Schema> for Change {
             .operation_write(Change::reference(), Values::reference())
             .operation_write(Change::reference(), UnboundValues::reference())
             .operation_create(Change::reference(), Record::reference())
+            .operation_link(Change::reference(), ContainsSamples::reference())
     }
 }
 pub struct Handler {
@@ -87,12 +89,13 @@ impl OperationHandler<Schema, Binding> for Handler {
         let result = (|| {
             let root = reader.resolve_entity(
                 Key::reference(),
-                if input.mode == 16 {
-                    "created"
+                if input.mode == 19 {
+                    String::from_utf8(input.reference.clone()).unwrap()
+                } else if input.mode == 16 {
+                    "created".into()
                 } else {
-                    "record"
-                }
-                .into(),
+                    "record".into()
+                },
             )?;
             if input.mode == 15 {
                 let mut stopped = false;
@@ -162,9 +165,28 @@ impl OperationHandler<Schema, Binding> for Handler {
                 },
             };
             match input.mode {
-                0 | 8 | 9 | 14 => writer
+                0 | 8 | 9 | 14 | 19 => writer
                     .write_content(&target, samples(), &grid)
                     .map_err(HandlerExecutionDenial::new)?,
+                18 => {
+                    let key = String::from_utf8(input.reference.clone()).unwrap();
+                    let child = writer
+                        .create_entity_in_context(
+                            &target,
+                            Record::reference(),
+                            WorthQueryApplicationEntityKey::new(&key).unwrap(),
+                        )
+                        .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .initialize_field(&child, Key::reference(), key.clone())
+                        .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .initialize_content(&child, samples(), &grid)
+                        .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .link(ContainsSamples::reference(), key, &target, &child)
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
                 1 => {
                     let new = writer
                         .create_entity(

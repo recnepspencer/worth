@@ -4,7 +4,8 @@ pub(super) fn application_commit_cause(
 ) -> WorthQueryConditionalExecutionCause {
     use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind as Kind;
     match kind {
-        Kind::StorageUnavailable(_)
+        Kind::ContentInconsistency
+        | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }

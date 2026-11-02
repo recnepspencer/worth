@@ -8,22 +8,49 @@ impl ApplicationFeature<Schema> for Feature {
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = ApplicationRuleLeaf;
+    type Rules = ApplicationRuleList<
+        ApplicationRuleAt<
+            ApplicationLocalRuleRef<Schema, Feature, source::CheckSamples>,
+            ApplicationCommitBoundary,
+        >,
+        ApplicationRuleLeaf,
+    >;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("content-door.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<Schema, Feature>()
+            .native_action::<source::expectation::Binding>()
+            .finish_action()
+            .native_action::<created_content::Binding>()
+            .finish_action()
+            .native_action::<revision::Binding>()
+            .finish_action()
             .native_action::<operation::Binding>()
             .finish_action()
             .finish()]
     }
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
-    type Configuration = Option<WorthQueryCancellationSource>;
+    type Configuration = (
+        Option<WorthQueryCancellationSource>,
+        std::sync::Arc<source::Calls>,
+    );
     fn configure(
-        cancellation: Option<WorthQueryCancellationSource>,
+        (cancellation, calls): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup
+            .managed_index_provider::<source::Index, _>(source::Provider(calls.clone()))
+            .with_refinement()
+            .install()?;
+        setup.invariant(
+            source::CheckSamples::reference(),
+            ApplicationInvariantExecutionPoint::CommitBoundary,
+            move |resolver| source::resolve(resolver, calls.clone()),
+        )?;
+        setup.handler::<source::expectation::Binding, _>(source::expectation::Handler)?;
+        setup.handler::<created_content::Binding, _>(created_content::Handler)?;
+        setup.handler::<revision::Binding, _>(revision::Handler)?;
         setup.handler::<operation::Binding, _>(operation::Handler { cancellation })
     }
 }
@@ -32,12 +59,18 @@ pub fn install() -> Host {
     install_with_control(None)
 }
 pub fn install_with_control(cancellation: Option<WorthQueryCancellationSource>) -> Host {
+    install_with_calls(cancellation, Default::default())
+}
+pub fn install_with_calls(
+    cancellation: Option<WorthQueryCancellationSource>,
+    calls: std::sync::Arc<source::Calls>,
+) -> Host {
     in_memory_program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
             .validated_program()
             .unwrap(),
         Schema::declaration().unwrap(),
-        (cancellation,),
+        ((cancellation, calls),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         |_, graph, installed| {
@@ -113,4 +146,33 @@ pub fn pin(
         .request(&principal, &scope)
         .retain_current_read()
         .unwrap()
+}
+
+pub fn checkpoint(host: &Host) -> WorthQueryApplicationCheckpoint {
+    host.runtime()
+        .with_host_advancement(|phase| {
+            host.runtime()
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap()
+}
+pub fn restore(
+    checkpoint: WorthQueryApplicationCheckpoint,
+    calls: std::sync::Arc<source::Calls>,
+) -> Host {
+    in_memory_program_from_checkpoint(
+        ApplicationProgramAuthoring::<Schema, Program>::begin()
+            .validated_program()
+            .unwrap(),
+        Schema::declaration().unwrap(),
+        ((None, calls),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        host_limits(),
+        checkpoint,
+    )
+    .unwrap()
 }

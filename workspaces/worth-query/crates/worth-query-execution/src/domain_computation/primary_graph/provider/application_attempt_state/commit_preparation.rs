@@ -104,9 +104,13 @@ fn take_prepared_session(
         predicate,
     } = approved;
     let source_fact_rebase = attempt.take_source_fact_rebase();
-    let (retained_preimage, preimage_retention_work) =
-        preimage_retention::retain_attempt_preimage(&attempt, &candidate, allocation_policy)?
-            .into_parts();
+    let (retained_preimage, preimage_retention_work) = preimage_retention::retain_attempt_preimage(
+        &attempt,
+        &candidate,
+        &session.execution_request(),
+        allocation_policy,
+    )?
+    .into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
         attempt,
         candidate,

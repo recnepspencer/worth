@@ -201,6 +201,9 @@ pub(super) fn map_authorized_read_denial(
         }
         WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
             let kind = match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::Content(cause) => {
+                    WorthQueryApplicationOneShotDenialKind::Content(cause)
+                }
                 WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind) => {
                     WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)
                 }

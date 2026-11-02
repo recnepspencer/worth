@@ -32,7 +32,7 @@ fn final_poll_can_refuse_an_otherwise_equal_or_different_comparison() {
 #[test]
 fn swallowed_resource_refusals_preserve_first_cause_for_both_boolean_results() {
     use super::with_resources;
-    use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
+    use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
     use std::cell::Cell;
     for first in 0..3 {
         for equal in [false, true] {
@@ -93,4 +93,37 @@ fn successful_resource_bridge_requires_original_final_poll_for_true_and_false() 
             Err("final")
         );
     }
+}
+
+#[test]
+fn corrupt_equal_identity_body_survives_the_actual_erased_comparison_receiver() {
+    use crate::domain_computation::primary_graph::application_query::{
+        certify_frame_bytes, ProjectionContentComparisonFault as Fault,
+    };
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Stop;
+    // Both purported content certificates name this same value. The checker
+    // receives independently supplied bodies, never an encoder's comparison.
+    let original = [3u8, 0, 0, 0, 7, 0, 0, 0, 11, 0, 0, 0];
+    for index in 0..original.len() {
+        let mut corrupt = original;
+        corrupt[index] ^= 1;
+        let result = super::with_resources(
+            &mut |_| Ok::<_, Stop>(()),
+            &mut |_| Ok(None),
+            &mut Fault::into_native,
+            &mut |checkpoint, scratch| {
+                let checked = certify_frame_bytes(
+                    &original,
+                    &corrupt,
+                    &mut |work| if checkpoint(work) { Ok(()) } else { Err(()) },
+                    &mut |cause| (scratch.fault)(cause),
+                );
+                // A hostile erased receiver tries to swallow the refusal.
+                let _ = checked;
+                true
+            },
+        );
+        assert_eq!(result, Err(Stop::ContentInconsistency));
+    }
+    assert_eq!(Stop::ContentInconsistency.as_kernel_stop(), None);
 }

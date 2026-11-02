@@ -17,6 +17,9 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
         Progression::ProductStale(stale) => Outcome::ProductStale(stale),
         Progression::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
         Progression::Denied(denial) => match denial.kind() {
+            Kind::ContentInconsistency => {
+                cleanup_execution_indeterminate(Ok(Session::ContentInconsistency))
+            }
             Kind::StorageUnavailable(failure) => {
                 cleanup_execution_indeterminate(Ok(Session::StorageUnavailable(failure)))
             }

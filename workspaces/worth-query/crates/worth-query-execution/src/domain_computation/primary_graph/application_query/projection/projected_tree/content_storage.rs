@@ -7,7 +7,7 @@ pub(in crate::domain_computation::primary_graph) enum ProjectionContentStorageFa
 }
 pub(in crate::domain_computation::primary_graph) struct ContentScratch<'a> {
     pub reserve: &'a mut dyn FnMut(u64) -> Result<Option<ExecutionMemoryReservation>, ()>,
-    pub fault: &'a mut dyn FnMut(ProjectionContentStorageFault),
+    pub fault: &'a mut dyn FnMut(super::ProjectionContentComparisonFault),
 }
 
 impl ProjectionContentStorageFault {

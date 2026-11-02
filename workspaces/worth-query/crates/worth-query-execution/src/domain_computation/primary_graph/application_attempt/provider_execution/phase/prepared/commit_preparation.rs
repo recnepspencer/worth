@@ -31,7 +31,7 @@ where
     let WorthQueryApplicationEffectProgram {
         read_set,
         mut effects,
-        content_attachments,
+        mut content_attachments,
         conditional_definition,
         effect_posture,
         output_correspondence,
@@ -160,6 +160,18 @@ where
                 WorthQueryApplicationCommitDenial::signing_lifecycle_attempt(cause.into_attempt_denial(admission.operation())))),
         }
     };
+    if let Some(causality) = &aftermath_causality
+        && let Err(cause) = content_attachments
+            .attach_retained(execution, causality.prepared_correction().content())
+    {
+        return terminal(WorthQueryApplicationCommitOutcome::Denied(
+            WorthQueryApplicationCommitDenial::domain_value_admission_rejected(
+                crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial::Content(
+                    cause,
+                ),
+            ),
+        ));
+    }
     if let Err(denial) = super::domain_value_write::admit(
         execution,
         application.installed_schema.value_bindings(),

@@ -42,6 +42,8 @@ pub enum RelationalExecutionDenialCause {
     UncheckedCustomKernel,
     ExpectedIdentitiesNotCanonical,
     MemoryOverflow,
+    /// Independently checked retained content disagrees with its identity.
+    ContentInconsistency,
 }
 
 impl RelationalExecutionDenialCause {

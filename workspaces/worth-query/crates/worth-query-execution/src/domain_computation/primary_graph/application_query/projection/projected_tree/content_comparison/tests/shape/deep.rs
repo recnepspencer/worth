@@ -1,6 +1,6 @@
 //! Equality of raw deep representations, never installed nested admission.
 use super::*;
-use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
+use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
 fn deep(key: &Arc<ApplicationQueryResultSlotKey>) -> WorthQueryApplicationProjectionNode {
     let mut root = shape(key);
     root.relations[0].rows[0] = shape(key);

@@ -36,6 +36,7 @@ pub struct DeclaredCorrectionOutputFieldParts {
     pub binding_unit: Option<String>,
     pub frame: Option<String>,
     pub canonical: Option<ApplicationCanonicalValueContract>,
+    pub content_format: Option<[u8; 32]>,
 }
 
 impl DeclaredCorrectionOutputField {
@@ -56,7 +57,7 @@ impl DeclaredCorrectionOutputField {
             scalar_family: parts.scalar_family,
             value_type: parts.value_binding.as_str().to_owned(),
             canonical: parts.canonical.clone(),
-            content_format: None,
+            content_format: parts.content_format,
             unit: parts.unit.clone(),
             frame: parts.frame.clone(),
             writable: false,
@@ -84,7 +85,7 @@ impl DeclaredCorrectionOutputField {
             return false;
         };
         let expected = &self.parts;
-        content_format.is_none()
+        expected.content_format == *content_format
             && expected.entity == *entity
             && expected.aspect == *aspect
             && expected.field == *field
@@ -108,6 +109,7 @@ pub struct ApplicationCorrectionOutputField<Schema> {
     entity: TypeId,
     entity_name: &'static str,
     recipe: ApplicationFieldBindingRecipe,
+    content: Option<crate::application_schema::ApplicationContentBindingRecipe>,
     schema: PhantomData<fn() -> Schema>,
 }
 
@@ -126,6 +128,11 @@ impl<S> ApplicationCorrectionOutputField<S> {
     }
     pub fn entity_name(&self) -> &'static str {
         self.entity_name
+    }
+    pub fn content_recipe(
+        &self,
+    ) -> Option<&crate::application_schema::ApplicationContentBindingRecipe> {
+        self.content.as_ref()
     }
     pub fn binding_recipe(&self) -> &ApplicationFieldBindingRecipe {
         &self.recipe
@@ -146,6 +153,35 @@ where
     >,
     Source: ApplicationMutationBinding<Role::Schema, Output = Role::Contract>,
 {
+    pub fn content_field<Aspect, Field, Write, Equality, Unit, C>(
+        field: crate::application_schema::ApplicationContentFieldRef<
+            Role::Schema,
+            Role::Entity,
+            Aspect,
+            Field,
+            Write,
+            Equality,
+            Unit,
+            C,
+        >,
+    ) -> ApplicationCorrectionOutputField<Role::Schema>
+    where
+        Aspect: ApplicationAspectMarkerIdentity<Role::Schema, Role::Entity>,
+        Field: ApplicationFieldMarkerIdentity<
+            Role::Schema,
+            Role::Entity,
+            Aspect,
+            Value = worth_foundational::facade::ContentRefId,
+        >,
+        Unit: ApplicationFieldUnit,
+        C: crate::application_schema::ApplicationContentBinding,
+    {
+        let mut witness = Self::field(field.field());
+        let recipe = crate::application_schema::ApplicationContentBindingRecipe::of::<C>();
+        witness.declaration.parts.content_format = Some(recipe.declaration().identity);
+        witness.content = Some(recipe);
+        witness
+    }
     pub fn field<Aspect, Field, Value, Write, Equality, Unit>(
         field: ApplicationFieldRef<
             Role::Schema,
@@ -185,6 +221,7 @@ where
                     binding_unit: recipe.unit().map(|unit| unit.as_str().to_owned()),
                     frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
                     canonical: recipe.canonical_contract().cloned(),
+                    content_format: None,
                 },
             ),
             source: TypeId::of::<Source>(),
@@ -193,6 +230,7 @@ where
             entity_name:
                 <Role::Entity as ApplicationEntityMarkerIdentity<Role::Schema>>::IDENTIFIER,
             recipe,
+            content: None,
             schema: PhantomData,
         }
     }

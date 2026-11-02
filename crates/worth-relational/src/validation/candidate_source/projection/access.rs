@@ -16,6 +16,8 @@ pub(crate) enum SourceProjectionBacking<'a> {
         relations: &'a StructuralRelationView<'a>,
         aspects: &'a StructuralAspectStateView<'a>,
         audience: AdmittedManagedIndexSourceAudience,
+        interpretation: &'a super::super::NativeManagedSourceInterpretation,
+        before: bool,
     },
     Selected {
         loan: &'a ManagedIndexSourceRebuild,

@@ -72,6 +72,10 @@ impl CheckpointDecodeDenial {
             },
             FactDecodeDenial::Retention(StoreDenial::PhysicalAllocation) => Self::allocator(),
             FactDecodeDenial::Retention(StoreDenial::Representability) => Self::capacity(),
+            FactDecodeDenial::Retention(StoreDenial::ContentInconsistency) => Self::native_execution(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::ContentInconsistency,
+                "checkpoint retained content disagrees with its identity".to_owned(),
+            ),
             FactDecodeDenial::Retention(StoreDenial::ConflictingBody) =>
                 "checkpoint facts contain conflicting bodies".to_owned().into(),
             #[cfg(test)]
