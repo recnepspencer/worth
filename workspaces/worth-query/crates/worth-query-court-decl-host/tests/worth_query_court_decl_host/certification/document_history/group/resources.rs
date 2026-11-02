@@ -10,7 +10,10 @@ use worth_query_host::facade::{
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::{
     document_history::ResultBoundedRetentionHistory,
-    host::{publish_on_first_program_with_limits, world_resources::world_resources_with_branches},
+    host::{
+        publish_on_first_program_with_limits,
+        world_resources::{world_resources_with_capacity, WorldLifecycleCapacity},
+    },
 };
 
 #[test]
@@ -103,7 +106,15 @@ fn candidate_capacity(cause: &WorthQueryProductBranchCreateError) -> bool {
 #[test]
 fn candidate_capacity_refusal_preserves_the_reserved_group_and_one_freed_slot_serves_all_members() {
     let limits = WorthQueryInMemoryApplicationLimits::new(
-        world_resources_with_branches(256, 4 * 1024 * 1024, 256, 3),
+        world_resources_with_capacity(
+            256,
+            4 * 1024 * 1024,
+            256,
+            WorldLifecycleCapacity {
+                live_product_branches: 3,
+                ..WorldLifecycleCapacity::DEFAULT
+            },
+        ),
         WorthQueryApplicationQueryResourceProfile::new(NonZeroUsize::new(128).unwrap()),
         SignalConditionalEvaluationBudget::development(),
     );

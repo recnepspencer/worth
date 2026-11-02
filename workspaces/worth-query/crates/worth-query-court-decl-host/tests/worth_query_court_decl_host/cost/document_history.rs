@@ -1,5 +1,6 @@
 //! Warm ordinary append; retained-history depth varies, model and local edit do not.
 mod group;
+mod growth;
 mod redo_choices;
 mod retention_frontier;
 use crate::certification::document_history::assert_page_entry;
