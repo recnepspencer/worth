@@ -1,5 +1,9 @@
 //! Original aliases refuse before seal; ordinary handlers retire after service.
 use super::*;
+type OrdinaryHome = worth_query_host::facade::WorthQueryApplicationHome<
+    fixture::schema::HomeIdentitySchema,
+    fixture::HomeProgram,
+>;
 use worth_query_host::facade::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
 };
@@ -8,15 +12,41 @@ use worth_query_host::facade::primary_graph::{
 fn program_alias_refusal_resumes_the_same_query_and_ordinary_handler_retires() {
     let initialized = Arc::new(AtomicUsize::new(0));
     let contacts = Arc::new(AtomicUsize::new(0));
-    let request = fixture::request(
-        fixture::location(),
-        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+    let lease = checkpoint_capture::lease(128 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let home = resume_original_query_after_alias_refusal(
+        &execution,
         initialized.clone(),
         contacts.clone(),
     );
-    let lease = checkpoint_capture::lease(128 << 20);
-    let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let home = with_bootstrap_advancement_from_request(execution, |phase| {
+    execute_original_mutation_after_query_alias_release(&home);
+    assert_eq!(initialized.load(Ordering::SeqCst), 1);
+    assert_eq!(contacts.load(Ordering::SeqCst), 1);
+    let closed = home
+        .close(&execution)
+        .unwrap_or_else(|refused| panic!("ordinary handler close: {refused:?}"));
+    assert!(closed.is_closed());
+    assert_eq!(
+        contacts.load(Ordering::SeqCst),
+        1,
+        "retirement never invokes business"
+    );
+    closed.reclaim();
+}
+
+#[inline(never)]
+fn resume_original_query_after_alias_refusal(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    initialized: Arc<AtomicUsize>,
+    contacts: Arc<AtomicUsize>,
+) -> OrdinaryHome {
+    let request = fixture::request(
+        fixture::location(),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+        initialized,
+        contacts.clone(),
+    );
+    let home = with_bootstrap_advancement_from_request(*execution, |phase| {
         request.open_in_advancement(&phase)
     })
     .unwrap()
@@ -33,28 +63,11 @@ fn program_alias_refusal_resumes_the_same_query_and_ordinary_handler_retires() {
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
     let home = refused.resume().unwrap();
     drop(retained);
-
-    execute_original_mutation_after_query_alias_release(&home);
-    assert_eq!(initialized.load(Ordering::SeqCst), 1);
-    assert_eq!(contacts.load(Ordering::SeqCst), 1);
-    let closed = home
-        .close(&execution)
-        .unwrap_or_else(|refused| panic!("ordinary handler close: {refused:?}"));
-    assert!(closed.is_closed());
-    assert_eq!(
-        contacts.load(Ordering::SeqCst),
-        1,
-        "retirement never invokes business"
-    );
-    closed.reclaim();
+    home
 }
 
-fn execute_original_mutation_after_query_alias_release(
-    home: &worth_query_host::facade::WorthQueryApplicationHome<
-        fixture::schema::HomeIdentitySchema,
-        fixture::HomeProgram,
-    >,
-) {
+#[inline(never)]
+fn execute_original_mutation_after_query_alias_release(home: &OrdinaryHome) {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
