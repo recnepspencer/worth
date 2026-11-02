@@ -56,7 +56,7 @@ translation is permitted. New public owner ports use their existing facades.
 
 | Requirement | Acceptance evidence |
 |---|---|
-| D11 ordinary handler custody and retained payload | `default_supplier_hooks_retire_invocation_without_destroying_shared_payload`, `ordinary_supplier_retirement_retains_the_original_payload_until_reclaim`, and Host `handler_retirement` courts; coordinator ruling retires the old ordinary-supplier Unsupported assertion |
+| D11 ordinary handler custody and retained payload | `default_supplier_hooks_retire_invocation_without_destroying_shared_payload`, `ordinary_supplier_retirement_retains_payload_with_an_exhausted_memory_budget`, and Host `handler_retirement` courts; coordinator ruling retires the old ordinary-supplier Unsupported assertion |
 | D11 original slot/handler aliases refuse Busy | `original_erased_slot_and_handler_aliases_preserve_the_same_handler_and_payload` and `erased_slot_and_active_handler_aliases_refuse_while_the_same_query_serves`; Host `program_alias_refusal_resumes_the_same_query_and_ordinary_handler_retires` |
 | D11 active call refuses before seal | `active_installed_call_refuses_before_world_seal_and_resumes_the_same_home` |
 | D11 registered source, serving graph and provider custody | Six unchanged `query_readmission::native_artifacts` acceptance courts named in the P-B brief, plus owner retirement controls |

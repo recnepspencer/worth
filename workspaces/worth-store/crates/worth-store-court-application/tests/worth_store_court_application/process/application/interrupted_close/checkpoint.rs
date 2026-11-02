@@ -107,7 +107,7 @@ fn close_deadline_retains_the_original_coupled_checkpoint_and_retry_closes_the_s
     assert_eq!(home.home_identity(), identity);
     assert!(matches!(
         home.close(&execution),
-        ApplicationHomeCloseOutcome::Closed { .. }
+        Ok(ApplicationHomeCloseOutcome::Closed { .. })
     ));
 }
 
@@ -185,7 +185,7 @@ fn last_home_loss_keeps_original_checkpoint_input_tickets_until_actual_terminal(
     assert_eq!(home.home_identity(), identity);
     assert!(matches!(
         home.close(&execution),
-        ApplicationHomeCloseOutcome::Closed { .. }
+        Ok(ApplicationHomeCloseOutcome::Closed { .. })
     ));
 }
 
@@ -287,6 +287,6 @@ fn overlapping_recovery(point: OverlapPoint) {
     drop(operation);
     assert!(matches!(
         home.close(&execution),
-        ApplicationHomeCloseOutcome::Closed { .. }
+        Ok(ApplicationHomeCloseOutcome::Closed { .. })
     ));
 }

@@ -134,7 +134,12 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
         ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
             panic!("same Native/Home close remains refused after external read release: {reason:?}")
         }
-        _ => panic!("same Home close must report its World checkpoint refusal"),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        } => {
+            panic!("same Home must retain its successful World checkpoint: {cause:?}")
+        }
     }
     drop(inert_ports);
     let reopened = crate::durable_run::open(directory.path(), &execution).unwrap();
@@ -225,6 +230,11 @@ fn abandoned_world_delivery_refuses_before_close_and_can_be_delivered_then_close
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("Native close refused: {reason:?}")
         }
-        _ => panic!("close must retain the successful coupled World checkpoint report"),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        } => {
+            panic!("close must retain the successful coupled World checkpoint report: {cause:?}")
+        }
     }
 }
