@@ -78,6 +78,7 @@ impl ApplicationHomePhysicalRefusal {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ApplicationHomePhysicalRefusalKind {
     PhysicalStep,
+    DiscardPending,
     MutationOwnerContended,
     UnsupportedRootSchema { observed: u32 },
 }
@@ -286,13 +287,18 @@ pub(crate) struct OpenedPhysicalHome {
 }
 
 pub(crate) fn open(root: &Path, opening: PhysicalOpening) -> Result<OpenedPhysicalHome, Refusal> {
+    require_no_discard(root)?;
     std::fs::create_dir_all(root)
         .map_err(|error| Refusal::new(Stage::RuntimeAdmission, error.to_string()))?;
     let held = opening.media.qualify_home(root).map_err(|error| {
+        if let Err(refusal) = require_no_discard(root) {
+            return refusal;
+        }
         recovery_admission_refusal(
             PhysicalRecoveryPlatformAdmissionError::BackendQualification(error),
         )
     })?;
+    require_no_discard(root)?;
     match held
         .store_presence()
         .map_err(|error| Refusal::new(Stage::RecoveryAdmission, format!("{error:?}")))?
@@ -315,4 +321,18 @@ pub(crate) fn open(root: &Path, opening: PhysicalOpening) -> Result<OpenedPhysic
             })
         }
     }
+}
+
+fn require_no_discard(root: &Path) -> Result<(), Refusal> {
+    if crate::discard::pending(root)
+        .map_err(|e| Refusal::new(Stage::MediaAdmission, e.to_string()))?
+    {
+        let mut refusal = Refusal::new(
+            Stage::MediaAdmission,
+            "explicit Home discard must finish before opening",
+        );
+        refusal.kind = ApplicationHomePhysicalRefusalKind::DiscardPending;
+        return Err(refusal);
+    }
+    Ok(())
 }

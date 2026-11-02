@@ -13,6 +13,9 @@ pub use crate::close::{
 };
 pub use crate::deadline::ApplicationHomeDeadlineDenial;
 pub use crate::descriptor::ApplicationHomeDescriptorDenial;
+pub use crate::discard::{
+    discard_home, ApplicationHomeDiscard, ApplicationHomeDiscardDenial, ApplicationHomeDiscardStage,
+};
 pub use crate::home_context::{
     AdmittedApplicationHome, ReadmittedApplicationHome, RecoveredPhysicalHome,
 };

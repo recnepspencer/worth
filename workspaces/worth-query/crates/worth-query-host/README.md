@@ -24,6 +24,17 @@ branch. This README covers the host's deeper contracts.
 
 ## Directory Home publication custody
 
+Dispose of a development directory with
+`worth_query_host::facade::discard_home(WorthQueryApplicationHomeLocation::Directory(path))`.
+It takes the same filesystem mutation lease as opening, without opening Store.
+An owned Home refuses with `MutationOwnerContended`; close it through its owning
+close path before disposal. Disposal destroys the directory's data, retaining
+only the mutation-lock scaffold. The next open initializes a new Home identity.
+An interrupted disposal leaves `discard.pending`; opening refuses with the
+typed physical `DiscardPending` reason until another explicit discard completes.
+Retry also accepts damaged Store data and a damaged namespace identity. A
+link-like or otherwise unusable lease path still refuses safely.
+
 `WorthQueryApplicationHome` owns the physical Home and its lifecycle. Keep the
 Home while borrowing its program runtime; consuming Home close retains the
 same advanced owner on refusal. A retained runtime clone can prevent composition

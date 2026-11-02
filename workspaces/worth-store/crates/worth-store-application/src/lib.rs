@@ -7,6 +7,7 @@ mod checkpoint;
 mod close;
 mod deadline;
 mod descriptor;
+mod discard;
 mod frame_encoding;
 mod home_context;
 #[cfg(feature = "certification-test-authority")]

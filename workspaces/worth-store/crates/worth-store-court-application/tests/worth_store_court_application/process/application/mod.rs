@@ -1,3 +1,4 @@
+mod discard;
 mod failed_close;
 mod interrupted_close;
 mod native_components;

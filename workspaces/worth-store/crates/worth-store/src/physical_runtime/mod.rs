@@ -349,6 +349,7 @@ pub use worth_store_physical_backend::{
     BoundedRecoveryFilesystemDiscovery, CompletedRecoveryStagingWrite,
     CompletedScheduledRecoveryReopenRead, CompletedScheduledRecoveryStagingWrite,
     DeniedScheduledRecoveryReopenRead, ExceededFilesystemObservationBound, FilesystemAccessPosture,
+    FilesystemHomeDiscard, FilesystemHomeDiscardDenial, FilesystemHomeDiscardStage,
     FilesystemObservationBound, FixedArtifact, GrantOverrun, GrantedRead, GrantedReadStop,
     IndeterminateRecoveryStagingWrite, MediaOwnerIdentity, ObservedRecoveryArtifact,
     ObservedWalArtifact, PageAddress, PhysicalRecoveryMediaGeneration,
@@ -359,7 +360,7 @@ pub use worth_store_physical_backend::{
     RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
     RecoveryStagingIndeterminatePhysical, RecoveryStagingWriteDisposition,
     RecoveryStagingWriteOutcome, RecoveryStorePresence, RecoveryWalObservationIdentity,
-    StreamArtifact, Uncharged, UnchargedRead, WalInventoryOutcome,
+    StreamArtifact, Uncharged, UnchargedRead, WalInventoryOutcome, HOME_DISCARD_TOMBSTONE,
 };
 
 pub use work::PhysicalEffectRecoveryObligation;

@@ -28,6 +28,7 @@ mod file_handle;
 mod file_mutation_sequence;
 mod file_synchronization;
 mod handle_accounting;
+mod home_discard;
 mod logical_length;
 mod media_owner;
 mod metadata;
@@ -142,6 +143,10 @@ pub(crate) use file_handle::CertificationRetainedMediaFileHandle;
 pub use file_handle::{
     MutableFileAccess, NamespaceFileHandle, NamespaceFileOpenKind, NamespaceFileOpenOutcome,
     NamespaceFileOpenResult, ReadOnlyFileAccess,
+};
+pub use home_discard::{
+    FilesystemHomeDiscard, FilesystemHomeDiscardDenial, FilesystemHomeDiscardStage,
+    HOME_DISCARD_TOMBSTONE,
 };
 pub use logical_length::TruncateRequest;
 pub use media_owner::{
