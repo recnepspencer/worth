@@ -51,6 +51,9 @@ mod page_pause;
 mod paging;
 mod preview;
 mod receiver_pause;
+mod retention_pause;
+#[doc(hidden)]
+pub use retention_pause::WorthQueryHistoryRetentionChangePauseForTest;
 mod redo;
 mod retention;
 pub use redo::{WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices};
@@ -115,6 +118,8 @@ pub struct WorthQueryDocumentHistory<
         Option<std::sync::Arc<receiver_pause::ReceiverPause>>,
     pub(in crate::domain_computation::primary_graph) context_pause:
         Option<std::sync::Arc<receiver_pause::ReceiverPause>>,
+    pub(in crate::domain_computation::primary_graph) retention_pause:
+        Option<(retention_pause::RetentionChangePoint, std::sync::Arc<receiver_pause::ReceiverPause>)>,
     pub(in crate::domain_computation::primary_graph) marker: std::marker::PhantomData<fn() -> H>,
 }
 

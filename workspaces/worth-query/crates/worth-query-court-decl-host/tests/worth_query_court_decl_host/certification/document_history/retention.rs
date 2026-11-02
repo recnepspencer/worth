@@ -1,7 +1,11 @@
 //! Real public owners prove document-wide eligibility and independent holder rights.
 use super::recording::{begin, close, finish, ready};
 use super::*;
+mod cancellation;
 mod custody;
+mod governed;
+mod guide;
+mod resources;
 use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationHistoryDenial as Failure, WorthQueryDocumentHistoryDenial as Native,
@@ -251,6 +255,21 @@ fn an_original_unfinished_checkout_survives_exclusion_and_restores_a_live_curren
         document.preview(&request, target),
         Err(Failure::Document(Native::HistoryNodeExcluded))
     ));
+    let fresh = document
+        .navigate::<Navigation>()
+        .checkout(target)
+        .expected_selection(expected.clone())
+        .idempotency(0x9182_6212)
+        .prepare(&request)
+        .unwrap_err();
+    assert!(matches!(
+        fresh,
+        worth_query_host::facade::application_entry::WorthQueryHistoryNavigationAdvanceDenial::Navigation(
+            worth_query_host::facade::application_entry::WorthQueryHistoryNavigationDenial::Document(
+                Native::HistoryNodeExcluded
+            )
+        )
+    ), "{fresh:?}");
     let mut deferred = false;
     for _ in 0..8 {
         deferred |= document.maintain_history(&request).unwrap() == Release::WaitingForNavigation;

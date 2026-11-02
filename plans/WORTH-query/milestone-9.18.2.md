@@ -1,6 +1,6 @@
 # Milestone 9.18.2: Consumer History Trees And Snapshot Navigation
 
-**Status:** in progress; Phases 1–5 implemented and verified; Phases 6–7 remain open.
+**Status:** in progress; Phases 1–6 implemented and verified; Phase 7 remains open.
 **Public boundary:** process-local Decl/Host consumers.
 **Prerequisites:** qualified branch/correction owners from
 [9.18](./milestone-9.18.md) and retained-read, guarded adoption and history
@@ -451,6 +451,7 @@ cases, actual lifecycle evidence, affected gates and scoped review.
 
 ## Phase 6: Configure A Navigation Window And Bookmarks
 
+**Status:** implemented and verified.
 **Depends on:** completed Phases 2-5.
 **Outcome:** consumers choose how many unpinned user steps this feature keeps
 navigable, across all futures, with honest ownership and no storage-cap claim.

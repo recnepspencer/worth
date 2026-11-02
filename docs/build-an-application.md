@@ -1895,6 +1895,11 @@ admission and excludes at most one entry. Resume a dropped borrow with the same
 target. Use `set_history_bookmark::<Bookmark>(&request, node, true/false)`
 for independently admitted pin/unpin, `history_retention_status` for counts
 and pending ownership, and `maintain_history` for one release attempt.
+For governed metadata, use `advance_governed`,
+`set_history_bookmark_governed` and `history_retention_status_governed` with
+the fresh metadata capability, operation and input. The policy roles remain
+separately admitted. Cancellation after a batch can leave a committed prefix;
+inspect status and resume the same document and target with a fresh request.
 Pages distinguish `Root`, `Retained(parent)` and `Truncated`; do not invent
 an edge through an excluded node. Existing previews and registered checkout
 retain their original observations, while new requests refuse excluded IDs.
@@ -1903,6 +1908,42 @@ refused cleanup. See the
 [window, bookmark and disposal example](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#configure-a-navigation-window-and-bookmarks)
 and its linked compiled public journeys. This bounds availability, without
 promising storage reclamation or a byte limit.
+
+This compiled example uses the retention application's `Document`, `Request`
+and installed `Window`/`Bookmark` recipes. `Failure` is
+`WorthQueryApplicationHistoryDenial`. `protect_and_shrink` performs one bounded
+batch. If `pending_window` remains, resume `set_history_window(target)` with
+fresh requests until it clears; pinning succeeded even if the later window
+change refuses. Release independent previews, unpin unwanted bookmarks, and
+advance `maintain_history` before consuming the document for another edit.
+`dispose_document` returns the actual close failure owner: retain it and retry
+its cleanup after outstanding holders release.
+
+<!-- compiled: document_history_retention.rs -->
+```rust
+fn protect_and_shrink(
+    document: &mut Document<'_>,
+    request: &Request<'_, '_, '_>,
+    bookmark: WorthQueryHistoryNodeId,
+    target: ApplicationHistoryRecentSteps,
+) -> Result<WorthQueryHistoryRetentionStatus, Failure> {
+    document.maintain_history(request)?;
+    document.set_history_bookmark::<Bookmark>(request, bookmark, true)?;
+    document
+        .set_history_window(target)
+        .advance::<Window>(request)
+}
+
+fn dispose_document<'runtime>(
+    document: Document<'runtime>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+) -> Result<
+    WorthQueryDocumentHistoryCloseReceipt,
+    WorthQueryApplicationHistoryCloseFailure<'runtime, DocumentRetentionSchema, RetentionHistory>,
+> {
+    document.close(phase)
+}
+```
 
 To record an isolated edit, consume the attached document with
 `document.edit(intent).idempotency_owned(&request, key)?`, then

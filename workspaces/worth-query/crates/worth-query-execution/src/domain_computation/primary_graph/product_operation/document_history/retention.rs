@@ -77,6 +77,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
             .validate_current_authority()
             .map_err(Denial::OperationAdmission)?;
         let request = admission.retain_admitted_request();
+        self.pause_retention(retention_pause::RetentionChangePoint::Before);
         let execution = phase
             .checked_execution_request_for(&self.application().product_runtime)
             .map_err(Denial::Stopped)?;
@@ -115,6 +116,10 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         }
         let removed = changed.expect("the original current request admitted the transition")?;
         drop(removed);
+        self.pause_retention(retention_pause::RetentionChangePoint::After);
+        phase
+            .check_live_for(&self.application().product_runtime)
+            .map_err(Denial::Stopped)?;
         Ok(status)
     }
 

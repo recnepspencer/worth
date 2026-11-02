@@ -73,7 +73,8 @@ pub mod document_history {
         WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
         WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPreview,
         WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
-        WorthQueryHistoryRetentionStatus, WorthQueryHistorySelection, WorthQueryHistoryStep,
+        WorthQueryHistoryRetentionChangePauseForTest, WorthQueryHistoryRetentionStatus,
+        WorthQueryHistorySelection, WorthQueryHistoryStep,
     };
     pub use crate::domain_computation::primary_graph::{
         WorthQueryDocumentHistoryIdentity, WorthQueryHistoryGroupCandidateCreation,

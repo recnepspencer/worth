@@ -59,6 +59,18 @@ impl ApplicationHistoryBinding<DocumentRetentionSchema> for DetailedRetentionHis
     const IDENTITY: &'static str = "DetailedDocumentRetentionHistory";
 }
 
+/// Two actual pending head cleanups bound admission before another candidate.
+pub struct ReleaseBoundedRetentionHistory;
+worth_query_portable_type!(ReleaseBoundedRetentionHistory => "worth.query.document-retention.release-bounded-history.v1");
+impl ApplicationHistoryBinding<DocumentRetentionSchema> for ReleaseBoundedRetentionHistory {
+    type Access = DocumentRetentionRead;
+    const IDENTITY: &'static str = "ReleaseBoundedDocumentRetentionHistory";
+    const RETENTION_RESOURCES: worth_query_decl::facade::application_history::ApplicationHistoryRetentionResources = worth_query_decl::facade::application_history::ApplicationHistoryRetentionResources {
+        maximum_pending_releases: std::num::NonZeroUsize::new(2).unwrap(),
+        ..worth_query_decl::facade::application_history::ApplicationHistoryRetentionResources::DEFAULT
+    };
+}
+
 /// The real navigation recipe with one unfinished attempt per attached document.
 pub struct NavigationBoundedRetentionHistory;
 worth_query_portable_type!(NavigationBoundedRetentionHistory => "worth.query.document-retention.navigation-bounded-history.v1");
@@ -118,6 +130,13 @@ pub fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
     control_roles::declare(retention_policy::declare(navigation::declare(schema)))
         .application_history(
+            ApplicationHistoryDefinition::<DocumentRetentionSchema, ReleaseBoundedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
+                .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+                .window_policy::<retention_policy::Window>()
+                .bookmark_policy::<retention_policy::Bookmark>()
+                .operation::<SetRetentionBinding>("Set retention"),
+        )
+        .application_history(
             ApplicationHistoryDefinition::<DocumentRetentionSchema, NavigationBoundedRetentionHistory>::for_binding(ApplicationQueryDisclosureContract::public())
                 .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
                 .navigation::<navigation::Navigation>()
@@ -146,6 +165,8 @@ pub fn declare(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, GovernedRetentionHistory>::for_binding(metadata_disclosure())
             .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
             .navigation::<navigation::Navigation>()
+            .window_policy::<retention_policy::Window>()
+            .bookmark_policy::<retention_policy::Bookmark>()
             .operation::<SetRetentionBinding>("Set retention"),
     ).application_history(
         ApplicationHistoryDefinition::<DocumentRetentionSchema, GovernedPayloadRetentionHistory>::for_binding(metadata_disclosure_for::<GovernedPayloadRetentionHistory>())

@@ -177,6 +177,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             capture_pause: None,
             page_pause: None,
             context_pause: None,
+            retention_pause: None,
             marker: std::marker::PhantomData,
         };
         match pending.confirm(phase, document.application(), document.branch(), document) {

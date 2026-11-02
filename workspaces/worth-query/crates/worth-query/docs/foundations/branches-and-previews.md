@@ -527,10 +527,32 @@ Edits and other policy changes refuse while that frontier is unfinished.
 An existing registered checkout can still finish; its actual target becomes
 the protected current step.
 
+Cancellation before the admitted policy effect preserves the window and its
+eligible entries. Cancellation during delivery can follow a completed batch.
+Read status with a fresh lawful request, keep that same document and target,
+and resume the remaining frontier. Completed exclusions are not rolled back.
+
 Use `document.set_history_bookmark::<Bookmark>(&request, node, true)` to pin,
 and pass `false` to unpin. Unpinning can immediately exclude an old step.
 `history_retention_status(&request)` reports the applied window, unfinished
 target, unprotected count, bookmark count, current ID and pending releases.
+
+For governed metadata, pass its current capability, operation and input to
+`history_retention_status_governed(..)`,
+`set_history_bookmark_governed::<Bookmark, _, _, _>(..)`, and
+`change.advance_governed::<Window, _, _, _>(..)`. These calls separately admit
+metadata disclosure and the window/bookmark role. A payload grant cannot stand
+in for metadata; a metadata grant cannot authorize either policy operation.
+Supply fresh metadata authority on every resumed batch.
+
+```rust,ignore
+let status = change.advance_governed::<Window, _, _, _>(
+    &request,
+    MetadataCapability::reference(),
+    MetadataRead::reference(),
+    metadata_input,
+)?;
+```
 
 Call `document.maintain_history(&request)` to attempt one pending release.
 `WaitingForNavigation` means an original unfinished checkout still needs that
@@ -547,6 +569,10 @@ show these calls with real edits, two futures, bookmarks, previews, resumed
 checkout and explicit session close. Navigation availability is a count of
 selectable steps. It promises no byte limit, catalog deletion or immediate
 heap/disk reclamation; see [storage retention](../execution/storage-retention.md).
+The [governed calls](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/governed.rs)
+show current metadata revocation and restoration. The
+[cancellation and disposal cases](../../../worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs)
+show an untouched frontier, a committed prefix and an actual cleanup retry.
 
 ### Configure required outputs
 
