@@ -21,7 +21,7 @@ pub(super) mod committed_dispatch_outbox;
 mod completed_observation;
 mod original_attempt_completion;
 pub(in crate::domain_computation::primary_graph) use original_attempt_completion::{
-    OriginalCompletionPublisher, OriginalCompletionReceiver,
+    OriginalCompletionPublisher, OriginalCompletionReceiver, OriginalCompletionSlot,
 };
 mod correction_witness;
 pub(in crate::domain_computation::primary_graph) use correction_witness::{

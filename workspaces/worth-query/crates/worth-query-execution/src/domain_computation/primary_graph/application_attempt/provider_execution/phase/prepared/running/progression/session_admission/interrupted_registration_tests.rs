@@ -52,11 +52,12 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 idempotency,
                 mut running,
                 mutation_run,
-                attempt_basis,
+                mut attempt_basis,
                 aftermath_causality,
                 outcome_identity,
                 workflow_settlement_publication: _,
             } = start(phase, &world, program, idempotency(185, 186));
+            let original_completion = attempt_basis.take_original_completion();
             let admitted = admit_provider_session(
                 phase,
                 &mut running,
@@ -94,6 +95,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 phase,
                 &world.application,
                 WorthQueryProgressedApplicationCommit {
+                    original_completion,
                     workflow_settlement_publication: None,
                     outcome,
                     lease,

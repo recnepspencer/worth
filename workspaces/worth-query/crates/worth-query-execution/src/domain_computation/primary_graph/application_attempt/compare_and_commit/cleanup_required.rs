@@ -9,11 +9,25 @@ use crate::domain_computation::{
 #[derive(Debug)]
 #[must_use = "retain business evidence and native cleanup custody"]
 pub struct WorthQueryApplicationCleanupRequired {
-    outcome: WorthQueryApplicationCommitOutcome,
-    cleanup: WorthQueryApplicationManagedCleanup,
+    parts: Option<(
+        WorthQueryApplicationCommitOutcome,
+        WorthQueryApplicationManagedCleanup,
+    )>,
+    _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryApplicationCleanupRequired {
-    pub(in crate::domain_computation::primary_graph) fn new(
+    pub(in crate::domain_computation::primary_graph) fn reserve(
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Box<Self>, worth_execution::ExecutionAllocationDenial> {
+        let funding = policy.reserve_memory(std::mem::size_of::<Self>() as u64)?;
+        policy.check_live()?;
+        Ok(Box::new(Self {
+            parts: None,
+            _funding: funding,
+        }))
+    }
+    pub(in crate::domain_computation::primary_graph) fn fill(
+        mut self: Box<Self>,
         outcome: WorthQueryApplicationCommitOutcome,
         failure: WorthQueryMutationCleanupFailure,
         runtime: WorthQueryProductRuntime,
@@ -21,40 +35,68 @@ impl WorthQueryApplicationCleanupRequired {
         bridge: std::sync::Arc<
             std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
         >,
-    ) -> Self {
-        Self {
+    ) -> Box<Self> {
+        assert!(
+            self.parts.is_none(),
+            "cleanup envelope is filled only once per handoff"
+        );
+        self.parts = Some((
             outcome,
-            cleanup: WorthQueryApplicationManagedCleanup {
+            WorthQueryApplicationManagedCleanup {
                 failure,
                 original,
                 runtime,
                 last_denial: None,
                 bridge,
+                return_owner: None,
             },
-        }
+        ));
+        self
     }
     pub(in crate::domain_computation::primary_graph) fn from_parts(
         outcome: WorthQueryApplicationCommitOutcome,
-        cleanup: WorthQueryApplicationManagedCleanup,
+        mut cleanup: WorthQueryApplicationManagedCleanup,
     ) -> Box<Self> {
-        Box::new(Self { outcome, cleanup })
+        let mut owner = cleanup
+            .return_owner
+            .take()
+            .expect("split cleanup retains its preallocated envelope");
+        assert!(
+            owner.parts.is_none(),
+            "split envelope has no duplicate business owner"
+        );
+        owner.parts = Some((outcome, cleanup));
+        owner
     }
     /// Business evidence retains its native outcome independently of failed cleanup.
     pub fn outcome(&self) -> &WorthQueryApplicationCommitOutcome {
-        &self.outcome
+        &self
+            .parts
+            .as_ref()
+            .expect("only filled cleanup envelopes are published")
+            .0
     }
     /// Borrows the actual native cleanup owner without transferring authority.
     pub fn cleanup(&self) -> &WorthQueryApplicationManagedCleanup {
-        &self.cleanup
+        &self
+            .parts
+            .as_ref()
+            .expect("only filled cleanup envelopes are published")
+            .1
     }
     /// Transfers both owners without manufacturing business completion.
     pub fn into_parts(
-        self,
+        mut self: Box<Self>,
     ) -> (
         WorthQueryApplicationCommitOutcome,
         WorthQueryApplicationManagedCleanup,
     ) {
-        (self.outcome, self.cleanup)
+        let (outcome, mut cleanup) = self
+            .parts
+            .take()
+            .expect("published cleanup retains both owners");
+        cleanup.return_owner = Some(self);
+        (outcome, cleanup)
     }
 }
 
@@ -80,6 +122,7 @@ impl WorthQueryApplicationCleanupRequired {
 /// ```
 #[must_use = "cleanup refusal returns this original owner"]
 pub struct WorthQueryApplicationManagedCleanup {
+    return_owner: Option<Box<WorthQueryApplicationCleanupRequired>>,
     failure: WorthQueryMutationCleanupFailure,
     original: Option<super::RetainedOriginalCleanupCommit>,
     runtime: WorthQueryProductRuntime,
@@ -120,6 +163,7 @@ impl WorthQueryApplicationManagedCleanup {
                         original,
                         runtime,
                         bridge,
+                        return_owner,
                         ..
                     } = owner
                         .take()
@@ -133,6 +177,7 @@ impl WorthQueryApplicationManagedCleanup {
                             original,
                             runtime,
                             bridge,
+                            return_owner,
                             last_denial: None,
                         }),
                     })

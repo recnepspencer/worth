@@ -5,25 +5,20 @@ use crate::domain_computation::{
     WorthQueryDirectRunCleanupInspection, WorthQueryDirectRunCleanupReceipt,
 };
 
-// Like DemandCleanupCustody, this bounds auto-trait traversal without
-// erasing the semantic subject or accepting descriptive receipt data.
-trait OriginalCleanupCommitOwner: Send + Sync {
-    fn original(&self) -> &Original;
-}
-impl OriginalCleanupCommitOwner for Original {
-    fn original(&self) -> &Original {
-        self
-    }
-}
+// The concrete slot is funded before effects and filled only by its active original.
 pub(in crate::domain_computation) struct RetainedOriginalCleanupCommit(
-    Box<dyn OriginalCleanupCommitOwner>,
+    std::sync::Arc<dyn crate::domain_computation::primary_graph::provider::OriginalCompletionSlot>,
 );
 impl RetainedOriginalCleanupCommit {
-    pub(in crate::domain_computation::primary_graph) fn new(original: Original) -> Self {
-        Self(Box::new(original))
+    pub(in crate::domain_computation::primary_graph) fn new(
+        slot: std::sync::Arc<
+            dyn crate::domain_computation::primary_graph::provider::OriginalCompletionSlot,
+        >,
+    ) -> Self {
+        Self(slot)
     }
     pub(in crate::domain_computation) fn original(&self) -> &Original {
-        self.0.original()
+        self.0.original_cleanup()
     }
 }
 

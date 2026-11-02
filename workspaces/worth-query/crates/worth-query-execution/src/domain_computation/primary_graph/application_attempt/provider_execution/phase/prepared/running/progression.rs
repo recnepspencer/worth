@@ -28,6 +28,8 @@ pub(in crate::domain_computation) use registered::{
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryProgressedApplicationCommit
 {
+    original_completion:
+        crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     outcome: WorthQueryProviderProgressionOutcome,
     workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
     lease: WorthQueryApplicationSnapshotLease,
@@ -72,8 +74,10 @@ impl WorthQueryProviderProgressionCompletion {
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
         request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        original_completion: crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     ) -> WorthQueryProgressedApplicationCommit {
         WorthQueryProgressedApplicationCommit {
+            original_completion,
             outcome: self.outcome,
             workflow_settlement_publication,
             lease,
@@ -219,6 +223,7 @@ where
         running,
         workflow_settlement_publication,
         admission.publication_request().clone(),
+        original_completion,
     )
 }
 

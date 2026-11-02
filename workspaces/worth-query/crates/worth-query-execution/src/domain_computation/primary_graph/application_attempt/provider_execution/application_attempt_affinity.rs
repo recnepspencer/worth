@@ -123,7 +123,8 @@ impl WorthQueryApplicationAttemptBasis {
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         snapshot: &SnapshotHandle,
         product: &crate::basis::WorthQueryProductBranchLease,
-    ) -> Result<Self, ()> {
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, super::super::WorthQueryApplicationCommitOutcome> {
         if admission.runtime_authority() != application.runtime.authority_identity()
             || snapshot.branch_id() != admission.graph_work_branch()
             || snapshot.branch_id()
@@ -141,10 +142,15 @@ impl WorthQueryApplicationAttemptBasis {
                     .observation()
                     .version_id()
         {
-            return Err(());
+            return Err(super::provider_denial::denied(
+                super::super::WorthQueryApplicationCommitDenialStage::ManagedRunAdmission,
+            ));
         }
         let (completion, receiver) =
-            super::super::super::provider::OriginalCompletionPublisher::pending_slot();
+            super::super::super::provider::OriginalCompletionPublisher::pending_slot(policy)
+                .map_err(
+                    super::super::provider_compare_denial::original_custody_allocation_denied,
+                )?;
         Ok(Self {
             original_completion: Some(receiver),
             core: WorthQueryApplicationAttemptCore {

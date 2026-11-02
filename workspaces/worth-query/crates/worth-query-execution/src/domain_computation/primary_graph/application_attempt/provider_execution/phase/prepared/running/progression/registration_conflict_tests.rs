@@ -91,16 +91,18 @@ fn reject_occupied_registration(
         idempotency,
         mut running,
         mutation_run: unbound_run,
-        attempt_basis,
+        mut attempt_basis,
         aftermath_causality,
         outcome_identity,
         workflow_settlement_publication: _workflow_settlement_publication,
     } = victim;
+    let original_completion = attempt_basis.take_original_completion();
     let reservation_basis = WorthQueryApplicationAttemptBasis::capture(
         &world.application,
         &admission,
         lease.snapshot(),
         lease.product(),
+    phase.borrowed_request_for_test().allocation_policy(),
     )
     .expect("the real running attempt must recapture its own exact basis");
     let admitted_session = admit_provider_session(
@@ -167,6 +169,7 @@ fn reject_occupied_registration(
         phase,
         &world.application,
         WorthQueryProgressedApplicationCommit {
+            original_completion,
             workflow_settlement_publication: None,
             outcome,
             lease,
@@ -277,6 +280,7 @@ fn while_peer_is_registered(
                 running,
                 None,
                 admission.publication_request().clone(),
+                original_completion,
             ),
     );
     assert!(matches!(

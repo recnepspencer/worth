@@ -78,6 +78,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 lease.snapshot(),
                 lease.product(),
+                phase.borrowed_request_for_test().allocation_policy(),
             )
             .is_err());
 
@@ -96,6 +97,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 substitute_lease.snapshot(),
                 substitute_lease.product(),
+                phase.borrowed_request_for_test().allocation_policy(),
             )
             .expect("same-runtime same-branch snapshot remains a valid pre-session basis");
             assert!(staged
@@ -136,6 +138,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 &foreign_branch_snapshot,
                 lease.product(),
+                phase.borrowed_request_for_test().allocation_policy(),
             )
             .is_err());
             assert!(lease.handle().with_runtime(

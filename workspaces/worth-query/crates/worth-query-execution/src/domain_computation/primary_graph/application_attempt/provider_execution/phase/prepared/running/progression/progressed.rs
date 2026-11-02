@@ -24,6 +24,7 @@ where
     Schema: ApplicationSchema,
 {
     let WorthQueryProgressedApplicationCommit {
+        original_completion,
         outcome,
         workflow_settlement_publication,
         lease,
@@ -44,10 +45,17 @@ where
     ) {
         Ok(completion) => completion,
         Err(failure) => {
-            let (evidence, original) = cleanup_failure::cleanup_failed_outcome(outcome);
-            return WorthQueryApplicationCommitOutcome::CleanupRequired(Box::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.product_runtime.clone(), original, application.bridge.conditional_operations()),
-            ));
+            let (evidence, original) =
+                cleanup_failure::cleanup_failed_outcome(outcome, &original_completion);
+            return WorthQueryApplicationCommitOutcome::CleanupRequired(
+                original_completion.cleanup_envelope().fill(
+                    evidence,
+                    failure,
+                    application.product_runtime.clone(),
+                    original,
+                    application.bridge.conditional_operations(),
+                ),
+            );
         }
     };
     let committed = outcome.finish(completion).unwrap_or_else(|| {

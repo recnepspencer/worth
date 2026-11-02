@@ -191,3 +191,19 @@ pub(in crate::domain_computation::primary_graph) fn control_stopped_outcome(
         }
     }
 }
+
+/// Original delivery backing is admitted before provider effects; exact stops remain typed.
+pub(in crate::domain_computation::primary_graph) fn original_custody_allocation_denied(
+    cause: worth_execution::ExecutionAllocationDenial,
+) -> super::WorthQueryApplicationCommitOutcome {
+    use crate::domain_computation::primary_graph::application_contribution::{
+        execution_denial, WorthQueryAdvancementDenial as Denial,
+    };
+    use worth_execution::ExecutionAllocationDenialClass as Class;
+    match cause.classify() {
+        Class::Request(stop) => execution_denial::advancement_scope_stop(stop).into_commit_outcome(),
+        Class::Physical(kind) => Denial::Resource(crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
+            kind, requested_payload_bytes: cause.requested_payload_bytes(),
+        }).into_commit_outcome(),
+    }
+}
