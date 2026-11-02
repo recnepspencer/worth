@@ -24,6 +24,52 @@ impl WorthQueryExecutionInstallationAuthority {
         relational_runtime: &mut RelationalRuntime,
         invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
     ) -> Result<InstalledNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
+        self.prepare_native_schema_with_initialization(
+            _phase,
+            runtime,
+            installed_schema,
+            relational_runtime,
+            invariant_factories,
+            None,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_native_schema_for_fresh_home<
+        Schema: ApplicationSchema,
+    >(
+        &self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        runtime: &WorthQueryExecutionRuntime,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        relational_runtime: &mut RelationalRuntime,
+        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
+        initialization: worth_proof::FreshNativeInitialization<
+            worth_relational::facade::durability::RelationalFreshInitialization,
+        >,
+    ) -> Result<InstalledNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
+        self.prepare_native_schema_with_initialization(
+            phase,
+            runtime,
+            installed_schema,
+            relational_runtime,
+            invariant_factories,
+            Some(initialization),
+        )
+    }
+
+    fn prepare_native_schema_with_initialization<Schema: ApplicationSchema>(
+        &self,
+        _phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        runtime: &WorthQueryExecutionRuntime,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        relational_runtime: &mut RelationalRuntime,
+        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
+        initialization: Option<
+            worth_proof::FreshNativeInitialization<
+                worth_relational::facade::durability::RelationalFreshInitialization,
+            >,
+        >,
+    ) -> Result<InstalledNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
         if !self.belongs_to(runtime) {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
@@ -61,6 +107,8 @@ impl WorthQueryExecutionInstallationAuthority {
                 additions,
                 registrations,
                 &layout,
+                &_phase.execution_request(),
+                initialization,
             )?;
         let managed_views = Arc::new(
             super::super::application_query::derived_view::ManagedDerivedViewRegistry::with_sources(

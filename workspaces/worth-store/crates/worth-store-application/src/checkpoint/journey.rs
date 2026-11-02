@@ -17,6 +17,7 @@ pub(crate) fn checkpoint(
         worth_store_relational::RelationalSectionCheckpointDenial,
     >,
     observer: Option<&super::step_custody::StepObserver<'_>>,
+    before_acknowledgement: Option<&(dyn Fn() + Send + Sync)>,
     after_acknowledgement: Option<&(dyn Fn() + Send + Sync)>,
 ) -> Result<Summary, Denial> {
     if let Some(attempt) = owner.pending() {
@@ -38,6 +39,9 @@ pub(crate) fn checkpoint(
                     caller_driver = Some(driver);
                     super::physical_start::start(serving, &attempt, input, context, lease)?;
                     drive_selection(serving, &attempt, context, observer)?;
+                    if let Some(observe) = before_acknowledgement {
+                        observe();
+                    }
                     let result = acknowledge(owner, &attempt, execution, context)?;
                     if let Some(observe) = after_acknowledgement {
                         observe();

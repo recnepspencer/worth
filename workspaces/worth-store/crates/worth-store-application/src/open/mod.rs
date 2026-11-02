@@ -1,3 +1,4 @@
+mod native_source;
 pub(crate) mod physical_admission;
 pub(crate) mod readmission;
 
@@ -72,10 +73,10 @@ pub fn admit_home(
             binding,
             build,
             #[cfg(feature = "certification-test-authority")]
-            controls,
+            mut controls,
         } = recovered.request;
         let binding = binding.consume(|admitted| admitted.into_description());
-        let descriptor = crate::descriptor::admit(
+        let prepared_descriptor = crate::descriptor::prepare_admission(
             &recovered.serving,
             recovered.origin,
             &relational,
@@ -84,6 +85,24 @@ pub fn admit_home(
             execution,
         )
         .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
+        let selected_source =
+            crate::checkpoint::SelectedHomeSource::capture(&recovered.serving, execution)
+                .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
+        let selected = selected_source
+            .selected(&recovered.serving, execution)
+            .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
+        let native_source = native_source::prepare(
+            &recovered.serving,
+            recovered.origin,
+            &selected_source,
+            selected.as_ref(),
+            execution,
+            #[cfg(feature = "certification-test-authority")]
+            &mut controls.relational,
+        )?;
+        let descriptor =
+            crate::descriptor::publish(&recovered.serving, prepared_descriptor, execution)
+                .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
         let checkpoint = Arc::new(Default::default());
         let world_slot = crate::world_section::UnclaimedWorldSlot::from_admitted_home(
             Arc::clone(&recovered.serving),
@@ -91,8 +110,9 @@ pub fn admit_home(
             &checkpoint,
         );
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
+            native_source,
             context: HomeContext {
-                selected_home_source: None,
+                selected_home_source: Some(selected_source),
                 initialization: crate::relational_preparation::HomeInitializationOrigin::Available(
                     recovered.origin,
                 ),
@@ -106,8 +126,6 @@ pub fn admit_home(
                 serving: recovered.serving,
             },
             definition: relational,
-            #[cfg(feature = "certification-test-authority")]
-            read_observer: controls.relational,
         }))
     })
 }

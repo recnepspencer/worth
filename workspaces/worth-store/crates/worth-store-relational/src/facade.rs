@@ -5,10 +5,12 @@ pub use crate::recovered_history::RelationalStoreJournalRefusal;
 pub use crate::recovered_transitions::RelationalStoreTransitionJournalRefusal;
 pub use crate::resolution::RelationalStoreCommitFate;
 pub use crate::section::{
-    ClosingRelationalSection, PreparedCompleteRelationalSection, PreparedRelationalSection,
+    ClosingRelationalSection, PreparedCompleteRelationalSection, PreparedFreshRelationalHomeSource,
+    PreparedRelationalHomeSource, PreparedRelationalSection,
     RelationalCheckpointSelectionProtection, RelationalCheckpointSelectionSource,
-    RelationalSectionCheckpointDenial, RelationalSectionCloseDenial,
-    RelationalSectionCompleteCheckpointPreparation, RelationalSectionReadmissionDenial,
-    RelationalStoreSection, UnrecoveredRelationalSection, UnsharedReadmittedRelationalSection,
+    RelationalHomeSourcePreparation, RelationalSectionCheckpointDenial,
+    RelationalSectionCloseDenial, RelationalSectionCompleteCheckpointPreparation,
+    RelationalSectionReadmissionDenial, RelationalStoreSection, UnrecoveredRelationalSection,
+    UnsharedReadmittedRelationalSection,
 };
 pub use crate::transition_resolution::RelationalStoreTransitionFate;

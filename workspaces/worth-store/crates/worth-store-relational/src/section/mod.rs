@@ -3,10 +3,16 @@ mod attachment;
 pub(crate) mod checkpoint;
 mod close;
 mod codec;
+mod complete_codec;
 #[cfg(feature = "certification-test-authority")]
 mod component_controls_for_test;
 mod readmission;
+mod source_preparation;
 mod unshared;
+pub use source_preparation::{
+    PreparedFreshRelationalHomeSource, PreparedRelationalHomeSource,
+    RelationalHomeSourcePreparation,
+};
 pub use unshared::{UnrecoveredRelationalSection, UnsharedReadmittedRelationalSection};
 pub(crate) mod selection;
 pub use selection::RelationalCheckpointSelectionSource;

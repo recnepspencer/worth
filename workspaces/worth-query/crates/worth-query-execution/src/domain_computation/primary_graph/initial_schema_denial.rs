@@ -8,6 +8,18 @@ pub(super) fn map_initial_schema_installation_denial(
     denial: worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     let kind = match denial.kind() {
+        RelationalInitialSchemaInstallationDenialKind::InitialInputsRejected => {
+            WorthQueryPrimaryGraphInstallationDenialKind::NativeInitialInputsRejected
+        }
+        RelationalInitialSchemaInstallationDenialKind::InitialPublicationBusy => {
+            WorthQueryPrimaryGraphInstallationDenialKind::NativeInitialPublicationBusy
+        }
+        RelationalInitialSchemaInstallationDenialKind::InitialPublicationRefused => {
+            WorthQueryPrimaryGraphInstallationDenialKind::NativeInitialPublicationRefused
+        }
+        RelationalInitialSchemaInstallationDenialKind::InitialPublicationUnresolved => {
+            WorthQueryPrimaryGraphInstallationDenialKind::NativeInitialPublicationUnresolved
+        }
         RelationalInitialSchemaInstallationDenialKind::Request(cause) => {
             match super::provider::relational_execution_denial::relational_execution_kind(
                 cause, None,
@@ -46,4 +58,5 @@ pub(super) fn map_initial_schema_installation_denial(
         }
     };
     WorthQueryPrimaryGraphInstallationDenial::new(kind, denial.detail())
+        .with_native_initialization(denial)
 }

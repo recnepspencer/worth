@@ -1299,8 +1299,11 @@ existing physical mutation worker; no World acknowledgment runs in that worker.
 ### Compose World with an admitted application Home
 
 The closed Query/Home preparation recipe attaches an `UnrecoveredApplicationHome`
-before Native is shared. Query installs its real initial schema through the
-named mutable loan, then consuming `readmit` checks that installation receipt
+before Native is shared. `prepare_native_schema_for_home` routes the actual
+physical origin before schema effects. Fresh initialization consumes Native's
+move-only source opportunity and durably records birth/installation through its
+original medium; existing receivers only prepare configured meaning. Consuming
+`readmit` checks that installation receipt
 before the one Native recovery. `UnsharedReadmittedApplicationHome` lends the
 same raw Native, recovered authority and complete recovery outcome for Query
 finalization; `share` creates the first Native Arc. `initialize_new_home`

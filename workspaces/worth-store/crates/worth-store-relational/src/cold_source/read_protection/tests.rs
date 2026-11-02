@@ -81,6 +81,7 @@ fn protected_native_cut_reads_original_journals_and_members_after_advance() {
     assert_eq!(
         cut.bounds(),
         Bounds {
+            selected_checkpoint: true,
             canonical: PatchStreamPosition(1),
             transitions: RelationalBranchTransitionSequence(1)
         }

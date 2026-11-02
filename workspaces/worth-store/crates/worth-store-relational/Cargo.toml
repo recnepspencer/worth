@@ -12,6 +12,7 @@
 [dependencies]
 
 worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-store-physical-format.workspace = true

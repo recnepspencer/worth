@@ -77,11 +77,20 @@ where
             Ok(home) => home,
             Err(home) => return Err(Refused::RelationalAttachment { query, home }),
         };
-        let query =
-            match query.install_home_native_schema(phase, home.native_for_schema_installation()) {
-                Ok(query) => query,
-                Err(query) => return Err(Refused::NativeInstallation { query, home }),
-            };
+        let installed = match home.prepare_native_schema_for_home(&request) {
+            Ok(ApplicationHomeNativeSchemaPreparation::Fresh {
+                native,
+                initialization,
+            }) => query.initialize_home_native_schema(phase, native, initialization),
+            Ok(ApplicationHomeNativeSchemaPreparation::Existing { native }) => {
+                query.prepare_home_native_receiver_schema(phase, native)
+            }
+            Err(cause) => Err(query.refuse_home_native_schema(cause)),
+        };
+        let query = match installed {
+            Ok(query) => query,
+            Err(query) => return Err(Refused::NativeInstallation { query, home }),
+        };
         let home = match home.readmit(query.home_initial_schema_receipt(), &request) {
             Ok(home) => home.consume(|home| home),
             Err(home) => return Err(Refused::NativeReadmission { query, home }),

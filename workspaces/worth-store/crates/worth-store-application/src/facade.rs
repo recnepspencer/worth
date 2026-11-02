@@ -27,10 +27,10 @@ pub use crate::open::readmission::transition::ApplicationHomeOwnerAdmissionDenia
 pub use crate::open::{admit_home, readmit_relational, recover_home, ApplicationHomeOpenRefusal};
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
-    RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeOpenRefused,
-    RelationalHomeReadmissionRefused, UnrecoveredApplicationHome,
-    UnrecoveredApplicationHomeCloseRefused, UnsharedApplicationHomeCloseRefused,
-    UnsharedReadmittedApplicationHome,
+    ApplicationHomeNativeSchemaPreparation, RelationalAttachmentFailedHome,
+    RelationalAttachmentRefused, RelationalHomeOpenRefused, RelationalHomeReadmissionRefused,
+    UnrecoveredApplicationHome, UnrecoveredApplicationHomeCloseRefused,
+    UnsharedApplicationHomeCloseRefused, UnsharedReadmittedApplicationHome,
 };
 pub use crate::world_section::{
     readmit_query_world, readmit_world, ApplicationHomeOwnerAdmissionRefused,

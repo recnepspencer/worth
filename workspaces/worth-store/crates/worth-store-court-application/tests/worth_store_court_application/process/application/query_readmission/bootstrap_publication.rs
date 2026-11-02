@@ -109,9 +109,17 @@ pub(super) fn prepared(
     let home = admit_home(recover_home(physical, &request).unwrap(), &request).unwrap();
     let mut home =
         attach_relational(home, &request).unwrap_or_else(|_| panic!("actual Native attaches"));
-    let query = query
-        .install_home_native_schema(phase, home.native_for_schema_installation())
-        .unwrap_or_else(|refused| panic!("actual schema: {:?}", refused.reason()));
+    let preparation = home.prepare_native_schema_for_home(&request).unwrap();
+    let query = match preparation {
+        ApplicationHomeNativeSchemaPreparation::Fresh {
+            native,
+            initialization,
+        } => query.initialize_home_native_schema(phase, native, initialization),
+        ApplicationHomeNativeSchemaPreparation::Existing { .. } => {
+            panic!("fresh Directory fixture selected an existing source")
+        }
+    }
+    .unwrap_or_else(|refused| panic!("actual schema: {:?}", refused.reason()));
     let home = home
         .readmit(query.home_initial_schema_receipt(), &request)
         .unwrap_or_else(|_| panic!("actual Native readmission"))

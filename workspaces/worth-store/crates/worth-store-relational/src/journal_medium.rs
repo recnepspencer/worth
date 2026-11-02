@@ -7,6 +7,7 @@
 //! in Relational's terms: durable, proven to have had no effect, or unknown.
 
 use std::sync::Arc;
+mod initial_inputs;
 
 use worth_relational::facade::durability::{
     DurablePublicationFate, RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact,
@@ -86,6 +87,15 @@ impl std::fmt::Debug for StoreJournalMedium {
 }
 
 impl RelationalDurableMedium for StoreJournalMedium {
+    fn publish_initial_inputs(
+        &self,
+        artifact: &worth_relational::facade::durability::RelationalSourceInitialInputsArtifact,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> DurablePublicationFate<
+        worth_relational::facade::durability::RelationalInitialInputsPublicationDetail,
+    > {
+        self.publish_original_initial_inputs(artifact, request)
+    }
     fn checkpoint_selection(
         &self,
         subject: &worth_relational::facade::durability::OpaqueCapturedCheckpointSubject,

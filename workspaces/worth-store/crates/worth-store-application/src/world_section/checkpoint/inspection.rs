@@ -29,6 +29,7 @@ where
             &self.home.context.checkpoint,
             &world,
             limits,
+            self.home.relational.cold_storage_reads().commit_reads,
             request,
         )
     }

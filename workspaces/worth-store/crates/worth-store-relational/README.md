@@ -26,19 +26,28 @@ bounds. A missing or loaned reader is a refusal; only that actual reader's
 anchor lookup can establish no selected checkpoint. Later anchor replacement
 does not select another source during an owning readmission retry.
 
-The closed `readmit_home_from_read` entry installs the actual selected-member
-route before the shared Native recovery core. The core performs no legacy
+The closed original-source preparation installs the actual selected-member
+route before descriptor publication; `readmit_prepared_home` later consumes
+that same source through the Native recovery core. The core performs no legacy
 reselection; ordinary standalone entries retain their explicit ordinary setup.
 Selected canonical and transition coverage can leave that core only after
 `recover_with_authority` succeeds. Zero scheduling baselines are not empty-owner
 or no-effect evidence.
 
-The qualified Native format currently lacks the required Complete source
-admission. Selected coupled Home2 therefore returns `CompleteNativeRequired`
-before Native recovery, preserving the owning unshared Home and its original
-source. Ordinary checkpoint output or a format marker cannot substitute for
-Complete admission. This containment remains unfinished integration work;
-genuine no-checkpoint recovery continues through the existing Native owner.
+Complete Home source admission uses an additive `WSRCSRC1` section containing
+Native's bound Complete source artifact. Native owns birth/installation chronology,
+transition schema roles and canonical original mutation policies. Its original
+initialization step persists `relational.initial-inputs` before live schema
+cutover. Store transports those bytes under the original request and actual
+protected cut; it never infers roles from a schema union.
+
+Canonical format 5 and transition format 2 refuse their predecessors with
+Foundational unsupported-version reasons before incarnation publication. Selected
+ordinary `WSRCKPT1` sections and Homes missing initialization evidence refuse too.
+CHK18, ordinary section v3 and Home manifest v2 retain their byte grammars. No
+migration or initializer replay is supplied. Native reconstruction must populate
+the actual stream/catalog so a later Complete capture can consume those inputs.
+Filesystem Host qualification is tracked in the P-A requirement map and lane logs.
 
 After both actual Native and World admissions consume the initial image and
 tails, successful attachment releases the context's local source share outside

@@ -50,6 +50,25 @@ impl ApplicationHomeCheckpointOperation {
             || self.native.prepare(request),
             None,
             None,
+            None,
+        )
+    }
+    /// The actual operation owns this passive observer through its selected
+    /// boundary. It grants neither selection nor acknowledgement authority.
+    pub fn checkpoint_with_native_ack_observer_for_test(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        observer: Box<dyn Fn() + Send + Sync>,
+    ) -> Result<Summary, Denial> {
+        super::journey::checkpoint(
+            &self.serving,
+            &self.owner,
+            Some(&self.world),
+            request,
+            || self.native.prepare(request),
+            None,
+            Some(observer.as_ref()),
+            None,
         )
     }
     pub fn recover_checkpoint(
@@ -74,6 +93,12 @@ impl ApplicationHomeCheckpointOperation {
             &self.owner,
             &self.world,
             self.limits,
+            self.native
+                .cold_storage_reads()
+                .ok_or(Denial::Native(
+                    worth_store_relational::RelationalSectionCheckpointDenial::OwnerUnavailable,
+                ))?
+                .commit_reads,
             request,
         )?;
         if !observed.due {

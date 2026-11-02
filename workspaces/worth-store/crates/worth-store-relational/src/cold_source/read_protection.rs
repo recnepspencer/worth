@@ -79,6 +79,7 @@ impl StoreColdSource {
                 _ => Refusal::Storage(Cause::SourceUnavailable),
             })?;
         let bounds = Bounds {
+            selected_checkpoint: membership.is_some(),
             canonical: PatchStreamPosition(canonical),
             transitions: RelationalBranchTransitionSequence(transitions),
         };

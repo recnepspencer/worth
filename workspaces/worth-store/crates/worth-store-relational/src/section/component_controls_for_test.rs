@@ -9,27 +9,6 @@ use worth_relational::facade::{
 };
 use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysicalRuntime};
 
-impl super::UnrecoveredRelationalSection {
-    pub fn attach_unrecovered_home_with_read_observer_for_test(
-        definition: RelationalRuntimeDefinition,
-        serving: Arc<ServingPhysicalRuntime>,
-        placement: AdmittedRecordPlacementPolicy,
-        checkpoint_selection: Arc<dyn super::RelationalCheckpointSelectionSource>,
-        observer: impl Fn(
-                worth_relational::facade::publication::PatchStreamPosition,
-                crate::RelationalStoreColdReadCounters,
-            ) + Send
-            + Sync
-            + 'static,
-    ) -> Result<Self, RelationalRuntimeConstructionDenial> {
-        let source = crate::cold_source::StoreColdSource::new_with_commit_read_observer(
-            serving.clone(),
-            observer,
-        );
-        Self::attach_with_source(definition, serving, placement, source, checkpoint_selection)
-    }
-}
-
 impl RelationalStoreSection {
     pub fn attach_with_read_observer_for_test(
         definition: RelationalRuntimeDefinition,

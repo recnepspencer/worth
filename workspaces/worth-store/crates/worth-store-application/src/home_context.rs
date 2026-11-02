@@ -25,18 +25,13 @@ pub struct RecoveredPhysicalHome {
 impl AuthorityMarker for RecoveredPhysicalHome {}
 
 pub struct AdmittedApplicationHome {
+    pub(crate) native_source: RelationalHomeOpeningInput,
     pub(crate) context: HomeContext,
     pub(crate) definition: RelationalRuntimeDefinition,
-    #[cfg(feature = "certification-test-authority")]
-    pub(crate) read_observer: Option<
-        Box<
-            dyn Fn(
-                    worth_relational::facade::publication::PatchStreamPosition,
-                    worth_store_relational::RelationalStoreColdReadCounters,
-                ) + Send
-                + Sync,
-        >,
-    >,
+}
+pub(crate) enum RelationalHomeOpeningInput {
+    Fresh(worth_store_relational::PreparedFreshRelationalHomeSource),
+    Existing(worth_store_relational::PreparedRelationalHomeSource),
 }
 impl AuthorityMarker for AdmittedApplicationHome {}
 

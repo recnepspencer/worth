@@ -24,6 +24,7 @@ pub(super) struct PublicationPlan {
     pub(super) deadline: PhysicalMutationDeadline,
     pub(super) locators: Vec<AnchoredRecordMemberLocator>,
     pub(super) record_sha256: [u8; 32],
+    pub(super) _payload_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 pub(super) struct FinalSelection {
     pub(super) name: super::super::super::AnchoredRecordName,
@@ -159,6 +160,7 @@ impl AnchoredRecords<'_> {
                     deadline: publication.deadline,
                     locators: Vec::new(),
                     record_sha256: [0; 32],
+                    _payload_memory: publication.payload_memory,
                 }),
                 final_selection: None,
                 recovery_alive: true,

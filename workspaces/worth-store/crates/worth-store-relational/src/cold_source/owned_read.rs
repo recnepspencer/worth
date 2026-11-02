@@ -31,7 +31,6 @@ impl StoreColdSource {
             .open_payload_from(&cut.reader, request, position.0, limit)
             .map_err(|cause| journal_failure(cause, limit))?;
         let bytes = copy_journal(request, stream, limit)?;
-        #[cfg(feature = "certification-test-authority")]
         if let Some(observer) = &self.commit_read_observer {
             observer(position, self.counters());
         }
