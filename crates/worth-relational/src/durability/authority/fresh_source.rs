@@ -23,7 +23,8 @@ impl DurabilityRecoveryAuthority<'_> {
         plan: RecoveryPlan,
     ) -> Result<FreshRelationalSourceAdmission, RelationalFreshSourceAdmissionStop> {
         crate::execution::check_request(execution).map_err(Stop::Request)?;
-        let admitted = super::recovery::admit_recovery_or_emit(self.runtime, plan)?;
+        let admitted =
+            super::recovery::admit_recovery_or_emit(self.runtime, plan).map_err(Stop::from)?;
         let plan = admitted.into_plan();
         if plan.checkpoint.is_some()
             || !plan.tail_log.is_empty()
