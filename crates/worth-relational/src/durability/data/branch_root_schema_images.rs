@@ -24,12 +24,12 @@ pub(crate) struct DurableBranchRootSchemaImage {
     entity_registrations: Vec<DurableEntitySchemaRegistration>,
     relation_registrations: Vec<DurableRelationSchemaRegistration>,
     retained_aspect_contracts: Vec<PortableAspectContract>,
-    // Appended optional tail preserves physical-only sequence and map encodings.
+    // Older optional declarations retain their decoding defaults. Their slots
+    // are always emitted before the required content-format authority.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     derived_relations: Vec<crate::derived_relation::DerivedRelationDefinitionParts>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     projected_member_domains: Vec<crate::projected_member_domain::ProjectedMemberDomainParts>,
-    #[serde(default)]
     content_formats: crate::content::RelationalContentSchemaSnapshot,
 }
 
@@ -210,10 +210,8 @@ impl DurableBranchRootSchemaImage {
             &mut digest,
             &self.projected_member_domains,
         );
-        if !self.content_formats.is_empty() {
-            digest.update(b"worth.native.content-schema-carrier.v1\0");
-            digest.update(rmp_serde::to_vec(&self.content_formats)?);
-        }
+        digest.update(b"worth.native.content-schema-carrier.v1\0");
+        digest.update(rmp_serde::to_vec(&self.content_formats)?);
         Ok(digest.finalize().into())
     }
 }

@@ -178,3 +178,20 @@ and another referenced grid, expect the literal unused identity, and check the
 selected descriptor and released original-funded custody. A positive case will
 retain a duplicate of already referenced content. Removing the final refusal
 must kill the court before exact restoration and a passing rebuild.
+# R6 boundary and implementation plan
+
+The actual content-format serde owners are SchemaAuthoritySnapshot and
+DurableBranchRootSchemaImage; extension.rs composes the registry and has no
+serialized field. Both envelopes must require content_formats, even empty.
+Their custom serializers must always emit preceding positional placeholders
+and the content block (seven and ten fields respectively). Both digest owners
+must always bind the content domain and empty block. Existing older defaults
+for projected_member_domains remain reported debt, not compatibility authority
+for this new field.
+
+Extend the existing pure snapshot/carrier families with literal compact-tail
+and JSON missing-field refusals. Check independent empty authority/carrier
+hashes computed with Python hashlib over manually specified counts and
+MessagePack tokens, without invoking either Rust serializer. Compile mutations
+that restore the content defaults and omit the empty digest, restore exact
+source bytes and rebuild the original tests. No new runtime or schema shape.

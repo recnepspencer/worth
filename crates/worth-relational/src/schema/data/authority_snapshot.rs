@@ -14,15 +14,14 @@ pub struct SchemaAuthoritySnapshot {
     pub primary_schema_version_id: Option<SchemaVersionId>,
     pub entity_kinds: Vec<SchemaAuthorityKindSnapshot>,
     pub relation_kinds: Vec<SchemaAuthorityRelationSnapshot>,
-    /// Complete executable recipes. Empty legacy authorities keep their text
-    /// representation and V2 digest unchanged.
+    /// Complete executable recipes. Older decoding defaults remain separate
+    /// from the required content-format authority below.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub derived_relations: Vec<crate::derived_relation::DerivedRelationDefinitionParts>,
-    /// The optional finite member-domain authority. Physical-only encodings
-    /// and digests acquire no new field or suffix.
+    /// The finite member-domain authority retains its older decoding default.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub projected_member_domains: Vec<crate::projected_member_domain::ProjectedMemberDomainParts>,
-    #[serde(default)]
+    /// Required even when no content format is installed.
     pub content_formats: crate::content::RelationalContentSchemaSnapshot,
 }
 
@@ -140,20 +139,18 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
         &mut hasher,
         &snapshot.projected_member_domains,
     );
-    if !snapshot.content_formats.is_empty() {
-        hasher.update(b"worth.native.content-schema.v1\0");
-        update_count(&mut hasher, snapshot.content_formats.formats().len());
-        for format in snapshot.content_formats.formats() {
-            hasher.update(format.identity);
-            update_bytes(&mut hasher, format.descriptor.name().as_bytes());
-            hasher.update(format.descriptor.version().to_le_bytes());
-            hasher.update(format.maximum_frame_bytes.to_le_bytes());
-        }
-        update_count(&mut hasher, snapshot.content_formats.fields().len());
-        for field in snapshot.content_formats.fields() {
-            hasher.update(field.field_meaning);
-            hasher.update(field.format);
-        }
+    hasher.update(b"worth.native.content-schema.v1\0");
+    update_count(&mut hasher, snapshot.content_formats.formats().len());
+    for format in snapshot.content_formats.formats() {
+        hasher.update(format.identity);
+        update_bytes(&mut hasher, format.descriptor.name().as_bytes());
+        hasher.update(format.descriptor.version().to_le_bytes());
+        hasher.update(format.maximum_frame_bytes.to_le_bytes());
+    }
+    update_count(&mut hasher, snapshot.content_formats.fields().len());
+    for field in snapshot.content_formats.fields() {
+        hasher.update(field.field_meaning);
+        hasher.update(field.format);
     }
     let digest = hasher.finalize();
     let mut out = [0_u8; 32];

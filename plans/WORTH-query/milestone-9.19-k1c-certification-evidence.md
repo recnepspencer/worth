@@ -252,3 +252,60 @@ mutation and exact restoration. The missing import was corrected before tests.
 The same reviewer passed R5 under qa-loop, qa-tests and code-quality-qa; no R5
 finding remains. Working-tree whitespace passed twice and staged whitespace
 passed once, all with zero errors.
+# R6: require and digest the content authority block
+
+Both actual serialized owners require content_formats and emit its block even
+when empty. The preceding positional slots are explicit (seven snapshot fields,
+ten carrier fields). extension.rs has no serde field; the second actual owner
+is durability/data/branch_root_schema_images.rs. The older
+projected_member_domains serde defaults remain existing debt, as requested;
+older derived defaults were also left outside this repair.
+
+The independent Python oracle specifies the digest domains, empty u64 counts
+and MessagePack tokens manually, without loading Rust output. It freezes empty
+authority d88918c5d7c1c31bc3df72d45eac0c683488dbff018bca1726e03b7004685707
+and carrier f3821900deb7ea73bd91b4777899c003a4c5218a571909352421a99a497246b2.
+The existing pure families also use literal 92 90 90 as the empty content tail,
+remove it from valid compact envelopes, and remove the named JSON field.
+
+Harness failures are not evidence: the filename filter
+`root_schema_content_tests::` selected zero tests in baseline, compiled mutant
+and restored runs (2273 filtered each). The first attempted module correction,
+`branch::root_schema::content_tests::`, also selected zero in all three runs.
+The reviewer missed the parent path alias as well and corrected that statement
+after independently tracing both mounts. The compiled binary's `--list`
+identified `branch::root::schema::content_tests::`; the corrected harness refuses
+to install a mutant unless its baseline reports exactly four passing tests.
+Neither zero-selected mutant is credited as a kill.
+
+The reviewer's earlier one-line Python oracle attempt exited 1 with
+`SyntaxError: unexpected character after line continuation character` at
+`<string>`, line 1 because Windows argument handling stripped its quotes. Its
+stdin retry succeeded. The durable .py oracle rerun uses PYTHONUTF8=1 and passed
+three literal hash assertions. No Rust test or production file was involved in
+that Python quoting failure.
+
+| R6 exact command or experiment | Result |
+| --- | --- |
+| `git fetch origin master codex/919-provider-lifecycle-20261027`; `git merge --no-edit origin/master`; `git merge --no-edit origin/codex/919-provider-lifecycle-20261027` | All three succeeded; both merges already up to date. |
+| `cargo fmt -p worth-relational` | One success. |
+| `python target/k1c-repair-logs/r6-digest-oracle.py`, with PYTHONUTF8=1 | Three independent hash assertions passed. |
+| `cargo test -p worth-relational --lib root_schema_content_tests:: -- --nocapture` | Three invalid coverage attempts: 0 passed/failed/ignored/measured, 2273 filtered each; no tests selected. |
+| `cargo test -p worth-relational --lib branch::root_schema::content_tests:: -- --nocapture` | Three further invalid coverage attempts: 0 passed/failed/ignored/measured, 2273 filtered each; no tests selected. |
+| `C:/worth-build-cache/target-cut-k1c-content/debug/deps/worth_relational-bc0d68c1db642786.exe --list` (output filtered for content_schema_/content_recorded_declarations) | Listed all four actual branch::root::schema::content_tests test names. This was discovery, not a passing test run. |
+| `cargo test -p worth-relational --lib branch::root::schema::content_tests:: -- --nocapture` | Correct baseline: 4 passed, 0 failed/ignored/measured, 2269 filtered. Compiled paired mutant: 1 passed, 3 failed, 0 ignored/measured, 2269 filtered. The authority literal differed at line 70; snapshot/carrier unwrap_err observed wrongly accepted missing fields at lines 159/198. |
+| Python paired mutation installation/restoration, with PYTHONUTF8=1 | Three installations and three restorations succeeded across the two invalid sequences and the valid sequence. Each restoration checked both files byte-for-byte and refreshed both timestamps: six exact equality assertions total. Only the verified four-test sequence supplies mutation evidence. |
+| `cargo test -p worth-relational --lib branch::root::schema::content_tests:: -- --nocapture` after exact restoration | 4 passed, 0 failed/ignored/measured, 2269 filtered; fresh rebuild 1m08s, tests 0.00s. |
+| `cargo fmt --check -p worth-relational` | Three successes, including the final restored source. |
+| `cargo clippy -p worth-relational --all-targets` | Three failures, each solely untouched payload.rs:34 let_and_return, 1 error and 8 warnings; no scoped error. |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | Three successes; repository boundaries valid each time. |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | Three successes. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | Three successes, 5 Rust files each. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | Three successes each, zero whitespace errors. |
+| `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Three successes, four untouched lint-file assertions each (12 total). |
+
+Staged whitespace also passed once with zero errors. The same reviewer passed
+R6 under qa-loop, qa-tests and code-quality-qa after independently checking the
+final source, literal oracles, three intended compiled failures, exact restored
+bytes, rebuilt four-test run and complete gate ledger. Its wrong filter advice
+is corrected above; no R6 finding remains open.
