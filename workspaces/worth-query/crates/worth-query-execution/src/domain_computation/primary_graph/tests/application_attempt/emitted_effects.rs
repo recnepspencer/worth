@@ -114,7 +114,7 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
         .expect("the fixture read owns its installed host call");
 
     world.faults.lose_next_commit_response();
-    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(original) =
+    let WorthQueryApplicationCommitOutcome::Committed(original) =
         world.application.compare_and_commit_application(
             first,
             idempotency(33, 33),
@@ -132,7 +132,9 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     else {
         panic!("retry must recover the exact emit commit");
     };
-    assert_eq!(recovered, original);
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &original,
+    );
     assert_eq!(
         world.application.provider_session_resource_count_for_test(),
         0

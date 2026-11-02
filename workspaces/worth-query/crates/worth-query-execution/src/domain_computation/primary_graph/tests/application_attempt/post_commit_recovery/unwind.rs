@@ -54,7 +54,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         .expect("the fixture read owns its installed host call");
 
     world.faults.panic_next_pending_application_publication();
-    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(first_receipt) =
+    let WorthQueryApplicationCommitOutcome::Committed(first_receipt) =
         world.application.compare_and_commit_application(
             first,
             idempotency(198, 199),
@@ -101,7 +101,10 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     else {
         panic!("the equivalent retry must recover the exact performed publication");
     };
-    assert_eq!(recovered, first_receipt);
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered,
+        &first_receipt,
+    );
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
         world

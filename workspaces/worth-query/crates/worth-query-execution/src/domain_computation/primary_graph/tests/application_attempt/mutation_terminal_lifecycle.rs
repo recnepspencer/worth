@@ -255,7 +255,7 @@ fn response_loss_terminal() {
             idempotency(68, 68),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
+        WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     assert_baselines(request_execution, &world, baseline);
 }

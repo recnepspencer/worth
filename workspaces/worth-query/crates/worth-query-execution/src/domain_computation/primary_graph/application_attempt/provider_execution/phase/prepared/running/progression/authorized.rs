@@ -159,21 +159,20 @@ where
             let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
                 authority.admission().publication_request(), allocation_policy,
             );
-            finish_authorized_compare(execution,
-            candidate.compare_and_commit_with(control.policy(), |read_authority, fresh| {
+            let context = WorthQueryAuthorizedCompareContext::from_progression(
+                authority,
+                dispatch_outbox,
+                provider_session,
+            );
+            let compared = candidate.compare_and_commit_with(control.policy(), |read_authority, fresh| {
                 authority.provider().recompare_application_read_set(execution,
                     read_authority, fresh,
                     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
                         control.policy(), Some(authority.admission().publication_request()),
                     ),
                 )
-            }),
-            WorthQueryAuthorizedCompareContext::from_progression(
-                authority,
-                dispatch_outbox,
-                provider_session,
-            ),
-        )
+            });
+            finish_authorized_compare(execution, compared, context)
         }
         Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
             candidate.discard();

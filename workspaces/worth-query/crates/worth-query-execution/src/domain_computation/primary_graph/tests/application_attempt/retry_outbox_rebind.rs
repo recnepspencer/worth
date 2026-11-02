@@ -15,8 +15,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
 };
 use crate::facade::primary_graph::{
-    WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
-    WorthQueryExternalTransportOutcome, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryApplicationCommitReceipt, WorthQueryExternalDispatchRequest,
+    WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome,
 };
 
 struct CompletingTransport(AtomicUsize);
@@ -48,7 +48,7 @@ fn response_loss_retry_performs_no_second_managed_application_attempt() {
 fn commit_response_lost(
     world: &AuthorizationWorld,
     transport: &CompletingTransport,
-) -> WorthQueryRecoveredApplicationCommitReceipt {
+) -> WorthQueryApplicationCommitReceipt {
     let request = live_scope();
     let principal = world
         .application
@@ -89,7 +89,7 @@ fn commit_response_lost(
         .expect("the fixture read owns its installed host call");
     world.faults.lose_next_commit_response();
     let before_commit = world.application.application_attempt_work_for_test();
-    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(original) =
+    let WorthQueryApplicationCommitOutcome::Committed(original) =
         world.application.compare_and_commit_application(
             original,
             idempotency(201, 202),
@@ -115,7 +115,7 @@ fn commit_response_lost(
 fn retry_without_managed_work(
     world: &AuthorizationWorld,
     transport: &CompletingTransport,
-    original: &WorthQueryRecoveredApplicationCommitReceipt,
+    original: &WorthQueryApplicationCommitReceipt,
 ) {
     let retry_request = live_scope();
     let retry_principal = world
@@ -174,7 +174,9 @@ fn retry_without_managed_work(
     assert_eq!(retry_work.retained_resolutions, 1);
     assert_no_managed_attempt_work(retry_work);
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
-    assert_eq!(recovered, *original);
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, original,
+    );
     assert!(recovered.world_journal_position().is_none());
     assert_eq!(
         world.application.provider_session_resource_count_for_test(),

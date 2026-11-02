@@ -105,7 +105,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         idempotency(81, 82),
         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
-    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(original) = outcome else {
+    let WorthQueryApplicationCommitOutcome::Committed(original) = outcome else {
         panic!("response-loss recovery must return the authoritative commit: {outcome:?}");
     };
     let after_original = world
@@ -145,7 +145,11 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         panic!("later equivalent resolution must reopen the original evidence");
     };
 
-    assert_eq!(recovered, original);
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &original,
+    );
+    assert_retained_status(&original, "open");
+    assert_eq!(original.terminal().attempt_resources_released(), Some(true));
     // Recorded data cannot supply live preimage authority. Inspect the actual
     // already-retained owner custody independently, without minting a receipt.
     assert!(recovered.world_journal_position().is_none());

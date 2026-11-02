@@ -18,10 +18,12 @@ use crate::domain_computation::{
 /// machine. The provider session is joined exactly once by [`bind_session`].
 pub(in crate::domain_computation) struct WorthQueryApplicationAttemptBasis {
     core: WorthQueryApplicationAttemptCore,
+    original_completion: Option<super::super::super::provider::OriginalCompletionReceiver>,
     product: crate::basis::WorthQueryProductBranchLease,
 }
 
 struct WorthQueryApplicationAttemptCore {
+    completion: super::super::super::provider::OriginalCompletionPublisher,
     runtime: WorthQueryRuntimeAuthorityIdentity,
     operation_attempt: WorthQueryOperationAdmissionIdentity,
     installed_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
@@ -141,8 +143,12 @@ impl WorthQueryApplicationAttemptBasis {
         {
             return Err(());
         }
+        let (completion, receiver) =
+            super::super::super::provider::OriginalCompletionPublisher::channel();
         Ok(Self {
+            original_completion: Some(receiver),
             core: WorthQueryApplicationAttemptCore {
+                completion,
                 runtime: admission.runtime_authority(),
                 operation_attempt: admission.admission_identity(),
                 installed_binding: admission.binding_identity().clone(),
@@ -160,6 +166,13 @@ impl WorthQueryApplicationAttemptBasis {
         })
     }
 
+    pub(super) fn take_original_completion(
+        &mut self,
+    ) -> super::super::super::provider::OriginalCompletionReceiver {
+        self.original_completion
+            .take()
+            .expect("only the active original progression receives its result")
+    }
     pub(in crate::domain_computation) fn retained_product(
         &self,
     ) -> crate::basis::WorthQueryProductBranchLease {
@@ -245,6 +258,12 @@ impl WorthQueryApplicationAttemptBasis {
 }
 
 impl WorthQueryApplicationAttemptAffinity {
+    pub(in crate::domain_computation::primary_graph) fn take_original_completion_publisher(
+        &self,
+    ) -> super::super::super::provider::OriginalCompletionPublisher {
+        self.basis.completion.take()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn owns_original_read(
         &self,
         read: &super::super::CompletedOriginalRead,

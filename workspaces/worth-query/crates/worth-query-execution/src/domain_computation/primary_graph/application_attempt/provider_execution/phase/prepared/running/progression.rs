@@ -109,6 +109,8 @@ struct WorthQueryApplicationCommitProgressionAuthority<
     idempotency: WorthQueryApplicationIdempotencyBinding,
     coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
     product: &'a crate::basis::WorthQueryProductBranchLease,
+    original_completion:
+        &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -188,9 +190,10 @@ where
         idempotency,
         mut running,
         mutation_run,
-        attempt_basis,
+        mut attempt_basis,
         aftermath_causality,
     } = running_commit;
+    let original_completion = attempt_basis.take_original_completion();
     progress_provider_application(
         execution,
         phase,
@@ -208,6 +211,7 @@ where
             aftermath_causality,
         },
         mutation_run,
+        &original_completion,
         allocation_policy,
     )
     .finish(
@@ -223,6 +227,7 @@ fn progress_provider_application<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
     progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+    original_completion: &crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionCompletion
 where
@@ -294,6 +299,7 @@ where
         idempotency,
         coordination: &coordination,
         product: &product,
+        original_completion,
         aftermath_causality,
     };
     registered_session.progress(execution, &authority, allocation_policy)

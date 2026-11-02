@@ -93,7 +93,7 @@ fn response_loss_cleanup_preserves_the_interleaved_peer() {
         |outcome| {
             assert!(matches!(
                 outcome,
-                WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
+                WorthQueryApplicationCommitOutcome::Committed(_)
             ))
         },
     );
@@ -106,7 +106,7 @@ fn post_commit_snapshot_recovery_cleanup_preserves_the_interleaved_peer() {
         |outcome| {
             assert!(matches!(
                 outcome,
-                WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
+                WorthQueryApplicationCommitOutcome::Committed(_)
             ))
         },
     );

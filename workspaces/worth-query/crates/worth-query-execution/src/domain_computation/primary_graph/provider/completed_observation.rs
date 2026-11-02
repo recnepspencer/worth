@@ -33,16 +33,6 @@ impl WorthQueryPrimaryGraphProvider {
             .observe(commit)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn observe_completed_application_for_session(
-        &self,
-        session: &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
-        self.completed_commit_evidence
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .observe_session(session)
-    }
-
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_application_commit_basis(
         &self,

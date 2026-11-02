@@ -45,7 +45,7 @@ fn response_loss_resolves_the_published_commit_before_returning() {
         .expect("the fixture read owns its installed host call");
 
     world.faults.lose_next_commit_response();
-    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(first_receipt) =
+    let WorthQueryApplicationCommitOutcome::Committed(first_receipt) =
         world.application.compare_and_commit_application(
             first,
             idempotency(15, 15),
@@ -63,7 +63,10 @@ fn response_loss_resolves_the_published_commit_before_returning() {
     else {
         panic!("retry must recover the transaction published before response loss");
     };
-    assert_eq!(receipt, first_receipt);
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &receipt,
+        &first_receipt,
+    );
     assert!(receipt.new_product_head().memory().is_some());
     assert_eq!(
         world.application.provider_session_resource_count_for_test(),
