@@ -90,7 +90,9 @@ where
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), WorthQueryOperationHomeRetirementDenial> {
-        request.consult().map_err(WorthQueryOperationHomeRetirementDenial::Execution)
+        request
+            .consult()
+            .map_err(WorthQueryOperationHomeRetirementDenial::Execution)
     }
 
     /// Complete retirement of the same sealed invocation capability.
@@ -102,7 +104,9 @@ where
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryOperationHomeRetirementProgress, WorthQueryOperationHomeRetirementDenial>
     {
-        request.consult().map_err(WorthQueryOperationHomeRetirementDenial::Execution)?;
+        request
+            .consult()
+            .map_err(WorthQueryOperationHomeRetirementDenial::Execution)?;
         Ok(WorthQueryOperationHomeRetirementProgress::Complete)
     }
 

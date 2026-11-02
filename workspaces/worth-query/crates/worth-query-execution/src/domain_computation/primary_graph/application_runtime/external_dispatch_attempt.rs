@@ -67,7 +67,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         self.primary_provider.observe_external_dispatch_admission();
         let relational_runtime = self
             .product_runtime
-            .source
+            .source()
             .authoritative_source_profile()
             .runtime_instance_id();
         if committed.relational_runtime_instance_id() != relational_runtime {

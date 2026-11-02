@@ -140,3 +140,6 @@ impl OperationHandler<HomeIdentitySchema, SetBalanceBinding> for BalanceHandler 
         }
     }
 }
+
+mod retirement;
+pub(super) use retirement::RefusingBalanceHandler;

@@ -25,7 +25,9 @@ use crate::domain_computation::{
     WorthQueryProvisionalOverlayEvidence, WorthQueryProvisionalOverlayEvidenceView,
 };
 
-pub(super) trait WorthQueryErasedGraphParticipationProvider: Send + Sync {
+pub(super) trait WorthQueryErasedGraphParticipationProvider:
+    std::any::Any + Send + Sync
+{
     fn begin(
         &self,
         call: &WorthQueryGraphProviderCall,
@@ -33,7 +35,9 @@ pub(super) trait WorthQueryErasedGraphParticipationProvider: Send + Sync {
     ) -> Result<Box<dyn WorthQueryGraphProviderExecution>, WorthQueryGraphProviderFailure>;
 }
 
-pub(super) trait WorthQueryErasedProviderSessionLifecycle: Send + Sync {
+pub(super) trait WorthQueryErasedProviderSessionLifecycle:
+    std::any::Any + Send + Sync
+{
     fn readmit(
         &self,
         plan: &WorthQueryProviderExecutionPlanView<'_>,

@@ -291,6 +291,8 @@ pub mod facade {
         WorthQueryInstalledConditionalDependencyAuthority,
         WorthQueryInstalledDomainOperationAuthority,
     };
+    pub use crate::installed_graph_participation::QueryGraphParticipationRetirementDenial;
+    pub use crate::installed_graph_participation::RetiredQueryGraphParticipation;
     pub use crate::installed_graph_participation::WorthQueryInstalledGraphParticipationAuthority;
     pub use crate::installed_handle_denial::{
         WorthQueryDomainHandleDenial, WorthQueryDomainHandleDenialKind,

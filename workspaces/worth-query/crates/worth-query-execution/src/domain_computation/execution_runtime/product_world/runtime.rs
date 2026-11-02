@@ -20,13 +20,14 @@ pub(crate) struct WorthQueryProductRootIdentity {
 /// default branch is a caller convenience; World alone resolves its current head.
 #[derive(Clone)]
 pub struct WorthQueryProductRuntime {
-    pub(super) home_maintenance: Option<Arc<dyn super::WorthQueryHomeMaintenance>>,
+    pub(in crate::domain_computation) home_maintenance:
+        Option<Arc<dyn super::WorthQueryHomeMaintenance>>,
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     pub(in crate::domain_computation) directory_support:
         Option<fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>>,
     pub(crate) owner: super::world_ports::WorthQueryProductWorldPorts,
-    pub(crate) source: RuntimeBridgeRelationalSource,
+    pub(crate) source: Option<RuntimeBridgeRelationalSource>,
     pub(crate) activations: Arc<WorthQueryProductActivationRegistry>,
     pub(crate) clock: WorthQueryProductWorldClock,
     pub(crate) relational_lifecycle: RelationalBranchLifecyclePort,
@@ -44,13 +45,18 @@ pub struct WorthQueryProductRuntime {
 }
 
 impl WorthQueryProductRuntime {
+    pub(crate) fn source(&self) -> &RuntimeBridgeRelationalSource {
+        self.source
+            .as_ref()
+            .expect("only serving product exposes its source")
+    }
     #[doc(hidden)]
     pub fn integration_managed_run_admission<'runtime>(
         &'runtime self,
         query: &'runtime crate::domain_computation::WorthQueryExecutionRuntime,
         bridge: &'runtime worth_runtime_bridge::facade::RuntimeBridge,
     ) -> crate::domain_computation::WorthQueryManagedRunAdmission<'runtime> {
-        query.managed_run_admission(bridge, &self.source)
+        query.managed_run_admission(bridge, self.source())
     }
 
     pub(crate) fn from_parts(
@@ -76,7 +82,7 @@ impl WorthQueryProductRuntime {
             directory_support: None,
             adoption_preparation: Arc::default(),
             named_read_probe: Arc::default(),
-            source,
+            source: Some(source),
             activations: Arc::new(activations),
             clock,
             relational_lifecycle,

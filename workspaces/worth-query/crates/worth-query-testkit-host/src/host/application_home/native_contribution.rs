@@ -1,7 +1,6 @@
 //! A Home-only authored contribution; existing identity fixtures stay unchanged.
 use super::schema::{Account, AccountNumber, HomeIdentitySchema};
 use super::{balance_query, native_mutation::*};
-use std::sync::{atomic::AtomicUsize, Arc};
 use worth_query_decl::facade::worth_query_application_contribution;
 use worth_query_host::facade::{
     application_contribution::{
@@ -26,12 +25,12 @@ worth_query_application_contribution! {
     }
 }
 impl WorthQueryApplicationContribution<HomeIdentitySchema> for HomeNativeSurface {
-    type Configuration = Arc<AtomicUsize>;
+    type Configuration = std::sync::Arc<std::sync::atomic::AtomicUsize>;
     fn configure(
-        contacts: Arc<AtomicUsize>,
+        configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, HomeIdentitySchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<SetBalanceBinding, _>(BalanceHandler(contacts))?;
+        setup.handler::<SetBalanceBinding, _>(BalanceHandler(configuration))?;
         Ok(())
     }
 }

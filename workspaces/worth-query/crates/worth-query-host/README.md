@@ -26,9 +26,16 @@ branch. This README covers the host's deeper contracts.
 
 `WorthQueryApplicationHome` owns the physical Home and its lifecycle. Keep the
 Home while borrowing its program runtime; consuming Home close retains the
-same advanced owner on refusal. A retained runtime clone can prevent composition
-release after World seal. Drop that clone and retry the same close custody;
-sealed ordinary ports cannot resume service.
+same advanced owner on refusal. A retained program-runtime alias refuses
+before World seal, preserving the same serving Query. Post-seal refusal retains
+the original retiring owners; sealed ordinary ports cannot resume service.
+
+Ordinary `OperationHandler` retirement covers the Home's registry entry, typed
+slot, original handler Arc and invocation capability. Supplier-internal shared
+state stays outside Home custody. An original erased-slot or active-handler
+alias refuses `Busy`; a supplier may explicitly refuse its own operational
+retirement. Retired handler payloads stay owned by the close result until its
+explicit unbudgeted `reclaim` (or ordinary abandonment).
 
 Fresh Directory bootstrap publishes its portable completion record after all
 seed batches and indexes succeed, before World genesis. Completion refusal

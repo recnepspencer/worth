@@ -19,6 +19,7 @@ use worth_query_testkit_host::facade::host::{
 };
 use worth_store_application::*;
 mod administration;
+mod home_close;
 mod idempotency;
 mod operations;
 mod selected;

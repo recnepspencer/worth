@@ -32,6 +32,8 @@ mod evidence_window;
 pub(in crate::domain_computation::primary_graph) mod fault_port;
 mod graph_participation;
 mod history_retirement;
+mod home_retirement;
+pub(crate) use home_retirement::PrimaryProviderCustody;
 mod idempotency;
 mod inbound_completion;
 mod inbound_cost;
@@ -309,7 +311,7 @@ impl WorthQueryPrimaryGraphProvider {
     }
 }
 
-pub(super) struct WorthQueryPrimaryLogicalGraph;
+pub(crate) struct WorthQueryPrimaryLogicalGraph;
 
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_completion::completion_preparation_denial;

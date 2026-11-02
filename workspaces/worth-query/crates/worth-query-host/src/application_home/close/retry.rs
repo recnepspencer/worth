@@ -51,6 +51,11 @@ impl<Schema: ApplicationSchema, Program: 'static>
                 home,
                 cause: _,
             } => retirement::advance(query, home, request),
+            CloseCustody::MaintenanceRetirement {
+                query,
+                home,
+                cause: _,
+            } => retirement::advance(query, home, request),
             CloseCustody::QueryReleased {
                 cause: _,
                 posture,

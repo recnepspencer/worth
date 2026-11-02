@@ -16,6 +16,8 @@ use worth_query_host::facade::{
 };
 
 pub mod balance_query;
+pub mod retirement;
+pub use retirement::{request_with_handler_retirement_refusal, RefusingHomeProgram};
 mod native_contribution;
 pub mod schema;
 use schema::HomeIdentitySchema;

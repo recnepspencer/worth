@@ -6,6 +6,8 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::ApplicationSchema;
+mod participation;
+pub(in crate::domain_computation::primary_graph) use participation::PrimaryGraphParticipationCustody;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum WorthQueryHomeRetirementOwner {
@@ -18,6 +20,9 @@ pub enum WorthQueryHomeRetirementOwner {
     ExternalTransport,
     SigningOwners,
     RelationalSource,
+    GraphProvider,
+    ReceiptBases,
+    HomeMaintenance,
 }
 
 #[derive(Debug)]
@@ -28,6 +33,15 @@ pub enum WorthQueryHomeRetirementDenial {
         binding: &'static str,
         cause: WorthQueryOperationHomeRetirementDenial,
     },
+    NativeAlias(
+        worth_relational::facade::change_source::RelationalRuntimeHandleAliasRetirementDenial,
+    ),
+    NativeObservation(
+        worth_relational::facade::change_source::RelationalRetainedObservationRetirementDenial,
+    ),
+    BridgeBasis(worth_runtime_bridge::facade::RelationalBridgeBasisRetirementDenial),
+    CanonicalSubscription(worth_relational::facade::mvcc::PublicationCompanionRetirementDenial),
+    Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
     Execution(worth_execution::WorkCeilingDenial),
 }
 
@@ -35,6 +49,19 @@ pub enum WorthQueryHomeRetirementDenial {
 pub(in crate::domain_computation::primary_graph) struct RetiringPrimaryGraphRuntime<Schema> {
     runtime: WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     handlers: HandlerRetirementCursor,
+    stage: QueryRetirementStage,
+    retired_product_source:
+        Option<worth_runtime_bridge::facade::RetiredRuntimeBridgeRelationalSource>,
+}
+enum QueryRetirementStage {
+    Handlers,
+    Participation,
+    Provider,
+    Granular,
+    ProductSource,
+    ServingGraph,
+    Bridge,
+    Complete,
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -51,6 +78,22 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.installed_producers.preflight_home_retirement()?;
         self.installed_conditionals.preflight_home_retirement()?;
         self.preflight_supplied_home_owners()?;
+        self.primary_graph_authority
+            .preflight(&self.primary_provider)?;
+        self.primary_provider.preflight(request)?;
+        if let Some(maintenance) = self.product_runtime.home_maintenance.as_mut() {
+            std::sync::Arc::get_mut(maintenance)
+                .ok_or(WorthQueryHomeRetirementDenial::Busy(
+                    WorthQueryHomeRetirementOwner::HomeMaintenance,
+                ))?
+                .preflight_home_retirement(request)?;
+        }
+        self.runtime
+            .primary_graph()
+            .expect("same serving graph")
+            .with_runtime(request, |native| {
+                self.bridge.preflight_home_retirement(request, native)
+            })?;
         // The actual source owner, not the durable roster, decides whether
         // its Native handle/subscription/head custody has a consuming path.
         self.runtime
@@ -89,31 +132,94 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         RetiringPrimaryGraphRuntime {
             runtime: self,
             handlers: Default::default(),
+            stage: QueryRetirementStage::Handlers,
+            retired_product_source: None,
         }
     }
 }
 
 impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn home_maintenance_mut(&mut self)
+    -> Option<&mut std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>>{
+        self.runtime.product_runtime.home_maintenance.as_mut()
+    }
+    pub(in crate::domain_computation::primary_graph) fn take_home_maintenance(&mut self)
+    -> Option<std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>>{
+        self.runtime.product_runtime.home_maintenance.take()
+    }
     pub(in crate::domain_computation::primary_graph) fn advance(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+        bridge_owner: &std::sync::Arc<
+            std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
+        >,
     ) -> Result<Progress, WorthQueryHomeRetirementDenial> {
-        match self
-            .runtime
-            .mutation_handlers
-            .advance_home_retirement(&mut self.handlers, request)?
-        {
-            Progress::Advanced => Ok(Progress::Advanced),
-            Progress::Complete => {
-                // Source retirement remains unsupported until its real Native,
-                // Bridge and provider owners supply their consuming operation.
-                // It cannot be inferred from the handler observation above.
-                self.runtime
-                    .runtime
-                    .primary_graph()
-                    .expect("retirement retains its original primary graph")
-                    .advance_home_retirement(request)
-            }
+        if self.runtime.product_runtime.home_maintenance.is_some() {
+            return Err(WorthQueryHomeRetirementDenial::Unsupported(
+                WorthQueryHomeRetirementOwner::HomeMaintenance,
+            ));
         }
+        let progress = match self.stage {
+            QueryRetirementStage::Handlers => self
+                .runtime
+                .mutation_handlers
+                .advance_home_retirement(&mut self.handlers, request)?,
+            QueryRetirementStage::Participation => self
+                .runtime
+                .primary_graph_authority
+                .advance(request, &self.runtime.primary_provider)?,
+            QueryRetirementStage::Provider => {
+                self.runtime.primary_provider.advance(request, native)?
+            }
+            QueryRetirementStage::Granular => self
+                .runtime
+                .granular_invalidation
+                .advance_home_retirement(request, native)?,
+            QueryRetirementStage::ProductSource => {
+                request
+                    .consult()
+                    .map_err(WorthQueryHomeRetirementDenial::Execution)?;
+                let source = self
+                    .runtime
+                    .product_runtime
+                    .source
+                    .take()
+                    .expect("same original product source");
+                match source.try_retire_alias_for_request(request, native) {
+                    Ok(retired) => self.retired_product_source = Some(retired),
+                    Err((source, cause)) => {
+                        self.runtime.product_runtime.source = Some(source);
+                        return Err(WorthQueryHomeRetirementDenial::NativeAlias(cause));
+                    }
+                }
+                Progress::Complete
+            }
+            QueryRetirementStage::ServingGraph => self
+                .runtime
+                .runtime
+                .primary_graph_mut()
+                .expect("same original serving graph")
+                .advance_home_retirement(request, native)?,
+            QueryRetirementStage::Bridge => {
+                self.runtime
+                    .bridge
+                    .advance_home_retirement(request, native, bridge_owner)?
+            }
+            QueryRetirementStage::Complete => return Ok(Progress::Complete),
+        };
+        if progress == Progress::Complete {
+            self.stage = match self.stage {
+                QueryRetirementStage::Handlers => QueryRetirementStage::Participation,
+                QueryRetirementStage::Participation => QueryRetirementStage::Provider,
+                QueryRetirementStage::Provider => QueryRetirementStage::Granular,
+                QueryRetirementStage::Granular => QueryRetirementStage::ProductSource,
+                QueryRetirementStage::ProductSource => QueryRetirementStage::ServingGraph,
+                QueryRetirementStage::ServingGraph => QueryRetirementStage::Bridge,
+                QueryRetirementStage::Bridge => QueryRetirementStage::Complete,
+                QueryRetirementStage::Complete => QueryRetirementStage::Complete,
+            };
+        }
+        Ok(Progress::Advanced)
     }
 }

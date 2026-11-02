@@ -1,17 +1,10 @@
 //! Actual authored Host startup is a POSTBOOTSTRAP boundary, not the Store C0 proof.
 use super::pending_support::{balance, scope, set};
 use super::*;
-use worth_query_decl::facade::{
-    application_operation::ApplicationMutationBinding,
-    application_schema::{ApplicationRelationIntegrity, ApplicationSchemaMember},
+use worth_query_decl::facade::application_schema::{
+    ApplicationRelationIntegrity, ApplicationSchemaMember,
 };
-use worth_query_host::facade::{
-    primary_graph::{
-        WorthQueryHomeRetirementDenial as CloseDenial,
-        WorthQueryOperationHomeRetirementDenial as HandlerDenial,
-    },
-    WorthQueryApplicationHomeCheckpointLimits,
-};
+use worth_query_host::facade::WorthQueryApplicationHomeCheckpointLimits;
 #[test]
 fn authored_fresh_home_postbootstrap_complete_and_automatic_maintenance_preserve_business_value() {
     let initialized = Arc::new(AtomicUsize::new(0));
@@ -91,18 +84,9 @@ fn authored_fresh_home_postbootstrap_complete_and_automatic_maintenance_preserve
     assert!(!settled.due && settled.pending.is_none());
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
-    // This fixture's real opaque supplier refuses before World seal. Preserve
-    // that exact owning posture; do not accept arbitrary close failure or Closed.
-    let refused = home
+    let closed = home
         .close(&execution)
-        .err()
-        .expect("opaque supplier retirement remains unsupported");
-    assert!(
-        matches!(refused.query_denial(), Some(CloseDenial::Handler {binding,cause:HandlerDenial::Unsupported})
-        if *binding == fixture::native_mutation::SetBalanceBinding::IDENTITY)
-    );
-    let home = refused.resume().unwrap();
-    assert!(home.is_directory());
-    // Explicit ordinary abandonment makes no provider retirement/D11 claim.
-    drop(home);
+        .unwrap_or_else(|refused| panic!("post-maintenance Home close: {refused:?}"));
+    assert!(closed.is_closed());
+    closed.reclaim();
 }

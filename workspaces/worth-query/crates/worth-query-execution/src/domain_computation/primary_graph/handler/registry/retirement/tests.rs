@@ -26,14 +26,22 @@ impl Drop for Probe {
 impl OperationHandler<Schema, Binding> for Probe {
     fn preflight_home_retirement(&mut self, _: &ExecutionRequest<'_, '_>) -> Result<(), Denial> {
         self.contacts.fetch_add(1, Ordering::SeqCst);
-        if self.refuses { Err(Denial::Unsupported) } else { Ok(()) }
+        if self.refuses {
+            Err(Denial::Unsupported)
+        } else {
+            Ok(())
+        }
     }
     fn advance_home_retirement(
         &mut self,
         _: &ExecutionRequest<'_, '_>,
     ) -> Result<Progress, Denial> {
         self.contacts.fetch_add(1, Ordering::SeqCst);
-        if self.refuses { Err(Denial::Unsupported) } else { Ok(Progress::Complete) }
+        if self.refuses {
+            Err(Denial::Unsupported)
+        } else {
+            Ok(Progress::Complete)
+        }
     }
     fn decide(
         &self,
@@ -139,7 +147,10 @@ fn ordinary_supplier_retirement_retains_the_original_payload_until_reclaim() {
         registry.advance_home_retirement(&mut cursor, &request),
         Ok(Progress::Advanced)
     ));
-    assert!(matches!(registry.advance_home_retirement(&mut cursor, &request), Ok(Progress::Complete)));
+    assert!(matches!(
+        registry.advance_home_retirement(&mut cursor, &request),
+        Ok(Progress::Complete)
+    ));
     assert_eq!(contacts.load(Ordering::SeqCst), 2);
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     drop(registry);
@@ -149,13 +160,19 @@ fn ordinary_supplier_retirement_retains_the_original_payload_until_reclaim() {
 #[test]
 fn supplier_declared_refusal_preserves_original_handler_and_payload() {
     let policy = SerialRequest::from_memory(
-        SerialMemoryBudget::new(Some(1 << 20)), CancellationToken::new(), None,
+        SerialMemoryBudget::new(Some(1 << 20)),
+        CancellationToken::new(),
+        None,
     );
     let request = ExecutionRequest::serial(&policy);
     let contacts = Arc::new(AtomicUsize::new(0));
     let drops = Arc::new(AtomicUsize::new(0));
     let entry = PendingMutationHandler::retain_original::<Schema, Binding, Probe>(
-        Probe { contacts: contacts.clone(), drops: drops.clone(), refuses: true },
+        Probe {
+            contacts: contacts.clone(),
+            drops: drops.clone(),
+            refuses: true,
+        },
         HandlerOrigin::Supplier,
     );
     let original = Arc::as_ptr(&entry.value);
@@ -163,11 +180,24 @@ fn supplier_declared_refusal_preserves_original_handler_and_payload() {
         entries: BTreeMap::from([(Binding::IDENTITY.to_owned(), entry)]),
         _schema: PhantomData,
     };
-    assert!(matches!(registry.preflight_home_retirement(&request),
-        Err(Failure::Handler { binding: Binding::IDENTITY, cause: Denial::Unsupported })));
-    assert!(matches!(registry.advance_home_retirement(&mut HandlerRetirementCursor::default(), &request),
-        Err(Failure::Handler { binding: Binding::IDENTITY, cause: Denial::Unsupported })));
-    assert!(std::ptr::addr_eq(original, Arc::as_ptr(&registry.entries[Binding::IDENTITY].value)));
+    assert!(matches!(
+        registry.preflight_home_retirement(&request),
+        Err(Failure::Handler {
+            binding: Binding::IDENTITY,
+            cause: Denial::Unsupported
+        })
+    ));
+    assert!(matches!(
+        registry.advance_home_retirement(&mut HandlerRetirementCursor::default(), &request),
+        Err(Failure::Handler {
+            binding: Binding::IDENTITY,
+            cause: Denial::Unsupported
+        })
+    ));
+    assert!(std::ptr::addr_eq(
+        original,
+        Arc::as_ptr(&registry.entries[Binding::IDENTITY].value)
+    ));
     assert_eq!(contacts.load(Ordering::SeqCst), 2);
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     drop(registry);
@@ -176,28 +206,50 @@ fn supplier_declared_refusal_preserves_original_handler_and_payload() {
 
 struct Ordinary(Arc<AtomicUsize>);
 impl OperationHandler<Schema, Binding> for Ordinary {
-    fn decide(&self, _: &Input, _: &mut DecisionReader<'_, '_, '_, Schema, Binding>)
-        -> HandlerResult<Decision, DomainDenial> { panic!("retirement cannot invoke the handler") }
-    fn build_candidate(&self, _: &Input, _: Decision, _: &mut CandidateWriter<'_, Schema, Binding>)
-        -> HandlerResult<Output, DomainDenial> { panic!("retirement cannot invoke the handler") }
+    fn decide(
+        &self,
+        _: &Input,
+        _: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> HandlerResult<Decision, DomainDenial> {
+        panic!("retirement cannot invoke the handler")
+    }
+    fn build_candidate(
+        &self,
+        _: &Input,
+        _: Decision,
+        _: &mut CandidateWriter<'_, Schema, Binding>,
+    ) -> HandlerResult<Output, DomainDenial> {
+        panic!("retirement cannot invoke the handler")
+    }
 }
 impl Drop for Ordinary {
-    fn drop(&mut self) { self.0.fetch_add(1, Ordering::SeqCst); }
+    fn drop(&mut self) {
+        self.0.fetch_add(1, Ordering::SeqCst);
+    }
 }
 
 #[test]
 fn default_supplier_hooks_retire_invocation_without_destroying_shared_payload() {
     let policy = SerialRequest::from_memory(
-        SerialMemoryBudget::new(Some(1 << 20)), CancellationToken::new(), None,
+        SerialMemoryBudget::new(Some(1 << 20)),
+        CancellationToken::new(),
+        None,
     );
     let request = ExecutionRequest::serial(&policy);
     let drops = Arc::new(AtomicUsize::new(0));
     let mut value = PendingMutationHandler::retain_original::<Schema, Binding, Ordinary>(
-        Ordinary(drops.clone()), HandlerOrigin::Supplier,
-    ).value;
+        Ordinary(drops.clone()),
+        HandlerOrigin::Supplier,
+    )
+    .value;
     preflight_original_handler::<Schema, Binding>(&mut value, &request).unwrap();
-    assert!(matches!(advance_original_handler::<Schema, Binding>(&mut value, &request), Ok(Progress::Complete)));
+    assert!(matches!(
+        advance_original_handler::<Schema, Binding>(&mut value, &request),
+        Ok(Progress::Complete)
+    ));
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     drop(value);
     assert_eq!(drops.load(Ordering::SeqCst), 1);
 }
+
+mod serving_aliases;

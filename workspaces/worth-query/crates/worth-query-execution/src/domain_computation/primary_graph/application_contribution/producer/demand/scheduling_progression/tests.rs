@@ -66,7 +66,7 @@ fn installation() -> (
     };
     let world = installed_authorization_world(true);
     let bridge = RuntimeBridge::builder()
-        .with_relational_source(world.application.product_runtime.source.clone())
+        .with_relational_source(world.application.product_runtime.source().clone())
         .with_signal_sink(UnusedSink)
         .register_mapping(BridgeMappingRegistration::new(
             BridgeMappingId::from_stable_name("scheduling-busy"),
