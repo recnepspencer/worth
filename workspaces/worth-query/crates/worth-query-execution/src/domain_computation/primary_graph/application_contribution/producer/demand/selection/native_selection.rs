@@ -82,6 +82,26 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         if let Some(shared) = selected_override {
             selected_basis::require_fresh_source(self, observation, Family::IDENTITY, shared)?;
         }
+        // The retained source establishes discovery custody, not the cutoff for
+        // publications that already exist at the execution head. Use one current
+        // selection for both candidate lookup and native output verification.
+        let program_selection = if retained_program_basis.is_some() && selected_override.is_none() {
+            let selected = selected_basis::select_retained_lifecycle(
+                self,
+                execution,
+                observation,
+                Family::IDENTITY,
+            )?;
+            Some(selected)
+        } else {
+            None
+        };
+        let lifecycle_observation = program_selection.as_ref().map(|selected| {
+            crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                selected.product().observation(),
+            )
+        });
+        let lifecycle_observation = lifecycle_observation.as_ref().unwrap_or(observation);
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
         let mut lineage = self
@@ -92,7 +112,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         self.record_recovered_output_candidates::<Family>(
             source,
-            observation,
+            lifecycle_observation,
             scope,
             &output_bindings,
             &mut lineage,
@@ -102,8 +122,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
                 scope,
-                observation.lifecycle_incarnation(),
-                observation.reference_generation().get(),
+                lifecycle_observation.lifecycle_incarnation(),
+                lifecycle_observation.reference_generation().get(),
                 &output_bindings,
                 source.partition_identity(),
                 execution,
@@ -123,7 +143,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             // Debit basis admission and lifecycle visits before entering that
             // phase. The caller's remainder survives all subsequent failures.
 
-            let newly_selected = if selected_override.is_none() {
+            let newly_selected = if program_selection.is_some() {
+                program_selection
+            } else if selected_override.is_none() {
                 Some(
                     self.on_branch(observation.product_branch())
                         .select_with_request(execution)

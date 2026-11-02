@@ -138,3 +138,39 @@ pub(super) fn selection_budget_denial(family: &str) -> WorthQueryOutputDemandDen
     )
     .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable)
 }
+
+/// Retained discovery pins the source, while lifecycle reads the current head
+/// of that same admitted occurrence. Candidate lookup and liveness share it.
+pub(super) fn select_retained_lifecycle<'runtime, Schema>(
+    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    source: &crate::basis::WorthQueryProductBranchReadIdentity,
+    family: &str,
+) -> Result<
+    crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation<
+        'runtime,
+        Schema,
+    >,
+    WorthQueryOutputDemandDenial,
+>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    let selected = runtime
+        .on_branch(source.product_branch())
+        .select_with_request(execution)
+        .map_err(|cause| {
+            WorthQueryOutputDemandDenial::product_selection(
+                cause,
+                "output lifecycle basis could not be selected",
+            )
+        })?;
+    if !source_basis_is_admitted(source, selected.product().observation(), true) {
+        return Err(WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            family.to_owned(),
+        )
+        .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
+    }
+    Ok(selected)
+}
