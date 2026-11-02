@@ -1864,3 +1864,13 @@ Qualification mapping for this integration slice:
   and consuming extraction ends the backing scope before releasing its grant.
   Existing capability-elevation approval/close/review, adversarial and replay
   courts remain the semantic controls, alongside external custody controls.
+
+At the next actual commit checkout, the same raw journey exposed B-tree
+remove/reinsert carriage of the large registered Native candidate: insertion
+frames allocate 104,184 and 190,824 bytes in
+`target/lane-evidence/integration-backed-stack.log`. Checkout now replaces the
+Registered value with its Committing marker in the existing reserved slot,
+under the same owner lock. The original identity, actual attempt/candidate and
+completion owner are unchanged. This removes a tree mutation and allocation
+opportunity rather than adding another backing owner. Existing attempt-store
+phase, cleanup and provider commit courts cover this handoff.
