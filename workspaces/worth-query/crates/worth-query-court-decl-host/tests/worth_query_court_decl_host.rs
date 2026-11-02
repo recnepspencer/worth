@@ -6,3 +6,6 @@ mod certification;
 
 #[path = "worth_query_court_decl_host/aspect_patterns/mod.rs"]
 mod aspect_patterns;
+
+#[path = "worth_query_court_decl_host/cost/mod.rs"]
+mod cost;

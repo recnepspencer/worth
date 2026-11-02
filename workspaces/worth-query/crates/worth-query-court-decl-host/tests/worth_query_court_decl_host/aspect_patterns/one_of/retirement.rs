@@ -1,6 +1,7 @@
 //! Retirement consumes the complete live record through its declared output role.
 use super::*;
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Retire {
     pub key: String,
 }

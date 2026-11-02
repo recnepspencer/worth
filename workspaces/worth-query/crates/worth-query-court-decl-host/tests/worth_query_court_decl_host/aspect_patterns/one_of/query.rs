@@ -1,5 +1,6 @@
 use super::*;
-#[derive(Clone, Debug, PartialEq, Eq, worth_foundational::facade::WorthValue)]
+#[derive(Clone, Debug, PartialEq, Eq, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Row {
     pub class: u64,
     pub first: Option<u64>,
@@ -127,7 +128,8 @@ impl WorthQueryApplicationProjection<Schema, Query> for Row {
         })
     }
 }
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Read {
     pub key: String,
 }

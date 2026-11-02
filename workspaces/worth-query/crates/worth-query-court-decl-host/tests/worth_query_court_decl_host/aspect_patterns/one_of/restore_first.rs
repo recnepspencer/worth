@@ -1,6 +1,7 @@
 //! Separate inverse operation: no recursive retained-preimage demand.
 use super::*;
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Restore {
     pub key: String,
     pub row: query::Row,

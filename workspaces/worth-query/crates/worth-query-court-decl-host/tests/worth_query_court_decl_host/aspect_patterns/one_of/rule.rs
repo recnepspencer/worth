@@ -1,11 +1,12 @@
 use super::*;
-#[derive(Clone, Debug, PartialEq, Eq, worth_foundational::facade::WorthValue)]
+#[derive(Clone, Debug, PartialEq, Eq, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Refusal {
     pub subject: String,
     pub class: Option<u64>,
     pub present: u64,
 }
-worth_query_value_binding!(pub RefusalBinding for Refusal { identity: "native-record-patterns.refusal.v1", scalar: String, canonical: worth_foundational::facade::ValueDecodeBounds::new(256, 64, 8, 8), });
+worth_query_value_binding!(pub RefusalBinding for Refusal { identity: "native-record-patterns.refusal.v1", scalar: String, canonical: ValueDecodeBounds::new(256, 64, 8, 8), });
 pub struct OneOf;
 impl ApplicationInvariantMarkerIdentity<Schema> for OneOf {
     const IDENTIFIER: &'static str = "native-record-one-of";
