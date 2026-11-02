@@ -152,10 +152,22 @@ impl OperationHandler<Schema, Binding> for Handler {
             let target = writer
                 .projected_entity(&decision.target)
                 .map_err(HandlerExecutionDenial::new)?;
+            // A small operation input reaches Native's own frame bound, rather
+            // than exhausting unrelated structured-input serialization first.
+            let generated;
+            let values = if input.mode == 20 {
+                let [count] = input.samples.as_slice() else {
+                    panic!("exact count stimulus")
+                };
+                generated = vec![0; usize::try_from(*count).expect("nonnegative court count")];
+                &generated
+            } else {
+                &input.samples
+            };
             let grid = codec::Grid {
                 rows: 1,
-                columns: input.samples.len() as u32,
-                samples: input.samples.clone(),
+                columns: values.len().try_into().expect("bounded court dimensions"),
+                samples: values.clone(),
                 corrupt_result: input.mode == 8,
                 swallow_sink_refusal: input.mode == 9,
                 cancel_during_encoding: if input.mode == 14 {
@@ -165,7 +177,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 },
             };
             match input.mode {
-                0 | 8 | 9 | 14 | 19 => writer
+                0 | 8 | 9 | 14 | 19 | 20 => writer
                     .write_content(&target, samples(), &grid)
                     .map_err(HandlerExecutionDenial::new)?,
                 18 => {

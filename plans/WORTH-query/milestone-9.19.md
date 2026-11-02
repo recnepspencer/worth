@@ -2100,7 +2100,7 @@ sequences; keyed sets and graphs need no position, fixed tuples use named relati
 and existing Native cycle semantics stay. Only a true sequence uses a
 membership-occurrence entity with a native position field and typed parent/target
 relations, or a directly fielded relation after its SDK carrier is qualified.
-Large identity-free numeric arrays require controlled typed content references;
+Ordered identity-free numeric arrays at every size require controlled typed content references;
 a ContentRef id alone proves neither available bytes nor admitted geometry.
 Identity-free, reference-free leaf values with no platform scalar, such as radical
 coefficients, are domain values: named, versioned, framed atoms with owner-supplied
@@ -2248,6 +2248,28 @@ Phase 3 or the remaining performance audit repairs.
 - Growth courts vary source width, relevant density, affected incidence and
   retained-query count independently, with predeclared growth expectations and
   generous algorithmic headroom rather than fitted exact-count goldens.
+
+### K1c public content qualification
+
+The public Native/Decl/Host lane uses one Native content authority and the existing
+pre-publication domain-value seal. It adds no AspectShape form or alternate store.
+Ordered identity-free numerical data uses ContentRef at every size; a frame above
+16 MiB gets a typed refusal before effects, including the maximum-count spline
+whose exact rational controls may exceed that byte bound.
+
+| Governing K1c row | Public generic court evidence |
+|---|---|
+| Content admission | Native literal frames, external digests and numerical correspondence; wrong/missing/version/corrupt refusals; real checkpoint/journal reconstruction, historical custody, original cancellation and final release. Decl/Host writes refuse before provider/index/selected-commit publication. S5 measures frame, directory and staging bounds. |
+| Declared dependency | The same Decl/Host sample-grid fixture changes only content identity behind a field while its conservative key stays constant. Actual Source changes reach exact consuming candidate membership; a separate literal-list full scan is the oracle. Correction, undo/reapply and current checkpoint cold staging retain Native custody. |
+
+See the [boundary](milestone-9.19-k1c-content-boundary.md),
+[complete slice ledger](milestone-9.19-k1c-content-evidence.md),
+[Source/correction evidence](milestone-9.19-k1c-content-slice4-evidence.md) and
+[bounded-cost and final review evidence](milestone-9.19-k1c-content-slice5-evidence.md).
+Recovery reconstructs current bytes; absent live World Source images and live
+correction occurrences remain typed refusals, not invented history. This public
+qualification does not perform the coordinated SDK repin or consuming application
+cutover.
 
 ## Must Preserve
 

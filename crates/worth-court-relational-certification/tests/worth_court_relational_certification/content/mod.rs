@@ -152,7 +152,7 @@ fn content_format_admission_is_unique_and_two_field_bindings_share_it() {
 
 #[test]
 fn content_identifiers_have_one_ascii_spelling() {
-    for name in ["", "Grid", "grid/é", "grid space"] {
+    for name in ["", "Grid", "grid/\u{e9}", "grid space"] {
         assert!(ContentFormat::new(name, 1).is_err());
     }
     assert!(ContentFormat::new("grid", 0).is_err());
@@ -170,3 +170,5 @@ mod schema_transition;
 mod historical_custody;
 
 mod preimage_work;
+
+mod recovered_reference;

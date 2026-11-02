@@ -207,16 +207,16 @@ impl RelationalContentFrame {
         execution: &ExecutionRequest<'_, '_>,
         other: &Self,
     ) -> Result<bool, Denial> {
-        if self.identity() != other.identity() {
-            return Ok(false);
-        }
-        if Arc::ptr_eq(&self.0, &other.0) {
-            execution
-                .check_live()
-                .map_err(|cause| Denial::Execution(cause.into()))?;
-            return Ok(true);
-        }
         control::run(execution, |control| {
+            // Both identity words and the backing decision belong to the
+            // original request, including the constant-work shortcuts.
+            control.checkpoint(65)?;
+            if self.identity() != other.identity() {
+                return Ok(false);
+            }
+            if Arc::ptr_eq(&self.0, &other.0) {
+                return Ok(true);
+            }
             if self.bytes().len() != other.bytes().len() {
                 return Err(Denial::ContentIdentityConflict);
             }

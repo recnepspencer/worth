@@ -11,6 +11,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     host::host_limits, operator_identity::*,
 };
 mod codec;
+mod controls;
 mod courts;
 mod created_content;
 mod operation;

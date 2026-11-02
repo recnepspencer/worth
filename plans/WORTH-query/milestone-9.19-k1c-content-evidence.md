@@ -1,5 +1,13 @@
 # K1c implementation evidence
 
+Slices 1–5 establish the Native content owner, durable reconstruction, typed
+Decl/Host door, Source/correction custody and bounded-cost qualification. The
+sections below preserve each slice's contemporaneous status and every logged
+attempt; an early “pending” statement describes that slice, not the final state.
+Final counts, remaining untouched enforcement debt, independent reviewer verdict
+and exact qualification scope are in the
+[slice 5 closeout](milestone-9.19-k1c-content-slice5-evidence.md).
+
 ## Slice 1: Native transactional content authority
 
 This is incremental evidence, not K1c completion. Native owns immutable admitted

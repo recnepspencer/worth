@@ -56,6 +56,9 @@ impl WorthQueryManagedIndexProvider<Schema, Index> for Provider {
         }
         row.with_content(query::content(), codec::GridFormat, |bytes| {
             assert!(bytes.len() >= 8);
+            if let Some(cancel) = self.0.cancel_content.lock().unwrap().take() {
+                cancel.cancel();
+            }
         })
         .map_err(content_stop)?;
         self.0.content_reads.fetch_add(1, Ordering::SeqCst);

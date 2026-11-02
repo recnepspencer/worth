@@ -27,7 +27,7 @@ pub(super) fn fixture_builder() -> (RelationalRuntimeBuilder, AspectContract) {
     )
 }
 
-pub(super) fn fixture_registry(
+pub(crate) fn fixture_registry(
     codec: Arc<dyn worth_relational::facade::content::RelationalContentCodec>,
     schema_version_id: SchemaVersionId,
 ) -> (RelationalSchemaRegistry, AspectContract) {
@@ -91,7 +91,7 @@ pub(crate) fn fixture() -> (RelationalRuntime, AspectContract) {
     (builder.build().unwrap(), contract)
 }
 
-pub(super) fn batch(contract: &AspectContract, identity: ContentRefId) -> WorkerIntentBatch {
+pub(crate) fn batch(contract: &AspectContract, identity: ContentRefId) -> WorkerIntentBatch {
     let value = StructAspectValue::new(
         [("left", identity), ("right", identity)]
             .map(|(name, id)| (FieldKey::new(name).unwrap(), AspectValue::ContentRef(id))),

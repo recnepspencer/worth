@@ -1,3 +1,11 @@
+mod bounds;
+mod controls;
+mod directory;
+mod frames;
+mod invoice;
+mod leased;
+mod stimulus;
+
 use crate::content::{
     fixture::grid,
     original,
