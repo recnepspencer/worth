@@ -147,30 +147,7 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
 /// verification.
 impl From<RebaseVerificationFailure> for FullVerificationReason {
     fn from(reason: RebaseVerificationFailure) -> Self {
-        match reason {
-            // The original owned cause remains in commit evidence; this is
-            // only the post-effect registration's conservative readiness hint.
-            RebaseVerificationFailure::ManagedIndex(_) => Self::RegistrationIncomplete,
-            // Pending publication already reported this request stop by value.
-            // A later recovery records the incomplete source registration;
-            // a settlement reason never carries an old request's interruption.
-            RebaseVerificationFailure::Execution(_)
-            | RebaseVerificationFailure::NativePayloadStorage { .. } => {
-                Self::RegistrationIncomplete
-            }
-            RebaseVerificationFailure::NativeRevisionUnavailable => Self::NativeRevisionUnavailable,
-            RebaseVerificationFailure::NativeFactRevisionUnavailable(ordinal) => {
-                Self::NativeFactRevisionUnavailable(ordinal)
-            }
-            RebaseVerificationFailure::IndexedSelectionDenied(denial) => {
-                Self::IndexedSelectionDenied(denial)
-            }
-            RebaseVerificationFailure::IndexedSelectionFactDenied(ordinal, denial) => {
-                Self::IndexedSelectionFactDenied(ordinal, denial)
-            }
-            RebaseVerificationFailure::UnsupportedDecisionFact => Self::UnsupportedFact,
-            RebaseVerificationFailure::AdmissionDenied(stop) => stopped(stop),
-        }
+        reason.into_registration_requirement()
     }
 }
 

@@ -88,18 +88,8 @@ pub(in crate::domain_computation::primary_graph) struct FailedRebase {
     pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum RebaseVerificationFailure {
-    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
-    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    NativeRevisionUnavailable,
-    NativeFactRevisionUnavailable(usize),
-    IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
-    IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
-    UnsupportedDecisionFact,
-    NativePayloadStorage { class: worth_execution::ExecutionAllocationDenialClass, requested: Option<u64> },
-    AdmissionDenied(CompanionPreflightStop),
-}
+mod failure;
+pub(in crate::domain_computation::primary_graph) use failure::RebaseVerificationFailure;
 
 mod full_preparation;
 use full_preparation::FullSourceFactRebase;

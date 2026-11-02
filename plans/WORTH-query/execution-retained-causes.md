@@ -1256,3 +1256,61 @@ Final slice 2 evidence: Publication lib 27/0/0/0/0; Host inspection 6/0/0/0/327;
 The same independent reviewer passed source/tests after the receipt-settlement gap closed; its scan covered 18 Rust files, 9 non-blocking function advisories and 0 errors. The Publication advisory is the unchanged exhaustive forwarding owner; the corruption court remains one coherent responsibility. Final qa-loop/qa-tests/code-quality-qa commit clearance follows review of these exact logs and ledger. Full Execution lib and full DeclHost remain scheduled for final slice 5, as accepted; these are the actual scoped runs for this slice. No hard-rule or reserved-file stop occurred.
 
 Final independent clearance: qa-loop, qa-tests and code-quality-qa all PASS for second correction 2. The reviewer independently reconciled each semantic mutation, actual restored/public/package counts, warning ownership and all seven footer exits. The missing-receipt finding is closed; no in-scope blocker remains.
+
+
+### 3. Give rebase verification reasons one owner.
+
+Boundary review and plan: the public `RebaseVerificationReason` is the actual cause vocabulary consumed by commit evidence. The former private variant-for-variant mirror and its conversion are deleted. A private failure struct carries that reason alongside the existing, semantically different post-effect registration requirement; only named owner constructors can build the pair. Fact specialization records the actual private ordinal in that requirement while the public reason preserves its native/indexed stage and exact indexed denial. The public consumer moves the reason directly; the registration reader consumes the carried requirement, with no duplicate reason-conversion match. No new public capability or Native shape is added.
+
+Courts retain the real native and indexed rebase journeys and add literal public-stage and private-position assertions at nonzero ordinals 37 and 53. Their expected categories/positions are constants independent of the factories. Planned semantic mutations collapse both fact stages to their general stages, then remove the registration reader's consumption; each must fail the corresponding literal or actual rebase court. Two eager `unwrap_or` decisions in the affected walk use explicit first-failure/actual-admission-stop matches. The walk, first-failure priority, metering and allocation behavior stay with their original owner.
+
+
+Reviewer finding and correction: the mechanical constructor update missed the existing commit-evidence request-stop pattern. The first focused compile exited 101 with `error[E0164]: expected tuple struct or tuple variant, found associated function RebaseVerificationFailure::execution` at `evidence_seal.rs:249`; 0 tests executed. The reader now exhaustively matches the carried public reason directly, preserving the existing execution-stop classification without recreating a private enum or conversion. This real build failure is separate from mutation evidence.
+
+The reviewer traced the existing request-stop forwarding through pending publication and found no dedicated court injecting this cause after effect. The inspected pre-effect stop oracles are not claimed as evidence for that seam. Under the user's no-action ruling on caller forwarding, this mechanical reader update is structurally/compiler checked with exhaustive public-reason alternatives and has no claimed dedicated mutation kill. The actual rebase stop oracles and reason/registration consumer mutations retain their narrower stated evidence.
+
+
+Exact second correction 3 focused rebase evidence commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 11 Rust files; 0 cap violations |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 11 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib postcommit_currentness` | 0 | 20/0/0/0/2304 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib postcommit_currentness` | 101 | 16/4/0/0/2304 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib postcommit_currentness` | 101 | 16/4/0/0/2304 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib postcommit_currentness` | 0 | 20/0/0/0/2304 (passed/failed/ignored/measured/filtered) |
+
+
+The initial failed command was exactly `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib postcommit_currentness`; exit 101, E0164 at the old request-stop pattern, 0 tests executed. The corrected rerun and restored-source run each passed 20/0/0/0/2304. Both semantic campaigns compiled and each failed 16/4/0/0/2304: two literal factory/real-reader assertions plus the genuine native unavailable-revision and indexed nonzero-position journeys. In the public-stage campaign, `NativeFactRevisionUnavailable` and `IndexedSelectionFactDenied` incorrectly became their general variants. In the independent registration campaign their public reasons remained correct, but the real registration reader returned `RegistrationIncomplete` instead of `NativeFactRevisionUnavailable(37)` / `IndexedSelectionFactDenied(53, Overflow)` and the genuine ordinals 0 / 1. These are separate stage and registration consumers, not one copied conversion oracle. Exact production bytes were restored after each campaign.
+
+The same reviewer independently confirmed the source-request-stop fix closes its finding, both compiled mutation kills are semantic, the literal/public/private oracles are separate, and the production readers are restored. The constructor pairs preserve the previous post-effect registration policy, including AdmissionDenied -> RegistrationIncomplete. The private hint already has its own broader registration semantics; it is not a new mirror of the public refusal enum.
+
+
+Exact second correction 3 public inspection integration commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/327 (passed/failed/ignored/measured/filtered) |
+
+The public Host inspection rerun passes 6/0/0/0/327. The same reviewer independently verified the actual source-request-stop fix, both compiled 16-pass/4-fail mutation results, the separate literal stage and registration assertions, and restored production readers. Footer and final commit clearance are pending at this point in the ledger.
+
+
+Exact second correction 3 final footer gates commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 11 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |
+
+
+Final slice 3 footer: all seven commands exit 0, dirty caps check 11 Rust files, boundary/context/fmt/whitespace have 0 violations. All-target Clippy reports 13 Execution-labelled and 7 upstream Relational warnings, 0 errors; no primary spans in dirty files. The same 12 pub-mono method warnings and physically mounted Certification `MIN` warning remain, with no owned Execution warning outside the excluded files. Relational's seven unchanged upstream warnings remain listed above. No public shape, authority, dependency, Native form or compatibility path is added; the mirrored private enum and conversion are deleted in this slice. The source-request-stop forwarding seam has the stated structural evidence only, without a claimed dedicated court.
+
+Final independent clearance: qa-loop, qa-tests and code-quality-qa all PASS for second correction 3. The reviewer independently reconciled the corrected source reader, both compiled four-failure campaigns, final restored/Host results, exact ledger and all seven footer checks. The pattern finding is closed; no in-scope blocker remains.

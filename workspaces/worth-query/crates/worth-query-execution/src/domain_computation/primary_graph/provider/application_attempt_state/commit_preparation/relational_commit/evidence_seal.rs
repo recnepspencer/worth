@@ -101,7 +101,7 @@ pub(super) fn seal(
     let performed_output_fields = if retain_output_field_evidence {
         use crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure as Failure;
         Some(match observed_source_facts.retained() {
-            Err(cause) => Err(Failure::Rebase { reason: cause.reason.into_diagnostic(), own_effect: cause.own_effect }),
+            Err(cause) => Err(Failure::Rebase { reason: cause.reason.into_reason(), own_effect: cause.own_effect }),
             Ok(facts) => crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::copy_performed_field_reads(
                 &facts,
                 crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
@@ -245,11 +245,18 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self,
     ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         match self.observed_source_facts.retained() {
-            Err(FailedRebase {
-                reason: RebaseVerificationFailure::Execution(cause),
-                ..
-            }) => Some(cause),
-            _ => None,
+            Err(FailedRebase { reason, .. }) => match reason.into_reason() {
+                RebaseVerificationReason::Execution(cause) => Some(cause),
+                RebaseVerificationReason::ManagedIndex(_)
+                | RebaseVerificationReason::NativeRevisionUnavailable
+                | RebaseVerificationReason::NativeFactRevisionUnavailable
+                | RebaseVerificationReason::IndexedSelectionDenied(_)
+                | RebaseVerificationReason::IndexedSelectionFactDenied(_)
+                | RebaseVerificationReason::UnsupportedDecisionFact
+                | RebaseVerificationReason::NativePayloadStorage { .. }
+                | RebaseVerificationReason::AdmissionDenied(_) => None,
+            },
+            Ok(_) => None,
         }
     }
 

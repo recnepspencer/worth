@@ -56,9 +56,9 @@ pub(super) fn rebase(
                     actions.push(action);
                 }
             }
-            Err(RebaseVerificationFailure::Execution(cause)) => {
+            Err(reason) if matches!(reason.reason(), RebaseVerificationReason::Execution(_)) => {
                 return RebasedSourceFacts::VerificationRequired {
-                    reason: RebaseVerificationFailure::Execution(cause),
+                    reason,
                     own_effect: own_effect.with_unanswered(
                         unasked,
                         producer_output,
@@ -67,15 +67,7 @@ pub(super) fn rebase(
                 }
             }
             Err(reason) => {
-                let reason = match reason {
-                    RebaseVerificationFailure::NativeRevisionUnavailable => {
-                        RebaseVerificationFailure::NativeFactRevisionUnavailable(ordinal)
-                    }
-                    RebaseVerificationFailure::IndexedSelectionDenied(denial) => {
-                        RebaseVerificationFailure::IndexedSelectionFactDenied(ordinal, denial)
-                    }
-                    reason => reason,
-                };
+                let reason = reason.at_fact(ordinal);
                 own_effect = own_effect.with_unanswered(
                     std::slice::from_ref(fact),
                     producer_output,
@@ -124,7 +116,10 @@ fn stopped(
     producer_output: bool,
 ) -> RebasedSourceFacts {
     RebasedSourceFacts::VerificationRequired {
-        reason: failure.unwrap_or(RebaseVerificationFailure::AdmissionDenied(stop)),
+        reason: match failure {
+            Some(reason) => reason,
+            None => RebaseVerificationFailure::admission_denied(stop),
+        },
         own_effect: own_effect.with_unanswered(unasked, producer_output, OwnEffect::Moved),
     }
 }
@@ -139,15 +134,15 @@ pub(super) fn storage_stopped(
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
     let reason = match cause.classify() {
         Class::Request(Request::Stopped(Stop::Cancelled)) => {
-            RebaseVerificationFailure::Execution(Native::Cancelled)
+            RebaseVerificationFailure::execution(Native::Cancelled)
         }
         Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
-            RebaseVerificationFailure::Execution(Native::DeadlineElapsed)
+            RebaseVerificationFailure::execution(Native::DeadlineElapsed)
         }
-        class => RebaseVerificationFailure::NativePayloadStorage {
+        class => RebaseVerificationFailure::native_payload_storage(
             class,
-            requested: cause.requested_payload_bytes(),
-        },
+            cause.requested_payload_bytes(),
+        ),
     };
     RebasedSourceFacts::VerificationRequired { reason, own_effect }
 }
