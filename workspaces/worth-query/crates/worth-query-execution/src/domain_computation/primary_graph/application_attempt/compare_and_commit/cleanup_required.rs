@@ -17,7 +17,7 @@ impl WorthQueryApplicationCleanupRequired {
         outcome: WorthQueryApplicationCommitOutcome,
         failure: WorthQueryMutationCleanupFailure,
         runtime: WorthQueryProductRuntime,
-        original: Option<super::WorthQueryPendingApplicationCommitReceipt>,
+        original: Option<super::RetainedOriginalCleanupCommit>,
         bridge: std::sync::Arc<
             std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
         >,
@@ -81,7 +81,7 @@ impl WorthQueryApplicationCleanupRequired {
 #[must_use = "cleanup refusal returns this original owner"]
 pub struct WorthQueryApplicationManagedCleanup {
     failure: WorthQueryMutationCleanupFailure,
-    original: Option<super::WorthQueryPendingApplicationCommitReceipt>,
+    original: Option<super::RetainedOriginalCleanupCommit>,
     runtime: WorthQueryProductRuntime,
     bridge: std::sync::Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>,
     last_denial: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial>,

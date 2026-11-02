@@ -5,8 +5,11 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationManagedCleanupReceipt as Cleanup,
     WorthQueryCleanupDispatchDenial as DispatchDenial, WorthQueryCleanupDispatchPosture as Posture,
+    WorthQueryRecoveredApplicationCommitReceipt,
+};
+use crate::facade::primary_graph::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
-    WorthQueryExternalTransportOutcome, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryExternalTransportOutcome,
 };
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -91,6 +94,7 @@ fn original(
         .original
         .as_ref()
         .unwrap()
+        .original()
         .original_authority()
         .idempotency_binding();
     world.application.with_host_advancement(|phase| {

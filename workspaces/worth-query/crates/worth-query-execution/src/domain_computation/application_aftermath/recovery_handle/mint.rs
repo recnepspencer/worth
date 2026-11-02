@@ -72,11 +72,15 @@ where
             }
             Posture::NotDeclared | Posture::AttemptedUnresolved | Posture::Observed => {}
         }
-        let original = cleanup.original.as_ref().ok_or_else(|| {
-            WorthQueryRecoveryHandleDenial::new(
-                WorthQueryRecoveryHandleDenialKind::RecoveryNotAdmitted,
-            )
-        })?;
+        let original = cleanup
+            .original
+            .as_ref()
+            .ok_or_else(|| {
+                WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::RecoveryNotAdmitted,
+                )
+            })?
+            .original();
         ensure_receipt_belongs_to_runtime(
             self.runtime.authority_identity(),
             original.original_authority().runtime_authority(),

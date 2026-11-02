@@ -243,3 +243,5 @@ pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScop
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
 
 pub(in crate::domain_computation) use compare_and_commit::WorthQueryPendingApplicationCommitReceipt;
+
+pub(in crate::domain_computation) use compare_and_commit::RetainedOriginalCleanupCommit;

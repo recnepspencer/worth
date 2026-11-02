@@ -145,8 +145,8 @@ fn medium(cause: worth_runtime_world::facade::WorldDurableMediumDenial) -> Denia
     }
 }
 
-fn signal(cause: worth_runtime_world::facade::SignalInitialEmptyRootRefusal) -> Denial {
-    use worth_runtime_world::facade::SignalInitialEmptyRootRefusal as Signal;
+fn signal(cause: worth_signal::facade::branch::SignalInitialEmptyRootRefusal) -> Denial {
+    use worth_signal::facade::branch::SignalInitialEmptyRootRefusal as Signal;
     match cause {
         Signal::Request(cause) => idempotency_read_stop(cause.into()),
         Signal::Description
@@ -176,7 +176,7 @@ fn bridge(cause: worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal) -> D
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worth_execution::{KernelStop, WorkCeilingDenial};
+    use worth_execution::{MapKernelStop as KernelStop, WorkCeilingDenial};
     use worth_runtime_world::facade::{
         RuntimeWorldServiceDenial, WorldDurableMediumDenial, WorldReadmissionDenial,
         WorldReadmittedPublicationDenial,
@@ -192,7 +192,7 @@ mod tests {
     fn signal_description_cancellation_keeps_the_original_control_stop() {
         assert_eq!(
             source(WorldDurableMediumDenial::SignalDescription(
-                worth_runtime_world::facade::SignalInitialEmptyRootRefusal::Request(
+                worth_signal::facade::branch::SignalInitialEmptyRootRefusal::Request(
                     WorkCeilingDenial::Stopped(KernelStop::Cancelled)
                 )
             )),

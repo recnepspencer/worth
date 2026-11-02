@@ -5,6 +5,28 @@ use crate::domain_computation::{
     WorthQueryDirectRunCleanupInspection, WorthQueryDirectRunCleanupReceipt,
 };
 
+// Like DemandCleanupCustody, this bounds auto-trait traversal without
+// erasing the semantic subject or accepting descriptive receipt data.
+trait OriginalCleanupCommitOwner: Send + Sync {
+    fn original(&self) -> &Original;
+}
+impl OriginalCleanupCommitOwner for Original {
+    fn original(&self) -> &Original {
+        self
+    }
+}
+pub(in crate::domain_computation) struct RetainedOriginalCleanupCommit(
+    Box<dyn OriginalCleanupCommitOwner>,
+);
+impl RetainedOriginalCleanupCommit {
+    pub(in crate::domain_computation::primary_graph) fn new(original: Original) -> Self {
+        Self(Box::new(original))
+    }
+    pub(in crate::domain_computation) fn original(&self) -> &Original {
+        self.0.original()
+    }
+}
+
 /// First-send disposition is separate from business completion and recovered data.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCleanupDispatchPosture {
@@ -20,18 +42,18 @@ pub enum WorthQueryCleanupDispatchPosture {
 #[must_use = "retain remaining original dispatch/recovery custody"]
 pub struct WorthQueryApplicationManagedCleanupReceipt {
     native: WorthQueryDirectRunCleanupReceipt,
-    pub(in crate::domain_computation) original: Option<Original>,
+    pub(in crate::domain_computation) original: Option<RetainedOriginalCleanupCommit>,
     pub(in crate::domain_computation) posture: WorthQueryCleanupDispatchPosture,
     pub(in crate::domain_computation) dispatch: Option<WorthQueryExternalEffectDispatch>,
 }
 impl WorthQueryApplicationManagedCleanupReceipt {
     pub(super) fn new(
         native: WorthQueryDirectRunCleanupReceipt,
-        original: Option<Original>,
+        original: Option<RetainedOriginalCleanupCommit>,
     ) -> Self {
         let posture = if original
             .as_ref()
-            .is_some_and(|original| original.dispatch_binding().is_some())
+            .is_some_and(|original| original.original().dispatch_binding().is_some())
         {
             WorthQueryCleanupDispatchPosture::Pending
         } else {

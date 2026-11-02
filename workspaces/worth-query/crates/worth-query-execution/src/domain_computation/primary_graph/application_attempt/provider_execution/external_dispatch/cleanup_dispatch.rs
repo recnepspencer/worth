@@ -35,7 +35,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let execution = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|denial| Denial::ExecutionDenied(denial.into()))?;
-        let original = receipt.original.as_ref().ok_or(Denial::OriginalNotOwned)?;
+        let original = receipt
+            .original
+            .as_ref()
+            .ok_or(Denial::OriginalNotOwned)?
+            .original();
         if original.original_authority().runtime_authority() != self.runtime.authority_identity() {
             return Err(Denial::ForeignRuntime);
         }

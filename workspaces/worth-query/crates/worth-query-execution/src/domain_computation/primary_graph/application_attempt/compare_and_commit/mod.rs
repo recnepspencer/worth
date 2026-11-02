@@ -36,3 +36,5 @@ pub use committed_publication::WorthQueryCommittedProductPublication;
 pub(in crate::domain_computation::primary_graph) use commit_receipt::MaterializedCommittedField;
 
 pub(in crate::domain_computation) use commit_receipt::WorthQueryPendingApplicationCommitReceipt;
+
+pub(in crate::domain_computation) use cleanup_receipt::RetainedOriginalCleanupCommit;

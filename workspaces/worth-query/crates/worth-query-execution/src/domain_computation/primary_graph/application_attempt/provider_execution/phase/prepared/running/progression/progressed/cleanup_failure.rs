@@ -12,10 +12,10 @@ use crate::domain_computation::{
 };
 
 pub(super) fn cleanup_failed_outcome(outcome: Progression) -> (
-    Outcome, Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryPendingApplicationCommitReceipt>,
+    Outcome, Option<crate::domain_computation::primary_graph::application_attempt::RetainedOriginalCleanupCommit>,
 ){
     let evidence = match outcome {
-        Progression::Committed(original) => return (cleanup_indeterminate(), Some(original)),
+        Progression::Committed(original) => return (cleanup_indeterminate(), Some(crate::domain_computation::primary_graph::application_attempt::RetainedOriginalCleanupCommit::new(original))),
         Progression::RecoveredCommitted(receipt) => Outcome::RecoveredCommitted(receipt),
         Progression::ProductPreparationPending(owner) => Outcome::ProductPreparationPending(owner),
         Progression::ProductPreparationRefused(owner) => Outcome::ProductPreparationRefused(owner),

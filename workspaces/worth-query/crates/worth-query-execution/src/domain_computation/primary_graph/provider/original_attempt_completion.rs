@@ -3,7 +3,33 @@ use super::WorthQueryPrimaryGraphCommittedApplication as Completed;
 use crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding;
 use std::sync::{Arc, Mutex};
 
-type OriginalSlot = Arc<Mutex<Option<Completed>>>;
+// Erase the owned Native graph here so consumers never repeat its auto-trait
+// traversal through provider-attempt state. The concrete owner remains sealed.
+trait OriginalCompletionSlot: Send + Sync {
+    fn complete(&self, completed: Completed);
+    fn take(&self) -> Option<Completed>;
+}
+struct PendingOriginalSlot(Mutex<Option<Completed>>);
+impl OriginalCompletionSlot for PendingOriginalSlot {
+    fn complete(&self, completed: Completed) {
+        let mut target = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        assert!(
+            target.is_none(),
+            "one performing owner fills its original slot once"
+        );
+        *target = Some(completed);
+    }
+    fn take(&self) -> Option<Completed> {
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+    }
+}
+type OriginalSlot = Arc<dyn OriginalCompletionSlot>;
 pub(in crate::domain_computation::primary_graph) struct OriginalCompletionPublisher(
     Mutex<Option<OriginalSlot>>,
 );
@@ -13,7 +39,7 @@ impl OriginalCompletionPublisher {
     ) -> (Self, OriginalCompletionReceiver) {
         // Allocate before the provider can perform an effect. Cutover only moves
         // the actual result into this fixed slot; it allocates no message queue.
-        let slot = Arc::new(Mutex::new(None));
+        let slot: OriginalSlot = Arc::new(PendingOriginalSlot(Mutex::new(None)));
         (
             Self(Mutex::new(Some(Arc::clone(&slot)))),
             OriginalCompletionReceiver(slot),
@@ -33,14 +59,7 @@ impl OriginalCompletionPublisher {
             .into_inner()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
         {
-            let mut target = slot
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            assert!(
-                target.is_none(),
-                "one original performing owner fills its slot once"
-            );
-            *target = Some(completed);
+            slot.complete(completed);
         }
     }
 }
@@ -49,11 +68,7 @@ impl OriginalCompletionReceiver {
         &self,
         session: &WorthQueryProviderSessionTerminalBinding,
     ) -> Option<Completed> {
-        let completed = self
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take()?;
+        let completed = self.0.take()?;
         assert!(
             completed
                 .commit_evidence()
