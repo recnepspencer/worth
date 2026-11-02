@@ -159,7 +159,7 @@ fn validated_proposal_backing_charges_original_request_until_native_consumption(
     let identity = original.proposal_identity().clone();
     let state = original.into_state();
     let bytes = std::mem::size_of_val(&state) as u64;
-    let budget = worth_execution::SerialMemoryBudget::new(Some(bytes));
+    let budget = worth_execution::SerialMemoryBudget::new(None);
     let request = worth_execution::SerialRequest::from_memory(
         budget.clone(),
         worth_execution::CancellationSource::new().token(),
@@ -197,7 +197,13 @@ fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
     );
     let denied = ValidatedRelationalProposal::retain(&ExecutionRequest::serial(&request), state)
         .unwrap_err();
-    assert!(matches!(denied, TransactionCommitError::Execution { .. }));
+    let TransactionCommitError::Execution { denial, .. } = denied else {
+        panic!("unfunded original backing must return the typed execution denial");
+    };
+    assert!(matches!(denial.kind,
+        crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted, ancestor: 0 }
+        ) if requested == bytes && admitted < bytes));
     assert_eq!(budget.charged_memory_bytes(), 0);
     assert!(runtime.record_identity.pending_snapshot().is_empty());
 }

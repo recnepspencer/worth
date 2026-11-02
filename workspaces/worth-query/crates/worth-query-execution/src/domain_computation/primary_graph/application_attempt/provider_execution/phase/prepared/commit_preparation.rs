@@ -48,7 +48,7 @@ where
     let workflow_approval_authority = workflow_settlement
         .as_ref()
         .and_then(|binding| binding.approval_authority.clone());
-    let mut admission = read_set.admission;
+    let mut admission = *read_set.admission;
     if admission.allowed_graph_contract().body().is_some()
         && mutation_proof.is_none()
         && read_set.local_action_settlement.is_none()

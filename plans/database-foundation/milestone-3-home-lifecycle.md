@@ -1909,3 +1909,18 @@ and managed-start temporaries now return through `entry/managed_start.rs`
 before progression enters. The original Running phase remains the sole input
 to the same progression and completion functions; no owner is cloned and no
 new allocation is introduced by this phase cut.
+
+The managed-start cut reduces the Query entry frame from 229,448 to 137,656
+bytes (`target/lane-evidence/integration-managed-start-stack.log`). The same
+trace reaches Native draft preparation (105,240 bytes) inside history
+preparation (267,464 bytes). Completed decision sets now retain their exact
+move-only admission in original-request-funded backing from seal through commit
+preparation. This is the completed read set's custody, released when the same
+admission transfers to the Running phase; ordinary program carriage no longer
+embeds the full 7 KB admission at every entry frame. Both full and native
+completion reserve before allocating and preserve the typed execution refusal.
+The new Native retention test initially supplied only the backing bytes as a
+finite ceiling, overlooking the execution framework's temporary 392-byte charge.
+Its retention oracle now uses an unbounded accounting budget and still checks
+the exact retained byte count; the separate finite refusal control checks the
+actual requested size and typed policy-memory denial.
