@@ -16,6 +16,8 @@ use crate::domain_computation::primary_graph::{
 };
 #[path = "application_attempt/authority_lifecycle.rs"]
 mod authority_lifecycle;
+#[path = "application_attempt/authority_precedence.rs"]
+mod authority_precedence;
 #[path = "application_attempt/authorization_causality.rs"]
 mod authorization_causality;
 #[path = "application_attempt/correction_output_preflight.rs"]
