@@ -1969,3 +1969,12 @@ Its actual-symbol assertion, strict smaller-than-input comparison and final
 zero-charge assertion remain unchanged. The separate retained-proposal test
 continues to require the exact fixed backing charge while that owner is live.
 This is an oracle-scope correction; production accounting is unchanged.
+
+The scoped Store native prebuild initially omitted the existing forwarded
+`worth-store/volatile-sync-for-tests` feature required by the owned independent
+writer prerequisites. Both Store and backend declarations remain present;
+no feature or prerequisite requirement is removed or added. Qualification
+selects that existing feature before the native graph is compiled, and the
+unchanged owned adapter carries and validates the same observed graph for
+independent executables. A cheap manifest-backed regression verifies each
+prerequisite feature against its actual declaring package.
