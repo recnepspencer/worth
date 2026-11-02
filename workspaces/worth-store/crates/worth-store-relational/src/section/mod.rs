@@ -18,6 +18,7 @@ pub use checkpoint::{
     RelationalSectionCompleteCheckpointPreparation,
 };
 pub use close::{
-    ClosingRelationalSection, RelationalSectionCloseDenial, RetiredRelationalSectionAllocation,
+    ClosingRelationalSection, PreparedRelationalSectionClose, RelationalSectionCloseDenial,
+    RetiredRelationalSectionAllocation,
 };
 pub use readmission::RelationalSectionReadmissionDenial;

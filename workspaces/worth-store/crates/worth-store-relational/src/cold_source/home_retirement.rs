@@ -5,35 +5,52 @@ use worth_store::physical_runtime::{
     AnchoredRecordReadRetirement, AnchoredRecordReadRetirementDenial as Denial,
     AnchoredRecordReadRetirementProgress as Progress, RetiredAnchoredRecordReadMembership,
 };
-pub(crate) enum StoreColdSourceClose {
-    LocalShareReleased,
-    Original {
-        source: StoreColdSource,
-        read: Option<AnchoredRecordReadRetirement>,
-        retired: Option<RetiredAnchoredRecordReadMembership>,
-        complete: bool,
-    },
+pub(crate) struct StoreColdSourceClose {
+    backing: Box<ColdSourceCloseBacking>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+struct ColdSourceCloseBacking {
+    original: Option<OriginalColdSourceClose>,
+}
+struct OriginalColdSourceClose {
+    source: StoreColdSource,
+    read: Option<AnchoredRecordReadRetirement>,
+    retired: Option<RetiredAnchoredRecordReadMembership>,
+    complete: bool,
 }
 pub(crate) struct RetiredStoreColdSource {
     _original: StoreColdSourceClose,
+}
+impl StoreColdSourceClose {
+    pub(crate) fn prepare(
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, worth_execution::WorkCeilingDenial> {
+        let memory =
+            request.reserve_retained_memory(std::mem::size_of::<ColdSourceCloseBacking>() as u64)?;
+        Ok(Self {
+            backing: Box::new(ColdSourceCloseBacking { original: None }),
+            _memory: memory,
+        })
+    }
 }
 impl StoreColdSource {
     pub(crate) fn into_home_retirement(
         self: Arc<Self>,
         actual: &Arc<ServingPhysicalRuntime>,
-    ) -> Result<StoreColdSourceClose, (Arc<Self>, Denial)> {
+        mut preparation: StoreColdSourceClose,
+    ) -> Result<StoreColdSourceClose, (Arc<Self>, StoreColdSourceClose, Denial)> {
         if !self.belongs_to(actual) {
-            return Err((self, Denial::ForeignServing));
+            return Err((self, preparation, Denial::ForeignServing));
         }
-        Ok(match Arc::into_inner(self) {
-            None => StoreColdSourceClose::LocalShareReleased,
-            Some(source) => StoreColdSourceClose::Original {
+        if let Some(source) = Arc::into_inner(self) {
+            preparation.backing.original = Some(OriginalColdSourceClose {
                 source,
                 read: None,
                 retired: None,
                 complete: false,
-            },
-        })
+            });
+        }
+        Ok(preparation)
     }
 }
 impl StoreColdSourceClose {
@@ -42,14 +59,14 @@ impl StoreColdSourceClose {
         request: &ExecutionRequest<'_, '_>,
         actual: &Arc<ServingPhysicalRuntime>,
     ) -> Result<Progress, Denial> {
-        match self {
-            Self::LocalShareReleased => Ok(Progress::Complete),
-            Self::Original {
+        match &mut self.backing.original {
+            None => Ok(Progress::Complete),
+            Some(OriginalColdSourceClose {
                 source,
                 read,
                 retired,
                 complete,
-            } => {
+            }) => {
                 if *complete {
                     return Ok(Progress::Complete);
                 }
@@ -100,10 +117,12 @@ impl StoreColdSourceClose {
         }
     }
     pub(crate) fn into_retired(self) -> Result<RetiredStoreColdSource, Self> {
-        if matches!(
-            &self,
-            Self::LocalShareReleased | Self::Original { complete: true, .. }
-        ) {
+        if self
+            .backing
+            .original
+            .as_ref()
+            .is_none_or(|original| original.complete)
+        {
             Ok(RetiredStoreColdSource { _original: self })
         } else {
             Err(self)

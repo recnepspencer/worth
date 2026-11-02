@@ -3,13 +3,13 @@ use super::*;
 impl UnrecoveredRelationalSection {
     pub fn prepare_close(
         self,
-        preparation: worth_relational::facade::runtime::PreparedRelationalSourceClose,
+        preparation: super::super::close::PreparedRelationalSectionClose,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
         ClosingRelationalSection,
         (
             Self,
-            worth_relational::facade::runtime::PreparedRelationalSourceClose,
+            super::super::close::PreparedRelationalSectionClose,
             RelationalSectionCloseDenial,
         ),
     > {
@@ -29,13 +29,13 @@ impl UnrecoveredRelationalSection {
 impl UnsharedReadmittedRelationalSection {
     pub fn prepare_close(
         self,
-        preparation: worth_relational::facade::runtime::PreparedRelationalSourceClose,
+        preparation: super::super::close::PreparedRelationalSectionClose,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
         ClosingRelationalSection,
         (
             Self,
-            worth_relational::facade::runtime::PreparedRelationalSourceClose,
+            super::super::close::PreparedRelationalSectionClose,
             RelationalSectionCloseDenial,
         ),
     > {

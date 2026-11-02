@@ -148,9 +148,7 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
         ))
     ));
     let prepared = preparation.prepare(execution).unwrap();
-    let retirement =
-        worth_relational::facade::runtime::PreparedRelationalSourceClose::prepare(execution)
-            .unwrap();
+    let retirement = crate::PreparedRelationalSectionClose::prepare(execution).unwrap();
     let (section, retirement, cause) = match section.prepare_close(retirement, execution) {
         Err(refused) => refused,
         Ok(_) => panic!("the actual retained Complete capture must veto Native close"),
@@ -185,9 +183,7 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
 
 #[test]
 fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_seal() {
-    use worth_relational::facade::runtime::{
-        PreparedRelationalSourceClose, RelationalSourceCloseProgress as Progress,
-    };
+    use worth_relational::facade::runtime::RelationalSourceCloseProgress as Progress;
     let serial = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
@@ -216,7 +212,7 @@ fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_sea
     let preparation = section.complete_checkpoint_preparation();
     let capture = preparation.prepare(execution).unwrap();
     let serving = section.serving.clone();
-    let retirement = PreparedRelationalSourceClose::prepare(execution).unwrap();
+    let retirement = crate::PreparedRelationalSectionClose::prepare(execution).unwrap();
     let mut closing = section
         .prepare_close(retirement, execution)
         .unwrap_or_else(|(_, _, cause)| panic!("the actual cache owns its read pins: {cause:?}"));

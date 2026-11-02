@@ -6,7 +6,7 @@ type CheckpointResult =
 
 struct Backing {
     result: Option<CheckpointResult>,
-    native_retirement: Option<worth_relational::facade::runtime::PreparedRelationalSourceClose>,
+    native_retirement: Option<worth_store_relational::PreparedRelationalSectionClose>,
     memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -19,7 +19,7 @@ impl HomeCloseCheckpointResult {
     pub(crate) fn prepare(execution: &ExecutionRequest<'_, '_>) -> Result<Self, WorkCeilingDenial> {
         let memory = execution.reserve_retained_memory(std::mem::size_of::<Backing>() as u64)?;
         let native_retirement =
-            worth_relational::facade::runtime::PreparedRelationalSourceClose::prepare(execution)?;
+            worth_store_relational::PreparedRelationalSectionClose::prepare(execution)?;
         Ok(Self {
             backing: Some(Box::new(Backing {
                 result: None,
@@ -30,7 +30,7 @@ impl HomeCloseCheckpointResult {
     }
     pub(crate) fn take_native_retirement(
         &mut self,
-    ) -> worth_relational::facade::runtime::PreparedRelationalSourceClose {
+    ) -> worth_store_relational::PreparedRelationalSectionClose {
         self.backing
             .as_mut()
             .expect("same prepaid Home backing")
@@ -40,7 +40,7 @@ impl HomeCloseCheckpointResult {
     }
     pub(crate) fn restore_native_retirement(
         &mut self,
-        original: worth_relational::facade::runtime::PreparedRelationalSourceClose,
+        original: worth_store_relational::PreparedRelationalSectionClose,
     ) {
         let slot = &mut self
             .backing

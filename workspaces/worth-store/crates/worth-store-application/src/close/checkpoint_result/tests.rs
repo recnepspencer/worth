@@ -9,7 +9,7 @@ use worth_execution::{
 fn independent_bill() -> u64 {
     Layout::new::<Option<CheckpointResult>>()
         .extend(Layout::new::<
-            Option<worth_relational::facade::runtime::PreparedRelationalSourceClose>,
+            Option<worth_store_relational::PreparedRelationalSectionClose>,
         >())
         .unwrap()
         .0
@@ -22,7 +22,7 @@ fn independent_bill() -> u64 {
 fn native_preparation_bill() -> u64 {
     let budget = SerialMemoryBudget::new(Some(64 << 10));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let original = worth_relational::facade::runtime::PreparedRelationalSourceClose::prepare(
+    let original = worth_store_relational::PreparedRelationalSectionClose::prepare(
         &ExecutionRequest::serial(&host),
     )
     .unwrap();

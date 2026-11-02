@@ -20,7 +20,7 @@ impl ClosingRelationalSection {
             return Err(RelationalSectionCloseDenial::ForeignServing);
         }
         if let Some(runtime) = &mut self.runtime {
-            let Some(ColdSourceCustody::Serving(source)) = &self.cold_source else {
+            let Some(ColdSourceCustody::Serving { source, .. }) = &self.cold_source else {
                 unreachable!("Native callbacks precede source retirement");
             };
             if runtime
@@ -44,10 +44,16 @@ impl ClosingRelationalSection {
             .take()
             .expect("same original source phase remains owned");
         self.cold_source = Some(match original {
-            ColdSourceCustody::Serving(source) => match source.into_home_retirement(actual) {
+            ColdSourceCustody::Serving {
+                source,
+                preparation,
+            } => match source.into_home_retirement(actual, preparation) {
                 Ok(task) => ColdSourceCustody::Retiring(task),
-                Err((source, cause)) => {
-                    self.cold_source = Some(ColdSourceCustody::Serving(source));
+                Err((source, preparation, cause)) => {
+                    self.cold_source = Some(ColdSourceCustody::Serving {
+                        source,
+                        preparation,
+                    });
                     return Err(RelationalSectionCloseDenial::Physical(cause));
                 }
             },

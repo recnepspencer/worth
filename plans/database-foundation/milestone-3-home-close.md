@@ -250,3 +250,11 @@ close carriers, preserving every operation and assertion without another thread
 or stack allowance. Its original monolithic body overflowed in Native commit
 admission before reaching its final close; close-handler-stack-debug.log retains
 the actual stack. The phase split requires direct ordinary-stack qualification.
+
+Store source-close preparation now funds the exact physical-read retirement
+backing before descriptor effects, alongside Native's existing preparation.
+PreparedRelationalSectionClose carries both original vacant slots. Reversible
+refusals return both slots; source retirement and its inert result retain the
+same cold Box. No physical read task or retained reader body is embedded in
+Home opening/close result carriers, and no replacement backing is allocated
+when a failed checkpoint leaves its payer exhausted.

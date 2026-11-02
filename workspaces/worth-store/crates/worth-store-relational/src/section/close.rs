@@ -3,14 +3,19 @@ use super::RelationalStoreSection;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::{
-    PreparedRelationalSourceClose, RelationalRuntimeCloseDenial, RelationalSourceClose,
-    RelationalSourceCloseDenial, RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
+    RelationalRuntimeCloseDenial, RelationalSourceClose, RelationalSourceCloseDenial,
+    RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
 use worth_store::physical_runtime::{AnchoredRecordReadRetirementProgress, ServingPhysicalRuntime};
+mod preparation;
 mod progression;
+pub use preparation::PreparedRelationalSectionClose;
 
 enum ColdSourceCustody {
-    Serving(Arc<crate::cold_source::StoreColdSource>),
+    Serving {
+        source: Arc<crate::cold_source::StoreColdSource>,
+        preparation: crate::cold_source::StoreColdSourceClose,
+    },
     Retiring(crate::cold_source::StoreColdSourceClose),
     Retired {
         _original: crate::cold_source::RetiredStoreColdSource,
@@ -61,13 +66,13 @@ fn native_denial(cause: RelationalSourceCloseDenial) -> RelationalSectionCloseDe
 impl RelationalStoreSection {
     pub fn prepare_close(
         self,
-        preparation: PreparedRelationalSourceClose,
+        preparation: PreparedRelationalSectionClose,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
         ClosingRelationalSection,
         (
             Self,
-            PreparedRelationalSourceClose,
+            PreparedRelationalSectionClose,
             RelationalSectionCloseDenial,
         ),
     > {
@@ -87,23 +92,26 @@ impl RelationalStoreSection {
             serving,
             checkpoint_selection,
         } = self;
-        let mut runtime =
-            match runtime.into_source_close(preparation, request, cold_source.as_ref()) {
-                Ok(runtime) => runtime,
-                Err((runtime, preparation, cause)) => {
-                    return Err((
-                        Self {
-                            source,
-                            runtime,
-                            cold_source,
-                            serving,
-                            checkpoint_selection,
-                        },
-                        preparation,
-                        native_denial(cause),
-                    ))
-                }
-            };
+        let PreparedRelationalSectionClose { native, cold } = preparation;
+        let mut runtime = match runtime.into_source_close(native, request, cold_source.as_ref()) {
+            Ok(runtime) => runtime,
+            Err((runtime, preparation, cause)) => {
+                return Err((
+                    Self {
+                        source,
+                        runtime,
+                        cold_source,
+                        serving,
+                        checkpoint_selection,
+                    },
+                    PreparedRelationalSectionClose {
+                        native: preparation,
+                        cold,
+                    },
+                    native_denial(cause),
+                ))
+            }
+        };
         // Reversible actual admission/publication/read and provider preflight.
         // The inventory walk and irreversible seal remain incremental.
         if let Err(cause) = runtime.advance(request, cold_source.as_ref()) {
@@ -118,7 +126,10 @@ impl RelationalStoreSection {
                     serving,
                     checkpoint_selection,
                 },
-                preparation,
+                PreparedRelationalSectionClose {
+                    native: preparation,
+                    cold,
+                },
                 native_denial(cause),
             ));
         }
@@ -126,7 +137,10 @@ impl RelationalStoreSection {
             source,
             runtime: Some(runtime),
             retired_runtime: None,
-            cold_source: Some(ColdSourceCustody::Serving(cold_source)),
+            cold_source: Some(ColdSourceCustody::Serving {
+                source: cold_source,
+                preparation: cold,
+            }),
             serving: Some(serving),
             checkpoint_selection,
             complete: false,
@@ -136,14 +150,14 @@ impl RelationalStoreSection {
 pub(super) fn prepare_attached_close(
     attached: super::unshared::AttachedRelationalRuntime,
     source: Option<super::readmission::source::ReadmittedRelationalSource>,
-    preparation: PreparedRelationalSourceClose,
+    preparation: PreparedRelationalSectionClose,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<
     ClosingRelationalSection,
     (
         super::unshared::AttachedRelationalRuntime,
         Option<super::readmission::source::ReadmittedRelationalSource>,
-        PreparedRelationalSourceClose,
+        PreparedRelationalSectionClose,
         RelationalSectionCloseDenial,
     ),
 > {
@@ -162,23 +176,26 @@ pub(super) fn prepare_attached_close(
         serving,
         checkpoint_selection,
     } = attached;
-    let mut runtime =
-        match runtime.into_owned_source_close(preparation, request, cold_source.as_ref()) {
-            Ok(runtime) => runtime,
-            Err((runtime, preparation, cause)) => {
-                return Err((
-                    super::unshared::AttachedRelationalRuntime {
-                        runtime,
-                        cold_source,
-                        serving,
-                        checkpoint_selection,
-                    },
-                    source,
-                    preparation,
-                    native_denial(cause),
-                ))
-            }
-        };
+    let PreparedRelationalSectionClose { native, cold } = preparation;
+    let mut runtime = match runtime.into_owned_source_close(native, request, cold_source.as_ref()) {
+        Ok(runtime) => runtime,
+        Err((runtime, preparation, cause)) => {
+            return Err((
+                super::unshared::AttachedRelationalRuntime {
+                    runtime,
+                    cold_source,
+                    serving,
+                    checkpoint_selection,
+                },
+                source,
+                PreparedRelationalSectionClose {
+                    native: preparation,
+                    cold,
+                },
+                native_denial(cause),
+            ))
+        }
+    };
     if let Err(cause) = runtime.advance(request, cold_source.as_ref()) {
         let (runtime, preparation) = runtime
             .resume()
@@ -191,7 +208,10 @@ pub(super) fn prepare_attached_close(
                 checkpoint_selection,
             },
             source,
-            preparation,
+            PreparedRelationalSectionClose {
+                native: preparation,
+                cold,
+            },
             native_denial(cause),
         ));
     }
@@ -199,7 +219,10 @@ pub(super) fn prepare_attached_close(
         source,
         runtime: Some(runtime),
         retired_runtime: None,
-        cold_source: Some(ColdSourceCustody::Serving(cold_source)),
+        cold_source: Some(ColdSourceCustody::Serving {
+            source: cold_source,
+            preparation: cold,
+        }),
         serving: Some(serving),
         checkpoint_selection,
         complete: false,
@@ -207,7 +230,7 @@ pub(super) fn prepare_attached_close(
 }
 
 impl ClosingRelationalSection {
-    pub fn resume(self) -> Result<(RelationalStoreSection, PreparedRelationalSourceClose), Self> {
+    pub fn resume(self) -> Result<(RelationalStoreSection, PreparedRelationalSectionClose), Self> {
         let Self {
             source,
             runtime,
@@ -230,7 +253,11 @@ impl ClosingRelationalSection {
         };
         match runtime.resume() {
             Ok((runtime, preparation)) => {
-                let Some(ColdSourceCustody::Serving(cold_source)) = cold_source else {
+                let Some(ColdSourceCustody::Serving {
+                    source: cold_source,
+                    preparation: cold,
+                }) = cold_source
+                else {
                     unreachable!("Native pre-seal precedes Store source retirement");
                 };
                 Ok((
@@ -241,7 +268,10 @@ impl ClosingRelationalSection {
                         serving: serving.expect("pre-seal retains physical custody"),
                         checkpoint_selection,
                     },
-                    preparation,
+                    PreparedRelationalSectionClose {
+                        native: preparation,
+                        cold,
+                    },
                 ))
             }
             Err(runtime) => Err(Self {
