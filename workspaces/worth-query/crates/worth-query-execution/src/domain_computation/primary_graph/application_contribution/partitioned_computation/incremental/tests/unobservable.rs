@@ -5,7 +5,11 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::bound_advancement_requests_on_this_thread_for_test;
-const OBSERVATION_WORK_CEILING: usize = 4_096;
+use crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test;
+// a2a9ce5d99 made this the complete host request, not a separate kernel quota.
+// Setup through FirstRun measured 23,558 and 9,540 units. Keep ample finite
+// host headroom and scale both hostile populations from this same grant.
+const OBSERVATION_WORK_CEILING: usize = 65_536;
 fn bound_observation_work() {
     bound_advancement_requests_on_this_thread_for_test(Some(
         worth_foundational::ExecutionBudget::new(
@@ -84,17 +88,22 @@ fn more_retained_keys_than_the_request_work_runs_in_full_uncompared() {
     // One more key than the whole request work, each one a comparison no
     // one is charged for.
     let declared = OBSERVATION_WORK_CEILING;
-    for copy in 0..=declared {
-        let undeclared = Key::Field {
+    state.facts.copy_keys(
+        &key,
+        (0..=declared).map(|copy| Key::Field {
             entity: format!("Undeclared{copy}"),
             entity_id,
             locator: locator.clone(),
-        };
-        state.facts.copy_key(&key, undeclared);
-    }
+        }),
+    );
+    assert!(state.facts.facts().count() > OBSERVATION_WORK_CEILING);
     let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
 
+    fact_verification_on_this_thread_for_test();
     let next = attempt(&world, &installed, Some(prior));
+    let observed = fact_verification_on_this_thread_for_test();
+    assert_eq!(observed.retained_computation_visits, 0);
+    assert_eq!(observed.retained_native_visits, 0);
     assert!(matches!(
         next.runs.as_slice(),
         [(Run::Full(Cause::ObservationOverBudget), Some(_))]
@@ -130,18 +139,22 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_request_work_run_in_full() {
     // third of it and its anchor's list, so together they pass it.
     let declared = OBSERVATION_WORK_CEILING;
     let third = declared / 3;
-    for copy in 0..3 {
-        let adjacency = Key::Adjacency {
+    state.facts.copy_keys(
+        &key,
+        (0..3).map(|copy| Key::Adjacency {
             relation: format!("Undeclared{copy}"),
             anchor: entity_id,
             direction: Direction::Outgoing,
             maximum_work_units: third,
-        };
-        state.facts.copy_key(&key, adjacency);
-    }
+        }),
+    );
     let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
 
+    fact_verification_on_this_thread_for_test();
     let next = attempt(&world, &installed, Some(prior));
+    let observed = fact_verification_on_this_thread_for_test();
+    assert_eq!(observed.retained_computation_visits, 0);
+    assert_eq!(observed.retained_native_visits, 0);
     assert!(matches!(
         next.runs.as_slice(),
         [(Run::Full(Cause::ObservationOverBudget), Some(_))]

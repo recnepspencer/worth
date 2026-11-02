@@ -36,6 +36,8 @@ fn supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_
                 .unwrap()
         })
         .unwrap();
+    // Exact history needs custody of the fork's raw creation parent too.
+    let fork_origin = observe_on(&application, fork);
     let sibling = application
         .with_host_advancement(|phase| {
             runtime
@@ -76,6 +78,7 @@ fn supplied_equal_value_retains_its_occurrence_and_bounded_pages_match_authored_
             break;
         }
     }
+    drop(fork_origin);
     assert!(incomplete_empty);
     assert_eq!(
         actual,

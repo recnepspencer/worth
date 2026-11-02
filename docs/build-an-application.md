@@ -2737,6 +2737,15 @@ retries the original cleanup with a fresh scope, retaining its actual refusal
 while readers still hold history. Release those readers and retry the same owner.
 The selected new head stays in place throughout.
 
+Inside `runtime.with_application_advancement(scope, |phase| ...)`, call the
+application cleanup owner's `retry_in_advancement(&phase)`. It uses that original
+runtime's admitted request for history, conditional and component cleanup. A
+foreign or interrupted phase returns the original cleanup with a typed denial
+before effects. Use `failure.into_cleanup()` for a fresh retry. The standalone
+`retry()` owns a separate serial request; an existing advancement supplies its
+phase instead. Preserve an actual successful cleanup receipt if the outer
+advancement reports a later handoff interruption.
+
 The example's `FinishedAdoption` distinguishes an ordinary previous-head close
 receipt from a settled retired-head cleanup receipt. Inspect the corresponding
 variant; cleanup settlement supplies its actual cleanup receipt. Keep adoption,
