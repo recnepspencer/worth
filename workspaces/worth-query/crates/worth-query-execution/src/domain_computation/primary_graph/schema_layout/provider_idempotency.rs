@@ -27,6 +27,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProviderIdempo
     pub(in crate::domain_computation::primary_graph) emitted_effect_count_locator:
         AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) key_index_id: DerivedIndexId,
+    pub(in crate::domain_computation::primary_graph) affinity_locator: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) association_locator: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) output_settlement_locator: AspectFieldLocator,
 }
 
 pub(super) fn lower_provider_idempotency(
@@ -46,19 +49,25 @@ pub(super) fn lower_provider_idempotency(
     let intent_locator = planned_field_locator(ASPECT, INTENT_FIELD)?;
     let outcome_identity_locator = planned_field_locator(ASPECT, OUTCOME_IDENTITY_FIELD)?;
     let emitted_effect_count_locator = planned_field_locator(ASPECT, EMITTED_EFFECT_COUNT_FIELD)?;
+    let affinity_locator = planned_field_locator(ASPECT, "product-affinity")?;
+    let association_locator = planned_field_locator(ASPECT, "attempt-association-source")?;
+    let output_settlement_locator = planned_field_locator(ASPECT, "output-settlement")?;
     let shape = aspects()
         .struct_fields()
         .required(KEY_FIELD, ScalarAspectType::String)
         .required(INTENT_FIELD, ScalarAspectType::String)
         .required(OUTCOME_IDENTITY_FIELD, ScalarAspectType::UInt64)
         .required(EMITTED_EFFECT_COUNT_FIELD, ScalarAspectType::UInt64)
+        .required("product-affinity", ScalarAspectType::String)
+        .required("attempt-association-source", ScalarAspectType::UInt64)
+        .required("output-settlement", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| super::invalid_member(ASPECT))?;
     let contract = aspects()
         .contract()
         .for_key(valid_aspect_key(ASPECT)?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(3))
+        .at_revision(aspects().vocabulary().revision(4))
         .struct_aspect(shape);
     let registry = register_entity(
         registry,
@@ -82,6 +91,9 @@ pub(super) fn lower_provider_idempotency(
             outcome_identity_locator,
             emitted_effect_count_locator,
             key_index_id: DerivedIndexId(0),
+            affinity_locator,
+            association_locator,
+            output_settlement_locator,
         },
     ))
 }

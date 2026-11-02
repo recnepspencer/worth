@@ -1,7 +1,7 @@
 //! Unique native cleanup transfer; diagnostic copies never contain authority.
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCleanupRequired as Required,
-    WorthQueryApplicationUncommitted,
+    WorthQueryApplicationCommitOutcome,
 };
 use crate::domain_computation::WorthQueryDirectRunCleanupReceipt as Receipt;
 type Recovery = crate::domain_computation::WorthQueryProductUnpublishedRecovery;
@@ -18,7 +18,7 @@ trait CleanupOwner: std::fmt::Debug + Send + Sync {
         release: &mut ReadRelease<'_>,
     ) -> Result<(), super::super::WorthQueryOutputReadCloseDenial>;
     fn receipt(&mut self) -> Option<&Receipt>;
-    fn outcome(&mut self) -> Option<&WorthQueryApplicationUncommitted>;
+    fn outcome(&mut self) -> Option<&WorthQueryApplicationCommitOutcome>;
     fn retired_components(&mut self) -> usize;
     fn release(
         &mut self,
@@ -29,7 +29,7 @@ trait CleanupOwner: std::fmt::Debug + Send + Sync {
 struct NativeCleanupState {
     required: Option<Box<Required>>,
     // Physical release never erases unpublished/uncertain producer evidence.
-    outcome: Option<WorthQueryApplicationUncommitted>,
+    outcome: Option<WorthQueryApplicationCommitOutcome>,
     released_receipt: Option<Receipt>,
     release_failure: Option<ReleaseFailure>,
     recovery_receipt: Option<ReleaseReceipt>,
@@ -48,7 +48,7 @@ impl CleanupOwner for NativeCleanupOwner {
             .0
             .get_mut()
             .unwrap_or_else(|poison| poison.into_inner());
-        use WorthQueryApplicationUncommitted as Outcome;
+        use WorthQueryApplicationCommitOutcome as Outcome;
         let pending = if let Some(failure) = state.release_failure.take() {
             Some(match failure {
                 ReleaseFailure::Recovery(failure) => release(failure.into_recovery()),
@@ -110,7 +110,7 @@ impl CleanupOwner for NativeCleanupOwner {
             .as_ref()
             .map_or(0, ReleaseReceipt::retired_component_count)
     }
-    fn outcome(&mut self) -> Option<&WorthQueryApplicationUncommitted> {
+    fn outcome(&mut self) -> Option<&WorthQueryApplicationCommitOutcome> {
         let state = self
             .0
             .get_mut()
@@ -195,12 +195,12 @@ impl DemandCleanupCustody {
         self.0.retired_components()
     }
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn from_outcome(
-        outcome: WorthQueryApplicationUncommitted,
+        outcome: crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
     ) -> Self {
         Self(Box::new(NativeCleanupOwner(std::sync::Mutex::new(
             NativeCleanupState {
                 required: None,
-                outcome: Some(outcome),
+                outcome: Some(outcome.into()),
                 released_receipt: None,
                 release_failure: None,
                 recovery_receipt: None,
@@ -209,7 +209,7 @@ impl DemandCleanupCustody {
     }
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn outcome(
         &mut self,
-    ) -> Option<&WorthQueryApplicationUncommitted> {
+    ) -> Option<&WorthQueryApplicationCommitOutcome> {
         self.0.outcome()
     }
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn close_read(

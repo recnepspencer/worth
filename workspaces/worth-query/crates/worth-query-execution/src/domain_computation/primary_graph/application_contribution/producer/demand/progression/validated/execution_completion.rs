@@ -87,7 +87,7 @@ pub(super) fn finish(
         .into_parts();
 
     super::super::caller_pass_observation::observe_publication(
-        receipt.published_in_this_advance(),
+        true,
         *recorded,
         runtime_identity,
         root,

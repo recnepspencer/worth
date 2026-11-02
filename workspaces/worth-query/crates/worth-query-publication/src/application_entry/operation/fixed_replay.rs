@@ -54,17 +54,17 @@ where
             let mut native = self.description.request_view(request, &self.installed_action);
             let prepared = native.authorize_fixed_source::<Program, Root>(phase, &self.runtime, None)?;
             let read = native.read_recovery_idempotency(phase, &prepared)?;
-            let Resolution::AlreadyCommitted(receipt) = read.into_resolution() else {
+            let Resolution::RecoveredCommitted(receipt) = read.into_resolution() else {
                 return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
                     RecoveryDenial::BindingMismatch,
                 ));
             };
-            if !receipt.is_same_authoritative_commit(original) {
+            if !super::receipt_correspondence::matches_retained_original(original, &receipt) {
                 return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
                     RecoveryDenial::BindingMismatch,
                 ));
             }
-            Ok((prepared, receipt))
+            Ok((prepared, original.clone()))
         })();
         let (prepared, receipt) = match admission {
             Ok(admitted) => admitted,

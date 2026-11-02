@@ -1,4 +1,9 @@
 //! Primary Graph application contracts.
+pub use worth_foundational::facade::{
+    DurableCompositeCommitIdentity, DurableProductBranchReference, DurableQueryOutputSettlement,
+    MemoryProductBranchReference, RecordedCompositePublicationAttemptIdentity,
+    RecordedProductBranchReference, WorldOwnerCoordinate,
+};
 mod managed_index;
 mod mutation_handler;
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
@@ -117,15 +122,16 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolutionDenialKind,
     WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
-    WorthQueryApplicationInvariantProjectionSnapshot, WorthQueryApplicationLiveCauseDenialKind,
-    WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveControlDenial,
-    WorthQueryApplicationLiveControls, WorthQueryApplicationLiveDeliveryCloseReceipt,
-    WorthQueryApplicationLiveLease, WorthQueryApplicationLiveOpenDenial,
-    WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
-    WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
-    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationOmission,
-    WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
-    WorthQueryApplicationOneShotResult, WorthQueryApplicationOperationInvariantProjectionReader,
+    WorthQueryApplicationInvariantProjectionSnapshot, WorthQueryApplicationLandedCommit,
+    WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveCloseOutcome,
+    WorthQueryApplicationLiveControlDenial, WorthQueryApplicationLiveControls,
+    WorthQueryApplicationLiveDeliveryCloseReceipt, WorthQueryApplicationLiveLease,
+    WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
+    WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
+    WorthQueryApplicationLiveUpdate, WorthQueryApplicationManagedCleanupFailure,
+    WorthQueryApplicationOmission, WorthQueryApplicationOneShotDenial,
+    WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationOneShotResult,
+    WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
     WorthQueryApplicationOutputDemandDisclosure, WorthQueryApplicationOutputDemandSource,
     WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
@@ -215,11 +221,10 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryGranularInvalidationCoverage, WorthQueryGranularInvalidationDeliveryBatch,
     WorthQueryGranularInvalidationInstallation, WorthQueryGranularInvalidationObservation,
     WorthQueryGranularSourceReadBasis, WorthQueryGranularTransportMergeDenial,
-    WorthQueryHistoricalApplicationCommit, WorthQueryInboundAdmissionDenial,
-    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundCleanupReport,
-    WorthQueryInboundCostObservation, WorthQueryInboundIndexRepairDenial,
-    WorthQueryInboundMaintenanceReport, WorthQueryInboundPendingReason,
-    WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
+    WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
+    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
+    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
     WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
@@ -305,6 +310,10 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
     WorthQueryValueDecodeDenial, WorthQueryWorkflowDefinitionDisposition,
     WorthQueryWorkflowDispositions, WorthQueryWorkflowInstanceDisposition,
+};
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox,
 };
 
 pub use crate::domain_computation::application_aftermath::{

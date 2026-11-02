@@ -40,8 +40,9 @@ pub struct WorthQueryOperationCleanup {
     managed:
         Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup>,
     // A failed output producer may have unpublished or uncertain business custody.
-    producer_outcome:
-        Option<Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>>,
+    producer_outcome: Option<
+        Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome>,
+    >,
     failures: Vec<Failure>,
     original_failures: Option<Vec<Failure>>,
     pending: Vec<
@@ -95,7 +96,7 @@ impl WorthQueryOperationCleanup {
             WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)) if self.managed.is_none() => {
                 let (outcome, cleanup) = required.into_parts();
                 self.absorb_managed(runtime, cleanup);
-                WorthQueryApplicationMutationOutcome::Commit(outcome)
+                WorthQueryApplicationMutationOutcome::from_commit_outcome(outcome)
             }
             other => other,
         }
@@ -123,7 +124,7 @@ impl WorthQueryOperationCleanup {
     /// Original output-producer business evidence remains independent of cleanup release.
     pub fn producer_native_outcome(
         &self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome>
     {
         self.producer_outcome.as_deref()
     }

@@ -149,6 +149,9 @@ where
                 | WorthQuerySourceCompletion::Recovered { receipt, .. } => {
                     super::recovery::inbound_without_recovery(receipt)
                 }
+                WorthQuerySourceCompletion::Recorded { receipt, .. } => {
+                    receipt.dispatch_outbox().is_some()
+                }
             })
         {
             return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);

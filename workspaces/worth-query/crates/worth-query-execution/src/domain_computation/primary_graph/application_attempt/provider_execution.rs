@@ -25,11 +25,7 @@ pub use external_dispatch::{
 pub(in crate::domain_computation) use outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome,
 };
-pub(in crate::domain_computation::primary_graph::application_attempt) use phase::{
-    WorthQueryEarlyEquivalentCommitReceiptPermit, WorthQueryFreshCommitReceiptPermit,
-    WorthQueryManagedEquivalentCommitReceiptPermit,
-    WorthQueryRegisteredEquivalentCommitReceiptPermit,
-};
+pub(in crate::domain_computation::primary_graph::application_attempt) use phase::WorthQueryFreshCommitReceiptPermit;
 pub(in crate::domain_computation) use phase::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
 };

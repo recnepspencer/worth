@@ -1,10 +1,10 @@
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted,
-    WorthQueryHistoricalApplicationCommit,
+    WorthQueryRecoveredApplicationCommitReceipt,
 };
 
 /// What executing an application mutation produced. `Committed`, `AlreadyCommitted`,
-/// and `PreviouslyCommitted` name published commits. A `Commit(ProductUnpublished)`
+/// and `RecoveredCommitted` name published commits. A `Commit(ProductUnpublished)`
 /// retains performed owner effects awaiting product publication; an indeterminate
 /// commit retains unresolved landing evidence. Neither is permission to rerun effects.
 #[derive(Debug)]
@@ -14,9 +14,8 @@ pub enum WorthQueryApplicationMutationOutcome<Denial, Result> {
         result: Result,
     },
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
-    /// The same intent committed earlier. The original live receipt and handler
-    /// result are unavailable; observe current state through a fresh query.
-    PreviouslyCommitted(WorthQueryHistoricalApplicationCommit),
+    /// Exact original durable meaning, without a reconstructed handler result.
+    RecoveredCommitted(WorthQueryRecoveredApplicationCommitReceipt),
     IdempotencyIntentDrift,
     DomainDenied(Denial),
     Cancelled,
@@ -27,6 +26,33 @@ pub enum WorthQueryApplicationMutationOutcome<Denial, Result> {
 }
 
 impl<Denial, Result> WorthQueryApplicationMutationOutcome<Denial, Result> {
+    pub(in crate::application_entry) fn from_commit_outcome(
+        outcome: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome,
+    ) -> Self {
+        use worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit;
+        match outcome.landed() {
+            Ok(WorthQueryApplicationLandedCommit::Live { receipt }) => {
+                Self::AlreadyCommitted(receipt)
+            }
+            Ok(WorthQueryApplicationLandedCommit::Recovered(receipt)) => {
+                Self::RecoveredCommitted(receipt)
+            }
+            Err(outcome) => Self::Commit(outcome),
+        }
+    }
+
+    pub const fn recovered_receipt(&self) -> Option<&WorthQueryRecoveredApplicationCommitReceipt> {
+        match self {
+            Self::RecoveredCommitted(receipt) => Some(receipt),
+            Self::Committed { .. }
+            | Self::AlreadyCommitted(_)
+            | Self::IdempotencyIntentDrift
+            | Self::DomainDenied(_)
+            | Self::Cancelled
+            | Self::DeadlineExceeded
+            | Self::Commit(_) => None,
+        }
+    }
     pub const fn commit_outcome(&self) -> Option<&WorthQueryApplicationUncommitted> {
         match self {
             Self::Commit(outcome) => Some(outcome),

@@ -1,40 +1,15 @@
 use super::commit_resolution::{finish_authorized_compare, WorthQueryAuthorizedCompareContext};
 use crate::domain_computation::primary_graph as graph;
 use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
-use graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, progression_from_authorization_denial, WorthQueryProviderProgressionOutcome,
 };
 use graph::application_attempt::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitReceipt,
-    WorthQueryCommittedReceiptProjection,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage as DenialStage,
 };
 use graph::provider::WorthQueryProviderIdempotencyResolution;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
-
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryManagedEquivalentCommitReceiptPermit
-{
-    provider_session:
-        crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-}
-
-impl WorthQueryManagedEquivalentCommitReceiptPermit {
-    fn mint(
-        provider_session: crate::domain_computation::provider_session::
-            WorthQueryProviderSessionTerminalBinding,
-    ) -> Self {
-        Self { provider_session }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn into_provider_session(
-        self,
-    ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding {
-        self.provider_session
-    }
-}
 
 pub(super) struct WorthQueryAuthorizedProviderCommit<
     'run,
@@ -200,9 +175,13 @@ where
             ),
         )
         }
-        Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
+        Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
             candidate.discard();
-            resolve_equivalent_commit(receipt, authority, provider_session)
+            if graph::application_attempt::provider_execution::aftermath_resolution::recovered_answers_aftermath(authority.aftermath_causality(), &receipt) {
+                WorthQueryProviderProgressionOutcome::RecoveredCommitted(receipt)
+            } else {
+                WorthQueryProviderProgressionOutcome::Denied(WorthQueryApplicationCommitDenial::idempotency_intent_drift())
+            }
         }
         Ok(WorthQueryProviderIdempotencyResolution::Drift) => {
             candidate.discard();
@@ -246,10 +225,10 @@ where
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }
-        Err(IdempotencyDenial::CommittedReceiptNotRetained { commit }) => {
+        Err(IdempotencyDenial::ForeignAffinity) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
-                WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
+                WorthQueryApplicationCommitDenial::idempotency_foreign_affinity(),
             )
         }
         Err(IdempotencyDenial::RecordedIntentUnverifiable) => {
@@ -282,48 +261,5 @@ where
                 ),
             )
         }
-    }
-}
-
-fn resolve_equivalent_commit<Schema, Operation, Input, Scope>(
-    receipt: graph::provider::WorthQueryPrimaryGraphCommittedApplication,
-    authority: &super::WorthQueryApplicationCommitProgressionAuthority<
-        '_,
-        '_,
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >,
-    provider_session: crate::domain_computation::provider_session::
-        WorthQueryProviderSessionTerminalBinding,
-) -> WorthQueryProviderProgressionOutcome
-where
-    Input: Clone + Send + Sync + 'static,
-{
-    let Ok(causality) =
-        resolve_exact_committed_aftermath(authority.aftermath_causality(), &receipt)
-    else {
-        return WorthQueryProviderProgressionOutcome::Denied(
-            WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
-        );
-    };
-    match WorthQueryCommittedReceiptProjection::resolve(receipt) {
-        Ok(projection) => {
-            let receipt = WorthQueryApplicationCommitReceipt::from_managed_equivalent(
-                WorthQueryManagedEquivalentCommitReceiptPermit::mint(provider_session),
-                projection,
-                recover_equivalent_commit_evidence(authority.admission().mutation_preconditions()),
-                authority.admission().canonical_work(),
-                WorthQueryApplicationCommitAuthorityBinding::from_admission(
-                    authority.admission(),
-                    authority.idempotency(),
-                ),
-            );
-            WorthQueryProviderProgressionOutcome::AlreadyCommitted(
-                receipt.with_aftermath_causality(causality),
-            )
-        }
-        Err(_) => progression_denied(DenialStage::Idempotency),
     }
 }

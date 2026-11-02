@@ -134,7 +134,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             "the first batch must be absent from the bounded live source"
         );
 
-        let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
             world.application.compare_and_commit_application(
                 retry,
                 idempotency(40, 40),
@@ -143,11 +143,10 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         else {
             panic!("provider idempotency must recover after live-source eviction");
         };
-        assert!(recovered.is_same_authoritative_commit(&original));
-        assert_eq!(
-            recovered.terminal().kind(),
-            WorthQueryApplicationCommitTerminalKind::Recovered
+        crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+            &recovered, &original,
         );
+        assert!(recovered.new_product_head().memory().is_some());
         assert_eq!(recovered.emitted_effect_count(), 1);
         let external_recovered_clone = recovered.clone();
         assert_eq!(
@@ -159,7 +158,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             "completed evidence must not grow the bounded receipt-basis owner"
         );
         let expired_read =
-            WorthQueryApplicationHistoricalRead::at_application_commit(&external_recovered_clone);
+            WorthQueryApplicationHistoricalRead::at_application_commit(&external_original_clone);
         let denial = world
             .application
             .with_host_advancement(|phase| {
@@ -180,6 +179,6 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable
         );
         assert!(external_original_clone.is_same_authoritative_commit(&original));
-        assert!(external_recovered_clone.is_same_authoritative_commit(&recovered));
+        assert_eq!(external_recovered_clone, recovered);
     }
 }

@@ -1,12 +1,13 @@
 //! Transportable source coordinates are resolved against actual completed native evidence.
 use super::WorthQueryRecordedCorrectionSource;
+use worth_foundational::facade::WorldOwnerCoordinate;
 use worth_relational::facade::history::RelationalCommitReceipt;
 
 /// Untrusted historical coordinates. Possession grants no disclosure or correction authority.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct WorthQueryCorrectionSourceCoordinates {
-    world_owner: u64,
+    world_owner: WorldOwnerCoordinate,
     world_commit: u64,
     relational: RelationalCommitReceipt,
 }
@@ -15,7 +16,7 @@ impl WorthQueryCorrectionSourceCoordinates {
     /// Carries descriptive fields received by an application transport.
     /// Selection resolves every field against retained native evidence.
     pub fn from_untrusted_fields(
-        world_owner: u64,
+        world_owner: WorldOwnerCoordinate,
         world_commit: u64,
         relational_branch: String,
         relational_commit: u64,
@@ -39,7 +40,7 @@ impl WorthQueryCorrectionSourceCoordinates {
     }
 
     pub fn from_untrusted_parts(
-        world_owner: u64,
+        world_owner: WorldOwnerCoordinate,
         world_commit: u64,
         relational: RelationalCommitReceipt,
     ) -> Self {
@@ -52,7 +53,7 @@ impl WorthQueryCorrectionSourceCoordinates {
     pub fn relational(&self) -> &RelationalCommitReceipt {
         &self.relational
     }
-    pub const fn world_owner(&self) -> u64 {
+    pub const fn world_owner(&self) -> WorldOwnerCoordinate {
         self.world_owner
     }
     pub const fn world_commit(&self) -> u64 {
@@ -61,9 +62,17 @@ impl WorthQueryCorrectionSourceCoordinates {
 }
 
 impl WorthQueryRecordedCorrectionSource {
+    pub fn world_owner_coordinate(&self) -> WorldOwnerCoordinate {
+        match self.world().owner_identity().durable() {
+            Some(owner) => WorldOwnerCoordinate::Home { owner },
+            None => WorldOwnerCoordinate::MemoryOnly {
+                observation: self.world().owner_identity().get(),
+            },
+        }
+    }
     pub fn coordinates(&self) -> WorthQueryCorrectionSourceCoordinates {
         WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
-            self.world().owner_identity().get(),
+            self.world_owner_coordinate(),
             self.world().ordinal(),
             self.relational().clone(),
         )

@@ -33,7 +33,7 @@ pub(super) fn terminal_outcome_can_close<D, R>(
             super::native_publication::native_terminal_can_close(posture)
         }
         WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-        | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+        | WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
         | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
         | WorthQueryApplicationMutationOutcome::DomainDenied(_)
         | WorthQueryApplicationMutationOutcome::Cancelled

@@ -132,10 +132,10 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
             idempotency(83, 84),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(81, 82),
@@ -145,14 +145,15 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         panic!("later equivalent resolution must reopen the original evidence");
     };
 
-    assert!(recovered.is_same_authoritative_commit(&original));
-    assert_eq!(recovered.mutation_work(), original.mutation_work());
-    assert_eq!(recovered.dispatch_outbox(), original.dispatch_outbox());
-    assert_eq!(recovered.retained_preimage(), original.retained_preimage());
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &original,
+    );
+    // D9 records original meaning; live work/preimage observations stay with fresh custody.
+    assert!(original.retained_preimage().is_some()); // Original live custody alone carries its retained preimage.
     assert_eq!(original.terminal().attempt_resources_released(), Some(true));
-    assert_eq!(recovered.terminal().attempt_resources_released(), None);
+    assert!(recovered.world_journal_position().is_none());
     assert!(recovered.dispatch_outbox().is_some());
-    assert_retained_status(&recovered, "open");
+    assert_retained_status(&original, "open");
     assert_eq!(commit_count(), baseline + 2);
     let commit = original.commit_reference().clone();
     let original_meaning = original.authority_binding().clone();

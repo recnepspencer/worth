@@ -69,7 +69,7 @@ const fn terminal_for(
 ) -> WorthQueryManagedRunTerminalKind {
     match outcome {
         WorthQueryProviderProgressionOutcome::Committed(_)
-        | WorthQueryProviderProgressionOutcome::AlreadyCommitted(_)
+        | WorthQueryProviderProgressionOutcome::RecoveredCommitted(_)
         | WorthQueryProviderProgressionOutcome::Stale(_)
         | WorthQueryProviderProgressionOutcome::ProductStale(_)
         | WorthQueryProviderProgressionOutcome::NoEffect(_) => {

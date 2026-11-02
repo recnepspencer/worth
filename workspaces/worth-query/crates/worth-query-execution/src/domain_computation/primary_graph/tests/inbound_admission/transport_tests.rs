@@ -75,7 +75,7 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
     };
     assert!(matches!(
         retry,
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     assert_eq!(

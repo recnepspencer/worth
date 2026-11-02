@@ -29,20 +29,16 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let (admission, locator, approval_identity, approval, replays) = match self {
+        let (admission, approval_identity, replays) = match self {
             Self::Transition {
                 program,
-                transition_identity_locator,
-                approval,
                 approval_identity,
                 approval_authentication,
                 replays,
                 ..
             } => (
                 &program.read_set.admission,
-                transition_identity_locator,
                 *approval_identity,
-                approval.as_ref(),
                 approval_authentication
                     .as_ref()
                     .and_then(|authentication| authentication.trusted_replays())
@@ -50,59 +46,36 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             ),
             Self::AwaitingAssessment(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
-                None,
                 None,
                 &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
-                None,
                 None,
                 &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
-                None,
                 None,
                 &prepared.replays,
             ),
             Self::AwaitingEvidence {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::AwaitingProposal {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::AwaitingApproval {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::ReplayOnly {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             } => (
                 &read_set.admission,
-                transition_identity_locator,
                 match self {
                     Self::ReplayOnly {
                         approval_identity, ..
                     } => *approval_identity,
-                    _ => None,
-                },
-                match self {
-                    Self::ReplayOnly { approval, .. } => approval.as_ref(),
                     _ => None,
                 },
                 replays,
@@ -141,7 +114,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         });
         let resolutions =
             runtime.resolve_admitted_application_idempotencies(execution, admission, bindings)?;
-        for (replay, resolution) in replays.iter().zip(resolutions) {
+        for resolution in resolutions {
             match resolution.into_resolution() {
                 WorthQueryApplicationIdempotencyResolution::Unseen => {}
                 WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
@@ -150,25 +123,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     )))
                 }
                 WorthQueryApplicationIdempotencyResolution::IntentDrift => drift = true,
-                WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                    return Ok(Some(runtime.primary_provider.graph.with_runtime(
-                        execution,
-                        |relational| {
-                            super::project(
-                                execution,
-                                relational,
-                                receipt,
-                                replay.identity.clone(),
-                                locator.clone(),
-                                replay.node_path.clone(),
-                                replay.terminal,
-                                None,
-                                approval.cloned(),
-                                replay.operation_receipt_identity,
-                                true,
-                            )
-                        },
-                    )))
+                WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                    return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt)))
                 }
             }
         }
@@ -356,8 +312,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                Some(project_original(receipt))
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt)))
             }
         })
     }

@@ -29,7 +29,7 @@ impl WorthQueryOutputReadCleanup {
     }
     pub fn producer_outcome(
         &mut self,
-    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted> {
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome> {
         self.custody.outcome()
     }
     pub fn close_in_advancement<S: ApplicationSchema>(

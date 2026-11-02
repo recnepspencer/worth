@@ -87,6 +87,8 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
             WorthQueryApplicationCommitOutcomeIdentity::mint().unwrap(),
             0,
             worth_relational::facade::identity::PartitionId::main(),
+            None,
+            false,
         );
         let mut transaction: BranchBoundRelationalTransaction = {
     let transaction_validation_input = runtime

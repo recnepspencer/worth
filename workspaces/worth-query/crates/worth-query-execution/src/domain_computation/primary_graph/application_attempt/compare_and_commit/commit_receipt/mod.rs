@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod certification;
 mod committed_changes;
-mod construction;
+mod recorded_settlement;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
 #[cfg(doctest)]
 mod disclosure_fences;
@@ -36,7 +36,7 @@ pub use publication_source::WorthQueryApplicationCommitPublicationSource;
 /// changed, which records were touched, what must be dispatched, and under what
 /// authority.
 ///
-/// Carried by the `Committed` and `AlreadyCommitted` commit outcomes. The fresh
+/// Carried by the `Committed` commit outcome. The fresh
 /// receipt also holds the performed product-change witness; a clone drops it and
 /// is descriptive history only.
 #[derive(Debug, PartialEq)]
@@ -60,14 +60,11 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) external_dispatch: Option<WorthQueryExternalEffectDispatch>,
     pub(super) external_dispatch_preparation_denial:
         Option<super::super::WorthQueryExternalDispatchPreparationDenial>,
-    /// R8.62 / C1 — derived from admission at construction; never caller-supplied.
+    /// R8.62 / C1 â€” derived from admission at construction; never caller-supplied.
     pub(super) authority_binding: WorthQueryApplicationCommitAuthorityBinding,
-    /// R8.2 — exact inverse pre-image slice retained from the decision read-set.
+    /// R8.2 â€” exact inverse pre-image slice retained from the decision read-set.
     pub(super) retained_preimage: Option<WorthQueryRetainedPreImage>,
     pub(super) aftermath_causality: Option<WorthQueryCommittedAftermathCausality>,
-    pub(super) expected_retry_session: Option<
-        crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    >,
     pub(super) performed_product_change: Option<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >,
@@ -108,7 +105,6 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             authority_binding: self.authority_binding.clone(),
             retained_preimage: self.retained_preimage.clone(),
             aftermath_causality: self.aftermath_causality.clone(),
-            expected_retry_session: self.expected_retry_session.clone(),
             performed_product_change: None,
             output_correspondence: self.output_correspondence.clone(),
             exact_output_settlement: self.exact_output_settlement.clone(),

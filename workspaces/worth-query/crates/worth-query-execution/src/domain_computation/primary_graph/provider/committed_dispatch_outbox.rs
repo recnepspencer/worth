@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 mod correlation;
 #[cfg(test)]
 mod layout_tests;
+mod original_row;
 #[cfg(test)]
 mod owner_test_support;
 mod restoration;

@@ -54,7 +54,7 @@ fn response_loss_resolves_the_published_commit_before_returning() {
     else {
         panic!("authoritative idempotency must prove the response-lost commit");
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(15, 15),
@@ -63,8 +63,14 @@ fn response_loss_resolves_the_published_commit_before_returning() {
     else {
         panic!("retry must recover the transaction published before response loss");
     };
-    assert!(receipt.is_same_authoritative_commit(&first_receipt));
-    assert_eq!(receipt.outcome_identity(), first_receipt.outcome_identity());
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &receipt,
+        &first_receipt,
+    );
+    assert_eq!(
+        Some(receipt.outcome_identity()),
+        first_receipt.outcome_identity()
+    );
     assert_eq!(
         first_receipt.terminal().kind(),
         WorthQueryApplicationCommitTerminalKind::Executed
@@ -73,14 +79,18 @@ fn response_loss_resolves_the_published_commit_before_returning() {
         first_receipt.terminal().attempt_resources_released(),
         Some(true)
     );
+    assert!(receipt.new_product_head().memory().is_some());
     assert_eq!(
-        receipt.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-    assert_eq!(
-        receipt.precondition_comparison().expected_version_count(),
+        first_receipt
+            .precondition_comparison()
+            .expected_version_count(),
         0
     );
-    assert_eq!(receipt.precondition_comparison().expected_fact_count(), 1);
+    assert_eq!(
+        first_receipt
+            .precondition_comparison()
+            .expected_fact_count(),
+        1
+    );
     assert!(receipt.changed_record_count() >= 2);
 }

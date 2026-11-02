@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
     recovery_evidence::unknown_commit_recovery_evidence,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationUncommitted as Outcome,
+    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationCommitOutcome as Outcome,
 };
 use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Session, WorthQueryProviderSessionFailure,
@@ -13,6 +13,7 @@ use crate::domain_computation::{
 
 pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
     match outcome {
+        Progression::RecoveredCommitted(receipt) => Outcome::RecoveredCommitted(receipt),
         Progression::ProductPreparationPending(owner) => Outcome::ProductPreparationPending(owner),
         Progression::ProductPreparationRefused(owner) => Outcome::ProductPreparationRefused(owner),
         Progression::ProductUnpublished(unpublished) => Outcome::ProductUnpublished(unpublished),
@@ -72,8 +73,8 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::CandidateIdentityExhausted
             | Kind::IndexMaintenanceBudgetExceeded
             | Kind::IndexGenerationIdentityExhausted
+            | Kind::IdempotencyForeignAffinity
             | Kind::IdempotencyIntentDrift
-            | Kind::IdempotencyReceiptNotRetained { .. }
             | Kind::IdempotencyIntentUnverifiable
             | Kind::MutationBindingMismatch
             | Kind::MutationInputMismatch
@@ -111,7 +112,6 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
         Progression::Committed(_)
-        | Progression::AlreadyCommitted(_)
         | Progression::Stale(_)
         | Progression::Aborted
         | Progression::Deferred(_) => cleanup_indeterminate(),

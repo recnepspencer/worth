@@ -106,11 +106,11 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitPublicationSource,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
-    WorthQueryApplicationCommittedChanges, WorthQueryApplicationManagedCleanup,
-    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
-    WorthQueryApplicationNoEffectCause, WorthQueryApplicationStaleAttempt,
-    WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
-    WorthQueryCommittedProductPublication,
+    WorthQueryApplicationCommittedChanges, WorthQueryApplicationLandedCommit,
+    WorthQueryApplicationManagedCleanup, WorthQueryApplicationManagedCleanupFailure,
+    WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
+    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
+    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
@@ -168,7 +168,7 @@ pub use idempotency::{
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub use idempotency_resolution::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryHistoricalApplicationCommit,
+    WorthQueryApplicationIdempotencyResolutionDenialKind,
 };
 pub(super) use mandatory_review_outcome::reviewed_outcome;
 pub use mandatory_review_outcome::{WorthQueryMandatoryReviewOutcome, WorthQueryReviewedElevation};

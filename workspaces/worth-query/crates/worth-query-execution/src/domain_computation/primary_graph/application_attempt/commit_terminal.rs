@@ -5,9 +5,6 @@ use worth_relational::facade::history::BranchId;
 pub enum WorthQueryApplicationCommitTerminalKind {
     /// This attempt ran the commit and observed its landing directly.
     Executed,
-    /// The receipt was rebuilt from the committed record rather than from this
-    /// attempt's own execution, for example on an idempotent replay.
-    Recovered,
 }
 
 /// Opaque, non-authoritative description of how an application commit became
@@ -21,7 +18,7 @@ pub enum WorthQueryApplicationCommitTerminalKind {
 /// use worth_relational::facade::history::BranchId;
 ///
 /// let forged = WorthQueryApplicationCommitTerminalEvidence {
-///     kind: WorthQueryApplicationCommitTerminalKind::Recovered,
+///     kind: WorthQueryApplicationCommitTerminalKind::Executed,
 ///     branch: BranchId("forged".to_owned()),
 ///     attempt_resources_released: None,
 /// };
@@ -42,23 +39,6 @@ impl WorthQueryApplicationCommitTerminalEvidence {
             branch,
             attempt_resources_released: Some(attempt_resources_released),
         }
-    }
-
-    pub(super) const fn recovered(branch: BranchId) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitTerminalKind::Recovered,
-            branch,
-            attempt_resources_released: None,
-        }
-    }
-
-    pub(super) fn with_retry_cleanup(mut self, attempt_resources_released: bool) -> Self {
-        debug_assert_eq!(
-            self.kind,
-            WorthQueryApplicationCommitTerminalKind::Recovered
-        );
-        self.attempt_resources_released = Some(attempt_resources_released);
-        self
     }
 
     pub const fn kind(&self) -> WorthQueryApplicationCommitTerminalKind {

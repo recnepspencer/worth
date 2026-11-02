@@ -144,21 +144,24 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
         });
         (left.join().unwrap(), right.join().unwrap())
     });
-    let receipts = [left, right]
-        .into_iter()
-        .map(|outcome| match outcome {
-            WorthQueryApplicationCommitOutcome::Committed(receipt)
-            | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => receipt,
-            unexpected => panic!("unexpected concurrent outcome: {unexpected:?}"),
-        })
-        .collect::<Vec<_>>();
-    assert!(receipts[0].is_same_authoritative_commit(&receipts[1]));
-    let terminal_kinds = receipts
-        .iter()
-        .map(|receipt| receipt.terminal().kind())
-        .collect::<Vec<_>>();
-    assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Executed));
-    assert!(terminal_kinds.contains(&WorthQueryApplicationCommitTerminalKind::Recovered));
+    let (fresh, recovered) = match (left, right) {
+        (
+            WorthQueryApplicationCommitOutcome::Committed(fresh),
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered),
+        )
+        | (
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered),
+            WorthQueryApplicationCommitOutcome::Committed(fresh),
+        ) => (fresh, recovered),
+        outcomes => panic!("one ordinary execution and one original-data retry: {outcomes:?}"),
+    };
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &fresh,
+    );
+    assert_eq!(
+        fresh.terminal().kind(),
+        WorthQueryApplicationCommitTerminalKind::Executed
+    );
 }
 
 mod response_loss_resolves_the_published_commit_before_returning;
@@ -230,7 +233,7 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
             idempotency(31, 31),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     assert_eq!(
         crate::execution_digest::test_hash_parts_call_count(),

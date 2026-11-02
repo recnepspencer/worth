@@ -163,3 +163,5 @@ type DeliveredProjectionBatch<Schema, ReadBinding> = crate::domain_computation::
     <ReadBinding as ApplicationQueryBinding<Schema>>::Query,
     <<ReadBinding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
 >;
+
+mod receipt_correspondence;

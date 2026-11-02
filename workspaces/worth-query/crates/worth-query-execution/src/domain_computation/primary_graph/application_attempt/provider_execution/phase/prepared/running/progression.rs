@@ -20,9 +20,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) mod progre
 mod registered;
 mod session_admission;
 
-pub(in crate::domain_computation::primary_graph::application_attempt) use authorized::WorthQueryManagedEquivalentCommitReceiptPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use commit_resolution::WorthQueryFreshCommitReceiptPermit;
-pub(in crate::domain_computation::primary_graph::application_attempt) use fresh::WorthQueryRegisteredEquivalentCommitReceiptPermit;
 use mutation_cleanup::WorthQueryApplicationMutationCleanupOwner;
 pub(in crate::domain_computation) use registered::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,

@@ -66,7 +66,7 @@ fn genuine_unprepared_refusal_preserves_winner_and_allows_fresh_same_key() {
         idempotency(171, 172),
         ExecutionAllocationPolicy::SystemAllocation,
     );
-    let Outcome::AlreadyCommitted(replayed) = replay else {
+    let Outcome::RecoveredCommitted(replayed) = replay else {
         panic!("one actual Native effect: {replay:?}");
     };
     assert_eq!(committed.commit_reference(), replayed.commit_reference());

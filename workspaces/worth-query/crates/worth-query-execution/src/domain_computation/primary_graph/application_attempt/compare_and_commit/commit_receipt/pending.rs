@@ -95,7 +95,6 @@ impl WorthQueryPendingApplicationCommitReceipt {
             authority_binding: self.authority_binding,
             retained_preimage: self.retained_preimage,
             aftermath_causality: self.aftermath_causality,
-            expected_retry_session: None,
             performed_product_change: Some(performed_product_change),
             committed_changes: self.provider.commit_evidence().committed_changes().clone(),
             performed_output_fields: self

@@ -12,6 +12,7 @@ mod recorded_intent;
 mod recorded_intent_tests;
 #[cfg(test)]
 mod tests;
+mod transport_intent;
 mod workflow_definition;
 mod workflow_instance;
 mod workflow_proposal_context;

@@ -1,10 +1,10 @@
 //! Independent native cleanup never makes a conditional operation runnable again.
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCleanupRequired,
-    WorthQueryApplicationManagedCleanup, WorthQueryApplicationUncommitted,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationManagedCleanup,
 };
 pub(super) struct RetainedManagedCleanup {
-    outcome: WorthQueryApplicationUncommitted,
+    outcome: WorthQueryApplicationCommitOutcome,
     pending: Option<WorthQueryApplicationManagedCleanup>,
     receipt: Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>,
     kind: crate::domain_computation::WorthQueryMutationCleanupFailureKind,

@@ -70,17 +70,14 @@ where
                 let prepared = source
                     .authorize_recovery_view(&phase, &request, &mut view)
                     .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Opening)?;
-                let original_receipt = match operation.evidence() {
-                    WorthQuerySourceCompletion::Fresh { receipt, .. }
-                    | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
-                };
+                let original_receipt = operation.evidence().live_receipt();
                 let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
                     &phase,
                     application,
                     &prepared.admission,
                     prepared.idempotency,
                     operation.required.transition_identity_bytes(),
-                    Some(original_receipt),
+                    original_receipt,
                 )
                 .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Inspection)?;
                 let receipt = match custody {

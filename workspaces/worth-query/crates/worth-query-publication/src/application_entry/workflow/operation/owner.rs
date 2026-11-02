@@ -27,6 +27,7 @@ use super::{
 /// committed the operation.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationOwnerPosture {
+    RecoveredCommitted(worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt),
     Unseen,
     IntentDrift,
     PublicationPending,
@@ -285,6 +286,7 @@ pub(in crate::application_entry) fn other_custody(
     use WorthQueryGuardedWorkflowOperationCustody as Custody;
     use WorthQueryWorkflowOperationOwnerPosture as Posture;
     match custody {
+        Custody::RecoveredCommitted(receipt) => Posture::RecoveredCommitted(receipt),
         Custody::Unseen => Posture::Unseen,
         Custody::IntentDrift => Posture::IntentDrift,
         Custody::PublicationPending => Posture::PublicationPending,

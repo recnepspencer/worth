@@ -2131,6 +2131,7 @@ not grant authority or replace the lifecycle explanations above.
 
 | Variant | Shape |
 | --- | --- |
+| `RecoveredCommitted` | tuple (WorthQueryRecoveredApplicationCommitReceipt) |
 | `AwaitingProposal` | tuple (RequiredWorkflowProposal) |
 | `AwaitingActor` | tuple (RequiredWorkflowActor) |
 | `AwaitingAssessment` | tuple (RequiredWorkflowAssessment) |

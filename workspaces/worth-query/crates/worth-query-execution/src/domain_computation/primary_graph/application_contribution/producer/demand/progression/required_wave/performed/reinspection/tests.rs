@@ -107,14 +107,16 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                     .unwrap();
                 let permission = record.attach_successor(permission, &a).unwrap();
                 if publish {
-                    let outcome = if replay {
-                        WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt)
+                    if replay {
+                        let recovered = crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::read_original(world, &receipt);
+                        let denial = commit_receipt("actual publication", WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered))
+                            .err().expect("original receipt data cannot pay fresh publication credit");
+                        assert!(denial.recovered_publication().is_some());
                     } else {
-                        WorthQueryApplicationCommitOutcome::Committed(receipt)
-                    };
-                    let publication = commit_receipt("actual publication", outcome)
-                        .unwrap_or_else(|_| panic!("receipt retained"));
-                    record.publication(permission, publication, |member| member.performed());
+                        let publication = commit_receipt("actual publication", WorthQueryApplicationCommitOutcome::Committed(receipt))
+                            .unwrap_or_else(|_| panic!("fresh receipt retains actual publication"));
+                        record.publication(permission, publication, |member| member.performed());
+                    }
                 }
                 assert!(
                     record.reinspection(&a, inspected).unwrap().is_none(),

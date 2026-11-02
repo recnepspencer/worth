@@ -1,5 +1,5 @@
 //! Business evidence and the real failed cleanup owner travel together.
-use super::WorthQueryApplicationUncommitted;
+use super::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::{
     execution_runtime::product_world::WorthQueryProductRuntime, WorthQueryMutationCleanupFailure,
@@ -9,12 +9,12 @@ use crate::domain_computation::{
 #[derive(Debug)]
 #[must_use = "retain business evidence and native cleanup custody"]
 pub struct WorthQueryApplicationCleanupRequired {
-    outcome: WorthQueryApplicationUncommitted,
+    outcome: WorthQueryApplicationCommitOutcome,
     cleanup: WorthQueryApplicationManagedCleanup,
 }
 impl WorthQueryApplicationCleanupRequired {
     pub(in crate::domain_computation::primary_graph) fn new(
-        outcome: WorthQueryApplicationUncommitted,
+        outcome: WorthQueryApplicationCommitOutcome,
         failure: WorthQueryMutationCleanupFailure,
         runtime: WorthQueryProductRuntime,
         bridge: std::sync::Arc<
@@ -32,13 +32,13 @@ impl WorthQueryApplicationCleanupRequired {
         }
     }
     pub(in crate::domain_computation::primary_graph) fn from_parts(
-        outcome: WorthQueryApplicationUncommitted,
+        outcome: WorthQueryApplicationCommitOutcome,
         cleanup: WorthQueryApplicationManagedCleanup,
     ) -> Box<Self> {
         Box::new(Self { outcome, cleanup })
     }
     /// Business evidence retains its native outcome independently of failed cleanup.
-    pub fn outcome(&self) -> &WorthQueryApplicationUncommitted {
+    pub fn outcome(&self) -> &WorthQueryApplicationCommitOutcome {
         &self.outcome
     }
     /// Borrows the actual native cleanup owner without transferring authority.
@@ -49,7 +49,7 @@ impl WorthQueryApplicationCleanupRequired {
     pub fn into_parts(
         self,
     ) -> (
-        WorthQueryApplicationUncommitted,
+        WorthQueryApplicationCommitOutcome,
         WorthQueryApplicationManagedCleanup,
     ) {
         (self.outcome, self.cleanup)

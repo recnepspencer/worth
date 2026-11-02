@@ -82,7 +82,7 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
         panic!("the guarded mutation must commit");
     };
     for completed in [None, Some(&committed)] {
-        let WorthQueryGuardedWorkflowOperationCustody::Committed(recovered) = world
+        let recovered = world
             .application
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request();
@@ -97,12 +97,19 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
                     )
                     .unwrap()
             })
-            .expect("the fixture read owns its installed host call")
-        else {
-            panic!("exact owner custody must recover the guarded commit");
-        };
-        assert!(recovered.is_same_authoritative_commit(&committed));
-        assert_eq!(recovered.principal_scope(), committed.principal_scope());
+            .expect("the fixture read owns its installed host call");
+        match (completed, recovered) {
+            (None, WorthQueryGuardedWorkflowOperationCustody::RecoveredCommitted(original)) => {
+                crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(&original, &committed);
+            }
+            (Some(_), WorthQueryGuardedWorkflowOperationCustody::Committed(owned)) => {
+                assert!(owned.is_same_authoritative_commit(&committed));
+                assert_eq!(owned.principal_scope(), committed.principal_scope());
+            }
+            (_, other) => {
+                panic!("existing live custody stays distinct from reconstructed data: {other:?}")
+            }
+        }
     }
 
     let drift = idempotency(76, 77).bind_guarded_workflow_effect(&transition);

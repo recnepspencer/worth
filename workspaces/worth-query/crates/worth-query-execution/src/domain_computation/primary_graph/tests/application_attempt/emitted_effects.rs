@@ -123,7 +123,7 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     else {
         panic!("idempotency must recover the response-lost emit commit");
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(33, 33),
@@ -132,15 +132,14 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     else {
         panic!("retry must recover the exact emit commit");
     };
-    assert!(recovered.is_same_authoritative_commit(&original));
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &original,
+    );
     assert_eq!(
         original.terminal().kind(),
         WorthQueryApplicationCommitTerminalKind::Executed
     );
-    assert_eq!(
-        recovered.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
+    assert!(recovered.new_product_head().memory().is_some());
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
         world

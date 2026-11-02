@@ -126,7 +126,7 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
             idempotency(2, 2),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
     let outcome = world.application.compare_and_commit_application(

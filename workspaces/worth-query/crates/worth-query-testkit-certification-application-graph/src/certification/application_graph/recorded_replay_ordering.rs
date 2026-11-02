@@ -61,7 +61,7 @@ pub fn recorded_commit<Denial: std::fmt::Debug, Result: std::fmt::Debug>(
 ) -> CommitId {
     match outcome {
         Outcome::AlreadyCommitted(replayed) => replayed.commit_reference().commit_id,
-        Outcome::PreviouslyCommitted(replayed) => replayed.commit_id(),
+        Outcome::RecoveredCommitted(replayed) => replayed.commit_reference().commit_id,
         other => panic!("a recorded key must answer with its commit: {other:?}"),
     }
 }

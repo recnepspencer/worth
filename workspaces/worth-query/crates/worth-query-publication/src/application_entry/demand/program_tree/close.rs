@@ -74,7 +74,7 @@ where
     }
     pub fn producer_outcome(
         &mut self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome>
     {
         self.core
             .custody

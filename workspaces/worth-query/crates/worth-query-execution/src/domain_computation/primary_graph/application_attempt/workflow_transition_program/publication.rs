@@ -362,6 +362,7 @@ impl PerformedWorkflowTransition {
 /// nothing landed, or why a landed commit could not be projected.
 #[derive(Debug)]
 pub enum WorkflowProgressOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     AwaitingProposal(RequiredWorkflowProposal),
     AwaitingActor(RequiredWorkflowActor),
     AwaitingAssessment(RequiredWorkflowAssessment),

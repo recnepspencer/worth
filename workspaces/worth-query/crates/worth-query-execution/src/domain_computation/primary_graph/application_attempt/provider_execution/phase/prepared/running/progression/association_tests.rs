@@ -155,7 +155,7 @@ fn assert_interleaved_terminal(
             );
             let expected_peer =
                 if matches!(victim, WorthQueryApplicationCommitOutcome::Committed(_)) {
-                    PeerExpectation::AlreadyCommitted
+                    PeerExpectation::RecoveredCommitted
                 } else {
                     PeerExpectation::Committed
                 };
@@ -221,13 +221,10 @@ fn finish_peer(
             );
         }
         (
-            PeerExpectation::AlreadyCommitted,
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt),
+            PeerExpectation::RecoveredCommitted,
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt),
         ) => {
-            assert_eq!(
-                receipt.terminal().kind(),
-                WorthQueryApplicationCommitTerminalKind::Recovered
-            );
+            assert!(receipt.new_product_head().memory().is_some());
         }
         (PeerExpectation::ProductBasisStale, outcome) => {
             crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
@@ -252,7 +249,7 @@ fn finish_peer(
 #[derive(Clone, Copy, Debug)]
 enum PeerExpectation {
     Committed,
-    AlreadyCommitted,
+    RecoveredCommitted,
     ProductBasisStale,
 }
 

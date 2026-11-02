@@ -33,6 +33,12 @@ pub(in crate::domain_computation::primary_graph) mod fault_port;
 mod graph_participation;
 mod history_retirement;
 mod idempotency;
+mod original_publication;
+pub use idempotency::{
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox,
+};
+use original_publication::OriginalPublication;
 mod inbound_completion;
 mod inbound_cost;
 pub(in crate::domain_computation::primary_graph) mod managed_cleanup_control;
@@ -65,7 +71,6 @@ pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::Outst
 pub(in crate::domain_computation::primary_graph) use pending_application_publication::WorthQueryApplicationPublicationRecoveryReservation;
 mod product_retirement;
 mod provisional_state;
-mod publication_recovery;
 mod resource_support;
 pub(in crate::domain_computation::primary_graph) use resource_support::WorthQueryPrimaryGraphResourceSupport;
 mod session_commit;
@@ -186,6 +191,8 @@ impl WorthQueryPrimaryGraphProvider {
         outcome_identity: super::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
         emitted_effect_count: u64,
         mutation_partition: worth_relational::facade::identity::PartitionId,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+        has_output_settlement: bool,
     ) -> worth_relational::facade::transactions::WorkerIntentBatch {
         batch.push(idempotency::idempotency_create_intent(
             self.graph.layout.provider_idempotency(),
@@ -193,6 +200,8 @@ impl WorthQueryPrimaryGraphProvider {
             outcome_identity,
             emitted_effect_count,
             mutation_partition,
+            Some(product),
+            has_output_settlement,
         ))
     }
 

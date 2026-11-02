@@ -82,13 +82,8 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// The idempotency key is already bound to a different intent. New intent needs
     /// a new key.
     IdempotencyIntentDrift,
-    /// The key records `commit` for this intent, but this runtime does not
-    /// retain its receipt: the commit was performed before a restore or
-    /// reopen, or by a product occurrence that has since retired. The commit
-    /// stands and nothing commits again; read current state to observe it.
-    IdempotencyReceiptNotRetained {
-        commit: worth_relational::facade::history::CommitId,
-    },
+    /// The durable key belongs to another product branch or lifecycle incarnation.
+    IdempotencyForeignAffinity,
     /// The key's record predates the durable intent encoding. Its durable
     /// parts match, but it names its operation only by the admitting
     /// installation's seal, which no later runtime can confirm. Nothing is

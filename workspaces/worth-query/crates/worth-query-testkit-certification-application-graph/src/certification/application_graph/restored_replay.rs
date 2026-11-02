@@ -60,11 +60,11 @@ pub fn assert_the_key_resolves_by_its_durable_record(
     for _ in 0..3 {
         let unchanged = set_retention(restored, branch, RETENTION, KEY)
             .expect("the freshly admitted retry resolves the durable commit");
-        let WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation) = &unchanged
+        let WorthQueryApplicationMutationOutcome::RecoveredCommitted(observation) = &unchanged
         else {
             panic!("the restored retry observes its earlier commit: {unchanged:?}");
         };
-        assert_eq!(observation.commit_id(), commit);
+        assert_eq!(observation.commit_reference().commit_id, commit);
         assert!(
             unchanged.receipt().is_none(),
             "history grants no live receipt authority"

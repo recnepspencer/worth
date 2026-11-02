@@ -25,25 +25,26 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
                     WorthQueryApplicationCommitOutcomeIdentity::restore(1).unwrap(),
                     0,
                     worth_relational::facade::identity::PartitionId(1),
+                    None,
+                    false,
                 )),
             );
             let selected = world.selected_product(&phase.test_host_request());
             let snapshot = selected.application_basis().snapshot_handle();
-            let affinity = WorthQueryProductIdempotencyAffinity::from_observation(
-                selected.product().observation(),
-            );
+            let product = selected.product().publication_binding();
             provider.graph.with_runtime(&execution, |runtime| {
                 crate::test_read_stops::every_consult_under(
                     &execution,
                     |request| {
                         resolve_at_snapshot(
-                            request, provider, runtime, snapshot, &layout, &affinity, binding,
+                            request, provider, runtime, snapshot, &layout, &product, binding,
                         )
                         .map(|answer| {
                             matches!(answer, WorthQueryProviderIdempotencyResolution::Absent)
                         })
                         .or_else(|denial| {
-                            if matches!(denial, WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained { .. }) {
+                            if denial == WorthQueryProviderIdempotencyResolutionDenial::Unavailable
+                            {
                                 Ok(false)
                             } else {
                                 Err(denial)

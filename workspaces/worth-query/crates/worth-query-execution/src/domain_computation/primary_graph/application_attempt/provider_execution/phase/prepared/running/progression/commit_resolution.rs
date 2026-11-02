@@ -31,7 +31,7 @@ pub(super) struct WorthQueryAuthorizedCompareContext<'a> {
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
-    authority_binding: super::super::super::WorthQueryApplicationCommitAuthorityBinding,
+    authority_binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding,
     provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
 }
@@ -94,7 +94,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
             dispatch_outbox,
             aftermath_causality: authority.aftermath_causality().cloned(),
             authority_binding:
-                super::super::super::WorthQueryApplicationCommitAuthorityBinding::from_admission(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding::from_admission(
                     admission,
                     authority.idempotency(),
                 ),
@@ -187,13 +187,8 @@ fn resolve_indeterminate_commit(
         context.idempotency,
         &context.product,
     ) {
-        Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
-            match resolve_committed_components(&context, receipt) {
-                Ok(resolved) => seal_committed_outcome(context, resolved),
-                Err(denial) => WorthQueryProviderProgressionOutcome::Indeterminate(
-                    committed_component_recovery_evidence(denial),
-                ),
-            }
+        Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
+            WorthQueryProviderProgressionOutcome::RecoveredCommitted(receipt)
         }
         Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage }) => {
             WorthQueryProviderProgressionOutcome::ProductPreparationPending(
