@@ -85,8 +85,12 @@ fn original_directory_receipt_preserves_cancellation_at_every_consult() {
     let (_, live) = scope();
     let fresh = set(home.runtime(), &live, 0xcace2, 8).unwrap();
     assert!(matches!(fresh, Outcome::Committed { result: 8, .. }));
-    let call = |scope: &WorthQueryRequestScope, principal| {
-        home.runtime()
+    fn call(
+        runtime: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>,
+        scope: &WorthQueryRequestScope,
+        principal: &worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<fixture::schema::HomeIdentitySchema>,
+    ) -> Result<Outcome<(), u64>, RequestDenial> {
+        runtime
             .request(principal, scope)
             .advanced()
             .mutate(fixture::native_mutation::SetAccountBalance {
@@ -96,16 +100,18 @@ fn original_directory_receipt_preserves_cancellation_at_every_consult() {
             .without_source()
             .idempotency(&0xcace2_u64)
             .execute_in_program(
-                home.runtime(),
+                runtime,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-    };
+    }
     let principal = identity::inspection_authentication::authenticate(
         home.runtime().runtime().installed_schema(),
         &live,
     );
-    let (healthy, consults) =
-        worth_execution::with_request_consult_observer_for_test(|_| {}, || call(&live, &principal));
+    let (healthy, consults) = worth_execution::with_request_consult_observer_for_test(
+        |_| {},
+        || call(home.runtime(), &live, &principal),
+    );
     assert!(matches!(healthy, Ok(Outcome::RecoveredCommitted(_))));
     assert!(consults > 0);
     for stop_at in 1..=consults {
@@ -120,7 +126,7 @@ fn original_directory_receipt_preserves_cancellation_at_every_consult() {
                     cancel.cancel();
                 }
             },
-            || call(&stopped, &principal),
+            || call(home.runtime(), &stopped, &principal),
         );
         assert!(
             reached >= stop_at,

@@ -30,7 +30,10 @@ fn existing_reference_assign_replace_clear_and_exact_replay_preserve_target_iden
     }
     match assign(&app, first, 800).unwrap() {
         Outcome::RecoveredCommitted(recovered) => {
-            assert_eq!(Some(recovered.outcome_identity()), receipt.outcome_identity())
+            assert_eq!(
+                Some(recovered.outcome_identity()),
+                receipt.outcome_identity()
+            )
         }
         other => panic!("replay:{other:?}"),
     }

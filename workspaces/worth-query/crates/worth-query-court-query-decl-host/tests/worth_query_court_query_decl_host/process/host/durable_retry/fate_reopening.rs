@@ -24,9 +24,12 @@ fn open(fresh: bool, contacts: Arc<AtomicUsize>) -> Home {
             contacts,
         )
     } else {
-        fixture::request_with_initializer(child_reexecution::location(), build, contacts, |_, _, _| {
-            panic!("a recovered fate cannot reinitialize")
-        })
+        fixture::request_with_initializer(
+            child_reexecution::location(),
+            build,
+            contacts,
+            |_, _, _| panic!("a recovered fate cannot reinitialize"),
+        )
     };
     with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
         .unwrap()
@@ -143,8 +146,7 @@ fn retained_writer() {
     let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 7);
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
-    let duplicate =
-        pending_support::pending(set(home.runtime(), &live, RETAINED, 8));
+    let duplicate = pending_support::pending(set(home.runtime(), &live, RETAINED, 8));
     assert_eq!(duplicate.record_handle(), original.record_handle());
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
     child_reexecution::wait_for_kill();
