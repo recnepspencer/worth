@@ -35,6 +35,8 @@ mod commitment_writer;
 mod frame_refusal;
 pub(crate) mod input_commitment;
 mod memory_publication;
+mod prepared_payload;
+pub(crate) use prepared_payload::PreparedOriginalCanonicalPayload;
 mod payload_digest;
 mod payload_wire;
 mod readmission;

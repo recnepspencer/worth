@@ -59,7 +59,10 @@ fn intent(
             if !valid {
                 return Err(malformed());
             }
-            add(&mut bytes, fields(value, request)?)
+            add(
+                &mut bytes,
+                fields(value, request, family != "Materialization")?,
+            )
         })
     })?;
     Ok(bytes)
@@ -67,6 +70,7 @@ fn intent(
 fn fields(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
+    reference_endpoints: bool,
 ) -> Result<OwnerAllocation, Refusal> {
     let mut bytes = OwnerAllocation::default();
     value.fields(request, |field, value| {
@@ -75,7 +79,7 @@ fn fields(
             "client_keys" => {
                 vector::<ClientKey>(value, request, |value| client_key(value, request))?
             }
-            "source" | "target" => endpoint(value, request)?,
+            "source" | "target" if reference_endpoints => endpoint(value, request)?,
             "endpoints" => vector::<(EntityReference, EntityReference)>(value, request, |value| {
                 let mut bytes = OwnerAllocation::default();
                 let count =
@@ -90,7 +94,7 @@ fn fields(
                 super::aspects::field_patch(value, request)
             })?,
             "aspect_patch" => super::portable_aspects::patch(value, request)?,
-            "replacement" => fields(value, request)?,
+            "replacement" => fields(value, request, reference_endpoints)?,
             _ => OwnerAllocation::default(),
         };
         add(&mut bytes, nested)
@@ -115,7 +119,7 @@ fn endpoint(
 ) -> Result<OwnerAllocation, Refusal> {
     let mut bytes = OwnerAllocation::default();
     value.fields(request, |variant, value| match variant {
-        "Created" => add(&mut bytes, fields(value, request)?),
+        "Created" => add(&mut bytes, fields(value, request, true)?),
         "Existing" => Ok(()),
         _ => Err(malformed()),
     })?;

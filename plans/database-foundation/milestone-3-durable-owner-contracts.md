@@ -2614,3 +2614,92 @@ It does not fabricate a resolved owner from those descriptive fixture rows.
 The metadata-directory court uses an actual empty index owner's captured and
 resolved state. The unchanged retained-plan second-Complete assertion and the
 nonempty covered-plus-tail court qualify the production continuation.
+
+
+### Prepublication original payload DATA and recovery source linkage
+
+The focused independent recovery review identified two product defects: source
+admission was being treated as same-cell input-custody transfer for a metadata
+merge, and Memory publication performed a full hash after candidate preparation,
+outside the shared commit work account. The latter also denied the existing
+World publication contract when its already-prepared invoking scope was fully
+spent without any refused charge.
+
+Native now prepares the exact v5 canonical-value and recorded-input leaves in
+the original request's shared preparation account. A private move-only carrier
+owns the SAME immutable canonical Arc and both leaves; route preparation checks
+that actual owner against the residency cell. Original input attribution seals
+Some or explicit standalone None before hashing. None cannot acquire later
+attribution through another Arc. These leaves are DATA and grant no admission,
+performed proof, source identity or custody. Comparison and external admission
+still hash their actual subjects. The reserved-position producer combines only
+the scalar position leaf, commit and carried leaves using the unchanged v5
+commitment grammar. Its private deterministic emission checks counted length
+and constructs its own immutable frame; it does not re-admit its own emitted
+bytes or repeat a full hash inside the publication cutover.
+
+The existing route stage settles this hash into RequestWorkBudget; the new
+original-schema capture in prepare_commit is settled into that same account too.
+Metadata-only source artifacts with no original-input custody do not enter the
+same-cell preservation operation. The preservation guard itself remains strict.
+Reconstructed source evidence is installed only through the existing admitted
+chronology graph, after actual root/source linkage.
+
+### Corrected fixture claims against the durable projection
+
+No test is deleted or ignored. The v5 decision in accepted f8c881ba9a and its
+composite commitment implementation retires the old flat-SHA resealing recipe;
+semantic refusal courts now independently compose the three-leaf commitment,
+including the changed header subject, before asserting their original semantic
+refusal. Their semantic assertions remain unchanged.
+
+The selected canonical member route already present at c068abc047 owns a third
+placement variant. Its concrete enum/cell tag costs one additional word versus
+the old two-variant fixture. The memory-layout court now bounds that exact one
+word while retaining all independent scalar tuple and original-frame assertions.
+Its independent reference frame includes v5's required original_inputs field.
+
+Milestone 3's explicit durable projection table excludes diagnostics and derived
+cache DATA. It retires FULL envelope equality as a durable-recovery claim for
+the CAD, hostile-workload, merge and aggregate logical-component courts. Their
+replacement compares every envelope field after removing only those two omitted
+lanes, and additionally checks the original schema/policy attribution. Existing
+full/embedded codec courts retain their FULL language and assertions. Covered
+history must name its actual selected directory, with no journal fallback; the
+caller-association court checks that placement and still compares original
+artifact bytes, digests, positions, caller association and recovered meaning.
+
+The original-request SDK custody cutover makes serial field-text imports funded
+by their real serial ledger; the field-text courts now assert that bill and the
+typed Request memory refusal. The snapshot-lifetime court funds its actual
+receiving metadata as well as text, retaining the last-owner refund assertion.
+
+
+D17 and the accepted original-source/owned-read decision retire the assumption
+that ordinary Native capture owns ONLY its encoded backing, or that recovery's
+first allocation is managed UTF-8. The capture court retains zero-budget
+pre-effect refusal, cancellation, byte equality, clone pointer equality,
+editable recovered truth and exact final-owner refund, now observing ALL actual
+capture/readmission grants. It fills the remaining invoking ledger to prove
+that escaped clones retain their exact aggregate bill, then proves that the
+last original/readmitted owner refunds that whole bill. The existing Native
+byte-owner court still proves exact encoded/enclosing-backing custody. The
+managed-text checkpoint court keeps its typed one-byte policy refusal,
+unchanged source and target, and successful funded retry; D17 may refuse a
+metadata owner before reaching text. Neither court substitutes another request
+for its governed capture or recovery invocation.
+
+
+The same durable-projection decision retires the expectation that the recovered
+process emits no diagnostic trace while replaying a diagnostics-free merge.
+That court still proves the ACTUAL original artifact contains no diagnostics,
+requires recovered typed merge authority, compares every durable field and
+original input, and checks the recovered branch head. Process-local replay
+traces cannot be an oracle for missing original authority.
+
+Phase 4's sealed semantic/envelope consistency rule retires a plan fixture that
+changed only descriptor_semantics_version to 99 while retaining a semantic
+image describing version 1. This is a contradictory canonical artifact, not a
+coherent unsupported-version plan. The court now requires the earlier exact
+semantic SchemaMismatch refusal, with unchanged owner and branch head. It does
+not manufacture a new original semantic image or bypass that admission guard.

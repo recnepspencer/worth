@@ -99,7 +99,7 @@ impl PerformedPublicationStream {
     pub(super) fn record_with_cutover<T>(
         &self,
         route: Arc<CanonicalPublicationRoute>,
-        resident: Arc<CanonicalCommitEnvelope>,
+        original_payload: &crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         medium: Option<&RelationalDurableMediumBinding>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -115,7 +115,7 @@ impl PerformedPublicationStream {
         };
         let original = RelationalCommitPublication::prepare_memory_frame(
             PatchStreamPosition(next_position),
-            &resident,
+            original_payload,
             medium,
             execution,
         )
@@ -123,7 +123,7 @@ impl PerformedPublicationStream {
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
                 PatchStreamPosition(next_position),
-                resident,
+                original_payload.envelope().clone(),
             ),
         ));
         // Durable before live: the position is assigned only once the medium

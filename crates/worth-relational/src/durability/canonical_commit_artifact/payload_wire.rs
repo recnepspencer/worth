@@ -35,7 +35,7 @@ impl<'a> ArtifactPayloadRef<'a> {
 pub(super) struct ArtifactPayloadWire<'a> {
     pub(super) position: PatchStreamPosition,
     #[serde(borrow)]
-    pub(super) canonical: CanonicalEnvelopeWire<'a>,
+    pub(super) canonical: CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'a>>,
     #[serde(deserialize_with = "required_original_inputs")]
     pub(super) original_inputs:
         Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,

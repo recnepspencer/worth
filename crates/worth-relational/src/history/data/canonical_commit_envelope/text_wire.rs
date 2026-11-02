@@ -14,7 +14,7 @@ use crate::schema::data::{
 use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthority};
 
 #[derive(Deserialize)]
-pub(crate) struct CanonicalEnvelopeWire<'a> {
+pub(crate) struct CanonicalEnvelopeWire<Symbols> {
     index_definition_delta: super::CanonicalIndexDefinitionDelta,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     caller_association: Option<super::super::RelationalCallerAssociation>,
@@ -38,11 +38,12 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
     schema_version: SchemaVersionId,
     schema_authority: SchemaAuthoritySnapshot,
     merged_plan: MergedCommitPlan,
-    #[serde(borrow)]
-    symbol_texts: crate::symbols::data::SymbolSnapshotWire<'a>,
+    symbol_texts: Symbols,
     revision_symbol_references: Vec<crate::symbols::data::Symbol>,
+    #[serde(default)]
     record_allocations: Vec<crate::history::data::CanonicalRecordAllocation>,
     patch: CanonicalAuthoritativePatch,
+    #[serde(default = "RelationalDescriptiveTouchGraph::unavailable")]
     descriptive_touches: RelationalDescriptiveTouchGraph,
     diagnostics_summary: RelationalDiagnosticArtifact,
     lineage: PublishedLineageArtifact,
@@ -56,7 +57,7 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
     #[serde(skip)]
     readmission_memory: super::CanonicalEnvelopeReadmissionMemory,
 }
-impl CanonicalEnvelopeWire<'_> {
+impl<Symbols> CanonicalEnvelopeWire<Symbols> {
     pub(crate) fn retain_readmission_memory(
         &mut self,
         memory: super::CanonicalEnvelopeReadmissionMemory,
@@ -107,7 +108,8 @@ impl CanonicalEnvelopeWire<'_> {
     pub(crate) fn commit_id(&self) -> CommitId {
         self.commit.commit_id
     }
-
+}
+impl CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'_>> {
     fn validate_symbol_coverage(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -185,7 +187,23 @@ impl CanonicalEnvelopeWire<'_> {
                 .retain_decoded_memory(self.readmission_memory.origin.take());
         }
         let _symbol_scratch = self.validate_symbol_coverage(execution)?;
-        let symbol_texts = self.symbol_texts.readmit(execution)?;
+        let symbol_texts = std::mem::replace(
+            &mut self.symbol_texts,
+            crate::symbols::data::SymbolSnapshotWire {
+                entries: Vec::new(),
+            },
+        )
+        .readmit(execution)?;
+        self.into_envelope(symbol_texts).map_err(|_| {
+            crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary
+        })
+    }
+}
+impl<Symbols> CanonicalEnvelopeWire<Symbols> {
+    pub(super) fn into_envelope(
+        mut self,
+        symbol_texts: crate::symbols::data::SymbolTableSnapshot,
+    ) -> Result<super::CanonicalCommitEnvelope, &'static str> {
         let body = super::CanonicalCommitEnvelopeBody {
             index_definition_delta: self.index_definition_delta,
             caller_association: self.caller_association,
@@ -227,10 +245,14 @@ impl CanonicalEnvelopeWire<'_> {
             semantic_result: self.semantic_result,
         };
         if !envelope.codec_retirement_headers_valid() {
-            return Err(
-                crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary,
-            );
+            return Err("invalid canonical codec retirement headers");
         }
         Ok(envelope)
+    }
+}
+
+impl CanonicalEnvelopeWire<crate::symbols::data::SymbolTableSnapshot> {
+    pub(super) fn take_descriptive_symbols(&mut self) -> crate::symbols::data::SymbolTableSnapshot {
+        std::mem::take(&mut self.symbol_texts)
     }
 }

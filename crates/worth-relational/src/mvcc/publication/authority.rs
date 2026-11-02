@@ -241,7 +241,8 @@ fn prepare_versioned_publication(
         artifact.set_original_inputs(original);
     }
     if matches!(sequence, PublicationSequence::RecoveryTruth)
-        && let Some(previous) = original_artifact
+        && let Some(previous) =
+            original_artifact.filter(|artifact| artifact.original_inputs().is_some())
     {
         artifact
             .preserve_original_inputs(previous)

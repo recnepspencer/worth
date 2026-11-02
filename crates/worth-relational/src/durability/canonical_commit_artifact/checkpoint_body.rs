@@ -111,7 +111,7 @@ fn decode(
         input,
         additional_envelope_bytes,
     )?;
-    let mut wire: CanonicalEnvelopeWire<'_> =
+    let mut wire: CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'_>> =
         rmp_serde::from_slice(bytes).map_err(|error| Refusal::PayloadDecode {
             detail: error.to_string(),
         })?;

@@ -22,7 +22,7 @@ pub(crate) enum RelationalCommitPublication {
 impl RelationalCommitPublication {
     pub(crate) fn prepare_memory_frame(
         position: crate::publication::patch::data::PatchStreamPosition,
-        envelope: &crate::history::data::CanonicalCommitEnvelope,
+        prepared: &crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
         medium: Option<&RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
@@ -32,7 +32,7 @@ impl RelationalCommitPublication {
         if medium.is_some() {
             return Ok(None);
         }
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_memory_publication(position,envelope,execution).map(Some)
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_memory_publication(position,prepared,execution).map(Some)
     }
     /// Publish or retain the stream's own subject. A caller cannot substitute
     /// another admitted publication for the prepared route's commit.

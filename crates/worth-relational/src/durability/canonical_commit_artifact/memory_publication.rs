@@ -1,12 +1,11 @@
 //! Issue one original frame from genuine producer data, before performed admission.
 use super::frame::{CanonicalCommitArtifactHeader, HEADER_LEN};
-use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
 use super::payload_wire::ArtifactPayloadRef;
+use super::PreparedOriginalCanonicalPayload;
 use super::{
     RelationalCanonicalCommitArtifact as Artifact,
     RelationalCanonicalCommitArtifactEncodeDenial as Denial,
 };
-use crate::history::data::CanonicalCommitEnvelope;
 use crate::publication::patch::data::PatchStreamPosition;
 use std::io::{self, Write};
 use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
@@ -15,9 +14,10 @@ impl Artifact {
     /// The position is reserved producer DATA. This issues bytes, not performed proof.
     pub(crate) fn from_memory_publication(
         position: PatchStreamPosition,
-        envelope: &CanonicalCommitEnvelope,
+        prepared: &PreparedOriginalCanonicalPayload,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
+        let envelope = prepared.envelope();
         let payload = ArtifactPayloadRef::new(position, envelope);
         let mut count = Sizing {
             request: *request,
@@ -33,10 +33,7 @@ impl Artifact {
         let header = CanonicalCommitArtifactHeader {
             position,
             commit_id: envelope.commit.commit_id,
-            digest: Digest::recorded(
-                Self::envelope_payload_digest_for_request(position, envelope, request)
-                    .map_err(Denial::Readmission)?,
-            ),
+            digest: prepared.at_position(position),
         };
         let mut buffer = ExecutionRequestArrayBuilder::<u8>::allocate(*request, frame_len)?;
         buffer.extend_from_slice(
@@ -55,10 +52,10 @@ impl Artifact {
             });
         }
         let bytes = buffer.seal()?.into_immutable_bytes();
-        // The second pass must produce exactly the counted/digested original bytes.
-        let artifact = Self::from_owned_bytes(bytes).map_err(|cause| Denial::PayloadEncoding {
-            detail: format!("original Memory frame agreement: {cause:?}"),
-        })?;
+        // These bytes were deterministically emitted from the exact immutable
+        // owner whose two leaves were prepared, with count/emission agreement.
+        // External bytes still pass the full frame verification door.
+        let artifact = Self { bytes, header };
         request.consult().map_err(Denial::Request)?;
         Ok(artifact)
     }

@@ -149,11 +149,18 @@ impl RelationalPreparationHistory {
             .canonical_routes
             .prepare_authored_generation(execution, &resident)
             .map_err(super::canonical_publication_routes::authored_write_commit_denial)?;
+        let original_payload = crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(resident, &execution)
+            .map_err(|cause| match cause {
+                crate::durability::data::RelationalRecoveryStop::Request(cause) => crate::transactions::data::TransactionCommitError::execution(cause.into()),
+                crate::durability::data::RelationalRecoveryStop::Allocation(cause) => crate::execution::allocation_commit_error(crate::transactions::data::TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial: cause }))),
+                crate::durability::data::RelationalRecoveryStop::Durability(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, cause.detail)),
+            })?;
         RelationalCanonicalPublicationRoutes::reserve(
             &self.canonical_routes,
             envelope,
             root,
             generation,
+            original_payload,
         )
         .map_err(|detail| {
             crate::transactions::data::TransactionCommitError::publication(

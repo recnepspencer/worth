@@ -142,9 +142,16 @@ impl CapturedCheckpointBasis {
                     || capture.leaf.unavailable_records != region.unavailable_records
                     || capture.leaf.kind_authority != region.kind_commitment
                 {
-                    return Err(
-                        corrupt("captured region differs from its selected root leaf").into(),
-                    );
+                    return Err(corrupt(format!(
+                        "captured region differs from its selected root leaf: partition={} partition_equal={} content_equal={} entity_slots_equal={} relation_slots_equal={} availability_equal={} kind_equal={}",
+                        region.partition_id.0,
+                        capture.leaf.partition_id == region.partition_id,
+                        capture.leaf.content_digest == region.content_digest,
+                        capture.leaf.entity_slots == region.entity_slots,
+                        capture.leaf.relation_slots == region.relation_slots,
+                        capture.leaf.unavailable_records == region.unavailable_records,
+                        capture.leaf.kind_authority == region.kind_commitment,
+                    )).into());
                 }
                 merge_history_dependencies(
                     &mut history_dependencies,

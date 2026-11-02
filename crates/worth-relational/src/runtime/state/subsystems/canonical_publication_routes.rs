@@ -114,7 +114,8 @@ pub(crate) enum CanonicalCheckpointAdmissionError {
 pub(crate) struct PreparedCanonicalPublicationRoute {
     routes: Arc<RelationalCanonicalPublicationRoutes>,
     route: Arc<CanonicalPublicationRoute>,
-    resident: Arc<CanonicalCommitEnvelope>,
+    original_payload:
+        crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
 }
 
 impl Default for RelationalCanonicalPublicationRoutes {
@@ -180,8 +181,12 @@ impl RelationalCanonicalPublicationRoutes {
         envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         root: Arc<crate::branch::RelationalBranchRoot>,
         authored_writes: Option<AuthoredWriteGeneration>,
+        original_payload: crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
     ) -> Result<PreparedCanonicalPublicationRoute, &'static str> {
         let resident = envelope.get().ok_or("prepared envelope is not resident")?;
+        if !Arc::ptr_eq(&resident, original_payload.envelope()) {
+            return Err("prepared payload differs from its original envelope owner");
+        }
         let commit = resident.commit.clone();
         let roots = root
             .descriptor()
@@ -221,7 +226,7 @@ impl RelationalCanonicalPublicationRoutes {
         Ok(PreparedCanonicalPublicationRoute {
             routes: Arc::clone(routes),
             route,
-            resident,
+            original_payload,
         })
     }
 
@@ -306,7 +311,7 @@ impl PreparedCanonicalPublicationRoute {
             .publication_cell = Some(publication_cell);
         self.routes.performed_stream.record_with_cutover(
             Arc::clone(&self.route),
-            self.resident.clone(),
+            &self.original_payload,
             admission,
             medium,
             policy,
