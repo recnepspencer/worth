@@ -1,4 +1,5 @@
 //! One actual Home checkpoint owner serves manual and automatic advancement.
+mod controls_for_test;
 use super::{
     owner::HomeCheckpointOwner, ApplicationHomeCheckpoint as Summary,
     ApplicationHomeCheckpointDenial as Denial, ApplicationHomeCheckpointLimits,

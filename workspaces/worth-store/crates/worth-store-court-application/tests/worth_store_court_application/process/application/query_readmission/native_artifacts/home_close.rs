@@ -4,6 +4,7 @@ use worth_execution::{CancellationSource, MapKernelStop, SerialMemoryBudget, Ser
 use worth_query_host::facade::WorthQueryApplicationHome;
 use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};
 mod killed_writer;
+mod source_retirement;
 type HostHome = WorthQueryApplicationHome<HomeIdentitySchema, HomeProgram>;
 fn open(
     path: &std::path::Path,
@@ -114,7 +115,7 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
         ));
     }
     assert_eq!(balance(home.runtime()), 8);
-    let bounded = serial(Some(64 * 1024), None);
+    let bounded = serial(Some(256 * 1024), None);
     let closed = home
         .close(&ExecutionRequest::serial(&bounded))
         .unwrap_or_else(|refused| {

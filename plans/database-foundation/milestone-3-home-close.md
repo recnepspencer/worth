@@ -63,6 +63,8 @@ translation is permitted. New public owner ports use their existing facades.
 | D11 original request deadlines and refusal custody | `expired_host_close_preserves_the_same_serving_home_and_a_live_retry_physically_closes`, with the original owners retained |
 | D11/D12 failed close checkpoint does not prevent Closed | `host_checkpoint_memory_failure_is_reported_while_original_retired_owners_remain_physically_closed` |
 | D11 kill without close preserves acknowledged results | `killed_host_without_close_reopens_its_acknowledged_value_and_original_idempotency_record`; exact P-A refusal is retained if blocked |
+| D11 cold/materialized Native and independent inert metadata | `cold_and_materialized_original_sources_physically_close_while_metadata_and_retired_payloads_live` |
+| D11 authentic source-capable fork veto and retry | `an_original_source_capable_fork_refuses_before_native_seal_and_same_home_retry_closes` |
 | D17 original member callback custody | `completed_member_callback_survives_a_busy_original_return_slot_without_replay`, `cancelled_member_handoff_returns_original_custody_and_a_live_request_continues_it` |
 | D17 prepaid close storage | `prepaid_close_storage_retains_original_backings_through_exhaustion_and_public_moveout`, `prepaid_slot_denial_targets_actual_backing_and_preserves_cancellation` |
 | D17 no service after seal; terminal custody consumed once | Prepared/retiring/retired owner types and sealed `query-home-retirement` caller |
@@ -137,3 +139,45 @@ This map records intended evidence until the focused courts, affected normal
 targets, default-stack direct controls and completion gates qualify the current
 committed source. Earlier compilation logs qualify only their earlier dirty
 source, and do not certify physical Closed. Independent review remains required.
+
+## Causal test and boundary corrections
+
+The lifecycle plan's Native/Store source-close decision ("Actual physical slots
+and retained callback work") requires original source and retirement state to
+stay under the existing envelope lock. It deliberately retires the old
+`memory_frame_layout_preserves_scalar_tuple_observations` size-equality
+assertions against `OldBacking`/`OldCell`: journal backing now occupies 80 rather
+than 32 bytes on the qualified Windows target. The replacement keeps all actual
+payload-length, digest and scalar-observation assertions. This is an explicit
+cold-storage cost, not a claim of unchanged layout or a wire-format change.
+
+Recovery's whole-state comparison now recognizes the retired-root map inside
+its new RwLock. It still compares every entry and field and preserves native
+address aliasing; only independently issued process addresses are canonicalized.
+The field-text controls preserve original-request custody: the one-byte request
+now refuses at the genuine symbol-table admission, the retained-backing control
+funds its larger actual table, and SerialMemoryBudget custody is reported as
+managed, as `StoredSymbolText::admit` already requires.
+
+The private source-member and installed-handler alias courts now live in the
+existing source-protection and handler-retirement unit courts. Their registered
+runtime construction frontier is unchanged; no source-court baseline exemption
+was added. The sole new control caller retains original cfg(test)
+lock-observation metadata and invokes no control.
+
+D12's mandatory coupled checkpoint retires the World-owned courts' old
+`WorldSectionRequired` expectations. They now require a successful coupled
+checkpoint and retain their original external-read and delivery fences. Bare
+Native-only reopened Homes still assert `WorldSectionRequired`.
+
+`close_deadline_retains_serving_native_until_its_original_checkpoint_settles`
+used a worldless checkpoint control that cannot admit D12 work. Its replacement
+`close_deadline_retains_the_original_coupled_checkpoint_and_retry_closes_the_same_home`
+drives the actual Home-issued Native/World operation and requires explicit
+post-seal recovery custody, the same continuous lease, and successful retry.
+The neighboring input-ticket and overlapping-driver courts use that same
+issued operation; observer hooks forward through its real checkpoint journey.
+
+The detached-read admission added for source close is local to that source-close
+phase. Memory retirement retains its existing incremental read/cache sequencing;
+it does not inherit source-close's stronger initial-capture veto.
