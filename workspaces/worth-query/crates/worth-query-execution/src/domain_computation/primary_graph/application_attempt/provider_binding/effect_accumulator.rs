@@ -1,6 +1,6 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use worth_relational::facade::transactions::{MutationIntent, WorkerIntentBatch};
@@ -17,9 +17,13 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields;
 use crate::domain_computation::WorthQueryProvisionalEffectStep;
 
+mod commit_projections;
 #[cfg(test)]
 mod compound_patch_tests;
 mod expected_steps;
+#[cfg(test)]
+mod ordering_tests;
+use commit_projections::materialize_commit_projections;
 pub(in crate::domain_computation::primary_graph) use expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 use expected_steps::WorthQueryExpectedEffectSteps;
 
@@ -273,58 +277,6 @@ impl WorthQueryRegisteredProviderEffects {
     ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.clone().seal(commit)
     }
-}
-
-fn materialize_commit_projections(
-    lowered: Vec<WorthQueryLoweredProviderEffect>,
-) -> Result<
-    (
-        Vec<MutationIntent>,
-        Vec<WorthQueryApplicationEmission>,
-        WorthQueryExpectedEffectSteps,
-    ),
-    WorthQueryApplicationAttemptDenial,
-> {
-    let mut intents = Vec::new();
-    let mut emissions = Vec::new();
-    // Query composes disjoint effects before handing one intent per record to
-    // Native. Keep each original evidence step; move payloads without cloning.
-    let mut patches = BTreeMap::<_, Vec<_>>::new();
-    let expected_steps = WorthQueryExpectedEffectSteps::from_step_groups(
-        lowered.into_iter().filter_map(|effect| match effect {
-            WorthQueryLoweredProviderEffect::EntityAspectPatch {
-                steps,
-                entity_id,
-                operations,
-            } => {
-                patches.entry(entity_id).or_default().extend(operations);
-                Some(steps)
-            }
-            WorthQueryLoweredProviderEffect::Mutation { intent, steps } => {
-                intents.push(intent);
-                Some(steps)
-            }
-            WorthQueryLoweredProviderEffect::ObservedNoop { steps } => Some(steps),
-            WorthQueryLoweredProviderEffect::Emission(emission) => {
-                emissions.push(emission);
-                None
-            }
-        }),
-    )?;
-    for (entity_id, operations) in patches {
-        use worth_relational::facade::transactions::{
-            ApplyEntityAspectPatchIntent, EntityMutationIntent,
-        };
-        intents.push(MutationIntent::Entity(
-            EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
-                entity_id,
-                aspect_patch: worth_foundational::facade::PortableRecordAspectPatch::new(
-                    operations,
-                ),
-            }),
-        ));
-    }
-    Ok((intents, emissions, expected_steps))
 }
 
 #[cfg(test)]

@@ -12,3 +12,6 @@ mod cost;
 
 #[path = "worth_query_court_decl_host/determinism/mod.rs"]
 mod determinism;
+
+#[path = "worth_query_court_decl_host/effect_order/mod.rs"]
+mod effect_order;
