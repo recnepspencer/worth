@@ -256,3 +256,24 @@ use ContentRef at every size; above16MiB refuses before effects. No code, test,
 shape, API or codec changes are needed; existing courts are not rerun for prose.
 Verify inventory paths/counts, scoped formatting, boundary/context, caps and
 whitespace, then obtain the same reviewer's three-skill gate before committing.
+
+# R9 boundary and implementation plan
+
+Native ContentFrameAdmission is the actual duplicate identity owner. Two real
+identical staged frames naturally share their digest, but the unit collision
+checker alone does not prove this admission receiver refuses disagreement.
+Add one receiver-owned compiled control on RelationalSchemaRegistry, selecting
+its actual installed format handle; its one-shot thread-local arm is scoped by
+Drop and matches only that handle. No arbitrary identity or input-byte override
+is exposed. The exact certification caller is added to the existing guard.
+
+Only when a genuine duplicate already exists, readmit a fresh original-funded
+copy, flip its final payload byte after checked exclusive access, and send it
+to the existing same_content owner. It cannot escape as an admitted frame.
+Unarmed comparisons use the original frame. Unexpected shape/sharing refuses
+EncodingInconsistency. Charge the fixed control decision at the receiver.
+The real transaction court demands literal ContentIdentityConflict, unchanged
+full descriptor and restored original-funded memory, then verifies scoped
+cleanup and unarmed duplicate publication. Remove only the duplicate comparison
+to kill the court via wrongly successful publication; restore exact bytes,
+rebuild, run the content portfolio and scoped gates, review and commit separately.

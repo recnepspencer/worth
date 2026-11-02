@@ -462,3 +462,43 @@ mutation result. Full-binary qualification remains pending subsequent repairs.
 
 The same reviewer passed R8 under qa-loop, qa-tests and code-quality-qa after
 independently checking the staged docs, consumer links and final receipts.
+
+# R9: identity conflict through real admission
+
+A compiled scoped control belongs to the actual schema registry receiver and
+matches its installed format Arc. Only an actual duplicate admission consumes
+it. The frame owner readmits a fresh original-funded copy, checks exclusive
+access and flips one payload byte for comparison; that witness never enters
+the directory. The same_content owner performs the exact comparison. No hash
+owner, aspect shape, arbitrary identity override or portable snapshot changes.
+The only added guard edge names this certification file.
+
+The new identity_conflict court creates two genuine duplicate admissions and
+expects literal ContentIdentityConflict from the real transaction. It checks
+the complete selected descriptor and full original-memory restoration. Scoped
+unwind cleanup is then proved by a real unarmed duplicate commit. The oracle is
+a literal typed refusal, not the equality algorithm copied into the court.
+
+| R9 exact command or experiment | Result |
+| --- | --- |
+| Fetch master/provider; merge each with `--no-edit` | Three successes; already up to date. |
+| `cargo fmt -p worth-relational -p worth-court-relational-certification` | Success. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification duplicate_content_disagreement_refuses_real_admission_with_literal_identity_conflict -- --nocapture` | Baseline: 1 passed, 0 failed/ignored/measured, 213 filtered, 0.01s. |
+| Same exact court, deleting only admission's prior.same_content call | Compiled mutant: 0 passed, 1 failed, 0 ignored/measured, 213 filtered. Real publication wrongly succeeded; unwrap_err saw Ok(CommitResult). |
+| Python mutation install/restore, PYTHONUTF8=1 | One comparison anchor; one byte-exact source restoration assertion, timestamp refreshed. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` after restoration | 65 passed, 0 failed/ignored/measured, 149 filtered, 25.53s; rebuilt restored source in 30.19s. |
+
+| R9 final exact gates | Result |
+| --- | --- |
+| `cargo fmt --check -p worth-relational -p worth-court-relational-certification` | Success. |
+| `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | Failed only untouched payload.rs:34, 1 error/8 warnings. |
+| `cargo clippy -p worth-court-relational-certification --all-targets --no-deps` | Failed only four previously listed untouched court errors/2 warnings. |
+| Boundary check; context check | One success each. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | Success, 7 Rust files. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | One success each, zero errors. |
+| Python lint-scope check, PYTHONUTF8=1 | Four scope assertions passed. |
+| `git diff --cached --check` | Success, zero errors. |
+
+The same reviewer passed R9 under qa-loop, qa-tests and code-quality-qa after
+independently checking the staged owner/court/guard, actual compiled kill, exact
+restoration, rebuilt portfolio and final receipts. No R9 finding remains open.

@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod collision_tests;
 mod contract;
+mod duplicate_comparison;
 mod integrity;
 pub(super) mod layout;
 mod record;

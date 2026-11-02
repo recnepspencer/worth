@@ -66,7 +66,9 @@ impl ContentFrameAdmission {
         let frame = RelationalContentFrame::readmit_record(execution, format, record)?;
         visit_directory(execution, frames.len())?;
         if let Some(prior) = frames.get(&frame.identity()) {
-            prior.same_content(execution, &frame)?;
+            control.checkpoint(1)?;
+            let comparison = frame.duplicate_comparison(execution, format)?;
+            prior.same_content(execution, &comparison)?;
         }
         frames
             .insert_cloned_native_for_request(&frame.identity(), &frame, *execution)

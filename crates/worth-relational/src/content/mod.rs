@@ -1,4 +1,5 @@
 //! Immutable content authority carried by Native transactions and selected roots.
+mod admission_fault;
 mod attachments;
 mod codec;
 mod control;
