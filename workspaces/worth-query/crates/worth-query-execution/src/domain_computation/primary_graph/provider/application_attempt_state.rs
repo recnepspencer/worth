@@ -38,9 +38,7 @@ pub(super) use retained_basis::{
     WorthQueryObservedApplicationFactBasis,
 };
 
-use super::{
-    mutation_work::WorthQueryPrimaryMutationWorkCounters, WorthQueryPrimaryGraphApplicationAttempt,
-};
+use super::WorthQueryPrimaryGraphApplicationAttempt;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct WorthQueryApplicationAttemptLookupKey(WorthQueryProviderSessionAffinityIdentity);

@@ -6,9 +6,9 @@ mod graph_obligation;
 pub(in crate::domain_computation) use graph_obligation::{
     WorthQueryInspectionReadCompletion, WorthQueryInspectionReadTerminalDenial,
     WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
-    WorthQueryManagedIndexCallbackProof, WorthQueryManagedIndexReadSession,
-    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
-    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
+    WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
+    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQueryResourceReadCompletion, WorthQuerySessionInspectionReadProof,
     WorthQuerySessionResourceReadProof,
 };
