@@ -18,6 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
+| Choose durable facts, names and links | [Native representations](native-representations.md), then [source subgraphs](source-subgraphs.md) | Independently mutable fields, entities, typed relations and an explicit read closure; canonical atoms need a recorded reason |
 | Explain a query result or an authored operation | [Inspect original evidence](#inspect-original-source-and-query-evidence) | Saved source/query receipts and current inspection permissions |
 | Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
@@ -281,7 +282,16 @@ includes a passing capability example and an undeclared-member compile refusal.
 
 ### Canonical nested values and derived readiness
 
-A pure value owner can derive `worth_foundational::facade::WorthValue` to emit
+Choose [native fields, entities and typed relations](native-representations.md)
+for durable application structure first. A nested Rust value does not make its
+members independently readable or patchable. The canonical binding below is for
+an intentional identity-free, reference-free atom, an opaque owner-admitted leaf
+or a named document boundary. Record each durable exception's owner, policy,
+reason and reference guard; keep independently edited objects and links native.
+See [source subgraphs](source-subgraphs.md) for partial edits and prior state.
+
+An application value owner can derive
+`worth_query_decl::facade::application_schema::WorthValue` to emit
 Serde serialization, portable wire shape, and a checked deserialization seed
 from one definition. Use those generated serialization implementations. Supported
 grammar includes concrete named/unit/newtype structs, external unit/newtype/named
@@ -315,7 +325,8 @@ Nullable optional payloads, such as `Option<Option<T>>` or `Option<()>`, are
 refused because Serde's `null` would erase the distinction between absence and
 a present null payload. Use an externally tagged enum for that meaning.
 
-The ordinary entry uses `worth_query_value_binding!` with `scalar: String`,
+For that whole-value atom, the existing entry uses
+`worth_query_decl::facade::worth_query_value_binding!` with `scalar: String`,
 `canonical,` and an optional `validate: domain_validator` returning
 `Result<(), &'static str>`. Domain validation runs on encode and decode. Fixed
 arrays and pairs retain their actual type cardinality. Encoding checks
@@ -329,6 +340,13 @@ representation policy may use `canonical: DOMAIN_BOUNDS`; absent policies use
 failures retain their exact `ValueCodecDenial` in
 `Canonical { binding_identity, cause }`; native cancellation retains its original
 request's stop at the owning handoff.
+
+This canonical grammar remains one native String field. Inner members have no
+native read/patch, touch, conflict or invalidation path, and serialization emits
+the complete atom. Current structured canonical bindings install in Struct
+fields; `ApplicationSchemaDeclarationBuilder::scalar_aspect_field` refuses that
+carrier. Fine native field reads also do not imply independent sibling-write
+transactions. See the [actual grain contract](../plans/worth-store/storage-foundation-aspect-native-gate.md#current-value-grain-contract).
 
 The [canonical binding example](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical_tests.rs)
 derives a nondefault `Span`, validates positive length in both directions and

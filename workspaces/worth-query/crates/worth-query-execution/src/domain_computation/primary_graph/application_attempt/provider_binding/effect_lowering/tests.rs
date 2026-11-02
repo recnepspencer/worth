@@ -53,6 +53,7 @@ fn appended_workflow_facts_keep_their_context_after_an_issued_application_create
             &|_, _| None,
             &references,
             application_partition,
+            false,
             effect,
         )
         .unwrap()
