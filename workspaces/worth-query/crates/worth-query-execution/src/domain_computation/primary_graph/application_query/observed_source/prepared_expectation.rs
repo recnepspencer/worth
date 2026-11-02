@@ -1,3 +1,4 @@
+mod admission;
 mod affinity;
 mod pending;
 pub(super) use affinity::parameter_denial;
@@ -271,6 +272,7 @@ where
             Schema,
         >,
     {
+        self.validate_source_admission(admission, Binding::IDENTITY)?;
         let identity = source.idempotency_identity().bytes();
         let checked = self.checked_source_affinity::<Binding, Scope>(
             admission,
@@ -323,6 +325,7 @@ where
     ) -> Result<WorthQueryPendingSourceExpectation<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>, WorthQuerySourceExpectationDenial>
     where Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<Schema>,
 {
+        self.validate_source_admission(admission, Binding::IDENTITY)?;
         let checked = self.checked_source_affinity::<Binding, Scope>(
             admission,
             &source,

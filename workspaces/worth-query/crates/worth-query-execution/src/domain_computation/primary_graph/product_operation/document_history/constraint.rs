@@ -16,6 +16,9 @@ use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
 };
 
+#[cfg(test)]
+mod installed_entry_tests;
+
 #[must_use = "retain the original restriction for every native attempt preparation"]
 pub struct WorthQueryDocumentHistoryOperationConstraint {
     model: HistoryModelIdentity,
@@ -112,12 +115,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ) {
             return Err(Denial::ForeignRuntime);
         }
-        if !restriction.model.matches_operation(admitted) {
-            return Err(Denial::ForeignModel);
-        }
+        admitted
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .map_err(Denial::OperationAdmission)?;
         admitted
             .validate_current_authority()
             .map_err(Denial::OperationAdmission)?;
+        if !restriction.model.matches_operation(admitted) {
+            return Err(Denial::ForeignModel);
+        }
         let meaning = binding.bind_admission(admitted);
         if meaning.canonical_key() != restriction.meaning.canonical_key()
             || !meaning.has_same_intent(restriction.meaning)

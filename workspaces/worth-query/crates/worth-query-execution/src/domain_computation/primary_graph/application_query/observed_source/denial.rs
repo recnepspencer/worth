@@ -2,6 +2,10 @@
 /// expectation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQuerySourceExpectationDenialKind {
+    /// The exact admission authority refusal before any source work.
+    AdmissionAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
     /// The operation declares a source expectation and none was bound.
     MissingExpectation,
     /// The source was observed by a different application runtime.

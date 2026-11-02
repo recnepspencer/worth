@@ -27,6 +27,7 @@ impl<Query> WorthQueryPendingSourceExpectation<Query> {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
+        runtime.validate_source_admission(admission, self.expected_query_identifier)?;
         if self.admission_identity != admission.admission_identity()
             || !admission
                 .graph_work()
