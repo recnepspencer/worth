@@ -104,21 +104,26 @@ fn normalized_small_output_does_not_retain_large_input_bill() {
         )
         .unwrap();
     let input_charge = budget.charged_memory_bytes();
-    let proposal = transaction.validate(&request, &runtime).unwrap();
-    let MutationIntent::Create(CreateIntent::Entity(entity)) =
-        &proposal.state.prepared.merged_plan.plan().merged_intents[0]
-    else {
-        panic!("accepted create")
+    let normalized = {
+        let proposal = transaction.validate(&request, &runtime).unwrap();
+        let MutationIntent::Create(CreateIntent::Entity(entity)) =
+            &proposal.state.prepared.merged_plan.plan().merged_intents[0]
+        else {
+            panic!("accepted create")
+        };
+        assert!(
+            entity.client_key.as_symbol().is_some(),
+            "the genuine normalizer selected the smaller representation"
+        );
+        // The claim concerns the normalized plan, not the independently
+        // charged fixed proposal backing or its other accepted state.
+        proposal.into_state().prepared.merged_plan
     };
-    assert!(
-        entity.client_key.as_symbol().is_some(),
-        "the genuine normalizer selected the smaller representation"
-    );
     assert!(
         budget.charged_memory_bytes() < input_charge,
         "accepted output must not pin the discarded input peak"
     );
-    drop(proposal);
+    drop(normalized);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 

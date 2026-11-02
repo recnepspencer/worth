@@ -1917,7 +1917,7 @@ preparation (267,464 bytes). Completed decision sets now retain their exact
 move-only admission in original-request-funded backing from seal through commit
 preparation. This is the completed read set's custody, released when the same
 admission transfers to the Running phase; ordinary program carriage no longer
-embeds the full 7 KB admission at every entry frame. Both full and native
+embeds the full inline admission at every entry frame. Both full and native
 completion reserve before allocating and preserve the typed execution refusal.
 The new Native retention test initially supplied only the backing bytes as a
 finite ceiling, overlooking the execution framework's temporary 392-byte charge.
@@ -1957,3 +1957,15 @@ asserts (`program/speculation/counted_read_stops/custody.rs`). Its old
 `ApplicationHomeOwnsLifecycle` expectation also assumed the retired World-first
 ordering. The fresh control now checks that actual earlier ownership refusal;
 it does not weaken the assertion to any conditional-close error.
+
+
+The core focused packet exposed a stale normalization-bill oracle in
+`normalized_small_output_does_not_retain_large_input_bill`: it retained the
+entire proposal while comparing the normalized plan's bill against input.
+The new fixed 10,240-byte proposal backing made that proxy invalid. As in the
+adjacent `replay_validation_keeps_normalized_copy_after_inputs_drop` control,
+the test now isolates the SAME actual normalized-plan owner before measuring.
+Its actual-symbol assertion, strict smaller-than-input comparison and final
+zero-charge assertion remain unchanged. The separate retained-proposal test
+continues to require the exact fixed backing charge while that owner is live.
+This is an oracle-scope correction; production accounting is unchanged.
