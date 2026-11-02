@@ -167,5 +167,26 @@ Instrument tests are measurement tests, not a claim of a symbol-growth guard.
 
 ## Slice results
 
-Baseline only: 160,719 symbols and 674,508,286 archive bytes. Optimization results
-must retain the same fixture, profile, instrument and successful artifact selection.
+| Slice | Symbols | Delta | Archive bytes | Delta | Physical code bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline | 160,719 | 0 | 674,508,286 | 0 | 48,544,077 |
+| Concrete source meanings | 157,807 | -2,912 (-1.81%) | 659,337,342 | -15,170,944 (-2.25%) | 46,914,499 |
+
+The source-meaning slice keeps the public generic entry and typed observations,
+but uses the exact existing relational denial and a dynamic comparator inside
+the concrete registry. Row and set completion use a borrowed non-generic owner
+context. The original comparison-state custody extent and phase ordering remain.
+Query Execution namespace symbols fall from 46,363 to 44,506; primary_graph
+falls from 40,599 to 38,742. One-shot completion falls from 790,976 to 667,168
+code bytes (still 32 typed copies). The 96-copy interner/checkpoint families
+are absent from the application archive; their bodies now compile in the owner.
+Independent totals agree at 157,807 symbols and 46,914,499 code bytes;
+unattributed code is 52,405 bytes and shared-alias code remains zero.
+Archive SHA-256:
+`b795f2ee986eb1a5dbd27c5917509211bfa24859872cfd0d56ee504584e8429d`.
+
+Reproduction substitutes `source-meanings-court-build.jsonl` for the baseline
+build log and `mono-source-meanings.json` for the measurement output, with the
+same exact build/instrument commands, fixture and existing test profile.
+Source parent is `2fee93f1a8`, plus the four-file source-meaning diff in its
+following commit. Upstream sync fetched before the slice was unchanged.
