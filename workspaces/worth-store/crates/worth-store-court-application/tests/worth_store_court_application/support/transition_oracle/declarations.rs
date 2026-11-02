@@ -83,6 +83,9 @@ pub(crate) fn outcome(
         Err(crate::branch_lifecycle::LifecycleStop::RequestStopped(reason)) => {
             panic!("{case}: unexpected request stop: {reason:?}")
         }
+        Err(crate::branch_lifecycle::LifecycleStop::OriginalInputsStopped(reason)) => {
+            panic!("{case}: unexpected original input stop: {reason:?}")
+        }
     }
 }
 

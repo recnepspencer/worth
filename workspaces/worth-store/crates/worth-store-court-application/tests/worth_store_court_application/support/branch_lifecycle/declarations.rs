@@ -40,6 +40,7 @@ pub(crate) type ReferencePrefixes = BTreeMap<(usize, usize), State>;
 pub(crate) enum LifecycleStop {
     Denied(LifecycleDenial),
     RequestStopped(worth_execution::WorkCeilingDenial),
+    OriginalInputsStopped(worth_relational::facade::durability::RelationalRecoveryStop),
     Unresolved(RelationalDurabilityUnresolved),
 }
 
@@ -75,6 +76,9 @@ pub(crate) fn stop<D>(
         worth_relational::facade::branch::RelationalBranchTransitionStop::RequestStopped(
             reason,
         ) => crate::branch_lifecycle::LifecycleStop::RequestStopped(reason),
+        RelationalBranchTransitionStop::OriginalInputsStopped(reason) => {
+            LifecycleStop::OriginalInputsStopped(reason)
+        }
     }
 }
 
