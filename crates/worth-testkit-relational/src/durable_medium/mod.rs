@@ -14,6 +14,8 @@ use worth_relational::facade::{
 #[derive(Debug, Default)]
 pub struct TestDurableMedium {
     contents: Mutex<Contents>,
+    member_cancellation: Mutex<Option<worth_execution::CancellationSource>>,
+    canonical_member_reads: std::sync::atomic::AtomicU64,
 }
 #[derive(Debug, Default)]
 struct Contents {
@@ -26,6 +28,18 @@ struct Contents {
     selected: Option<OpaqueCapturedCheckpointSubject>,
 }
 impl TestDurableMedium {
+    pub fn cancel_next_owned_member_read_for_test(
+        &self,
+        cancellation: worth_execution::CancellationSource,
+    ) {
+        let mut armed = self.member_cancellation.lock().unwrap();
+        assert!(armed.is_none());
+        *armed = Some(cancellation);
+    }
+    pub fn canonical_member_reads(&self) -> u64 {
+        self.canonical_member_reads
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
     pub fn new() -> Arc<Self> {
         Arc::new(Self::default())
     }

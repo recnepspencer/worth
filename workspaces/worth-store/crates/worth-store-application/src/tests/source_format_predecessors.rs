@@ -30,6 +30,21 @@ fn native_format_predecessors_refuse_filesystem_home_before_incarnation_or_owner
         )
         .unwrap()
         .consume(|home| home);
+        // A genuine current record precedes the unsupported one. Eligibility
+        // must inspect the entire suffix before admitting even that first body.
+        match predecessor {
+            Predecessor::Canonical => super::native_schema::commit(
+                home.relational.runtime(),
+                &request,
+                "current-before-old",
+            ),
+            Predecessor::Transition => {
+                let runtime = home.relational.runtime();
+                runtime
+                    .archive_branch(&request, &runtime.main_branch_identity())
+                    .unwrap();
+            }
+        }
         let (name, magic, version) = match predecessor {
             Predecessor::Canonical => (
                 worth_store::physical_runtime::RELATIONAL_CANONICAL_COMMITS,
@@ -43,16 +58,18 @@ fn native_format_predecessors_refuse_filesystem_home_before_incarnation_or_owner
             ),
         };
         // Deliberately untrusted predecessor framing. The current-only version
-        // boundary must refuse before interpreting even an empty old payload.
+        // boundary must refuse before charging its oversized body. Transition
+        // transport permits 1 MiB; the invoking admission budget below is also
+        // deliberately smaller than either predecessor payload.
         let mut bytes = magic.to_vec();
         bytes.extend_from_slice(&version.to_le_bytes());
-        bytes.resize(66, 0);
+        bytes.resize(2 << 20, 0);
         home.context
             .serving
             .ordered_journal(OrderedJournalName::new(name).unwrap())
             .unwrap()
             .publish(OrderedJournalPublication::new(
-                1,
+                2,
                 bytes,
                 crate::open::physical_admission::placement(),
                 PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
@@ -82,7 +99,12 @@ fn native_format_predecessors_refuse_filesystem_home_before_incarnation_or_owner
         let journals = crate::registry::HOME_JOURNALS
             .map(|journal| OrderedJournalName::new(journal.name).unwrap());
         let heads = journals.map(|name| selected.journal_head(&serving, name, &request).unwrap());
-        let refused = crate::admit_home(recovered, &request)
+        let limited = SerialRequest::from_memory(
+            SerialMemoryBudget::new(Some(512 << 10)),
+            CancellationSource::new().token(),
+            None,
+        );
+        let refused = crate::admit_home(recovered, &ExecutionRequest::serial(&limited))
             .err()
             .expect("predecessor version cannot be adopted");
         use worth_relational::facade::durability::{

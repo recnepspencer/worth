@@ -67,6 +67,12 @@ pub struct RelationalCanonicalCommitArtifact {
 }
 
 impl RelationalCanonicalCommitArtifact {
+    /// Bounded version eligibility only, never frame or payload admission.
+    pub fn preflight_frame_version(
+        prefix: &[u8],
+    ) -> Result<(), RelationalCanonicalCommitArtifactFrameRefusal> {
+        frame::validate_frame_version(prefix)
+    }
     pub const PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
         worth_foundational::facade::BoundaryProtocolIdentity::new(
             "worth.relational.canonical-commit",

@@ -66,7 +66,7 @@ pub(super) fn rebuild_runtime_from_plan(
 > {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let mut plan = admitted.into_plan();
-    let original_schemas = original_schemas::OriginalSchemaGraph::admit(&plan, execution)?;
+    let original_schemas = original_schemas::OriginalSchemaGraph::admit(&mut plan, execution)?;
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;
     validate_recovered_lineage_artifacts(plan.checkpoint.as_ref(), tail_envelopes.iter().copied())?;

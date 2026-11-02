@@ -125,7 +125,7 @@ fn restart(case: Case, test: &str) {
     assert_eq!(inspection.journals[0].head, *head);
     if matches!(case, Case::BoundedTail) {
         assert!(*tail <= 8);
-        assert!(inspection.native_journal_reads <= 8 + 32,
+        assert!(inspection.native_canonical_body_reads <= 8 + 32,
             "reopen journal-body reads must follow the bounded tail, with fixed headroom: {inspection:?}");
     }
     assert_eq!(contacts.load(Ordering::SeqCst), 0);

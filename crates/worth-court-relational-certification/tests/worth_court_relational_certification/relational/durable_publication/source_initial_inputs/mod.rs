@@ -9,6 +9,7 @@ use worth_testkit_relational::{
     initial_input_source::*,
 };
 mod initial_tail;
+mod plan_retry;
 mod publication_fates;
 mod wire;
 fn initial(artifact: &RelationalCompleteSourceArtifact) -> serde_json::Value {

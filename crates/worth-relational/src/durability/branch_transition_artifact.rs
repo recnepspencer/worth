@@ -54,6 +54,13 @@ pub struct RelationalBranchTransitionArtifact {
 }
 
 impl RelationalBranchTransitionArtifact {
+    /// Bounded version eligibility only, never frame or payload admission.
+    pub fn preflight_frame_version(
+        prefix: &[u8],
+    ) -> Result<(), RelationalBranchTransitionArtifactFrameRefusal> {
+        frame::validate_frame_version(prefix)
+    }
+
     pub const PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
         worth_foundational::facade::BoundaryProtocolIdentity::new(
             "worth.relational.branch-transition",

@@ -171,6 +171,9 @@ impl StoreColdSource {
 }
 
 impl RelationalDurableColdSource for StoreColdSource {
+    fn observe_canonical_member_read(&self, _member: RelationalDurableMemberLocator) {
+        self.commit_reads.fetch_add(1, Ordering::Relaxed);
+    }
     fn read_member_prefix_owned(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,

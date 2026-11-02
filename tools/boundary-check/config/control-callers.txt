@@ -561,3 +561,6 @@ workspaces/worth-query/crates/worth-query-host/ workspaces/worth-query/crates/wo
 
 # Passive actual-Complete commitment observation; returns computed DATA only.
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs.rs
+
+# Cancel only the actual medium member-read ingress for retained Complete-plan retry.
+crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/plan_retry.rs

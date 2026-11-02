@@ -1,4 +1,5 @@
 //! Original Native source eligibility precedes every descriptor/incarnation effect.
+mod prefixes;
 use super::ApplicationHomeOpenRefusal as Denial;
 use crate::checkpoint::{SelectedHomeManifest, SelectedHomeSource};
 use crate::home_context::RelationalHomeOpeningInput;
@@ -86,6 +87,23 @@ pub(super) fn prepare(
     let transition_head = source
         .journal_head(serving, transitions_name, request)
         .map_err(Denial::Checkpoint)?;
+    // Complete both version scans before retaining or reconstructing ANY tail body.
+    prefixes::canonical(
+        source,
+        serving,
+        canonical_name,
+        covered[0],
+        canonical_head,
+        request,
+    )?;
+    prefixes::transitions(
+        source,
+        serving,
+        transitions_name,
+        covered[1],
+        transition_head,
+        request,
+    )?;
     let canonical = tail(
         source,
         serving,

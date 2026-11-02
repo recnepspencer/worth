@@ -11,6 +11,10 @@ fn bounded(bytes: Option<&[u8]>, limit: u64) -> Result<Vec<u8>, Cause> {
     Ok(bytes.to_vec())
 }
 impl RelationalDurableColdSource for TestDurableMedium {
+    fn observe_canonical_member_read(&self, _: RelationalDurableMemberLocator) {
+        self.canonical_member_reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
     fn read_member_prefix_owned(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -146,6 +150,9 @@ impl RelationalDurableColdSource for TestDurableMedium {
         worth_execution::ExecutionImmutableBytes,
         worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
     > {
+        if let Some(cancellation) = self.member_cancellation.lock().unwrap().take() {
+            cancellation.cancel();
+        }
         let snapshot=original.downcast_ref::<super::OwnedNativeReadSnapshot>().ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
         snapshot
             .member(request, locator.sha256, locator.length, limit)

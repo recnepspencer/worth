@@ -134,7 +134,7 @@ pub(super) fn anchor_denial(cause: AnchoredRecordReadFailure) -> Denial {
         cause => Denial::Read(cause),
     }
 }
-fn journal_denial(cause: OrderedJournalReadFailure) -> Denial {
+pub(super) fn journal_denial(cause: OrderedJournalReadFailure) -> Denial {
     match cause {
         OrderedJournalReadFailure::Execution(cause) => Denial::Execution(cause),
         cause => Denial::JournalRead(cause),

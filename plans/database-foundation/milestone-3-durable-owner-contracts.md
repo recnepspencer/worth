@@ -2482,3 +2482,29 @@ The integration report now exists, at final integration HEAD
 ready to land. It is not merged. The minimal Host `opening.rs` routing edit is a
 pending merge seam with that owner's split. No final implementation approval or
 Phase 3 completion is claimed by this qualification note.
+
+
+### Corrective admission ownership after independent review
+
+The reconstruction graph is attempt-local: each RecoveryPlan consumption owns
+fresh fixed-size directory bindings with shared intrinsic manifest/read custody.
+A retained plan clone is never mutated. The graph's original request grant also
+funds those exact binding allocations. Test:
+`cloned_complete_plan_retries_after_member_read_cancellation_without_directory_contamination`
+cancels at the real medium's first full member read after graph preparation,
+then retries the SAME retained Complete plan and captures another Complete.
+
+Both uncovered journal suffixes receive a complete same-cut ten-byte version
+scan before ANY tail body admission. The prefix grants no SHA/readmission proof.
+The two existing Native artifact facade types expose only
+`preflight_frame_version`; physical stream and body verification remain owned.
+The predecessor filesystem case now places a genuine current record first,
+then a 2 MiB predecessor, and admits under a 512 KiB budget. Both refusal classes
+must remain typed unsupported versions and leave descriptor/owner heads intact.
+
+Canonical demand observation includes actual selected-checkpoint canonical
+member bodies as well as journal transport. The existing selected canonical
+reader reports completed body reads to its actual source; bounded prefix probes
+never count as full bodies. Host inspection names this observation
+`native_canonical_body_reads`, so the bounded-tail court cannot hide historical
+body replay behind checkpoint member placement. This is passive DATA only.

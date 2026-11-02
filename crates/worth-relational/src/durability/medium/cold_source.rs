@@ -14,6 +14,9 @@ pub struct RelationalDurableMemberLocator {
 /// Read-only committed storage, injected before recovery readmission. A fork
 /// may share this port without acquiring any publication authority.
 pub trait RelationalDurableColdSource: Send + Sync + std::fmt::Debug {
+    /// Passive observation at the actual selected canonical-body read seam.
+    /// Prefix probes do not call this and no admission authority is produced.
+    fn observe_canonical_member_read(&self, _member: RelationalDurableMemberLocator) {}
     /// Bounded descriptive framing bytes from the SAME selected member read.
     /// A prefix is never evidence of payload integrity or schema authority.
     fn read_member_prefix_owned(

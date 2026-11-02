@@ -1,6 +1,31 @@
 //! Independent resealing changes roles while preserving the original CHK18 index.
 use super::*;
 #[test]
+fn format_prefixes_refuse_predecessors_before_payload_bytes_are_available() {
+    let mut canonical = b"WRTHRCCA".to_vec();
+    canonical.extend_from_slice(&4u16.to_le_bytes());
+    let RelationalCanonicalCommitArtifactFrameRefusal::UnsupportedVersion(cause) =
+        RelationalCanonicalCommitArtifact::preflight_frame_version(&canonical).unwrap_err()
+    else {
+        panic!("canonical predecessor must refuse from its ten-byte prefix");
+    };
+    assert_eq!(cause.produced().get(), 4);
+    let mut transition = b"WRTHRBTA".to_vec();
+    transition.extend_from_slice(&1u16.to_le_bytes());
+    let RelationalBranchTransitionArtifactFrameRefusal::UnsupportedVersion(cause) =
+        RelationalBranchTransitionArtifact::preflight_frame_version(&transition).unwrap_err()
+    else {
+        panic!("transition predecessor must refuse from its ten-byte prefix");
+    };
+    assert_eq!(cause.produced().get(), 1);
+    canonical[8..10]
+        .copy_from_slice(&RelationalCanonicalCommitArtifact::FORMAT_VERSION.to_le_bytes());
+    transition[8..10]
+        .copy_from_slice(&RelationalBranchTransitionArtifact::FORMAT_VERSION.to_le_bytes());
+    RelationalCanonicalCommitArtifact::preflight_frame_version(&canonical).unwrap();
+    RelationalBranchTransitionArtifact::preflight_frame_version(&transition).unwrap();
+}
+#[test]
 fn normalized_policy_rewrite_refuses_with_unchanged_canonical_index_and_resealed_wrapper() {
     require_rewrite_refusal(|normalized, _| {
         let policy = &mut normalized["canonical"][0]["mutation"]["cascade_delete_policy"];

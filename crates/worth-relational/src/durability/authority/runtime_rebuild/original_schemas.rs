@@ -13,15 +13,19 @@ pub(super) struct OriginalSchemaGraph {
 }
 impl OriginalSchemaGraph {
     pub(super) fn admit(
-        plan: &RecoveryPlan,
+        plan: &mut RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Option<Self>, RelationalRecoveryStop> {
         let Some(original) = &plan.original_source else {
             return Ok(None);
         };
+        let directory_copies = plan.checkpoint.as_ref().map_or(0, |checkpoint| {
+            usize::from(checkpoint.directory.is_some())
+                + usize::from(checkpoint.canonical_directory.is_some())
+        });
         let mut graph = Self {
             original: original.clone(),
-            schemas: ReadmittedSourceSchemaCatalog::prepare(request)?,
+            schemas: ReadmittedSourceSchemaCatalog::prepare(request, directory_copies)?,
         };
         for image in &original.current.schemas {
             graph.insert(image, &plan.config.schema.registry, request)?;
@@ -67,23 +71,18 @@ impl OriginalSchemaGraph {
                     .ok_or_else(|| corrupt("Home transition lacks its original schema role"))?,
             )?;
         }
-        if let Some(checkpoint) = &plan.checkpoint {
+        if let Some(checkpoint) = &mut plan.checkpoint {
             for directory in checkpoint
                 .directory
-                .iter()
-                .chain(checkpoint.canonical_directory.iter())
+                .iter_mut()
+                .chain(checkpoint.canonical_directory.iter_mut())
             {
-                if let Err(schemas) = directory.source_schemas.set(graph.schemas.clone())
-                    && !directory
-                        .source_schemas
-                        .get()
-                        .is_some_and(|existing| Arc::ptr_eq(existing, &schemas))
-                {
-                    return Err(corrupt(
-                        "selected directory already belongs to another schema reconstruction",
-                    )
-                    .into());
-                }
+                // A plan clone retains its original immutable directory. The
+                // attempt owns only this fixed-size binding; intrinsic manifest,
+                // history and actual selected-read custody stay shared.
+                let mut binding = directory.as_ref().clone();
+                binding.source_schemas = std::sync::OnceLock::from(graph.schemas.clone());
+                *directory = Arc::new(binding);
             }
         }
         Ok(Some(graph))

@@ -1,5 +1,6 @@
 //! One opaque shared owner retains the actual Home read through both runtimes.
 mod native_anchor;
+mod native_prefix;
 mod read;
 use super::{ApplicationHomeCheckpointDenial as Denial, SelectedHomeManifest};
 use std::sync::{Arc, Mutex};
@@ -121,6 +122,20 @@ impl SelectedHomeSource {
             .try_lock()
             .map_err(|_| Denial::ReadSourceBusy)?;
         read::journal_payload(&cut, serving, name, position, limit, request).map(|(_, bytes)| bytes)
+    }
+    pub(crate) fn native_journal_prefix(
+        &self,
+        serving: &ServingPhysicalRuntime,
+        name: OrderedJournalName,
+        position: u64,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<[u8; 10], Denial> {
+        let cut = self
+            .backing
+            .cut
+            .try_lock()
+            .map_err(|_| Denial::ReadSourceBusy)?;
+        native_prefix::read(&cut, serving, name, position, request)
     }
     pub(crate) fn native_initial_inputs(
         &self,

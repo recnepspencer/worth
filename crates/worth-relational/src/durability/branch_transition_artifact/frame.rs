@@ -44,25 +44,7 @@ impl BranchTransitionArtifactHeader {
     ///
     /// Cost: O(1) header checks, then one SHA-256 pass over the payload.
     pub(super) fn verify(frame: &[u8]) -> Result<(Self, &[u8]), Refusal> {
-        let magic = frame
-            .get(..VERSION_OFFSET)
-            .ok_or(Refusal::TruncatedHeader {
-                available: frame.len(),
-            })?;
-        if magic != MAGIC {
-            return Err(Refusal::UnrecognizedMagic);
-        }
-        let version = u16::from_le_bytes(fixed(frame, VERSION_OFFSET)?);
-        let version =
-            worth_foundational::facade::BoundaryProtocolVersion::try_new(u32::from(version))
-                .map_err(|_| Refusal::InvalidVersion)?;
-        let supported =
-            worth_foundational::facade::BoundaryProtocolVersion::new(FORMAT_VERSION as u32);
-        worth_foundational::facade::BoundaryProtocolCompatibilityWindow::inclusive(
-            supported, supported,
-        )
-        .admit(version)
-        .map_err(Refusal::UnsupportedVersion)?;
+        validate_frame_version(frame)?;
         let header = Self {
             sequence: RelationalBranchTransitionSequence(u64::from_le_bytes(fixed(
                 frame,
@@ -109,4 +91,26 @@ fn declared_payload(frame: &[u8], declared: u64) -> Result<&[u8], Refusal> {
         });
     }
     Ok(payload)
+}
+
+/// Descriptive prefix eligibility; no payload or digest admission.
+pub(super) fn validate_frame_version(frame: &[u8]) -> Result<(), Refusal> {
+    let magic = frame
+        .get(..VERSION_OFFSET)
+        .ok_or(Refusal::TruncatedHeader {
+            available: frame.len(),
+        })?;
+    if magic != MAGIC {
+        return Err(Refusal::UnrecognizedMagic);
+    }
+    let version = u16::from_le_bytes(fixed(frame, VERSION_OFFSET)?);
+    let version = worth_foundational::facade::BoundaryProtocolVersion::try_new(u32::from(version))
+        .map_err(|_| Refusal::InvalidVersion)?;
+    let supported = worth_foundational::facade::BoundaryProtocolVersion::new(FORMAT_VERSION as u32);
+    worth_foundational::facade::BoundaryProtocolCompatibilityWindow::inclusive(
+        supported, supported,
+    )
+    .admit(version)
+    .map_err(Refusal::UnsupportedVersion)?;
+    Ok(())
 }
