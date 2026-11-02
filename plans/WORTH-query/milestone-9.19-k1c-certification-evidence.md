@@ -373,3 +373,53 @@ keep finding commits coherent; final qualification requires this failure closed.
 | `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | One success; 6 Rust files. |
 | `git diff --check origin/master...HEAD`; `git diff --check` | One success each, zero whitespace errors. |
 | `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Four untouched lint-file scope assertions passed. |
+
+# R5 follow-up: correction availability is not authored staging
+
+Native's concrete read closure admits all available retained input under the
+original request, then selects only demanded identities absent from authored
+staging and the genuine current root. Every explicitly authored attachment
+survives; Native's existing final candidate closure remains the publication
+check. Query neither parses content nor adds a second domain-write seal.
+The untouched correction union remains retained availability. No AspectShape
+or generic engine body is added.
+
+The extended existing surplus court uses the independent frozen grid identity,
+a real transaction refusal, complete selected descriptor equality and exact
+original memory restoration. With 10/100/1000 unrelated available frames,
+complete acquisition Work is 401460/3060430/30289554; selector Work is 960 in all
+three. These are separate stages, not a constant-cost claim for admission.
+Final diagnostic timings (microseconds, observations only) were acquisition
+1047/11307/124212 and selector132/190/118. The tenfold growth inequalities use
+an independent bound, and selection must spend positive Work. The existing
+public inverse/reapplication court keeps its independent literal IDs unchanged.
+
+| R5 follow-up exact command or experiment | Result |
+| --- | --- |
+| `git fetch origin master codex/919-provider-lifecycle-20261027`; `git merge --no-edit origin/master`; `git merge --no-edit origin/codex/919-provider-lifecycle-20261027` | All succeeded. Master advanced to e04dc5b176 and merged ten files in 99b9277d25; provider already up to date. |
+| `cargo fmt -p worth-relational -p worth-court-relational-certification`; Query execution fmt with its manifest | Two successes each. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification unreferenced_attachment_refuses_with_literal_identity_and_releases_custody -- --nocapture` | Two baseline runs: 1 passed, 0 failed/ignored/measured, 212 filtered each (0.25s/0.26s). |
+| Same exact court with authored clone replaced by empty staging | Compiled mutant: 0 passed, 1 failed, 0 ignored/measured, 212 filtered. Real transaction wrongly published and unwrap_err failed before the redundant selected-ID assertion. |
+| Python mutation install/restore with PYTHONUTF8=1 | One anchor checked; one byte-exact restored-source assertion, fresh timestamp. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` after restoration | 64 passed, 0 failed/ignored/measured, 149 filtered, 20.35s; rebuilt restored source. |
+| Public content_door:: and Query execution Clippy first attempts | Both failed compilation with E0061 at effect_program/content.rs:51; no tests. Master's parent-removal guard gained the entity-name argument. K1c caller now passes name and actual ID consistently with ordinary authoring. |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door:: -- --nocapture` after merge adaptation | 21 passed, 0 failed/ignored/measured, 331 filtered, 2.50s. Master added four unrelated tests. The previously red inverse/reapplication court passes unchanged. |
+| Debug rlib observation, same path/profile | libworth_query_execution-b7016cf434752ce1.rlib: 319337486 before, 319365618 after, +28132 bytes. Includes master sync; not isolated generic-code attribution. New engine code is concrete. |
+
+| R5 follow-up final gates | Result |
+| --- | --- |
+| Native/court fmt check; Query execution fmt check | Two successes each. |
+| `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | Two failed attempts, each only untouched payload.rs:34, 1 error/8 warnings. |
+| `cargo clippy -p worth-court-relational-certification --all-targets --no-deps` | Two failed attempts, each the four previously listed untouched court errors/2 warnings. |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets` | First failed E0061 (above); corrected run succeeded, 47 lib warnings/44 lib-test warnings (42 duplicates), 26.47s. |
+| Boundary check; context check | Two successes each. |
+| Dirty Rust line caps | Two successes: 4 files before merge-call adaptation, 5 after. |
+| `git diff --check origin/master...HEAD` | Two successes. |
+| `git diff --check` | First success; second failed only evidence.md new blank line at EOF. Removed that trailing blank; corrected check succeeded with zero errors. |
+| Python lint-scope check with PYTHONUTF8=1 | Two successes, 4 assertions each; untouched lint errors do not overlap branch/dirty scope. |
+| `git diff --cached --check` | Success, zero errors. |
+
+The same reviewer independently read the complete production/court diff and
+passed qa-loop, qa-tests and code-quality-qa after all receipts. It requested
+only the staged-diff receipt above, now recorded. No behavior expectation was weakened. Remaining full Native reds
+are tracked separately. This closes the R5 correction-staging regression.

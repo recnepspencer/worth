@@ -160,28 +160,20 @@ where
                 WorthQueryApplicationCommitDenial::signing_lifecycle_attempt(cause.into_attempt_denial(admission.operation())))),
         }
     };
-    if let Some(causality) = &aftermath_causality
-        && let Err(cause) = content_attachments
-            .attach_retained(execution, causality.prepared_correction().content())
-    {
-        return terminal(WorthQueryApplicationCommitOutcome::Denied(
-            WorthQueryApplicationCommitDenial::domain_value_admission_rejected(
-                crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial::Content(
-                    cause,
-                ),
-            ),
-        ));
-    }
-    if let Err(denial) = super::domain_value_write::admit(
+    content_attachments = match super::domain_value_write::admit(
         execution,
         application.installed_schema.value_bindings(),
         &lease.layout,
         &effects,
         lease.product().relational_basis(),
         &content_attachments,
+        aftermath_causality
+            .as_ref()
+            .map(|causality| causality.prepared_correction().content()),
     ) {
-        return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
-    }
+        Ok(attachments) => attachments,
+        Err(denial) => return terminal(WorthQueryApplicationCommitOutcome::Denied(denial)),
+    };
     let lease = match readmit_current_basis(
         execution,
         application,

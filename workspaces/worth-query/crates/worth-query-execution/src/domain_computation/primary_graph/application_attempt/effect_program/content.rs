@@ -42,14 +42,14 @@ impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
                 ));
             }
         } else {
-            let EntityReference::Existing(entity) = target.reference else {
+            let EntityReference::Existing(entity_id) = target.reference else {
                 return Err(denial(
                     WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
                     field,
                 ));
             };
-            self.require_parent_not_removed(entity, &locator)?;
-            self.require_field_observation(entity, &locator)?;
+            self.require_parent_not_removed(entity, entity_id, &locator)?;
+            self.require_field_observation(entity_id, &locator)?;
         }
         Ok(())
     }

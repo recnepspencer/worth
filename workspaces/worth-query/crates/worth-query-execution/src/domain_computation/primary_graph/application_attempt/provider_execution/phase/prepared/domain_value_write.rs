@@ -11,6 +11,7 @@ use worth_query_installation::facade::{
     AdmittedFieldBindingStop, ApplicationFieldBindingOwnerKind as Owner,
     WorthQueryInstalledApplicationValueBindingCatalog as Catalog,
 };
+use worth_relational::facade::content::RelationalContentAttachments;
 
 pub(super) fn admit(
     execution: &ExecutionRequest<'_, '_>,
@@ -18,11 +19,16 @@ pub(super) fn admit(
     layout: &Layout,
     effects: &[Effect],
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    attachments: &worth_relational::facade::content::RelationalContentAttachments,
-) -> Result<(), Denial> {
-    let mut content = basis
-        .prepare_content_reads(execution, attachments)
-        .map_err(|cause| Denial::domain_value_admission_rejected(Stop::Content(cause)))?;
+    attachments: &RelationalContentAttachments,
+    retained: Option<&RelationalContentAttachments>,
+) -> Result<RelationalContentAttachments, Denial> {
+    let mut content = match retained {
+        Some(retained) => {
+            basis.prepare_content_reads_with_retained(execution, attachments, retained)
+        }
+        None => basis.prepare_content_reads(execution, attachments),
+    }
+    .map_err(|cause| Denial::domain_value_admission_rejected(Stop::Content(cause)))?;
     let state = ValueDecodeState::admitted(bindings.clone());
     let result = state
         .run(execution, |session| {
@@ -84,7 +90,13 @@ pub(super) fn admit(
     result?;
     state
         .check(execution)
-        .map_err(Denial::domain_value_admission_rejected)
+        .map_err(Denial::domain_value_admission_rejected)?;
+    match retained {
+        Some(_) => content
+            .attachments_for_reads(execution, attachments)
+            .map_err(|cause| Denial::domain_value_admission_rejected(Stop::Content(cause))),
+        None => Ok(attachments.clone()),
+    }
 }
 struct WriteAdmission<'a, 'b, 'run, 'host> {
     session: &'a ValueDecodeSession<'b>,

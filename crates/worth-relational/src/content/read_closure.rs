@@ -15,6 +15,19 @@ pub struct RelationalContentReadClosure {
     resolved: ExecutionOrderedMap<ContentRefId, RelationalContentFrame>,
 }
 impl AdmittedRelationalBranchBasis {
+    /// Retained custody is read availability, not an instruction to publish all
+    /// its records. Admission still certifies the complete available input.
+    pub fn prepare_content_reads_with_retained(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        authored: &RelationalContentAttachments,
+        retained: &RelationalContentAttachments,
+    ) -> Result<RelationalContentReadClosure, Denial> {
+        let mut available = authored.clone();
+        available.attach_retained(execution, retained)?;
+        self.prepare_content_reads(execution, &available)
+    }
+
     pub fn prepare_content_reads(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -51,6 +64,47 @@ impl AdmittedRelationalBranchBasis {
     }
 }
 impl RelationalContentReadClosure {
+    /// Preserve the caller's complete authored staging, adding only resolved
+    /// historical custody absent from it and the genuine selected root.
+    /// Work depends on authored records and resolved identities, not unused
+    /// availability. Final candidate closure remains the publication authority.
+    pub fn attachments_for_reads(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        authored: &RelationalContentAttachments,
+    ) -> Result<RelationalContentAttachments, Denial> {
+        control::run(execution, |_control| {
+            let mut identities = ExecutionOrderedMap::<ContentRefId, ()>::default();
+            for record in authored.records() {
+                super::directory::visit_directory(execution, identities.len())?;
+                identities
+                    .insert_cloned_native_for_request(&record.identity(), &(), *execution)
+                    .map_err(super::directory::map_denial)?;
+            }
+            let mut selected = authored.clone();
+            for (identity, frame) in self.resolved.iter() {
+                super::directory::visit_directory(execution, identities.len())?;
+                if identities.contains_key(identity)
+                    || self
+                        .basis
+                        .inner
+                        .root
+                        .retained_content()
+                        .find(execution, *identity)?
+                        .is_some()
+                {
+                    continue;
+                }
+                selected.attach(execution, frame)?;
+                super::directory::visit_directory(execution, identities.len())?;
+                identities
+                    .insert_cloned_native_for_request(identity, &(), *execution)
+                    .map_err(super::directory::map_denial)?;
+            }
+            Ok(selected)
+        })
+    }
+
     pub fn read(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

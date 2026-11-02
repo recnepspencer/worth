@@ -212,3 +212,27 @@ assertion. Frame widths use checked conversions. Registry readmission currently
 contains no expect, so no invented edit is needed there. Keep the observation
 engine concrete and record the execution rlib before/after. Run the affected
 content integration court plus focused Native tests, then the required gates.
+# R5 follow-up boundary and implementation plan
+
+The public inverse/reapplication court exposed a caused consumer regression:
+retained correction custody intentionally contains preimage A and output B, but
+commit preparation stages that whole availability even when reapplication writes
+only B. Keep Native's final surplus refusal and the court's literal IDs.
+
+Native's existing ReadClosure will admit authored plus retained availability
+through its existing frame/format/collision owner. A concrete selector will clone
+every original authored attachment, build one paid identity index, and add only
+resolved reads absent from that authored set and the genuine selected root.
+Query's existing domain-write seal will return this result after state.check;
+there is no second effect parser or publication seal. Keep the authored argument
+explicit rather than retaining unadmitted transport bytes inside ReadClosure.
+The sole Query caller passes its untouched authored set.
+
+Extend the existing Native surplus court with authored A plus available B,
+resolve B, and prove the resulting real transaction still refuses unused A.
+Deleting the selector's authored clone must kill that court. Measure full
+availability acquisition separately at 10/100/1000 unrelated records; selector
+work for fixed authored/demanded inputs must remain constant. Acquisition still
+admits the complete availability and is not claimed local. Check release with
+available custody already retained, restore exact mutant bytes, rerun Native's
+content portfolio and the public content court, then all required gates.
