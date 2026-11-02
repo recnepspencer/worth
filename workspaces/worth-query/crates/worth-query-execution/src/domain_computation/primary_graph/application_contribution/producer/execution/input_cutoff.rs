@@ -344,6 +344,28 @@ pub(super) fn source_preparation_denial(
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
             format!("{identity}: {stop}"),
         ),
-        _ => failed(identity, stop),
+        Kind::AdmissionAuthorization => denial(
+            WorthQueryOutputDemandDenialKind::of_request_authorization(
+                stop.authorization_denial()
+                    .expect("the source denial owner retains its authorization cause")
+                    .kind(),
+            ),
+            identity.to_owned(),
+        ),
+        Kind::MissingExpectation
+        | Kind::ForeignApplication
+        | Kind::ForeignInstallation
+        | Kind::ForeignSchema
+        | Kind::ForeignModel
+        | Kind::ForeignBranch
+        | Kind::ForeignOperation
+        | Kind::SourceChanged
+        | Kind::IncompleteFootprint
+        | Kind::SourceContractMismatch
+        | Kind::SourceParametersMismatch
+        | Kind::RetainedSourceStorageDenied => failed(identity, stop),
     }
 }
+
+#[cfg(test)]
+mod authorization_cause_tests;

@@ -34,11 +34,7 @@ impl WorthQueryRequiredOutputPreparationDenial {
             Denial::Dependencies(cause) => match cause {
                 worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Output(cause) => output_posture(cause),
                 worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(cause) => {
-                    use worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenialKind as Kind;
-                    match cause.kind() {
-                        Kind::RetainedSourceStorageDenied | Kind::WorkBudgetExceeded | Kind::PreparationMemoryExceeded => WorthQueryRequiredOutputRecoveryPosture::Retryable,
-                        _ => WorthQueryRequiredOutputRecoveryPosture::Terminal,
-                    }
+                    source_posture(cause)
                 }
             },
             Denial::SourceQuery(query) => query_posture(query),
@@ -88,6 +84,37 @@ fn output_posture(
             WorthQueryRequiredOutputRecoveryPosture::Retryable
         }
         WorthQueryOutputDemandRecoveryPosture::Terminal => {
+            WorthQueryRequiredOutputRecoveryPosture::Terminal
+        }
+    }
+}
+
+fn source_posture(
+    cause: &worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial,
+) -> WorthQueryRequiredOutputRecoveryPosture {
+    use worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenialKind as Kind;
+    match cause.kind() {
+        Kind::AdmissionAuthorization => query::authorization_posture(
+            cause
+                .authorization_denial()
+                .expect("the source denial owner retains its authorization cause")
+                .kind(),
+        ),
+        Kind::RetainedSourceStorageDenied
+        | Kind::WorkBudgetExceeded
+        | Kind::PreparationMemoryExceeded => WorthQueryRequiredOutputRecoveryPosture::Retryable,
+        Kind::MissingExpectation
+        | Kind::ForeignApplication
+        | Kind::ForeignInstallation
+        | Kind::ForeignSchema
+        | Kind::ForeignModel
+        | Kind::ForeignBranch
+        | Kind::ForeignOperation
+        | Kind::SourceChanged
+        | Kind::IncompleteFootprint
+        | Kind::SourceContractMismatch
+        | Kind::SourceParametersMismatch
+        | Kind::ManagedSourceExpansionUnsupported => {
             WorthQueryRequiredOutputRecoveryPosture::Terminal
         }
     }

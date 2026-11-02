@@ -60,7 +60,9 @@ fn product_posture(kind: ProductKind) -> WorthQueryRequiredOutputRecoveryPosture
     }
 }
 
-fn authorization_posture(kind: AuthorizationKind) -> WorthQueryRequiredOutputRecoveryPosture {
+pub(super) fn authorization_posture(
+    kind: AuthorizationKind,
+) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
         AuthorizationKind::Refused(AuthorizationRefusal::ProductSecurityBasis(refusal)) => product_posture(ProductKind::Refused(refusal)),
