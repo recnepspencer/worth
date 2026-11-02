@@ -1589,6 +1589,37 @@ remove every temporary marker from the final source. Require the same Store
 and authored Host filesystem cases under unchanged defaults, plus affected
 checkpoint/close request and exhaustion controls, before qualifying this repair.
 
+The unchanged-default follow-up also reaches a distinct checkpoint stack
+failure after Home admission. Actual debugger unwinding identifies repeated
+by-value preparation results in Execution scope carriers, and a 572,792-byte
+selected-read frame combining open, payload copy, EOF transfer and admission.
+Fix this at those phase boundaries: retain the actual preparation result in
+the invoking caller's output slot while a named private refusal carries its
+status through Execution; preserve the original domain error and final scope
+controls. Only after preparation succeeds, move the same Native/World owners
+into the existing funded Home attempt and return its actual driver/input.
+Do not introduce another allocation, allowance or checkpoint owner.
+
+Separate World capture, Native capture/previous-selection validation and frame
+assembly so later-phase locals do not occupy the stack during earlier source
+reads. Likewise, selected reads separate opening, bounded copying, consuming
+verified-EOF handoff and manifest admission. Preserve the same reader, table,
+payload grants and refusal custody through these calls. The unchanged C0 and
+authored Host controls remain the runtime oracles. Original cancellation now
+refuses at prepaid-slot admission before descriptor encoding; retain both
+serial and leased no-descriptor/no-commit assertions. The additional
+`prepaid_close_storage_refuses_before_descriptor_effects_when_opening_memory_is_unavailable`
+control protects that same pre-effect boundary under actual zero memory.
+
+The physical append refusal carried by anchored-record and ordered-journal
+failures must exclude successful preparation. Their shared append producer
+projects the five non-success categories into the concrete
+`PhysicalMutationPreparationRefusal`, preserving each original typed payload
+with an exhaustive match. No refusal can hold `PreparedPhysicalMutation` or a
+successful terminal fact. This compiler-enforced cutover removes a 9,856-byte
+success-capable payload from ordinary Home failures without allocating error
+storage, changing persisted formats, or weakening physical preparation itself.
+
 World receives a distinct closed `admit_fresh_world_home` entry with the actual
 Native runtime and its fresh receipt. It validates that affinity before any
 World construction, reads the real protected World source and requires no

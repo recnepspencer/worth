@@ -147,11 +147,11 @@ pub use publication::{
     PhysicalManifestCapacityTransition, PhysicalMutationAdmissionDisposition,
     PhysicalMutationPreparationDeferred, PhysicalMutationPreparationDenial,
     PhysicalMutationPreparationFailure, PhysicalMutationPreparationOutcome,
-    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationStale,
-    PhysicalMutationPreparationSuccess, PhysicalMutationResourceShape,
-    PhysicalPreSealCancellationDenial, PhysicalPreSealCancellationOutcome,
-    PhysicalRecordSubmission, PlannedInlineRewriteArtifact, PreparedPhysicalMutation,
-    RootPublicationCandidatePlan, RootPublicationPlanningMembers,
+    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationRefusal,
+    PhysicalMutationPreparationStale, PhysicalMutationPreparationSuccess,
+    PhysicalMutationResourceShape, PhysicalPreSealCancellationDenial,
+    PhysicalPreSealCancellationOutcome, PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
+    PreparedPhysicalMutation, RootPublicationCandidatePlan, RootPublicationPlanningMembers,
 };
 pub use publication::{
     PhysicalExtentCopyPhase, PhysicalExtentCopyProgress, PhysicalExtentCopyResolutionProgress,

@@ -10,42 +10,10 @@ pub(super) fn selected(
     request.consult().map_err(Denial::Execution)?;
     let records = serving.anchored_records().map_err(Denial::Unavailable)?;
     if cut.selected.is_none() {
-        let reader = cut.reader.as_ref().ok_or(Denial::ReadSourceBusy)?;
-        let anchor = AnchoredRecordName::new(crate::registry::CHECKPOINT_ANCHOR)
-            .expect("closed Home anchor");
-        let Some(mut stream) = records
-            .open_payload_from(reader, request, anchor, 1 << 30)
-            .map_err(anchor_denial)?
-        else {
-            // ONLY the actual SAME reader's anchor lookup can establish this.
+        capture_selected_read(cut, &records, request)?;
+        if cut.selected.is_none() {
             return Ok(None);
-        };
-        let size = usize::try_from(stream.payload_bytes()).map_err(|_| Denial::SizeLimit)?;
-        let mut bytes =
-            ExecutionRequestArrayBuilder::allocate(*request, size).map_err(Denial::Payload)?;
-        let mut scratch = [0; 64 << 10];
-        loop {
-            let count = stream.read_next(&mut scratch).map_err(anchor_denial)?;
-            if count == 0 {
-                break;
-            }
-            bytes
-                .extend_from_slice(&scratch[..count])
-                .map_err(Denial::Payload)?;
         }
-        let bytes = bytes
-            .seal()
-            .map_err(Denial::Payload)?
-            .into_immutable_bytes();
-        let reader = cut.reader.take().ok_or(Denial::ReadSourceBusy)?;
-        let membership = match stream.into_verified_membership(reader) {
-            Ok(membership) => membership,
-            Err((_stream, reader)) => {
-                cut.reader = Some(reader);
-                return Err(Denial::ReadSourceBusy);
-            }
-        };
-        cut.selected = Some(VerifiedHomeRead { membership, bytes });
     }
     let selected = cut
         .selected
@@ -57,6 +25,65 @@ pub(super) fn selected(
     SelectedHomeManifest::from_verified_read(selected.bytes.clone(), selected.membership.clone())
         .map(Some)
         .map_err(Denial::Manifest)
+}
+
+fn capture_selected_read(
+    cut: &mut HomeReadCut,
+    records: &AnchoredRecords<'_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<(), Denial> {
+    let reader = cut.reader.as_ref().ok_or(Denial::ReadSourceBusy)?;
+    let anchor =
+        AnchoredRecordName::new(crate::registry::CHECKPOINT_ANCHOR).expect("closed Home anchor");
+    let Some(mut stream) = records
+        .open_payload_from(reader, request, anchor, 1 << 30)
+        .map_err(anchor_denial)?
+    else {
+        // ONLY the actual SAME reader's anchor lookup establishes absence.
+        return Ok(());
+    };
+    let bytes = read_selected_payload(&mut stream, request)?;
+    retain_verified_read(cut, stream, bytes)
+}
+
+fn read_selected_payload(
+    stream: &mut AnchoredRecordPayloadStream<'_, '_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<ExecutionImmutableBytes, Denial> {
+    let size = usize::try_from(stream.payload_bytes()).map_err(|_| Denial::SizeLimit)?;
+    let mut bytes =
+        ExecutionRequestArrayBuilder::allocate(*request, size).map_err(Denial::Payload)?;
+    let mut scratch = [0; 64 << 10];
+    loop {
+        let count = stream.read_next(&mut scratch).map_err(anchor_denial)?;
+        if count == 0 {
+            break;
+        }
+        bytes
+            .extend_from_slice(&scratch[..count])
+            .map_err(Denial::Payload)?;
+    }
+    Ok(bytes
+        .seal()
+        .map_err(Denial::Payload)?
+        .into_immutable_bytes())
+}
+
+fn retain_verified_read(
+    cut: &mut HomeReadCut,
+    stream: AnchoredRecordPayloadStream<'_, '_>,
+    bytes: ExecutionImmutableBytes,
+) -> Result<(), Denial> {
+    let reader = cut.reader.take().ok_or(Denial::ReadSourceBusy)?;
+    let membership = match stream.into_verified_membership(reader) {
+        Ok(membership) => membership,
+        Err((_stream, reader)) => {
+            cut.reader = Some(reader);
+            return Err(Denial::ReadSourceBusy);
+        }
+    };
+    cut.selected = Some(VerifiedHomeRead { membership, bytes });
+    Ok(())
 }
 
 pub(super) fn journal_payload(

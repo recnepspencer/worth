@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 
 use crate::physical_runtime::{
     AdmittedRecordPlacementPolicy, PhysicalMutationDeadline,
-    PhysicalMutationIdempotencyIssuanceDenial, PhysicalMutationPreparationOutcome,
+    PhysicalMutationIdempotencyIssuanceDenial, PhysicalMutationPreparationRefusal,
     PhysicalReadProtectionDenial, PhysicalRecordId, RecordReadError, RecordStreamFailure,
     ServingPhysicalRuntime,
 };
@@ -176,7 +176,7 @@ pub enum OrderedJournalPublicationFailure {
     Batch(crate::physical_runtime::RecordAppendDenial),
     Idempotency(PhysicalMutationIdempotencyIssuanceDenial),
     /// Physical preparation refused before any WAL effect.
-    Preparation(PhysicalMutationPreparationOutcome),
+    Preparation(PhysicalMutationPreparationRefusal),
     ProvenNoEffect(crate::physical_runtime::ProvenNoEffectPhysicalMutation),
     /// The publication may or may not be durable.
     Indeterminate(crate::physical_runtime::IndeterminatePhysicalMutation),

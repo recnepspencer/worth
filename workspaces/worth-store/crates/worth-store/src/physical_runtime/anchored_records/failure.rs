@@ -2,7 +2,7 @@
 
 use crate::physical_runtime::{
     IndeterminatePhysicalMutation, PhysicalMutationIdempotencyIssuanceDenial,
-    PhysicalMutationPreparationOutcome, PhysicalReadProtectionDenial,
+    PhysicalMutationPreparationRefusal, PhysicalReadProtectionDenial,
     ProvenNoEffectPhysicalMutation, RecordAppendDenial, RecordReadError, RecordStreamFailure,
 };
 
@@ -49,7 +49,7 @@ pub enum AnchoredRecordPublicationFailure {
     Batch(RecordAppendDenial),
     Idempotency(PhysicalMutationIdempotencyIssuanceDenial),
     /// Physical preparation refused before any WAL effect.
-    Preparation(PhysicalMutationPreparationOutcome),
+    Preparation(PhysicalMutationPreparationRefusal),
     ProvenNoEffect(ProvenNoEffectPhysicalMutation),
     /// The publication may or may not be durable.
     Indeterminate(IndeterminatePhysicalMutation),
@@ -73,7 +73,7 @@ pub enum AnchoredRecordPublicationFailure {
 pub enum AnchoredRecordMemberWriteFailure {
     Batch(RecordAppendDenial),
     Idempotency(PhysicalMutationIdempotencyIssuanceDenial),
-    Preparation(PhysicalMutationPreparationOutcome),
+    Preparation(PhysicalMutationPreparationRefusal),
     ProvenNoEffect(ProvenNoEffectPhysicalMutation),
     Indeterminate(IndeterminatePhysicalMutation),
     CompletedWithoutRecords,

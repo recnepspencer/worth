@@ -139,10 +139,8 @@ fn descriptor_admission_preserves_original_cancellation_before_any_descriptor_or
     cancellation.cancel();
     assert!(matches!(
         admit_home(recovered, &ExecutionRequest::serial(&original)),
-        Err(ApplicationHomeOpenRefusal::Descriptor(
-            ApplicationHomeDescriptorDenial::Execution(WorkCeilingDenial::Stopped(
-                MapKernelStop::Cancelled
-            ))
+        Err(ApplicationHomeOpenRefusal::Execution(
+            WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)
         ))
     ));
     assert_no_descriptor_or_native_commit(directory.path());
@@ -251,11 +249,35 @@ fn descriptor_admission_bills_both_frames_to_one_unwrapped_leased_request() {
     cancellation.cancel();
     assert!(matches!(
         admit_home(recovered, &ExecutionRequest::leased(&original)),
-        Err(ApplicationHomeOpenRefusal::Descriptor(
-            ApplicationHomeDescriptorDenial::Execution(WorkCeilingDenial::Stopped(
-                MapKernelStop::Cancelled
-            ))
+        Err(ApplicationHomeOpenRefusal::Execution(
+            WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)
         ))
     ));
     assert_no_descriptor_or_native_commit(&cancelled);
+}
+
+#[test]
+fn prepaid_close_storage_refuses_before_descriptor_effects_when_opening_memory_is_unavailable() {
+    let directory = tempfile::tempdir().unwrap();
+    let setup = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let recovered = recover_home(
+        super::program::request(directory.path()),
+        &ExecutionRequest::serial(&setup),
+    )
+    .unwrap();
+    let budget = SerialMemoryBudget::new(Some(0));
+    let original =
+        SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+    assert!(matches!(
+        admit_home(recovered, &ExecutionRequest::serial(&original)),
+        Err(ApplicationHomeOpenRefusal::Execution(
+            WorkCeilingDenial::Admission(worth_execution::LeaseDenial::MemoryExhausted(_))
+        ))
+    ));
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    assert_no_descriptor_or_native_commit(directory.path());
 }

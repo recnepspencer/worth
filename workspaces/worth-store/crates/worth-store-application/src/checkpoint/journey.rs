@@ -31,10 +31,9 @@ pub(crate) fn checkpoint(
         execution
             .run_native_with_checkpoint(|context| {
                 returned = Some((|| {
-                    let (native, world, input) =
-                        super::preparation::capture(serving, execution, world, capture)?
-                            .into_parts();
-                    let (attempt, driver) = owner.install(native, world, execution)?;
+                    let (attempt, driver, input) = super::preparation::prepare_attempt(
+                        serving, owner, execution, world, capture,
+                    )?;
                     retained = Some(attempt.clone());
                     caller_driver = Some(driver);
                     super::physical_start::start(serving, &attempt, input, context, lease)?;
