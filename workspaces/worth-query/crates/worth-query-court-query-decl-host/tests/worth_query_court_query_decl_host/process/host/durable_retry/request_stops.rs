@@ -170,7 +170,7 @@ fn original_directory_receipt_preserves_cancellation_at_every_consult() {
         Ok(Outcome::RecoveredCommitted(receipt)) => receipt,
         other => panic!("post-business cancellation must preserve the original answer: {other:?}"),
     };
-    let original = match fresh {
+    let original = match &fresh {
         Outcome::Committed { receipt, .. } => receipt,
         other => panic!("the retained original must remain fresh: {other:?}"),
     };
