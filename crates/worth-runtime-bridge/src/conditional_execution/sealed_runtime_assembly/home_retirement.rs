@@ -17,6 +17,7 @@ pub(super) struct FundedBridgeAssemblyRetirement {
 struct BridgeAssemblyRetirement {
     prepared_signal: Option<PreparedInitialEmptySignalStop<(), (), (), (), ()>>,
     _stopped_signal: Option<StoppedInitialEmptySignalAllocation<(), (), (), (), ()>>,
+    correspondence: Option<crate::home_retirement::RetiringWorldCorrespondence>,
     bridge: Option<RetiringRuntimeBridge>,
     _retired_bridge: Option<RetiredRuntimeBridge>,
     stage: AssemblyRetirementStage,
@@ -25,6 +26,7 @@ enum AssemblyRetirementStage {
     Unprepared,
     CommitSignal,
     Retention,
+    Correspondence,
     Bridge,
     Complete,
 }
@@ -40,6 +42,10 @@ impl BridgeSealedRuntimeAssembly {
         self.runtime
             .bridge
             .preflight_home_retirement(native, request)?;
+        self.correspondence
+            .as_ref()
+            .expect("serving assembly owns correspondence")
+            .preflight_home_retirement(request, native)?;
         if self.home_retirement.is_none() {
             let funding = request
                 .reserve_retained_memory(std::mem::size_of::<BridgeAssemblyRetirement>() as u64)
@@ -47,6 +53,7 @@ impl BridgeSealedRuntimeAssembly {
             let state = Box::new(BridgeAssemblyRetirement {
                 prepared_signal: None,
                 _stopped_signal: None,
+                correspondence: None,
                 bridge: None,
                 _retired_bridge: None,
                 stage: AssemblyRetirementStage::Unprepared,
@@ -126,7 +133,32 @@ impl BridgeSealedRuntimeAssembly {
             }
             AssemblyRetirementStage::Retention => {
                 self.runtime.retention.try_close_for_home_stop()?;
-                state.stage = AssemblyRetirementStage::Bridge;
+                state.stage = AssemblyRetirementStage::Correspondence;
+            }
+            AssemblyRetirementStage::Correspondence => {
+                if state.correspondence.is_none() {
+                    let original = self
+                        .correspondence
+                        .take()
+                        .expect("same original correspondence");
+                    match original.into_home_retirement(request, native) {
+                        Ok(task) => state.correspondence = Some(task),
+                        Err((original, cause)) => {
+                            self.correspondence = Some(original);
+                            return Err(cause);
+                        }
+                    }
+                    return Ok(Progress::Advanced);
+                }
+                if state
+                    .correspondence
+                    .as_mut()
+                    .expect("same correspondence task")
+                    .advance(request, native)?
+                    == Progress::Complete
+                {
+                    state.stage = AssemblyRetirementStage::Bridge;
+                }
             }
             AssemblyRetirementStage::Bridge => {
                 if state.bridge.is_none() {

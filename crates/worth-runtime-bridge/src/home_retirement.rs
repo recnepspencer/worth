@@ -1,4 +1,5 @@
 //! Retain configuration while consuming each authentic Native source alias.
+mod correspondence;
 use crate::{
     adapter::InvalidationSink,
     diagnostics::{BridgeDiagnosticsFacade, DiagnosticSink},
@@ -11,6 +12,7 @@ use crate::{
     structural::AdmittedStructuralRegistry,
     subscription::FrozenSubscriptionFamilyRegistry,
 };
+pub(crate) use correspondence::RetiringWorldCorrespondence;
 use std::{any::Any, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{

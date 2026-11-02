@@ -35,7 +35,7 @@ pub struct BridgeSealedRuntimeAssembly {
         >,
     >,
     signal_basis: worth_signal::facade::branch::AdmittedSignalBranchBasis,
-    correspondence: RuntimeWorldCorrespondencePort,
+    correspondence: Option<RuntimeWorldCorrespondencePort>,
     correspondence_basis: crate::facade::AdmittedRuntimeWorldCorrespondenceBasis,
     affinity: BridgeSealedOwnerAffinity,
     home_retirement: Option<home_retirement::FundedBridgeAssemblyRetirement>,
@@ -154,7 +154,7 @@ impl BridgeSealedRuntimeAssembly {
             signal_services,
             signal_definition_publication: Some(signal_definition_publication),
             signal_basis,
-            correspondence,
+            correspondence: Some(correspondence),
             correspondence_basis,
             affinity,
             home_retirement: None,
@@ -212,7 +212,10 @@ impl BridgeSealedRuntimeAssembly {
     }
 
     pub fn runtime_world_correspondence_port(&self) -> RuntimeWorldCorrespondencePort {
-        self.correspondence.clone()
+        self.correspondence
+            .as_ref()
+            .expect("serving assembly owns correspondence")
+            .clone()
     }
 
     pub fn admitted_runtime_world_correspondence_basis(
