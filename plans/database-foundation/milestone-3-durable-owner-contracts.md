@@ -2864,3 +2864,18 @@ preflight rejected that same wire body. The preflight now uses the existing
 InlineBytes length authority, checks the whole body and quotes the exact retained
 payload vector. This repairs the existing format rather than adding a new tag
 or changing a persisted version.
+
+Physical recovery's existing PlannedPhysicalRecovery remains the sole move-only
+planned-phase receiver. Its payload now resides in one sealed, checked vector
+slot, so return continuations do not duplicate the large inline owner state.
+Preparation uses the original PhysicalRecoveryOpenRequest recovery-memory limit
+and happens before plan-cost admission, while context, basis and execution
+inputs are still owned. It preflights requested backing plus one full payload
+construction temporary before allocation, then admits actual capacity with the
+same overlap before consuming inputs. Existing live-input and lifecycle cost
+floors remain; the backing construction peak also enters plan-cost admission.
+The private backing exposes no mutable collection, alternate issuer or empty
+planned receiver. Consumption moves the actual state onward; cancellation keeps
+the existing explicit coordination shutdown and refusal. Allocation failure is
+PlannedStateAllocation, and budget failure follows the existing typed planning
+cost-denial path. This changes no persisted format or recovery authority.

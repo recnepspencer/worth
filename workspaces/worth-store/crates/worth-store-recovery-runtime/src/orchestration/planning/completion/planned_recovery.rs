@@ -12,6 +12,7 @@ pub(super) fn construct(
     context: PlanningContext,
     basis: ResolvedPlanningBasis,
     execution: ExecutionProducts,
+    backing: crate::progression::PlannedStateBacking,
     plan_cost: RecoveryPlanCost,
     planning_counters: worth_store_recovery_physics::RecoveryPlanningCounters,
 ) -> Result<PlannedPhysicalRecovery, crate::entry::PhysicalRecoveryOutcome> {
@@ -25,6 +26,7 @@ pub(super) fn construct(
         ));
     }
     Ok(PlannedPhysicalRecovery::new(
+        backing,
         context.authority,
         context.coordination,
         context.selection,

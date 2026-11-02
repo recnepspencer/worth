@@ -12,6 +12,7 @@ pub(super) fn admit(
     context: PlanningContext,
     basis: &ResolvedPlanningBasis,
     execution: &ExecutionProducts,
+    backing_peak: u64,
 ) -> Result<
     (
         PlanningContext,
@@ -89,7 +90,8 @@ pub(super) fn admit(
         .unwrap_or(u64::MAX);
     let peak_recovery_bytes = legacy_cost_peak
         .max(final_live_bytes)
-        .max(execution.planning_construction_peak);
+        .max(execution.planning_construction_peak)
+        .max(backing_peak);
     let planning_counters = basis
         .planning_counters()
         .with_peak_recovery_bytes(peak_recovery_bytes);

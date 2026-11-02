@@ -10,6 +10,8 @@ pub(super) mod historical_publication;
 mod plan_cost;
 #[path = "completion/planned_recovery.rs"]
 mod planned_recovery;
+#[path = "completion/planned_storage.rs"]
+mod planned_storage;
 #[path = "completion/publication_effects.rs"]
 mod publication_effects;
 #[path = "completion/rewrite_materialization.rs"]
@@ -31,7 +33,16 @@ pub(super) fn complete(
     let context = blob_expiry::verify(context, &mut basis)?;
     let context = blob_reclaim::verify(context, &mut basis)?;
     let (context, execution) = execution_basis::derive(context, &mut basis)?;
-    let (context, plan_cost, planning_counters) = plan_cost::admit(context, &basis, &execution)?;
+    let (context, backing, backing_peak) = planned_storage::prepare(context, &basis, &execution)?;
+    let (context, plan_cost, planning_counters) =
+        plan_cost::admit(context, &basis, &execution, backing_peak)?;
     let context = publication_effects::admit(context, planning_counters, &execution.publication)?;
-    planned_recovery::construct(context, basis, execution, plan_cost, planning_counters)
+    planned_recovery::construct(
+        context,
+        basis,
+        execution,
+        backing,
+        plan_cost,
+        planning_counters,
+    )
 }

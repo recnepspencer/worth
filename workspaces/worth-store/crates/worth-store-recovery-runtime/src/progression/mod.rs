@@ -11,7 +11,7 @@ mod staged;
 
 pub(crate) use planned::{
     derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
-    CandidateMaterializationCost, ExecutionBasisDenial, PlanningMemoryDenial,
+    CandidateMaterializationCost, ExecutionBasisDenial, PlannedStateBacking, PlanningMemoryDenial,
     PlanningResidentAllowance, RecoveryObservedCandidateArtifact,
     RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
     RecoverySelectedSourceInventory,
