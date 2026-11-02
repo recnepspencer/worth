@@ -46,7 +46,7 @@ impl WorthQueryInspectionReadCompletion {
 
 /// Preserve the original request stop separately from session affinity refusals.
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorthQueryInspectionReadTerminalDenial {
+pub enum WorthQueryInspectionReadTerminalDenial {
     Request(worth_execution::WorkCeilingDenial),
     Read(super::session::WorthQueryManagedGraphReadDenial),
 }

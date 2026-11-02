@@ -356,7 +356,7 @@ impl WorthQueryManagedGraphWorkSession {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryManagedGraphReadDenial {
+pub enum WorthQueryManagedGraphReadDenial {
     RequestStop(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     SnapshotUnavailable,
     IndexNotInstalled(worth_relational::facade::indexes::DerivedIndexId),

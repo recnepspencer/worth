@@ -823,3 +823,121 @@ final footer/report gate precedes this separate commit.
 
 The same reviewer issued the final slice-3 PASS under qa-loop, qa-tests and
 code-quality-qa after checking all source, evidence, debt and report entries.
+
+
+### 4. Exhaustive retained-cause projection
+
+Finding 3 landed in 2d8243c6521b7bd16adb33ab2767b7b3d5163f0b. The final
+post-report `git diff --check` also passed with zero errors. Both required sync
+branches were fetched and merged before this correction; both were current.
+
+Boundary review followed the actual inspection admission, read/terminal,
+diagnostic, comparison, source, plan and report owners and their existing
+public readers. Every catch-all None arm in owner.rs is removed. An added
+variant now requires an explicit projection decision from the compiler.
+The private generic domain helper is replaced by an exhaustive capture reader.
+Only descriptive denials and the diagnostic stage vocabulary become public;
+session, admission and completion proof construction stays private.
+
+The plan preserves exact existing dedicated readers and adds descriptive
+projection where no such reader exists. New pure enum matches borrow existing
+objects or return fixed cases; they allocate nothing and perform no graph work.
+Common kernel/storage failures carry the actual owner stage rather than merge
+owners. Report identity and bridge remain distinct stages. Parameter comparison's
+unit domain cause means the two original parameter-binding identities differ;
+its distinct ComparisonParametersUnavailable case preserves that cause.
+
+| Retained field/discriminant | Outcome | Real consumer | Court |
+|---|---|---|---|
+| InspectionCause::Advancement | a | owner_refusal borrows the original advancement, including non-resource cases | Original advancement pointer court |
+| InspectionAdmissionDenial::Read | a | Read borrows the exact managed graph-read denial | Nine literal read cases, including index identity and native refusal payload, plus pointer identity |
+| InspectionAdmissionDenial::Terminal | a | Terminal borrows the exact terminal wrapper and its request/read cause | Both literal terminal cases and pointer identity |
+| InspectionAdmissionDenial::DiagnosticAdmission | a | DiagnosticAdmission borrows the exact diagnostic-comparison denial | All six owner cases and pointer identity |
+| InspectionCause::Unavailable | a | Distinct Unavailable owner case | Literal unavailable-stage court |
+| ForeignIssuedAccess | a | Distinct public owner case | Literal foreign-access court |
+| MissingGraph | a | Distinct public owner case | Literal missing-graph court |
+| MissingInspection | a | Distinct public owner case | Literal missing-inspection court |
+| FacetDenied | a | Distinct public owner case | Literal facet court |
+| MissingOriginalProjection | a | Distinct public owner case | Literal missing-projection court |
+| DiagnosticContract NotDeclared/UnsupportedShape | a | Separate fixed diagnostic-contract cases | One literal court per distinction |
+| ComparisonParameters domain unit | a | Distinct parameter-binding mismatch case | Literal parameter-stage court |
+| RichSource UnresolvedField/MissingOriginalValue | a | Separate fixed source-materialization cases | One literal court per distinction |
+| Comparison DisclosureInterpretationChanged/OriginalDisclosureIncomplete/NestingExceedsDeclaredShape | a | Separate fixed comparison cases | One literal court per distinction |
+| Plan Overflow | a | Distinct plan-accounting case | Literal plan-overflow court |
+| Report ForeignComparison/ForeignMaterialization | a | Separate fixed report cases | One literal court per distinction |
+| Report Identity Overflow/ForeignSession/ProductRequired | a | Separate fixed report-identity cases | One literal court per distinction |
+| Report Bridge AccountingOverflow/InvalidReportingAssociation | a | Separate fixed bridge cases | One literal court per distinction |
+| RetainedStorageDenial::Overflow | a | StorageAccountingOverflow carries its exact owner stage | Literal binding/target/storage/contract/plan/comparison/report/identity/bridge and nested canonical route courts |
+| Captured MapKernelFailure::Panic | a | KernelPanic carries its exact capture stage | One literal court per actual capture owner |
+| Captured MapKernelFailure::ResultCapacityExceeded | a | KernelResultCapacityExceeded carries its exact capture stage | One literal court per actual capture owner |
+
+No retained cause is deleted. The remaining named None branches delegate to
+real exact readers: Request/RequestControl to resource_refusal and
+request_interruption; Connection General/Output to producer_connection_refusal
+and producer_output_refusal; Rich's two domain cases to materialization_refusal;
+array/allocation/memory/request/lease/kernel stops to resource_refusal; immutable
+canonical Basis/Digest causes to canonical_refusal. Storage overflow is now
+projected explicitly rather than mistaken for a delegated memory refusal.
+
+The new tests inject descriptive private denial carriers and read the public
+owner projection. Their oracle is the independently written literal public
+case/stage and, for borrowed owners, pointer identity with the retained object.
+They are projection courts, not claims that fabricated denial inputs constitute
+admission, completion, canonical readiness or actual producer receipts.
+
+Readings I chose: a meaningful unit discriminant is information, so naming a
+None arm does not justify erasing it. Keep real existing dedicated consumers;
+project the other distinctions. The same reviewer approved focused owner and
+actual Host tests before this slice's commit, with the full Execution/DeclHost
+and both inspection binaries on final slice-5 source, avoiding repeated broad
+court compilation for consecutive diagnostic-only changes. All footer gates
+still run before every commit. The two deferred pub-mono handover causes remain
+unchanged. No AspectShape form is added.
+
+The same reviewer passed source and court review. Completed mutation, restored
+runs and footer evidence follows.
+
+
+Exact slice-4 commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 17 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib stop::owner` | 0 | 81/0/0/0/2243 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib stop::owner` | 101 | 16/65/0/0/2243 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib stop::owner` | 0 | 81/0/0/0/2243 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/323 (passed/failed/ignored/measured/filtered) |
+
+
+Exact slice-4-footer commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 17 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |
+
+The compiled projection-removal mutation changed exactly one Some consumer for
+each of the 29 new public cases into None. Its 65 expected assertion failures
+are 39 capture-stage courts, three lifecycle-carrier courts, 22 fixed-stage
+courts and the original foreign-access court; 16 controls still pass. Every
+mutated production byte was restored. The restored 81 owner courts and six
+actual Host inspection courts pass. The oracle is each court's literal public
+case/stage or the retained object's pointer, not a copied projection algorithm.
+
+All footer checks exit zero. Execution Clippy retains the same 13 labelled
+Execution and seven upstream Relational warning diagnostics inventoried above;
+none comes from this slice's source. Six reserved pub-mono methods account for
+12 duplicated all-target diagnostics; the thirteenth is the physically external,
+path-mounted consumer-values fixture. No suppression or unrelated edit is made.
+The dirty cap checks 17 Rust files with zero violations. No hard-rule or scope
+stop occurred. Final clearance from the same reviewer follows the ledger.
+
+The same reviewer independently reconciled all footer logs, zero dirty Clippy
+primary spans, the mutation manifest and the report, and issued final PASS under
+qa-loop, qa-tests and code-quality-qa. This fourth finding is cleared to commit.

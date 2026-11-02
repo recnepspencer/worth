@@ -16,7 +16,7 @@ pub use decision::WorthQueryApplicationQueryGovernanceDenialKind;
 pub(in crate::domain_computation) use decision::{
     admit_application_query_governance, admit_application_resource_governance,
     prepare_application_diagnostic_governance, prepare_application_inspection_governance,
-    DiagnosticComparisonAdmission, DiagnosticComparisonDenial, DiagnosticPreparationDenial,
+    DiagnosticComparisonAdmission, DiagnosticPreparationDenial,
     WorthQueryApplicationGovernanceBinding, WorthQueryApplicationInternalProjectionAdmission,
     WorthQueryApplicationQueryGovernance, WorthQueryPendingApplicationQueryGovernance,
     WorthQueryPreparedApplicationGovernance, WorthQueryRetainedQueryInfluence,
@@ -27,3 +27,5 @@ pub use receipt::{
     WorthQueryApplicationDisclosureOutcomeIdentity, WorthQueryApplicationDisclosureReceipt,
     WorthQueryApplicationDisclosureReceiptPosture,
 };
+
+pub use decision::DiagnosticComparisonDenial;

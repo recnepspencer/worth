@@ -28,9 +28,7 @@ pub(in crate::domain_computation) use influence::{
     WorthQueryRetainedQueryInfluence, WorthQueryRetainedQueryInfluenceDenial,
 };
 mod inspection;
-pub(in crate::domain_computation) use diagnostic::{
-    DiagnosticComparisonAdmission, DiagnosticComparisonDenial,
-};
+pub(in crate::domain_computation) use diagnostic::DiagnosticComparisonAdmission;
 mod preparation;
 pub(in crate::domain_computation) use preparation::WorthQueryPreparedApplicationGovernance;
 mod resource;
@@ -121,3 +119,5 @@ pub(in crate::domain_computation) fn admit_application_query_governance(
 
 mod binding;
 pub(in crate::domain_computation) use binding::WorthQueryApplicationGovernanceBinding;
+
+pub use diagnostic::DiagnosticComparisonDenial;

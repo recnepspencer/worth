@@ -117,17 +117,12 @@ fn governance(diagnostic: bool) {
 }
 
 #[test]
-fn unrelated_stops_do_not_project_owner_causes() {
-    for original in [
-        InspectionAdmissionDenial::ForeignIssuedAccess,
-        InspectionAdmissionDenial::DiagnosticPreparation(CaptureStop::Kernel(ScopeStop::Failure(
-            MapKernelFailure::Panic,
-        ))),
-    ] {
-        assert!(denial(original).owner_refusal().is_none());
-    }
+fn inspection_preserves_foreign_issued_access() {
+    assert!(matches!(
+        denial(InspectionAdmissionDenial::ForeignIssuedAccess).owner_refusal(),
+        Some(Refusal::ForeignIssuedAccess)
+    ));
 }
-
 #[test]
 fn inspection_preserves_outer_query_cause() {
     let query = WorthQueryApplicationQueryAdmissionDenial::new(Query::ForeignScope, "outer query");
