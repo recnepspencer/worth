@@ -35,13 +35,12 @@ impl WorthQueryApplicationRuntimeCore {
         binding: &ApplicationSchemaBindingIdentity,
         subject: &str,
     ) -> Result<(), WorthQuerySourceExpectationDenial> {
-        core.validate_installed_entry_with_tag(
+        core.validate_projection_entry_with_tag(
             tag,
             self.authority_identity(),
             binding,
             &self.installed_operations,
         )
-        .and_then(|()| core.validate_current_authority())
         .map_err(|denial| {
             WorthQuerySourceExpectationDenial::admission_authorization(subject, denial)
         })
