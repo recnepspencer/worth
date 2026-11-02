@@ -400,11 +400,13 @@ pub use crate::durability::{
     CompositeAttemptAssociationOwnerMismatch, DurableArtifactRetention,
     DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity, DurableIdentity,
     DurableOwnerFamily, DurableProductBranchIdentity, DurableProductBranchIncarnation,
-    DurableProductBranchNameDenial, DurableProductReferenceGeneration,
-    DurableProductUnpublishedOwnerEffectsIdentity, DurableStateFamily,
-    DurableWorldBootstrapAttemptIdentity, DurableWorldOwnerIdentity, HomeIdentity,
-    HomeIdentityDenial, HomeIncarnation, HomeIncarnationExhausted, HomeProgramBinding,
-    RetentionClass, UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerSlotIdentity,
+    DurableProductBranchNameDenial, DurableProductBranchReference,
+    DurableProductReferenceGeneration, DurableProductReferenceOwnerMismatch,
+    DurableProductUnpublishedOwnerEffectsIdentity, DurableQueryOutputSettlement,
+    DurableStateFamily, DurableWorldBootstrapAttemptIdentity, DurableWorldOwnerIdentity,
+    HomeIdentity, HomeIdentityDenial, HomeIncarnation, HomeIncarnationExhausted,
+    HomeProgramBinding, RetentionClass, UnsupportedDurableOwnerTag, WorldDurableJournal,
+    WorldOwnerCoordinate, WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

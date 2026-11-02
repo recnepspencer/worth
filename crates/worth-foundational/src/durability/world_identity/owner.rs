@@ -1,6 +1,9 @@
 use super::super::{identity_seal, DurableIdentity, HomeIdentity};
 /// The stable World owner slot recorded inside a Home, not a process ordinal.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(transparent)]
 pub struct WorldOwnerSlotIdentity(u64);
 impl WorldOwnerSlotIdentity {
     /// Descriptive recorded data; this grants no attachment or issuer authority.
@@ -14,7 +17,10 @@ impl WorldOwnerSlotIdentity {
 impl identity_seal::Sealed for WorldOwnerSlotIdentity {}
 impl DurableIdentity for WorldOwnerSlotIdentity {}
 /// World identity whose scope remains the same across process reopen.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(deny_unknown_fields)]
 pub struct DurableWorldOwnerIdentity {
     home: HomeIdentity,
     slot: WorldOwnerSlotIdentity,
