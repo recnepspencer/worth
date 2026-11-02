@@ -258,3 +258,45 @@ refusals return both slots; source retirement and its inert result retain the
 same cold Box. No physical read task or retained reader body is embedded in
 Home opening/close result carriers, and no replacement backing is allocated
 when a failed checkpoint leaves its payer exhausted.
+
+## Qualification and outstanding ownership
+
+At 7b29f21c24, fresh read-only Host close passes both the owned court and direct
+ordinary-stack run. The independent filesystem admission refuses before close
+and acquires its original mutation lease after close while all retired owners
+remain alive. Prepaid close-storage courts and Native-owned-cache versus real
+external-capture courts each pass 2/0/0.
+
+The six unchanged Store acceptance courts remain red: five reach
+CompleteNativeRequired during readmission; the original cancellation/memory
+court reaches ReadCustodyRetained on mutation close. The Host deadline and
+checkpoint-memory controls also reach that exact Native refusal. None is
+accepted as success. Kill-without-close acknowledges commit 4, then ordinary
+reopen overflows; its configured-stack run reaches RootLinkage. Those reopening
+paths and durable formats remain with P-A.
+
+The latest alias court separates opening/alias refusal/resume, mutation/read,
+and final close into actual sequential phases on the same libtest thread. At
+ccac0ab the ordinary stack completes the first two phases and reaches the
+remaining ReadCustodyRetained refusal on close; it no longer overflows. Store's
+deadline control likewise resumes and reads the same Home before that refusal.
+No larger stack, replacement owner, suppressed assertion or new thread is used.
+
+Independent review of a78d14a967 returned REJECT: (1) mutated Home close retains
+Native read custody; (2) the alias and deadline controls overflow the ordinary
+stack. Finding 2 is addressed by original prepaid physical-source storage and
+sequential court phases, with direct logs at 7b29f21c24 and ccac0ab. Finding 1
+requires the referred Query/World receipt-owner retirement handoff. The
+coordinator's ownership question remains unanswered; this is not a completed
+P-B or Phase 3 landing.
+
+Every executed command and test count, including failed intermediate builds,
+is catalogued in target/lane-evidence/close-evidence-catalog.md and its JSON
+counterpart. Each full log records its own HEAD, dirty state, times and exit.
+Older normal evidence is retained without certifying a later source: Native
+normal recorded 2301/125/31, Bridge 1121/0/0; six of those Native failures were
+subsequently corrected and targeted controls passed. The remaining 119 are
+unqualified, with exact test names/stdout in native-normal-unqualified.json.
+Query execution normal recorded 2208/0/1; Host/installation/testkit unit targets
+367/0/0; Store application/section units 36/0/0; Query Host courts 340/12/2.
+These recorded failures prohibit a full green-lane claim.

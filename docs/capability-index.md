@@ -1346,6 +1346,17 @@ families return owning refusal. Compiled workflow declarations alone remain
 allowed. Consume the refusal's actual close route and retain further close
 custody when refused; original-result retry and full D8/D9/D11 closure remain open.
 
+Ordinary `OperationHandler` registrations now retire their Home-owned registry
+entry, typed slot, original invocation Arc and operational capability by default.
+An erased-slot or handler alias refuses `Busy` before World seal. A supplier may
+explicitly refuse retirement; supplier-internal shared state is outside Home
+custody. Retired payloads survive until explicit reclaim. Original source,
+provider and Bridge retirement ports preserve interrupted custody; a fresh
+read-only Host physically closes while those retired allocations remain alive.
+Mutation Home close remains unqualified: completed-publication receipt custody
+still retains Native bases and causes `ReadCustodyRetained`. See the
+[close requirement map](../plans/database-foundation/milestone-3-home-close.md).
+
 Store Application's `readmit_world` consumes the concrete Native-readmitted
 Home and an `ApplicationWorldDefinition`. The private attachment injects the
 same actual Native runtime into World and Bridge. The resulting
