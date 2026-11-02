@@ -2703,3 +2703,22 @@ image describing version 1. This is a contradictory canonical artifact, not a
 coherent unsupported-version plan. The court now requires the earlier exact
 semantic SchemaMismatch refusal, with unchanged owner and branch head. It does
 not manufacture a new original semantic image or bypass that admission guard.
+
+
+Follow-up owner evidence exposed the same retired diagnostic-equality assumption
+in the merge certification artifact and deleted-convergence courts. Their
+machine boolean and assertions now use that same complete durable-field/input
+comparison; original live diagnostic-value assertions remain intact. A codec
+ordering-refusal fixture now retains only baseline bytes, releasing its actual
+Native capture's observation pins before asking to replace the destination.
+The runtime's pinned-destination refusal itself is unchanged.
+
+The shared-work-account court's equal-price assumption is also retired by the
+exact original-payload hashing contract. Strategy validation explicitly keeps
+StrategyCommitArtifactBundle::from_lowered, while the other entries call
+into_validation_parts and discard that decoration. They are distinct original
+canonical subjects even for equal mutation intent. The court now independently
+measures EACH entry, requires its exact own ceiling to succeed both with and
+without an enclosing SDK scope, compares recorded and full SDK charges, and
+requires its own one-short ceiling to refuse without moving the branch. No
+accounting bound or original-request denial assertion is relaxed.

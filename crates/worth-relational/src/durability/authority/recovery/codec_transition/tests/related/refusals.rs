@@ -159,7 +159,7 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
         })
         .expect("index fixture has identity capacity");
     let (mut target, _) = installed(2);
-    let before = capture(execution, &target);
+    let before = capture(execution, &target).bytes().to_vec();
     let owner = target.runtime_instance_id();
     let denial = target
         .durability_recovery()
@@ -174,7 +174,7 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
         "{denial:?}"
     );
     assert_eq!(target.runtime_instance_id(), owner);
-    assert_eq!(capture(execution, &target), before);
+    assert_eq!(capture(execution, &target).bytes(), before);
 }
 
 #[test]

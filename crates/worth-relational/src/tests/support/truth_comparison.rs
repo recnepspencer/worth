@@ -68,12 +68,28 @@ pub(crate) fn assert_durable_commit_meaning_eq(
         expected.recorded_original_inputs(),
         actual.recorded_original_inputs()
     );
-    let mut expected = expected.copy_original_for_test(execution);
-    let mut actual = actual.copy_original_for_test(execution);
-    for envelope in [&mut expected, &mut actual] {
-        let body = envelope.body_mut_for_test();
-        body.diagnostics_summary.entries.clear();
-        body.derived_index_artifacts = Default::default();
-    }
-    assert_eq!(expected, actual);
+    assert_eq!(
+        durable_commit_data(execution, expected),
+        durable_commit_data(execution, actual)
+    );
+}
+
+pub(crate) fn durable_commit_meaning_matches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    expected: &crate::history::data::CanonicalCommitEnvelope,
+    actual: &crate::history::data::CanonicalCommitEnvelope,
+) -> bool {
+    expected.recorded_original_inputs() == actual.recorded_original_inputs()
+        && durable_commit_data(execution, expected) == durable_commit_data(execution, actual)
+}
+
+fn durable_commit_data(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    source: &crate::history::data::CanonicalCommitEnvelope,
+) -> crate::history::data::CanonicalCommitEnvelope {
+    let mut copied = source.copy_original_for_test(execution);
+    let body = copied.body_mut_for_test();
+    body.diagnostics_summary.entries.clear();
+    body.derived_index_artifacts = Default::default();
+    copied
 }

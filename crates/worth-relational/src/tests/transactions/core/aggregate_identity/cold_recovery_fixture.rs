@@ -21,6 +21,35 @@ pub(super) struct ColdSource {
     pub(super) histories: BTreeSet<RelationalDurableMemberLocator>,
 }
 impl RelationalDurableColdSource for ColdSource {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<RelationalDurableMemberCustody, RelationalDurableOwnedReadRefusal> {
+        // This source's immutable map retains the members for its whole lifetime.
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || Ok(()))
+    }
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), RelationalDurableMemberRetirementRefusal> {
+        if original.is::<()>() {
+            Ok(())
+        } else {
+            Err(RelationalDurableMemberRetirementRefusal::ForeignCustody)
+        }
+    }
+    fn advance_member_custody_retirement(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> RelationalDurableMemberRetirementObservation {
+        match self.validate_member_custody_retirement(original) {
+            Ok(()) => RelationalDurableMemberRetirementObservation::Complete,
+            Err(cause) => RelationalDurableMemberRetirementObservation::Refused(cause),
+        }
+    }
     fn checkpoint_selected_read_protection(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,

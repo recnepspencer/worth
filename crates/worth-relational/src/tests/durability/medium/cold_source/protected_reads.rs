@@ -2,6 +2,16 @@
 pub(super) use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
 
+pub(super) fn validate_retirement(
+    original: &(dyn std::any::Any + Send + Sync),
+) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+    if original.is::<()>() {
+        Ok(())
+    } else {
+        Err(crate::durability::medium::RelationalDurableMemberRetirementRefusal::ForeignCustody)
+    }
+}
+
 pub(super) fn validate(
     request: &ExecutionRequest<'_, '_>,
     original: &(dyn std::any::Any + Send + Sync),

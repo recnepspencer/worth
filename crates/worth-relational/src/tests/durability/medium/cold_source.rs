@@ -29,6 +29,45 @@ pub(super) enum ColdRead {
 }
 
 impl RelationalDurableColdSource for MemberSource {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, protected_reads::Refusal>
+    {
+        // The same immutable source owns every addressed byte, so its basis
+        // payload has no separate physical pin. Fund the actual custody owner.
+        crate::durability::medium::RelationalDurableMemberCustody::try_new_from_source_for_request(
+            issuer,
+            request,
+            || Ok(()),
+        )
+    }
+
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        protected_reads::validate_retirement(original)
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        match protected_reads::validate_retirement(original) {
+            Ok(()) => {
+                crate::durability::medium::RelationalDurableMemberRetirementObservation::Complete
+            }
+            Err(cause) => {
+                crate::durability::medium::RelationalDurableMemberRetirementObservation::Refused(
+                    cause,
+                )
+            }
+        }
+    }
     fn checkpoint_read_protection(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,

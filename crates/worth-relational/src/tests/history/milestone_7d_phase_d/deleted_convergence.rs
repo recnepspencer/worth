@@ -74,15 +74,15 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
         .expect("recovered merge envelope");
     let recovered_truth = capture_aspect_truth_bundle(execution, &recovered, &[entity], &[], &[]);
 
-    assert_eq!(live_envelope, recovered_envelope);
+    crate::tests::support::assert_durable_commit_meaning_eq(
+        execution,
+        &live_envelope,
+        &recovered_envelope,
+    );
     assert_eq!(live_truth.visible_truth, recovered_truth.visible_truth);
     assert_eq!(
         live_truth.entity_history_digests,
         recovered_truth.entity_history_digests
-    );
-    assert_eq!(
-        live_envelope.diagnostics_summary,
-        recovered_envelope.diagnostics_summary
     );
 
     let summary_entry = live_envelope
