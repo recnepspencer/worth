@@ -327,6 +327,15 @@ There is no replacement request or representation-only decoder fallback. Declare
 fields with `no_equality`; domain equality and ordering remain with the owner.
 Render terminal values through the owner's reader/renderer, as the Ratio example does.
 
+Use these bindings on fields in an existing struct aspect. The explicit
+`scalar_aspect_field` declaration currently requires a codec-free scalar binding;
+it refuses a domain codec. This capability adds no aspect shape form.
+The [correction and recovery courts](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain.rs)
+exercise the opaque field through ordinary owners. Their literal encodings and
+the production decode/re-encode check certify stored byte identity across recovery.
+Whole model checkpoint equality separately checks that admitted reads have no
+effects within either runtime; runtime identity metadata legitimately rebinds.
+
 Canonical text can explicitly claim the same leaf posture with
 `canonical: FINITE_BOUNDS, domain_value,` and optional `unit:` and `frame:`.
 Binary atoms use `worth.domain-binary.v1`; canonical atoms use

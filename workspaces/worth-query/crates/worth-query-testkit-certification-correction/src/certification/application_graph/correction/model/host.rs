@@ -194,7 +194,11 @@ where
                 .field(Secondary::reference(), 7_u64)
                 .field(ReadEnabled::reference(), true)
                 .field(Ceiling::reference(), 100_u64)
-                .field(Calculated::reference(), 0_u64),
+                .field(Calculated::reference(), 0_u64)
+                .field(
+                    super::composite_definition_model::DefinitionRevision::reference(),
+                    5_u64,
+                ),
             )?;
             super::adoption::seed(graph);
             super::causal_inspection::capability::seed(graph);
@@ -310,4 +314,38 @@ pub(super) fn installation_limits() -> WorthQueryInMemoryApplicationLimits {
         ),
         SignalConditionalEvaluationBudget::development(),
     )
+}
+
+/// Bootstrap issues the ordinary retained projection owner used by decode courts.
+pub fn install_with_projection() -> (
+    Host,
+    WorthQueryApplicationInvariantProjectionAuthority<NumericSchema>,
+) {
+    let mut authority = None;
+    let application = install_program_with_seed(
+        validated::<Program>(),
+        roster().support(validated::<super::output_program::OutputProgram>()),
+        |graph| {
+            authority = Some(graph.retain_invariant_projection_authority());
+            Ok(())
+        },
+    );
+    (
+        application,
+        authority.expect("actual bootstrap issued projection authority"),
+    )
+}
+
+/// Reopen the exact current fixture representation; no migration is inferred.
+pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
+    in_memory_rostered_program_from_checkpoint(
+        validated::<Program>(),
+        roster().support(validated::<super::output_program::OutputProgram>()),
+        NumericSchema::declaration().unwrap(),
+        ((),),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+        installation_limits(),
+        checkpoint,
+    )
+    .expect("current inline-domain checkpoint reopens")
 }

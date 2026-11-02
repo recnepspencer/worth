@@ -152,7 +152,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
         Ok(Restore {
             key: original.key.clone(),
             name,
-            primary: field!(Primary, U64ApplicationValueBinding),
+            primary: field!(Primary, InlineCounterBinding),
             secondary: field!(Secondary, U64ApplicationValueBinding),
             read_enabled: field!(ReadEnabled, BoolApplicationValueBinding),
             ceiling: field!(Ceiling, U64ApplicationValueBinding),

@@ -139,41 +139,19 @@ pub fn node() -> domain::WorthQueryPortableConditionalNodeDeclaration {
     .unwrap()
 }
 pub fn aspect() -> domain::AspectContract {
-    let fields = [
-        ("Key", domain::ScalarAspectType::String),
-        ("Primary", domain::ScalarAspectType::UInt64),
-        ("Secondary", domain::ScalarAspectType::UInt64),
-        ("ReadEnabled", domain::ScalarAspectType::Bool),
-        ("Ceiling", domain::ScalarAspectType::UInt64),
-        ("Calculated", domain::ScalarAspectType::UInt64),
-    ]
-    .map(|(name, scalar)| {
-        domain::FieldDeclaration::new(
-            domain::FieldKey::new(name).unwrap(),
-            scalar,
-            domain::FieldRequirement::Required,
-            domain::AbsenceLaw::Required,
-            domain::AspectEvolutionPolicy::AdditiveFieldsAllowed,
-        )
-        .unwrap()
-    });
-    // The dependency contract must describe the installed NumberFacts shape;
-    // its projection and predicate still read only Primary.
-    let fields = fields.into_iter().chain([domain::FieldDeclaration::new(
-        domain::FieldKey::new("Operand").unwrap(),
-        domain::ScalarAspectType::UInt64,
-        domain::FieldRequirement::Optional,
-        domain::AbsenceLaw::Optional,
-        domain::AspectEvolutionPolicy::AdditiveFieldsAllowed,
+    use worth_query_host::facade::declaration::application_schema::ApplicationSchema;
+    // Consume the declared complete Native meaning, including codec identity.
+    // A hand-maintained family-only shape would omit the domain codec certificate.
+    worth_query_installation::facade::declared_application_aspect(
+        NumericSchema::declaration().unwrap().erased(),
+        "Number",
+        "NumberFacts",
     )
-    .unwrap()]);
-    domain::AspectContract::struct_aspect(
-        domain::AspectKey::new("NumberFacts").unwrap(),
-        domain::AspectIdentity(0x91800103),
-        domain::AspectContractRevision(1),
-        domain::StructAspectShape::new(fields).unwrap(),
-    )
+    .expect("the fixture's complete declared contract is valid")
+    .contract()
+    .clone()
 }
+
 pub fn mask() -> domain::AspectMask<domain::ProjectionMask> {
     domain::AspectMask::new([domain::CanonicalFieldPath::single(
         domain::FieldKey::new("Primary").unwrap(),

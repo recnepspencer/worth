@@ -38,7 +38,7 @@ fn input() -> ApplicationQueryResultFieldRef<
     Primary,
     u64,
     ReadWrite,
-    EqualityPredicate,
+    NoEqualityPredicate,
     NoApplicationUnit,
 > {
     ApplicationQueryResultFieldRef::new("input", Primary::reference())

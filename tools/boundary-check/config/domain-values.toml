@@ -11,3 +11,8 @@ forbidden_types = []
 source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs"
 binding = "SpanBinding"
 forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/domain_binding.rs"
+binding = "InlineCounterBinding"
+forbidden_types = []

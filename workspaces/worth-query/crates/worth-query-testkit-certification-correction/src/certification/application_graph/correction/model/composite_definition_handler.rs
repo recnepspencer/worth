@@ -16,6 +16,10 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         let result = (|| {
             let root = reader.resolve_entity(Key::reference(), input.key.clone())?;
             reader.field(&root, Primary::reference())?;
+            reader
+                .reader()
+                .require_decision_field(&root, DefinitionRevision::reference())
+                .map_err(HandlerExecutionDenial::new)?;
             let target = reader.mutation_target(&root)?;
             let definition = reader
                 .prepare_conditional_definition::<Conditional, ReadyNode, Clock, Predicate>(
@@ -37,6 +41,7 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         let result = (|| {
             let target = writer.projected_entity(&decision.target)?;
             writer.write_field(&target, Primary::reference(), input.value)?;
+            writer.write_field(&target, DefinitionRevision::reference(), input.revision)?;
             writer.advance_conditional_definition(decision.definition)
         })();
         match result {
