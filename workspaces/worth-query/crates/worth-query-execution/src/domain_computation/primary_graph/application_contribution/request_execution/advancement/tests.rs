@@ -175,3 +175,5 @@ mod member_lineage;
 mod observations;
 #[path = "seam_cancellation.rs"]
 mod seam_cancellation;
+
+mod panic_custody;
