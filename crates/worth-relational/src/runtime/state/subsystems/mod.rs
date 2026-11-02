@@ -57,7 +57,9 @@ pub(crate) use lineage::{
 pub(crate) use lineage_identity::LineageIdentityAllocator;
 pub(crate) use owned_state::RuntimeOwnedState;
 pub(crate) use publication::PublicationSubsystem;
-pub(crate) use publication_diagnostics::RelationalDiagnosticArtifactStore;
+pub(crate) use publication_diagnostics::{
+    RelationalDiagnosticArtifactStore, RelationalDiagnosticOperationCapture,
+};
 pub(crate) use record_identity::{
     PendingRecordAllocations, ReclaimedRecordSlot, RecordIdentitySubsystem,
 };

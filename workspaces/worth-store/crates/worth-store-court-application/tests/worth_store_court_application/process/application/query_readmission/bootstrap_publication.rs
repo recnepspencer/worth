@@ -118,9 +118,9 @@ pub(super) fn prepared(
         .consume(|home| home);
     let (query, home) = home
         .initialize_new_home(&request, |mut home| {
-            let (native, authority, outcome) = home.query_finalization_parts();
+            let (native, admission) = home.fresh_query_finalization_parts().unwrap();
             let query = query
-                .finish_fresh_home_native_readmission(phase, native, authority, outcome)
+                .finish_fresh_home_native_readmission(phase, native, admission)
                 .unwrap_or_else(|refused| panic!("fresh finalization: {:?}", refused.reason()));
             let bridge = query.home_bridge_definition().unwrap();
             let (budgets, clock, policy, execution, conditionals) = query.home_world_resources();

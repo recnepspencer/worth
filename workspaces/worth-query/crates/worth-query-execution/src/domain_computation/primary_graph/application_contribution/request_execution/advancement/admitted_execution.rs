@@ -16,6 +16,9 @@ impl QueryRequestExecution<'_> {
                 Resource::WorkExhausted,
             ));
         }
+        // Keep the owning business result outside Execution's nested completion
+        // frames. Those frames carry only completion, independent of R's size.
+        let mut body_result = None;
         let mut body_unwind = None;
         let execute = |lease: Option<&worth_execution::ExecutionResourceLease<'_>>| {
             observation::record_workers(
@@ -37,12 +40,11 @@ impl QueryRequestExecution<'_> {
                     let invoking = lease.map(ExecutionRequest::leased).unwrap_or(request);
                     directory_completion::after_business(invoking, maintenance);
                 }
-                result
+                body_result = Some(result);
             })) {
-                Ok(result) => Some(result),
+                Ok(()) => (),
                 Err(payload) => {
                     body_unwind = Some(payload);
-                    None
                 }
             }
         };
@@ -78,9 +80,9 @@ impl QueryRequestExecution<'_> {
             std::panic::resume_unwind(payload);
         }
         outcome
-            .map(|(result, report)| {
+            .map(|((), report)| {
                 observation::record_report(report);
-                result.expect("a completed advancement has its body result")
+                body_result.expect("a completed advancement has its body result")
             })
             .map_err(advancement_denial)
     }

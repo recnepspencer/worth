@@ -89,8 +89,12 @@ where
         // Existing/Consumed origin never invokes the callback. Keep Query out
         // of its closure's ownership until Store has actually admitted it.
         let mut query = Some(query);
+        // Retain the owning result in this caller. Store's initialization
+        // callback carries only completion, keeping its generic phase frames
+        // independent of Query's large refused-opening custody.
+        let mut initialized = None;
         let opened = home.initialize_new_home(&request, |home| {
-            fresh::finish_new_home(
+            initialized = Some(fresh::finish_new_home(
                 phase,
                 home,
                 query
@@ -98,10 +102,10 @@ where
                     .expect("the one admitted recipe consumes Query once"),
                 self.initial_state,
                 self.checkpoint_limits,
-            )
+            ));
         });
         match opened {
-            Ok(opened) => opened,
+            Ok(()) => initialized.expect("the one admitted initializer retained its result"),
             Err(home) => match home.reason() {
                 ApplicationHomeInitializationDenial::ExistingHomeRequiresQueryPublication => {
                     existing::finish_existing_home(

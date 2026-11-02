@@ -20,6 +20,7 @@ use worth_query_testkit_host::facade::host::{
 use worth_store_application::*;
 mod administration;
 mod idempotency;
+mod maintenance;
 mod operations;
 mod selected;
 mod stops;
@@ -52,7 +53,7 @@ fn with_native<R>(
     operation: impl FnOnce(&worth_relational::facade::runtime::RelationalRuntime) -> R,
 ) -> R {
     let (query, mut home) = unshared(path, phase);
-    let (native, _, _) = home.query_finalization_parts();
+    let (native, _, _) = home.recovered_query_finalization_parts().unwrap();
     let result = operation(native);
     drop(query);
     assert!(matches!(
@@ -66,7 +67,7 @@ fn finalize_native(
     home: &mut UnsharedReadmittedApplicationHome,
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
 ) -> Result<NativeMeaning, NativeRefused> {
-    let (native, authority, outcome) = home.query_finalization_parts();
+    let (native, authority, outcome) = home.recovered_query_finalization_parts().unwrap();
     query.finish_existing_home_native_readmission(phase, native, authority, outcome)
 }
 
@@ -169,7 +170,7 @@ fn latest_native_owner_rows_refuse_their_actual_family_kind_and_record_before_se
         fresh_closed(path.path(), execution);
         let (kind, record) = with_bootstrap_advancement_from_request(execution, |phase| {
             let (query, mut home) = unshared(path.path(), &phase);
-            let (native, _, _) = home.query_finalization_parts();
+            let (native, _, _) = home.recovered_query_finalization_parts().unwrap();
             let result = administration::create_required_row(native, &execution, name);
             drop(query);
             assert!(matches!(
@@ -227,7 +228,7 @@ fn unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bri
         .unwrap_or_else(|refused| panic!("writer close: {refused:?}"));
     with_bootstrap_advancement_from_request(execution, |phase| {
         let (query, mut home) = unshared(path.path(), &phase);
-        let (native, _, _) = home.query_finalization_parts();
+        let (native, _, _) = home.recovered_query_finalization_parts().unwrap();
         let accounts = administration::rows(native, &execution, "Account");
         let [account] = accounts.as_slice() else {
             panic!("actual account row")
@@ -283,6 +284,7 @@ fn unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bri
                 ports.recovery_port(),
                 root.clone(),
                 no_operation_admission,
+                maintenance::prepare(&home, &execution),
             )
             .unwrap_or_else(|refused| {
                 panic!("same selected World attachment: {}", refused.detail())
@@ -359,6 +361,7 @@ fn another_actual_home_world_basis_cannot_attach_to_this_existing_source() {
                 ports.recovery_port(),
                 root_a.clone(),
                 no_operation_admission,
+                maintenance::prepare(&home_b, &execution),
             )
             .err()
             .expect("a genuine foreign Native observation is not this source's basis");

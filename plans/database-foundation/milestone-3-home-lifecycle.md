@@ -1620,6 +1620,24 @@ successful terminal fact. This compiler-enforced cutover removes a 9,856-byte
 success-capable payload from ordinary Home failures without allocating error
 storage, changing persisted formats, or weakening physical preparation itself.
 
+Host opening likewise keeps the actual initialized result beside Store's
+callback, which carries completion only. Fresh opening returns from actual
+source preparation before invoking initialization, and completes World/service
+attachment after initialization. These steps consume the existing concrete
+Query stages; they introduce no initializer opportunity or substitute owner.
+
+Boundary ruling for the existing Store Query courts: migrate the exact
+`query_readmission/bootstrap_publication.rs` caller from its former generic
+source-finalization getter to `application-home-fresh-finalization`, and the
+exact `query_readmission/native_artifacts.rs` caller to
+`application-home-recovered-finalization`. Both files already belong to the
+closed Native/Home Query preparation audience. This preserves those same
+callers with narrower source provenance; it admits no new file, family or raw
+source constructor. Their actual Home still supplies the sealed fresh receipt
+or recovered authority. Observational existing-World attachment receives the
+same Home's real funded checkpoint operation through Query's maintenance port;
+it does not gain a no-op advancement path or qualify checkpoint reopen/close.
+
 World receives a distinct closed `admit_fresh_world_home` entry with the actual
 Native runtime and its fresh receipt. It validates that affinity before any
 World construction, reads the real protected World source and requires no
@@ -1728,3 +1746,28 @@ graphs under the existing build policy. Reuse unchanged closed evidence and
 record source hashes and actual results. Fresh admission does not close
 selected Complete Home reconstruction, original serving graph retirement,
 callback/provider release, D11, the joint landing oracle or the milestone.
+
+
+### Default-stack qualification and selected-source stop
+
+Fresh-Home admission qualification includes running the existing filesystem C0
+and authored Host checkpoint/automatic-maintenance controls directly on the
+normal libtest thread stack, in addition to the owned nextest lane. The
+configured nextest stack alone concealed an overflow. Native candidate
+preparation transfers its existing history proof and the same diagnostic,
+request-control and retention custody into a distinct registration frame.
+Early admission/draft frames return before later publication locals exist;
+this requires no new allocation, authority or memory allowance.
+
+Selected Complete reopening remains refused by `CompleteNativeRequired`.
+The selected-source boundary reviews in
+`target/complete-home-selected-source-boundary/{brief,original-input-refinement}.json`
+identify the missing persisted original-input chronology: zero-write
+birth/installation, transition schema attribution and per-canonical original
+mutation configuration. CHK18's full schema union does not establish those
+roles. Canonical format 4 and transition format 1 also lack these original
+inputs. Removing the gate requires an explicit durable-owner and versioned
+wire-placement ruling. Fresh authority cannot substitute for reconstructed
+original evidence. This is a stop on reopening, not acceptance of Phase 3;
+registered-source retirement and the remaining audited lifecycle obligations
+are still outstanding.
