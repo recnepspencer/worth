@@ -9,7 +9,21 @@ fn foreign_recovery_authority_refuses_release_continuation_and_adoption_without_
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let (fixture, owner, expected) = setup();
-    let (_foreign_fixture, foreign, _foreign_head) = setup();
+    let (foreign_fixture, foreign, _foreign_head) = setup();
+    let relational = || {
+        let native = foreign_fixture.relational_runtime();
+        native
+            .observe_branch(&native.main_branch_identity())
+            .unwrap()
+            .1
+            .descriptor()
+            .clone()
+    };
+    let before_relational = relational();
+    let before_signal = foreign_fixture
+        .observe_signal_current_basis()
+        .descriptor()
+        .clone();
     let before = foreign
         .state
         .branches
@@ -57,5 +71,10 @@ fn foreign_recovery_authority_refuses_release_continuation_and_adoption_without_
         .unwrap()
         .atomic_snapshot();
     assert_eq!(actual, before);
+    assert_eq!(relational(), before_relational);
+    assert_eq!(
+        foreign_fixture.observe_signal_current_basis().descriptor(),
+        &before_signal
+    );
     assert!(owner.inspect_recovery(&handle).is_some());
 }
