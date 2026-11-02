@@ -173,11 +173,11 @@ where
         CandidatePreparation<'request, Schema, Intent::Binding>,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        let prepared = prepare(self, &identities, staged)?;
         match self.execute_staged_handler(
             phase,
             identities,
-            staged,
-            prepare,
+            prepared,
             decision_work,
             allocation_policy,
         )? {

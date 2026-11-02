@@ -50,22 +50,13 @@ where
         &'request self,
         phase: &AdvancementPhase<'_>,
         identities: ApplicationMutationIdentities<'request, Schema, Intent::Binding>,
-        staged: WorthQueryStagedMutation<Schema, Intent>,
-        prepare: impl FnOnce(
-            &Self,
-            &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
-            WorthQueryStagedMutation<Schema, Intent>,
-        ) -> Result<
-            super::super::authorization::PreparedMutation<Schema, Intent::Binding>,
-            WorthQueryApplicationRequestMutationDenial,
-        >,
+        prepared: super::super::authorization::PreparedMutation<Schema, Intent::Binding>,
         decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         HandlerPreparation<'request, Schema, Intent::Binding>,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        let prepared = prepare(self, &identities, staged)?;
         let principal_identity = prepared.principal_identity;
         let mut admission = prepared.admission;
         let commit_binding = WorthQueryMutationCommitBinding::new(&identities, prepared.extension);
