@@ -136,6 +136,10 @@ pub(super) fn graph_obligation_denial(
     operation: &str,
     denial: WorthQueryGraphObligationInstallationDenial,
 ) -> WorthQueryApplicationOperationInstallationDenial {
+    let canonical_denial = match &denial {
+        WorthQueryGraphObligationInstallationDenial::Canonical(cause) => Some(*cause),
+        WorthQueryGraphObligationInstallationDenial::InvalidContract => None,
+    };
     let kind = match denial {
         WorthQueryGraphObligationInstallationDenial::InvalidContract => {
             WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract
@@ -156,7 +160,11 @@ pub(super) fn graph_obligation_denial(
             WorthQueryApplicationOperationInstallationDenialKind::CanonicalDigestSlotRejected
         }
     };
-    operation_denial(kind, operation)
+    let denial = operation_denial(kind, operation);
+    match canonical_denial {
+        Some(cause) => denial.with_canonical_denial(cause),
+        None => denial,
+    }
 }
 
 pub(super) fn operation_denial(
@@ -169,6 +177,21 @@ pub(super) fn operation_denial(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn canonical_byte_refusal_keeps_its_attempted_and_maximum_counts() {
+        let cause =
+            worth_foundational::facade::CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
+                maximum: 1_048_576,
+                attempted: 1_048_577,
+            };
+        let denial = graph_obligation_denial(
+            "apply-preserve",
+            WorthQueryGraphObligationInstallationDenial::Canonical(cause),
+        );
+        assert_eq!(denial.canonical_denial(), Some(&cause));
+        assert_eq!(denial.kind(), WorthQueryApplicationOperationInstallationDenialKind::CanonicalEncodedByteBudgetExceeded);
+    }
 
     #[test]
     fn authorization_mode_is_an_exclusive_installed_lattice() {

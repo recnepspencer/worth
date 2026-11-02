@@ -3,3 +3,5 @@
 
 #[path = "worth_query_court_installation/installation/mod.rs"]
 mod installation;
+
+mod cost;

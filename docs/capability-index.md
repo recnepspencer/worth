@@ -104,6 +104,13 @@ the declaration's finite ceiling for a larger program. Handle a validation
 refusal before installation. See
 [program validation](build-an-application.md#35-validate).
 
+Installed graph-obligation identities separately admit 4,096 canonical entries
+and 1 MiB. Distinct aspect contracts count once; references, projection masks,
+field paths, bindings and structural scopes also count. Application runtime
+resource profiles do not raise this ceiling. Operation installation denials
+retain requested and maximum counts in `canonical_denial()`. See
+[installation limits](build-an-application.md#4-install-the-application-graph).
+
 For mutations, prepare the typed decision through `DecisionReader`, then consume
 its values and native targets through `CandidateWriter`. Propagate preparation
 or publication denials; a successful commit publishes the validated candidate

@@ -83,6 +83,25 @@ remain separate costs. Raising it changes admission headroom without changing
 canonical rules, ordering, versions, or identities of previously admitted
 packages and schemas.
 
+Each installed graph-obligation identity has a separate fixed limit of 4,096
+canonical entries and 1 MiB of digest material. Its v2 encoding includes every
+distinct aspect contract once in an identity-local table and one ordinal
+reference per read projection or touch. Contract version and entry count frame
+each table member; exact canonical contract entries determine sharing, never a
+hash or aspect name alone. Projection masks, selected field paths, schema and
+entity bindings, structural scopes and resources still contribute their own
+entries and bytes. Repeated field writes therefore pay references rather than
+copies of their whole aspect. Table construction, references and masks share
+that one budget; the application resource profile cannot raise it.
+
+Entry or byte exhaustion refuses before operation authority is issued.
+`WorthQueryApplicationOperationInstallationDenial::canonical_denial()` preserves
+the underlying requested (`actual` or `attempted`) and `maximum` counts. Entry
+construction stops at the first over-limit append; its requested count is that
+append, not a forecast of the rest of the declaration. The v2 rule changes
+graph-obligation identities and their dependent authority seals; it does not
+change portable package/schema identities or execution semantics.
+
 ## Related Docs
 
 - [Runtime-Installed Domains And Operations](../worth-query/docs/domain-capabilities/runtime-installed-domains.md)
