@@ -12,7 +12,10 @@ required sync branches reported already up to date before this slice:
 - Lane baseline: `567b4f8abbb38a96e651fb8bdadeaf2a1d2c9e66`.
 - `origin/master`: `7131b1d4cf5e04be108417f199a602f0641723b9`.
 - `origin/codex/919-provider-lifecycle-20261027`:
-  `d5d9456637cff28cfa19cfd92cee9cecd3596370`.
+  `567b4f8abbb38a96e651fb8bdadeaf2a1d2c9e66` at initial reproduction.
+  The original table sampled the later remote ref and incorrectly associated it
+  with this baseline. Remote reflog confirms that `d5d9456637cff28cfa19cfd92cee9cecd3596370`
+  arrived during reproduction; it was merged in `7d83d1bdfa` before repair.
 - Environment: Windows x86-64, repository-pinned Rust and repository build
   configuration; existing lane target directory and six build jobs.
 
@@ -60,6 +63,11 @@ with the correct binary target; only those corrected outcomes appear below.
 
 ## Court table
 
+After the provider sync, both formerly compiler-blocked courts execute and fail:
+the measured runtime total is five passing courts and fourteen failing courts.
+This includes ten passing executions (five isolated parent/child pairs) and
+fourteen failing executions, excluding diagnostic reruns and build refusals.
+
 Classification is a conclusion about the cause, separate from the measured
 outcome. An unresolved cause or a compiler refusal is not forced into a
 fixture/production/flake category without evidence.
@@ -75,8 +83,8 @@ fixture/production/flake category without evidence.
 | E | `domain_computation::primary_graph::provider::application_touch_admission::tests::whole_clear_requires_grants_for_every_removed_prior_field` | 0 passed, 1 failed; `complete actual removal grants: Contract` | Stale fixture after `eea53fe428`: the purported complete operation lacks the separate `RemoveAspect` grant. Field-write grants must remain insufficient. |
 | E | `domain_computation::primary_graph::provider::application_touch_admission::tests::whole_sequence::committed_prior_fields_cannot_be_hidden_by_a_successive_whole_write` | 0 passed, 1 failed; `full installed grants before effects: Contract` | Same stale complete-grant declaration. Keep real committed successive writes and the incomplete-grant refusal. |
 | E | `domain_computation::primary_graph::tests::inbound_admission::cost_tests::post_preparation_cancellation_releases_inbound_dispatch_reservation` | 0 passed, 1 failed; `Denied(ProviderRejected)` at `ProviderCommit`, detail `Relational execution stopped: Cancelled at None`, typed cause `Execution(Err(Cancelled))` | Production defect. Successor-observation reservation can stop after native preparation; normalization of the original caller interruption currently covers only the native-prepare call. Preserve live-caller execution-preparation retry denials while classifying actual caller cancellation correctly. |
-| Q | `domain_installation::operation_execution::workflow_execution::progression::frontier::tests::dispatch::reversed_completion_still_applies_canonical_effects_and_receipts` | 0 tests executed; Cargo exit 101 | Compile-blocked, unclassified. The issue's former work-ceiling assertion cannot be measured on this baseline. See the exact compiler failures below. |
-| C | `certification::application_graph::canonical_transition::related::companion_transition::companion_target_rule_rejects_actual_surviving_relation_before_publication` | 0 tests executed; Cargo exit 101 | Compile-blocked, unclassified. The issue's reported subject mismatch is not a measured result here. |
+| Q | `domain_installation::operation_execution::workflow_parallel_progression::frontier::tests::dispatch::reversed_completion_still_applies_canonical_effects_and_receipts` | Initially compile-blocked; post-sync 0 passed, 1 failed, 2487 filtered | Stale fixture after `c478117afa` reduced native preparation charges. `dispatch.rs:225` expects the default 1024-unit request to stop, but it completes. Preserve reversed completion, canonical effects and serial/parallel receipt equivalence; test resource refusal separately. |
+| C | `certification::application_graph::canonical_transition::related::companion_transition::companion_target_rule_rejects_actual_surviving_relation_before_publication` | Initially compile-blocked; post-sync 0 passed, 1 failed, 328 filtered | Stale diagnostic after `3dc89054fd` moved the genuine invariant check to seed publication. Actual subject is `application seed transaction`; expected subject is `application principal bootstrap transaction`. The custom invariant still refuses before publication. |
 | F | `application_invariant_acceptance::candidate_index::boxes::candidate_allocation::pruned_completed_source_allocates_no_dense_candidate_backing` | 1 passed, 0 failed, in parent and isolated child | Fixed already on this branch. Physical interval: zero allocations, zero allocated bytes; one deallocation of eight bytes. Existing zero-allocation assertions unchanged. |
 | F | `application_invariant_acceptance::managed_index::boxes::candidate_allocation::pruned_completed_source_allocates_no_dense_candidate_backing` | 1 passed, 0 failed, in parent and isolated child | Fixed already; same measured zero-allocation interval. |
 | F | `application_invariant_acceptance::candidate_index::boxes::lifecycle::cancelled_cold_box_build_releases_partial_bvh_and_rebuilds_with_fresh_request` | 1 passed, 0 failed, in parent and isolated child | Fixed already. Existing exact allocated/deallocated-byte equality, original cancellation, Failed lifecycle and fresh successful rebuild all pass. |
@@ -84,7 +92,7 @@ fixture/production/flake category without evidence.
 | F | `application_invariant_acceptance::managed_index::lifecycle::cancelled_cold_prefix_build_releases_partial_backing_and_rebuilds_with_fresh_request` | 1 passed, 0 failed, in parent and isolated child | Fixed already. Existing cancellation, partial backing release and fresh rebuild assertions pass. |
 | F | `proposal_acceptance::courts::acceptance::disposal::partial_attempt_disposal_retries_actual_retired_cleanup_until_its_reader_releases` | 0 passed, 1 failed; `NestedStopped` at `disposal.rs:117` after reader release | Cause attribution pending. A production application-cleanup request gap is supported by source: its retry opens a new serial request inside an existing advancement, while the product owner already supports the admitted phase. This run does not yet isolate that gap from a residual cleanup refusal. |
 | F | `proposal_acceptance::courts::acceptance::previous::previous_head_cleanup_recovers_without_discarding_adoption_evidence_or_adopting_again` | 0 passed, 1 failed; expected completion at `previous.rs:131` did not occur | Unresolved. The same request gap is present, but its causal contribution and any additional retention cause require the actual residual denial. Keep the genuine reader-release and retained adoption-evidence requirements. |
-| T | `checkpoint_recovery::current_output::serial::restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change` | 0 passed, 1 failed; `InvariantAdmission(ExecutionRequest(WorkExhausted))` at `current_output.rs:63` | Unresolved cost failure. Equality lookups/candidates 5091, field reads/role lookups 5090. `facc9d1197` deliberately used 8193 expectations to cross a former 8192 ceiling while retaining a finite eight-million-unit request. Do not lower that population or raise its budget without establishing the legitimate production change. |
+| T | `checkpoint_recovery::current_output::serial::restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change` | 0 passed, 1 failed; `InvariantAdmission(ExecutionRequest(WorkExhausted))` at `current_output.rs:63` | Stale request funding introduced by `facc9d1197`: the legitimate projection-quota removal expanded this very court from one read to 8193 without changing its eight-million-unit host grant. No evidence establishes that expanded fixture ever passed at eight million; the issue's earlier green report covers the original eleven courts. Preserve 8193 reads and zero producer contacts, and retain the original grant as an explicit typed-refusal twin. This is not evidence of a later production read-cost regression. |
 
 ## Diagnostic reruns
 
@@ -99,7 +107,7 @@ that retired quota or reducing the adversarial bound relative to the request.
 
 ## Out-of-scope compiler blockers
 
-Both Q and C stop on the following unchanged production sources:
+On the initial baseline, both Q and C stopped on these unchanged production sources:
 
 ```text
 error[E0063]: missing field `source_kind` in initializer of `WorthQueryReadGraphRelationView<'_>`
@@ -110,8 +118,17 @@ crates/worth-query/src/runtime/graph_read_access/access_admission/case_inventory
 ```
 
 Cargo reports `could not compile worth-query` due to two previous errors.
-These are outside the named court failures. Do not repair these files in this
-lane or describe either blocked court as passing or reproduced at runtime.
+These are outside the named court failures and were not repaired by this lane.
+Provider sync `d5d9456637` fixes them; the required merge `7d83d1bdfa` lets both
+courts run. Q then reports the complete workflow where its old assertion expects
+work exhaustion (zero passed, one failed, 2487 filtered).
+
+C's first post-sync command still executes zero tests: three missing
+`WORTH_IMPLEMENTATION_BUILD_ID` compile-time inputs in two testkit packages.
+The documented `python scripts/application_build.py cargo test ...` wrapper
+issues that required build identity. With the same single-court filter, C runs
+and reports the diagnostic subject mismatch (zero passed, one failed, 328
+filtered). Both post-sync runtime runs have zero ignored and zero measured.
 
 ## Evidence boundaries
 
@@ -141,11 +158,55 @@ lane or describe either blocked court as passing or reproduced at runtime.
   occurrence repairs fixture custody; splicing history would weaken correctness.
 - Keep the intentional 8193 current-output population and every allocation
   equality assertion until evidence justifies a production or fixture repair.
+- Supply the documented fresh application build identity for courts that embed
+  it. A missing build input is a command refusal and executes no court.
 
 ## Repair and verification status
 
 Initial reproduction is complete. Diagnostic classification and repairs remain
 open. No implementation slice is qualified by this initial table.
+
+### Publication custody repair
+
+The three record-history fixtures now hold a genuine observation of the fork's
+creation occurrence until exact paging completes. Production history behavior
+and the expected four authored record coordinates are unchanged. Caller
+interruption classification now surrounds the complete pre-publication commit
+transition rather than only Native preparation. Only a returned control stop
+with an actually interrupted original caller is normalized; successful or
+unpublished publication and live-caller retry custody are unchanged. No shape
+or public API was added.
+
+Focused commands all use the Query manifest above and `-- --nocapture`:
+
+| Package / target / filter | Passed | Failed | Filtered |
+|---|---:|---:|---:|
+| R / `--test worth_query_court_decl_host` / `record_history::court` | 9 | 0 | 185 |
+| E / `--lib` / `post_preparation_cancellation_releases_inbound_dispatch_reservation` | 1 | 0 | 2189 |
+| E / `--lib` / `preparation_control_refusal_and_ordinary_interruption_keep_different_head_postures` | 1 | 0 | 2189 |
+| E / `--lib` / `stops::leased_requests::request_control` | 2 | 0 | 2188 |
+
+All have zero ignored and measured tests. History's nine include three genuine
+retired-parent refusal twins and three grant checks. The posture court checks
+both cancellation and timeout: an interrupted work lease with a live original
+caller remains a retryable execution-preparation denial. The two public-door
+courts keep original typed cancellation/deadline causes. The cancellation
+regression's independent native commit and inbound reservation observations
+remain unchanged; the actual post-preparation pause/cancel now returns Cancelled.
+
+Publication-custody footer commands select `-p worth-query-execution
+-p worth-query-court-decl-host` with the Query manifest for both formatting and
+Clippy. Formatting exits zero. Clippy exits 101 with the same untouched debt:
+46 errors / 49 warnings for lib and 37 errors / 48 warnings for lib test
+(40 warning duplicates). No diagnostic location names either changed commit
+file or a changed history court. The reports overlap and are not summed as
+unique errors. No lint is suppressed.
+The exact boundary-check and agent-context commands listed below both exit
+zero, with valid boundaries and no context mismatch. The dirty line-cap guard
+passes five Rust files. Both branch and working diff checks exit zero with zero
+whitespace errors. The independent reviewer found no material code finding in
+this slice; it verified raw-parent custody and the enclosing pre-effect stop
+boundary, including unchanged live-caller retry and unpublished-owner posture.
 
 ### Initial triage slice checks
 

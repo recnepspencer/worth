@@ -121,23 +121,7 @@ pub(super) fn commit(
         .with_runtime_mut(&execution, |runtime| {
             runtime.prepare_validated_proposal(&execution, candidate)
         })
-        .map_err(|error| {
-            let stop = transaction_commit_stop(error);
-            // The admitted caller's own interruption is terminal. A stopped
-            // work lease with a live caller keeps the preparation-retry denial.
-            match stop {
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::ControlStopped(stopped)
-                    if attempt.affinity().publication_request().interruption().is_some() =>
-                {
-                    crate::domain_computation::WorthQueryProviderSessionCommitStop::ControlStopped(
-                        crate::domain_computation::WorthQueryProviderSessionCommitControlStopped::new(
-                            stopped.kind(), stopped.detail(),
-                        ),
-                    )
-                }
-                stop => stop,
-            }
-        })?;
+        .map_err(transaction_commit_stop)?;
     if let Some(fence) = availability_fence {
         fence
             .bind(&mut candidate)
