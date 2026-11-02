@@ -10,6 +10,7 @@ use worth_query_host::facade::{
 mod controls;
 mod native;
 mod predicate;
+mod write_admission;
 use native::{assert_wire, capture, CertifiedObservation};
 
 const FIVE: [u8; 9] = [1, 5, 0, 0, 0, 0, 0, 0, 0];

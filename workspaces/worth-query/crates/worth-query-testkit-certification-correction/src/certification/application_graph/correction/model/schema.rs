@@ -22,6 +22,7 @@ worth_query_application_contribution! {
         members: |schema| {
             let schema = super::causal_inspection::declare(schema);
             let schema = super::operand_edit::declare(schema);
+            let schema = super::write_admission::declare(schema);
             let schema = super::aspect_input::declare(schema);
             let schema = super::scalar_input::declare(schema);
             let schema = super::composite_definition_model::declare(schema);

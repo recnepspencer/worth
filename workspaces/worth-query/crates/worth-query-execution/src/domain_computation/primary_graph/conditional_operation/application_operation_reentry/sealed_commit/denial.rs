@@ -182,6 +182,7 @@ fn classify_kind(kind: Kind) -> Outcome {
         Kind::UnobservedWrite
         | Kind::ProviderRejected
         | Kind::CustomInvariantDenied
+        | Kind::DomainValueRejected
         | Kind::WorkflowSettlementDenied { .. }
         | Kind::ProductBasisStale
         | Kind::UniqueValueTaken

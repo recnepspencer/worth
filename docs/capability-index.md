@@ -220,6 +220,9 @@ keeps normalization, canonical bytes, admission and terminal rendering; the entr
 delegate supplies finite bounds, identity, unit and frame. Binary and explicitly
 marked canonical domain atoms require the same per-binding source guard and have
 distinct portable protocols from established structured canonical artifacts.
+Ordinary domain field writes must pass the installed owner's admitted
+reader and canonical byte comparison under the original request before provider
+lowering or publication; an unreadable encoding returns a typed commit refusal.
 See the [compiled entry delegate](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs)
 and [representation and guard guidance](build-an-application.md#inline-opaque-values).
 

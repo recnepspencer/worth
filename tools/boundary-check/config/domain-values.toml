@@ -16,3 +16,18 @@ forbidden_types = []
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/domain_binding.rs"
 binding = "InlineCounterBinding"
 forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/binary.rs"
+binding = "BrokenBinaryBinding"
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/canonical.rs"
+binding = "CanonicalBinding"
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/canonical.rs"
+binding = "DelegatedBinding"
+forbidden_types = []

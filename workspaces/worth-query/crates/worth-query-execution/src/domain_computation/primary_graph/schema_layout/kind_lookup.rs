@@ -33,3 +33,35 @@ impl super::WorthQueryPrimaryGraphLayout {
             .find_map(|(name, candidate)| (*candidate == kind).then_some(name.as_str()))
     }
 }
+
+impl super::WorthQueryPrimaryGraphLayout {
+    /// Resolve actual create-effect kind custody without inventing a name.
+    /// Each visited integer kind is funded before comparison; names are borrowed.
+    pub(in crate::domain_computation::primary_graph) fn record_name_admitted<E>(
+        &self,
+        owner: worth_query_installation::facade::ApplicationFieldBindingOwnerKind,
+        kind: KindId,
+        admit: &mut impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<Option<&str>, E> {
+        use worth_query_installation::facade::ApplicationFieldBindingOwnerKind as Owner;
+        match owner {
+            Owner::Entity => {
+                for (name, candidate) in &self.entity_kinds {
+                    admit(1)?;
+                    if *candidate == kind {
+                        return Ok(Some(name));
+                    }
+                }
+            }
+            Owner::Relation => {
+                for (name, candidate) in &self.relation_kinds {
+                    admit(1)?;
+                    if candidate.kind == kind {
+                        return Ok(Some(name));
+                    }
+                }
+            }
+        }
+        Ok(None)
+    }
+}

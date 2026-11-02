@@ -38,6 +38,7 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         (): (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<super::write_admission::Binding, _>(super::write_admission::Handler)?;
         setup.handler::<super::causal_inspection::distinct_subjects::grant_status::Binding, _>(
             super::causal_inspection::distinct_subjects::grant_status::Handler,
         )?;
@@ -195,6 +196,12 @@ where
                 .field(ReadEnabled::reference(), true)
                 .field(Ceiling::reference(), 100_u64)
                 .field(Calculated::reference(), 0_u64)
+                .field(super::write_admission::Binary::reference(), 5_u64)
+                .field(
+                    super::write_admission::Canonical::reference(),
+                    super::write_admission::CanonicalCounter(5),
+                )
+                .field(super::write_admission::Delegated::reference(), 5_u64)
                 .field(
                     super::composite_definition_model::DefinitionRevision::reference(),
                     5_u64,

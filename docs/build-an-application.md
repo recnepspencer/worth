@@ -323,6 +323,14 @@ checks that encoding the admitted result reproduces the input exactly; a corrupt
 owner result returns `ValueCodecDenial::InternalInconsistency`. Size refusals retain
 the binding identity and precede mutation effects. Decoding and the independent
 byte comparison share the original request's work, memory and cancellation loan.
+Ordinary writes also pass through this installed admitted decoder and
+canonical comparison after effect expansion and before provider lowering or
+publication. This single commit-preparation seal covers binary, canonical domain
+and delegated canonical domain bindings, including entity creation, field updates,
+optional-field patches and relation creation. An owner whose encoder emits bytes
+its reader rejects receives `DomainValueRejected`; `domain_value_decode_denial()`
+retains the binding identity and codec cause. Request resource refusals retain
+their original execution cause. Either refusal leaves the selected commit unchanged.
 There is no replacement request or representation-only decoder fallback. Declare
 fields with `no_equality`; domain equality and ordering remain with the owner.
 Render terminal values through the owner's reader/renderer, as the Ratio example does.

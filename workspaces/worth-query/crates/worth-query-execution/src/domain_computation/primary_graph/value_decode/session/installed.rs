@@ -76,3 +76,32 @@ impl ValueDecodeSession<'_> {
         }
     }
 }
+
+impl ValueDecodeSession<'_> {
+    /// Fund write traversal and installed lookup using this exact request loan.
+    pub(in crate::domain_computation::primary_graph) fn admit_write_quantities(
+        &self,
+        work: u64,
+        bytes: u64,
+    ) -> Result<(), Stop> {
+        let work = usize::try_from(work).map_err(|_| {
+            self.refuse(Stop::AccountingOverflow);
+            Stop::AccountingOverflow
+        })?;
+        let bytes = usize::try_from(bytes).map_err(|_| {
+            self.refuse(Stop::AccountingOverflow);
+            Stop::AccountingOverflow
+        })?;
+        self.admit(work, bytes).map_err(|_| {
+            self.denial()
+                .expect("refused original admission is latched")
+        })
+    }
+    pub(in crate::domain_computation::primary_graph) fn validate_domain_write(
+        &self,
+        binding: &Installed,
+        value: &AspectValue,
+    ) -> Result<(), worth_query_installation::facade::ApplicationValueDecodeDenial> {
+        binding.validate_encoded_admitted(value, &mut |work, bytes| self.admit(work, bytes))
+    }
+}
