@@ -76,7 +76,11 @@ def prepare(repository, output_directory, cargo_runner, profile='dev', *, native
         raise NativeFeatureRefusal('independent executable graph belongs to another workspace')
     receipt = {'schema': 1, 'features': native.features, 'inputs': native.inputs}
     (output / 'native-feature-graph.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
-    result = cargo_runner(['cargo', 'build', '--workspace', '--bins', '--locked',
+    selected = [argument for package in sorted({request['package'] for request in REQUESTS})
+                for argument in ('--package', package)]
+    selected += [argument for binary in sorted({request['binary'] for request in REQUESTS})
+                 for argument in ('--bin', binary)]
+    result = cargo_runner(['cargo', 'build', *selected, '--locked',
                            '--profile', profile, '--features',
                            ','.join(native.features),
                            '--manifest-path', str(workspace / 'Cargo.toml')],

@@ -87,6 +87,12 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
                 return SimpleNamespace(returncode=0, stdout='\n'.join(map(json.dumps, events)))
             result = prepare(root, root / 'output', runner, 'ci-test', native=native)
             self.assertEqual(calls[0][calls[0].index('--features') + 1], 'authority/observed')
+            self.assertNotIn('--workspace', calls[0])
+            self.assertNotIn('--bins', calls[0])
+            packages = {calls[0][index + 1] for index, value in enumerate(calls[0]) if value == '--package'}
+            binaries = {calls[0][index + 1] for index, value in enumerate(calls[0]) if value == '--bin'}
+            self.assertEqual(packages, {request['package'] for request in REQUESTS})
+            self.assertEqual(binaries, {request['binary'] for request in REQUESTS})
             self.assertTrue(Path(result['WORTH_PREBUILT_EXECUTABLES']).is_file())
             receipt = json.loads((root / 'output/native-feature-graph.json').read_text())
             self.assertEqual(receipt['validated_shared_libraries'], 1)

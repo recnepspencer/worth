@@ -1978,3 +1978,12 @@ selects that existing feature before the native graph is compiled, and the
 unchanged owned adapter carries and validates the same observed graph for
 independent executables. A cheap manifest-backed regression verifies each
 prerequisite feature against its actual declaring package.
+
+The independent Store prerequisite builder also used `--workspace --bins`
+although its retained contract names only four executable requests. That
+expanded the scoped graph with unrelated workspace binaries and activated an
+extra Physical Format feature; the existing graph-drift guard correctly refused.
+The builder now selects the exact packages and binaries from its existing
+REQUESTS contract. The retained executable and library-signature checks are
+unchanged. The regression verifies that those exact requests, rather than an
+unbounded workspace binary set, determine the independent command.
