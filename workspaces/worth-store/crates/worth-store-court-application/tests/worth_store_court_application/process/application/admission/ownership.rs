@@ -18,19 +18,24 @@ fn competing_host_processes_admit_exactly_one_writer_until_process_death() {
         || {
             assert_eq!(std::fs::read(&ready).unwrap(), b"serving:initialized-once");
             let initialized = Arc::new(AtomicUsize::new(0));
-            match open(&location, build(), initialized.clone()) {
-                Err(Refused::Physical {
-                    cause: ApplicationHomeOpenRefusal::Physical(cause),
-                    ..
-                }) => {
-                    assert_eq!(
-                        cause.kind(),
-                        ApplicationHomePhysicalRefusalKind::MutationOwnerContended
-                    );
-                }
-                Err(cause) => panic!("competing Host must report lease contention: {cause:?}"),
-                Ok(_) => panic!("two processes cannot both serve one Home"),
-            }
+            with_open(
+                &location,
+                build(),
+                initialized.clone(),
+                |opened| match opened {
+                    Err(Refused::Physical {
+                        cause: ApplicationHomeOpenRefusal::Physical(cause),
+                        ..
+                    }) => {
+                        assert_eq!(
+                            cause.kind(),
+                            ApplicationHomePhysicalRefusalKind::MutationOwnerContended
+                        );
+                    }
+                    Err(cause) => panic!("competing Host must report lease contention: {cause:?}"),
+                    Ok(_) => panic!("two processes cannot both serve one Home"),
+                },
+            );
             assert_eq!(initialized.load(Ordering::SeqCst), 0);
         },
     );
@@ -65,15 +70,18 @@ fn host_writer_child() {
         return;
     };
     let initialized = Arc::new(AtomicUsize::new(0));
-    let home = open(Path::new(&path), build(), initialized.clone())
-        .unwrap_or_else(|cause| panic!("writer: {cause:?}"));
-    assert_eq!(initialized.load(Ordering::SeqCst), 1);
-    assert!(home.is_directory());
-    let ready = std::path::PathBuf::from(std::env::var_os("WORTH_HOST_LEASE_READY").unwrap());
-    crate::killed_child::announce(&ready, b"serving:initialized-once");
-    // Keep the actual public Host and its continuous Store lease alive.
-    std::hint::black_box(&home);
-    crate::killed_child::park();
+    with_open(Path::new(&path), build(), initialized.clone(), |opened| {
+        let home = opened
+            .as_ref()
+            .unwrap_or_else(|cause| panic!("writer: {cause:?}"));
+        assert_eq!(initialized.load(Ordering::SeqCst), 1);
+        assert!(home.is_directory());
+        let ready = std::path::PathBuf::from(std::env::var_os("WORTH_HOST_LEASE_READY").unwrap());
+        crate::killed_child::announce(&ready, b"serving:initialized-once");
+        // Keep the actual public Host and its continuous Store lease alive.
+        std::hint::black_box(home);
+        crate::killed_child::park();
+    });
 }
 
 #[test]
@@ -82,19 +90,23 @@ fn host_reader_child() {
         return;
     };
     let initialized = Arc::new(AtomicUsize::new(0));
-    match open(Path::new(&path), build(), initialized.clone()) {
-        Ok(home) => {
-            assert!(home.is_directory());
-            println!("HOST_AFTER_KILL=Serving");
-            drop(home);
-        }
-        Err(Refused::NativeReadmission { home, .. }) => {
-            // P-A owns this step. Require its actual owner refusal, rather
-            // than accepting a physical denial or replaying the initializer.
-            println!("HOST_AFTER_KILL=NativeReadmission({:?})", home.reason());
-            assert_known_native_readmission_block(home.reason());
-        }
-        Err(cause) => panic!("lease must be available after process death: {cause:?}"),
-    }
+    with_open(
+        Path::new(&path),
+        build(),
+        initialized.clone(),
+        |opened| match opened {
+            Ok(home) => {
+                assert!(home.is_directory());
+                println!("HOST_AFTER_KILL=Serving");
+            }
+            Err(Refused::NativeReadmission { home, .. }) => {
+                // P-A owns this step. Require its actual owner refusal, rather
+                // than accepting a physical denial or replaying the initializer.
+                println!("HOST_AFTER_KILL=NativeReadmission({:?})", home.reason());
+                assert_known_native_readmission_block(home.reason());
+            }
+            Err(cause) => panic!("lease must be available after process death: {cause:?}"),
+        },
+    );
     assert_eq!(initialized.load(Ordering::SeqCst), 0);
 }

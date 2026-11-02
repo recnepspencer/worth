@@ -20,11 +20,12 @@ type Home = WorthQueryApplicationHome<fixture::schema::HomeIdentitySchema, fixtu
 type Refused =
     WorthQueryApplicationHomeOpenRefused<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>;
 
-fn open(
+fn with_open<R>(
     path: &Path,
     build: ApplicationBuildIdentity,
     initialized: Arc<AtomicUsize>,
-) -> Result<Home, Refused> {
+    observe: impl FnOnce(&Result<Home, Refused>) -> R,
+) -> R {
     let input = fixture::request(
         path.to_owned(),
         build,
@@ -33,8 +34,12 @@ fn open(
     );
     let lease = checkpoint_capture::lease(128 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    with_bootstrap_advancement_from_request(execution, |phase| input.open_in_advancement(&phase))
-        .unwrap()
+    with_bootstrap_advancement_from_request(execution, |phase| {
+        // Observe the original result in its opening frame, without moving the
+        // large, concrete refusal custody through additional caller frames.
+        observe(&input.open_in_advancement(&phase))
+    })
+    .unwrap()
 }
 
 fn build() -> ApplicationBuildIdentity {

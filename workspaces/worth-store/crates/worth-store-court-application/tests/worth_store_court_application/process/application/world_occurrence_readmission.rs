@@ -2,7 +2,7 @@
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::DurableCompositeCommitIdentity;
 use worth_runtime_world::facade::*;
-use worth_store_application::ApplicationHomeCloseOutcome;
+use worth_store_application::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseOutcome};
 
 fn open(
     location: &std::path::Path,
