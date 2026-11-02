@@ -13,6 +13,12 @@ type Decision = <Binding as ApplicationMutationBinding<Schema>>::Decision;
 type DomainDenial = <Binding as ApplicationMutationBinding<Schema>>::Denial;
 type Output = <Binding as ApplicationMutationBinding<Schema>>::Result;
 
+struct PanickingPayload;
+impl Drop for PanickingPayload {
+    fn drop(&mut self) {
+        panic!("supplier panic payload destructor");
+    }
+}
 struct Probe {
     contacts: Arc<AtomicUsize>,
     drops: Arc<AtomicUsize>,
@@ -39,7 +45,7 @@ impl OperationHandler<Schema, Binding> for Probe {
     ) -> Result<Progress, Denial> {
         self.contacts.fetch_add(1, Ordering::SeqCst);
         if self.panic_once.swap(false, Ordering::SeqCst) {
-            panic!("supplier retirement advanced then panicked");
+            std::panic::panic_any(PanickingPayload);
         }
         if self.refuses {
             Err(Denial::Unsupported)
@@ -335,7 +341,7 @@ fn erased_slot_and_active_handler_aliases_refuse_while_the_same_query_serves() {
 }
 
 #[test]
-fn handler_retirement_panic_retains_original_payload_and_unadvanced_cursor_for_retry() {
+fn handler_retirement_and_panic_payload_destructor_preserve_original_custody_for_retry() {
     let policy = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationToken::new(),

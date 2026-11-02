@@ -67,7 +67,14 @@ where
     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         original.advance_home_retirement(request)
     }))
-    .unwrap_or_else(|_| {
+    .unwrap_or_else(|payload| {
+        // Match Execution's existing panic boundary: payload destruction can
+        // panic too. It must not unwind the retained original Query owner.
+        if let Err(secondary) =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| drop(payload)))
+        {
+            std::mem::forget(secondary);
+        }
         Err(Denial::Execution(
             worth_execution::WorkCeilingDenial::Panicked,
         ))

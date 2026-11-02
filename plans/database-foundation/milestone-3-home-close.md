@@ -220,7 +220,7 @@ Post-seal Query retirement consults the original request without opening a new
 execution scope per step. A fresh scope itself needs framework memory, which
 cannot be required after a failed checkpoint exhausts that payer. The handler
 owner contains supplier advancement panics while keeping its original payload
-and cursor; `handler_retirement_panic_retains_original_payload_and_unadvanced_cursor_for_retry`
+and cursor; `handler_retirement_and_panic_payload_destructor_preserve_original_custody_for_retry`
 traces that refusal. The memory court exhausts the same Serial payer only after
 preflight, through its own reservation port, and advances without fresh memory.
 
@@ -316,3 +316,9 @@ world_occurrence_readmission also still asserted that coupled World checkpointin
 was unsupported. D12 retires that expectation; their close branches now require
 Ok checkpoint results. The bare Native cleanup branch retains its original
 WorldSectionRequired assertion. All reopen and original custody assertions stay.
+
+The handler panic retry court now also makes the supplier panic payload's own
+destructor panic. Post-seal retirement uses the existing Execution panic
+boundary's second-payload containment pattern, so that destructor cannot unwind
+the original Query owner. Original handler payload identity, drop count and
+unadvanced cursor assertions remain and the same request retries successfully.
