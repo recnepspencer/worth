@@ -116,7 +116,7 @@ impl IndexAuthority<'_> {
                     return Err(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
                 }
                 if cold_changes.is_none() {
-                    cold_changes = Some(changes::ChangedRecords::cold(after, work)?);
+                    cold_changes = Some(changes::ChangedRecords::cold(execution, after, work)?);
                 }
                 match &definition.kind {
                     DerivedIndexKind::EntityField { .. } => {
