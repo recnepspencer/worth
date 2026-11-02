@@ -92,3 +92,12 @@ inspection/obligation custody and zero World/Query publications are required.
 It cannot honestly claim Native no-effect or resume a weak owner after the
 fixture has dropped. The consult oracle's explicit healthy budget covers the
 original canonical artifact hash; every cancellation/work boundary stays checked.
+
+The authority-evidence work oracle now ends after its one-way DecisionReadSet
+phase has been traversed. It keeps every authority revalidation charge and its
+exact by-value resource cause; unrelated later Native/capture charge prefixes
+belong to the existing Native/source-stop and new retained-effect capture courts.
+Traversing every later full commit did not strengthen the authority claim and
+timed out at the committed 600-second test limit during the first normal run.
+The original positive whole-commit control remains, and an observed post-Native
+stop still asserts its exact retained-effect fate.

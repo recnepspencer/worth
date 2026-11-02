@@ -65,8 +65,14 @@ mod tests {
             let charges = crate::test_read_stops::charged_prefixes_for_test(&observer).into_iter().map(|(_, required)| required).collect();
             match outcome {
                 Outcome::Committed(_) => (true, None, charges),
+                Outcome::ProductUnpublished(effects) => {
+                    assert_eq!(effects.cause(), worth_runtime_world::facade::ProductUnpublishedCause::OriginalObservationStopped(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
+                    assert_eq!(effects.owner_effect_count(), 1);
+                    assert_eq!(world.application.primary_provider.published_application_commit_count(), 0);
+                    (false, None, charges)
+                }
                 Outcome::Denied(denial) => (false, Some((denial.stage(), denial.execution_denial_cause(), denial.authorization_denial_kind())), charges),
-                other => panic!("the real commit door has a committed or pre-effect denied answer: {other:?}"),
+                other => panic!("the real commit door preserves the exact stopped fate: {other:?}"),
             }
         }).unwrap()
     }
@@ -88,6 +94,12 @@ mod tests {
         for required in unique {
             let (committed, evidence, _) = commit_at(required - 1);
             assert!(!committed, "charge {required}");
+            // Phase progression is one-way. Keep every resource boundary of
+            // authority revalidation; later Native settlement/capture stops
+            // have their own custody courts and cannot add authority evidence.
+            if reached > 0 && !matches!(evidence, Some((Stage::DecisionReadSet, _, _))) {
+                break;
+            }
             if let Some((Stage::DecisionReadSet, _, Some(Authority::Stopped(_)))) = evidence {
                 assert_eq!(
                     evidence,

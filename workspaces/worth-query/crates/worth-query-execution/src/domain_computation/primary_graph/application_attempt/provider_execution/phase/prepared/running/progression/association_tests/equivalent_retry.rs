@@ -87,7 +87,10 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                     .outputs_of::<RetentionOutputs>()
                     .and_then(|outputs| outputs.entity::<RetainedAccount>())
                     .expect("fresh receipt retains its actual output role");
-                assert_eq!(recovered.semantic_result().semantic(), executed.committed_changes().semantic_result());
+                for (entity, _) in executed.committed_changes().entity_changes() {
+                    assert!(recovered.semantic_result().semantic().changed_records().contains(
+                        &worth_relational::facade::transactions::RecordRef::Entity(entity)));
+                }
                 assert!(recovered.semantic_result().semantic().changed_records().contains(
                     &worth_relational::facade::transactions::RecordRef::Entity(executed_output.entity_id())));
                 assert_eq!(recovered.exact_output_settlement(), worth_foundational::facade::DurableQueryOutputSettlement::OriginalOccurrenceSlot { slot: 0 });

@@ -108,8 +108,7 @@ impl PublishedWorkflowInstanceRef {
     }
 }
 
-/// A workflow instance start that landed: the instance, its commit receipt, and whether the
-/// owner-issued receipt from this actual publication.
+/// A real workflow instance start and its owner-issued commit receipt.
 #[derive(Debug)]
 pub struct PerformedWorkflowInstanceStart {
     instance: PublishedWorkflowInstanceRef,
