@@ -2,6 +2,7 @@
 use super::pending_support::{balance, scope, set};
 use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+mod durable_retry;
 mod refusals;
 mod separate_process;
 
