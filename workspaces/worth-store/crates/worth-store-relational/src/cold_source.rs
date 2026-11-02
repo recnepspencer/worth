@@ -46,6 +46,8 @@ pub(crate) struct StoreColdSource {
     custody: member_custody::MemberCustodyRegistry,
     member_reads: AtomicU64,
     commit_reads: AtomicU64,
+    #[cfg(test)]
+    canonical_journal_attempts: AtomicU64,
     commit_read_observer:
         Option<Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>>,
     // Local selected readers/pins retire before a possible final pool-owner Drop.
@@ -64,6 +66,8 @@ impl StoreColdSource {
         // The closed Home transport delivers the body read by its original
         // protected reader. Observe that SAME ingress; never read it again.
         self.commit_reads.fetch_add(1, Ordering::Relaxed);
+        #[cfg(test)]
+        self.record_canonical_journal_attempt();
         if let Some(observer) = &self.commit_read_observer {
             observer(position, self.counters());
         }
@@ -96,6 +100,8 @@ impl StoreColdSource {
             custody: Default::default(),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
+            #[cfg(test)]
+            canonical_journal_attempts: AtomicU64::new(0),
             commit_read_observer: observer,
             serving,
             _allocation_memory: memory,
@@ -106,6 +112,15 @@ impl StoreColdSource {
             member_reads: self.member_reads.load(Ordering::Relaxed),
             commit_reads: self.commit_reads.load(Ordering::Relaxed),
         }
+    }
+    #[cfg(test)]
+    fn record_canonical_journal_attempt(&self) {
+        self.canonical_journal_attempts
+            .fetch_add(1, Ordering::Relaxed);
+    }
+    #[cfg(test)]
+    pub(crate) fn canonical_journal_attempts(&self) -> u64 {
+        self.canonical_journal_attempts.load(Ordering::Relaxed)
     }
     #[cfg(feature = "certification-test-authority")]
     pub(crate) fn new_with_commit_read_observer(
@@ -323,6 +338,8 @@ impl RelationalDurableColdSource for StoreColdSource {
 
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
         self.commit_reads.fetch_add(1, Ordering::Relaxed);
+        #[cfg(test)]
+        self.record_canonical_journal_attempt();
         let bytes = self
             .serving
             .canonical_commits()

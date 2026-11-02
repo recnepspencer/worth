@@ -23,6 +23,8 @@ impl StoreColdSource {
             return Err(Refusal::Bounds);
         }
         self.commit_reads.fetch_add(1, super::Ordering::Relaxed);
+        #[cfg(test)]
+        self.record_canonical_journal_attempt();
         let journal = self
             .serving
             .canonical_commits()

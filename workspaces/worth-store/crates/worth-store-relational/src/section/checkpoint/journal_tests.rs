@@ -370,11 +370,15 @@ fn journal_checkpoint_selection_rehomes_covered_history_and_preserves_uncovered_
         recovered.snapshots().release_snapshot(&snapshot).unwrap();
     }
     assert_eq!(
-        source.counters().commit_reads,
+        source.canonical_journal_attempts(),
         0,
         "no covered canonical journal demand, including component/association admission"
     );
     assert!(source.counters().member_reads > 0);
+    assert!(
+        source.counters().commit_reads > 0,
+        "selected canonical bodies were admitted"
+    );
     assert_eq!(
         recovered
             .history()
