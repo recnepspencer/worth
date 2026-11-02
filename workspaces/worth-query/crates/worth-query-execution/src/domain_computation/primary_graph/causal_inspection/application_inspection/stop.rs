@@ -103,11 +103,11 @@ impl WorthQueryApplicationInspectionDenial {
             InspectionCause::Admission(InspectionAdmissionDenial::Capability(denial))
                 if denial.kind() == crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation) => Kind::StaleIncarnation,
             InspectionCause::Admission(InspectionAdmissionDenial::CurrentAuthorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)))
-            | InspectionCause::Admission(InspectionAdmissionDenial::Security(crate::basis::WorthQueryProductBranchAdmissionDenial::StaleIncarnation)) => Kind::StaleIncarnation,
+            | InspectionCause::Admission(InspectionAdmissionDenial::Security(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(crate::basis::WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation))) => Kind::StaleIncarnation,
             InspectionCause::Admission(InspectionAdmissionDenial::Authorization(denial))
                 if denial.kind() == crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
             InspectionCause::Query(denial) if denial.kind() == crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
-            InspectionCause::Selection(crate::basis::WorthQueryProductBranchAdmissionDenial::StaleIncarnation) => Kind::StaleIncarnation,
+            InspectionCause::Selection(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(crate::basis::WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation)) => Kind::StaleIncarnation,
             InspectionCause::Unavailable
             | InspectionCause::Admission(InspectionAdmissionDenial::MissingOriginalProjection)
             | InspectionCause::Admission(InspectionAdmissionDenial::DiagnosticContract(

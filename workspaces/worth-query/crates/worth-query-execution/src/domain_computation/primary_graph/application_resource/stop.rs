@@ -111,7 +111,7 @@ impl WorthQueryResourceActionDenial {
         match &self.cause {
             C::Admission(ResourceAdmissionDenial::Authorization(denial) | ResourceAdmissionDenial::DisclosureAuthorization(denial))
                 if denial.kind() == crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleIncarnation) => K::StaleIncarnation,
-            C::Selection(crate::basis::WorthQueryProductBranchAdmissionDenial::StaleIncarnation)
+            C::Selection(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(crate::basis::WorthQueryProductBranchAdmissionRefusalKind::StaleIncarnation))
             | C::Native(worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial::StaleIncarnation)
             | C::Revalidation(worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial::StaleIncarnation)
             | C::ScopeCapture(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::StaleIncarnation)) => K::StaleIncarnation,

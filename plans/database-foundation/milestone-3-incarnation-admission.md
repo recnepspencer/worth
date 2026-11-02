@@ -313,3 +313,13 @@ no receipt or idempotency algorithm changes.
 The baseline 66-file qualification count is explicitly tied to f5d91091b8.
 Later full-candidate counts are recorded by the range-cap lane in the evidence
 index, rather than presenting that earlier count as the current range.
+
+
+The checked-accessor compile found workflow audit as an additional receiver
+under a differently named subject/audit pair. Both accesses now use the checked
+metadata accessor before independent audit work; StaleIncarnation stays a
+technical Authorization error and can never become permission withholding.
+Foreign ownership retains PolicyMismatch. The first compile also caught three
+incorrect stop-projection patterns: branch StaleIncarnation is nested inside
+AdmissionDenial::Refused(AdmissionRefusalKind), not a top-level denial variant.
+Those patterns now preserve the actual existing typed shape.
