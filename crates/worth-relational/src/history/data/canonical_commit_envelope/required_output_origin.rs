@@ -5,11 +5,19 @@ use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::transactions::data::TransactionCommitError;
 use serde::{Deserialize, Serialize};
+mod authored_cascade;
+mod authored_restoration;
 mod installation;
+pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
+pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
+mod group_selection;
 mod members;
 mod payload_coverage;
 mod readmission;
 mod relations;
+mod restoration_candidate;
+pub(crate) use restoration_candidate::validate as validate_authored_restoration_candidate;
+mod restoration_header;
 mod retention;
 pub(crate) use relations::CanonicalRequiredOutputRelation;
 use retention::{origin_request, origin_retention_bytes};
@@ -25,6 +33,10 @@ pub(crate) enum CanonicalOutputPublication {
     },
     /// Ordinary authored retirement succeeds the selected publication without
     /// inventing a running producer. Attribution remains predecessor provenance.
+    AuthoredRestoration {
+        retirement: CommitId,
+        predecessor: CommitId,
+    },
     AuthoredRetirement {
         predecessor: CommitId,
     },
@@ -34,9 +46,9 @@ impl CanonicalOutputPublication {
     pub(crate) fn predecessor(&self) -> Option<CommitId> {
         match self {
             Self::Birth | Self::BirthAfterCodecRetirement { .. } => None,
-            Self::Preserve { predecessor } | Self::AuthoredRetirement { predecessor } => {
-                Some(*predecessor)
-            }
+            Self::Preserve { predecessor }
+            | Self::AuthoredRetirement { predecessor }
+            | Self::AuthoredRestoration { predecessor, .. } => Some(*predecessor),
         }
     }
 }
@@ -60,6 +72,7 @@ pub(crate) struct CanonicalRequiredOutputOrigin {
     pub(crate) commit: crate::history::data::RelationalCommitReceipt,
     pub(crate) basis: RelationalBranchBasisDescriptor,
     pub(crate) producer: String,
+    pub(crate) source_scope_owned: bool,
     pub(crate) dependency_identity: [u8; 32],
     pub(crate) outputs: Vec<EntityId>,
     pub(crate) relations: Vec<CanonicalRequiredOutputRelation>,
@@ -79,6 +92,7 @@ impl PartialEq for CanonicalRequiredOutputOrigin {
     fn eq(&self, other: &Self) -> bool {
         self.commit == other.commit
             && self.basis == other.basis
+            && self.source_scope_owned == other.source_scope_owned
             && self.producer == other.producer
             && self.dependency_identity == other.dependency_identity
             && self.outputs == other.outputs
@@ -92,3 +106,5 @@ impl PartialEq for CanonicalRequiredOutputOrigin {
     }
 }
 impl Eq for CanonicalRequiredOutputOrigin {}
+
+mod source_scope_ownership;

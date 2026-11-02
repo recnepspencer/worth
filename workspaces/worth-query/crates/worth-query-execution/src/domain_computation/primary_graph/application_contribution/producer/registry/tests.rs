@@ -233,6 +233,8 @@ fn role(
 
 fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
     DeclaredProducerBinding {
+        ownership: worth_foundational::facade::ProducerPublicationOwnership::Independent,
+        owned_scope_entity: None,
         owner: "owner".into(),
         identity: "producer".into(),
         source_selector: "source".into(),
@@ -297,3 +299,44 @@ impl WorthQueryApplicationOutputRoleFamily for Member {
 mod canonical_inventory;
 
 mod output_equivalence;
+
+#[test]
+fn cascade_ownership_is_installed_identity_and_family_wide_meaning() {
+    use worth_foundational::facade::{ApplicationBuildIdentity, ProducerPublicationOwnership};
+    let independent = declared(TypeId::of::<InstalledProducer>());
+    let mut owned = independent.clone();
+    owned.ownership = ProducerPublicationOwnership::SourceScopeCascade;
+    owned.owned_scope_entity = Some("Account".into());
+    assert!(!independent.has_same_meaning_as(&owned));
+    let build = ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap();
+    let edition = |declaration| {
+        InstalledProducerEdition::from_declaration(declaration, build)
+            .unwrap()
+            .digest()
+    };
+    assert_ne!(edition(&independent), edition(&owned));
+    let mut other_kind = owned.clone();
+    other_kind.owned_scope_entity = Some("Principal".into());
+    assert!(!owned.has_same_meaning_as(&other_kind));
+    assert_ne!(edition(&owned), edition(&other_kind));
+    let mut preserve = independent.clone();
+    preserve.identity = "preserve".into();
+    let mixed = std::collections::BTreeMap::from([
+        ("initial".into(), owned.clone()),
+        ("preserve".into(), preserve),
+    ]);
+    let denial = super::scope_ownership::require_family_agreement(&mixed).unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        super::DenialKind::ProducerFamilyOwnershipMismatch
+    );
+    let mut preserve = owned.clone();
+    preserve.identity = "preserve".into();
+    assert!(
+        super::scope_ownership::require_family_agreement(&std::collections::BTreeMap::from([
+            ("initial".into(), owned),
+            ("preserve".into(), preserve),
+        ]))
+        .is_ok()
+    );
+}

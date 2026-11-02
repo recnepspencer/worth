@@ -42,6 +42,7 @@ pub(crate) use publication::{
     PublicationPreparationDenial,
 };
 pub use publication::{
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RequiredOutputProducingImplementation, RequiredOutputPublication,
     RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,

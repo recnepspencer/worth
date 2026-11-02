@@ -83,7 +83,37 @@ impl CommitCreatedRelationBindings {
         }
     }
 
-    pub(super) fn resolve(&self, created: &CreatedRelationRef) -> Option<RelationId> {
+    pub(crate) fn resolve_work_bound(&self, created: &CreatedRelationRef) -> Option<u64> {
+        let reference_bytes = |reference: &EntityReference| match reference {
+            EntityReference::Existing(_) => 4usize,
+            EntityReference::Created(value) => value
+                .client_key
+                .as_raw_str()
+                .map_or(4, |key| key.len().saturating_add(4)),
+        };
+        let width = created
+            .client_key
+            .as_raw_str()
+            .map_or(4, |key| key.len().saturating_add(4))
+            .checked_add(reference_bytes(&created.source))?
+            .checked_add(reference_bytes(&created.target))?;
+        let entries = self
+            .by_exact_reference
+            .len()
+            .max(self.by_stable_reference.len());
+        let levels = usize::BITS as usize - entries.max(1).leading_zeros() as usize;
+        u64::try_from(
+            entries
+                .min(11)
+                .checked_mul(levels)?
+                .checked_add(1)?
+                .checked_mul(width)?
+                .checked_mul(2)?,
+        )
+        .ok()
+    }
+
+    pub(crate) fn resolve(&self, created: &CreatedRelationRef) -> Option<RelationId> {
         if let Some(relation_id) = self.by_exact_reference.get(created) {
             return Some(*relation_id);
         }

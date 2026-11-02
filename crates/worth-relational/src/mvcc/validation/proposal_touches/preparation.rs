@@ -10,19 +10,24 @@ type Error = ValidatedMutationTouchProjectionError;
 pub(super) fn project<'p>(
     proposal: &'p ValidatedRelationalProposal,
     request: &ExecutionRequest<'_, '_>,
+    application_only: bool,
 ) -> Result<ValidatedMutationTouches<'p>, Error> {
     request
-        .in_scope(|lease| project_in_scope(proposal, request, lease))
+        .in_scope(|lease| project_in_scope(proposal, request, lease, application_only))
         .map_err(|stop| collection::execution(stop.into()))?
 }
 fn project_in_scope<'p>(
     proposal: &'p ValidatedRelationalProposal,
     request: &ExecutionRequest<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    application_only: bool,
 ) -> Result<ValidatedMutationTouches<'p>, Error> {
+    if application_only {
+        super::authored_restoration::validate(proposal, request)?;
+    }
     consult_stage(request, CommitStage::Validation)
         .map_err(|stop| collection::execution(stop.into()))?;
-    let (extent, _, _) = run(proposal, request, None)?;
+    let (extent, _, _) = run(proposal, request, None, application_only)?;
     consult_stage(request, CommitStage::Validation)
         .map_err(|stop| collection::execution(stop.into()))?;
     let bytes = extent.bytes()?;
@@ -39,7 +44,7 @@ fn project_in_scope<'p>(
     consult_stage(request, CommitStage::Validation)
         .map_err(|stop| collection::execution(stop.into()))?;
     let backing = extent.allocate(memory)?;
-    let (_, backing, mut work) = run(proposal, request, Some(backing))?;
+    let (_, backing, mut work) = run(proposal, request, Some(backing), application_only)?;
     let mut backing = backing.expect(/* Proof: Only the build pass reaches this branch and it owns Some(admitted backing); the sizing pass exits through its separate branch. */ "build pass owns the admitted backing");
     let comparisons = backing
         .touches
@@ -65,6 +70,7 @@ fn run<'p>(
     proposal: &'p ValidatedRelationalProposal,
     request: &ExecutionRequest<'_, '_>,
     backing: Option<TouchBacking<'p>>,
+    application_only: bool,
 ) -> Result<
     (
         Extent,
@@ -94,6 +100,11 @@ fn run<'p>(
         for intent in &plan.commands().merged_intents {
             (sink.checkpoint)(1)?;
             work.validated_intents_examined += 1;
+            if application_only
+                && super::authored_restoration::owns_create(proposal, intent, sink.checkpoint)?
+            {
+                continue;
+            }
             match intent {
                 MutationIntent::Entity(intent @ EntityMutationIntent::ApplyAspectPatch(_)) => {
                     super::aspect_patch::project(proposal, intent, &mut sink, &mut work)?

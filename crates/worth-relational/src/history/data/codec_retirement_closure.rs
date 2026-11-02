@@ -5,7 +5,13 @@ use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 
+mod authored_cascade;
+mod authored_restoration;
 mod authored_retirement;
+mod scope_dependents;
+pub(crate) use scope_dependents::select_owned_scope_dependent;
+mod restoration_payload;
+pub(crate) use authored_cascade::select_authored_source_retirement;
 mod codec_disposition;
 pub(crate) use authored_retirement::select_authored_retirement;
 pub(super) mod materialization;
@@ -20,7 +26,9 @@ mod publication_succession;
 mod relation_payload;
 mod relations;
 mod route_selection;
-pub(crate) use output_correspondence::validate_codec_output_correspondence;
+pub(crate) use output_correspondence::{
+    validate_codec_output_correspondence, SelectedOutputPublication,
+};
 pub(crate) use route_selection::readmit_required_output_route;
 
 type OutputOrigin = (
@@ -36,96 +44,6 @@ pub(crate) struct OwnedCodecRetirementClosure {
     origins: Vec<OutputOrigin>,
     _memory: worth_execution::ExecutionMemoryReservation,
     _relation_memory: worth_execution::ExecutionMemoryReservation,
-}
-
-impl OwnedCodecRetirementClosure {
-    pub(crate) fn complete_publications(
-        &self,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-    ) -> Result<
-        (
-            Vec<std::sync::Arc<super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>>,
-            worth_execution::ExecutionMemoryReservation,
-        ),
-        CodecRetirementClosureStop,
-    > {
-        let memory = reserve(
-            lease,
-            self.origins
-                .len()
-                .checked_mul(std::mem::size_of::<
-                    std::sync::Arc<super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>,
-                >())
-                .ok_or_else(memory_overflow)?,
-        )?;
-        let mut complete = Vec::with_capacity(self.origins.len());
-        for (_, _, origin) in &self.origins {
-            charge(
-                context,
-                complete.len().saturating_add(
-                    origin
-                        .members
-                        .len()
-                        .saturating_mul(self.entities.len().saturating_add(1)),
-                ),
-            )?;
-            if complete.iter().any(
-                |prior: &std::sync::Arc<
-                    super::canonical_commit_envelope::CanonicalRequiredOutputOrigin,
-                >| prior.commit == origin.commit,
-            ) {
-                continue;
-            }
-            if origin.members.iter().all(|member| {
-                member.posture == crate::mvcc::RequiredOutputRolePosture::Retire
-                    || self.entities.binary_search(&member.id).is_ok()
-            }) {
-                complete.push(std::sync::Arc::clone(origin));
-            }
-        }
-        Ok((complete, memory))
-    }
-    pub(crate) fn births(
-        &self,
-    ) -> impl Iterator<
-        Item = (
-            EntityId,
-            KindId,
-            &str,
-            &[u8; 32],
-            crate::mvcc::RequiredOutputRolePosture,
-            crate::mvcc::RequiredOutputRolePosture,
-        ),
-    > {
-        self.origins.iter().map(|(id, kind, origin)| {
-            let member = &origin.members[origin
-                .members
-                .binary_search_by_key(id, |member| member.id)
-                .expect(/* Proof: The only origins.push is preceded by membership::validate_member, which checks this exact id in validate_output_membership_header's sorted immutable members. OwnedCodecRetirementClosure fields are private and neither the id nor the Arc origin is mutated afterwards. */ "readmitted full membership")];
-            (
-                *id,
-                *kind,
-                member.birth_producer.as_str(),
-                &member.birth_dependency,
-                member.posture,
-                origin.publication.predecessor().map_or(
-                    crate::mvcc::RequiredOutputRolePosture::Create,
-                    |_| crate::mvcc::RequiredOutputRolePosture::Preserve,
-                ),
-            )
-        })
-    }
-    pub(crate) fn producers(&self) -> impl Iterator<Item = (EntityId, KindId, &str, &[u8; 32])> {
-        self.origins.iter().map(|(id, kind, origin)| {
-            (
-                *id,
-                *kind,
-                origin.producer.as_str(),
-                &origin.dependency_identity,
-            )
-        })
-    }
 }
 
 #[derive(Debug)]
@@ -294,6 +212,13 @@ fn derive_metered(
             .as_ref()
             .ok_or("affected output payload missing")?;
         let selected = membership::latest(runtime, basis, id, context, lease)?;
+        if selected.authored_cascade_restoration.is_some()
+            || selected.authored_cascade_retirement.is_some()
+        {
+            return Err(
+                "grouped authored publication requires distinct codec-transition custody".into(),
+            );
+        }
         let origin = membership::validate_member(
             runtime,
             basis,
@@ -396,3 +321,5 @@ impl From<crate::storage::data::RelationalStorageUnavailable> for CodecRetiremen
         Self::Request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure))
     }
 }
+
+mod owned_publications;
