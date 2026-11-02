@@ -408,7 +408,8 @@ receipt-store-controls/native-cold-close.log (0/2/0, CompleteNativeRequired).
 These reopening paths remain P-A's scope; their failures are not acceptance
 success. No opening or Native durable-format implementation is changed here.
 
-Native's new original-basis behavior court passes (1/0/0); World normal owners
+Native's new original-basis behavior court passes (1/0/31 ignored inventory;
+no ignored test executed); World normal owners
 pass (305/0/0), followed by the three affected publication-custody cases after
 the consuming-refusal correction (3/0/0). Retired Native basis and consumed World
 publication each pass their compile-fail read-access court (1/0/0 each).
@@ -422,3 +423,12 @@ ConsumedPublicationRetirement, ConsumedPublicationRetirementDenial,
 ConsumedPublicationRetirementProgress and RetiredConsumedPublication. This
 receipt slice adds no boundary configuration entry or application_home/mod.rs
 entry. The earlier exact query-home-retirement caller seal remains unchanged.
+
+The existing post-maintenance Host court copied only the mutation result out of
+its outcome, leaving its unbound original receipt alive through close. The
+coordinator's 2026-11-02 publication-receipt ruling requires this genuine
+external read custody to refuse before seal. The court now moves and explicitly
+drops that receipt before close. All original initialization, authored-schema,
+value, cadence, generation, frontier and physical Closed assertions remain.
+The held-original-receipt court separately requires the exact Busy refusal and
+same-Home resume while that original receipt remains alive.

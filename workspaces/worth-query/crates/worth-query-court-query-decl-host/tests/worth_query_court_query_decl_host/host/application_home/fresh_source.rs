@@ -52,13 +52,16 @@ fn authored_fresh_home_postbootstrap_complete_and_automatic_maintenance_preserve
     let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 7);
     let result = set(home.runtime(), &live, 0x4652455348, 8).unwrap();
-    let worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { result, .. } = result else {
+    let worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { receipt, result } = result else {
         panic!("genuine ordinary business publication required: {result:?}");
     };
     assert_eq!(
         result, 8,
         "maintenance cannot replace the actual business value"
     );
+    // The fresh receipt is actual external read custody. Release that original
+    // handoff explicitly before the later owning Home close.
+    drop(receipt);
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
     assert_eq!(balance(home.runtime(), &live), 8);
     let automatic = home.inspect_checkpoint(&execution).unwrap();
