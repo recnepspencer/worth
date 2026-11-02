@@ -6,7 +6,7 @@ use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailabl
 use std::num::NonZeroUsize;
 
 #[test]
-fn bounded_history_reads_only_the_selected_envelope_and_refuses_sticky_journal_damage() {
+fn bounded_history_reads_only_the_selected_envelope_and_refuses_sticky_body_damage() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for damaged in [false, true] {
@@ -28,6 +28,11 @@ fn bounded_history_reads_only_the_selected_envelope_and_refuses_sticky_journal_d
             .durability_recovery()
             .recover(execution, plan)
             .unwrap();
+        assert!(
+            counter.journal_reads.lock().unwrap().is_empty(),
+            "selected history never falls back to its retired journal"
+        );
+        let selected_before = counter.canonical_member_reads.lock().unwrap().len();
         let reads_before = counter.commit_reads.lock().unwrap().len();
         let receipt = runtime
             .history()
@@ -65,6 +70,8 @@ fn bounded_history_reads_only_the_selected_envelope_and_refuses_sticky_journal_d
             assert!(!patches.is_empty());
             assert_eq!(read().unwrap(), patches);
         }
+        assert!(counter.journal_reads.lock().unwrap().is_empty());
+        assert!(counter.canonical_member_reads.lock().unwrap().len() > selected_before);
         let reads = counter.commit_reads.lock().unwrap();
         assert!(!reads[reads_before..].is_empty());
         assert!(reads[reads_before..].iter().all(|read| *read == position));
@@ -104,6 +111,11 @@ fn patch_stream_demands_only_the_requested_batch_and_refuses_sticky_journal_dama
             .durability_recovery()
             .recover(execution, plan)
             .unwrap();
+        assert!(
+            counter.journal_reads.lock().unwrap().is_empty(),
+            "selected history never falls back to its retired journal"
+        );
+        let selected_before = counter.canonical_member_reads.lock().unwrap().len();
         let reads_before = counter.commit_reads.lock().unwrap().len();
         let receipt = runtime
             .history()
@@ -150,6 +162,8 @@ fn patch_stream_demands_only_the_requested_batch_and_refuses_sticky_journal_dama
             assert_eq!(batch.latest_position, frontier);
             assert_eq!(read().unwrap(), batch);
         }
+        assert!(counter.journal_reads.lock().unwrap().is_empty());
+        assert!(counter.canonical_member_reads.lock().unwrap().len() > selected_before);
         let reads = counter.commit_reads.lock().unwrap();
         assert!(!reads[reads_before..].is_empty());
         assert!(reads[reads_before..].iter().all(|read| *read == position));
@@ -283,6 +297,11 @@ fn envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage() {
                 .durability_recovery()
                 .recover(execution, plan)
                 .unwrap();
+            assert!(
+                counter.journal_reads.lock().unwrap().is_empty(),
+                "selected history never falls back to its retired journal"
+            );
+            let selected_before = counter.canonical_member_reads.lock().unwrap().len();
             let reads_before = counter.commit_reads.lock().unwrap().len();
             assert!(
                 reads_before < 4,
@@ -323,6 +342,8 @@ fn envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage() {
                 assert!(count > 0, "{door:?}");
                 assert_eq!(read().unwrap(), count, "{door:?}");
             }
+            assert!(counter.journal_reads.lock().unwrap().is_empty());
+            assert!(counter.canonical_member_reads.lock().unwrap().len() > selected_before);
             let reads = counter.commit_reads.lock().unwrap();
             assert!(!reads[reads_before..].is_empty(), "{door:?}");
             assert!(

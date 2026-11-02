@@ -14,6 +14,54 @@ struct ChangedBytes {
     corrupt: AtomicBool,
 }
 impl RelationalDurableColdSource for ChangedBytes {
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableReadPayload,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.producer.checkpoint_selected_read_protection(request)
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || Ok(()))
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
+        let bytes = self
+            .producer
+            .read_member_owned(request, original, member, limit)?;
+        if !self.corrupt.load(Ordering::Acquire) || *self.target.lock().unwrap() != Some(member) {
+            return Ok(bytes);
+        }
+        let mut changed =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, bytes.len())
+                .map_err(Refusal::Buffer)?;
+        changed
+            .extend_from_slice(&bytes[..bytes.len() - 1])
+            .map_err(Refusal::Buffer)?;
+        changed
+            .push(bytes[bytes.len() - 1] ^ 1)
+            .map_err(Refusal::Buffer)?;
+        changed.seal_immutable_bytes().map_err(Refusal::Buffer)
+    }
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],

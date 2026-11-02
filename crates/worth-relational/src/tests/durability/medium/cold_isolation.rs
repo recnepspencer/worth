@@ -122,6 +122,19 @@ fn recover_shape_inner(
             .iter()
             .map(|entry| (entry.position(), entry.as_bytes().to_vec()))
             .collect(),
+        canonical_members: artifacts
+            .iter()
+            .map(|artifact| {
+                (
+                    crate::durability::log::native_checkpoint_codec::member_frame::locator(
+                        artifact.as_bytes(),
+                    ),
+                    artifact.position(),
+                )
+            })
+            .collect(),
+        canonical_member_reads: Default::default(),
+        journal_reads: Default::default(),
         damaged: AtomicBool::new(false),
         reads: AtomicUsize::new(0),
         member_reads: std::sync::Mutex::new(Vec::new()),

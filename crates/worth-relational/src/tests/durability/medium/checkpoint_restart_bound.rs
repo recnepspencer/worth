@@ -165,6 +165,9 @@ fn place(native: &RelationalNativeCheckpoint, prior: &MemberSource) -> Arc<Membe
             })
             .collect(),
         commits: prior.commits.clone(),
+        canonical_members: prior.canonical_members.clone(),
+        canonical_member_reads: Default::default(),
+        journal_reads: Default::default(),
         damaged: AtomicBool::new(false),
         reads: AtomicUsize::new(0),
         member_reads: Default::default(),

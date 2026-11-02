@@ -13,6 +13,10 @@ pub(super) struct MemberSource {
     pub(super) members:
         BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     pub(super) commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
+    pub(super) canonical_members: BTreeMap<RelationalDurableMemberLocator, PatchStreamPosition>,
+    pub(super) canonical_member_reads: std::sync::Mutex<Vec<RelationalDurableMemberLocator>>,
+    pub(super) journal_reads: std::sync::Mutex<Vec<PatchStreamPosition>>,
+    // These counters retain their record/index/lineage/symbol member meaning.
     pub(super) damaged: AtomicBool,
     pub(super) reads: AtomicUsize,
     pub(super) member_reads: std::sync::Mutex<Vec<RelationalDurableMemberLocator>>,
@@ -163,6 +167,18 @@ impl RelationalDurableColdSource for MemberSource {
 
 impl MemberSource {
     fn commit(&self, position: PatchStreamPosition, limit: u64) -> Result<&Vec<u8>, Cause> {
+        self.journal_reads.lock().unwrap().push(position);
+        self.observe_canonical_read(position)?;
+        let bytes = self.commits.get(&position).ok_or(Cause::MissingMember)?;
+        if bytes.len() as u64 > limit {
+            return Err(Cause::LimitExceeded {
+                length: bytes.len() as u64,
+                limit,
+            });
+        }
+        Ok(bytes)
+    }
+    fn observe_canonical_read(&self, position: PatchStreamPosition) -> Result<(), Cause> {
         self.commit_reads.lock().unwrap().push(position);
         if let Some(cause) = self
             .failures
@@ -175,22 +191,20 @@ impl MemberSource {
         if self.commits_damaged.load(Ordering::Relaxed) {
             return Err(Cause::Damaged);
         }
-        let bytes = self.commits.get(&position).ok_or(Cause::MissingMember)?;
-        if bytes.len() as u64 > limit {
-            return Err(Cause::LimitExceeded {
-                length: bytes.len() as u64,
-                limit,
-            });
-        }
-        Ok(bytes)
+        Ok(())
     }
     fn member(
         &self,
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<&worth_execution::ExecutionImmutableBytes, Cause> {
-        self.reads.fetch_add(1, Ordering::Relaxed);
-        self.member_reads.lock().unwrap().push(locator);
+        if let Some(position) = self.canonical_members.get(&locator) {
+            self.canonical_member_reads.lock().unwrap().push(locator);
+            self.observe_canonical_read(*position)?;
+        } else {
+            self.reads.fetch_add(1, Ordering::Relaxed);
+            self.member_reads.lock().unwrap().push(locator);
+        }
         if let Some(cause) = self
             .failures
             .lock()

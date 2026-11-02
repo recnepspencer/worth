@@ -16,6 +16,9 @@ use std::{
 pub(super) struct ColdSource {
     members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
+    canonical_members: BTreeSet<RelationalDurableMemberLocator>,
+    canonical_reads: Mutex<Vec<RelationalDurableMemberLocator>>,
+    journal_reads: std::sync::atomic::AtomicUsize,
     pub(super) fail_regions: AtomicBool,
     pub(super) reads: Mutex<Vec<RelationalDurableMemberLocator>>,
     pub(super) histories: BTreeSet<RelationalDurableMemberLocator>,
@@ -91,6 +94,7 @@ impl RelationalDurableColdSource for ColdSource {
         self.member(id, limit).map(|bytes| bytes.to_vec())
     }
     fn read_commit(&self, id: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        self.journal_reads.fetch_add(1, Ordering::Relaxed);
         let bytes = self.commits.get(&id).ok_or(Cause::MissingMember)?;
         if bytes.len() as u64 > limit {
             return Err(Cause::LimitExceeded {
@@ -107,7 +111,11 @@ impl ColdSource {
         id: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<&worth_execution::ExecutionImmutableBytes, Cause> {
-        self.reads.lock().unwrap().push(id);
+        if self.canonical_members.contains(&id) {
+            self.canonical_reads.lock().unwrap().push(id);
+        } else {
+            self.reads.lock().unwrap().push(id);
+        }
         let bytes = self.members.get(&id).ok_or(Cause::MissingMember)?;
         if self.fail_regions.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG") {
             return Err(Cause::SourceUnavailable);
@@ -164,6 +172,16 @@ pub(super) fn reopen(
             .iter()
             .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
             .collect(),
+        canonical_members: artifacts
+            .iter()
+            .map(|artifact| {
+                crate::durability::log::native_checkpoint_codec::member_frame::locator(
+                    artifact.as_bytes(),
+                )
+            })
+            .collect(),
+        canonical_reads: Default::default(),
+        journal_reads: Default::default(),
         fail_regions: AtomicBool::new(false),
         reads: Mutex::new(Vec::new()),
         histories: manifest
@@ -209,6 +227,11 @@ pub(super) fn reopen(
     assert!(
         source.reads.lock().unwrap().is_empty(),
         "reopen keeps record/history members cold"
+    );
+    assert_eq!(source.journal_reads.load(Ordering::Relaxed), 0);
+    assert!(
+        (1..4).contains(&source.canonical_reads.lock().unwrap().len()),
+        "only actual distinct head envelopes are read"
     );
     (receiving, source)
 }

@@ -2722,3 +2722,19 @@ measures EACH entry, requires its exact own ceiling to succeed both with and
 without an enclosing SDK scope, compares recorded and full SDK charges, and
 requires its own one-short ceiling to refuse without moving the branch. No
 accounting bound or original-request denial assertion is relaxed.
+
+
+The selected-directory canonical-member route present at c068abc047 retires the
+cold fixture's assumption that every member transport read is a record/index/
+lineage/symbol payload, and that canonical bodies always use journal transport.
+The fixture now derives canonical locator-to-position classification from the
+original offered frames. It records actual selected locators separately from
+actual journal calls, and includes both in the existing canonical-position spy.
+Selected reads still return the actual selected member bytes, never the journal
+map. Both locator-specific and canonical-position faults remain active. The
+record/history zero-read and exact demand/sticky-refusal assertions remain;
+the envelope courts additionally forbid journal fallback and require selected
+member demand. The aggregate fixture independently counts its selected head
+reads and forbids journal calls. Replacement and corrupt-byte wrappers now
+implement the actual owned ports while retaining their original pin/Drop or
+byte-corruption semantics and request-funded returned buffers.
