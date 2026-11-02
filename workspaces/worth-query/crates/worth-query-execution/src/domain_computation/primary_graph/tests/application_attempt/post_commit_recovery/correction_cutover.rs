@@ -87,10 +87,12 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         "the held real post-commit boundary must leave pending custody: {outcome:?}"
     );
     let provider = &world.application.primary_provider;
-    assert!(
-        matches!(provider.observe_correction_key(&sibling_observation, binding.key_identity()),
-        Observed::Pending(Some(recorded)) if recorded.key_identity() == binding.key_identity())
-    );
+    let Observed::Pending(Some(admitted_binding)) =
+        provider.observe_correction_key(&sibling_observation, binding.key_identity())
+    else {
+        panic!("the exact original key retains pending custody");
+    };
+    assert_eq!(admitted_binding.key_identity(), binding.key_identity());
     drop(held);
     let barrier = std::sync::Barrier::new(2);
     let (resolved, observed) = std::thread::scope(|threads| {
@@ -109,10 +111,10 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     };
     match observed {
         Observed::Pending(Some(recorded)) => {
-            assert_eq!(recorded, binding)
+            assert_eq!(recorded, admitted_binding)
         }
         Observed::Completed(recorded, committed) => {
-            assert_eq!(recorded, binding);
+            assert_eq!(recorded, admitted_binding);
             assert_eq!(committed.commit_reference(), receipt.commit_reference());
         }
         _ => panic!("cross-branch lookup must retain exact pending or completed evidence"),

@@ -22,6 +22,7 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                 let binding = idempotency(139, 140);
                 let left = start(phase, &world.application, left, binding);
                 let right = start(phase, &world.application, right, binding);
+                let both_attempts = world.invariant.active_snapshot_count(&active_phase.borrowed_request_for_test());
                 let left = progress_application_commit(
                     &phase.borrowed_request_for_test(),
                     phase,
@@ -29,25 +30,13 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                     left,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
-                assert_eq!(
-                    world
-                        .invariant
-                        .active_snapshot_count(&active_phase.borrowed_request_for_test()),
-                    snapshot_baseline + 2
-                );
                 let left = finish_application_commit(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     left,
                 );
-                assert_eq!(
-                    world
-                        .invariant
-                        .active_snapshot_count(&active_phase.borrowed_request_for_test()),
-                    snapshot_baseline + 1,
-                    "finishing one attempt must preserve its interleaved peer's snapshot lease"
-                );
+                assert_only_peer_remains(&active_phase.borrowed_request_for_test(), &world, snapshot_baseline, both_attempts);
                 world.application.primary_provider.discard_completed_evidence_for_test();
                 let right = progress_application_commit(
                     &phase.borrowed_request_for_test(),
@@ -98,8 +87,9 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                     .outputs_of::<RetentionOutputs>()
                     .and_then(|outputs| outputs.entity::<RetainedAccount>())
                     .expect("fresh receipt retains its actual output role");
-                assert!(recovered.semantic_result().semantic().created_entities().iter()
-                    .any(|created| created.assigned == executed_output.entity_id()));
+                assert_eq!(recovered.semantic_result().semantic(), executed.committed_changes().semantic_result());
+                assert!(recovered.semantic_result().semantic().changed_records().contains(
+                    &worth_relational::facade::transactions::RecordRef::Entity(executed_output.entity_id())));
                 assert_eq!(recovered.exact_output_settlement(), worth_foundational::facade::DurableQueryOutputSettlement::OriginalOccurrenceSlot { slot: 0 });
                 assert_eq!(executed.terminal().attempt_resources_released(), Some(true));
                 assert_eq!(executed.terminal().kind(), WorthQueryApplicationCommitTerminalKind::Executed);

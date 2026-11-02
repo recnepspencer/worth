@@ -54,7 +54,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         .expect("the fixture read owns its installed host call");
 
     world.faults.panic_next_pending_application_publication();
-    let WorthQueryApplicationCommitOutcome::Committed(first_receipt) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(first_receipt) =
         world.application.compare_and_commit_application(
             first,
             idempotency(198, 199),
@@ -101,10 +101,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     else {
         panic!("the equivalent retry must recover the exact performed publication");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
-        &recovered,
-        &first_receipt,
-    );
+    assert_eq!(recovered, first_receipt);
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
         world
@@ -114,10 +111,15 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         0,
         "terminal recovery must disarm and retire the exact slot"
     );
+    let owner_evidence = world
+        .application
+        .primary_provider
+        .observe_completed_application(first_receipt.commit_reference())
+        .expect("actual retained dispatch custody remains with its owner");
     let emissions = world
         .application
         .primary_provider
-        .committed_application_emissions(first_receipt.committed_product_publication());
+        .committed_application_emissions(owner_evidence.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(
         emissions[0].payload::<String>().map(String::as_str),

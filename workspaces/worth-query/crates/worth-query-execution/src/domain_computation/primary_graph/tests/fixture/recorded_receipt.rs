@@ -78,13 +78,25 @@ pub(in crate::domain_computation::primary_graph) fn read_original(
     world: &super::AuthorizationWorld,
     fresh: &WorthQueryApplicationCommitReceipt,
 ) -> WorthQueryRecoveredApplicationCommitReceipt {
-    world.application.with_host_advancement(|phase| {
-        let product = world.selected_product(&phase.test_host_request()).product().publication_binding();
-        match world.application.primary_provider.resolve_idempotency_binding_at_product(&phase.borrowed_request_for_test(), fresh.idempotency_binding(), &product).unwrap() {
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution::Readmitted(original) => original,
-            other => panic!("actual owner lookup must return original meaning: {other:?}"),
-        }
-    }).unwrap()
+    world
+        .application
+        .with_host_advancement(|phase| read_original_in_phase(world, fresh, &phase))
+        .unwrap()
+}
+
+pub(in crate::domain_computation::primary_graph) fn read_original_in_phase(
+    world: &super::AuthorizationWorld,
+    fresh: &WorthQueryApplicationCommitReceipt,
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+) -> WorthQueryRecoveredApplicationCommitReceipt {
+    let product = world
+        .selected_product(&phase.test_host_request())
+        .product()
+        .publication_binding();
+    match world.application.primary_provider.resolve_idempotency_binding_at_product(&phase.borrowed_request_for_test(), fresh.idempotency_binding(), &product).unwrap() {
+        crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution::Readmitted(original) => original,
+        other => panic!("actual owner lookup must return original meaning: {other:?}"),
+    }
 }
 
 pub(in crate::domain_computation::primary_graph) fn assert_causality(

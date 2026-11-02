@@ -217,7 +217,7 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
             idempotency(31, 31),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
         ),
-        WorthQueryApplicationCommitOutcome::Committed(_)
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
     ));
     let after_commit = crate::execution_digest::test_hash_parts_call_count();
     assert_eq!(

@@ -33,8 +33,9 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
             let snapshot = selected.application_basis().snapshot_handle();
             let product = selected.product().publication_binding();
             provider.graph.with_runtime(&execution, |runtime| {
-                crate::test_read_stops::every_consult_under(
+                crate::test_read_stops::every_consult_under_with_work(
                     &execution,
+                    16 << 20,
                     |request| {
                         resolve_at_snapshot(
                             request, provider, runtime, snapshot, &layout, &product, binding,

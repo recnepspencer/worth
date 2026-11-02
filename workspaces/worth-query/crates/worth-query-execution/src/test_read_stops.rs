@@ -70,9 +70,19 @@ pub fn every_consult_under<T: Eq + Debug, E: Eq + Debug>(
     cancelled: E,
     exhausted: E,
 ) {
+    every_consult_under_with_work(parent, 100_000, door, cancelled, exhausted);
+}
+
+pub fn every_consult_under_with_work<T: Eq + Debug, E: Eq + Debug>(
+    parent: &ExecutionRequest<'_, '_>,
+    healthy_work: u64,
+    door: impl Fn(&ExecutionRequest<'_, '_>) -> Result<T, E>,
+    cancelled: E,
+    exhausted: E,
+) {
     selected_consult_answers_under(
         Some(parent),
-        100_000,
+        healthy_work,
         || true,
         |counted| counted(&door),
         false,

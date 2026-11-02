@@ -93,7 +93,7 @@ fn response_loss_cleanup_preserves_the_interleaved_peer() {
         |outcome| {
             assert!(matches!(
                 outcome,
-                WorthQueryApplicationCommitOutcome::Committed(_)
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
             ))
         },
     );
@@ -106,7 +106,7 @@ fn post_commit_snapshot_recovery_cleanup_preserves_the_interleaved_peer() {
         |outcome| {
             assert!(matches!(
                 outcome,
-                WorthQueryApplicationCommitOutcome::Committed(_)
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
             ))
         },
     );
@@ -153,12 +153,15 @@ fn assert_interleaved_terminal(
                 baseline,
                 both_attempts,
             );
-            let expected_peer =
-                if matches!(victim, WorthQueryApplicationCommitOutcome::Committed(_)) {
-                    PeerExpectation::RecoveredCommitted
-                } else {
-                    PeerExpectation::Committed
-                };
+            let expected_peer = if matches!(
+                victim,
+                WorthQueryApplicationCommitOutcome::Committed(_)
+                    | WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
+            ) {
+                PeerExpectation::RecoveredCommitted
+            } else {
+                PeerExpectation::Committed
+            };
             finish_peer(phase, &world, peer, baseline, expected_peer);
         })
         .expect("fixture owner admits its advancement");

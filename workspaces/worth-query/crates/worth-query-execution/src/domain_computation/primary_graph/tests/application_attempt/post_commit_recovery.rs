@@ -82,7 +82,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .expect("the fixture read owns its installed host call");
 
     world.faults.fail_next_post_commit_snapshot();
-    let WorthQueryApplicationCommitOutcome::Committed(first_receipt) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(first_receipt) =
         world.application.compare_and_commit_application(
             first,
             idempotency(196, 197),
@@ -112,15 +112,17 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     else {
         panic!("equivalent retry must resolve the exact committed evidence");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
-        &recovered,
-        &first_receipt,
-    );
+    assert_eq!(recovered, first_receipt);
     assert_eq!(first_receipt.emitted_effect_count(), 1);
+    let owner_evidence = world
+        .application
+        .primary_provider
+        .observe_completed_application(first_receipt.commit_reference())
+        .expect("actual retained dispatch custody remains with its owner");
     let emissions = world
         .application
         .primary_provider
-        .committed_application_emissions(first_receipt.committed_product_publication());
+        .committed_application_emissions(owner_evidence.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(
         emissions[0].payload::<String>().map(String::as_str),

@@ -66,3 +66,29 @@ The public Host native-input-guard and mutation-attempt-report retry courts now
 expect `RecoveredCommitted`, per D9's clean cutover, and compare the same
 original outcome/commit against the independent held live receipt. Their graph,
 audit, invocation, revision and no-resurrection assertions remain intact.
+
+
+## Response-loss migration and exact resource courts
+
+D9's live-only row retires the response-loss first response's reconstructed
+terminal, timing, precondition-observation and preimage receipt claims. Those
+courts now require `RecoveredCommitted` on the first internally resolved lost
+response as well as later retries, and compare the complete recorded value.
+Actual preimage/dispatch custody is still checked independently through its
+own already-held owner observations; receipt data never mints a live receipt.
+The terminal/session/snapshot cleanup counts remain real owner observations.
+
+The interleaved snapshot court measures both started attempts and checks exactly
+one peer remains AFTER `finish_application_commit`, where progressed.rs releases
+lease custody and mutation cleanup. Its former pre-finish fixed count described
+a temporary implementation phase, not release. Final baseline, zero provider
+resources and released-attempt evidence remain mandatory.
+
+The checked-rule exact-work court keeps its independent zero-body control,
+authored delta and exact total ceiling. One total unit short now stops at the
+funded original capture AFTER Native settlement: exact
+`ProductUnpublished(OriginalObservationStopped(WorkExhausted))`, one owner effect,
+inspection/obligation custody and zero World/Query publications are required.
+It cannot honestly claim Native no-effect or resume a weak owner after the
+fixture has dropped. The consult oracle's explicit healthy budget covers the
+original canonical artifact hash; every cancellation/work boundary stays checked.

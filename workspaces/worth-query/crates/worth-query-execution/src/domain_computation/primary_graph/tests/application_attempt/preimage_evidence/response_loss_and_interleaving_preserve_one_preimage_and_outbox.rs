@@ -105,7 +105,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         idempotency(81, 82),
         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
-    let WorthQueryApplicationCommitOutcome::Committed(original) = outcome else {
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(original) = outcome else {
         panic!("response-loss recovery must return the authoritative commit: {outcome:?}");
     };
     let after_original = world
@@ -145,19 +145,45 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         panic!("later equivalent resolution must reopen the original evidence");
     };
 
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
-        &recovered, &original,
-    );
-    // D9 records original meaning; live work/preimage observations stay with fresh custody.
-    assert!(original.retained_preimage().is_some()); // Original live custody alone carries its retained preimage.
-    assert_eq!(original.terminal().attempt_resources_released(), Some(true));
+    assert_eq!(recovered, original);
+    // Recorded data cannot supply live preimage authority. Inspect the actual
+    // already-retained owner custody independently, without minting a receipt.
     assert!(recovered.world_journal_position().is_none());
     assert!(recovered.dispatch_outbox().is_some());
-    assert_retained_status(&original, "open");
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
     assert_eq!(commit_count(), baseline + 2);
     let commit = original.commit_reference().clone();
-    let original_meaning = original.authority_binding().clone();
-    let original_preimage = original.retained_preimage().cloned();
+    let owner_evidence = world
+        .application
+        .primary_provider
+        .observe_completed_application(&commit)
+        .expect("the actual performed source still owns its preimage");
+    let retained = owner_evidence
+        .commit_evidence()
+        .retained_preimage()
+        .unwrap();
+    assert!(!format!("{retained:?}").contains("open"));
+    assert_eq!(
+        retained
+            .field_for(AccountStatus::reference())
+            .unwrap()
+            .value(),
+        &worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::from("open")
+        )
+    );
+    let original_meaning = owner_evidence
+        .commit_evidence()
+        .original_authority()
+        .clone();
+    let original_preimage = owner_evidence
+        .commit_evidence()
+        .retained_preimage()
+        .cloned();
+    drop(owner_evidence);
     drop(original);
     drop(recovered);
     let occurrence = world
