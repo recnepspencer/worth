@@ -155,6 +155,9 @@ class CargoRunner:
             except OSError as error:
                 result = subprocess.CompletedProcess(command, 127, '', str(error))
             if not streaming:
+                if plan is not None:
+                    from cargo_dependency_features import retain_dependencies
+                    result.stdout = retain_dependencies(result.stdout, plan)
                 log.write(result.stdout)
             log.write('\n' + result.stderr)
             log.write('\n' + json.dumps({'type': 'cargo-result', 'exit_code': result.returncode}) + '\n')

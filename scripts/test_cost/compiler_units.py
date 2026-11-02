@@ -125,6 +125,15 @@ def attribute(event, declaration):
                   and row['output'] == output(event)
                   and matches_profile(row['profile'], event['profile'], row['mode'], row['target']['kind'])]
     unique = {row['identity']: row for row in candidates}
+    if len(unique) > 1 and 'cargo_dependency_features' in event:
+        dependencies = {row['identity']: row for row in declaration['units']}
+        observed = event['cargo_dependency_features']
+        unique = {identity: row for identity, row in unique.items()
+                  if all(dependency in dependencies for dependency in row['dependency_units'])
+                  and sorted((dependencies[dependency]['target']['name'],
+                              dependencies[dependency]['features'])
+                             for dependency in row['dependency_units']) ==
+                      sorted((name, features) for name, features in observed)}
     if len(unique) != 1:
         raise CompilerUnitRefusal('artifact does not identify exactly one predeclared compiler unit: '
                                   + encoded({'package': event['package_id'], 'target': target,
