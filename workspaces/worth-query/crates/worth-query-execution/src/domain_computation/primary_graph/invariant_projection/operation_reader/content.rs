@@ -35,12 +35,15 @@ impl<S: ApplicationSchema, O> Reader<'_, '_, S, O> {
         let session = self.reader.value_decode;
         let binding =
             session.content_binding::<C>(field.entity(), field.aspect(), field.field())?;
-        let locator = self
+        let Some(locator) = self
             .reader
             .layout
             .field_locator(field.entity(), field.aspect(), field.field())
-            .expect("the decision field was admitted above")
-            .clone();
+            .cloned()
+        else {
+            session.refuse_content(Stop::BindingContractMismatch);
+            return Err(Denial::BindingContractMismatch);
+        };
         let Some(value) = self.reader.content_reference(
             identity.entity_id,
             identity.kind,

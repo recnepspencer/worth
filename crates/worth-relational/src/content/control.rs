@@ -1,6 +1,20 @@
 use super::RelationalContentDenial as Denial;
 use crate::execution::request_stage::checkpoint;
 use worth_execution::{ExecutionRequest, MapKernelContext};
+#[cfg(test)]
+mod tests;
+
+// Only the SDK's generic nested-stop sentinel may yield to a classified inner
+// refusal. A concrete original-request stop is authoritative at final handoff.
+fn final_denial(inner: Option<Denial>, outer: Denial) -> Denial {
+    match (inner, outer) {
+        (
+            Some(inner),
+            Denial::Execution(crate::execution::RelationalExecutionDenialCause::NestedStopped),
+        ) => inner,
+        (_, outer) => outer,
+    }
+}
 
 /// Borrowed original controls; codecs cannot replace this account or its first stop.
 pub struct RelationalContentControl<'borrow, 'scope, 'lease> {
@@ -59,23 +73,28 @@ pub(super) fn run<T>(
         execution,
         |context, _memory| {
             let mut control = RelationalContentControl::new(context);
-            let operation = operation
-                .take()
-                .expect("the original content stage runs once");
-            result = Some(control.checkpoint(0).and_then(|()| operation(&mut control)));
+            result = Some(match operation.take() {
+                Some(operation) => control.checkpoint(0).and_then(|()| operation(&mut control)),
+                None => Err(Denial::EncodingInconsistency),
+            });
             // Preserve the original classified stop even if a codec swallowed it.
             if let Err(cause) = control.checkpoint(0) {
-                result = Some(Err(cause));
+                let inner = result
+                    .as_ref()
+                    .and_then(|value| value.as_ref().err())
+                    .copied();
+                result = Some(Err(final_denial(inner, cause)));
             }
         },
         |_| 0,
     );
-    match handoff {
-        Ok(_) => result.expect("a completed content scope invoked its callback"),
-        Err(cause) => match result {
-            Some(Err(cause)) => Err(cause),
-            _ => Err(Denial::Execution(cause)),
-        },
+    match (handoff, result) {
+        (Ok(_), Some(result)) => result,
+        (Ok(_), None) => Err(Denial::EncodingInconsistency),
+        (Err(cause), result) => Err(final_denial(
+            result.and_then(Result::err),
+            Denial::Execution(cause),
+        )),
     }
 }
 
@@ -94,10 +113,16 @@ pub(super) fn run_source<T>(
         |context, _memory| {
             let mut control = RelationalContentControl::new(context);
             control.source = Some(budget);
-            let operation = operation.take().expect("one original Source content stage");
-            result = Some(control.checkpoint(0).and_then(|()| operation(&mut control)));
+            result = Some(match operation.take() {
+                Some(operation) => control.checkpoint(0).and_then(|()| operation(&mut control)),
+                None => Err(Denial::EncodingInconsistency),
+            });
             if let Err(cause) = control.checkpoint(0) {
-                result = Some(Err(cause));
+                let inner = result
+                    .as_ref()
+                    .and_then(|value| value.as_ref().err())
+                    .copied();
+                result = Some(Err(final_denial(inner, cause)));
             }
             source_stop = control.source_stop;
         },
@@ -106,12 +131,13 @@ pub(super) fn run_source<T>(
     if let Some(cause) = source_stop {
         return Err(DerivedRelationReadDenial::Structural(cause).into());
     }
-    let result = match handoff {
-        Ok(_) => result.expect("completed original Source content stage"),
-        Err(cause) => match result {
-            Some(Err(cause)) => Err(cause),
-            _ => Err(Denial::Execution(cause)),
-        },
+    let result = match (handoff, result) {
+        (Ok(_), Some(result)) => result,
+        (Ok(_), None) => Err(Denial::EncodingInconsistency),
+        (Err(cause), result) => Err(final_denial(
+            result.and_then(Result::err),
+            Denial::Execution(cause),
+        )),
     };
     result.map_err(|cause| match cause {
         Denial::Execution(cause) => Read::Source(DerivedRelationReadDenial::Request(cause)),

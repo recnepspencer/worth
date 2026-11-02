@@ -127,6 +127,12 @@ availability decision. The existing transport and conversion courts are extended
 | Mutation restoration Python check, with PYTHONUTF8=1 | One exact original-byte equality assertion passed; source timestamp refreshed before rebuild. |
 | `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Four untouched lint-file scope assertions passed. |
 
+The same reviewer passed R7's separate repair under qa-loop, qa-tests and
+code-quality-qa after inspecting final source and receipts. The public failure
+above remains active for the immediate R5 follow-up; it was neither excluded as
+debt nor called a passing public portfolio. Final working-tree whitespace
+passed twice and staged whitespace passed once, with zero errors.
+
 The same reviewer found a shifted-tag risk from inserting the new enum case; it
 closed by appending the case. It approved the corrected compositional cold proof
 and directory distinction, inspected the compiled mutation and restored 63-test
@@ -309,3 +315,61 @@ R6 under qa-loop, qa-tests and code-quality-qa after independently checking the
 final source, literal oracles, three intended compiled failures, exact restored
 bytes, rebuilt four-test run and complete gate ledger. Its wrong filter advice
 is corrected above; no R6 finding remains open.
+# R7: typed invariants and exact final stop precedence
+
+The two Native content-control shells share one concrete refusal-selection
+owner. Only NestedStopped yields to an already returned inner denial; concrete
+outer stops stay authoritative. Missing invocation/result invariants return
+EncodingInconsistency. Source structural refusals keep their existing dedicated
+channel. Query's missing locator and latch refuse with sticky typed causes,
+and content field work uses the existing checked consume. Checked frame-width
+conversions replace the remaining Native content layout expects. The named
+registry/readmission.rs currently has no expect and needed no invented change.
+No AspectShape or generic engine was added.
+
+The new pure court has seven literal expected outcomes, independent of request
+execution and of the merge implementation. The two existing actual Native
+request courts protect the nested SDK boundary and unchanged selected state.
+
+| R7 exact command or experiment | Result |
+| --- | --- |
+| `git fetch origin master codex/919-provider-lifecycle-20261027`; `git merge --no-edit origin/master`; `git merge --no-edit origin/codex/919-provider-lifecycle-20261027` | All three succeeded; both merges already up to date. |
+| `cargo fmt -p worth-relational` | One success. |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | One success. |
+| `cargo test -p worth-relational --lib content_stop_precedence_preserves_exact_inner_only_for_nested_handoff -- --nocapture` | Baseline and restored: 1 passed, 0 failed/ignored/measured, 2273 filtered each. Compiled always-outer mutant: 0 passed, 1 failed, 0 ignored/measured, 2273 filtered; actual Execution(NestedStopped) differed from literal Execution(WorkExhausted). |
+| Python merge mutation install/restore, with PYTHONUTF8=1 | Owner located successfully; one byte-exact restored-source assertion passed, timestamp refreshed. |
+| `cargo test -p worth-relational --lib empty_commit_request_refuses_before_publication -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2273 filtered. Original expectation unchanged. |
+| `cargo test -p worth-relational --lib unfunded_native_validation_preserves_the_branch_and_releases_request_memory -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2273 filtered. Original expectation unchanged. |
+
+An additional reviewer source audit traced empty/no-op transactions through
+proposal_round, apply_mutation_draft and unconditional artifact preparation.
+They retain staged attachments and reach R5's final closure check; no empty
+commit bypass or production follow-up was found. This was source inspection,
+not a further executed court.
+
+| R7 public integration and artifact observation | Result |
+| --- | --- |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door:: -- --nocapture` | FAILED: 20 passed, 1 failed, 0 ignored/measured, 327 filtered, 1.85 seconds. content_recorded_inverse_and_reapplication_preserve_exact_source_bytes failed at revision_courts.rs:86 with ProviderRejected / Native UnreferencedAttachment for original identity 7bcb0e089d83cadc112d673d0f68e3200fdde9f3b4b46626f60e6f83667d165a. |
+| Debug rlib measurement, same file/profile | libworth_query_execution-b7016cf434752ce1.rlib: 319,335,294 before; 319,337,486 after; increase 2,192 bytes. This is an artifact observation, not isolated monomorphization attribution. |
+
+The public failure is an active caused R5 consumer regression, not untouched
+debt and not a passing public portfolio. Independent review traced correction
+custody's deliberate preimage/output union into unconditional authored staging
+at commit_preparation.rs:163-176. Reapplication writes B but stages old A too.
+The Native surplus guard is correct and the court's independent literal IDs
+remain unchanged. The immediate separate R5 follow-up must keep retained
+correction custody as read availability and stage only actual missing reads,
+while preserving every explicitly authored attachment. R7 stays separate to
+keep finding commits coherent; final qualification requires this failure closed.
+
+| R7 final exact command | Result |
+| --- | --- |
+| `cargo fmt --check -p worth-relational` | One success. |
+| `cargo fmt --check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | One success. |
+| `cargo clippy -p worth-relational --all-targets` | Failed solely on untouched payload.rs:34 let_and_return, 1 error and 8 warnings. |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets` | Success; 47 lib warnings, 44 lib-test warnings (42 duplicates), no error; 4m04s. |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | One success; repository boundaries valid. |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | One success. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | One success; 6 Rust files. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | One success each, zero whitespace errors. |
+| `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Four untouched lint-file scope assertions passed. |

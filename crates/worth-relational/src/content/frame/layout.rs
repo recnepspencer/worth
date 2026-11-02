@@ -43,8 +43,16 @@ pub(in crate::content) fn inspect(frame: &[u8]) -> Result<(&str, u32, usize), De
     let rest = frame
         .get(12 + name_len..offset)
         .ok_or(Denial::NonCanonicalContent)?;
-    let version = u32::from_le_bytes(rest[..4].try_into().expect("fixed version width"));
-    let payload = u64::from_le_bytes(rest[4..].try_into().expect("fixed length width"));
+    let version = u32::from_le_bytes(
+        rest[..4]
+            .try_into()
+            .map_err(|_| Denial::NonCanonicalContent)?,
+    );
+    let payload = u64::from_le_bytes(
+        rest[4..]
+            .try_into()
+            .map_err(|_| Denial::NonCanonicalContent)?,
+    );
     let payload = usize::try_from(payload).map_err(|_| Denial::ArithmeticOverflow)?;
     if offset.checked_add(payload) != Some(frame.len()) {
         return Err(Denial::NonCanonicalContent);

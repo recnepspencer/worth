@@ -195,3 +195,20 @@ hashes computed with Python hashlib over manually specified counts and
 MessagePack tokens, without invoking either Rust serializer. Compile mutations
 that restore the content defaults and omit the empty digest, restore exact
 source bytes and rebuild the original tests. No new runtime or schema shape.
+# R7 boundary and implementation plan
+
+Content control's generic shells must return typed EncodingInconsistency if
+their single invocation/result invariant is absent. One concrete refusal
+selection helper will preserve an inner denial only against the SDK's generic
+NestedStopped handoff. A real final original-request stop remains authoritative.
+Both ordinary and Source paths use the same rule; Source's recorded structural
+refusal remains outside codec vocabulary. A pure literal matrix will court the
+selection rule and a compiled always-outer mutant must fail it. The existing
+empty-commit and unfunded-validation tests exercise the actual nested boundary.
+
+Query's content-only locator and missing-latch invariants become sticky typed
+refusals. Content field work uses the existing checked consume instead of an
+assertion. Frame widths use checked conversions. Registry readmission currently
+contains no expect, so no invented edit is needed there. Keep the observation
+engine concrete and record the execution rlib before/after. Run the affected
+content integration court plus focused Native tests, then the required gates.

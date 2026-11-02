@@ -68,14 +68,13 @@ impl ContentRead<'_, '_, '_> {
         if let Some(cause) = *self.native_stop {
             return Err(Stop::Content(cause.into()));
         }
-        if !self.budget.can_afford(1) {
+        if !self.budget.consume(1) {
             return Err(if self.budget.overflowed() {
                 Stop::ContentProjectionWorkOverflow
             } else {
                 Stop::ContentProjectionWorkExceeded
             });
         }
-        assert!(self.budget.consume(1), "content field work was admitted");
         self.scope.record(field.entity);
         read_reference(
             self.runtime,
@@ -127,10 +126,9 @@ fn read_reference(
                 Raw::Present(value) => decode
                     .decode::<ContentRefApplicationValueBinding>(name, aspect, key, value)
                     .map(Some)
-                    .ok_or_else(|| {
-                        decode
-                            .denial()
-                            .expect("a primitive decoder refusal latches its cause")
+                    .ok_or_else(|| match decode.denial() {
+                        Some(cause) => cause,
+                        None => Stop::Content(worth_relational::facade::content::RelationalContentDenial::EncodingInconsistency),
                     }),
                 Raw::AspectAbsent if field.optional_aspect => Ok(None),
                 Raw::FieldAbsent if field.optional_field => Ok(None),

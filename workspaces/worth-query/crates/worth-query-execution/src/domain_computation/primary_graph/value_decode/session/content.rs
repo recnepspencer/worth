@@ -35,8 +35,11 @@ impl ValueDecodeSession<'_> {
             return Ok(binding);
         }
         self.refuse(Stop::BindingContractMismatch);
-        Err(self
-            .denial()
-            .expect("the refused content binding latched its first cause"))
+        Err(match self.denial() {
+            Some(cause) => cause,
+            None => Stop::Content(
+                worth_relational::facade::content::RelationalContentDenial::EncodingInconsistency,
+            ),
+        })
     }
 }
