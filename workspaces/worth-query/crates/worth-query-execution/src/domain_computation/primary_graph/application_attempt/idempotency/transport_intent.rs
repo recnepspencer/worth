@@ -17,11 +17,7 @@ impl WorthQueryApplicationIdempotencyBinding {
     /// Binds transport-admitted meaning in addition to the canonically encoded
     /// application input. This grants no operation or publication authority.
     pub fn bind_transport_intent(mut self, intent: &[u8; 32]) -> Self {
-        let mut digest = Sha256::new();
-        digest.update(b"worth.query.transport-mutation-intent.v1");
-        digest.update(self.intent_identity);
-        digest.update(intent);
-        self.intent_identity = digest.finalize().into();
+        self.transport_intent_identity = Some(*intent);
         self
     }
 }
@@ -30,13 +26,22 @@ impl WorthQueryApplicationIdempotencyBinding {
 mod tests {
     use super::*;
     #[test]
-    fn transport_intent_extends_input_without_changing_the_key() {
+    fn transport_intent_preserves_handler_input_and_changes_recorded_meaning() {
         let binding = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
         let left = binding.bind_transport_intent(&[3; 32]);
         let right = binding.bind_transport_intent(&[4; 32]);
         assert_eq!(binding.key_identity(), left.key_identity());
-        assert_ne!(binding.intent_identity(), left.intent_identity());
-        assert_ne!(left.intent_identity(), right.intent_identity());
+        assert_eq!(binding.intent_identity(), left.intent_identity());
+        assert_ne!(binding.intent_text(), left.intent_text());
+        assert_ne!(left.intent_text(), right.intent_text());
+        assert_eq!(
+            left.match_recorded_intent(&left.intent_text()),
+            Ok(super::super::WorthQueryRecordedIntentMatch::Same)
+        );
+        assert_eq!(
+            left.match_recorded_intent(&right.intent_text()),
+            Ok(super::super::WorthQueryRecordedIntentMatch::Drift)
+        );
         assert_eq!(left, binding.bind_transport_intent(&[3; 32]));
     }
     #[test]
