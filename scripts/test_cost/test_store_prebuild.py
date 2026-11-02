@@ -86,6 +86,14 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
                 calls.append(command)
                 return SimpleNamespace(returncode=0, stdout='\n'.join(map(json.dumps, events)))
             result = prepare(root, root / 'output', runner, 'ci-test', native=native)
+            self.assertNotIn('--workspace', calls[0])
+            self.assertNotIn('--bins', calls[0])
+            self.assertEqual([calls[0][index + 1] for index, argument in enumerate(calls[0])
+                              if argument == '--package'],
+                             list(dict.fromkeys(request['package'] for request in REQUESTS)))
+            self.assertEqual([calls[0][index + 1] for index, argument in enumerate(calls[0])
+                              if argument == '--bin'],
+                             [request['binary'] for request in REQUESTS])
             self.assertEqual(calls[0][calls[0].index('--features') + 1], 'authority/observed')
             self.assertTrue(Path(result['WORTH_PREBUILT_EXECUTABLES']).is_file())
             receipt = json.loads((root / 'output/native-feature-graph.json').read_text())
