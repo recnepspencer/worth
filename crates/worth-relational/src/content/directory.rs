@@ -193,6 +193,23 @@ impl ContentDirectory {
         }
         Ok(records)
     }
+
+    pub(super) fn unreferenced_attachment(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        attachments: &RelationalContentAttachments,
+    ) -> Result<Option<ContentRefId>, Denial> {
+        control::run(execution, |control| {
+            control.checkpoint(0)?;
+            for record in attachments.records() {
+                control.checkpoint(1)?;
+                if self.find_controlled(control, record.identity())?.is_none() {
+                    return Ok(Some(record.identity()));
+                }
+            }
+            Ok(None)
+        })
+    }
 }
 pub(super) fn require_format(
     execution: &ExecutionRequest<'_, '_>,

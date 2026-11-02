@@ -15,6 +15,7 @@ mod retained;
 mod schema_install;
 mod selected_value;
 pub(crate) mod transaction;
+mod unreferenced_attachment;
 use fixture::*;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;

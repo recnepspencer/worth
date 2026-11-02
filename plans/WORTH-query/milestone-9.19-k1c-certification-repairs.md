@@ -161,3 +161,20 @@ frame comparison failure even if its boolean callee swallows it.
   Native-frame callback. Run affected execution tests, the public content door
   court, scoped gates and reviewer. Measure the same debug rlib before/after;
   the existing artifact is 319,059,810 bytes. Add no generic frame engine body.
+# R5 boundary and implementation plan
+
+The first publication draft precedes invariant consequences. It must retain all
+staged records, because consequences may still introduce references. The final
+candidate directory is the authority that can certify whether every staged
+attachment is referenced. Before narrowing publication records, it will perform
+one directory-owned, original-request-charged traversal and refuse the first
+unreferenced identity with `UnreferencedAttachment { identity }`.
+
+The traversal polls even for empty input and charges each attachment and its
+ordered lookup. Reconstruction will reuse that traversal while keeping its
+existing `NonCanonicalContent` refusal. No root-wide scan or additional store is
+needed. A real transaction court will stage an independently known golden grid
+and another referenced grid, expect the literal unused identity, and check the
+selected descriptor and released original-funded custody. A positive case will
+retain a duplicate of already referenced content. Removing the final refusal
+must kill the court before exact restoration and a passing rebuild.

@@ -13,6 +13,10 @@ fn semantic_content_causes_keep_literal_payloads_and_execution_keeps_its_origina
         (Denial::MissingContent, Rejection::MissingContent),
         (Denial::HistoryNotResident, Rejection::HistoryNotResident),
         (
+            Denial::UnreferencedAttachment { identity },
+            Rejection::UnreferencedAttachment { identity },
+        ),
+        (
             Denial::BackingUnavailable {
                 identity,
                 cause: backing,

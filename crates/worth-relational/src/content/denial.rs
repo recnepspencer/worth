@@ -64,6 +64,9 @@ content_rejections! {
     },
     ArithmeticOverflow,
     HistoryNotResident,
+    UnreferencedAttachment {
+        identity: worth_foundational::facade::ContentRefId,
+    },
 }
 
 impl From<RelationalExecutionDenialCause> for RelationalContentDenial {

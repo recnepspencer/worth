@@ -129,6 +129,9 @@ impl ContentPublication {
             self.source.as_ref(),
             !std::ptr::eq(root.retained_schema_authority().registry(), schema),
         )?;
+        if let Some(identity) = directory.unreferenced_attachment(execution, &self.records)? {
+            return Err(Denial::UnreferencedAttachment { identity });
+        }
         let records = directory.publication_records(execution, prior, changed)?;
         Ok(Self {
             records,

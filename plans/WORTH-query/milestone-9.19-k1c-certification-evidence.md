@@ -212,3 +212,43 @@ findings. The same reviewer passed R4 under qa-loop, qa-tests and code-quality-q
 | `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | One success; 24 Rust files. |
 | `git diff --check origin/master...HEAD`; `git diff --check` | One success each; zero whitespace errors. |
 | `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Four untouched lint-file scope assertions passed. |
+# R5: staged attachments must belong to final candidate closure
+
+The new external transaction court uses an independently frozen frame digest,
+not the writer's returned identity, as its refusal oracle. A consumed failed
+transaction releases the original-funded staging and candidate scratch, and the
+entire selected descriptor stays unchanged. Its positive transactions also prove
+that a staged duplicate referenced by an unchanged prior record remains legal.
+The final directory owns the paid traversal; reconstruction reuses it without
+changing its existing NonCanonicalContent classification. No AspectShape was added.
+
+| Exact command or experiment | Result |
+| --- | --- |
+| `git fetch origin master codex/919-provider-lifecycle-20261027`; `git merge --no-edit origin/master`; `git merge --no-edit origin/codex/919-provider-lifecycle-20261027` | All three succeeded; both merges already up to date. |
+| `cargo fmt -p worth-relational -p worth-court-relational-certification` | Two successes. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification unreferenced_attachment_refuses_with_literal_identity_and_releases_custody -- --nocapture` | Initial compile: three E0433 errors for the same missing RelationalTransactionIntent import, two warnings; no tests ran. Corrected baseline: 1 passed, 212 filtered. Compiled guard-deletion mutant: 0 passed, 1 failed, 212 filtered; unwrap_err observed an incorrectly successful publication. Both executed runs had 0 ignored/measured. |
+| Python mutation install/restore, with PYTHONUTF8=1 | One pre-edit anchor and one byte-exact restored-source assertion passed; restored timestamp refreshed. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | Restored source: 64 passed, 0 failed/ignored/measured, 149 filtered, 26.80 seconds. The local-directory court measured n=1,000 read 29,272/edit 275,431 and n=10,000 read 29,784/edit 283,639; its independent growth bounds passed. |
+
+Administrative receipts from prior committed slices: R2, R3 and R4 each also
+ran `git diff --cached --check` successfully once before their commit, with zero
+whitespace errors. These checks supplement their recorded branch/dirty checks.
+
+| R5 final exact command | Result |
+| --- | --- |
+| `cargo fmt --check -p worth-relational -p worth-court-relational-certification` | One success. |
+| `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | Failed solely on untouched payload.rs:34 let_and_return: 1 error, 8 warnings. |
+| `cargo clippy -p worth-court-relational-certification --all-targets --no-deps` | Failed on the same 4 untouched errors in 3 court files, 2 warnings, recorded under R1. |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | One success; repository boundaries valid. |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | One success. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | One success; 7 Rust files. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | One success each; zero whitespace errors. |
+| `cargo test -p worth-relational --lib semantic_content_causes_keep_literal_payloads_and_execution_keeps_its_original_cause -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2272 filtered. |
+| `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Four untouched lint-file scope assertions passed. |
+
+The reviewer independently checked final-phase placement, literal identity,
+unchanged-record acceptance, consumed-transaction memory release, the compiled
+mutation and exact restoration. The missing import was corrected before tests.
+The same reviewer passed R5 under qa-loop, qa-tests and code-quality-qa; no R5
+finding remains. Working-tree whitespace passed twice and staged whitespace
+passed once, all with zero errors.

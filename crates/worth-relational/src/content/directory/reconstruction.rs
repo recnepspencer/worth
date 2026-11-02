@@ -37,10 +37,11 @@ impl ContentDirectory {
         })?;
         // Require the exact closure: omitted bytes refuse during field traversal;
         // extraneous records cannot silently obtain retention in the new root.
-        for record in records.records() {
-            if directory.find(execution, record.identity())?.is_none() {
-                return Err(Denial::NonCanonicalContent);
-            }
+        if directory
+            .unreferenced_attachment(execution, records)?
+            .is_some()
+        {
+            return Err(Denial::NonCanonicalContent);
         }
         Ok(directory)
     }
