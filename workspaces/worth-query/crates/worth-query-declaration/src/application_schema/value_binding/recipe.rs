@@ -102,6 +102,7 @@ pub struct ApplicationFieldBindingRecipe {
     scalar_family: ScalarAspectType,
     unit: Option<ApplicationUnitIdentity>,
     frame: Option<ApplicationFrameIdentity>,
+    domain_value: bool,
     binding_type: TypeId,
     value_type: TypeId,
     validate: ErasedApplicationValueValidation,
@@ -126,6 +127,7 @@ impl ApplicationFieldBindingRecipe {
             scalar_family: Binding::SCALAR_FAMILY,
             unit: Binding::UNIT,
             frame: Binding::FRAME,
+            domain_value: Binding::DOMAIN_VALUE,
             binding_type: TypeId::of::<Binding>(),
             value_type: TypeId::of::<Binding::Value>(),
             validate: erased_validate::<Binding>,
@@ -165,6 +167,9 @@ impl ApplicationFieldBindingRecipe {
 
     pub const fn frame(&self) -> Option<ApplicationFrameIdentity> {
         self.frame
+    }
+    pub const fn is_domain_value(&self) -> bool {
+        self.domain_value
     }
 
     pub fn binding_type(&self) -> TypeId {
@@ -212,6 +217,7 @@ impl ApplicationFieldBindingRecipe {
             && self.scalar_family == other.scalar_family
             && self.unit == other.unit
             && self.frame == other.frame
+            && self.domain_value == other.domain_value
             && self.binding_type == other.binding_type
             && self.value_type == other.value_type
             && self.decode.is_some() == other.decode.is_some()

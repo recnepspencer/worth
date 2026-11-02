@@ -24,6 +24,7 @@ pub enum Code {
     OneBuild,
     Topology,
     InputFailure,
+    DomainValue,
 }
 impl Code {
     pub fn as_str(self) -> &'static str {
@@ -37,6 +38,7 @@ impl Code {
             Self::OneBuild => "BC9001_ONE_BUILD",
             Self::Topology => "BC9002_TEST_TOPOLOGY",
             Self::InputFailure => "BOUNDARY_INPUT_FAILURE",
+            Self::DomainValue => "BC9019_DOMAIN_VALUE_REFERENCE",
         }
     }
     fn legal_home(self) -> &'static str {
@@ -50,6 +52,7 @@ impl Code {
             Self::OneBuild => "tools/boundary-check/src/graph_rules.rs; remove the build predicate or feature declaration and use an owned inert control",
             Self::Topology => "docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts",
             Self::InputFailure => "tools/boundary-check/src/inputs.rs; restore readable Git inputs and offline Cargo metadata before judging boundaries",
+            Self::DomainValue => "tools/boundary-check/config/domain-values.toml; domain bindings require a closed source type without references, keys or names",
         }
     }
 }
@@ -292,6 +295,11 @@ mod tests {
                 Code::InputFailure,
                 "BOUNDARY_INPUT_FAILURE",
                 "tools/boundary-check/src/inputs.rs",
+            ),
+            (
+                Code::DomainValue,
+                "BC9019_DOMAIN_VALUE_REFERENCE",
+                "tools/boundary-check/config/domain-values.toml",
             ),
         ] {
             let json = serde_json::to_value(diagnostic(code, "subject", "message")).unwrap();

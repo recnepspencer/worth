@@ -13,7 +13,7 @@ impl WorthQueryProductBranchOwnerCleanup {
         WorthQueryProductBranchOwnerCleanupFailure,
     > {
         let mut retirements = OwnerCleanupRetirements::default();
-        let execution = match phase.checked_execution_request_for(&self.runtime) {
+        let execution = match self.execution_for(phase) {
             Ok(request) => request,
             Err(denial) => {
                 return Err(
@@ -22,6 +22,20 @@ impl WorthQueryProductBranchOwnerCleanup {
             }
         };
         self.retry_in_request_with_retirements(&execution, &mut retirements)
+    }
+
+    pub(in crate::domain_computation) fn execution_for<'scope>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'scope>,
+    ) -> Result<
+        worth_execution::ExecutionRequest<'scope, 'scope>,
+        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    > {
+        let execution = phase.checked_execution_request_for(&self.runtime)?;
+        execution
+            .check_live()
+            .map_err(execution_denial::advancement_checkpoint_stop)?;
+        Ok(execution)
     }
 
     pub(crate) fn retry_in_request_with_retirements(

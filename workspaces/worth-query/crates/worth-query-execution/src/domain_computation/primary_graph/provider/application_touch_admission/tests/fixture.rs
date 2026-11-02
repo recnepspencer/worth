@@ -3,7 +3,7 @@ use super::*;
 use worth_query_decl::facade::{
     application_schema::*, worth_query_application_schema, worth_query_aspect, worth_query_entity,
     worth_query_field, worth_query_operation, worth_query_operation_reads,
-    worth_query_operation_writes,
+    worth_query_operation_removes_aspects, worth_query_operation_writes,
 };
 use worth_query_installation::facade::*;
 pub(super) mod relation;
@@ -26,9 +26,13 @@ worth_query_decl::facade::worth_query_structured_value_binding!(pub(super) Input
 worth_query_operation!(pub(super) OnlyA for TouchSchema, input InputBinding);
 worth_query_operation_reads!(OnlyA => [Node]);
 worth_query_operation_writes!(OnlyA => [A]);
+worth_query_operation!(pub(super) FieldsOnly for TouchSchema, input InputBinding);
+worth_query_operation_reads!(FieldsOnly => [Node]);
+worth_query_operation_writes!(FieldsOnly => [A, B]);
 worth_query_operation!(pub(super) Both for TouchSchema, input InputBinding);
-worth_query_operation_reads!(Both => [Node, RequiredNode]);
+worth_query_operation_reads!(Both => [Node, RequiredNode, A, B]);
 worth_query_operation_writes!(Both => [A, B, RequiredA, RequiredB]);
+worth_query_operation_removes_aspects!(Both => [Notes]);
 worth_query_application_schema! {
     pub schema TouchSchema {
         owner: struct_touch_admission,
@@ -36,6 +40,7 @@ worth_query_application_schema! {
         members: |schema| {
             let one = OnlyA::reference();
             let both = Both::reference();
+            let fields = FieldsOnly::reference();
             let schema = schema.entity(Node::reference()).entity(RequiredNode::reference())
                 .aspect(Node::reference(), Identity::reference())
                 .field(Node::reference(), Key::reference())
@@ -47,12 +52,19 @@ worth_query_application_schema! {
                 .operation(one.definition().no_external_effect().no_aftermath().finish())
                 .operation_projection_work_budget(one, 16)
                 .operation_read_entity(one, Node::reference()).operation_write(one, A::reference())
+                .operation(fields.definition().no_external_effect().no_aftermath().finish())
+                .operation_projection_work_budget(fields, 16)
+                .operation_read_entity(fields, Node::reference())
+                .operation_write(fields, A::reference()).operation_write(fields, B::reference())
                 .operation(both.definition().no_external_effect().no_aftermath().finish())
                 .operation_projection_work_budget(both, 16)
                 .operation_read_entity(both, Node::reference())
                 .operation_read_entity(both, RequiredNode::reference())
+                .operation_read_field(both, A::reference()).operation_read_field(both, B::reference())
                 .operation_write(both, A::reference()).operation_write(both, B::reference())
-                .operation_write(both, RequiredA::reference()).operation_write(both, RequiredB::reference());
+                .operation_write(both, RequiredA::reference()).operation_write(both, RequiredB::reference())
+                // eea53fe428: removing the parent requires its own installed grant.
+                .operation_remove_aspect(both, Notes::reference());
             relation::declare(schema)
         }
     }

@@ -13,20 +13,21 @@ use worth_query_host::facade::{
 pub struct Change {
     pub key: String,
     pub value: u64,
+    pub revision: u64,
 }
 #[derive(Clone, Debug)]
 pub struct Changed;
 #[derive(Clone, Debug)]
 pub struct Missing;
-worth_query_structured_value_binding!(pub InputBinding for Change { identity: "numeric-definition.input.v1" });
+worth_query_structured_value_binding!(pub InputBinding for Change { identity: "numeric-definition.input.v2" });
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "numeric-definition.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Missing { identity: "numeric-definition.denial.v1" });
 worth_query_operation!(pub ChangeDefinition for NumericSchema, input InputBinding);
-worth_query_operation_reads!(ChangeDefinition => [Key, Primary]);
-worth_query_operation_writes!(ChangeDefinition => [Primary]);
+worth_query_operation_reads!(ChangeDefinition => [Key, Primary, DefinitionRevision]);
+worth_query_operation_writes!(ChangeDefinition => [Primary, DefinitionRevision]);
 worth_query_operation!(pub Tick for NumericSchema, input InputBinding);
-worth_query_operation_reads!(Tick => [Key, Primary, Secondary, Ceiling]);
-worth_query_operation_writes!(Tick => [Primary, Secondary, Ceiling]);
+worth_query_operation_reads!(Tick => [Key, Primary, Secondary, Ceiling, DefinitionRevision]);
+worth_query_operation_writes!(Tick => [Primary, Secondary, Ceiling, DefinitionRevision]);
 
 impl ApplicationDeclaredOperation<NumericSchema> for ChangeDefinition {
     fn declare_access(
@@ -35,6 +36,8 @@ impl ApplicationDeclaredOperation<NumericSchema> for ChangeDefinition {
         schema
             .operation_read_field(Self::reference(), Key::reference())
             .operation_read_field(Self::reference(), Primary::reference())
+            .operation_read_field(Self::reference(), DefinitionRevision::reference())
+            .operation_write(Self::reference(), DefinitionRevision::reference())
             .operation_write(Self::reference(), Primary::reference())
     }
 }
@@ -42,6 +45,8 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
     schema
+        .optional_aspect(Number::reference(), DefinitionRevisionFacts::reference())
+        .field(Number::reference(), DefinitionRevision::reference())
         .operation(
             Tick::reference()
                 .definition()
@@ -49,6 +54,8 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
+        .operation_read_field(Tick::reference(), DefinitionRevision::reference())
+        .operation_write(Tick::reference(), DefinitionRevision::reference())
         .operation_read_field(Tick::reference(), Key::reference())
         .operation_read_field(Tick::reference(), Primary::reference())
         .operation_read_field(Tick::reference(), Secondary::reference())
@@ -155,10 +162,16 @@ impl ApplicationCorrectionBinding<NumericSchema> for CorrectDefinition {
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Primary::reference())],
-                U64ApplicationValueBinding::encode(&u64::MAX)
+                [
+                    DeclaredPreImageLocus::from_field(Primary::reference()),
+                    DeclaredPreImageLocus::from_field(DefinitionRevision::reference()),
+                ],
+                InlineCounterBinding::encode(&u64::MAX)
                     .unwrap()
-                    .semantic_byte_width(),
+                    .semantic_byte_width()
+                    + U64ApplicationValueBinding::encode(&u64::MAX)
+                        .unwrap()
+                        .semantic_byte_width(),
             )
             .unwrap(),
         )
@@ -175,7 +188,15 @@ impl ApplicationCorrectionBinding<NumericSchema> for CorrectDefinition {
             .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?;
         Ok(Change {
             key: original.key.clone(),
-            value: U64ApplicationValueBinding::decode(value)
+            revision: U64ApplicationValueBinding::decode(
+                preimage
+                    .field(&DeclaredPreImageLocus::from_field(
+                        DefinitionRevision::reference(),
+                    ))
+                    .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
+            )
+            .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?,
+            value: InlineCounterBinding::decode(value)
                 .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?,
         })
     }
@@ -205,3 +226,8 @@ pub fn feature() -> ApplicationFeatureSpec {
         .conditional_operation::<Tick>()
         .finish()
 }
+
+// The temporal owner's revision is a native scalar, separate from the business
+// atom. Only actual numeric intents carry this optional role.
+worth_query_aspect!(pub DefinitionRevisionFacts for NumericSchema, Number; identity = AspectIdentity(0x91800108), revision = AspectContractRevision(1));
+worth_query_field!(pub DefinitionRevision for NumericSchema, Number, DefinitionRevisionFacts: u64 => U64ApplicationValueBinding, read_write, equality);

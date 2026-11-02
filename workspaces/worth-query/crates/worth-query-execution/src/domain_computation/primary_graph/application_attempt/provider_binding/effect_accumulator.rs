@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use worth_relational::facade::transactions::{MutationIntent, WorkerIntentBatch};
@@ -16,7 +17,13 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields;
 use crate::domain_computation::WorthQueryProvisionalEffectStep;
 
+mod commit_projections;
+#[cfg(test)]
+mod compound_patch_tests;
 mod expected_steps;
+#[cfg(test)]
+mod ordering_tests;
+use commit_projections::materialize_commit_projections;
 pub(in crate::domain_computation::primary_graph) use expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 use expected_steps::WorthQueryExpectedEffectSteps;
 
@@ -28,6 +35,7 @@ pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: Fa
     created: CreatedEffectReferences,
     contracts: &'layout super::effect_lowering::AspectContracts<'layout>,
     lowered: Vec<WorthQueryLoweredProviderEffect>,
+    composed_aspects: BTreeSet<worth_relational::facade::identity::EntityId>,
 }
 
 pub(super) struct WorthQueryRegisteredProviderEffects {
@@ -67,6 +75,15 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
             mutation_partition,
             created: CreatedEffectReferences::new(effects, mutation_partition),
             lowered: Vec::with_capacity(effects.len()),
+            composed_aspects: effects
+                .iter()
+                .filter_map(|effect| match effect {
+                    WorthQueryApplicationRealizedEffect::RemoveAspect { entity_id, .. } => {
+                        Some(*entity_id)
+                    }
+                    _ => None,
+                })
+                .collect(),
         }
     }
 
@@ -74,12 +91,20 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
         &mut self,
         effect: WorthQueryApplicationRealizedEffect,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let composed_aspect_patch = match &effect {
+            WorthQueryApplicationRealizedEffect::UpdateEntity { entity_id, .. }
+            | WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+                entity_id, ..
+            } => self.composed_aspects.contains(entity_id),
+            _ => false,
+        };
         let lowered = lower_provider_effect(
             &self.facts,
             &mut self.unique,
             self.contracts,
             &self.created,
             self.mutation_partition,
+            composed_aspect_patch,
             effect,
         )?;
         self.lowered.push(lowered);
@@ -252,34 +277,6 @@ impl WorthQueryRegisteredProviderEffects {
     ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.clone().seal(commit)
     }
-}
-
-fn materialize_commit_projections(
-    lowered: Vec<WorthQueryLoweredProviderEffect>,
-) -> Result<
-    (
-        Vec<MutationIntent>,
-        Vec<WorthQueryApplicationEmission>,
-        WorthQueryExpectedEffectSteps,
-    ),
-    WorthQueryApplicationAttemptDenial,
-> {
-    let mut intents = Vec::new();
-    let mut emissions = Vec::new();
-    let expected_steps = WorthQueryExpectedEffectSteps::from_step_groups(
-        lowered.into_iter().filter_map(|effect| match effect {
-            WorthQueryLoweredProviderEffect::Mutation { intent, steps } => {
-                intents.push(intent);
-                Some(steps)
-            }
-            WorthQueryLoweredProviderEffect::ObservedNoop { steps } => Some(steps),
-            WorthQueryLoweredProviderEffect::Emission(emission) => {
-                emissions.push(emission);
-                None
-            }
-        }),
-    )?;
-    Ok((intents, emissions, expected_steps))
 }
 
 #[cfg(test)]

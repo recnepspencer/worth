@@ -32,6 +32,7 @@ pub enum AspectValue {
     TimestampTz(CanonicalTimestampTz),
     EntityRef(EntityId),
     ContentRef(ContentRefId),
+    InlineBytes(super::scalar_wrappers::InlineBytes),
 }
 
 impl AspectValue {
@@ -61,6 +62,7 @@ impl AspectValue {
             Self::TimestampTz(_) => ScalarAspectType::TimestampTz,
             Self::EntityRef(_) => ScalarAspectType::EntityRef,
             Self::ContentRef(_) => ScalarAspectType::ContentRef,
+            Self::InlineBytes(_) => ScalarAspectType::InlineBytes,
         }
     }
 
@@ -104,6 +106,7 @@ impl AspectValue {
             Self::Uuid(_) => 17,
             Self::TimestampTz(_) => 13,
             Self::EntityRef(_) => 17,
+            Self::InlineBytes(value) => 1 + value.as_bytes().len(),
         }
     }
 
@@ -119,6 +122,7 @@ impl AspectValue {
                 .capacity()
                 .saturating_add(value.denominator.0.capacity()),
             Self::String(InternedString::Raw(value)) => value.capacity(),
+            Self::InlineBytes(value) => value.owned_allocation_capacity_bytes(),
             _ => 0,
         }
     }

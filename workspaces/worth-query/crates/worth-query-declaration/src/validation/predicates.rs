@@ -248,6 +248,7 @@ fn field_kind_name(field_kind: &ScalarAspectType) -> &'static str {
 
 fn native_family_name(family: ScalarAspectType) -> &'static str {
     match family {
+        ScalarAspectType::InlineBytes => "InlineBytes",
         ScalarAspectType::Null => "Null",
         ScalarAspectType::Bool => "Bool",
         ScalarAspectType::Int8 => "Int8",
@@ -277,6 +278,7 @@ fn native_family_name(family: ScalarAspectType) -> &'static str {
 
 fn native_set_family_name(family: ScalarAspectType) -> &'static str {
     match family {
+        ScalarAspectType::InlineBytes => "Set<InlineBytes>",
         ScalarAspectType::Null => "Set<Null>",
         ScalarAspectType::Bool => "Set<Bool>",
         ScalarAspectType::Int8 => "Set<Int8>",

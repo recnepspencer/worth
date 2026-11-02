@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod currentness;
+mod domain_value_write;
 mod local_workflow_settlement;
 mod native_reference_invariants;
 use currentness::{

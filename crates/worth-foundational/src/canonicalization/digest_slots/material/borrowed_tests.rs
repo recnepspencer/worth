@@ -18,6 +18,7 @@ impl CanonicalMaterialSink for TextSink {
 fn borrowed_scalar_material_preserves_frozen_historical_bytes() {
     // Literal v1 material, independent of both adapters and the encoder.
     let cases = [
+        (AspectValue::InlineBytes(InlineBytes::try_new(vec![0, 128, 255]).unwrap()), "value.kind#12:inline-bytes;value.inline-bytes#3:0080ff;"),
         (AspectValue::Null, "value.kind#4:null;"),
         (AspectValue::Bool(true), "value.kind#4:bool;value.bool#4:true;"),
         (AspectValue::Int8(-7), "value.kind#6:signed;value.width#2:i8;value.signed#2:-7;"),

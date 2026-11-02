@@ -21,6 +21,8 @@ pub trait ApplicationScalarValueBinding: 'static {
     const SCALAR_FAMILY: ScalarAspectType;
     const UNIT: Option<ApplicationUnitIdentity> = None;
     const FRAME: Option<ApplicationFrameIdentity> = None;
+    /// A reference-free, identity-free atom, certified by the binding's source guard.
+    const DOMAIN_VALUE: bool = false;
     /// Whether the owner supplies resource-admitted canonical decoding.
     const SUPPORTS_ADMITTED_DECODE: bool = false;
 

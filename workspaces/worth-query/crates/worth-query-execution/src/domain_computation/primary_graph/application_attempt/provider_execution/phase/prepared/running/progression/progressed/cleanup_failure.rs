@@ -52,6 +52,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             Kind::UnobservedWrite
             | Kind::ProviderRejected
             | Kind::CustomInvariantDenied
+            | Kind::DomainValueRejected
             | Kind::WorkflowSettlementDenied { .. }
             | Kind::ProductBasisStale
             | Kind::UniqueValueTaken

@@ -15,6 +15,7 @@ pub(super) fn application_commit_cause(
         Kind::UnobservedWrite
         | Kind::ProviderRejected
         | Kind::CustomInvariantDenied
+        | Kind::DomainValueRejected
         | Kind::WorkflowSettlementDenied { .. }
         | Kind::ProductBasisStale
         | Kind::UniqueValueTaken

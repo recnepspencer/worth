@@ -51,6 +51,14 @@ Use these entry points to find an API and its worked use.
 
 ## Task index
 
+Choose [native representations](native-representations.md) before a durable
+value binding: flat scalar fields, named entities and actual typed relations.
+The [candidate-only one-of pattern](native-representations.md#one-class-one-optional-aspect)
+includes required class payloads, complete rule scope and atomic transitions;
+its lawful at-pin refusal requires the repin. The
+[source-subgraph contract and court](source-subgraphs.md) cover partial member
+edit, pinned previous state, recorded undo and a generated-member witness.
+
 For a new installed feature, use the
 [complete feature definition](build-an-application.md#complete-feature-definitions)
 first: `host::worth_query_application_contribution! { pub feature ... }` projects
@@ -208,9 +216,34 @@ propagate stopped-prefix or missing-qualification refusals. Accounted reuse foll
 the original receipt at its work boundary. See
 [persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
 
-For nested persisted values, use the existing value-binding macro's
-`scalar: String, canonical,` arm with Query-free
-`WorthValue` derivation. The installed value-binding catalog retains the derived
+Platform scalar owners can carry opaque atoms using `ScalarAspectType::InlineBytes`
+and the immutable `InlineBytes` carrier. Its native framing ceiling is
+4,294,967,290 payload bytes; oversized lengths return `InlineBytesLengthDenial`
+before admission. The carrier supplies no domain comparison or index hooks.
+See [inline opaque values](build-an-application.md#inline-opaque-values).
+
+Applications adopt an identity-free, reference-free leaf through the existing
+value-binding macro's `binary: OwnerDelegate` arm. Its Query-free pure owner
+keeps normalization, canonical bytes, admission and terminal rendering; the entry
+delegate supplies finite bounds, identity, unit and frame. Binary and explicitly
+marked canonical domain atoms require the same per-binding source guard and have
+distinct portable protocols from established structured canonical artifacts.
+Ordinary domain field writes must pass the installed owner's admitted
+reader and canonical byte comparison under the original request before provider
+lowering or publication; an unreadable encoding returns a typed commit refusal.
+See the [compiled entry delegate](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs)
+and [representation and guard guidance](build-an-application.md#inline-opaque-values).
+
+For independently edited persisted structure, use the
+[native representation table](native-representations.md). For an intentional identity-free, reference-free canonical atom or
+an explicit document boundary, use
+`decl::worth_query_value_binding!`'s `scalar: String, canonical,` arm with
+`decl::application_schema::WorthValue` derivation (or the pure owner's existing
+value). Record the owner, representation policy, reason and reference guard.
+The entire atom is one native field: its nested grammar grants no inner-field
+read, patch, touch or invalidation. See the
+[Store grain contract](../plans/worth-store/storage-foundation-aspect-native-gate.md#current-value-grain-contract).
+The installed value-binding catalog retains the derived
 shape and any explicit domain representation policy. Fixed arrays, checked
 indices, `Box`, exact
 pairs and tagged named variants use the checked seed path. Complete closure
@@ -464,6 +497,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Survive a restart | The app owns the artifact. Capture: inside `runtime.with_host_advancement(..)`, call `runtime.capture_application_checkpoint_with_sections(&phase, policy)` with a `host::application_installation::WorthQueryCheckpointCapturePolicy`. Restore: `in_memory_program_from_checkpoint(..)` or `in_memory_rostered_program_from_checkpoint(..)` | [Front door: capture and reopen](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#capture-and-reopen-cost-boundary), [Build §4.4](build-an-application.md#44-checkpoint-program-transitions) |
 | Work on a branch or move it to a new program under its declared capability | `runtime.branches().fork(runtime.current_world()).components(..).create(&phase)`; `request(..).on_branch(branch)`; `.programs()` then `compare(&target)`, `adopt(&requirements)?.prepare(max)`, `programs.publish(prepared)` | [Branches](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#application-product-branches-host), [Build §7](build-an-application.md#7-adopt-a-new-program-on-a-branch) |
 | Run isolated transaction steps on a fork | `runtime.branches().fork(head).components(..).create(&phase)`, then `request(..).on_branch(fork)`. The application's model-state owner selects the branch for subsequent requests; `runtime.on_branch(discarded).close(&phase)` retires discarded branches. The fork retains its parent's history for corrections. | [Branches](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#application-product-branches-host), [Fork transaction example](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_adoption.rs) |
+| Retry retired application product cleanup under a fresh admitted request | Keep the `WorthQueryApplicationProductBranchCleanup` from `OwnerCleanupPending`. Inside the original runtime's `with_application_advancement(scope, \|phase\| ...)`, call `cleanup.retry_in_advancement(&phase)`. Foreign or interrupted phases return the same cleanup owner; retained readers may still refuse. Release those readers and retry that owner. Keep the actual completed receipt even if the outer request later stops. | [Build: retired cleanup](build-an-application.md#register-attempts-on-a-stable-product), [Compiled control and release court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/acceptance/disposal.rs) |
 | Fork the exact source already selected by the application | Pass the owned selection to `runtime.branches().fork_expected(selected)`, choose components, then `create(&phase)`. Keep the returned candidate and use `candidate.branch()` for ordinary requests. Adopt with `candidate.adopt(&mut model.head, &phase)` while the exact source remains current, or discard with `candidate.close(&phase)`. Refusals retain the candidate and typed denial. Close the previous branch separately after adoption. | [Fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection) |
 | Store an expected basis and freshly select it | Serialize `selected.describe_basis()` as ordinary application data. After a fresh ordinary READ of that record, deserialize `WorthQueryExpectedProductBasisDescription` and call `runtime.branches().select_expected(&description, &phase)`. World and Native admit the original exact current basis; stale, retired, foreign and unsupported descriptions refuse. The data retains no lease and grants no READ or mutation permission. Consume the returned selection with `fork_expected`. | [Stored expected basis](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again) |
 | Record typed comparison data without moving the model basis | Create a separately owned storage branch with `parts.fork_relational()`. Write and read records through ordinary requests on that branch, with a canonical declared field codec for structured values. Retain its branch owner for explicit close. | [Storage and typed records](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again) |

@@ -18,6 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
+| Choose durable facts, names and links | [Native representations](native-representations.md), then [source subgraphs](source-subgraphs.md) | Independently mutable fields, entities, typed relations and an explicit read closure; canonical atoms need a recorded reason |
 | Explain a query result or an authored operation | [Inspect original evidence](#inspect-original-source-and-query-evidence) | Saved source/query receipts and current inspection permissions |
 | Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
@@ -279,9 +280,128 @@ includes a passing capability example and an undeclared-member compile refusal.
 ---
 
 
+### Inline opaque values
+
+`ScalarAspectType::InlineBytes` carries one opaque inline atom. Its immutable
+`InlineBytes` carrier admits at most **4,294,967,290 payload bytes**
+(`u32::MAX - 5`). The existing native scalar frame uses a 32-bit body length;
+one tag byte and four payload-length bytes occupy the remaining five bytes.
+This is a framing limit, not a recommended allocation or an execution grant.
+`InlineBytes::admit_length` and `try_new` return `InlineBytesLengthDenial`
+above that limit, before the value can enter a mutation. Wire readers check
+the declared length before copying its payload, and serde preserves the same
+invariant. Binding-specific representation bounds and the original request's
+work, cancellation and memory limits still apply.
+
+The scalar carries no domain ordering, comparison or indexing hooks. Byte
+identity serves digests and change detection. The owner remains responsible
+for canonical encoding, domain admission, and terminal rendering. Independently
+editable objects and graph references belong in entities and relations.
+
+Choose a representation by ownership and change granularity:
+
+| Meaning | Representation |
+|---|---|
+| Independently named or editable object | Entity with stable semantic identity |
+| Link to another object | Typed relation to its actual entity |
+| Fact with an existing scalar meaning | Native scalar field |
+| Identity-free, reference-free leaf with owner-defined meaning | Versioned domain-value binding; one opaque native atom |
+
+Declare a binary atom with `worth_query_value_binding!` and `binary: OwnerDelegate`,
+plus its intrinsic `unit:` and `frame:` when applicable. The delegate implements
+`BinaryValueDelegate` through `worth_query_decl::facade::application_schema`;
+its associated value needs no Query or Serde implementation. The
+[compiled entry binding](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs)
+adopts a [pure Ratio owner](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_values/src/ratio.rs).
+Its nine-byte maximum is its complete versioned representation, rather than
+an arbitrary payload policy. `worth_query_decl::facade::typed` also exposes
+`InlineBytes` and `InlineBytesLengthDenial` for scalar-boundary input.
+
+The owner normalizes authored values through its constructor and encodes only
+canonical bytes. Incoming bytes must already be canonical: admission refuses
+alternate spellings, malformed data and unsupported versions. Every binary decode
+checks that encoding the admitted result reproduces the input exactly; a corrupt
+owner result returns `ValueCodecDenial::InternalInconsistency`. Size refusals retain
+the binding identity and precede mutation effects. Decoding and the independent
+byte comparison share the original request's work, memory and cancellation loan.
+Ordinary writes also pass through this installed admitted decoder and
+canonical comparison after effect expansion and before provider lowering or
+publication. This single commit-preparation seal covers binary, canonical domain
+and delegated canonical domain bindings, including entity creation, field updates,
+optional-field patches and relation creation. An owner whose encoder emits bytes
+its reader rejects receives `DomainValueRejected`; `domain_value_decode_denial()`
+retains the binding identity and codec cause. Request resource refusals retain
+their original execution cause. Either refusal leaves the selected commit unchanged.
+There is no replacement request or representation-only decoder fallback. Declare
+fields with `no_equality`; domain equality and ordering remain with the owner.
+Render terminal values through the owner's reader/renderer, as the Ratio example does.
+
+Use these bindings on fields in an existing struct aspect. The explicit
+`scalar_aspect_field` declaration currently requires a codec-free scalar binding;
+it refuses a domain codec. This capability adds no aspect shape form.
+The [correction and recovery courts](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/correction/inline_domain.rs)
+exercise the opaque field through ordinary owners. Their literal encodings and
+the production decode/re-encode check certify stored byte identity across recovery.
+Whole model checkpoint equality separately checks that admitted reads have no
+effects within either runtime; runtime identity metadata legitimately rebinds.
+
+Canonical text can explicitly claim the same leaf posture with
+`canonical: FINITE_BOUNDS, domain_value,` and optional `unit:` and `frame:`.
+Binary atoms use `worth.domain-binary.v1`; canonical atoms use
+`worth.domain-canonical-json.v1`. Existing structured canonical artifacts retain
+`worth.canonical-json.v1` and their existing complete grammar. Those artifacts
+make no domain-leaf claim and cannot satisfy a domain-atom contract. An immutable
+operation artifact's established structured protocol is distinct from a leaf value;
+neither posture licenses hiding independently editable objects or graph links.
+
+Every explicit domain binding must have a source-guard registration, including
+canonical and manual bindings. Register its actual Rust source, binding name
+(including inline module names), and the owner's key/name/object types:
+
+```toml
+[[binding]]
+source = "app/src/value_binding.rs"
+binding = "RatioBinding"
+forbidden_types = ["app::graph::NodeKey", "app::names::StableName"]
+```
+
+The guard follows Cargo library roots, actual modules, explicit imports, aliases,
+all fields and enum variants, and concrete generic arguments. Platform entity and
+content references are always refused. Unknown types, ambiguous imports, transforming
+attributes, generated bindings and unsupported local scopes refuse a proof. The
+guard does not infer reference-free meaning from an innocent type name. Keep the
+owner's forbidden list complete; a primitive string or integer is not permission
+to encode a graph link. In WORTH this runs as part of `boundary-check`. An external
+consumer runs the same checker from its Git root, with its own registry and manifest:
+
+```text
+cargo run --manifest-path path/to/worth/tools/boundary-check/Cargo.toml -- --root . --domain-values domain-values.toml --manifest-path app/Cargo.toml
+```
+
+A repository whose bindings live in a separate consumer workspace can list its actual
+Git-owned `Cargo.toml` paths in the registry's optional `workspace_manifests` array.
+This extends Cargo metadata discovery; module and type names still come from the
+actual library roots and Rust declarations. It does not register generated context
+workspaces or supply alternate type roots.
+
+
+Both source and registry must be in Git's tracked or unignored source inventory.
+Unresolved external opaque types require a source representation the guard can
+inspect; they receive no automatic exemption. Installation independently refuses
+a mismatch between the declared domain posture, carrier and executable binding.
+
 ### Canonical nested values and derived readiness
 
-A pure value owner can derive `worth_foundational::facade::WorthValue` to emit
+Choose [native fields, entities and typed relations](native-representations.md)
+for durable application structure first. A nested Rust value does not make its
+members independently readable or patchable. The canonical binding below is for
+an intentional identity-free, reference-free atom, an opaque owner-admitted leaf
+or a named document boundary. Record each durable exception's owner, policy,
+reason and reference guard; keep independently edited objects and links native.
+See [source subgraphs](source-subgraphs.md) for partial edits and prior state.
+
+An application value owner can derive
+`worth_query_decl::facade::application_schema::WorthValue` to emit
 Serde serialization, portable wire shape, and a checked deserialization seed
 from one definition. Use those generated serialization implementations. Supported
 grammar includes concrete named/unit/newtype structs, external unit/newtype/named
@@ -315,7 +435,8 @@ Nullable optional payloads, such as `Option<Option<T>>` or `Option<()>`, are
 refused because Serde's `null` would erase the distinction between absence and
 a present null payload. Use an externally tagged enum for that meaning.
 
-The ordinary entry uses `worth_query_value_binding!` with `scalar: String`,
+For that whole-value atom, the existing entry uses
+`worth_query_decl::facade::worth_query_value_binding!` with `scalar: String`,
 `canonical,` and an optional `validate: domain_validator` returning
 `Result<(), &'static str>`. Domain validation runs on encode and decode. Fixed
 arrays and pairs retain their actual type cardinality. Encoding checks
@@ -329,6 +450,13 @@ representation policy may use `canonical: DOMAIN_BOUNDS`; absent policies use
 failures retain their exact `ValueCodecDenial` in
 `Canonical { binding_identity, cause }`; native cancellation retains its original
 request's stop at the owning handoff.
+
+This canonical grammar remains one native String field. Inner members have no
+native read/patch, touch, conflict or invalidation path, and serialization emits
+the complete atom. Current structured canonical bindings install in Struct
+fields; `ApplicationSchemaDeclarationBuilder::scalar_aspect_field` refuses that
+carrier. Fine native field reads also do not imply independent sibling-write
+transactions. See the [actual grain contract](../plans/worth-store/storage-foundation-aspect-native-gate.md#current-value-grain-contract).
 
 The [canonical binding example](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical_tests.rs)
 derives a nondefault `Span`, validates positive length in both directions and
@@ -2736,6 +2864,15 @@ that exact failure into its cleanup owner. The
 retries the original cleanup with a fresh scope, retaining its actual refusal
 while readers still hold history. Release those readers and retry the same owner.
 The selected new head stays in place throughout.
+
+Inside `runtime.with_application_advancement(scope, |phase| ...)`, call the
+application cleanup owner's `retry_in_advancement(&phase)`. It uses that original
+runtime's admitted request for history, conditional and component cleanup. A
+foreign or interrupted phase returns the original cleanup with a typed denial
+before effects. Use `failure.into_cleanup()` for a fresh retry. The standalone
+`retry()` owns a separate serial request; an existing advancement supplies its
+phase instead. Preserve an actual successful cleanup receipt if the outer
+advancement reports a later handoff interruption.
 
 The example's `FinishedAdoption` distinguishes an ordinary previous-head close
 receipt from a settled retired-head cleanup receipt. Inspect the corresponding

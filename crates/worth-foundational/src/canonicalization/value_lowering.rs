@@ -35,6 +35,7 @@ pub fn prepare_struct_aspect_value_identity_basis(
 /// still require the corresponding Foundational preparation APIs.
 pub fn canonical_basis_value_for_aspect_value(value: &AspectValue) -> CanonicalBasisValue {
     match value {
+        AspectValue::InlineBytes(value) => CanonicalBasisValue::InlineBytes(value.clone()),
         AspectValue::Null => CanonicalBasisValue::Null,
         AspectValue::Bool(value) => CanonicalBasisValue::Bool(*value),
         AspectValue::Int8(value) => CanonicalBasisValue::SignedInteger {

@@ -24,6 +24,7 @@ pub(crate) fn encoded_aspect_value_len(value: &AspectValue) -> Option<usize> {
         4usize.checked_add(text.len())
     };
     match value {
+        AspectValue::InlineBytes(value) => Some(5 + value.as_bytes().len()),
         AspectValue::Null => Some(1),
         AspectValue::Bool(_) | AspectValue::Int8(_) | AspectValue::UInt8(_) => Some(2),
         AspectValue::Int16(_) | AspectValue::UInt16(_) => Some(3),
@@ -52,6 +53,11 @@ pub(crate) fn encoded_aspect_value_len(value: &AspectValue) -> Option<usize> {
 
 fn encode_aspect_value_body(bytes: &mut Vec<u8>, value: &AspectValue) {
     match value {
+        AspectValue::InlineBytes(value) => {
+            bytes.push(tags::INLINE_BYTES);
+            encode_u32(bytes, value.wire_length());
+            bytes.extend_from_slice(value.as_bytes());
+        }
         AspectValue::Null => bytes.push(tags::NULL),
         AspectValue::Bool(value) => {
             bytes.push(tags::BOOL);

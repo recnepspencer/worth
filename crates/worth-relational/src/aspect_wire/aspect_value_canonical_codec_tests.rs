@@ -40,6 +40,12 @@ fn native_strategy_codec_uses_canonical_aspect_value_bytes() {
 fn reported_value_families_keep_one_canonical_tag_layout() {
     let reported_samples = [
         (
+            AspectValue::InlineBytes(
+                worth_foundational::InlineBytes::try_new(vec![0, 128, 255]).unwrap(),
+            ),
+            &[24, 3, 0, 0, 0, 0, 128, 255][..],
+        ),
+        (
             AspectValue::Int64(-12),
             &[5, 244, 255, 255, 255, 255, 255, 255, 255][..],
         ),

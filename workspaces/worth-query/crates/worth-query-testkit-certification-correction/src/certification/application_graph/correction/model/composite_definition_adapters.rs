@@ -37,6 +37,7 @@ impl domain::WorthQueryTemporalIntentProjector<ReadyNode, Clock, Row, Change> fo
         let input = Change {
             key: row.key.clone(),
             value: super::composite_definition_runtime::TICK_OUTPUT,
+            revision: row.revision,
         };
         let candidate = if row.lifecycle == 100 {
             domain::WorthQueryTemporalIntentCandidate::active::<StringApplicationValueBinding>(

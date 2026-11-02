@@ -126,7 +126,8 @@ fn companion_target_rule_rejects_actual_surviving_relation_before_publication() 
         panic!("the target rule must reject native preparation before publication: {denial:?}")
     };
     assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected);
-    assert_eq!(denial.subject(), "Relational rejected the application principal bootstrap transaction: custom invariant 'canonical-companion-link' reported a structural violation");
+    // 3dc89054fd moved this genuine invariant check to seed publication.
+    assert_eq!(denial.subject(), "Relational rejected the application seed transaction: custom invariant 'canonical-companion-link' reported a structural violation");
     assert_eq!(successor::output::decodes(), 0);
     assert_eq!(old::reads::read(&original), value);
     assert_eq!(held.bytes(), bytes);

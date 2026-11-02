@@ -1,6 +1,7 @@
 //! Portable wire descriptions and bounded, Query-free value construction.
 mod admission;
 mod admitted;
+mod binary;
 mod containers;
 mod decode_control;
 mod definition;
@@ -16,6 +17,10 @@ pub use admission::{ValueCodecDenial, ValueDecodeBounds};
 pub use admitted::{
     decode_canonical_value_with_admission, decode_delegated_canonical_value,
     decode_delegated_canonical_value_with_admission,
+};
+pub use binary::{
+    decode_binary_value, decode_binary_value_with_admission, encode_binary_value,
+    BinaryValueDelegate, BinaryValueWriter,
 };
 pub use decode_control::{value_decode_error, ValueDecodeAdmission, ValueDecodeControl};
 pub use definition::{

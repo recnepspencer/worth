@@ -117,6 +117,12 @@ impl ConsumedFieldValueFact {
     );
     scalar_refinement!(as_entity_ref, EntityId, EntityRef, EntityRef);
     scalar_refinement!(as_content_ref, ContentRefId, ContentRef, ContentRef);
+    scalar_refinement!(
+        as_inline_bytes,
+        worth_foundational::InlineBytes,
+        InlineBytes,
+        InlineBytes
+    );
 
     pub fn as_struct(&self) -> Result<&StructAspectValue, ConsumedNativeRefinementDenial> {
         match self.native_value() {
@@ -175,6 +181,9 @@ mod tests {
         for value in scalar_samples() {
             let fact = scalar_fact(value.clone());
             match value {
+                AspectValue::InlineBytes(expected) => {
+                    assert_eq!(fact.as_inline_bytes(), Ok(&expected))
+                }
                 AspectValue::Null => fact.as_null().unwrap(),
                 AspectValue::Bool(expected) => assert_eq!(fact.as_bool(), Ok(&expected)),
                 AspectValue::Int8(expected) => assert_eq!(fact.as_int8(), Ok(&expected)),
@@ -331,6 +340,9 @@ mod tests {
             }),
             AspectValue::EntityRef(EntityId::new(PartitionId(9), 10, 11)),
             AspectValue::ContentRef(ContentRefId(42)),
+            AspectValue::InlineBytes(
+                worth_foundational::InlineBytes::try_new(vec![0, 128, 255]).unwrap(),
+            ),
             AspectValue::String(InternedString::Symbol(Symbol(17))),
         ]
     }

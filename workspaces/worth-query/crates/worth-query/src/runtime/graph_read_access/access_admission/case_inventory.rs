@@ -178,6 +178,10 @@ fn access_case_posture_and_owner(
             WorthQueryGraphReadAccessAdmissionPosture::InlineIndexed,
             WorthQueryGraphReadRequiredCapabilityOwner::QueryRuntime,
         ),
+        WorthQueryGraphReadAccessRequirementKind::DerivedSource => (
+            WorthQueryGraphReadAccessAdmissionPosture::InlineIndexed,
+            WorthQueryGraphReadRequiredCapabilityOwner::LowerRuntime,
+        ),
         WorthQueryGraphReadAccessRequirementKind::LiveMaintenanceSupport
         | WorthQueryGraphReadAccessRequirementKind::DomainOperationCapabilityRegistration => (
             WorthQueryGraphReadAccessAdmissionPosture::AccessCapabilityRegistrationRequired,

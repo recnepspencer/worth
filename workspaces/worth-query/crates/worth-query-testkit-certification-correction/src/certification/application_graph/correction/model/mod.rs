@@ -24,6 +24,7 @@ pub mod composite_definition_query;
 pub mod composite_definition_runtime;
 pub mod correction;
 pub mod correction_race_court;
+pub mod domain_binding;
 pub mod edit;
 pub mod fork_head_adoption;
 pub mod fork_head_cleanup;
@@ -49,3 +50,5 @@ pub mod tree_controls;
 pub mod tree_reapplication;
 
 pub use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity as authentication;
+
+pub mod write_admission;

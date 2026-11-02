@@ -76,6 +76,7 @@ pub(super) fn write_scalar_type(
     value: ScalarAspectType,
 ) -> Result<(), Denial> {
     output.u16(match value {
+        ScalarAspectType::InlineBytes => 25,
         ScalarAspectType::Null => 1,
         ScalarAspectType::Bool => 2,
         ScalarAspectType::Int8 => 3,
@@ -105,6 +106,7 @@ pub(super) fn write_scalar_type(
 
 pub(super) fn decode_scalar_type(input: &mut BinaryInput<'_>) -> Result<ScalarAspectType, Denial> {
     Ok(match input.u16()? {
+        25 => ScalarAspectType::InlineBytes,
         1 => ScalarAspectType::Null,
         2 => ScalarAspectType::Bool,
         3 => ScalarAspectType::Int8,
@@ -167,6 +169,7 @@ fn write_scalar_type_dyn(
 
 const fn scalar_type_tag(value: ScalarAspectType) -> u16 {
     match value {
+        ScalarAspectType::InlineBytes => 25,
         ScalarAspectType::Null => 1,
         ScalarAspectType::Bool => 2,
         ScalarAspectType::Int8 => 3,

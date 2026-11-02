@@ -56,11 +56,13 @@ pub enum CanonicalBasisValue {
     },
     UuidBytes([u8; 16]),
     NestedSequence(u32),
+    InlineBytes(crate::values::InlineBytes),
 }
 
 impl CanonicalBasisValue {
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         match self {
+            Self::InlineBytes(value) => value.owned_allocation_capacity_bytes(),
             Self::ExactText(value) | Self::DecimalText(value) | Self::BigIntText(value) => {
                 value.owned_allocation_capacity_bytes()
             }

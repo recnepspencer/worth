@@ -1,0 +1,33 @@
+workspace_manifests = ["workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml"]
+
+# Every explicit binary or canonical domain-value binding is registered here.
+# Sources and imports are resolved from Cargo roots and actual Rust modules.
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs"
+binding = "RatioBinding"
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs"
+binding = "SpanBinding"
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/domain_binding.rs"
+binding = "InlineCounterBinding"
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/binary.rs"
+binding = "BrokenBinaryBinding"
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/canonical.rs"
+binding = "CanonicalBinding"
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/canonical.rs"
+binding = "DelegatedBinding"
+forbidden_types = []
