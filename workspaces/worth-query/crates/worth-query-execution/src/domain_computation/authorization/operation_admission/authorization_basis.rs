@@ -4,6 +4,9 @@ use crate::domain_computation::authorization::{
     WorthQueryElevationRequestBinding, WorthQueryMandatoryReviewBinding,
 };
 
+// Lifecycle predecessors retain actual publication custody. Their charged backing
+// belongs only to the admitted lifecycle; ordinary admissions carry no allocation
+// and do not embed every possible predecessor in read sets and effect programs.
 pub(in crate::domain_computation) enum WorthQueryOperationAuthorizationBasis<Input> {
     Conventional,
     Capability {
@@ -28,17 +31,23 @@ pub(in crate::domain_computation) enum WorthQueryOperationAuthorizationBasis<Inp
     ElevationApproval {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryElevationApprovalBinding,
+        binding: Box<WorthQueryElevationApprovalBinding>,
+        // Release physical backing before its original-request reservation.
+        _binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
     ElevationClose {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryElevationCloseBinding,
+        binding: Box<WorthQueryElevationCloseBinding>,
+        // Release physical backing before its original-request reservation.
+        _binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
     MandatoryReview {
         input:
             worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
-        binding: WorthQueryMandatoryReviewBinding,
+        binding: Box<WorthQueryMandatoryReviewBinding>,
+        // Release physical backing before its original-request reservation.
+        _binding_memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
 }
 

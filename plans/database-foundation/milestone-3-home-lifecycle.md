@@ -1813,10 +1813,30 @@ carries the actual completed program, original identities, extension, work and
 workflow authority. `preparation/completion.rs` consumes those exact values for
 original-input retention, workflow binding and signed creation. Handler and
 Native preparation frames return before completion's program-move temporaries
-exist. There is no new allocation, authority, execution allowance, alternate
+exist. The phase split adds no allocation, authority, execution allowance, alternate
 preparation algorithm or changed publication order. Keep all existing terminal
 outcomes and validate ordinary and external custody through the production
 courts. Raw default-stack qualification covers fresh Host startup, the authored
 Host checkpoint/business/automatic-maintenance journey and Store's C0/manual/
 automatic checkpoint control. This integration does not qualify Complete
 reopening, retirement, transitions, discard, receipts or the joint landing.
+
+The retained-payload measurement identifies the owning cause behind ordinary
+carriage: a complete read set is 30,288 bytes, including a 25,416-byte operation
+admission. Its authorization-basis enumeration embeds capability lifecycle
+predecessors even for Conventional operations. Approval, close and mandatory
+review bindings occupy 7,032, 12,776 and 18,416 bytes respectively. Compiler
+layout diagnostics are retained in
+`target/lane-evidence/integration-{carriage,admission}-layout.json`; the compile-only
+probes were removed and produced no runnable artifact.
+
+Only these three large lifecycle variants retain their original binding in
+unique backing. Admission reserves that backing against the original request
+before allocation and retains the same grant beside it until consumption or
+drop. The binding allocation drops before its grant. An unfunded or stopped
+admission returns the original requested/approved/mandatory custody with the
+actual typed stop; replay preserves that stop as well. Conventional operations
+allocate nothing for this lifecycle. This is a runtime-custody representation
+change, not a receipt-format, replay-authority or capability-lifecycle cutover.
+Handler-plan preparation also uses an Infallible completed value on its stop
+report, making a completed candidate impossible before the handler runs.
