@@ -1,11 +1,16 @@
 mod application_facts;
 mod application_table;
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
+use crate::domain_computation::{
+    WorthQueryDecisionReadSetDenialKind as BindingKind,
+    WorthQueryDecisionReadSetFailure as BindingFailure,
+};
 pub(in crate::domain_computation) use application_facts::{
     CompletedApplicationFacts, SharedObservedFact, SharedReadScope,
 };
 pub(in crate::domain_computation) use application_table::ApplicationFactTable;
 use std::sync::Arc;
+use worth_execution::ExecutionRequest;
 
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
 
@@ -51,22 +56,23 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
     pub(in crate::domain_computation) fn retain_observed_source_role(
         self,
         source: SharedObservedFact,
-    ) -> Result<Self, &'static str> {
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, BindingFailure> {
         match self {
             Self::Application { read_scope, fact } => Ok(Self::ApplicationObservedSource {
                 read_scope,
-                fact: retained_observation(fact, source)?,
+                fact: retained_observation(fact, source, execution)?,
             }),
             Self::ObservedSource { fact } => Ok(Self::ObservedSource {
-                fact: retained_observation(fact, source)?,
+                fact: retained_observation(fact, source, execution)?,
             }),
             Self::ApplicationObservedSource { read_scope, fact } => {
                 Ok(Self::ApplicationObservedSource {
                     read_scope,
-                    fact: retained_observation(fact, source)?,
+                    fact: retained_observation(fact, source, execution)?,
                 })
             }
-            _ => Err(DISAGREEMENT),
+            _ => Err(binding_failure(DISAGREEMENT)),
         }
     }
 
@@ -186,17 +192,51 @@ const DISAGREEMENT: &str = "decision facts disagree at one structural locator";
 fn retained_observation(
     fact: SharedObservedFact,
     source: SharedObservedFact,
-) -> Result<SharedObservedFact, &'static str> {
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<SharedObservedFact, BindingFailure> {
+    use crate::domain_computation::primary_graph::{
+        application_attempt::WorthQueryApplicationObservedFact as Fact,
+        source_facts::SourceFactsAllocation,
+    };
+    if let (
+        Fact::ManagedIndexSource { observation: first },
+        Fact::ManagedIndexSource {
+            observation: second,
+        },
+    ) = (fact.as_ref(), source.as_ref())
+    {
+        let equal = first
+            .same_truth(second, &mut |units| {
+                SourceFactsAllocation::work(execution, units)
+            })
+            .map_err(|cause| {
+                SelfDenial::relational_read_stopped(cause, "managed fact role merge")
+                    .into_decision_read_set_failure()
+            })?;
+        SourceFactsAllocation::work(execution, 0).map_err(|cause| {
+            SelfDenial::relational_read_stopped(cause, "managed fact role merge")
+                .into_decision_read_set_failure()
+        })?;
+        return if equal {
+            Ok(fact)
+        } else {
+            Err(binding_failure(DISAGREEMENT))
+        };
+    }
     if fact.as_ref() == source.as_ref() {
         return Ok(fact);
     }
     let mut merged = fact.as_ref().clone();
     if !merged.merge_equal_observation(source.as_ref()) {
-        return Err(DISAGREEMENT);
+        return Err(binding_failure(DISAGREEMENT));
     }
     Ok(if &merged == source.as_ref() {
         source
     } else {
         fact
     })
+}
+
+fn binding_failure(detail: &'static str) -> BindingFailure {
+    BindingFailure::new(BindingKind::ProviderRejected, detail)
 }

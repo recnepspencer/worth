@@ -9,6 +9,8 @@ impl StructuralRelationView<'_> {
         observation: &crate::validation::engine::InvariantObservation<'_>,
         committed: bool,
     ) -> Self {
+        // A previously admitted path cannot cross a schema/source rebind.
+        self.derived_admissions = Default::default();
         let version = self.aggregate_read_parts().0.version_id();
         self.structural_source = Some((
             runtime.selected_registry.clone(),

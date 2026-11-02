@@ -131,19 +131,13 @@ where
         request,
         branch,
         history,
-        |permission, _, read_commit| {
+        |permission, _, read_commit, reader| {
             let plan = runtime
                 .finish_prepared_application_query_permission(execution, permission)
                 .map_err(query_admission_denial)?;
-            let read = runtime.execute_application_query_one_shot_admitted(execution, plan)
-                .map_err(|stop| {
-                    use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as Stop;
-                    match stop {
-                        Stop::Admission(stop) => resource_denial(stop),
-                        Stop::Execution(stop) => query_execution_denial(stop),
-                        Stop::WorkCounterOverflow | Stop::WorkAccountingMismatch => work_denial(),
-                    }
-                })?;
+            let read = reader.read_admitted_result::<Family::Source>(execution, plan,
+                &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+                .map_err(|stop| crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(stop).demand_stop())?;
             crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(
                 retained.source_root(), retained.selected_product_commit().expect("retained Product source").clone(), read_commit.clone());
             super::super::super::invocation::confirm_history_source(
@@ -166,7 +160,8 @@ fn with_retained_source_permission<Schema, Family, R>(
     history: Option<HistoryProducerInvocation<'_>>,
     inspect: impl for<'prepared> FnOnce(Permission<'prepared, Schema, Family>,
         Option<&'prepared crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBasisCustody>,
-        &worth_runtime_world::facade::CompositeCommitIdentity) -> Result<R, WorthQueryOutputDemandDenial>,
+        &worth_runtime_world::facade::CompositeCommitIdentity,
+        &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<'_, Schema>) -> Result<R, WorthQueryOutputDemandDenial>,
 ) -> Result<R, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -235,6 +230,15 @@ where
         .map_err(resource_denial)?
     }
     .with_original_settled_producer(shared.selected().original_settled_producer().cloned());
+    let source_reader =
+        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::new(
+            runtime,
+            &shared,
+            control.as_ref(),
+            history,
+            principal,
+            request,
+        )?;
     runtime
         .with_fresh_retained_query_permission(
             execution,
@@ -260,7 +264,7 @@ where
                     runtime,
                     (),
                 )?;
-                inspect(permission, control_basis.as_ref(), &read_commit)
+                inspect(permission, control_basis.as_ref(), &read_commit, &source_reader)
             },
         )
         .map_err(|stop| {

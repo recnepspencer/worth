@@ -9,7 +9,10 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Manag
     pub(in crate::domain_computation::primary_graph::application_query) rows:
         worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
     pub(in crate::domain_computation::primary_graph::application_query) result_set:
-        Arc<WorthQueryObservedSourceMeaning>,
+        Option<Arc<WorthQueryObservedSourceMeaning>>,
+    pub(in crate::domain_computation::primary_graph::application_query) maintained: Option<
+        Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
+    >,
     pub(in crate::domain_computation::primary_graph::application_query) identity: [u8; 32],
     pub(in crate::domain_computation::primary_graph::application_query) fact_count: usize,
     pub(in crate::domain_computation::primary_graph::application_query) field_count: usize,
@@ -20,10 +23,7 @@ impl ManagedSourceDependencies {
     pub(in crate::domain_computation::primary_graph::application_query) fn meanings(
         &self,
     ) -> impl Iterator<Item = &Arc<WorthQueryObservedSourceMeaning>> {
-        self.rows
-            .elements()
-            .iter()
-            .chain(std::iter::once(&self.result_set))
+        self.rows.elements().iter().chain(self.result_set.iter())
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn accepts(
         meaning: &WorthQueryObservedSourceMeaning,
@@ -37,6 +37,9 @@ impl ManagedSourceDependencies {
             })
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn len(&self) -> usize {
+        if self.maintained.is_some() {
+            return 1;
+        }
         self.rows
             .len()
             .checked_add(1)
@@ -54,12 +57,20 @@ impl std::fmt::Debug for ManagedSourceDependencies {
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph::application_query) struct DeclaredManagedIndexSelection
 {
+    pub(in crate::domain_computation::primary_graph::application_query) coverage: Option<
+        Arc<crate::domain_computation::primary_graph::access_strategy::coverage::RetainedCoverage>,
+    >,
     pub(in crate::domain_computation::primary_graph::application_query) access:
         Arc<WorthQueryInstalledManagedIndexAccessContract>,
     pub(in crate::domain_computation::primary_graph::application_query) dependencies:
         Arc<ManagedSourceDependencies>,
 }
 impl DeclaredManagedIndexSelection {
+    fn coverage_is_present(&self) -> bool {
+        self.access.meaning().definition().parts().membership ==
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::Candidates
+            || self.coverage.is_some()
+    }
     pub(in crate::domain_computation::primary_graph::application_query) const fn descriptor_work(
     ) -> u64 {
         b"declared-managed-index:v1".len() as u64 + 64
@@ -86,6 +97,17 @@ impl DeclaredManagedIndexSelection {
         >,
     ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         control()?;
+        if !self.coverage_is_present() || !other.coverage_is_present() {
+            return Ok(false);
+        }
+        match (
+            &self.dependencies.maintained,
+            &other.dependencies.maintained,
+        ) {
+            (None, None) => {}
+            (Some(left), Some(right)) if left.same_truth(right, admit)? => {}
+            _ => return Ok(false),
+        }
         if self.access.graph_obligations().identity() != other.access.graph_obligations().identity()
             || self.dependencies.identity != other.dependencies.identity
             || self.dependencies.rows.len() != other.dependencies.rows.len()
@@ -122,7 +144,11 @@ impl DeclaredManagedIndexSelection {
 }
 impl PartialEq for DeclaredManagedIndexSelection {
     fn eq(&self, other: &Self) -> bool {
-        self.access.graph_obligations().identity() == other.access.graph_obligations().identity()
+        self.coverage_is_present()
+            && other.coverage_is_present()
+            && self.access.graph_obligations().identity()
+                == other.access.graph_obligations().identity()
+            && self.dependencies.maintained == other.dependencies.maintained
             && self.dependencies.identity == other.dependencies.identity
             && self.dependencies.rows.len() == other.dependencies.rows.len()
             && self

@@ -24,6 +24,7 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
 
 fn preparation_failure(stop: CustomPreparationStop) -> MapKernelFailure<PacketBudgetDenial> {
     match stop {
+        CustomPreparationStop::Request(stop) => MapKernelFailure::Stop(stop),
         CustomPreparationStop::Cancelled => MapKernelFailure::Stop(MapKernelStop::Cancelled),
         CustomPreparationStop::DeadlineElapsed => {
             MapKernelFailure::Stop(MapKernelStop::DeadlineElapsed)

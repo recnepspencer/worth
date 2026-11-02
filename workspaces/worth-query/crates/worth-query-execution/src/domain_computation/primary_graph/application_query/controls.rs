@@ -302,6 +302,11 @@ impl<'a> WorthQueryApplicationQueryResumeControls<'a> {
 }
 
 impl WorthQueryAdmittedApplicationQueryControls<'_> {
+    pub(in crate::domain_computation::primary_graph::application_query) fn is_current_product_one_shot(
+        &self,
+    ) -> bool {
+        self.current_product_one_shot
+    }
     pub(super) fn original_settled_producer_for(
         &self,
         actual: &worth_runtime_world::facade::ProductBranchObservation,
@@ -310,11 +315,6 @@ impl WorthQueryAdmittedApplicationQueryControls<'_> {
             .as_ref()
             .filter(|origin| origin.matches_read(actual))
             .cloned()
-    }
-    pub(in crate::domain_computation::primary_graph::application_query) fn is_current_product_one_shot(
-        &self,
-    ) -> bool {
-        self.current_product_one_shot
     }
     pub const fn basis_posture(&self) -> WorthQueryApplicationQueryBasisPosture {
         self.basis

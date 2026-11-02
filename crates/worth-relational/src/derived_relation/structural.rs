@@ -14,6 +14,10 @@ use crate::validation::data::{
 };
 use std::sync::Arc;
 
+mod changes;
+pub(crate) use changes::{prepare as prepare_changes, read as read_changes};
+pub use changes::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
+
 impl<'runtime> StructuralRelationView<'runtime> {
     /// Creates only a sealed lookup key, without reading graph data. Evaluation
     /// can therefore reject an unprepared root before any source acquisition.
@@ -62,6 +66,12 @@ impl<'runtime> StructuralRelationView<'runtime> {
         self.read_budget()
             .check_live()
             .map_err(Denial::Structural)?;
+        self.read_budget()
+            .checkpoint(self.derived_admissions.probe_work())
+            .map_err(Denial::Structural)?;
+        if self.derived_admissions.contains(definition) {
+            return Ok(());
+        }
         let (registry, _) = self
             .structural_source
             .as_ref()
@@ -110,6 +120,12 @@ impl<'runtime> StructuralRelationView<'runtime> {
             self.require_entity_kind(carrier)
                 .map_err(|error| self.derived_refusal(error))?;
         }
+        // Only the actual registry and this consumer's successful audience
+        // checks can populate this immutable view's inline admission cache.
+        self.read_budget()
+            .checkpoint(self.derived_admissions.probe_work())
+            .map_err(Denial::Structural)?;
+        self.derived_admissions.remember(definition);
         Ok(())
     }
 
@@ -209,12 +225,28 @@ impl<'runtime> StructuralRelationView<'runtime> {
     }
 }
 
-struct StructuralSource<'borrow, 'runtime> {
-    view: &'borrow StructuralRelationView<'runtime>,
-    reads: Reads,
+pub(crate) struct StructuralSource<'borrow, 'runtime> {
+    pub(crate) view: &'borrow StructuralRelationView<'runtime>,
+    pub(crate) reads: Reads,
 }
 
 impl SourceRead for StructuralSource<'_, '_> {
+    fn admit_definition(
+        &mut self,
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        handle: &Handle,
+    ) -> Result<(), Denial> {
+        if self
+            .view
+            .structural_source
+            .as_ref()
+            .is_some_and(|(actual, _)| std::ptr::eq(actual.registry(), registry))
+        {
+            self.view.require_derived_relation(handle)
+        } else {
+            super::evaluation::admit_definition(registry, handle, self)
+        }
+    }
     fn checkpoint(&mut self, units: usize) -> Result<(), Denial> {
         self.view
             .read_budget()
@@ -225,6 +257,12 @@ impl SourceRead for StructuralSource<'_, '_> {
         self.view
             .read_budget()
             .claim_retained(bytes as u64)
+            .map_err(Denial::Structural)
+    }
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial> {
+        self.view
+            .read_budget()
+            .check_scratch_peak(bytes as u64)
             .map_err(Denial::Structural)
     }
     fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial> {

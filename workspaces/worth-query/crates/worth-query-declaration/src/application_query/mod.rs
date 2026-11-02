@@ -19,13 +19,19 @@ mod inspection;
 mod lane_eligibility;
 mod live_cause;
 mod managed_index;
+pub use managed_index::{
+    ApplicationManagedIndexMatchPosture, ApplicationManagedIndexRefinement,
+    ApplicationManagedIndexRefinementMeaning, WorthQueryPortableManagedIndexRefinementParts,
+};
 mod marker_identity;
 pub use managed_index::{
-    ApplicationManagedIndexBinding, ApplicationManagedIndexBindingDescriptor,
+    ApplicationInvariantManagedIndexSource, ApplicationManagedIndexBinding,
+    ApplicationManagedIndexBindingDescriptor, ApplicationManagedIndexColdSource,
     ApplicationManagedIndexDefinition, ApplicationManagedIndexDefinitionDenial,
-    ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexRef,
-    ApplicationManagedIndexSelectionRecipe, ApplicationManagedIndexSourceMeaning,
-    ApplicationManagedIndexSourceParameters, ApplicationManagedIndexSourceScope,
+    ApplicationManagedIndexMembership, ApplicationManagedIndexProbeMeaning,
+    ApplicationManagedIndexRef, ApplicationManagedIndexSelectionRecipe,
+    ApplicationManagedIndexSourceMeaning, ApplicationManagedIndexSourceParameters,
+    ApplicationManagedIndexSourceScope, ApplicationManagedIndexSourceStructure,
     ApplicationQueryManagedIndexMeaning, ErasedApplicationManagedIndexDefinition,
     WorthQueryPortableManagedIndexParts, WorthQueryPortableManagedIndexProbeParts,
     WorthQueryPortableQueryManagedIndexParts,

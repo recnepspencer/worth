@@ -67,6 +67,7 @@ pub(super) fn prepare(
         ),
     };
     let root = Arc::new(RelationalBranchRoot {
+        managed_source_image: std::sync::OnceLock::new(),
         id: root_id,
         regions: prepared_regions.regions,
         entity_slot_count: prepared_regions.entity_slot_count,

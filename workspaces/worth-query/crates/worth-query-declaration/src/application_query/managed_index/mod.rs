@@ -1,9 +1,16 @@
 //! Portable index contracts. Executable providers and retained roots belong to runtime owners.
 mod descriptor;
+mod invariant_source;
 pub use descriptor::ApplicationManagedIndexBindingDescriptor;
+pub use invariant_source::ApplicationInvariantManagedIndexSource;
 mod definition;
 mod probe;
 mod reference;
+mod refinement;
+pub use refinement::{
+    ApplicationManagedIndexMatchPosture, ApplicationManagedIndexRefinement,
+    ApplicationManagedIndexRefinementMeaning, WorthQueryPortableManagedIndexRefinementParts,
+};
 mod selection;
 mod selection_recipe;
 pub use selection_recipe::ApplicationManagedIndexSelectionRecipe;
@@ -13,6 +20,11 @@ pub use source::{
     ApplicationManagedIndexSourceScope,
 };
 mod validation;
+pub use worth_foundational::facade::{
+    ManagedIndexColdSourcePosture as ApplicationManagedIndexColdSource,
+    ManagedIndexMembership as ApplicationManagedIndexMembership,
+    ManagedIndexSourceStructure as ApplicationManagedIndexSourceStructure,
+};
 
 pub use definition::{
     ApplicationManagedIndexDefinition, ApplicationManagedIndexDefinitionDenial,

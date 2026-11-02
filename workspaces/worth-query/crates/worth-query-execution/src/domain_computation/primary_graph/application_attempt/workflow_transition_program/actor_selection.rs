@@ -29,6 +29,16 @@ pub(in crate::domain_computation) struct WorkflowRecordedActorObservation {
     dependencies: WorkflowActorDependencies,
 }
 impl WorkflowRecordedActorObservation {
+    /// Shared immutable request provenance; the wire already retains SDK funding.
+    pub(in crate::domain_computation) fn retained_use_bytes(&self) -> Option<u64> {
+        u64::try_from(
+            size_of::<Self>()
+                .checked_add(2 * size_of::<usize>())?
+                .checked_add(self.dependencies.wire().len())?,
+        )
+        .ok()
+    }
+
     pub(in crate::domain_computation) fn remains_current(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

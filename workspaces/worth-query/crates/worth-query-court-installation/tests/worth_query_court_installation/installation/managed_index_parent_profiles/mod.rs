@@ -8,6 +8,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchemaDenialKind as SchemaKind, WorthQueryInstalledPackageIndex,
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
+mod decision_read;
 mod model;
 mod queries;
 
@@ -71,6 +72,24 @@ fn installed_parent_profiles_preserve_identity_and_refuse_codec_or_disclosure_dr
     );
     assert_ne!(a.canonical, b.canonical);
     let lawful = bind::<0>().unwrap();
+    let declared = lawful
+        .installed_mutation_binding::<decision_read::PrincipalDecision<Lawful>>()
+        .unwrap();
+    assert_eq!(
+        declared.operation().contracts().managed_index_reads().len(),
+        1
+    );
+    let foreign_scope = bind::<4>()
+        .err()
+        .expect("an input-field operation cannot borrow a principal-scoped Parent");
+    assert_eq!(
+        foreign_scope.kind(),
+        SchemaKind::OperationInstallationDenied
+    );
+    assert_eq!(
+        foreign_scope.subject(),
+        "worth.query.tests.managed-parent-field-decision.v1"
+    );
     let installed = lawful
         .installed_managed_index::<queries::ModelIndex<Lawful>>()
         .unwrap();
@@ -110,4 +129,138 @@ fn installed_parent_profiles_preserve_identity_and_refuse_codec_or_disclosure_dr
         disclosure.subject(),
         queries::ModelIndex::<model::ParentSchema<3>>::NAME
     );
+}
+
+#[test]
+fn installed_source_structure_changes_canonical_meaning_and_keeps_its_typed_profile() {
+    type Opaque = model::ParentSchema<0>;
+    type Tree = model::ParentSchema<5>;
+    let opaque = Opaque::declaration().unwrap();
+    let tree = Tree::declaration().unwrap();
+    let normalize = |declaration: &ApplicationSchemaDeclaration<Tree>| {
+        declaration
+            .erased()
+            .members()
+            .iter()
+            .cloned()
+            .map(|member| {
+                if let ApplicationSchemaMember::ManagedIndex { definition } = member {
+                    let mut parts = definition.parts().clone();
+                    parts.structure = ApplicationManagedIndexSourceStructure::Opaque;
+                    ApplicationSchemaMember::ManagedIndex {
+                        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                            parts,
+                        ),
+                    }
+                } else {
+                    member
+                }
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        opaque.erased().members(),
+        normalize(&tree),
+        "only Source structure differs"
+    );
+    assert_ne!(
+        opaque.identity(),
+        tree.identity(),
+        "canonical identity binds that structural meaning"
+    );
+    let installed = bind::<5>().unwrap();
+    let index = installed
+        .installed_managed_index::<queries::ModelIndex<Tree>>()
+        .unwrap();
+    assert_eq!(
+        index.definition().parts().structure,
+        ApplicationManagedIndexSourceStructure::BinarySourceTree
+    );
+    assert!(index.admits_parent(
+        &installed
+            .installed_query_binding::<queries::ParentBinding<Tree>>()
+            .unwrap()
+    ));
+}
+
+#[test]
+fn installed_exhaustive_membership_binds_its_profile_without_changing_parent_meaning() {
+    type Candidates = model::ParentSchema<5>;
+    type Complete = model::ParentSchema<6>;
+    let candidates = Candidates::declaration().unwrap();
+    let complete = Complete::declaration().unwrap();
+    let normalized = complete
+        .erased()
+        .members()
+        .iter()
+        .cloned()
+        .map(|member| {
+            if let ApplicationSchemaMember::ManagedIndex { definition } = member {
+                let mut parts = definition.parts().clone();
+                parts.membership = ApplicationManagedIndexMembership::Candidates;
+                ApplicationSchemaMember::ManagedIndex {
+                    definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                        parts,
+                    ),
+                }
+            } else {
+                member
+            }
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        candidates.erased().members(),
+        normalized,
+        "membership is the only changed meaning"
+    );
+    assert_ne!(candidates.identity(), complete.identity());
+    let installed = bind::<6>().unwrap();
+    let index = installed
+        .installed_managed_index::<queries::ModelIndex<Complete>>()
+        .unwrap();
+    assert_eq!(
+        index.definition().parts().membership,
+        ApplicationManagedIndexMembership::ExhaustiveSourceTree
+    );
+    assert!(index.admits_parent(
+        &installed
+            .installed_query_binding::<queries::ParentBinding<Complete>>()
+            .unwrap()
+    ));
+    type Checked = model::ParentSchema<7>;
+    let checked = Checked::declaration().unwrap();
+    let normalized = checked
+        .erased()
+        .members()
+        .iter()
+        .cloned()
+        .map(|member| {
+            if let ApplicationSchemaMember::ManagedIndex { definition } = member {
+                let mut parts = definition.parts().clone();
+                parts.membership = ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+                ApplicationSchemaMember::ManagedIndex {
+                    definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                        parts,
+                    ),
+                }
+            } else {
+                member
+            }
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(complete.erased().members(), normalized);
+    assert_ne!(complete.identity(), checked.identity());
+    let installed = bind::<7>().unwrap();
+    let index = installed
+        .installed_managed_index::<queries::ModelIndex<Checked>>()
+        .unwrap();
+    assert_eq!(
+        index.definition().parts().membership,
+        ApplicationManagedIndexMembership::CheckedSummarySourceTree
+    );
+    assert!(index.admits_parent(
+        &installed
+            .installed_query_binding::<queries::ParentBinding<Checked>>()
+            .unwrap()
+    ));
 }

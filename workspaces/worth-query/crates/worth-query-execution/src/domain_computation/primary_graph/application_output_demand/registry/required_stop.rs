@@ -91,6 +91,7 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
                 == WorthQueryOutputDemandRecoveryPosture::Terminal
         }
         Kind::Cancelled
+        | Kind::ManagedIndexSourceDenied
         | Kind::TimedOut
         | Kind::WorkBudgetExceeded
         | Kind::RetentionBudgetExceeded

@@ -13,14 +13,14 @@ pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
 pub use custom_rule::{
     CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantExecutionError,
-    CustomInvariantInterruption, CustomInvariantLeaseBudget, CustomInvariantNonApplicability,
-    CustomInvariantPreparationError, CustomInvariantProvenance, CustomInvariantReadBudget,
-    CustomInvariantRefusal, CustomInvariantRegistration, CustomInvariantRegistrationError,
-    CustomInvariantRule, CustomInvariantScopePlanner, CustomInvariantTouchedSummary,
-    CustomInvariantTraversalSummary, CustomInvariantVerdict, PlannedRelationEndpointUpdate,
-    StructuralAspectStateView, StructuralCountView, StructuralReadError, StructuralRelationRecord,
-    StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
-    StructuralWalkStep,
+    CustomInvariantInterruption, CustomInvariantLeaseBudget, CustomInvariantNativeCheckpointDenial,
+    CustomInvariantNonApplicability, CustomInvariantPreparationError, CustomInvariantProvenance,
+    CustomInvariantReadBudget, CustomInvariantRefusal, CustomInvariantRegistration,
+    CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
+    CustomInvariantTouchedSummary, CustomInvariantTraversalSummary, CustomInvariantVerdict,
+    PlannedRelationEndpointUpdate, StructuralAspectStateView, StructuralCountView,
+    StructuralReadError, StructuralRelationRecord, StructuralRelationView, StructuralWalkDenial,
+    StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
 };
 pub(crate) use custom_rule::{
     CustomInvariantFailure, CustomInvariantFailureKind, CustomInvariantRuntimePhase,

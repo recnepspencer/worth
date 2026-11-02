@@ -76,7 +76,11 @@ impl RelationalForkPort {
         &self,
         source: &ValidatedForkSource,
         installable: InstallableForkTarget,
-    ) -> (RelationalForkOutcome, Option<AdmittedRelationalBranchBasis>) {
+    ) -> (
+        RelationalForkOutcome,
+        Option<AdmittedRelationalBranchBasis>,
+        Option<crate::mvcc::PreparedManagedIndexSourceFork>,
+    ) {
         let InstallableForkTarget {
             prepared: target,
             materialization_cost,
@@ -88,6 +92,9 @@ impl RelationalForkPort {
             target.source_head_version,
         );
         let target_identity = target.target_cell.identity().clone();
+        if let Some(managed) = &target.managed_source {
+            managed.installed();
+        }
         self.owner
             .install_target(target.reservation, target.target_cell);
         (
@@ -101,6 +108,7 @@ impl RelationalForkPort {
                 shared_commit_id: target.shared_commit_id,
             },
             basis,
+            target.managed_source,
         )
     }
 }
@@ -111,7 +119,7 @@ fn materialization_cost(
     let fork_materialized_authoritative_bytes = target
         .target_cell
         .root()
-        .filter(|target_root| !Arc::ptr_eq(target_root, &target.source_root))
+        .filter(|target_root| !target_root.shares_authoritative_regions_with(&target.source_root))
         .map(|target_root| target_root.logical_partition_payload_bytes())
         .unwrap_or(0);
     let copied_commit_envelopes = target

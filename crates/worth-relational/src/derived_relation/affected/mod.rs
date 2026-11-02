@@ -52,13 +52,7 @@ pub(crate) fn collect(
         &mut targets,
         after,
     )?;
-    let capacity = support
-        .len()
-        .checked_add(reverse_support.len())
-        .and_then(|n| n.checked_mul(size_of::<DerivedRelationData>()))
-        .ok_or(super::DerivedRelationDenial::WorkBudgetExceeded)?;
-    after.retain(capacity)?;
-    support.extend(reverse_support);
+    super::support::append(after, &mut support, reverse_support)?;
     Ok(DerivedAffectedRoots {
         roots,
         targets,

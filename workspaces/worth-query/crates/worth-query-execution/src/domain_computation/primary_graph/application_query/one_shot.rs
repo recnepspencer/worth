@@ -5,6 +5,8 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
+pub(in crate::domain_computation::primary_graph::application_query) use admitted::map_selected_read_stop;
+pub(in crate::domain_computation::primary_graph::application_query) use admitted::settle_admitted_read;
 mod history_capture;
 pub use history_capture::WorthQueryApplicationHistoryCaptureResult;
 mod correction_disclosure;

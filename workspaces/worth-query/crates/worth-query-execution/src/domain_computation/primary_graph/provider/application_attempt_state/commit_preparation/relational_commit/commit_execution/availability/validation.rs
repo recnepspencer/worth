@@ -20,6 +20,9 @@ pub(super) fn validate(
                 .map_err(|cause| stop(map_admission(cause)))?
                 .map_err(|cause| {
                     stop(match cause {
+                        WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => {
+                            VerificationStop::ManagedIndex(cause)
+                        }
                         WorthQuerySourceCurrentnessFailure::OutputObservation(cause) => cause,
                         WorthQuerySourceCurrentnessFailure::Execution(cause) => {
                             VerificationStop::Execution(cause)

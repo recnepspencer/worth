@@ -139,6 +139,12 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
         {
             WorthQueryInvariantExecutionDenialKind::ProposalIdentityExhausted
         }
+        Error::Preparation { error, .. } if error.managed_source_denial().is_some() => {
+            return WorthQueryInvariantExecutionFailure::managed_source(
+                error.managed_source_denial().expect("matched the original Source failure").clone(),
+                error.detail(),
+            );
+        }
         Error::Preparation { .. }
         | Error::PublicationDenied { .. }
         // Candidate validation stops before publication.

@@ -28,6 +28,7 @@ pub(super) struct Control {
 }
 
 pub(super) struct Capture {
+    pub source: Option<crate::validation::engine::InvariantSourceAffinity>,
     pub rule: usize,
     pub evaluation: bool,
     pub proposed: Vec<AggregateRead>,
@@ -103,6 +104,30 @@ impl ReaderRule {
             None => vec![KindId(2)],
         }
     }
+    fn assert_materialization_source(
+        proposed: &StructuralRelationView<'_>,
+        committed: &StructuralRelationView<'_>,
+    ) {
+        let source = proposed
+            .structural_source
+            .as_ref()
+            .map(|(_, source)| source)
+            .expect("genuine Native observation");
+        let proposal = source.proposal.as_ref().expect("actual proposal");
+        let owner = proposal.source_interpretation().expect("live draft owner");
+        let logical = owner
+            .materialization_source()
+            .expect("real materialization port custody");
+        assert_eq!(source.version, logical.basis().observation().version_id());
+        assert_eq!(owner.suspension_source_version(), Some(source.version));
+        assert_ne!(owner.proposed_version(), source.version);
+        assert!(!logical.records().is_empty());
+        let (_, before) = committed.structural_source.as_ref().unwrap();
+        assert_eq!(before.observation, source.observation);
+        assert_eq!(before.version, source.version);
+        assert!(before.committed && !source.committed);
+    }
+
     fn observe(
         &self,
         proposed: StructuralRelationView<'_>,
@@ -120,12 +145,19 @@ impl ReaderRule {
             &selected
         };
         let mut capture = Capture {
+            source: proposed
+                .structural_source
+                .as_ref()
+                .map(|(_, source)| source.clone()),
             rule: self.id,
             evaluation,
             proposed: Vec::new(),
             committed: Vec::new(),
             errors: Vec::new(),
         };
+        if self.maintenance {
+            Self::assert_materialization_source(&proposed, &committed);
+        }
         // The request owner deliberately occupies its own original ledger. No
         // replacement request or synthetic preparation error enters this court.
         if let Some(memory) = self.control.pressure.lock().unwrap().as_ref() {

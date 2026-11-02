@@ -1,9 +1,10 @@
 //! Authored endpoint intent gates canonical full-generation membership effects.
-use super::{AuthoredWriteGeneration, Denial, Key};
+use super::{AuthoredWriteGeneration, Denial};
 use crate::history::data::{
     CanonicalCommitEnvelope, RelationalDescriptiveTouch as Touch,
     RelationalTouchAdjacencyDirection as Direction,
 };
+use crate::history::{AuthoredWritePostingKey, RelationalAuthoredWriteSelector as Key};
 use crate::identity::data::RelationId;
 use crate::transactions::data::{MutationIntent, RecordRef, RelationMutationIntent};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest, MapKernelContext};
@@ -39,11 +40,7 @@ pub(super) fn append(
         else {
             continue;
         };
-        crate::history::visit_authored_write_lookup(
-            context,
-            affected.len(),
-            std::mem::size_of::<RelationId>() as u64,
-        )?;
+        crate::history::visit_authored_write_lookup(context, affected.len())?;
         if affected.get(relation).is_none() {
             continue;
         }
@@ -73,11 +70,11 @@ pub(super) fn append(
             generation.append(
                 execution,
                 context,
-                &Key::Adjacency {
+                &AuthoredWritePostingKey::Ordinary(Key::Adjacency {
                     anchor,
                     kind: *kind,
                     direction,
-                },
+                }),
                 envelope.commit.commit_id,
             )?;
         }
@@ -181,11 +178,7 @@ fn mark(
     relation: RelationId,
     covered: bool,
 ) -> Result<(), Denial> {
-    crate::history::visit_authored_write_lookup(
-        context,
-        affected.len(),
-        std::mem::size_of::<RelationId>() as u64,
-    )?;
+    crate::history::visit_authored_write_lookup(context, affected.len())?;
     affected.insert_cloned_native_for_request(&relation, &covered, execution)?;
     Ok(())
 }
@@ -196,7 +189,7 @@ fn incomplete(
     context: &mut MapKernelContext<'_, '_>,
     gap: super::AdjacencyHistoryGap,
 ) -> Result<(), Denial> {
-    crate::history::visit_authored_write_lookup(context, generation.incomplete_adjacency.len(), 8)?;
+    crate::history::visit_authored_write_lookup(context, generation.incomplete_adjacency.len())?;
     generation
         .incomplete_adjacency
         .insert_cloned_native_for_request(&generation.ordinal, &gap, execution)?;

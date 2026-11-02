@@ -22,7 +22,12 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn start<'a, 'request, 'authority, S: ApplicationSchema>(
+pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn start<
+    'a,
+    'request,
+    'authority,
+    S: ApplicationSchema,
+>(
     execution: &ExecutionRequest<'request, 'authority>,
     application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
     parent: &'a WorthQueryManagedGraphWorkSession,

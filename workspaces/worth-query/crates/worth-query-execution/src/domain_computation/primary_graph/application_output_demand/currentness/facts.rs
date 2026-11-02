@@ -20,6 +20,8 @@ pub(super) fn require_witnessed_output(
         Err(CompanionPreflightStop::Execution(cause)) => Err(output_reuse::read_denial(cause)),
         Ok(true) => Ok(()),
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
+        Err(CompanionPreflightStop::ManagedSourceChanged) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
+        Err(CompanionPreflightStop::ManagedSourceNotPrepared) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
 
         Err(CompanionPreflightStop::Interrupted(event)) => {
             Err(output_reuse::interruption_denial(event))
@@ -35,6 +37,12 @@ pub(super) fn require_current_facts(
     facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     match first_moved_fact_in(verification, facts.iter()) {
+        Err(RetainedFactStop::ManagedIndex(cause)) => {
+            Err(WorthQueryOutputDemandDenial::managed_index(
+                cause,
+                "settled managed source consistency",
+            ))
+        }
         Ok(None) => Ok(()),
         Err(RetainedFactStop::OutputObservation(stop)) => Err(output_reuse::verification_denial(
             stop,

@@ -11,15 +11,18 @@ pub use crate::domain_computation::primary_graph::application_invariant::{
     WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantEntityBinding,
     WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
     WorthQueryApplicationInvariantGraphComponent, WorthQueryApplicationInvariantGraphComponents,
-    WorthQueryApplicationInvariantGraphMember, WorthQueryApplicationInvariantOrbit,
-    WorthQueryApplicationInvariantPreparationError,
+    WorthQueryApplicationInvariantGraphMember, WorthQueryApplicationInvariantManagedIndexBinding,
+    WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantPreparationError,
     WorthQueryApplicationInvariantProjectedCaseBinding, WorthQueryApplicationInvariantReadView,
     WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantRelationBinding,
     WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantScopePlanner,
     WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantWalk,
     WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
     WorthQueryEmptyInvariantRefusal, WorthQueryInvariantAccessDenial,
-    WorthQueryInvariantAccessDenialKind, WorthQueryInvariantRefusalDecodeDenial,
+    WorthQueryInvariantAccessDenialKind, WorthQueryInvariantDerivedChanges,
+    WorthQueryInvariantManagedIndexPair, WorthQueryInvariantManagedIndexRead,
+    WorthQueryInvariantRefusalDecodeDenial, WorthQueryPreparedInvariantDerivedChanges,
+    WorthQueryPreparedInvariantManagedIndex,
 };
 pub use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionWork;
 pub use crate::domain_computation::primary_graph::{

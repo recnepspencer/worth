@@ -22,4 +22,9 @@ impl std::fmt::Display for WorthQueryOutputDemandDenial {
     }
 }
 
-impl std::error::Error for WorthQueryOutputDemandDenial {}
+impl std::error::Error for WorthQueryOutputDemandDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.managed_index_denial()
+            .map(|cause| cause as &dyn std::error::Error)
+    }
+}

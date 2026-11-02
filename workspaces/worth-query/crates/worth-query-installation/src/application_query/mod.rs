@@ -14,6 +14,7 @@ pub use history::{
 pub use managed_index::{
     WorthQueryInstalledManagedIndex, WorthQueryInstalledManagedIndexAccessContract,
     WorthQueryInstalledManagedIndexParent, WorthQueryInstalledManagedIndexReadMeaning,
+    WorthQueryManagedIndexPredicateProfile, WorthQueryManagedIndexPredicateProfileDenial,
 };
 mod inspection;
 mod installed_binding;

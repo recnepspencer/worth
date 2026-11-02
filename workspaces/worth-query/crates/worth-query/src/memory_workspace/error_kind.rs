@@ -45,6 +45,10 @@ pub enum WorthQueryWorkspaceErrorKind {
     RelationalBasisUnavailable,
     InvalidationCompanionPending,
     InvalidationCompanionCapacityExhausted,
+    /// Structural managed Source stop, with no retry or capacity inference.
+    InvalidationCompanionUnavailable {
+        stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+    },
     /// The durable medium could not say whether the commit became durable. It
     /// was not installed live and may already be durable; the Relational owner
     /// refuses further publication until it is reopened.

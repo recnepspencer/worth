@@ -8,6 +8,7 @@ mod derived_relation;
 mod field;
 mod history;
 mod invariant;
+mod invariant_source;
 mod managed_index;
 mod mutation_description;
 mod operation;
@@ -30,6 +31,9 @@ pub(super) fn append_member(
     match member {
         ApplicationSchemaMember::ApplicationHistory { definition } => {
             history::append(basis, &prefix, definition)
+        }
+        ApplicationSchemaMember::InvariantManagedIndexSource { .. } => {
+            invariant_source::append(basis, &prefix, member)
         }
         ApplicationSchemaMember::ManagedIndex { definition } => {
             managed_index::append(basis, &prefix, definition)

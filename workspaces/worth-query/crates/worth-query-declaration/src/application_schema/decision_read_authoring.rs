@@ -7,6 +7,27 @@ use super::{
 };
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    /// Declares the exact managed Parent binding available to this operation's decision.
+    /// Installation requires its scope mapping to match the mutation binding.
+    pub fn operation_managed_index_read<Binding, Operation, Input>(
+        self,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+    ) -> Self
+    where
+        Schema: super::ApplicationSchema,
+        Binding: crate::application_query::ApplicationQueryBinding<Schema>,
+    {
+        self.decision_read(
+            operation.name(),
+            ApplicationOperationDecisionReadTarget::ManagedIndex {
+                parent: crate::application_query::ApplicationQueryBindingReference::of::<
+                    Schema,
+                    Binding,
+                >(),
+            },
+        )
+    }
+
     /// Optionally limits decision-read work. Omit this declaration for no operation work ceiling.
     /// Scope, authorization, source facts, cancellation and allocation admission still apply.
     pub fn operation_projection_work_budget<Operation, Input>(

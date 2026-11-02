@@ -41,6 +41,8 @@ pub enum RelationalForkDenial {
     /// historical-root reopening. Refused before destination reservation.
     RetainedSourceDurabilityUnsupported,
     MissingArtifact,
+    RootIdentityExhausted,
+    ManagedSource(crate::mvcc::CompanionPreflightStop),
     InvalidTarget(BranchCreateError),
     Cell(RelationalBranchCellDenial),
     RetentionCapacityExhausted,

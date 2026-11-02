@@ -83,6 +83,8 @@ pub enum WorthQueryProviderSessionDenialKind {
 /// this description does not itself grant retry or cleanup authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionFailure {
+    managed_index:
+        Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryProviderSessionDenialKind,
     stage: WorthQueryProviderSessionProtocolStage,
     recovery_posture: WorthQueryProviderSessionRecoveryPosture,
@@ -113,6 +115,7 @@ impl WorthQueryProviderSessionFailure {
         counters: WorthQueryProviderSessionProtocolCounters,
     ) -> Self {
         Self {
+            managed_index: None,
             kind,
             stage,
             recovery_posture: WorthQueryProviderSessionRecoveryPosture::Closed,
@@ -270,3 +273,5 @@ impl WorthQueryProviderSessionFailure {
         self
     }
 }
+
+mod managed_index;

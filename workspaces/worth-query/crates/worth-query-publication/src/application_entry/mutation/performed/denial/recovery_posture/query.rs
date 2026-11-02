@@ -244,6 +244,7 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
             worth_execution::ExecutionPhysicalAllocationDenialKind::Layout
             | worth_execution::ExecutionPhysicalAllocationDenialKind::CapacityMismatch
             | worth_execution::ExecutionPhysicalAllocationDenialKind::WriteBeyondReserved
+            | worth_execution::ExecutionPhysicalAllocationDenialKind::UninitializedElement
             | worth_execution::ExecutionPhysicalAllocationDenialKind::IncompleteSeal => Terminal,
         },
         ExecutionKind::Cancelled

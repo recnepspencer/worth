@@ -14,3 +14,6 @@ mod host;
 mod oracle;
 #[path = "worth_query_court_query_decl_host/process/mod.rs"]
 mod process;
+
+#[path = "worth_query_court_query_decl_host/dependent_dispatch/mod.rs"]
+mod dependent_dispatch;

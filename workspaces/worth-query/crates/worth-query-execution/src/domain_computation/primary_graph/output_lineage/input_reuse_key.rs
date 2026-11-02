@@ -46,16 +46,26 @@ impl PreparedInputReuseKey {
     pub(in crate::domain_computation::primary_graph) fn same_prepared_input_as(
         &self,
         other: &Self,
-    ) -> bool {
+        admit: &mut impl FnMut(
+            u64,
+        ) -> Result<
+            (),
+            worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        admit(1)?;
         observation::reach(Gate::InputIdentity);
         if self.input_identity != other.input_identity {
-            return false;
+            admit(0)?;
+            return Ok(false);
         }
         observation::reach(Gate::InstalledEdition);
         if self.installed_edition != other.installed_edition {
-            return false;
+            admit(0)?;
+            return Ok(false);
         }
         observation::reach(Gate::SelectedMembership);
-        self.selection.same_selected_membership_as(&other.selection)
+        self.selection
+            .same_selected_membership_as(&other.selection, admit)
     }
 }

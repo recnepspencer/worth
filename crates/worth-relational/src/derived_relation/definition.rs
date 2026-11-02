@@ -102,6 +102,9 @@ impl Eq for DerivedRelationHandle {}
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct RegisteredDerivedRelation {
+    /// Memoization follows this exact registered path owner across clones and
+    /// registry composition. It contributes no descriptive schema meaning.
+    pub(crate) managed_source_binding: crate::validation::candidate_source::SourceBindingCache,
     pub(crate) parts: DerivedRelationDefinitionParts,
     pub(crate) leaves: Vec<(KindId, KindId, KindId)>,
     pub(crate) domains: Vec<ProjectedMemberDomainIdentity>,

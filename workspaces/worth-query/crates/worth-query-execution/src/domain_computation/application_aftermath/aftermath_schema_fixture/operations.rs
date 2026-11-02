@@ -14,9 +14,9 @@ use worth_query_declaration::facade::application_schema::{
 use super::declaration::{
     principal_read, AftermathFixtureSchema, ApproveEmergencyAccess, AuditRetention, BalanceRead,
     Charge, DeathNoticeEffect, FixtureAbility, FixtureEntity, FixtureInput, FreezeAccount,
-    FreezeAccountFields, FreezeBalance, FreezeNote, FrozenRead, LegalHold, NoteRead, NotifyDeath,
-    ReleaseEstate, Transfer, TransferLarge, TransferSmall, WireInstructionEffect,
-    WireTransferFinal,
+    FreezeAccountFields, FreezeAccountFieldsReversed, FreezeBalance, FreezeNote, FrozenRead,
+    LegalHold, NoteRead, NotifyDeath, ReleaseEstate, Transfer, TransferLarge, TransferSmall,
+    WireInstructionEffect, WireTransferFinal,
 };
 
 /// The rail the fixture's death notices escape through.
@@ -257,6 +257,26 @@ fn bind_inverse_ops(
         .operation_projection_work_budget(balance_op, 16)
         .operation_requires_ability(balance_op, ability)
         .operation_read_field(balance_op, reads.balance);
+    let reversed_op = op::<FreezeAccountFieldsReversed>();
+    let schema = schema
+        .operation(
+            reversed_op
+                .definition()
+                .no_external_effect()
+                .aftermath(inverse(
+                    [
+                        DeclaredPreImageLocus::from_field(reads.note),
+                        DeclaredPreImageLocus::from_field(reads.frozen),
+                    ],
+                    256,
+                    "account-fields-inverse",
+                ))
+                .finish(),
+        )
+        .operation_projection_work_budget(reversed_op, 24)
+        .operation_requires_ability(reversed_op, ability)
+        .operation_read_field(reversed_op, reads.frozen)
+        .operation_read_field(reversed_op, reads.note);
     let fields_op = op::<FreezeAccountFields>();
     schema
         .operation(

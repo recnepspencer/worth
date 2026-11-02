@@ -19,6 +19,14 @@ pub struct ExecutionArray<T> {
     backing: OwnedFixedBacking<T>,
 }
 
+impl ExecutionArray<u8> {
+    /// Transfer this exact admitted allocation and its single reservation into
+    /// shared immutable byte custody. No bytes or authority are copied.
+    pub fn into_immutable_bytes(self) -> super::super::ExecutionImmutableBytes {
+        super::super::ExecutionImmutableBytes::from_owned(self.backing)
+    }
+}
+
 impl<T> ExecutionArray<T> {
     pub(super) fn from_owned(backing: OwnedFixedBacking<T>) -> Self {
         Self { backing }

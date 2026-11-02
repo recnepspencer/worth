@@ -167,7 +167,7 @@ fn committed_index_choice_v1_round_trips_and_keeps_legacy_component_bytes() {
     let (decoded_orbit, component, index) = root_selection::choice::decode(&mut input).unwrap();
     assert!(decoded_orbit.is_none() && component.is_none() && input.is_finished());
     assert_eq!(index, source.managed_index);
-    let mut input = BinaryInput::new(&[0, 3, 0, 2]);
+    let mut input = BinaryInput::new(&[0, 3, 0, 3]);
     assert_eq!(
         root_selection::choice::decode(&mut input)
             .unwrap_err()

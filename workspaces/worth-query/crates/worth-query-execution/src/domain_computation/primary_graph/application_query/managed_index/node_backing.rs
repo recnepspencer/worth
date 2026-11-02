@@ -15,6 +15,7 @@ where
     P: WorthQueryManagedIndexProvider<S, I>,
 {
     pub(super) nodes: WorthQueryManagedIndexNodes<P::Node>,
+    pub(super) structure: Option<super::source_structure::SourceTree>,
     _memory: Option<ExecutionMemoryReservation>,
     marker: PhantomData<fn() -> (S, I, P)>,
 }
@@ -22,6 +23,7 @@ where
 pub(super) fn retain<S, I, P>(
     execution: &ExecutionRequest<'_, '_>,
     nodes: WorthQueryManagedIndexNodes<P::Node>,
+    structure: Option<super::source_structure::SourceTree>,
 ) -> Result<Arc<dyn Any + Send + Sync>, WorthQueryManagedIndexStop>
 where
     S: ApplicationSchema + 'static,
@@ -39,6 +41,7 @@ where
         .map_err(WorthQueryManagedIndexStop::Request)?;
     Ok(Arc::new(ProviderNodeBacking::<S, I, P> {
         nodes,
+        structure,
         _memory: memory,
         marker: PhantomData,
     }))

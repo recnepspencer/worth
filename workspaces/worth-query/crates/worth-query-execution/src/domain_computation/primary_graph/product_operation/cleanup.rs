@@ -5,8 +5,9 @@ use std::sync::{Arc, RwLock};
 use worth_runtime_bridge::facade::{BridgeConditionalDenial, BridgeSealedRuntimeAssembly};
 
 use crate::domain_computation::execution_runtime::product_world::{
-    WorthQueryProductBranchOwnerCleanup, WorthQueryProductBranchOwnerCleanupDenial,
-    WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupWork,
+    OwnerCleanupRetirements, WorthQueryProductBranchOwnerCleanup,
+    WorthQueryProductBranchOwnerCleanupDenial, WorthQueryProductBranchOwnerCleanupReceipt,
+    WorthQueryProductBranchOwnerCleanupWork,
 };
 
 #[derive(Debug)]
@@ -53,11 +54,55 @@ impl WorthQueryApplicationProductBranchCleanup {
         WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryApplicationProductBranchCleanupFailure,
     > {
+        let mut retirements = OwnerCleanupRetirements::default();
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        self.retry_with_retirements(
+            &worth_execution::ExecutionRequest::serial(&host),
+            &mut retirements,
+        )
+    }
+
+    /// Finish the same cleanup using the receiving runtime's admitted request.
+    pub fn retry_in_advancement(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        WorthQueryProductBranchOwnerCleanupReceipt,
+        WorthQueryApplicationProductBranchCleanupFailure,
+    > {
+        let mut retirements = OwnerCleanupRetirements::default();
+        let execution = match self.product.execution_request_in_advancement(phase) {
+            Ok(execution) => execution,
+            Err(denial) => {
+                return Err(Self::failed(
+                    self.product,
+                    self.conditional,
+                    WorthQueryApplicationProductBranchCleanupDenial::Product(
+                        WorthQueryProductBranchOwnerCleanupDenial::Execution(denial),
+                    ),
+                ));
+            }
+        };
+        self.retry_with_retirements(&execution, &mut retirements)
+    }
+
+    pub(crate) fn retry_with_retirements(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<
+        WorthQueryProductBranchOwnerCleanupReceipt,
+        WorthQueryApplicationProductBranchCleanupFailure,
+    > {
         let Self {
             product,
             conditional,
         } = self;
-        if let Err(denial) = product.release_retired_history() {
+        if let Err(denial) = product.release_retired_history(retirements) {
             return Err(Self::failed(
                 product,
                 conditional,
@@ -89,7 +134,7 @@ impl WorthQueryApplicationProductBranchCleanup {
                 ));
             }
         }
-        match product.retry() {
+        match product.retry_in_request_with_retirements(execution, retirements) {
             Ok(receipt) => Ok(receipt),
             Err(failure) => {
                 let denial = failure.denial();

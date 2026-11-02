@@ -59,7 +59,8 @@ impl WorthQueryUnpublishedIdempotencyReservation {
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             assert_eq!(entry.recovery_handle, returned_handle);
-            assert!(entry.managed.replace(managed).is_none());
+            assert!(entry.managed.is_none());
+            entry.managed = Some(managed);
             entry.posture = WorthQueryUnpublishedIdempotencyPosture::Retained;
         }
         self.armed = false;

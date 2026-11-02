@@ -3,14 +3,14 @@
 mod adjacency;
 #[path = "authored_writes/indexed.rs"]
 mod indexed;
+#[path = "authored_writes/managed_source.rs"]
+mod managed_source;
 #[path = "authored_writes/projection.rs"]
 mod projection;
 #[path = "authored_writes/rebuild.rs"]
 mod rebuild;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
-use crate::history::{
-    RelationalAuthoredWriteDenial as Denial, RelationalAuthoredWriteSelector as Key,
-};
+use crate::history::{AuthoredWritePostingKey as Key, RelationalAuthoredWriteDenial as Denial};
 use std::sync::Arc;
 use worth_execution::{ChargedBytes, ExecutionOrderedMap, ExecutionRequest};
 
@@ -18,6 +18,11 @@ use worth_execution::{ChargedBytes, ExecutionOrderedMap, ExecutionRequest};
 pub(crate) struct AuthoredWriteGeneration {
     pub(crate) writes: ExecutionOrderedMap<Key, Postings>,
     pub(crate) prefix: ExecutionOrderedMap<CommitId, u64>,
+    pub(crate) managed_last_gap: Option<u64>,
+    pub(crate) managed_run_start: u64,
+    pub(crate) managed_run_catalog: Option<
+        Arc<crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
+    >,
     pub(crate) incomplete_indexes: ExecutionOrderedMap<u64, ()>,
     pub(crate) incomplete_adjacency: ExecutionOrderedMap<u64, AdjacencyHistoryGap>,
     pub(crate) index_coverage: ExecutionOrderedMap<u64, crate::runtime::IndexCatalogCoverage>,
@@ -68,7 +73,7 @@ impl super::RelationalCanonicalPublicationRoutes {
     pub(crate) fn prepare_authored_generation(
         &self,
         execution: ExecutionRequest<'_, '_>,
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &Arc<CanonicalCommitEnvelope>,
     ) -> Result<Option<AuthoredWriteGeneration>, Denial> {
         crate::history::run_authored_write_stage(execution, |context| {
             let mut generation = match envelope.commit.parents.as_slice() {
@@ -131,6 +136,9 @@ pub(crate) fn commit_denial(cause: Denial) -> crate::transactions::data::Transac
         | Denial::GenerationUnavailable
         | Denial::UnsupportedIndexSelector
         | Denial::IncompleteIndexHistory
+        | Denial::ForeignManagedSourceProgram
+        | Denial::UnsupportedManagedSourceSelector
+        | Denial::IncompleteManagedSourceHistory
         | Denial::IncompleteAdjacencyHistory { .. }
         | Denial::UnsupportedAdjacencySelector
         | Denial::UnsupportedMergeInterval
@@ -149,7 +157,7 @@ impl AuthoredWriteGeneration {
         &mut self,
         execution: ExecutionRequest<'_, '_>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &Arc<CanonicalCommitEnvelope>,
     ) -> Result<(), Denial> {
         if self.unsupported_merge {
             return Ok(());
@@ -162,12 +170,13 @@ impl AuthoredWriteGeneration {
             )?
             .map(Arc::new);
         self.ordinal = self.ordinal.checked_add(1).ok_or(Denial::SizeOverflow)?;
-        crate::history::visit_authored_write_lookup(context, self.prefix.len(), 8)?;
+        crate::history::visit_authored_write_lookup(context, self.prefix.len())?;
         self.prefix.insert_cloned_native_for_request(
             &envelope.commit.commit_id,
             &self.ordinal,
             execution,
         )?;
+        managed_source::append(self, execution, context, envelope)?;
         indexed::append(self, execution, context, envelope)?;
         adjacency::append(self, execution, context, envelope)?;
         projection::append(execution, context, self, envelope)
@@ -179,19 +188,13 @@ impl AuthoredWriteGeneration {
         key: &Key,
         commit: CommitId,
     ) -> Result<(), Denial> {
-        let key_work = key
-            .additional_charged_bytes()
-            .checked_add(std::mem::size_of::<Key>() as u64)
-            .ok_or(Denial::Interrupted(
-                worth_execution::MapKernelStop::WorkCounterOverflow,
-            ))?;
-        crate::history::visit_authored_write_lookup(context, self.writes.len(), key_work)?;
+        crate::history::visit_authored_write_lookup(context, self.writes.len())?;
         let mut postings = self.writes.get(key).cloned().unwrap_or_default();
-        crate::history::visit_authored_write_lookup(context, postings.0.len(), 8)?;
+        crate::history::visit_authored_write_lookup(context, postings.0.len())?;
         postings
             .0
             .insert_cloned_native_for_request(&self.ordinal, &commit, execution)?;
-        crate::history::visit_authored_write_lookup(context, self.writes.len(), key_work)?;
+        crate::history::visit_authored_write_lookup(context, self.writes.len())?;
         self.writes
             .insert_cloned_for_request(key, &postings, execution)?;
         Ok(())

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 use std::sync::{Arc, Mutex};
 
 use super::{
@@ -15,6 +16,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePublicatio
     pub(super) key: WorthQueryLiveProductKey,
     pub(super) slot: Option<Arc<WorthQueryLiveCommitBatchCell>>,
     pub(super) evictions: usize,
+    pub(super) retired_batches: Vec<Arc<WorthQueryLiveCommitBatchCell>>,
+    pub(super) _allocation: Option<Arc<SourceFactsAllocation>>,
     pub(super) active: bool,
 }
 
@@ -28,6 +31,8 @@ impl WorthQueryLivePublicationReservation {
             key,
             slot: None,
             evictions: 0,
+            retired_batches: Vec::new(),
+            _allocation: None,
             active: false,
         }
     }
@@ -48,13 +53,16 @@ impl Drop for WorthQueryLivePublicationReservation {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(partition) = state.partitions.get_mut(&self.key) {
+        let remove = if let Some(partition) = state.partitions.get_mut(&self.key) {
             partition.reservation_live = false;
-            if partition.subscriber_count == 0 {
-                state.partitions.remove(&self.key);
-            }
-        }
+            partition.is_unowned()
+        } else {
+            false
+        };
+        let retired = remove.then(|| state.remove_partition(&self.key));
         self.active = false;
+        drop(state);
+        drop(retired);
     }
 }
 
@@ -77,13 +85,13 @@ impl Drop for WorthQueryLiveSubscription {
             .is_some_and(|partition| {
                 released = true;
                 partition.subscriber_count = partition.subscriber_count.saturating_sub(1);
-                partition.subscriber_count == 0 && !partition.reservation_live
+                partition.is_unowned()
             });
-        if remove {
-            state.partitions.remove(&self.key);
-        }
+        let retired = remove.then(|| state.remove_partition(&self.key));
         if released {
             state.subscriber_count = state.subscriber_count.saturating_sub(1);
         }
+        drop(state);
+        drop(retired);
     }
 }

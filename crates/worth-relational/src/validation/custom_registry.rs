@@ -14,6 +14,9 @@ pub struct DuplicateCustomInvariantRegistration {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FrozenCustomInvariantRegistry {
     registrations: Arc<[CustomInvariantRegistration]>,
+    source_postings: crate::validation::candidate_source::routing::SourceProgramPostings,
+    pub(crate) source_history:
+        Arc<crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
     index_by_identity_and_execution_point: Arc<
         BTreeMap<
             (
@@ -44,6 +47,11 @@ impl FrozenCustomInvariantRegistry {
             }
         }
         Ok(Self {
+            source_history: Arc::new(crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog::compile(&registrations)),
+            source_postings:
+                crate::validation::candidate_source::routing::SourceProgramPostings::compile(
+                    &registrations,
+                ),
             registrations: registrations.into(),
             index_by_identity_and_execution_point: Arc::new(index_by_identity_and_execution_point),
         })
@@ -51,6 +59,18 @@ impl FrozenCustomInvariantRegistry {
 
     pub(crate) fn len(&self) -> usize {
         self.registrations.len()
+    }
+
+    pub(crate) fn source_registrations(
+        &self,
+        entities: impl Iterator<Item = crate::identity::data::KindId>,
+        relations: impl Iterator<Item = crate::identity::data::KindId>,
+    ) -> Vec<&CustomInvariantRegistration> {
+        self.source_postings
+            .affected(entities, relations)
+            .into_iter()
+            .map(|slot| &self.registrations[slot])
+            .collect()
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = &CustomInvariantRegistration> {

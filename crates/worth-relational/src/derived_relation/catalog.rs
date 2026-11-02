@@ -85,6 +85,7 @@ impl RelationalSchemaRegistry {
             self.derived_relations.insert(
                 identity.clone(),
                 Arc::new(RegisteredDerivedRelation {
+                    managed_source_binding: Default::default(),
                     parts,
                     leaves: leaves.into_iter().collect(),
                     domains: domains.into_iter().collect(),

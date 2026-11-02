@@ -23,6 +23,10 @@ pub(in crate::domain_computation) use diagnostic_preparation::{
 };
 mod field_admission;
 mod governance;
+mod influence;
+pub(in crate::domain_computation) use influence::{
+    WorthQueryRetainedQueryInfluence, WorthQueryRetainedQueryInfluenceDenial,
+};
 mod inspection;
 pub(in crate::domain_computation) use diagnostic::{
     DiagnosticComparisonAdmission, DiagnosticComparisonDenial,

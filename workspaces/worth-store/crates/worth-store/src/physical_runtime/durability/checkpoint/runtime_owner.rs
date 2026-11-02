@@ -117,6 +117,7 @@ impl PhysicalCheckpointRuntimeOwner {
     fn start(
         self: &Arc<Self>,
         request: PhysicalCheckpointRequest,
+        interruption: Option<Arc<worth_execution::ExecutionInterruptionView>>,
     ) -> PhysicalCheckpointStartOutcome {
         loop {
             let mut lifecycle = self.state();
@@ -162,6 +163,19 @@ impl PhysicalCheckpointRuntimeOwner {
                     .into();
             }
 
+            if let Some(stop) = interruption
+                .as_ref()
+                .and_then(|view| view.check_live().err())
+            {
+                return TransitionOutcome::denied(
+                    if matches!(stop, worth_execution::MapKernelStop::DeadlineElapsed) {
+                        PhysicalCheckpointStartDenial::OriginalRequestDeadlineElapsed
+                    } else {
+                        PhysicalCheckpointStartDenial::OriginalRequestCancelled
+                    },
+                )
+                .into();
+            }
             let admitted = match self.capture.admit() {
                 Ok(admitted) => admitted,
                 Err(failure) => return start_admission_failure(failure),
@@ -170,6 +184,7 @@ impl PhysicalCheckpointRuntimeOwner {
                 request.idempotency_key(),
                 request.deadline(),
                 admitted.basis().source(),
+                interruption,
             );
             lifecycle.current = Some(Arc::clone(&attempt));
             lifecycle.current_terminal = false;
@@ -290,11 +305,22 @@ impl PhysicalCheckpointTerminalState {
 }
 
 impl PhysicalCheckpointSubmission {
+    pub fn start_with_interruption_view(
+        &self,
+        request: PhysicalCheckpointRequest,
+        interruption: worth_execution::ExecutionInterruptionView,
+    ) -> PhysicalCheckpointStartOutcome {
+        let Some(owner) = self.owner.upgrade() else {
+            return TransitionOutcome::stale(PhysicalCheckpointStartStale::RuntimeClosing).into();
+        };
+        owner.start(request, Some(Arc::new(interruption)))
+    }
+
     pub fn start(&self, request: PhysicalCheckpointRequest) -> PhysicalCheckpointStartOutcome {
         let Some(owner) = self.owner.upgrade() else {
             return TransitionOutcome::stale(PhysicalCheckpointStartStale::RuntimeClosing).into();
         };
-        owner.start(request)
+        owner.start(request, None)
     }
 }
 
@@ -338,40 +364,8 @@ impl PhysicalCheckpointShutdown {
     }
 }
 
-fn run_worker(
-    owner: Weak<PhysicalCheckpointRuntimeOwner>,
-    attempt: Arc<PhysicalCheckpointAttempt>,
-    admitted: super::capture::AdmittedPhysicalCheckpointCapture,
-) {
-    let Some(owner) = owner.upgrade() else {
-        attempt.complete(super::PhysicalCheckpointOutcome::Indeterminate(
-            super::IndeterminatePhysicalCheckpoint::new(
-                attempt.identity(),
-                attempt.idempotency_key(),
-                PhysicalCheckpointCaptureFailureKind::RuntimeUnavailable,
-            ),
-        ));
-        return;
-    };
-    let execution = catch_unwind(AssertUnwindSafe(|| {
-        owner.capture.execute(admitted, &attempt)
-    }));
-    let (result, panicked) = match execution {
-        Ok(result) => (result, false),
-        Err(_) => (
-            PhysicalCheckpointExecutionResult::indeterminate(
-                attempt.identity(),
-                attempt.idempotency_key(),
-                PhysicalCheckpointCaptureFailureKind::WorkerPanicked,
-            ),
-            true,
-        ),
-    };
-    let terminal = result.terminal();
-    owner.record_result(result, panicked);
-    owner.capture.release_background_selection();
-    attempt.complete(terminal);
-}
+mod worker;
+use worker::run_worker;
 
 fn start_admission_failure(
     failure: PhysicalCheckpointCaptureFailure,

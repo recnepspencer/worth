@@ -18,7 +18,7 @@ impl<const MODE: u8> ApplicationSchema for ParentSchema<MODE> {
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
         let policy = policy::<Self>();
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
+        let declared = ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
             .entity(Mapping::reference())
             .entity(Principal::reference())
             .aspect(Mapping::reference(), ExternalIdentity::reference())
@@ -49,8 +49,8 @@ impl<const MODE: u8> ApplicationSchema for ParentSchema<MODE> {
             .managed_index(ApplicationManagedIndexDefinition::<
                 Self,
                 queries::ModelIndex<Self>,
-            >::new())
-            .build()
+            >::new());
+        super::decision_read::declare(declared).build()
     }
 }
 worth_query_entity!(pub Mapping for Schema: ModelSchema);

@@ -24,9 +24,36 @@ impl<D: std::error::Error + 'static> std::error::Error for PaidProviderDenial<D>
 #[derive(Clone, Debug)]
 pub struct WorthQueryManagedIndexProviderFailure {
     cause: Arc<dyn std::error::Error + Send + Sync>,
+    retained_bytes: u64,
+    equal: fn(
+        &(dyn std::error::Error + Send + Sync + 'static),
+        &(dyn std::error::Error + Send + Sync + 'static),
+    ) -> bool,
 }
 
+fn equal_cause<D: Eq + std::error::Error + Send + Sync + 'static>(
+    left: &(dyn std::error::Error + Send + Sync + 'static),
+    right: &(dyn std::error::Error + Send + Sync + 'static),
+) -> bool {
+    match (
+        left.downcast_ref::<PaidProviderDenial<D>>(),
+        right.downcast_ref::<PaidProviderDenial<D>>(),
+    ) {
+        (Some(left), Some(right)) => left.cause == right.cause,
+        _ => false,
+    }
+}
+impl PartialEq for WorthQueryManagedIndexProviderFailure {
+    fn eq(&self, other: &Self) -> bool {
+        (self.equal)(self.cause.as_ref(), other.cause.as_ref())
+    }
+}
+impl Eq for WorthQueryManagedIndexProviderFailure {}
+
 impl WorthQueryManagedIndexProviderFailure {
+    pub(in crate::domain_computation::primary_graph) fn retained_payload_bytes(&self) -> u64 {
+        self.retained_bytes
+    }
     pub(super) fn retain<D>(
         execution: &ExecutionRequest<'_, '_>,
         control: &WorthQueryManagedIndexControl<'_>,
@@ -51,7 +78,11 @@ impl WorthQueryManagedIndexProviderFailure {
             _memory: memory,
         });
         control.poll()?;
-        Ok(Self { cause })
+        Ok(Self {
+            cause,
+            retained_bytes: bytes,
+            equal: equal_cause::<D>,
+        })
     }
 
     /// Inspect the provider's original concrete denial type.
@@ -75,3 +106,6 @@ impl std::error::Error for WorthQueryManagedIndexProviderFailure {
         Some(self.cause.as_ref())
     }
 }
+
+#[cfg(test)]
+mod tests;

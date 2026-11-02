@@ -11,6 +11,8 @@ pub(in crate::domain_computation::primary_graph) enum PreflightReadRefusal {
     },
     ForeignCell,
     RegistrationChanged,
+    ManagedSourceNotPrepared,
+    ManagedSourceChanged,
 }
 pub(in crate::domain_computation::primary_graph) fn preflight_execution_cause(
     stop: Stop,
@@ -36,6 +38,8 @@ pub(in crate::domain_computation::primary_graph) fn preflight_execution_cause(
         }
         Stop::ForeignCell => Err(PreflightReadRefusal::ForeignCell),
         Stop::RegistrationChanged => Err(PreflightReadRefusal::RegistrationChanged),
+        Stop::ManagedSourceNotPrepared => Err(PreflightReadRefusal::ManagedSourceNotPrepared),
+        Stop::ManagedSourceChanged => Err(PreflightReadRefusal::ManagedSourceChanged),
     }
 }
 

@@ -26,12 +26,14 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self,
         provider: &WorthQueryPrimaryGraphProvider,
         publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+        predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicatePublication>,
     ) -> WorthQueryPublishedApplicationCausality {
         let emitted_effect_count = provider.publish_application_commit_causality(
             self.live_delivery_reservation
                 .expect("World publication reserved live causality before owner effects"),
             publication,
             self.effects.into_emissions(),
+            predicate,
         );
         WorthQueryPublishedApplicationCausality {
             outcome_identity: self.outcome_identity,

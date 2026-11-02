@@ -346,7 +346,7 @@ fn attach_targeted_relation(
     )
 }
 
-fn validate_relation_cardinality(
+pub(in crate::domain_computation::primary_graph::application_query) fn validate_relation_cardinality(
     relation: &WorthQueryInstalledGraphRelation,
     count: usize,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {

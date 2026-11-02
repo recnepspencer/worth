@@ -88,8 +88,8 @@ jobs:
         with:
           name: consumer-docs-gate-failure
           path: |
-            target/query-gate/*.log
-            target/query-gate/*.json
+            target/query-gate/**/*.log
+            target/query-gate/**/*.json
 
   line-cap:
     if: github.event_name != 'workflow_dispatch' || (inputs.scope != 'consumer-docs' && inputs.scope != 'checkpoint-only')
@@ -191,6 +191,6 @@ jobs:
         with:
           name: query-checkpoint-recovery-failure
           path: |
-            target/query-gate/*.log
-            target/query-gate/*.json
-            target/query-gate/*.jsonl
+            target/query-gate/**/*.log
+            target/query-gate/**/*.json
+            target/query-gate/**/*.jsonl

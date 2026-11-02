@@ -211,10 +211,11 @@ where
         let (handler_outcome, work) = self
             .request
             .application
-            .execute_mutation_handler_report::<Intent::Binding>(
+            .execute_mutation_handler_report_with_query_reads::<Intent::Binding>(
                 phase,
                 &identities,
                 &principal_identity,
+                self.request.principal,
                 admission,
                 allocation_policy,
             )

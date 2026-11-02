@@ -287,6 +287,10 @@ fn write_decision_read_target(
     target: &ApplicationOperationDecisionReadTarget,
 ) -> Result<(), Denial> {
     match target {
+        ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
+            output.u16(4)?;
+            super::super::query_binding_reference::write(output, parent)
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => tagged_text(output, 1, entity),
         ApplicationOperationDecisionReadTarget::Field {
             entity,
@@ -307,6 +311,9 @@ fn decode_decision_read_target(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationOperationDecisionReadTarget, Denial> {
     Ok(match input.u16()? {
+        4 => ApplicationOperationDecisionReadTarget::ManagedIndex {
+            parent: super::super::query_binding_reference::decode(input)?,
+        },
         1 => ApplicationOperationDecisionReadTarget::Entity {
             entity: input.text()?.to_owned(),
         },

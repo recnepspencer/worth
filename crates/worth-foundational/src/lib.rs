@@ -47,6 +47,8 @@ pub mod facade;
 pub mod geometry_api;
 mod identities;
 mod locators;
+mod managed_access;
+mod managed_index_source;
 mod performance;
 pub mod performance_api;
 pub mod physical_integrity_observation;
@@ -63,3 +65,5 @@ mod values;
 pub use budget_limits::__limit_authority;
 pub use facade::*;
 pub use physical_integrity_observation::*;
+
+mod projected_candidate_content;

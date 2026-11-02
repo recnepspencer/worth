@@ -69,16 +69,40 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
         shape: super::DerivedRelationReadShape,
         maximum_work: Option<usize>,
     ) -> Result<PinnedDerivedRelationRead, Denial> {
+        VisibilityProjectionView::from_pinned(self).derived_source(
+            execution,
+            definition,
+            root.into(),
+            shape,
+            maximum_work,
+        )
+    }
+}
+
+impl VisibilityProjectionView {
+    pub(crate) fn derived_source(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        definition: &Handle,
+        root: NativeMemberKey,
+        shape: super::DerivedRelationReadShape,
+        maximum_work: Option<usize>,
+    ) -> Result<PinnedDerivedRelationRead, Denial> {
         execution
             .check_live()
             .map_err(|cause| Denial::Request(cause.into()))?;
         let root = root.into();
-        let projection = VisibilityProjectionView::from_pinned(self);
+        let projection = self;
+        let schema = self
+            .selected_schema_authority()
+            .filter(|_| self.is_exact_basis())
+            .ok_or(DefinitionDenial::RecordUnavailable)?
+            .registry();
         let mut inner_denial = None;
         let result = execution.run_native_with_checkpoint(|context| {
             let result = (|| {
                 let mut read = PinnedSource {
-                    projection: &projection,
+                    projection,
                     execution: *execution,
                     context,
                     reads: Reads::default(),
@@ -89,9 +113,9 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
                     work: 0,
                     maximum_work,
                 };
-                super::evaluation::admit_definition(self.schema(), definition, &mut read)?;
+                super::evaluation::admit_definition(schema, definition, &mut read)?;
                 let (data, steps) =
-                    super::source::acquire(self.schema(), definition, root, shape, &mut read)?;
+                    super::source::acquire(schema, definition, root, shape, &mut read)?;
                 read.checkpoint(0)?;
                 Ok(PinnedDerivedRelationRead {
                     data,
@@ -136,6 +160,26 @@ impl SourceRead for PinnedSource<'_, '_, '_, '_, '_> {
     }
     fn retain(&mut self, bytes: usize) -> Result<(), Denial> {
         retain(&mut self.memory, &mut self.bytes, bytes as u64)
+    }
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial> {
+        self.execution
+            .check_live()
+            .map_err(|cause| Denial::Request(cause.into()))?;
+        self.checkpoint(0)?;
+        let peak = self
+            .bytes
+            .checked_add(bytes as u64)
+            .ok_or(Denial::Request(Cause::ChargedBytesOverflow))?;
+        if let Some(memory) = &mut self.memory {
+            if peak > memory.bytes() {
+                memory.resize(peak).map_err(|cause| {
+                    Denial::Request(crate::execution::denial::lease_denial(
+                        worth_execution::LeaseDenial::MemoryExhausted(cause),
+                    ))
+                })?;
+            }
+        }
+        Ok(())
     }
     fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial> {
         self.checkpoint(

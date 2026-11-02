@@ -27,9 +27,11 @@ pub struct ServingPhysicalRuntime {
     scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,
     blob_declarations: std::sync::Mutex<()>,
     blob_index_publications: std::sync::Mutex<()>,
-    ordered_journals:
+    ordered_journals: std::sync::Arc<
         std::sync::Mutex<crate::physical_runtime::ordered_journal::OrderedJournalState>,
-    anchored_records: std::sync::Mutex<crate::physical_runtime::AnchoredRecordState>,
+    >,
+    anchored_records:
+        std::sync::Arc<std::sync::Mutex<crate::physical_runtime::AnchoredRecordState>>,
     anchored_membership: std::sync::Mutex<crate::physical_runtime::AnchoredMembershipCache>,
     parts: PhysicalStoreInstanceParts,
 }
@@ -45,8 +47,8 @@ impl ServingPhysicalRuntime {
                 scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
                 blob_declarations: std::sync::Mutex::new(()),
                 blob_index_publications: std::sync::Mutex::new(()),
-                ordered_journals: std::sync::Mutex::new(Default::default()),
-                anchored_records: std::sync::Mutex::new(Default::default()),
+                ordered_journals: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
+                anchored_records: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
                 anchored_membership: std::sync::Mutex::new(Default::default()),
                 parts,
             }),
@@ -142,12 +144,10 @@ impl ServingPhysicalRuntime {
         Ok(crate::physical_runtime::AnchoredRecords::new(self))
     }
 
-    pub(in crate::physical_runtime) fn anchored_record_state(
+    pub(in crate::physical_runtime) fn anchored_publication_owner(
         &self,
-    ) -> std::sync::MutexGuard<'_, crate::physical_runtime::AnchoredRecordState> {
-        self.anchored_records
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    ) -> std::sync::Arc<std::sync::Mutex<crate::physical_runtime::AnchoredRecordState>> {
+        self.anchored_records.clone()
     }
 
     /// The verified member tables of current anchored values. Held only to

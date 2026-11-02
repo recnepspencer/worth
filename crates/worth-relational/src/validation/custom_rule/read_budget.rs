@@ -3,6 +3,13 @@ use super::{
     CustomInvariantWorkMeter, CustomPreparationStop, StructuralReadError, StructuralWalkDenialKind,
 };
 
+/// The rule's own allowance and the SDK's original request remain distinct.
+#[derive(Debug)]
+pub enum CustomInvariantNativeCheckpointDenial {
+    Source(StructuralWalkDenialKind),
+    Request(worth_execution::MapKernelStop),
+}
+
 /// Read work and retention admission on the original custom-invariant meter.
 /// This handle creates no allowance and grants no graph or mutation authority.
 pub struct CustomInvariantReadBudget<'borrow> {
@@ -11,6 +18,30 @@ pub struct CustomInvariantReadBudget<'borrow> {
 }
 
 impl<'borrow> CustomInvariantReadBudget<'borrow> {
+    /// Spend the installed rule allowance and the actual SDK context once.
+    /// Source visits and provider steps share the immediate original SDK account.
+    pub fn checkpoint_native(
+        &self,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+        units: u64,
+    ) -> Result<(), CustomInvariantNativeCheckpointDenial> {
+        if !self.work.admits_native_context(context) {
+            return Err(CustomInvariantNativeCheckpointDenial::Source(
+                StructuralWalkDenialKind::Read(StructuralReadError::OutsideDeclaredAccess),
+            ));
+        }
+        self.check_live()
+            .map_err(CustomInvariantNativeCheckpointDenial::Source)?;
+        if !self.work.try_debit_native_work(units) {
+            return Err(CustomInvariantNativeCheckpointDenial::Source(
+                self.refusal(StructuralReadError::WorkBudgetExceeded),
+            ));
+        }
+        crate::execution::request_stage::checkpoint(context, units).map_err(|stop| {
+            self.work.record_native_stop(stop);
+            CustomInvariantNativeCheckpointDenial::Request(stop)
+        })
+    }
     pub(crate) fn debit_native_rule_work(
         &self,
         units: u64,
@@ -30,6 +61,9 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
             }
             Some(CustomPreparationStop::MemoryExhausted) => Cause::ScratchCapacityExceeded,
             Some(CustomPreparationStop::UncheckedCustomKernel) => Cause::UncheckedCustomKernel,
+            Some(CustomPreparationStop::Request(stop)) => {
+                Cause::from(worth_execution::WorkCeilingDenial::Stopped(stop))
+            }
             _ => Cause::WorkExhausted,
         })
     }
@@ -64,6 +98,13 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
             .ok_or_else(|| self.refusal(StructuralReadError::WorkBudgetExceeded))
     }
 
+    pub(crate) fn check_scratch_peak(&self, bytes: u64) -> Result<(), StructuralWalkDenialKind> {
+        self.checkpoint(0)?;
+        crate::validation::data::CustomInvariantLeaseBudget::check_scratch_peak(self.work, bytes)
+            .then_some(())
+            .ok_or_else(|| self.refusal(StructuralReadError::WorkBudgetExceeded))
+    }
+
     pub(crate) fn refusal(&self, error: StructuralReadError) -> StructuralWalkDenialKind {
         use super::CustomInvariantInterruption;
         match self.work.leased_stop() {
@@ -78,6 +119,14 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
             }
             Some(CustomPreparationStop::MemoryAdmission(cause)) => {
                 StructuralWalkDenialKind::MemoryAdmission(cause)
+            }
+            Some(CustomPreparationStop::Request(worth_execution::MapKernelStop::Cancelled)) => {
+                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::Cancelled)
+            }
+            Some(CustomPreparationStop::Request(
+                worth_execution::MapKernelStop::DeadlineElapsed,
+            )) => {
+                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::DeadlineElapsed)
             }
             _ => StructuralWalkDenialKind::Read(error),
         }

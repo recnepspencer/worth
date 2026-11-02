@@ -37,6 +37,10 @@ pub enum InstalledProgramTarget {
         aspect: String,
         path: worth_foundational::facade::CanonicalFieldPath,
     },
+    RemoveAspect {
+        entity: String,
+        aspect: String,
+    },
     InitializeRelationField {
         relation: String,
         from: String,
@@ -131,6 +135,12 @@ pub fn installed_program_targets(
                 aspect: scope.contract().key().as_str().to_owned(),
                 path: scope.field_path().clone(),
             },
+            WorthQueryOperationTouchScope::RemoveAspect(scope) => {
+                InstalledProgramTarget::RemoveAspect {
+                    entity: scope.entity().to_owned(),
+                    aspect: scope.contract().key().as_str().to_owned(),
+                }
+            }
             WorthQueryOperationTouchScope::LinkRelation(scope) => InstalledProgramTarget::Link {
                 relation: scope.relation().to_owned(),
                 from: scope.from().to_owned(),

@@ -40,8 +40,8 @@ pub use service_denial::RuntimeWorldServiceDenial;
 #[path = "operation_control.rs"]
 pub(crate) mod operation_control_for_test;
 pub use operation_control_for_test::{
-    RuntimeWorldOperationControlForTest, RuntimeWorldProductComparePauseForTest,
-    RuntimeWorldProductCurrentnessPauseForTest,
+    RuntimeWorldOperationControlForTest, RuntimeWorldPerformedPublicationObservationForTest,
+    RuntimeWorldProductComparePauseForTest, RuntimeWorldProductCurrentnessPauseForTest,
 };
 
 #[cfg(test)]

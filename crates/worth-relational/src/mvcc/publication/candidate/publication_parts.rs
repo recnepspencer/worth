@@ -18,6 +18,7 @@ impl PreparedRelationalCommitCandidate {
         let (movement, completion) = payload.execution.split(payload.published_snapshot_slot);
         Ok(PreparedRelationalPublicationParts {
             companion_read: payload.companion_read,
+            managed_source_reads: payload.managed_source_reads,
             current_read: payload.current_read,
             runtime_instance_id: self.runtime_instance_id,
             candidate_id: self.candidate_id,

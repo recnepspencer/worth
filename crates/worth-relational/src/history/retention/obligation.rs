@@ -26,6 +26,12 @@ pub(crate) struct RelationalObservationRetentionObligation {
 }
 
 impl RelationalObservationRetentionObligation {
+    pub(crate) fn owner_relationship(
+        &self,
+        binding: &super::RelationalBranchRetentionBinding,
+    ) -> super::RelationalRetentionOwnerRelationship {
+        self._guard.owner_relationship(binding)
+    }
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
         root: Arc<RelationalBranchRoot>,
@@ -41,13 +47,6 @@ impl RelationalObservationRetentionObligation {
 
     pub(crate) const fn reason(&self) -> RelationalBasisRetentionReason {
         RelationalBasisRetentionReason::Observation
-    }
-
-    pub(crate) fn owner_relationship(
-        &self,
-        binding: &super::RelationalBranchRetentionBinding,
-    ) -> super::RelationalRetentionOwnerRelationship {
-        self._guard.owner_relationship(binding)
     }
 }
 

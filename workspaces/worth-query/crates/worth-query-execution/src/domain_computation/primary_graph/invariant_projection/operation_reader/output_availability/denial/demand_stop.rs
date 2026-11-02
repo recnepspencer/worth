@@ -22,7 +22,7 @@ impl WorthQueryOutputAvailabilityDenial {
         use Cause::*;
         let kind = match self.cause.as_ref() {
             Verification(stop) => {
-                return output_reuse::verification_denial(*stop, "output availability")
+                return output_reuse::verification_denial(stop.clone(), "output availability")
             }
             Registration(SettlementRegistrationStop::Admission(stop)) => return meter(*stop),
             Registration(SettlementRegistrationStop::Edit(_)) => Kind::PublicationStale,
@@ -56,6 +56,12 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
 
     let kind = match stop {
         QueryStop::CurrentControl(stop) => return stop.clone(),
+        QueryStop::ManagedIndex(stop) => {
+            return WorthQueryOutputDemandDenial::managed_source_query(
+                std::sync::Arc::clone(stop),
+                "output availability Source",
+            )
+        }
         QueryStop::Installation(stop) => Kind::SourceQueryInstallation(stop.kind()),
         QueryStop::Principal(stop) => Kind::of_principal_resolution(stop.kind()),
         QueryStop::Scope(stop) => Kind::of_scope_resolution(stop.kind()),

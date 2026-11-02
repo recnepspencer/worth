@@ -10,6 +10,7 @@ pub(in crate::domain_computation::primary_graph::provider) struct ManagedUnpubli
     pub(super) publication_mode: ManagedUnpublishedPublicationMode,
     pub(super) attempt: WorthQueryPrimaryGraphApplicationAttempt,
     pub(super) work: WorthQueryPrimaryMutationWorkCounters,
+    pub(super) predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     pub(super) index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
     pub(super) retained_preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
@@ -141,6 +142,7 @@ impl ManagedUnpublishedAttempt {
         super::WorthQueryCommittedApplicationSession {
             attempt: self.attempt,
             work: self.work,
+            predicate: self.predicate,
             index_maintenance_work: self.index_maintenance_work,
             retained_preimage: self.retained_preimage,
             preimage_retention_work: self.preimage_retention_work,

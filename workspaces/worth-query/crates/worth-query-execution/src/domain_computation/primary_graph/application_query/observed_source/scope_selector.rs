@@ -49,7 +49,14 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self,
         other: &WorthQueryObservedSource<Other>,
     ) -> bool {
-        Arc::ptr_eq(&self.parameters, &other.parameters)
+        (match (
+            &self.invocation_managed_source,
+            &other.invocation_managed_source,
+        ) {
+            (None, None) => true,
+            (Some(left), Some(right)) => Arc::ptr_eq(left, right),
+            _ => false,
+        }) && Arc::ptr_eq(&self.parameters, &other.parameters)
             && Arc::ptr_eq(&self.source_meaning, &other.source_meaning)
             && self.runtime_authority == other.runtime_authority
             && self.schema_binding == other.schema_binding
@@ -76,6 +83,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             selection: self.selection.clone(),
             model_root: self.model_root,
             source_meaning: Arc::clone(&self.source_meaning),
+            invocation_managed_source: self.invocation_managed_source.clone(),
             scope_selector: Arc::clone(&self.scope_selector),
 
             _marker: PhantomData,

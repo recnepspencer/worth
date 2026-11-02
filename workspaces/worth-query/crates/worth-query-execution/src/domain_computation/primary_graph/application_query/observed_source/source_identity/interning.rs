@@ -100,15 +100,22 @@ impl WorthQueryObservedSourceMeaningRegistry {
                     .lookup(state.meanings.len())
                     .map_err(&mut *failure)?;
                 unmatched = storage
-                    .scratch(state.meanings.get(&coordinate).map_or(0, Vec::len))
+                    .scratch(
+                        state
+                            .meanings
+                            .get(&coordinate)
+                            .map_or(0, |bucket| bucket.entries.len()),
+                    )
                     .map_err(&mut *failure)?;
                 storage
                     .lookup(state.meanings.len())
                     .map_err(&mut *failure)?;
             }
             if let Some(meanings) = state.meanings.get_mut(&coordinate) {
-                meanings.retain(|meaning| meaning.strong_count() > 0);
-                for existing in meanings.iter().filter_map(Weak::upgrade) {
+                meanings
+                    .entries
+                    .retain(|meaning| meaning.strong_count() > 0);
+                for existing in meanings.entries.iter().filter_map(Weak::upgrade) {
                     unmatched.push(existing);
                     let existing = unmatched.last().expect("just retained comparator operand");
                     if let Some(storage) = &storage {
@@ -168,6 +175,7 @@ impl WorthQueryObservedSourceMeaningRegistry {
                 .meanings
                 .entry(coordinate)
                 .or_insert_with(|| prepared.unwrap_or_default())
+                .entries
                 .push(Arc::downgrade(&meaning));
             Ok(Some(meaning))
         })();

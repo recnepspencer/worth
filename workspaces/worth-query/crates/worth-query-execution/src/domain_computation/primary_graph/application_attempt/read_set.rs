@@ -358,7 +358,8 @@ where
             super::retained_decision_facts::StorageControl::new(
                 allocation_policy,
                 Some(admission.publication_request()),
-            ),
+            )
+            .with_execution(*execution),
         )?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {

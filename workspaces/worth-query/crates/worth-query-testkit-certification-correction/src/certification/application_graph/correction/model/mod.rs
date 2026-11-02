@@ -3,6 +3,7 @@ pub mod adjacency_link;
 pub mod adoption;
 pub mod adoption_courts;
 pub mod aspect_input;
+pub mod authored_collateral_court;
 pub mod authored_identity_correction;
 pub mod authored_identity_courts;
 pub mod authored_identity_handlers;

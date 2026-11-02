@@ -2,6 +2,7 @@
 //! then actual retained original-root support. Ordinary reuse stays unchanged.
 mod cancellation;
 mod eligibility;
+mod history;
 mod overlap;
 pub(super) use eligibility::require;
 
@@ -10,6 +11,7 @@ pub(super) use eligibility::require;
 /// Unsupported facts and unavailable canonical evidence never mean no writes.
 pub enum WorthQueryCorrectionRestoredSupportDenial {
     UnsupportedFact,
+    ManagedProvider(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     CanonicalEvidenceUnavailable,
     CanonicalAssociationMismatch,
     Native(worth_relational::facade::history::RelationalAuthoredWriteDenial),

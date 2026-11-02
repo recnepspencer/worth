@@ -14,9 +14,15 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::EntityId;
 
+mod denial;
 mod disclosed;
+mod required_field;
+pub use denial::{
+    WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
+};
 mod optional_aspect;
 mod projected_tree;
+pub(in crate::domain_computation::primary_graph::application_query) use projected_tree::content::ContentWriter;
 pub(in crate::domain_computation::primary_graph) mod retained_projection;
 
 pub use disclosed::{WorthQueryApplicationDisclosed, WorthQueryApplicationOmission};
@@ -26,42 +32,6 @@ pub(super) use projected_tree::{
     WorthQueryApplicationProjectedField, WorthQueryApplicationProjectedRelation,
     WorthQueryApplicationProjectionNode, WorthQueryApplicationWorkingProjectionTree,
 };
-
-/// Why a query result row could not be projected into an application value.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationProjectionDenialKind {
-    /// Native admitted value decoding refused the original execution request.
-    ValueDecode(WorthQueryValueDecodeDenial),
-    /// The selected field is not part of this row's projection.
-    FieldNotProjected,
-    /// The field selector does not match the installed field contract or disclosure.
-    FieldContractMismatch,
-    /// The field's value could not be decoded as the selector's value type.
-    FieldTypeMismatch,
-    /// A required field was withheld by governed disclosure.
-    FieldOmitted,
-    /// The selected relation is not part of this row's projection.
-    RelationNotProjected,
-    /// The relation selector does not match the installed relation contract or
-    /// disclosure.
-    RelationContractMismatch,
-    /// The relation's result count does not match the selector's cardinality.
-    RelationCardinalityMismatch,
-    /// A required relation was withheld by governed disclosure.
-    RelationOmitted,
-    /// Application projection code rejected the row with `reject`.
-    DomainProjectionRejected,
-}
-
-/// Refusal to project a query result row into an application value.
-///
-/// Returned by row reads and by application code through `reject`.
-/// [`Self::kind`] says why and the subject names the refused result path.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationProjectionDenial {
-    kind: WorthQueryApplicationProjectionDenialKind,
-    subject: String,
-}
 
 /// Query-owned authoritative row presented to domain projection code.
 ///
@@ -84,33 +54,6 @@ pub struct WorthQueryApplicationProjectionRows<'row, Schema, Query> {
     governance: &'row super::disclosure::WorthQueryApplicationQueryGovernance,
     decode: &'row ValueDecodeSession<'row>,
     _marker: PhantomData<fn() -> (Schema, Query)>,
-}
-
-impl WorthQueryApplicationProjectionDenial {
-    pub fn reject(subject: impl Into<String>) -> Self {
-        Self::new(
-            WorthQueryApplicationProjectionDenialKind::DomainProjectionRejected,
-            subject,
-        )
-    }
-
-    pub const fn kind(&self) -> WorthQueryApplicationProjectionDenialKind {
-        self.kind
-    }
-
-    pub fn subject(&self) -> &str {
-        &self.subject
-    }
-
-    pub(super) fn new(
-        kind: WorthQueryApplicationProjectionDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
-        Self {
-            kind,
-            subject: subject.into(),
-        }
-    }
 }
 
 impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query> {
@@ -357,15 +300,3 @@ fn relation_cardinality_denial(
         relation.result_path(),
     )
 }
-
-impl std::fmt::Display for WorthQueryApplicationProjectionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "application-query projection denied: {:?} ({})",
-            self.kind, self.subject
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryApplicationProjectionDenial {}

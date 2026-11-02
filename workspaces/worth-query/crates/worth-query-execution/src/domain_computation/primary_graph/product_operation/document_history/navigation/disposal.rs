@@ -135,7 +135,7 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
             .checked_execution_request_for(&application.product_runtime)
             .map_err(Denial::Stopped)?;
         if let Some(fork) = self.fork.take() {
-            if let Err(fork) = fork.release() {
+            if let Err(fork) = fork.release(phase) {
                 self.fork = Some(fork);
                 return Err(Denial::ForkRecovery);
             }
@@ -155,7 +155,7 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
             }
         }
         if let Some(failure) = self.retired.take() {
-            return match failure.into_cleanup().retry() {
+            return match failure.into_cleanup().retry_in_advancement(phase) {
                 Ok(_) => Ok(1),
                 Err(failure) => {
                     self.retired = Some(failure);

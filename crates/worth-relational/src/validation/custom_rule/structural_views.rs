@@ -2,6 +2,8 @@ use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::validation::engine::state_view::InvariantStateView;
+mod derived_admission;
+pub(crate) use derived_admission::DerivedAdmissionCache;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StructuralRelationRecord {
@@ -79,6 +81,8 @@ impl<'runtime> StructuralAspectStateView<'runtime> {
 
 #[derive(Clone)]
 pub struct StructuralRelationView<'runtime> {
+    // Clones retain this exact immutable access/source. Rebinding resets it.
+    pub(crate) derived_admissions: DerivedAdmissionCache,
     pub(crate) structural_source: Option<(
         crate::schema::SchemaRegistryCustody,
         crate::validation::engine::InvariantSourceAffinity,
@@ -148,6 +152,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
             work,
             access,
             structural_source: None,
+            derived_admissions: Default::default(),
             aggregate: None,
             #[cfg(test)]
             walk_observer: None,
@@ -252,6 +257,54 @@ impl<'runtime> StructuralRelationView<'runtime> {
         } else {
             Err(StructuralReadError::OutsideDeclaredAccess)
         }
+    }
+
+    pub(crate) fn derived_source_relation(
+        &self,
+        id: RelationId,
+        definition: &crate::derived_relation::DerivedRelationHandle,
+    ) -> Result<Option<StructuralRelationRecord>, StructuralReadError> {
+        let work = u64::try_from(definition.physical_sources().len())
+            .ok()
+            .and_then(|n| n.checked_add(1))
+            .ok_or(StructuralReadError::WorkBudgetExceeded)?;
+        if !self.work.try_charge_work(work) {
+            return Err(StructuralReadError::WorkBudgetExceeded);
+        }
+        let Some(metadata) = self.state_view.relation_metadata(id) else {
+            return Ok(None);
+        };
+        if !definition
+            .physical_sources()
+            .iter()
+            .any(|(kind, _, _)| *kind == metadata.kind_id)
+        {
+            return Ok(None);
+        }
+        self.relation(id).map(Some)
+    }
+
+    pub(crate) fn require_derived_change_access(
+        &self,
+        definition: &crate::derived_relation::DerivedRelationHandle,
+    ) -> Result<(), StructuralReadError> {
+        for &kind in &definition.entry.carriers {
+            if !self.work.try_charge_work(1) {
+                return Err(StructuralReadError::WorkBudgetExceeded);
+            }
+            if !self.access.affects_entity(kind) {
+                return Err(StructuralReadError::OutsideDeclaredAccess);
+            }
+        }
+        for &(kind, _, _) in definition.physical_sources() {
+            if !self.work.try_charge_work(1) {
+                return Err(StructuralReadError::WorkBudgetExceeded);
+            }
+            if !self.access.affects_relation(kind) {
+                return Err(StructuralReadError::OutsideDeclaredAccess);
+            }
+        }
+        Ok(())
     }
 
     pub fn outgoing_relations_for_entity(

@@ -1,12 +1,13 @@
-//! Member48/v1 describes one provider contract; no executable root is transported.
+//! Member48: v1 Opaque; v2 structure; v3 membership; v4 row-local refinement.
 use super::*;
 use crate::record::application_schema::wire_vocabulary::{
     decode_optional, decode_type_identity, write_optional, write_type_identity,
 };
 use crate::record::application_schema::{canonical_value_reference, query_binding_reference};
 use worth_query_declaration::facade::application_query::{
-    ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexSourceMeaning,
-    ApplicationManagedIndexSourceParameters, ApplicationManagedIndexSourceScope,
+    ApplicationManagedIndexMembership as Membership, ApplicationManagedIndexProbeMeaning,
+    ApplicationManagedIndexSourceMeaning, ApplicationManagedIndexSourceParameters,
+    ApplicationManagedIndexSourceScope, ApplicationManagedIndexSourceStructure as Structure,
     ErasedApplicationManagedIndexDefinition as Definition,
     WorthQueryPortableManagedIndexParts as Parts,
     WorthQueryPortableManagedIndexProbeParts as Probe,
@@ -33,6 +34,19 @@ pub(super) fn write(
     output.text(&parts.name)?;
     output.text(&parts.provider)?;
     output.u32(parts.provider_version)?;
+    if parts.semantic_version >= 2 {
+        output.u16(match parts.structure {
+            Structure::Opaque => 0,
+            Structure::BinarySourceTree => 1,
+        })?;
+    }
+    if parts.semantic_version >= 3 {
+        output.u16(match parts.membership {
+            Membership::Candidates => 0,
+            Membership::ExhaustiveSourceTree => 1,
+            Membership::CheckedSummarySourceTree => 2,
+        })?;
+    }
     query_binding_reference::write(output, &parts.source.binding)?;
     output.u16(match parts.source.scope {
         ApplicationManagedIndexSourceScope::SameAdmittedScope => 1,
@@ -55,7 +69,16 @@ pub(super) fn write(
         probe.canonical.as_ref(),
         canonical_value_reference::write,
     )?;
-    crate::record::foundational_value::write_bool(output, probe.supports_admitted_decode)
+    crate::record::foundational_value::write_bool(output, probe.supports_admitted_decode)?;
+    if parts.semantic_version == 4 {
+        crate::record::managed_index_refinement::write(
+            output,
+            definition
+                .refinement()
+                .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
+        )?;
+    }
+    Ok(())
 }
 
 pub(super) fn decode(
@@ -63,13 +86,32 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     let semantic_version = input.u16()?;
-    if semantic_version != 1 {
+    if !matches!(semantic_version, 1 | 2 | 3 | 4) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     budget.require_nesting_depth(2)?;
     let name = input.text()?.to_owned();
     let provider = input.text()?.to_owned();
     let provider_version = input.u32()?;
+    let structure = if semantic_version == 1 {
+        Structure::Opaque
+    } else {
+        match input.u16()? {
+            0 => Structure::Opaque,
+            1 => Structure::BinarySourceTree,
+            _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+        }
+    };
+    let membership = if semantic_version < 3 {
+        Membership::Candidates
+    } else {
+        match input.u16()? {
+            0 => Membership::Candidates,
+            1 => Membership::ExhaustiveSourceTree,
+            2 => Membership::CheckedSummarySourceTree,
+            _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+        }
+    };
     let binding = query_binding_reference::decode(input)?;
     let scope = match input.u16()? {
         1 => ApplicationManagedIndexSourceScope::SameAdmittedScope,
@@ -88,21 +130,30 @@ pub(super) fn decode(
         canonical: decode_optional(input, canonical_value_reference::decode)?,
         supports_admitted_decode: crate::record::foundational_value::decode_bool(input)?,
     });
-    let member = ApplicationSchemaMember::ManagedIndex {
-        definition: Definition::from_untrusted_parts(Parts {
-            semantic_version,
-            name,
-            provider,
-            provider_version,
-            source: ApplicationManagedIndexSourceMeaning {
-                binding,
-                scope,
-                parameters,
-            },
-            entity,
-            probe,
-        }),
+    let parts = Parts {
+        semantic_version,
+        name,
+        provider,
+        provider_version,
+        structure,
+        membership,
+        source: ApplicationManagedIndexSourceMeaning {
+            binding,
+            scope,
+            parameters,
+        },
+        entity,
+        probe,
     };
+    let definition = if semantic_version == 4 {
+        Definition::from_refinement_parts(
+            parts,
+            crate::record::managed_index_refinement::decode(input)?,
+        )
+    } else {
+        Definition::from_untrusted_parts(parts)
+    };
+    let member = ApplicationSchemaMember::ManagedIndex { definition };
     require_shape(&member)?;
     Ok(member)
 }

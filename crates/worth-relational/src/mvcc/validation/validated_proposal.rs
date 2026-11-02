@@ -94,6 +94,17 @@ impl std::fmt::Debug for ValidatedRelationalProposal {
 }
 
 impl ValidatedRelationalProposal {
+    /// The successful round's actual metadata. Discarded symbol/residency rounds
+    /// never lend metadata through this accepted proposal.
+    pub fn managed_source_preparation_metadata(
+        &self,
+    ) -> Option<crate::validation::candidate_source::ManagedIndexSourcePreparationMetadata<'_>>
+    {
+        self.proposed_mutation
+            .source_interpretation
+            .preparation_metadata()
+    }
+
     pub const fn invariant_evidence(&self) -> &RelationalMutationInvariantEvidence {
         &self.evidence
     }

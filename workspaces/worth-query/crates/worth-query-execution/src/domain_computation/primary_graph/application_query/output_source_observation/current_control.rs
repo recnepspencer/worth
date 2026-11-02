@@ -20,7 +20,11 @@ impl SourceQueryObservationStop {
         use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
         use SourceQueryObservationStop as Stop;
         match self {
-            Stop::CurrentControl(_) | Stop::Principal(_) | Stop::Scope(_) | Stop::Basis(_) => true,
+            Stop::CurrentControl(_)
+            | Stop::ManagedIndex(_)
+            | Stop::Principal(_)
+            | Stop::Scope(_)
+            | Stop::Basis(_) => true,
             Stop::Admission(stop) | Stop::Preparation { cause: stop, .. } => matches!(
                 stop.kind(),
                 Admission::Authorization(_)
@@ -71,6 +75,34 @@ impl SourceQueryObservationStop {
 }
 
 impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
+    pub(in crate::domain_computation::primary_graph) fn ordinary(
+        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        shared: &'a SharedSelectedProductOperation<'a, S>,
+        principal: &'a WorthQueryAuthenticatedExternalPrincipal<S>,
+        request: &'a WorthQueryRequestScope,
+    ) -> Self {
+        Self {
+            application,
+            shared,
+            principal,
+            request,
+            history: None,
+            refused: Default::default(),
+        }
+    }
+    pub(super) fn record_history_refusal(
+        &self,
+        stop: SourceQueryObservationStop,
+    ) -> SourceQueryObservationStop {
+        if self.history.is_some() && stop.is_control_refusal() {
+            return self
+                .refused
+                .borrow_mut()
+                .get_or_insert_with(|| stop.clone())
+                .clone();
+        }
+        stop
+    }
     pub(in crate::domain_computation::primary_graph) fn new(
         application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
         shared: &'a SharedSelectedProductOperation<'a, S>,
@@ -105,14 +137,9 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
                 ))
             }
         };
-        Ok(Self {
-            application,
-            shared,
-            principal,
-            request,
-            history,
-            refused: Default::default(),
-        })
+        let mut reader = Self::ordinary(application, shared, principal, request);
+        reader.history = history;
+        Ok(reader)
     }
 
     /// A handler cannot swallow a control refusal or turn it into domain denial.

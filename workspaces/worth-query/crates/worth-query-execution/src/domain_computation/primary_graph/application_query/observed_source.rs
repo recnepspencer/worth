@@ -18,6 +18,7 @@ mod footprint_accounting;
 mod prepared_expectation;
 mod query_context_binding;
 pub(in crate::domain_computation) use query_context_binding::ObservedQueryExpressionContext;
+mod realized_footprint;
 mod result_set;
 pub(crate) mod retained_dependencies;
 mod retained_parameters;
@@ -118,6 +119,13 @@ pub struct WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) branch: std::sync::Arc<BranchId>,
     pub(in crate::domain_computation) selection: WorthQueryApplicationBasisSelectionIdentity,
     pub(in crate::domain_computation) model_root: EntityId,
+    // The current invocation's actual Source custody cannot be replaced by an
+    // interned semantic Meaning retaining an older admitted footprint.
+    pub(super) invocation_managed_source: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,
+        >,
+    >,
     pub(super) source_meaning: std::sync::Arc<source_identity::WorthQueryObservedSourceMeaning>,
     pub(super) scope_selector: std::sync::Arc<WorthQueryObservedScopeSelector>,
 

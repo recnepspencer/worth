@@ -18,6 +18,9 @@ impl<T> OwnedFixedBacking<T> {
     pub(super) fn push(&mut self, value: T) {
         self.elements.push(value);
     }
+    pub(super) fn replace_initialized(&mut self, index: usize, value: T) -> T {
+        std::mem::replace(&mut self.elements[index], value)
+    }
     pub(in super::super) fn elements(&self) -> &[T] {
         &self.elements
     }

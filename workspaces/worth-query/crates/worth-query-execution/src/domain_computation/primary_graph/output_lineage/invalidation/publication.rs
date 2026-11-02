@@ -148,6 +148,9 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
 impl From<RebaseVerificationReason> for FullVerificationReason {
     fn from(reason: RebaseVerificationReason) -> Self {
         match reason {
+            // The original owned cause remains in commit evidence; this is
+            // only the post-effect registration's conservative readiness hint.
+            RebaseVerificationReason::ManagedIndex(_) => Self::RegistrationIncomplete,
             // Pending publication already reported this request stop by value.
             // A later recovery records the incomplete source registration;
             // a settlement reason never carries an old request's interruption.

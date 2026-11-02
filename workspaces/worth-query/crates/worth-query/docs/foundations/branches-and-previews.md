@@ -126,7 +126,9 @@ head owner manages branch custody; ordinary request authorization still applies.
 Close each head explicitly. A `Retained { head, denial }` failure returns a live
 head after a refusal before retirement. A `Retired { branch, failure }` failure
 returns the actual cleanup obligation after retirement. Retain
-`failure.into_cleanup()` and call `retry()`; a further failure retains that same
+`failure.into_cleanup()` and call `retry_in_advancement(&phase)` inside an
+admitted advancement. Standalone callers can use `retry()` outside an active
+advancement. A further failure retains that same
 cleanup through `into_cleanup()`. For example, a reader holding the retired
 head can keep cleanup pending until that reader is released.
 

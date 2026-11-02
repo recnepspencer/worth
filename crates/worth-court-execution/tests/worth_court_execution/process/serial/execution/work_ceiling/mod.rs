@@ -1,3 +1,4 @@
+mod scope_observation;
 #[allow(unused_imports)]
 pub(crate) use {
     crate::work_ceiling::ordinary_context::authority,

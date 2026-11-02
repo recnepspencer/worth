@@ -117,7 +117,10 @@ where
                     == Some(FactlessCurrentness::Superseded)
         );
         match pending {
-            Err(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => {
+            Err(
+                stop @ (ConsumedOutputVerificationStop::SourceQueryAuthorization(_)
+                | ConsumedOutputVerificationStop::ManagedIndex(_)),
+            ) => {
                 return Err(
                     crate::domain_computation::primary_graph::output_reuse::verification_denial(
                         stop,

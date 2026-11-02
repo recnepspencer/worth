@@ -6,10 +6,12 @@ pub use crate::aggregate_identity::{
     PreparedAggregateCensus,
 };
 pub use crate::derived_relation::{
-    DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial,
-    DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationReads,
-    DerivedRelationWalkStep, PinnedDerivedRelationRead, PreparedDerivedRelationRead,
+    DerivedRelationAdjacency, DerivedRelationChangeData, DerivedRelationData,
+    DerivedRelationReadDenial, DerivedRelationReadIdentity, DerivedRelationReadShape,
+    DerivedRelationReads, DerivedRelationWalkStep, PinnedDerivedRelationRead,
+    PreparedDerivedRelationChanges, PreparedDerivedRelationRead,
 };
+pub use crate::validation::data::CustomInvariantNativeCheckpointDenial;
 pub use crate::validation::data::{
     CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,
     CustomInvariantExecutionContext, CustomInvariantExecutionError, CustomInvariantInterruption,
@@ -27,6 +29,21 @@ pub use crate::validation::data::{
 };
 pub use crate::validation::engine::InvariantExecutionResult;
 
+pub use crate::mvcc::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
+pub use crate::validation::candidate_source::{
+    ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
+    ManagedIndexSourceCacheRetirement, ManagedIndexSourceContextFactory,
+    ManagedIndexSourceContextReceipt, ManagedIndexSourceContextShare, ManagedIndexSourceField,
+    ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
+    ManagedIndexSourcePreparationDenial, ManagedIndexSourcePreparationMetadata,
+    ManagedIndexSourceProgram, ManagedIndexSourceProjection,
+    ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceProjectionRoute,
+    ManagedIndexSourceProviderFailure, ManagedIndexSourcePublication,
+    ManagedIndexSourcePublicationRoot, ManagedIndexSourceRead, ManagedIndexSourceRows,
+    ManagedIndexSourceScope, NativeSourceInterpretationIdentity,
+    PreparedManagedIndexProjectionRead, PreparedManagedIndexRelationRead,
+    PreparedManagedIndexSourceRead, PreparedManagedIndexSourceRoot,
+};
 pub use crate::validation::DuplicateCustomInvariantRegistration;
 
 pub use worth_foundational::facade::AggregateLineageKind;

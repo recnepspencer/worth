@@ -1,3 +1,5 @@
+#[path = "compilation_tests/catalog_sharing.rs"]
+mod catalog_sharing;
 use super::*;
 use worth_query_declaration::facade::application_schema::*;
 
@@ -151,6 +153,7 @@ fn canonical_admission_dispatch_is_the_exact_installed_binding_and_shared_catalo
         binding,
         retained.field("Entity", "Aspect", "Field").unwrap()
     ));
+    catalog_sharing::check(catalogue, &retained);
     assert!(binding.matches_binding::<NestedBinding>());
     assert!(!binding.matches_binding::<OpaqueBinding>());
     assert!(binding.supports_admitted_decode());

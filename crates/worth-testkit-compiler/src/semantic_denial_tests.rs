@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{json, Value};
 
-use crate::semantic_denial::check_semantic_outcome;
+use crate::semantic_denial::{check_semantic_outcome, RequiredDiagnostic};
 use crate::CompilerFixtureRefusal;
 
 fn source() -> PathBuf {
@@ -27,7 +27,7 @@ fn check(observation: &Value) -> Result<(), CompilerFixtureRefusal> {
     check_semantic_outcome(
         &source(),
         observation,
-        "E0614",
+        RequiredDiagnostic::Code("E0614"),
         &["PhysicalRecordChunkView"],
     )
 }
@@ -105,7 +105,12 @@ fn semantic_denial_refuses_vacuous_expectations() {
         ("E0614", vec!["PhysicalRecordChunkView", " "]),
     ] {
         assert!(matches!(
-            check_semantic_outcome(&source(), &outcome(), code, &symbols),
+            check_semantic_outcome(
+                &source(),
+                &outcome(),
+                RequiredDiagnostic::Code(code),
+                &symbols
+            ),
             Err(CompilerFixtureRefusal::InvalidPrebuild(_))
         ));
     }
@@ -213,4 +218,167 @@ fn semantic_denial_uses_label_child_and_expansion_evidence_without_rendered_sour
         }
         assert!(check(&changed).is_ok(), "{location}");
     }
+}
+
+fn uncoded_outcome() -> Value {
+    let mut observation = outcome();
+    observation["messages"][0]["code"] = Value::Null;
+    observation["messages"][0]["message"] =
+        "cannot construct OwnerCompletion due to private fields".into();
+    observation
+}
+
+fn check_uncoded(observation: &Value) -> Result<(), CompilerFixtureRefusal> {
+    check_semantic_outcome(
+        &source(),
+        observation,
+        RequiredDiagnostic::ExplicitNullCause("cannot construct"),
+        &["OwnerCompletion", "private fields"],
+    )
+}
+
+#[test]
+fn uncoded_semantic_denial_requires_explicit_null_not_missing_or_coded() {
+    assert!(check_uncoded(&uncoded_outcome()).is_ok());
+    for code in [None, Some(json!({"code":"E0451"})), Some(json!(7))] {
+        let mut changed = uncoded_outcome();
+        match code {
+            Some(code) => changed["messages"][0]["code"] = code,
+            None => {
+                changed["messages"][0]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("code");
+            }
+        }
+        assert!(check_uncoded(&changed).is_err());
+    }
+    let mut coded = outcome();
+    coded["messages"][0]["code"] = Value::Null;
+    assert!(matches!(
+        check(&coded),
+        Err(CompilerFixtureRefusal::WrongSemanticDenial { .. })
+    ));
+}
+
+#[test]
+fn uncoded_semantic_denial_binds_cause_symbols_and_fixture_in_one_error() {
+    for mutation in [
+        "cause",
+        "symbol",
+        "foreign",
+        "split-cause",
+        "split-attribution",
+        "rendered-only",
+    ] {
+        let mut changed = uncoded_outcome();
+        let mut other = changed["messages"][0].clone();
+        match mutation {
+            "cause" => {
+                changed["messages"][0]["message"] = "OwnerCompletion has private fields".into()
+            }
+            "symbol" | "split-cause" | "rendered-only" => {
+                changed["messages"][0]["rendered"] = changed["messages"][0]["message"].clone();
+                changed["messages"][0]["message"] =
+                    "cannot construct OtherCarrier due to private fields".into();
+            }
+            "foreign" | "split-attribution" => {
+                changed["messages"][0]["spans"][0]["file_name"] = "foreign.rs".into()
+            }
+            _ => unreachable!(),
+        }
+        if mutation.starts_with("split-") {
+            other["message"] = "unrelated OwnerCompletion with private fields".into();
+            changed["messages"].as_array_mut().unwrap().push(other);
+        }
+        assert!(
+            matches!(
+                check_uncoded(&changed),
+                Err(CompilerFixtureRefusal::WrongSemanticDenial { .. })
+            ),
+            "{mutation}"
+        );
+    }
+}
+
+#[test]
+fn uncoded_semantic_denial_refuses_vacuous_expectations() {
+    for (cause, symbols) in [
+        ("", vec!["OwnerCompletion"]),
+        (" ", vec!["OwnerCompletion"]),
+        ("cannot construct", vec![]),
+        ("cannot construct", vec![""]),
+        ("cannot construct", vec!["OwnerCompletion", " "]),
+    ] {
+        assert!(matches!(
+            check_semantic_outcome(
+                &source(),
+                &uncoded_outcome(),
+                RequiredDiagnostic::ExplicitNullCause(cause),
+                &symbols
+            ),
+            Err(CompilerFixtureRefusal::InvalidPrebuild(_))
+        ));
+    }
+}
+
+#[test]
+fn uncoded_semantic_denial_rejects_setup_before_or_after_its_match() {
+    for setup_first in [false, true] {
+        for field in ["message", "rendered"] {
+            let mut changed = uncoded_outcome();
+            let mut setup = changed["messages"][0].clone();
+            setup[field] = "no matching package named `missing`".into();
+            setup["spans"] = json!([]);
+            changed["messages"]
+                .as_array_mut()
+                .unwrap()
+                .insert(if setup_first { 0 } else { 1 }, setup);
+            assert!(
+                matches!(check_uncoded(&changed), Err(CompilerFixtureRefusal::WrongSemanticDenial { reason, .. }) if reason.contains("setup failure"))
+            );
+        }
+    }
+}
+
+#[test]
+fn uncoded_semantic_denial_preserves_evidence_and_wire_refusals() {
+    for (field, value) in [
+        ("fate", "compiled"),
+        ("environment", "production"),
+        ("proof_stage", "codegen"),
+        ("audience_identity", ""),
+        ("environment_identity", ""),
+        ("shared_target_root", ""),
+    ] {
+        let mut changed = uncoded_outcome();
+        changed[field] = value.into();
+        assert!(check_uncoded(&changed).is_err(), "{field}");
+    }
+    for field in ["message", "spans", "children", "rendered"] {
+        let mut changed = uncoded_outcome();
+        changed["messages"][0][field] = 7.into();
+        assert!(
+            matches!(
+                check_uncoded(&changed),
+                Err(CompilerFixtureRefusal::InvalidPrebuild(_))
+            ),
+            "{field}"
+        );
+    }
+    let mut no_error = uncoded_outcome();
+    no_error["messages"][0]["level"] = "note".into();
+    assert!(matches!(
+        check_uncoded(&no_error),
+        Err(CompilerFixtureRefusal::NoCompilerErrors(_))
+    ));
+}
+
+#[test]
+fn uncoded_semantic_denial_accepts_harmless_rendering_changes() {
+    let mut changed = uncoded_outcome();
+    changed["messages"][0]["rendered"] = "different rendering without identifying fragments".into();
+    changed["messages"][0]["message"] =
+        "private fields prevent callers: cannot construct OwnerCompletion".into();
+    assert!(check_uncoded(&changed).is_ok());
 }

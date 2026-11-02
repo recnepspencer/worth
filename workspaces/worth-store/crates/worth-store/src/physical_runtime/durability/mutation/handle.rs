@@ -1,3 +1,5 @@
+mod anchored_step;
+pub(in crate::physical_runtime) use anchored_step::ManagedPublicationRegistration;
 use std::cell::Cell;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, Weak};
 
@@ -22,6 +24,8 @@ pub(in crate::physical_runtime) struct PhysicalMutationAttempt {
     effect_cutover: Mutex<()>,
     state: Mutex<PhysicalMutationAttemptState>,
     changed: Condvar,
+    interruption: Mutex<Option<Arc<worth_execution::ExecutionInterruptionView>>>,
+    anchored_step: Mutex<Option<anchored_step::ManagedPublicationCustody>>,
 }
 
 struct PhysicalMutationAttemptState {
@@ -119,7 +123,19 @@ impl PhysicalMutationAttempt {
                 completed_unobserved_recorded: false,
             }),
             changed: Condvar::new(),
+            interruption: Mutex::new(prepared.interruption()),
+            anchored_step: Mutex::new(None),
         })
+    }
+
+    pub(in crate::physical_runtime) fn original_request_stop(
+        &self,
+    ) -> Option<worth_execution::MapKernelStop> {
+        self.interruption
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .and_then(|view| view.check_live().err())
     }
 
     pub(in crate::physical_runtime) const fn identity(&self) -> PhysicalMutationIdentity {
@@ -177,17 +193,50 @@ impl PhysicalMutationAttempt {
         &self,
         terminal: PhysicalMutationTerminalFact,
     ) {
-        let mut state = self.state();
-        state.terminal = Some(terminal);
+        self.state().terminal = Some(terminal.clone());
+        let step = self
+            .anchored_step
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .map(|custody| custody.recorder());
+        if let Some(step) = step {
+            step.preserve_fact(&terminal);
+        }
+    }
+
+    pub(in crate::physical_runtime) fn retained_physical_fact(
+        &self,
+    ) -> Option<PhysicalMutationTerminalFact> {
+        self.state().terminal.clone()
+    }
+
+    pub(in crate::physical_runtime) fn visible_terminal_fact(
+        &self,
+    ) -> Option<PhysicalMutationTerminalFact> {
+        let state = self.state();
+        if state.terminal_visible {
+            state.terminal.clone()
+        } else {
+            None
+        }
     }
 
     pub(in crate::physical_runtime) fn publish_terminal(&self) {
+        let interruption = self
+            .interruption
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
+        drop(interruption);
         let mut state = self.state();
         state
             .progress
             .enter(PhysicalMutationProgressPhase::Terminal);
         state.terminal_visible = true;
         self.changed.notify_all();
+        drop(state);
+        self.publish_journal_visibility();
     }
 
     pub(in crate::physical_runtime) fn record_completed_unobserved_on_completion(

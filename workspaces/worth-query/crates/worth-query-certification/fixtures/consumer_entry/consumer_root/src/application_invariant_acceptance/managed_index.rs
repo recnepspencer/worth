@@ -5,8 +5,21 @@ mod expectations;
 mod host;
 mod journey;
 #[cfg(test)]
-mod lifecycle;
+pub(super) mod lifecycle;
+mod maintained;
 mod mutation;
 mod prefix;
 mod query;
+mod refusing;
 mod schema;
+#[cfg(test)]
+mod value_edits;
+
+const PREFIX_MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+    worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::ExhaustiveSourceTree;
+
+const SOURCE_MAX_RESULTS: usize = 16;
+
+const PREFIX_REFINEMENT: Option<
+    worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
+> = None;

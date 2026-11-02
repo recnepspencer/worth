@@ -27,17 +27,19 @@ pub(crate) use candidate::{CandidatePayload, PreparedRelationalCandidateAdmissio
 pub use candidate::{DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate};
 pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
+    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,
 };
 pub use companion::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    PendingCompanionRegistration, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
-    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
-    PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
-    PublicationCompanionRegistrationStop, RelationalPublicationCompanion,
-    ReservedCompanionBranchCell,
+    ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement, ManagedIndexSourceForkPreparation,
+    ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PendingCompanionRegistration,
+    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    PublicationCompanionPreflight, PublicationCompanionRegistration,
+    PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
+    RelationalPublicationCompanion, ReservedCompanionBranchCell,
 };
 pub use outcome::{
     PerformedRelationalCommit, PublishRelationalCommit, RelationalPublicationDeferred,

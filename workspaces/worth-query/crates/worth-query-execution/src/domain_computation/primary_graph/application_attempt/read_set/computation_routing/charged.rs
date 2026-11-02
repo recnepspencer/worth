@@ -28,6 +28,7 @@ impl ChargedBytes for WorthQueryApplicationFactKey {
         match self {
             // The native read retains its own actual backing and custody.
             Self::ComponentSelection(_)
+            | Self::ManagedIndexSource(_)
             | Self::SourcePublication(_)
             | Self::StructuralWalk(_)
             | Self::Aggregate(_) => 0,
@@ -76,6 +77,7 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
                 .saturating_add(list(candidates)),
             Self::WorkflowInstanceCapacity { instances, .. } => list(instances),
             Self::ComponentSelection { .. }
+            | Self::ManagedIndexSource { .. }
             | Self::SourcePublication { .. }
             | Self::StructuralWalk { .. }
             | Self::Aggregate { .. }

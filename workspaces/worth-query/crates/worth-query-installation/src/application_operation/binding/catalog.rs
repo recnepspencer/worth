@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
 use crate::application_schema::WorthQueryInstalledApplicationSchema;
 
 use super::WorthQueryCompiledApplicationMutationBinding;
+mod managed_index_reads;
 mod source_query;
 mod workflow_requirements;
 use crate::application_operation::{
@@ -82,6 +83,7 @@ where
         validate_principal(schema, descriptor)?;
         validate_outputs(schema, descriptor)?;
         source_query::validate(schema, descriptor)?;
+        managed_index_reads::validate(schema, descriptor)?;
         if let Some(existing) = descriptors.insert(descriptor.identity().to_owned(), descriptor) {
             let kind = if existing == descriptor {
                 DenialKind::MutationBindingIdentityCollision

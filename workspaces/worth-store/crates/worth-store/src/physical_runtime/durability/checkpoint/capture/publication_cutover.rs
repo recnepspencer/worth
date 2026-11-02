@@ -161,7 +161,10 @@ impl PhysicalCheckpointCaptureOwner {
                 durable,
                 context.attempt,
                 context.key,
-                PhysicalCheckpointProvenNoEffectCause::CancelledAndCandidateRemoved,
+                context
+                    .attempt
+                    .pre_publication_stop_cause(true)
+                    .unwrap_or(PhysicalCheckpointProvenNoEffectCause::CancelledAndCandidateRemoved),
             );
         }
         publish_under_cutover(

@@ -76,7 +76,8 @@ pub(super) fn eligible_registrations<'state>(
             let access = registration.access_contract();
             let has_declared_applicability = !access.affected_entity_kinds.is_empty()
                 || !access.affected_relation_kinds.is_empty();
-            let unrelated = has_declared_applicability
+            let unrelated = registration.managed_sources.is_empty()
+                && has_declared_applicability
                 && touched_kinds
                     .get_or_init(|| {
                         super::custom_applicability::CandidateTouchedKinds::from_request(
@@ -122,7 +123,28 @@ pub(super) fn eligible_registrations<'state>(
             if preparation_budget.is_some_and(|budget| budget.stop().is_some()) {
                 return None;
             }
+            // Managed applicability comes from the complete Native pullback,
+            // including indirect endpoint changes. An empty invocation set is
+            // non-applicability, never a successful zero-callback execution.
+            // Association failures continue through the rule's refusal path.
+            if !registration.managed_sources.is_empty()
+                && crate::validation::candidate_source::observed_scopes(
+                    &registration.managed_sources,
+                    &planner.committed_relations(),
+                    &planner.relations(),
+                )
+                .is_ok_and(|scopes| scopes.is_empty())
+            {
+                return Some(InvariantPacketRegistration::CustomNotApplicable {
+                    registration: registration.clone(),
+                    prepared_scope,
+                    retained_touched: planner.retained_touched(),
+                    work,
+                    basis: CustomInvariantNonApplicability::NoApplicableTouch,
+                });
+            }
             if request.semantic_plan().is_some()
+                && registration.managed_sources.is_empty()
                 && has_declared_applicability
                 && !planner.has_applicable_touches()
                 && !work.exceeded()

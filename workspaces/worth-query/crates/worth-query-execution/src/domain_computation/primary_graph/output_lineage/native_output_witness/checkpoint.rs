@@ -37,6 +37,7 @@ impl SealedNativeOutputWitness {
             // The fact owner reserves on this carried meter before reading
             // and settles the actual probe debit on success or failure.
             match fact.source_currentness_in(relational, execution, snapshot)? {
+                Err(stop @ crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::ManagedIndex(_)) => return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(stop)),
                 Err(stop @ crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::OutputObservation(_)) => return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(stop)),
                 Ok(movement) if movement.movement() == Movement::Unmoved => {}
                 Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Execution(cause)) => {

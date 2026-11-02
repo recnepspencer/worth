@@ -7,10 +7,31 @@ use std::cell::RefCell;
 use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};
 
 /// A controlled request refusal or the provider's retained concrete domain cause.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexWorkDenial {
     Controlled(Stop),
     Provider(WorthQueryManagedIndexProviderFailure),
+}
+impl worth_execution::ChargedBytes for WorthQueryManagedIndexWorkDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        match self {
+            Self::Provider(cause) => cause.retained_payload_bytes(),
+            Self::Controlled(_) => 0,
+        }
+    }
+}
+impl std::fmt::Display for WorthQueryManagedIndexWorkDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+impl std::error::Error for WorthQueryManagedIndexWorkDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Provider(cause) => Some(cause),
+            Self::Controlled(_) => None,
+        }
+    }
 }
 
 impl From<Stop> for WorthQueryManagedIndexWorkDenial {
@@ -28,12 +49,22 @@ pub(super) fn controlled<R>(
     let outcome = execution.run_native_with_checkpoint(|context| {
         let accounted = context.has_accounting();
         let context = RefCell::new(context);
-        let checkpoint = |work| {
-            if accounted {
+        let checkpoint = |work, source: Option<&worth_relational::facade::runtime::CustomInvariantReadBudget<'_>>| {
+            if let Some(source) = source {
+                return source.checkpoint_native(&mut context.borrow_mut(), work).map_err(|cause| {
+                    use worth_relational::facade::runtime::CustomInvariantNativeCheckpointDenial as Denial;
+                    match cause {
+                        Denial::Source(cause) => Stop::NativeSource(cause),
+                        Denial::Request(cause) => Stop::Request(WorkCeilingDenial::Stopped(cause)),
+                    }
+                });
+            }
+            let result = if accounted {
                 context.borrow_mut().checkpoint(work)
             } else {
                 context.borrow_mut().poll()
-            }
+            };
+            result.map_err(|cause| Stop::Request(WorkCeilingDenial::Stopped(cause)))
         };
         let poll = || context.borrow_mut().poll();
         let control = Control::new(&checkpoint, &poll, &first);

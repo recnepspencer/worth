@@ -31,6 +31,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     UndeclaredDecisionRead,
     StaleEntityIdentity,
     MissingAuthoritativeFact,
+    ManagedIndexSourceDenied,
     InvalidAuthoritativeValue,
     IncompleteDecisionReadSet,
     DecisionDependencyMismatch,

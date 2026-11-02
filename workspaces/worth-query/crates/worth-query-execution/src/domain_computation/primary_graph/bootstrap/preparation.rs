@@ -114,8 +114,8 @@ impl WorthQueryExecutionInstallationAuthority {
             installed_schema.native_contracts(),
             &relational_runtime.config().schema.registry,
         )?;
-        let registrations =
-            invariant_factories.lower(installed_schema.binding_identity(), &layout)?;
+        let (registrations, managed_sources, source_initializer) =
+            invariant_factories.lower(&execution, installed_schema.binding_identity(), &layout)?;
         let expected_invariant_inventory_digest =
             worth_relational::facade::runtime::custom_invariant_inventory_digest(&registrations);
         let mut invariant_installation_receipt = relational_runtime
@@ -182,6 +182,7 @@ impl WorthQueryExecutionInstallationAuthority {
             layout,
             relational_runtime,
             product_world_resources.invalidation_resources(),
+            managed_sources,
             checkpoint.is_some(),
         )?;
         if let Some(publisher) = source_publisher {
@@ -225,6 +226,8 @@ impl WorthQueryExecutionInstallationAuthority {
             mutation_handlers: Default::default(),
             resources: Default::default(),
             managed_indexes: Default::default(),
+            source_initializer,
+            pending_source_initialization: None,
             program_activation_seed: None,
             program_activation: None,
             invariant_installation_receipt,

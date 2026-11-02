@@ -6,6 +6,57 @@ pub(super) fn append_fact(
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::ManagedIndexSource { observation } => {
+            kind(
+                entries,
+                prefix,
+                if observation.has_verified_realized_footprint() {
+                    "managed-verified-projected-candidate-content-v1"
+                } else {
+                    "managed-complete-source"
+                },
+            );
+            if let Some(origin) = observation.key().influence {
+                push(
+                    entries,
+                    format!("{prefix}.managed-parameters"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(origin.parameters)),
+                );
+            }
+            entity(entries, prefix, "scope", observation.key().scope);
+            push(
+                entries,
+                format!("{prefix}.source"),
+                CanonicalBasisEntryKind::Value,
+                CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(
+                    observation.key().obligation,
+                )),
+            );
+            if let Some(origin) = observation.key().influence {
+                push(
+                    entries,
+                    format!("{prefix}.admitted-query-influence-v1"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(origin.audience)),
+                );
+                push(
+                    entries,
+                    format!("{prefix}.projected-candidate-content-v1"),
+                    CanonicalBasisEntryKind::Value,
+                    CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(
+                        origin.content.bytes(),
+                    )),
+                );
+            } else {
+                number_u64(
+                    entries,
+                    prefix,
+                    "revision",
+                    observation.native().source_revision().0,
+                );
+            }
+        }
         WorthQueryApplicationObservedFact::ComponentSelection { observation } => {
             kind(entries, prefix, "scoped-native-components");
             push(

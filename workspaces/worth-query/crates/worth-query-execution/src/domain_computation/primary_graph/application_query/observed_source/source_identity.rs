@@ -89,24 +89,22 @@ impl Drop for WorthQueryObservedSourceMeaning {
             .meanings
             .get_mut(&self.coordinate)
             .is_some_and(|meanings| {
-                meanings.retain(|meaning| meaning.strong_count() > 0);
-                meanings.is_empty()
+                meanings
+                    .entries
+                    .retain(|meaning| meaning.strong_count() > 0);
+                meanings.entries.is_empty()
             });
-        if remove_coordinate {
-            state.meanings.remove(&self.coordinate);
-        }
+        let retired_coordinate = remove_coordinate.then(|| state.meanings.remove(&self.coordinate));
         let released = state.take_empty_material_storage();
         drop(state);
         drop(released);
+        drop(retired_coordinate);
     }
 }
 
 struct WorthQueryObservedSourceMeaningRegistryState {
     next_ordinal: u64,
-    meanings:
-        BTreeMap<WorthQueryObservedSourceCoordinate, Vec<Weak<WorthQueryObservedSourceMeaning>>>,
-    material_allocations:
-        Vec<Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>>,
+    meanings: BTreeMap<WorthQueryObservedSourceCoordinate, material_storage::CoordinateMeanings>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaningRegistry {
@@ -123,7 +121,6 @@ impl WorthQueryObservedSourceMeaningRegistry {
             state: Arc::new(Mutex::new(WorthQueryObservedSourceMeaningRegistryState {
                 next_ordinal: 1,
                 meanings: BTreeMap::new(),
-                material_allocations: Vec::new(),
             })),
         }
     }

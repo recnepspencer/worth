@@ -38,7 +38,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let state = std::mem::replace(&mut self.phase, NavigationPhase::Discarded);
         match state {
             NavigationPhase::Prepared => self.fork(phase),
-            NavigationPhase::ForkRecovery(recovery) => match recovery.release() {
+            NavigationPhase::ForkRecovery(recovery) => match recovery.release(phase) {
                 Ok(()) => {
                     self.phase = NavigationPhase::Prepared;
                     Ok(())
@@ -186,17 +186,17 @@ fn selector_denial(
 }
 
 impl custody::ForkCleanup {
-    pub(super) fn release(self) -> Result<(), Self> {
+    pub(super) fn release(self, phase: &WorthQueryAdvancementPhase<'_>) -> Result<(), Self> {
         use crate::basis::WorthQueryProductBranchCreationRecoveryReleaseFailure as Failure;
         match self {
-            Self::Creation(owner) => match owner.release_obligations(0) {
+            Self::Creation(owner) => match owner.release_obligations_in_advancement(phase, 0) {
                 Ok(_) => Ok(()),
                 Err(Failure::Recovery(failure)) => Err(Self::Creation(failure.into_recovery())),
                 Err(Failure::OwnerCleanup(failure)) => Err(Self::Cleanup(failure)),
             },
             Self::Cleanup(failure) => failure
                 .into_cleanup()
-                .retry()
+                .retry_in_advancement(phase)
                 .map(|_| ())
                 .map_err(Self::Cleanup),
         }

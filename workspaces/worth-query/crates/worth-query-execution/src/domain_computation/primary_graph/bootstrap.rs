@@ -31,6 +31,7 @@ mod advancement_publication;
 mod binding_denial;
 mod checkpoint;
 pub(in crate::domain_computation::primary_graph) mod checkpoint_transition;
+mod managed_source_initialization;
 mod preparation;
 mod program_activation_recovery;
 mod program_activation_seeding;
@@ -81,6 +82,8 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     committed_relation_count: usize,
     last_seed_commit_id: Option<worth_relational::facade::history::CommitId>,
     seed_batch_failed: bool,
+    source_initializer: Option<super::application_query::managed_index::SourceInitializationIssuer>,
+    pending_source_initialization: Option<super::application_query::managed_index::SelectedSources>,
     pub(super) recovered_publication: Option<WorthQueryPrimaryGraphPublication>,
     recovered_relational_authority:
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,

@@ -11,12 +11,16 @@ pub(crate) mod evaluation;
 mod pinned;
 mod proof;
 mod source;
+pub(crate) mod support;
 pub use pinned::PinnedDerivedRelationRead;
 mod structural;
 pub use proof::{
     DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationWalkStep,
     PreparedDerivedRelationRead,
 };
+pub(crate) use structural::StructuralSource;
+pub(crate) use structural::{prepare_changes, read_changes};
+pub use structural::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
 mod read;
 pub use read::{
     DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial, DerivedRelationReads,

@@ -1,15 +1,24 @@
 #![forbid(unsafe_code)]
 
 mod box2;
+mod segment_box;
 pub use box2::{BoundsDenial, Box2, Box2Coordinates};
+pub use segment_box::{endpoint_segment_intersects_box, segment_intersects_box, SegmentBoxDenial};
 mod box_tree;
-pub use box_tree::{build_box_tree, query_box_tree, BoxIndexDenial, BoxNode, BoxNodeLinks};
+pub use box_tree::{
+    build_box_tree, compare_box_bounds, insert_box_source, query_box_tree, remove_box_source,
+    replace_box_source, BoxEditStorage, BoxIndexDenial, BoxNode, BoxNodeLinks,
+};
 mod prefix_order;
+mod prefix_summary;
+mod prefix_watch;
+pub use prefix_summary::{join_prefix_bounds, prefix_bounds_may_match, PrefixSourceBounds};
+pub use prefix_watch::prefix_watch_bounds_may_match;
 mod prefix_tree;
 pub use prefix_order::{compare_prefix_keys, prefix_order, PrefixOrder};
 pub use prefix_tree::{
-    build_prefix_tree, query_prefix_tree, PrefixBuildStorage, PrefixIndexDenial, PrefixNode,
-    PrefixQueryStorage,
+    build_prefix_tree, insert_prefix_source, query_prefix_tree, remove_prefix_source,
+    PrefixBuildStorage, PrefixIndexDenial, PrefixNode, PrefixQueryStorage,
 };
 
 mod planar_operation;

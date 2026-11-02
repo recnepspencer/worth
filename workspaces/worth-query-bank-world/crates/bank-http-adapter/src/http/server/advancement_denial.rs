@@ -80,6 +80,7 @@ pub(super) fn physical_allocation(
         Physical::Layout
         | Physical::CapacityMismatch
         | Physical::WriteBeyondReserved
+        | Physical::UninitializedElement
         | Physical::IncompleteSeal => operator_denial(),
     }
 }

@@ -154,7 +154,7 @@ impl WorthQueryPrimaryGraphProvider {
         let semantic_work = u64::try_from(material.semantic.expected.len()).map_err(|_| {
             closure_failure("candidate semantic cardinality exceeds work representation")
         })?;
-        let candidate = self.validate_relational_candidate(
+        let (candidate, predicate) = self.validate_relational_candidate(
             execution,
             material.batch,
             &material.branch,
@@ -205,7 +205,7 @@ impl WorthQueryPrimaryGraphProvider {
             material.expected_step_preparation_work,
             touch_admission,
         );
-        self.retain_validated_candidate(session, candidate, work)
+        self.retain_validated_candidate(session, candidate, work, predicate)
     }
 
     fn retain_validated_candidate(
@@ -213,12 +213,22 @@ impl WorthQueryPrimaryGraphProvider {
         session: WorthQueryProviderSessionView<'_>,
         candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
         work: super::mutation_work::WorthQueryPrimaryMutationWorkCounters,
+        predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
-        self.attempts
+        let mut incoming = Some(
+            super::application_attempt_state::WorthQueryApprovedApplicationCandidate {
+                native: candidate,
+                work,
+                predicate,
+            },
+        );
+        let result = self
+            .attempts
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .retain_invariant_approved(session, candidate, work)
-            .map_err(closure_failure)
+            .retain_invariant_approved(session, &mut incoming);
+        drop(incoming); // Rejected incoming custody retires after the attempt gate.
+        result.map_err(closure_failure)
     }
 }
 

@@ -95,27 +95,11 @@ pub(in crate::domain_computation::primary_graph) fn map_bootstrap_commit_denial(
     let denial = primary_graph_denial(
         kind,
         format!(
-            "Relational rejected the application principal bootstrap transaction: {}",
+            "Relational rejected the application seed transaction: {}",
             error.detail()
         ),
     );
-    let fields = match error {
-        Error::Conflict { error, .. } => match error.class {
-            worth_relational::facade::transactions::ConflictClass::InvariantViolation {
-                fields,
-                ..
-            } => Some(fields),
-            _ => None,
-        },
-        Error::Publication { error, .. } => error
-            .into_invariant_violation()
-            .map(|violation| violation.fields),
-        _ => None,
-    };
-    if let Some(fields) = fields
-        && crate::domain_computation::WorthQueryRelationLawDenial::from_fields(&fields).is_some()
-    {
-        return denial.with_relation_law_fields(fields);
-    }
-    denial
+    denial.with_native_validation_failure(
+        super::super::provider::invariant_execution_failure::map_validation_failure(error),
+    )
 }

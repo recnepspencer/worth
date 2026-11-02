@@ -65,6 +65,7 @@ pub struct WorthQueryApplicationInvariantFactories<Schema> {
     factories: BTreeMap<(String, ApplicationInvariantExecutionPoint), Factory<Schema>>,
     installed_order: Vec<(String, ApplicationInvariantExecutionPoint)>,
     program_basis: Option<WorthQueryInvariantProgramBasis<Schema>>,
+    managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -92,8 +93,17 @@ where
             factories: BTreeMap::new(),
             installed_order: Vec::new(),
             program_basis: None,
+            managed_indexes: Default::default(),
             _schema: PhantomData,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_managed_index_catalog(
+        mut self,
+        catalog: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
+    ) -> Self {
+        self.managed_indexes = catalog;
+        self
     }
 
     /// Binds the admitted support roster this installation lowers under, so a
@@ -140,9 +150,17 @@ where
 
     pub(super) fn lower(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding_identity: ApplicationSchemaBindingIdentity,
         layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
-    ) -> Result<Vec<CustomInvariantRegistration>, WorthQueryPrimaryGraphInstallationDenial> {
+    ) -> Result<
+        (
+            Vec<CustomInvariantRegistration>,
+            super::application_query::managed_index::ManagedSourceInstallation,
+            Option<super::application_query::managed_index::SourceInitializationIssuer>,
+        ),
+        WorthQueryPrimaryGraphInstallationDenial,
+    > {
         if binding_identity != self.binding_identity {
             return Err(denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::ForeignInvariantFactory,
@@ -155,6 +173,18 @@ where
                 "factory inventory does not match the installed invariant catalog",
             ));
         }
+        // Compile supported physical Source shapes and bind the actual configured
+        // providers before publishing factories. Unsupported shapes still refuse
+        // in this compiler; every supported rule consumes Native's staged loans.
+        let (sources, initializer) =
+            super::application_query::managed_index::ManagedSourceInstallation::compile(
+                execution,
+                &self.managed_indexes,
+                layout,
+                self.expected
+                    .values()
+                    .flat_map(|rule| rule.managed_index_sources().iter().cloned()),
+            )?;
         let mut lowered = Vec::with_capacity(self.expected.len());
         for key in self.installed_order {
             let installed = self.expected.remove(&key).ok_or_else(|| {
@@ -204,12 +234,34 @@ where
                         detail,
                     )
                 })?;
+            let programs = installed
+                .managed_index_sources()
+                .iter()
+                .map(|requirement| {
+                    layout
+                        .managed_source(requirement.index())
+                        .cloned()
+                        .ok_or_else(|| {
+                            denial(
+                    WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedInvariantSource,
+                    requirement.index(),
+                )
+                        })
+                })
+                .collect::<Result<Vec<_>, _>>()?;
             let registration = rule
                 .into_registration(descriptor, self.binding_identity.clone(), program_selection)
                 .map_err(|detail| {
                     denial(
                         WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
                         detail,
+                    )
+                })?
+                .with_managed_index_sources(programs)
+                .map_err(|cause| {
+                    denial(
+                        WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedInvariantSource,
+                        format!("{}: {cause:?}", installed.identifier()),
                     )
                 })?;
             if !is_mandatory_candidate_registration(&registration) {
@@ -221,7 +273,7 @@ where
             lowered.push(registration);
         }
         lowered.push(workflow_publication::registration(layout.workflow())?);
-        Ok(lowered)
+        Ok((lowered, sources, initializer))
     }
 }
 

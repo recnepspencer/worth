@@ -29,6 +29,7 @@ impl RelationalPreparationRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: &mut BranchBoundRelationalTransaction,
         source: &RelationalProposalSource,
+        context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<PreparedProposalRound, TransactionCommitError> {
         let basis = transaction.basis.clone();
         let selected = crate::branch::SelectedRelationalBranchState::from_admitted_basis(&basis);
@@ -39,8 +40,13 @@ impl RelationalPreparationRuntime {
                 let round = self.preparation_round();
                 let read =
                     crate::branch::SelectedRelationalBranchRead::in_round(&selected, partitions);
-                let answer =
-                    round.prepare_proposal_symbol_round(execution, transaction, source, read);
+                let answer = round.prepare_proposal_symbol_round(
+                    execution,
+                    transaction,
+                    source,
+                    read,
+                    context,
+                );
                 (answer, round)
             },
         )
@@ -74,6 +80,7 @@ impl RelationalPreparationRuntime {
         transaction: &mut BranchBoundRelationalTransaction,
         source: &RelationalProposalSource,
         selected: crate::branch::SelectedRelationalBranchRead<'_>,
+        context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<PreparedProposalRound, TransactionCommitError> {
         let basis = transaction.basis.clone();
         crate::authority::commit::preparation::probe_symbol_rounds(
@@ -88,8 +95,9 @@ impl RelationalPreparationRuntime {
                     }
                     transaction.validate_staged_branch_locality(&selected, symbols.interner())?;
                     let input = RelationalTransactionValidationInput::from_transaction(transaction);
-                    let identity =
+                    let (identity, source_interpretation) =
                         self.issue_mutation_proposal_identity(transaction.transaction_id, &input)?;
+                    source_interpretation.bind_context(execution, context)?;
                     transaction.reserve_preparation_client_keys(
                         &mut symbols,
                         self.config.identity.client_key_symbol_policy,
@@ -121,6 +129,7 @@ impl RelationalPreparationRuntime {
                         Some(retained) => apply_retained_entity_selection_draft(
                             execution, &runtime, &selected, &prepared.working_state, retained,
                             prepared.schema_authority.as_ref(), &identity, symbols,
+                            source_interpretation,
                         ),
                         None => apply_mutation_draft(
                         execution,
@@ -131,10 +140,19 @@ impl RelationalPreparationRuntime {
                         prepared.schema_authority.as_ref(),
                         &identity,
                         symbols,
-                        validation_input.intent().materialization_mode(),
+                        source_interpretation,
                     ),
                     }?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
+                    mutation.prepare_managed_sources(
+                        *execution,
+                        &runtime,
+                        selected,
+                        &identity,
+                        (validation_input.merge_parent_bases().is_empty()
+                            && prepared.plan.retained().is_none())
+                            .then_some(prepared.plan.view().commands()),
+                    )?;
                     let control =
                         crate::validation::engine::InvariantPreparationControl::for_transaction(
                             &validation_input,

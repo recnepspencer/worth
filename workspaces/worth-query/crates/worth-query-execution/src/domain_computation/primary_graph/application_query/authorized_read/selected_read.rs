@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_s
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    plan: &mut WorthQueryAdmittedApplicationQueryPlan<
+    plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
         Query,
@@ -58,6 +58,65 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_s
 where
     Schema: ApplicationSchema,
 {
+    execute_selected_authorized_body_with_native_access(
+        execution,
+        application,
+        plan,
+        native,
+        |runtime, layout, plan| {
+            read_bounded_root_rows(runtime, execution, layout, plan, Some(spent))
+        },
+    )
+}
+
+/// The existing selected security/read session surrounds both Native row reads
+/// and an exact maintained Source observation. A callback supplies read mechanics,
+/// never an admission, invariant verdict or publication effect.
+pub(in crate::domain_computation::primary_graph::application_query) fn execute_selected_authorized_body_with_native_access<
+    Schema: ApplicationSchema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Output,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    plan: &WorthQueryAdmittedApplicationQueryPlan<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >,
+    native: &mut super::super::ApplicationQueryNativeAccess<'_>,
+    read: impl FnOnce(
+        &worth_relational::facade::runtime::RelationalRuntime,
+        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &WorthQueryAdmittedApplicationQueryPlan<
+            '_,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+    ) -> Result<Output, WorthQueryApplicationReadExecutionDenial>,
+) -> Result<
+    (
+        Output,
+        WorthQueryApplicationAuthorizationWorkEvidence,
+        crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
+    ),
+    SelectedAuthorizedReadStop,
+> {
     let super::WorthQueryQueryIndexPosture::SelectedInstalled(prepared) = &plan.index_posture
     else {
         return Err(SelectedAuthorizedReadStop::StaleSecurity);
@@ -90,13 +149,12 @@ where
                     plan,
                 )
                 .map_err(SelectedAuthorizedReadStop::Currentness)?;
-                let raw =
-                    match read_bounded_root_rows(runtime, execution, layout, plan, Some(spent)) {
-                        Ok(raw) => raw,
-                        Err(denial) => {
-                            return Err(SelectedAuthorizedReadStop::Read(denial));
-                        }
-                    };
+                let raw = match read(runtime, layout, plan) {
+                    Ok(raw) => raw,
+                    Err(denial) => {
+                        return Err(SelectedAuthorizedReadStop::Read(denial));
+                    }
+                };
                 Ok((
                     raw,
                     plan.authorization_work

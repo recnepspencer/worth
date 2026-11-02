@@ -420,6 +420,11 @@ pub use crate::locators::{
     FoundationalMergeScopeLocator, FoundationalSelectedAspectScopeLocator,
     FoundationalSelectedNodeScopeLocator, FoundationalTransitionLocator, LocatorAuthority,
 };
+pub use crate::managed_access::ManagedIndexMembership;
+pub use crate::managed_index_source::{
+    ManagedIndexColdSourcePosture, ManagedIndexSourceStructure,
+    ManagedSourceInterpretationCommitment,
+};
 pub use crate::performance::{
     attach_counter_backed_performance_receipt, attach_performance_bundle,
     attach_policy_admission_receipt, bridge_certified_performance_bundle_trust_boundary,
@@ -707,3 +712,5 @@ pub use crate::value_shape::{
     ValueVariantShape,
 };
 pub use worth_value_shape_derive::{ChargedBytes, WorthValue};
+
+pub use crate::projected_candidate_content::ProjectedCandidateContentV1;

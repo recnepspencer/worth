@@ -90,10 +90,12 @@ impl<'r, S: ApplicationSchema> HistoryHeadCustody<'r, S> {
                     Err(Self::Retired { branch, failure })
                 }
             },
-            Self::Retired { branch, failure } => match failure.into_cleanup().retry() {
-                Ok(receipt) => Ok(Some(ClosedHistoryHead::Cleanup { _receipt: receipt })),
-                Err(failure) => Err(Self::Retired { branch, failure }),
-            },
+            Self::Retired { branch, failure } => {
+                match failure.into_cleanup().retry_in_advancement(phase) {
+                    Ok(receipt) => Ok(Some(ClosedHistoryHead::Cleanup { _receipt: receipt })),
+                    Err(failure) => Err(Self::Retired { branch, failure }),
+                }
+            }
         }
     }
 

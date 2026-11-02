@@ -5,7 +5,7 @@ use worth_relational::facade::branch::{
 use worth_runtime_world::facade::OwnerRetirementWork;
 use worth_signal::facade::branch::{SignalBranchRetirementReason, SignalOwnerCancellationSource};
 
-use super::WorthQueryProductBranchOwnerCleanupDenial;
+use super::{OwnerCleanupRetirements, WorthQueryProductBranchOwnerCleanupDenial};
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 
 impl WorthQueryProductRuntime {
@@ -13,11 +13,16 @@ impl WorthQueryProductRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work: &OwnerRetirementWork,
+        retirements: &mut OwnerCleanupRetirements,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
         match work {
             OwnerRetirementWork::RelationalBranchRetirement { identity, .. } => {
+                let prepared = retirements.prepare(execution, identity)?;
                 match self.relational_lifecycle.delete_branch(execution, identity) {
-                    Ok(RelationalBranchDeletionOutcome::Deleted(_)) => Ok(()),
+                    Ok(RelationalBranchDeletionOutcome::Deleted(deleted)) => {
+                        retirements.deleted(prepared, deleted);
+                        Ok(())
+                    }
                     Ok(RelationalBranchDeletionOutcome::WaitingForActiveOperations(_)) => Err(
                         WorthQueryProductBranchOwnerCleanupDenial::RelationalOperationsStillActive,
                     ),

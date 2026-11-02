@@ -46,6 +46,20 @@ impl WorthQueryCommittedProductPublication {
         self.performed().map(|receipt| receipt.publication())
     }
 
+    /// Join metadata to the real performed predecessor, including its admission.
+    pub(in crate::domain_computation::primary_graph) fn follows_observation(
+        &self,
+        observation: &ProductBranchObservation,
+    ) -> bool {
+        self.performed().is_some_and(|receipt| {
+            let before = receipt.publication().old_product_head();
+            before.branch_identity() == observation.branch_identity()
+                && before.lifecycle_incarnation() == observation.lifecycle_incarnation()
+                && before.reference_generation() == observation.reference_generation()
+                && before.selected_commit() == observation.selected_commit()
+                && before.basis().relational_basis() == observation.basis().relational_basis()
+        })
+    }
     /// The original performed selection, without retaining its owner bases.
     /// Identity-only custody cannot supply the missing full basis.
     pub(in crate::domain_computation::primary_graph) fn observed_product_identity(

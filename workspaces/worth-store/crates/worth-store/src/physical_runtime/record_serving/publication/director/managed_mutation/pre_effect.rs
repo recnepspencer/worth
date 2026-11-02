@@ -11,6 +11,14 @@ impl RecordPublicationDirector {
         &self,
         attempt: &PhysicalMutationAttempt,
     ) -> Option<PhysicalMutationProvenNoEffectCause> {
+        if let Some(stop) = attempt.original_request_stop() {
+            return Some(match stop {
+                worth_execution::MapKernelStop::DeadlineElapsed => {
+                    PhysicalMutationProvenNoEffectCause::DeadlineElapsedBeforeGroupSeal
+                }
+                _ => PhysicalMutationProvenNoEffectCause::CancelledBeforeGroupSeal,
+            });
+        }
         if attempt.cancellation_requested() {
             return Some(PhysicalMutationProvenNoEffectCause::CancelledBeforeGroupSeal);
         }
@@ -49,6 +57,9 @@ impl RecordPublicationDirector {
     ) -> PhysicalMutationTerminalFact {
         match self.settle_prepared_before_group_seal(prepared, cause) {
             PhysicalPreSealCancellationOutcome::ProvenNoEffect(terminal) => {
+                attempt.install_terminal(PhysicalMutationTerminalFact::ProvenNoEffect(
+                    terminal.clone(),
+                ));
                 let terminal = match detail {
                     Some(detail) => terminal.with_admission_detail(detail),
                     None => terminal,

@@ -42,8 +42,13 @@ pub(super) fn publish(
     let disposition = provider.unpublished_idempotency_disposition();
     let (retain_live_observation, retain_output_demand_observation, retain_client_observation) =
         attempt
-            .reserve_successor_observations(provider)
-            .map_err(|_| capacity_exhausted())?;
+            .reserve_successor_observations(&execution, provider)
+            .map_err(|denial| match denial {
+                crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => {
+                    crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None)
+                }
+                crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(_) => capacity_exhausted(),
+            })?;
     let successor_observation_requested =
         retain_live_observation || retain_output_demand_observation || retain_client_observation;
     let Some(change) = attempt.take_conditional_definition() else {

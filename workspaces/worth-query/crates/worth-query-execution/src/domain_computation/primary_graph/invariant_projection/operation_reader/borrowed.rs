@@ -68,7 +68,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                         super::admitted::SourceAccess::none(),
                     )
                 },
-                StorageControl::new(allocation, Some(admission.publication_request())),
+                StorageControl::new(allocation, Some(admission.publication_request()))
+                    .with_execution(*execution),
             )
             .map_err(|denial| {
                 WorthQueryOperationProjectionDenial::from_invariant(denial, admission.operation())

@@ -37,13 +37,16 @@ pub(crate) use meter::detach_meter_for_test;
 pub(crate) use meter::enter_certification_activity;
 pub(crate) use meter::enter_retained_memory;
 pub(crate) use meter::has_active_kernel;
+pub(crate) use meter::run_invoking_preparation;
 pub(crate) use meter::run_invoking_scope;
 pub(crate) use meter::MemoryActivityGuard;
 pub use meter::NestedComputationStop;
+pub(crate) use meter::ObservationScope;
 pub(crate) use meter::RunLimits;
 pub(crate) use meter::StructuralSpanFailure;
 pub use meter::{
-    ExecutionKernelReceipt, ExecutionKernelReceiptStorage, KernelContext, KernelFailure, KernelStop,
+    ExecutionKernelReceipt, ExecutionKernelReceiptStorage, ExecutionWorkLoan,
+    ExecutionWorkLoanDenial, KernelContext, KernelFailure, KernelStop,
 };
 pub(crate) use ordered::{
     ordered_memory_requirement, run_ordered, run_ordered_until, OrderedOutcome, OrderedStep,
@@ -60,6 +63,7 @@ pub(crate) use scope::{
 };
 pub use scope::{ScopeOutcome, ScopeStop};
 
+pub(crate) use meter::active_deadline;
 pub(crate) use meter::active_serial_memory;
 pub(crate) use meter::active_stop;
 pub(crate) use meter::available_serial_memory_bytes;

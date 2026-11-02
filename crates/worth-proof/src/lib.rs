@@ -12,6 +12,15 @@ pub mod contracts;
 mod dx;
 mod effect;
 mod linear;
+mod managed_access;
+mod managed_source;
+pub use managed_access::{
+    AdmittedManagedIndexCoverage, BorrowedManagedCoverageFrame, BorrowedRealizedFootprintFrame,
+    CapturedRealizedFootprint, ManagedCoverageDisposition, ManagedCoverageFrontier,
+    ManagedCoverageRegion, ManagedCoverageStep, ManagedIndexCoverageAuthority,
+    ManagedIndexCoverageDenial, ManagedIndexCoverageIssuer, RealizedFootprintAuthority,
+    RealizedFootprintDenial, RealizedFootprintIssuer, VerifiedRealizedFootprint,
+};
 mod phase;
 pub mod prelude;
 mod proof;
@@ -24,6 +33,13 @@ pub use application_publication::{
     AdmittedRequiredOutputPublication, AdmittedRequiredOutputSuccession,
     InstalledApplicationPublicationAuthority, InstalledApplicationPublicationOwner,
     RequiredOutputPublicationAuthority,
+};
+pub use managed_source::{
+    AdmittedManagedIndexSourceAudience, AdmittedManagedIndexSourceCorrespondence,
+    AdmittedManagedIndexSourceInitialization, ManagedIndexSourceAudienceAuthority,
+    ManagedIndexSourceAudienceIssuer, ManagedIndexSourceCorrespondenceAuthority,
+    ManagedIndexSourceCorrespondenceIssuer, ManagedIndexSourceInitializationAuthority,
+    ManagedIndexSourceInitializationIssuer,
 };
 mod transition;
 mod type_level;

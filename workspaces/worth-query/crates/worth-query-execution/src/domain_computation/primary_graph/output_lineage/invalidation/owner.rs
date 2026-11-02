@@ -11,6 +11,8 @@ use worth_relational::facade::mvcc::PublicationCompanionPreflight;
 pub(in crate::domain_computation) struct SourceInvalidationOwner {
     pub(super) runtime_instance_id: u64,
     pub(super) resources: WorthQueryInvalidationResources,
+    pub(in crate::domain_computation::primary_graph) managed_views:
+        Arc<crate::domain_computation::primary_graph::application_query::derived_view::ManagedDerivedViewRegistry>,
     pub(super) branches: Mutex<BranchCells>,
     pub(super) released: Mutex<Vec<Arc<super::super::RecordedSettlementIdentity>>>,
 }
@@ -29,10 +31,18 @@ impl SourceInvalidationOwner {
         resources: WorthQueryInvalidationResources,
         runtime_instance_id: u64,
     ) -> Self {
+        Self::with_managed_views(resources, runtime_instance_id, Arc::new(Default::default()))
+    }
+    pub(in crate::domain_computation::primary_graph) fn with_managed_views(
+        resources: WorthQueryInvalidationResources,
+        runtime_instance_id: u64,
+        managed_views: Arc<crate::domain_computation::primary_graph::application_query::derived_view::ManagedDerivedViewRegistry>,
+    ) -> Self {
         resources.attach_runtime_observations();
         Self {
             runtime_instance_id,
             resources,
+            managed_views,
             branches: Mutex::new(BranchCells {
                 cells: OrdMap::new(),
                 vacant: None,

@@ -10,25 +10,19 @@
 use sha2::{Digest, Sha256};
 
 use super::frame::AnchoredRecordHeader;
-use super::membership::{SelectedRecord, ValueMembership};
 use super::{
     AnchoredRecordMember, AnchoredRecordMemberLocator, AnchoredRecordMembership,
     AnchoredRecordName, AnchoredRecordPublicationFailure, AnchoredRecordVersion, AnchoredRecords,
 };
-use crate::physical_runtime::record_serving::{AnchoredRecordAppend, DurableRecordAppendFailure};
-use crate::physical_runtime::{
-    AdmittedRecordPlacementPolicy, PhysicalMutationDeadline, RecordAppendDenial,
-};
+use crate::physical_runtime::record_serving::DurableRecordAppendFailure;
+use crate::physical_runtime::{AdmittedRecordPlacementPolicy, PhysicalMutationDeadline};
 
 mod admission;
 mod batch_capacity;
 mod current;
 mod member_writes;
-
-use admission::AdmittedMembers;
-use batch_capacity::BatchCapacity;
-use current::{CurrentDecision, RequestedPayload};
-use member_writes::MemberWritePlan;
+pub(super) mod operation;
+pub(in crate::physical_runtime) mod step_custody;
 
 type Failure = AnchoredRecordPublicationFailure;
 
@@ -95,93 +89,41 @@ impl AnchoredRecordPublished {
 }
 
 impl AnchoredRecords<'_> {
-    /// Makes `payload` and its members the value of its name at
-    /// `expected_generation + 1` in one durable root decision, or reports why
-    /// not.
-    ///
-    /// Publications are serialized across names. Every refusal before the
-    /// first member batch has no effect. A retry of a value whose payload and
-    /// member contents are already durable at the requested generation
-    /// writes nothing and answers `AlreadyPublished`.
+    /// Drives the same owned phases using this door's existing Signal deadline.
+    /// Admission hashes input and may read the selected record; each pending
+    /// phase waits only for its current ordinary managed append.
     pub fn publish(
         &self,
         publication: AnchoredRecordPublication,
     ) -> Result<AnchoredRecordPublished, Failure> {
-        if self
-            .runtime
-            .journal_registry()
-            .reserves(publication.name.anchor())
-        {
-            return Err(Failure::ReservedForOrderedJournal);
-        }
-        let mut state = self.runtime.anchored_record_state();
-        let name = publication.name;
-        if state.unresolved.contains(&name.anchor()) {
-            return Err(Failure::Unresolved);
-        }
-        if publication.payload.is_empty() {
-            return Err(Failure::EmptyPayload);
-        }
-        let capacity = BatchCapacity::of(self.runtime, publication.placement);
-        let members = AdmittedMembers::admit(publication.members, capacity)?;
-        let payload = RequestedPayload {
-            sha256: Sha256::digest(&publication.payload).into(),
-            bytes: publication.payload.len() as u64,
+        use operation::{
+            AnchoredRecordOperationFailure as Cause, AnchoredRecordPublicationStart as Start,
+            AnchoredRecordPublicationStep as Step,
         };
-        let target = match self.decide_against_current(
-            name,
-            publication.expected_generation,
-            payload,
-            &members,
-        )? {
-            CurrentDecision::AlreadyPublished(membership) => {
-                return Ok(AnchoredRecordPublished::AlreadyPublished(membership))
+        let mut operation = match self.admit_publication(publication, None) {
+            Start::Ready {
+                operation,
+                recovery: _recovery,
+            } => operation,
+            Start::AlreadyPublished(receipt) => return Ok(receipt),
+            Start::Refused(Cause::Publication(failure)) => return Err(failure),
+            Start::Refused(Cause::Busy) => return Err(Failure::PublicationBusy),
+            Start::Refused(_) => return Err(Failure::Unresolved),
+        };
+        loop {
+            match operation.drive(self, None) {
+                Step::Pending(pending) => {
+                    let step = pending.shared.state().accepted.clone();
+                    if let Some(step) = step {
+                        step.wait();
+                    }
+                    operation = pending;
+                }
+                Step::Ready(ready) => operation = ready,
+                Step::Completed(receipt) => return Ok(receipt),
+                Step::Failed(failure) => return Err(failure.into_publication_failure()),
             }
-            CurrentDecision::Replace { target } => target,
-        };
-        let header = AnchoredRecordHeader::describe(
-            name.anchor(),
-            target,
-            &publication.payload,
-            members.len(),
-        );
-        if header.record_bytes() > capacity.bytes {
-            return Err(Failure::Batch(RecordAppendDenial::BatchByteLimitExceeded));
         }
-        let content = members.content_digest(name, target, payload.sha256);
-        let incarnation = self.runtime.runtime_identity().get();
-        let (plan, resolution) =
-            MemberWritePlan::plan(members, name, target, content, incarnation, capacity)?;
-        let written = plan.write(
-            &self.runtime.record_submission(),
-            publication.placement,
-            publication.deadline,
-        )?;
-        let locators = resolution.resolve(&written);
-        let record = header.encode_record(&locators, &publication.payload);
-        let record_sha256: [u8; 32] = Sha256::digest(&record).into();
-        let persisted = AnchoredRecordAppend {
-            record,
-            anchor: name.anchor(),
-            expected_generation: publication.expected_generation,
-            idempotency: material(name, target, record_sha256, incarnation),
-            placement: publication.placement,
-            deadline: publication.deadline,
-        }
-        .submit(&self.runtime.record_submission())
-        .map_err(|failure| {
-            if failure.leaves_fate_unresolved() {
-                state.unresolved.insert(name.anchor());
-            }
-            door_failure(failure)
-        })?;
-        let selected = SelectedRecord {
-            record: persisted,
-            record_sha256,
-            generation: target,
-        };
-        let value = self.remember(name, ValueMembership::new(selected, header, locators));
-        Ok(AnchoredRecordPublished::Published(value.described(name)))
     }
 }
 

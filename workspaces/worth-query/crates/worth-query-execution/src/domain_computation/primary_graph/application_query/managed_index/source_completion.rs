@@ -23,6 +23,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
 
 pub(super) enum SourceDenial {
+    Native(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
     Read(Denial),
     Work(super::WorthQueryManagedIndexWorkDenial),
     Source(super::super::WorthQuerySourceExpectationDenial),
@@ -74,8 +75,21 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
     one_shot::plan_admission::validate_one_shot_plan(execution, application, &plan)?;
     refresh_governed_authorization(execution, application, &mut plan)
         .map_err(|cause| one_shot::map_authorized_read_denial(cause, query))?;
+    let mut rebuild_loan = None;
+    let mut native_denial = None;
     let (kernel, authorization_work, read_proof) =
         execute_authorized_read(execution, application, &plan, |runtime, layout, plan| {
+            if let Some(program) = layout.managed_source(I::NAME) {
+                rebuild_loan = Some(runtime.read_truth().prepare_managed_index_rebuild(
+                    execution, plan.basis.snapshot_handle(), program, plan.scope.entity_id(),
+                ).map_err(|cause| {
+                    native_denial = Some(cause);
+                    read_execution::relational_read_denial(
+                        worth_relational::facade::transactions::RelationalExecutionDenialCause::NestedStopped,
+                        query,
+                    )
+                })?);
+            }
             let mut read = ReadPlan::of(plan);
             read.material_source = Some(&allocation);
             read_execution::read_bounded_plan_rows(
@@ -87,7 +101,10 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
                 ReadInterruption::Query(plan.controls.request_scope()),
             )
         })
-        .map_err(|cause| one_shot::map_authorized_read_denial(cause, query))?;
+        .map_err(|cause| match native_denial {
+            Some(cause) => SourceDenial::Native(cause),
+            None => SourceDenial::Read(one_shot::map_authorized_read_denial(cause, query)),
+        })?;
     let decode = ValueDecodeState::new(application.installed_schema().value_bindings().clone());
     let storage = MaterialCompletion::new(execution, &allocation);
     let failure = |cause| {
@@ -131,11 +148,19 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
         .arc::<crate::domain_computation::provider_session::WorthQueryCompletedSourceRead>()
         .map_err(failure)?;
     let terminal = Arc::new(parts.terminal);
-    storage.arc::<SourceImage<S, I>>().map_err(failure)?;
-    Ok(Arc::new(SourceImage {
-        installed,
+    storage
+        .arc::<super::source_image::SourceMaterial>()
+        .map_err(&failure)?;
+    let material = Arc::new(super::source_image::SourceMaterial {
         tree,
         order,
+        _allocation: Arc::clone(&parts.allocation),
+    });
+    storage.arc::<SourceImage<S, I>>().map_err(&failure)?;
+    Ok(Arc::new(SourceImage {
+        rebuild_loan,
+        installed,
+        material,
         dependencies,
         _sources: parts.sources,
         _result_set: parts.result_set,

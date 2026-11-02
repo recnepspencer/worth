@@ -9,6 +9,12 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
         let control = self.control;
         control.poll(&source.query_identifier)?;
         let mut facts = reserve_facts(self.fact_count, &source.query_identifier)?;
+        if let Some(observation) = source.invocation_managed_source()? {
+            control.poll(&source.query_identifier)?;
+            facts.push(Fact::ManagedIndexSource {
+                observation: std::sync::Arc::clone(observation),
+            });
+        }
         let mut fields = self.fields.iter();
         for observed in source.source_meaning.footprint().fact_sources() {
             control.poll(&source.query_identifier)?;
@@ -75,11 +81,7 @@ pub(super) fn merge_facts(
             std::collections::btree_map::Entry::Occupied(entry) => {
                 let existing = &mut unique[*entry.get()];
                 if !existing
-                    .merge_same_source_fact(
-                        fact,
-                        control.storage().policy(),
-                        control.storage().request(),
-                    )
+                    .merge_same_source_fact(fact, control.storage())
                     .map_err(|denial| {
                         WorthQuerySourceExpectationDenial::source_retention_denied(subject, denial)
                     })?

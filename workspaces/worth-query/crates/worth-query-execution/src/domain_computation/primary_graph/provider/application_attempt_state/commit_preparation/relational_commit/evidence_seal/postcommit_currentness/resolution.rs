@@ -23,6 +23,7 @@ pub(super) fn reads_source(fact: &Fact) -> bool {
     matches!(
         fact,
         Fact::SourcePublication { .. }
+            | Fact::ManagedIndexSource { .. }
             | Fact::StructuralWalk { .. }
             | Fact::ComponentSelection { .. }
             | Fact::Aggregate { .. }
@@ -77,7 +78,7 @@ impl PreparedFactRebase {
             return Ok(
                 retirement::committed_retirement(runtime, snapshot, entity_id, fact)
                     .map(Self::Replace)
-                    .ok_or(unavailable),
+                    .ok_or_else(|| unavailable.clone()),
             );
         }
         if producer_output
@@ -93,7 +94,7 @@ impl PreparedFactRebase {
                 Err(cause) => return Ok(Err(RebaseVerificationReason::Execution(cause))),
                 Ok(Some(true)) => {},
                 Ok(Some(false)) => return Ok(Ok(Self::KeepSuperseded)),
-                Ok(None) => return Ok(Err(unavailable)),
+                Ok(None) => return Ok(Err(unavailable.clone())),
             }
         }
         if producer_output
@@ -102,10 +103,12 @@ impl PreparedFactRebase {
         {
             return Ok(
                 match fact.source_currentness_in(runtime, execution, snapshot)? {
+                    Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => Err(RebaseVerificationReason::ManagedIndex(cause)),
                     Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => match stop {
+                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause) => Err(RebaseVerificationReason::ManagedIndex(cause)),
                         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Execution(cause) => Err(RebaseVerificationReason::Execution(cause)),
                         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Interrupted(event) => return Err(CompanionPreflightStop::Interrupted(event)),
-                        _ => Err(unavailable),
+                        _ => Err(unavailable.clone()),
                     },
                     Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
                         Err(RebaseVerificationReason::Execution(cause))
@@ -117,7 +120,7 @@ impl PreparedFactRebase {
                     Err(
                         WorthQuerySourceCurrentnessFailure::Unavailable
                         | WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
-                    ) => Err(unavailable),
+                    ) => Err(unavailable.clone()),
                 },
             );
         }
@@ -149,15 +152,15 @@ impl PreparedFactRebase {
                 entity_id, locator, ..
             } => {
                 let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
-                    return Err(unavailable);
+                    return Err(unavailable.clone());
                 };
                 view.read_entity_aspect_version(execution, *entity_id, locator.aspect().aspect_key())
                     .map_err(|denial| match denial {
-                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable,
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable.clone(),
                         worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationReason::Execution(cause),
                     })?
                     .map(Self::Aspect)
-                    .ok_or(unavailable)
+                    .ok_or_else(|| unavailable.clone())
             }
             Fact::AspectPresence {
                 entity_id,
@@ -167,7 +170,7 @@ impl PreparedFactRebase {
             } => {
                 let present = crate::domain_computation::primary_graph::application_attempt::observe_aspect_presence(
                     runtime, execution, snapshot, *entity_id, *kind, aspect,
-                ).map_err(RebaseVerificationReason::Execution)?.ok_or(unavailable)?;
+                ).map_err(RebaseVerificationReason::Execution)?.ok_or_else(|| unavailable.clone())?;
                 Ok(Self::Replace(Fact::AspectPresence {
                     entity_id: *entity_id,
                     kind: *kind,
@@ -194,7 +197,7 @@ impl PreparedFactRebase {
                 };
                 match revision {
                     Some(revision) => Ok(Self::Field { locator, revision }),
-                    None if producer_output => Err(unavailable),
+                    None if producer_output => Err(unavailable.clone()),
                     None => Ok(Self::Keep),
                 }
             }
@@ -204,12 +207,12 @@ impl PreparedFactRebase {
                 let revision = runtime.read_truth().project_snapshot(snapshot)
                     .map(|view| view.read_entity_aspect_version(execution, *entity_id, aspect))
                     .transpose().map_err(|denial| match denial {
-                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable,
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable.clone(),
                         worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationReason::Execution(cause),
                     })?.flatten();
                 match revision {
                     Some(revision) => Ok(Self::Aspect(revision)),
-                    None if producer_output => Err(unavailable),
+                    None if producer_output => Err(unavailable.clone()),
                     None => Ok(Self::Keep),
                 }
             }
@@ -222,7 +225,7 @@ impl PreparedFactRebase {
             } => {
                 let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
                     return if producer_output {
-                        Err(unavailable)
+                        Err(unavailable.clone())
                     } else {
                         Ok(Self::Keep)
                     };
@@ -245,7 +248,7 @@ impl PreparedFactRebase {
                         AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
                         | AdjacencyStructuralRevisionDenial::AnchorUnavailable
                         | AdjacencyStructuralRevisionDenial::BasisUnavailable,
-                    ) if producer_output => Err(unavailable),
+                    ) if producer_output => Err(unavailable.clone()),
                     Err(
                         AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
                         | AdjacencyStructuralRevisionDenial::AnchorUnavailable
@@ -264,7 +267,7 @@ impl PreparedFactRebase {
                 .map_err(RebaseVerificationReason::Execution)?
                 {
                     Some(rebased) => Ok(Self::Replace(rebased)),
-                    None if producer_output => Err(unavailable),
+                    None if producer_output => Err(unavailable.clone()),
                     None => Ok(Self::Keep),
                 }
             }

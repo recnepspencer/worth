@@ -1,4 +1,6 @@
+mod changed_records;
 mod current_read;
+mod managed_source;
 mod publication_parts;
 mod read_condition;
 mod retained_selection;
@@ -29,6 +31,7 @@ pub struct PreparedRelationalCommitCandidate {
 
 pub(crate) struct CandidatePayload {
     current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
+    managed_source_reads: Option<super::companion::ManagedSourceReadConditions>,
     companion_read: Option<super::companion::CompanionReadCondition>,
     expected_basis: crate::branch::RelationalBranchBasisDescriptor,
     expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
@@ -41,6 +44,7 @@ pub(crate) struct CandidatePayload {
 
 pub(super) struct PreparedRelationalPublicationParts {
     pub(super) current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
+    pub(super) managed_source_reads: Option<super::companion::ManagedSourceReadConditions>,
     pub(super) companion_read: Option<super::companion::CompanionReadCondition>,
     pub(super) runtime_instance_id: u64,
     pub(super) candidate_id: u64,
@@ -63,49 +67,6 @@ pub(crate) enum PreparedRelationalCandidateAdmissionStop {
 }
 
 impl PreparedRelationalCommitCandidate {
-    /// Borrows the exact, already-prepared touch graph without copying it.
-    /// The callback must not reenter this candidate. Consumed or revoked
-    /// candidates return `None`, distinct from an available exact-empty graph.
-    /// The graph describes this candidate; it grants no source currentness.
-    pub fn with_prepared_descriptive_touches<T>(
-        &self,
-        visit: impl FnOnce(&crate::history::data::RelationalDescriptiveTouchGraph) -> T,
-    ) -> Option<T> {
-        let payload = self
-            ._payload
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        payload
-            .as_ref()
-            .map(|payload| visit(payload.execution.descriptive_touches()))
-    }
-
-    /// Borrows the exact records already prepared for publication. The callback
-    /// must not reenter this candidate. Consumed or revoked candidates have no
-    /// prepared records; the callback is not invoked in that state.
-    pub fn with_prepared_changed_records<T>(
-        &self,
-        visit: impl FnOnce(&[crate::transactions::data::RecordRef]) -> T,
-    ) -> Option<T> {
-        let payload = self
-            ._payload
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        payload
-            .as_ref()
-            .map(|payload| visit(payload.execution.changed_records()))
-    }
-
-    /// Exact record count already finalized by this prepared publication.
-    /// A consumed or revoked candidate has no prepared payload to inspect.
-    pub fn prepared_changed_record_count(&self) -> Option<usize> {
-        self._payload
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .as_ref()
-            .map(|payload| payload.execution.changed_record_count())
-    }
-
     pub(crate) fn new(
         runtime_instance_id: u64,
         custom_invariant_generation: u64,
@@ -129,6 +90,7 @@ impl PreparedRelationalCommitCandidate {
         let payload = std::sync::Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
             current_read: None,
             companion_read: None,
+            managed_source_reads: None,
             expected_basis,
             expected_root,
             publication_cell,

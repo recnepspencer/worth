@@ -24,10 +24,14 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     BindingNotInstalled,
     /// A declared managed index has no configured executable provider.
     MissingManagedIndexProvider,
+    /// Exact access requires its separately declared executable refiner.
+    MissingManagedIndexRefinement,
     /// A managed provider differs from its exact installed contract or version.
     ManagedIndexProviderMeaningMismatch,
     /// A managed index was configured more than once.
     DuplicateManagedIndexProvider,
+    /// Provider configuration was already shared with installed Source lowering.
+    ManagedIndexProviderConfigurationSealed,
     /// A binding belongs to a different schema.
     BindingSchemaMismatch,
     /// Two bootstrap principals share an external identity.
@@ -131,6 +135,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignInvariantFactory,
     /// An invariant factory does not match its invariant's declared meaning.
     InvariantFactoryMeaningMismatch,
+    UnsupportedInvariantSource,
     /// An invariant factory rejected installation.
     InvariantFactoryRejected,
     /// A program-rostered rule's declared work budget cannot carry the platform
@@ -217,7 +222,7 @@ pub struct WorthQueryPrimaryGraphInstallationDenial {
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum InstallationDenialCause {
     Readiness(super::application_contribution::WorthQueryOutputReadinessContractDenial),
-    RelationLaw(worth_relational::facade::transactions::InvariantViolationFields),
+    NativeValidation(crate::domain_computation::WorthQueryInvariantExecutionFailure),
 }
 
 impl WorthQueryPrimaryGraphInstallationDenial {
@@ -272,23 +277,38 @@ impl WorthQueryPrimaryGraphInstallationDenial {
         }
     }
 
+    /// Original Native preparation/validation failure from the refused seed commit.
+    pub fn invariant_execution_failure(
+        &self,
+    ) -> Option<&crate::domain_computation::WorthQueryInvariantExecutionFailure> {
+        match self.cause.as_deref()? {
+            InstallationDenialCause::NativeValidation(failure) => Some(failure),
+            _ => None,
+        }
+    }
+    pub fn managed_source_denial(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial> {
+        self.invariant_execution_failure()?.managed_source_denial()
+    }
+    /// Original custom invariant verdict/failure, not a string classification.
+    pub fn custom_invariant_denial(
+        &self,
+    ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
+        self.invariant_execution_failure()?
+            .custom_invariant_denial()
+    }
     /// Original native law evidence from the refused bootstrap commit.
     pub fn relation_law(
         &self,
     ) -> Option<crate::domain_computation::WorthQueryRelationLawDenial<'_>> {
-        match self.cause.as_deref()? {
-            InstallationDenialCause::RelationLaw(fields) => {
-                crate::domain_computation::WorthQueryRelationLawDenial::from_fields(fields)
-            }
-            _ => None,
-        }
+        self.invariant_execution_failure()?.relation_law()
     }
-
-    pub(super) fn with_relation_law_fields(
+    pub(super) fn with_native_validation_failure(
         mut self,
-        fields: worth_relational::facade::transactions::InvariantViolationFields,
+        failure: crate::domain_computation::WorthQueryInvariantExecutionFailure,
     ) -> Self {
-        self.cause = Some(Box::new(InstallationDenialCause::RelationLaw(fields)));
+        self.cause = Some(Box::new(InstallationDenialCause::NativeValidation(failure)));
         self
     }
 }

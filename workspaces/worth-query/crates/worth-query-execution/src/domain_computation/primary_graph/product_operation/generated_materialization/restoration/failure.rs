@@ -1,4 +1,3 @@
-use crate::domain_computation::primary_graph::provider::relational_execution_denial;
 use worth_relational::facade::{
     branch::RelationalMaterializationError,
     transactions::{ConflictClass, InvariantViolationFields, TransactionCommitError},
@@ -48,15 +47,16 @@ pub(super) fn preparation_failure_cause(
     error: &RelationalMaterializationError,
 ) -> WorthQueryGeneratedOutputRestorationFailureCause {
     use WorthQueryGeneratedOutputRestorationFailureCause as Cause;
+    if let Some(execution) = super::super::preparation_execution::project(error) {
+        return match execution {
+            Ok(kind) => Cause::ExecutionDenied(kind),
+            Err(kind) => Cause::ExecutionControlStopped(kind),
+        };
+    }
     let error = match error {
         RelationalMaterializationError::Commit(error) => error,
-        RelationalMaterializationError::Read(cause) => {
-            return match relational_execution_denial::relational_execution_kind(*cause, None) {
-                Ok(kind) => Cause::ExecutionDenied(kind),
-                Err(kind) => Cause::ExecutionControlStopped(kind),
-            };
-        }
-        RelationalMaterializationError::OwnerUnavailable
+        RelationalMaterializationError::Read(_)
+        | RelationalMaterializationError::OwnerUnavailable
         | RelationalMaterializationError::SourceCommitMismatch
         | RelationalMaterializationError::SourceIsNotCompleteCreatePublication
         | RelationalMaterializationError::SourceRecordUnavailable(_)
@@ -68,24 +68,9 @@ pub(super) fn preparation_failure_cause(
         | RelationalMaterializationError::TransactionStaging(_) => return Cause::Preparation,
     };
     let error = match error {
-        TransactionCommitError::Execution { denial, .. } => {
-            // A new public denial kind must force an explicit decision here.
-            #[allow(clippy::infallible_destructuring_match)]
-            let cause = match denial.kind {
-                worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
-                    cause
-                }
-            };
-            return match relational_execution_denial::relational_execution_kind(
-                cause,
-                denial.partition_identity,
-            ) {
-                Ok(kind) => Cause::ExecutionDenied(kind),
-                Err(kind) => Cause::ExecutionControlStopped(kind),
-            };
-        }
         TransactionCommitError::Conflict { error, .. } => error,
-        TransactionCommitError::Publication { .. }
+        TransactionCommitError::Execution { .. }
+        | TransactionCommitError::Publication { .. }
         | TransactionCommitError::Preparation { .. }
         | TransactionCommitError::Interrupted { .. }
         | TransactionCommitError::PublicationDenied { .. }

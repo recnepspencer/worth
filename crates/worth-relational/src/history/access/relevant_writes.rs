@@ -1,17 +1,24 @@
 //! Canonical authored writes, including writes whose semantic after-image is unchanged.
 mod cursor;
 mod maintenance;
+mod managed_source;
 mod page;
+pub(crate) mod posting_key;
 mod selection;
 
 pub use cursor::RelationalAuthoredWriteCursor;
+pub(crate) use managed_source::source_impact;
+pub use managed_source::{
+    RelationalAuthoredManagedSourceImpact, RelationalAuthoredManagedSourceMaterial,
+    RelationalAuthoredManagedSourcePayloads,
+};
 pub use page::{
     RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalPreparedAuthoredWritePage,
 };
 pub use selection::{
-    RelationalAuthoredEntityIndexDefinition, RelationalAuthoredWriteScope,
-    RelationalAuthoredWriteSelector,
+    RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceSelector,
+    RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector,
 };
 
 /// A missing derived generation or canonical occurrence never proves absence.
@@ -25,6 +32,9 @@ pub enum RelationalAuthoredWriteDenial {
     GenerationUnavailable,
     UnsupportedMergeInterval,
     IncompleteIndexHistory,
+    ForeignManagedSourceProgram,
+    UnsupportedManagedSourceSelector,
+    IncompleteManagedSourceHistory,
     IncompleteAdjacencyHistory {
         ordinal: u64,
         commit: crate::history::data::CommitId,
@@ -104,35 +114,30 @@ pub(crate) fn run<T>(
     }
 }
 
-pub(crate) fn visit(
+/// Admit actual traversal/copy work on the same supplied Native request.
+pub(crate) fn admit_work(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
+    units: u64,
 ) -> Result<(), RelationalAuthoredWriteDenial> {
     if context.has_accounting() {
-        context.checkpoint(1)?;
+        context.checkpoint(units)?;
     } else {
         context.poll()?;
     }
     Ok(())
 }
+pub(crate) fn visit(
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+) -> Result<(), RelationalAuthoredWriteDenial> {
+    admit_work(context, 1)
+}
 
-/// AVL height is below twice its bit width. Pay key comparisons before the
-/// persistent backing walks; memory admission remains the backing owner's job.
+/// AVL height is below twice its bit width: one unit per descended level.
+/// Comparisons stop at the first differing byte, so key width is not priced.
 pub(crate) fn ordered_visit(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     entries: usize,
-    key_bytes: u64,
 ) -> Result<(), RelationalAuthoredWriteDenial> {
-    let height = 2 * u64::from(usize::BITS - entries.leading_zeros()) + 2;
-    let work =
-        height
-            .checked_mul(key_bytes.max(1))
-            .ok_or(RelationalAuthoredWriteDenial::Interrupted(
-                worth_execution::MapKernelStop::WorkCounterOverflow,
-            ))?;
-    if context.has_accounting() {
-        context.checkpoint(work)?;
-    } else {
-        context.poll()?;
-    }
-    Ok(())
+    let work = 2 * u64::from(usize::BITS - entries.leading_zeros()) + 2;
+    admit_work(context, work)
 }

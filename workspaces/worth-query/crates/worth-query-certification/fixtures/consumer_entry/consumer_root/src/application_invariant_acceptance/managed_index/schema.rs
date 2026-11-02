@@ -25,10 +25,11 @@ worth_query_application_contribution! { pub contribution CatalogContribution in 
             .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
             .relation(Contains::reference(), Directory::reference(), Item::reference())
             .principal_binding(CatalogPrincipal::reference())
-            .application_query(query::source_definition())
+            .application_query(query::guarded_source_definition())
             .application_query_binding::<query::SourceBinding>()
             .application_query(query::prefix_definition())
             .application_query_binding::<query::PrefixBinding>()
+            .application_query_binding::<query::PrefixAliasBinding>()
             .managed_index(ApplicationManagedIndexDefinition::<Catalog, prefix::PrefixIndex>::new()))))
     }
 }}
@@ -51,7 +52,7 @@ worth_query_value_binding!(pub NameBinding for String {
     canonical: ValueDecodeBounds::new(2048, 1024, 8, 8),
 });
 worth_query_field!(pub ItemName for Catalog, Item, ItemFacts: String => NameBinding, read_write, equality);
-worth_query_field!(pub ItemEnabled for Catalog, Item, ItemFacts: bool => BoolApplicationValueBinding, read_only, equality);
+worth_query_field!(pub ItemEnabled for Catalog, Item, ItemFacts: bool => BoolApplicationValueBinding, read_write, equality);
 worth_query_relation!(pub MappingTarget in Catalog, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub Contains in Catalog, Directory => Item; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(pub CatalogPrincipal in Catalog, mapping ExternalMapping {

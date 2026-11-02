@@ -1,5 +1,7 @@
 pub(crate) use worth_query_bank_testkit_domain::facade::domain_contracts::estate_capability_installation::*;
 
+mod aspect_removal;
+
 pub(crate) mod composition_contracts;
 
 pub(crate) mod delegation_activation;

@@ -783,6 +783,16 @@ Features can pass typed values to each other. A feature *provides* an output
 port; another feature *requires* an input port; a connection binds the two;
 the program's output graph says which connections produce settled outputs.
 
+For a generated child, keep its source and its realization in **separate
+records**, joined by a declared typed relation. The parent produces and owns the
+child's source record; the child produces its own realization and any next-level
+sources. A declared relation names each source's immediate parent. A parent's output
+witness covers the whole source entity, including absent aspects: a child writing
+its realization onto that source invalidates the parent's witness. Corrections
+to a generated source therefore go through its owning producer, from that
+producer's input. See the [generic split-record courts](../workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/dependent_dispatch/split_courts.rs)
+for installed roots, sealed dependent dispatch and current delivery.
+
 The block below is a **shape with illustrative names**. The compiled
 counterpart is the consumer fixture at
 `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/application_program.rs`
@@ -2491,12 +2501,61 @@ accept `.at(observation)`. Resume with the token itself and a fresh request:
 ```rust,ignore
 // Illustrative: not compiled.
 // The application declares read_children and the query.
-let first = original_request.query(read_children.clone()).page(width, work)?;
+let first = original_request.query(read_children.clone()).page(width)?;
 let (owned_rows, continuation, _) = first.into_parts();
 let token = continuation.expect("another child page");
 // Keep the original owner available while installing/regenerating the target.
-let second = fresh_original_request.query(read_children).resume(token, width, work)?;
+let second = fresh_original_request.query(read_children).resume(token, width)?;
 ```
+
+### Protected continuation pages
+
+An ordinary continuation advances one ordered Many child collection below an
+ExactlyOne root with pinned basis support. Open a governed first page with
+`page_governed` and resume with `resume_governed`, supplying the actual capability,
+operation and purpose on every call. The `_approved` forms additionally require
+current approved elevation. `readmit_resume_governed` and its `_approved` twin
+lend the canonical admitted plan to an owning callback when needed.
+
+This compiled maintained-Catalog court uses real protected child rows:
+
+<!-- compiled: protected_continuation.rs -->
+```rust
+    let first = request
+        .query(input())
+        .page_governed(
+            access::ReadBoxes::reference(),
+            access::InspectBoxes::reference(),
+            purpose(),
+            width(),
+        )
+        .unwrap();
+    let (rows, continuation, _) = first.into_parts();
+    let second = request
+        .query(input())
+        .resume_governed(
+            access::ReadBoxes::reference(),
+            access::InspectBoxes::reference(),
+            purpose(),
+            continuation.expect("another child page"),
+            width(),
+        )
+        .unwrap();
+```
+
+Each page admits current capability and independent READ before rows, count,
+ordering, cursor or completion metadata. Hidden ordering fields need explicit
+Ordering and Pagination influence; permitted hidden values remain omitted.
+The cursor retains the exact old World, parameters and Native ordering generation.
+Regrant can authorize an independently issued old cursor while current data has
+changed; it does not replace the cursor's data with current values. A failed
+resume consumes its move-only token. Retain separate genuinely issued cursors
+when separate attempts are required. A requested page width cannot widen the
+installed binding limit.
+
+Managed-index root selection and related-collection continuation remain distinct
+declared shapes. Combining them refuses during declaration; a managed candidate
+hit supplies no child-page position or root-pagination authority.
 
 The [related-output journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/continuation.rs)
 publishes three output roles and two internal relations. An original token still
@@ -3103,6 +3162,10 @@ stays inside the attempt and requires ordinary admission to inspect.
 If candidate close returns `OwnerCleanupPending`, retry the retained cleanup
 owner rather than closing the retired branch again. Release external readers
 and disposed evidence receipts before expecting their retained history to clear.
+Inside `with_application_advancement`, pass its phase to
+`cleanup.retry_in_advancement(&phase)`. This borrows the receiving runtime's
+admitted request. Standalone callers can use `cleanup.retry()` outside an active
+advancement.
 Disposing a registered attempt leaves its real Claim row committed; the same key
 with no result or continuation still refuses. After adoption, disposal retains
 the committed continuation. Use acceptance for result recording and normal
@@ -3117,7 +3180,8 @@ custody and unresolved panicked handoffs remain retained rather than being
 discarded as owner-free refusals.
 
 For a preparation's `ProductUnpublished` creation failure, `dispose_pending`
-uses the actual creation recovery's `release_obligations`. A recovery refusal
+passes its phase to the actual creation recovery's
+`release_obligations_in_advancement(&phase, minimum_age_ticks)`. A recovery refusal
 retains that owner. Once release transfers work to owner cleanup, further
 disposal retries that cleanup instead of releasing creation again. The
 [compiled creation cleanup](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/application/acceptance/disposal/preparation.rs)
@@ -6134,6 +6198,16 @@ installs the matching pure provider with `setup.managed_index::<Index, _>(provid
 Providers borrow disclosed, query-bound Source rows and finite node/candidate
 writers; they receive no mutation handle or reusable read permission.
 
+For repeated required String reads, use
+`row.with_text(name_selector, |name| name.starts_with("al"))`. Nested callbacks
+can compare two rows while borrowing their decoded text. Query keeps this memo
+inside one actual Source image and provider invocation; before/after images
+remain separate. Each use still checks the current request, disclosed field
+contract and installed Rust binding. The text cannot escape its callback; return
+an owned result such as a boolean or ordering. A text read returns either a
+projection denial or the original controlled stop.
+
+
 Source queries have no parameters and must have Public authorization and Public
 disclosure without capability or rule governance. Parent queries may use Public
 or Governed disclosure, with their own installed READ ability and capability
@@ -6149,8 +6223,13 @@ then `request.query(intent).rebuild_index(&index)` for explicit cold constructio
 Ordinary `execute()` returns typed `NotReady` while Created or Evicted; it does
 not silently rebuild or fall back to a scope-root query. Probe values share the
 same complete Source image. Source authored ordering remains intact; the provider
-receives a separate canonical full-generation source-slot order. Every publication
-on the owning branch makes the image cold again.
+receives a separate canonical full-generation source-slot order. Native owns the
+public cache at the actual selected image and publishes a cold successor in its
+compound effect. This conservative cache does not require an invariant Source
+association; supported ordinary Source guards remain usable. If Native has
+performed while World publication is pending, a fresh read at the unchanged World
+can still use its genuine selected predecessor cache. After World adopts the
+successor, indexed reads return `NotReady` until explicit rebuild.
 
 For a governed Parent, use `open_index_governed` and `rebuild_index_governed`
 with the actual capability, operation and request input, then `execute_governed`
@@ -6160,8 +6239,16 @@ admits the Parent capability and READ policy before cache or provider access;
 its normal final disclosure still applies. A valid Public Source or a Ready
 cache does not authorize the Parent.
 
-Repeated opens share one registration. `index.lifecycle()` reports retained cache
-status, not fresh authorization. `evict()` releases its image; explicit rebuild
+Repeated opens share one registration for the actual installed Index/Parent
+binding, principal, full-generation scope and World incarnation. Two bindings to
+the same Query have independent
+registrations. Ordinary lookup and repeated open use indexed routing; unrelated
+retained registrations do not add a full scan. Both routing directions retain
+their original memory grants, and close removes only its issued registration id.
+`index.lifecycle()` reports retained cache status, not fresh authorization.
+Public-only status observes the Native head and
+can report Evicted while an unchanged World still selects a retained predecessor.
+`evict()` releases its image; explicit rebuild
 is required before another indexed read. `close()` disposes and unregisters it
 for every sibling handle; later open creates a fresh registration. Dropping a
 handle leaves the runtime-owned cache alive; explicit close or final runtime
@@ -6169,19 +6256,293 @@ disposal releases the registration's image. Outstanding results, Source
 observations or in-flight selections can retain their own backing. Final
 release requires those owners and all runtime keepalives to close or drop.
 A stopped cold rebuild may leave Failed status; it publishes no Ready image.
-Use a fresh lawful request for another explicit rebuild. Historical/pinned
-managed-index reads and rebuilds remain unsupported; ordinary historical Source
-reads retain their existing contract.
+Use a fresh lawful request for another explicit rebuild. A retained managed
+one-shot read can run while its genuine World and Native selection still equals
+the current image. It retains read-only custody. A moved historical image remains
+unsupported before provider lookup; ordinary historical Source reads keep their
+existing contract.
 
-Indexed results retain complete positive, empty and ordering dependencies from
-the original Source, including nonmatching rows. The ordinary `expect_source`
-and `expect_result_set` mutation entrances consume these observations under the
-current request. Keep the observation until the mutation consumes it. The
-mutation rechecks the complete Source: a previously nonmatching record entering
-an empty prefix invalidates the expectation. If the Source has changed, reread
-and reassess the operation instead of substituting only the returned rows.
+Declare `STRUCTURE = ApplicationManagedIndexSourceStructure::BinarySourceTree` and
+implement Node-only `decompose` to expose each node's stored genuine Source
+occurrence and binary children. Capture actual Source slots during build/update;
+`decompose` cannot consult a Source roster that changes independently of the Node. Query checks exact Source membership, unique slots and parents,
+connectivity and absence of cycles before retaining the root. Warm edits carry
+that correspondence using actual changed node coordinates and Native Source
+deltas. Opaque structure remains an explicit conservative profile. Definition v1
+means Opaque; v2 transports structure; v3 also binds the membership strategy.
+Old v1/v2 definitions always retain candidate-only membership.
+
+During a checked warm edit, `nodes.before_source_node(slot)` locates the genuine
+occurrence's predecessor node without scanning the Source or adding a provider
+lookup table. It returns a descriptive coordinate; `nodes.get` reads the staged
+writer and checks liveness. Read the old key before editing that occurrence.
+Cold, opaque, missing or foreign occurrences refuse. The box provider uses this
+lookup to move a leaf within its pure spatial ordering, without rereading Source.
+
+A Source-complete tree alone does not establish complete query membership.
+Declare `MEMBERSHIP = ApplicationManagedIndexMembership::ExhaustiveSourceTree`
+and implement `validate_probe` plus `matches_source(row, probe, control)` to use
+Query's complete traversal. Query validates the probe even for an empty Source,
+visits every checked region and applies the installed pure candidate predicate
+to each genuine Source row. It emits that row's slot itself and returns only
+after the complete walk and final controls succeed. An interrupted traversal
+refuses; it cannot return a partial or empty success. The explicit-rebuild prefix
+application below chooses this profile through its `PREFIX_MEMBERSHIP` constant. The provider's legacy `query` callback is
+unused on this path; candidate-only providers keep their existing contract.
+
+Exhaustive membership deliberately visits the whole Source and provides no
+locality or pruning claim. Candidate membership is distinct from exact domain
+refinement such as geometric contact, and grants no mutation eligibility.
+Source dependencies remain conservative.
+
+Providers keeping Candidates or ExhaustiveSourceTree may use `type Summary = ()`;
+their summary callbacks remain unused. For checked subtree pruning, choose
+`ApplicationManagedIndexMembership::CheckedSummarySourceTree`. The provider's
+`Summary` is `Copy + Eq`; `source_summary` describes the actual Source row,
+`merge_summaries` folds its own contribution and qualified children, and
+`node_summary` reads the cached value from the actual Node. Query recomputes and
+compares summaries bottom-up before retaining the root. Warm qualification follows
+actual Node writes and changed Native Source rows through every final ancestor,
+including a changed row for which the provider wrote no Node. A mismatch returns
+`SummaryMismatch` and preserves the predecessor.
+
+`merge_summaries` and `summary_may_match` receive
+`WorthQueryManagedIndexSummarySources`. Its only row lookup accepts a genuine slot
+inside the current checked region; a same-Source slot outside that subtree returns
+`ForeignSummarySource`. Summary semantics cannot depend on an unrelated region.
+Each receiving summary callback keeps four positive membership facts for its
+immutable region. A paid parent walk may stop at an already proved descendant;
+eviction falls back to the actual parent chain. Every lookup still checks the
+original request, resolves the genuine slot in the current Source and admits the
+row before lending it. A miss may traverse its full ancestor chain.
+
+The pure provider owns its enclosure and comparison algebra. Query uses that
+qualified summary premise to skip precisely its actual subtree, then applies
+`matches_source` to surviving genuine rows itself. The small box example and the
+maintained prefix/geometry compositions use this same strategy. Prefix summaries
+keep exact UTF-8 extrema; geometry summaries use the numerical owner's closed
+bounds and union, without Query-specific tolerances or field policy.
+
+Both complete strategies record the actual visited regions and checked prunes.
+Before releasing slots, Query verifies that this cut covers the checked tree and
+that matched Source occurrences correspond exactly to those slots. The receiver
+checks the actual Source/root pair, probe and read session. Public selections
+retain the verified cut with their Source observation; Native committed and
+proposed invariant reads require complete evidence in their own read posture.
+An interrupted or incomplete cut refuses. Physical traversal shape does not
+change semantic Source equality after an index rebuild.
+
+To retain a whole-Parent watch on a complete Native-maintained Source, implement
+`WorthQueryManagedIndexPredicateProvider` on the same installed provider and
+configure it with `setup.managed_index_with_predicate_routing::<Index, _>(provider)`.
+Declare Live eligibility on the Public managed Parent. Calling
+`request.query(input).watch_index::<Index>()` returns its complete initial result
+and a `WorthQueryManagedIndexWatch`. The opening subscribes before reading and
+registers against that exact World image; a concurrent preparation or publication
+can refuse the opening. Retry with a fresh request.
+
+Call `fresh_request.query(original_input).next_watch(&mut watch)` for each refresh.
+Every call independently admits the Parent, principal, purpose, full parameters,
+result limit and World occurrence before inspecting watch metadata. `Delivered`
+contains a whole current Parent read and its receipt, plus the actual notification
+publication. A notification at B can be served by current read C; only B is
+acknowledged, so later notifications remain queued. `Pending`, `Overflow`,
+`Unavailable` and `Closed` are distinct. Overflow or unavailable coverage requires
+a fresh opening. `watch.close()` or dropping the watch releases its exact posting
+and queue custody. Retaining an old result never makes it current.
+
+Query owns the inverse tree and active watch IDs. The provider supplies pure probe
+ordering, fixed summary algebra and region matching; it owns no subscriptions.
+Prefix and closed-box providers use this same path. Supported profiles require the
+complete canonical Source projection. Projected root refinements may conservatively
+wake every matching provider candidate; delivery applies the full Parent again.
+
+For governed Parents, open with `watch_index_governed::<Index, _, _, _>` and
+poll with `next_watch_governed`, passing the capability, operation and original
+purpose input each time. The corresponding `_approved` methods take a genuine
+current approved elevation. These methods use the ordinary capability owner and
+independent Parent READ admission on every call. Retained request correspondence
+binds the actual installed capability, principal/resource, action/purpose,
+elevation, related/field/magnitude/cardinality and context. It retains no old
+grant or decision authority. Revocation and READ denial leave a queued
+notification unacknowledged; a fresh lawful regrant can deliver it.
+
+A governed managed Live Parent, and every governed exact-refined Parent even
+without Live, must explicitly permit membership influence for every Parent
+scalar projection through its internal field-use rules. Live additionally
+requires `LiveMembership`. The exact installed Source/Parent projection profile
+then covers implicit provider inputs such as names and bounds. Projecting or
+omitting a value does not itself grant membership influence. A permitted hidden
+field remains omitted by the ordinary final projector and current disclosure
+receipt; a missing influence permission refuses before provider execution.
+Broader Source/projection profiles must extend this closure before admission.
+
+Untracked inputs, candidate-only membership, public-cache-only Sources and
+continuations refuse this watch entrance. Ordinary protected child pages use
+[their existing continuation owner](#protected-continuation-pages); they do not
+paginate managed root results. No verified narrowed footprint is issued by
+these traversal or watch strategies.
+
+For a domain predicate narrower than candidate membership, declare an optional
+`ApplicationManagedIndexRefinement::row_local("domain.identity", version)` in
+`Index::REFINEMENT`. Implement `WorthQueryManagedIndexRefinementProvider` on the
+same provider with matching `REFINEMENT_IDENTITY` and `REFINEMENT_VERSION`, a
+required `validate_refinement_probe`, and `refine_source`. The callbacks receive
+only the same typed probe, genuine complete Source row projection (including its
+projected relations), and original control. No roster or external reader is
+available. Qualify that exact acceptance implies candidate acceptance.
+
+Install that provider with
+`setup.managed_index_provider::<Index, _>(provider).with_refinement().install()?`.
+Add `.with_predicate_routing()` before `.install()` when it supports watches.
+These optional mechanics share the actual provider object and Source. Select
+exact access explicitly with `.managed_index_refined(Index::reference(), probe())`
+in a Parent definition, or `context.refined_managed_index(&prepared)` for Native
+committed/proposed reads. Existing `.managed_index` entrances keep their
+candidate meaning. Missing contracts, executables, complete candidate coverage,
+or compatible Source/Parent projection profiles refuse exact access.
+
+The maintained exact-name Parent selects that explicit access mode:
+
+<!-- compiled: managed_exact_refinement.rs -->
+```rust
+pub fn definition(
+) -> ApplicationQueryDefinition<Catalog, ExactQuery, source::Parameters, source::ItemRow, Directory>
+{
+    source::base(
+        ExactQuery::reference(),
+        ApplicationQueryLaneEligibility::one_shot().with_live(),
+    )
+    .managed_index_refined(prefix::PrefixIndex::reference(), probe())
+    .order_by(
+        source::identity(),
+        ApplicationQueryOrderingDirection::Ascending,
+    )
+    .build()
+    .unwrap()
+}
+```
+
+Query verifies the complete candidate cut first, then evaluates every candidate
+once. It retains the original cut, all accepted/rejected dispositions and the
+accepted subset before releasing exact results. Probe validation still runs for
+an empty candidate set. Domain refusal or interruption refuses the whole result.
+Each retained watch uses its actual Parent's candidate or refined mode during
+before/after routing; equal probes keep distinct registrations. Current full
+Parent read, ordering, disclosure and ordinary Source dependencies still apply.
+
+The maintained fixture separately qualifies exact name equality and closed
+segment/rectangle contact against prefix/AABB candidates. Segment endpoints must
+be genuine point regions in the fixture's declared integer length unit and XY
+frame; non-point regions refuse. This numerical predicate supplies no CAD
+topology or private adoption evidence.
+
+Complete Public Parents over Native-maintained Sources can retain verified
+candidate influence when their installed full Source/Parent projection profile
+covers every input. `has_verified_realized_footprint()` on the observed row or
+result set describes that posture; it grants no read or mutation authority.
+The original complete candidate cut includes exact rejects and all projected
+inputs, root predicates, related endpoints, ordering and negative coverage.
+
+The ordinary `expect_source` and `expect_result_set` mutation entrances consume
+these observations under the current request. At the actual target image, Query
+uses the same installed forward provider and exact evaluator to verify complete
+candidate coverage again. Equal membership, exact decisions and complete
+candidate bodies can preserve an expectation across edits to noncandidates or
+restoration of candidate content. Shared immutable bodies provide the fast path;
+otherwise Query pays for exact occurrence, dependency and full one-hop projection
+comparison. Commitments only shortlist that comparison. A previously nonmatching
+record entering an empty range invalidates it. A changed candidate input prevents
+equality even if the returned exact rows stay empty. Installed slot correspondence,
+full-generation relation/row identities, predicate support and order remain part
+of the comparison. Semantic restoration alone never proves canonical authored
+history cancellation. Qualified retained managed facts can join ordinary recorded
+correction through Native scope-impact candidates. For qualified Public Parents,
+actual historical affected rows in both Source images can exclude nonmatching
+edits using the installed forward predicate; exact refinement never removes a
+matching candidate. Missing/expired material stays conservative. Every remaining
+candidate needs genuine performed cancellation before strict original and complete
+target comparison. The same ordinary correction path qualifies prefix and
+indirect box/contact inputs; governed historical relevance stays conservative. See the
+[correction guide](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
+Independent ordinary field and adjacency revision facts still apply. Thus equal
+restored managed content does not guarantee that every populated observation
+remains eligible. Actual root-predicate reads keep their revision facts even
+when their output is empty. The restoration positive qualifies exact-refinement-
+rejected candidate support through a real mutation expectation; the separate
+populated and root-filter-empty courts preserve their independent refusals.
+
+The commit receiver retains and atomically pins the checked target Native Source
+observation. A writer after revalidation refuses at the existing Native basis
+check. No returned DTO, digest or old observation substitutes for that pin.
+Unsupported projection profiles retain the conservative whole-Source posture.
+A complete governed Parent also qualifies when the actual admitted governance
+owner retains passive full capability-use and disclosure correspondence. That
+capture checks its real session, capability, query/parameters, principal/scope
+and exact installed Parent; it holds no old authorization or READ grant. Public
+reads, watches and pages still require fresh READ and disclosure admission;
+internal consistency verification exposes no rows.
+
+Qualified semantic Source identity covers the complete candidate cut, full
+projected content and exact dispositions, including rejected candidates. In the
+Public producer pipeline, an unrelated Source edit can preserve genuine generated-
+output reuse.
+Every demand still admits fresh principal/scope/READ and disclosure, verifies the
+retained output at the actual target, and keeps the original Native expectation.
+A reused committed output can report `Performed` with its original historical
+receipt and zero new producer contacts; `StableReused` is a separate stable-lineage
+posture. Identity alone grants no reuse or publication authority.
+
+A qualified complete Public managed Source also participates in the declared
+canonical producer-input cutoff. Fresh actual selection compares every candidate
+identity and exact decision, the outer field/relation membership and full admitted
+query affinity. If canonical operation input and the installed producer remain
+equal, the existing cutoff still verifies prior handler facts, decision context,
+consumed outputs and the actual Native output witness. A real Source content
+change can then yield `StableReused`, zero handler contacts and no new mutation
+receipt. This does not make changed operation input reusable.
+
+Managed Source reverse postings remain conservative. Such a stable alias retains
+full verification and authentic output projection custody; it creates no clean
+equality links or downstream discharges. Later relevant Source/output changes
+still refuse delivery. Generation substitution cannot reuse a prior selected-membership key;
+incomplete/restored or unqualified captures cannot supply one.
+
+A governed observation preserves its ordinary omission receipts while retaining
+hidden candidate influence. Its source expectation is descriptive input to the
+separately admitted mutation; it supplies no current Query grant. Passive use
+includes actual action/purpose/context and admitted disclosure meaning. Distinct
+Public/Governed uses cannot collapse into one canonical Source obligation, and a
+changed rejected body still refuses even when disclosed exact rows are unchanged.
+Fresh grant revocation or independent READ refusal still stops the next public
+query/watch before provider callbacks or metadata. Governed producer/output-demand
+readmission and canonical input-cutoff integration remain unqualified here; the
+selected governed execution mode still refuses that pipeline. The producer reuse
+and cutoff results above apply to the supported Public pipeline.
+
+The governed profile retains full projected candidate inputs; this conservative
+support does not claim minimal per-field tracing. Governed history keeps all
+scope candidates. The same correction court qualifies Public prefix and indirect
+box/contact inputs, including exact-rejected matching candidate protection.
+Successful regeneration after changed inputs depends on the declared producer
+lifecycle; an Initial-only/Create operation cannot replace a prior live output.
+Keep the observation until the mutation consumes it, then reread and reassess
+if equality cannot be proved.
 Reuse the operation's idempotency identity for a recorded retry; it does not
-repeat the completed mutation.
+repeat the completed mutation. See the [currentness evidence](../plans/WORTH-query/milestone-9.19-phase4-currentness-evidence.md) and
+[semantic reuse plan](../plans/WORTH-query/milestone-9.19-phase4-semantic-reuse-plan.md) and
+[selected-membership plan](../plans/WORTH-query/milestone-9.19-phase4-membership-plan.md) and
+[governed influence plan](../plans/WORTH-query/milestone-9.19-phase4-governed-plan.md).
+
+The maintained prefix and geometry courts also exercise genuine equal-value
+rename/move commits. A watch may remain Pending or deliver unchanged rows;
+notification suppression is not promised. An empty read overlapped by a matching
+entrant refuses stale registration, and a fresh opening includes the entrant.
+Completed replay after unpublished recovery preserves the selected World,
+provider maintenance counts and drained notification state; changed input under
+the same key returns `IdempotencyIntentDrift`. See the
+[Phase 3 qualification matrix](../plans/WORTH-query/milestone-9.19-phase3-closure.md)
+for the supported contracts, current cost receipts and explicit later-phase work.
 
 Use the request-bearing mutation entrances for indexed observations. A lower-level
 conversion without an Execution request returns `ManagedSourceExpansionUnsupported`;
@@ -6215,6 +6576,14 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const REFINEMENT: Option<
+        worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
+    > = super::PREFIX_REFINEMENT;
+    const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
+    const MEMBERSHIP:
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        super::PREFIX_MEMBERSHIP;
 }
 ```
 
@@ -6227,6 +6596,10 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const NAME: &'static str = "catalog_box_index";
     const PROVIDER: &'static str = "managed-catalog.closed-box2.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
+    const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
+        worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;
 }
 ```
 
@@ -6239,6 +6612,315 @@ distinct Source occurrences with equal bounds remain distinct rows. The
 and [governed grant lifecycle](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/authority.rs)
 show ordinary final ordering, explicit rebuild and separate capability/READ
 revocation handling.
+
+### Prepare candidate structural Source changes
+
+An installed invariant's planner can acquire
+`prepare_derived_relation_changes(&binding)` through the existing Native
+before/after source owner. Retain the returned proof in the rule's `Scope`, then
+use `context.derived_relation_changes(&binding, &prepared)` during evaluation.
+Both calls use the genuine current candidate; a descriptor, entity coordinate
+or previous proposal cannot replace that custody. The full recipe's declared
+read and affected kinds govern preparation, and evaluation freshly checks its
+reader audience. Structural inverse-prefix support includes empty adjacency.
+Application code uses the ordinary `worth-query-host` audience. The
+[internal engine handoff](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md#candidate-structural-source-changes)
+describes the corresponding Native boundary.
+
+<!-- compiled: candidate_source_changes.rs -->
+```rust
+pub fn prepare_changes<S, R, F, T>(
+    planner: &WorthQueryApplicationInvariantScopePlanner<'_, '_, S>,
+    binding: &WorthQueryApplicationInvariantDerivedRelationBinding<S, R, F, T>,
+) -> Result<WorthQueryPreparedInvariantDerivedChanges<S, R, F, T>, WorthQueryInvariantAccessDenial>
+{
+    planner.prepare_derived_relation_changes(binding)
+}
+
+pub fn read_changes<S, R, F, T>(
+    context: &WorthQueryApplicationInvariantContext<'_, '_, S>,
+    binding: &WorthQueryApplicationInvariantDerivedRelationBinding<S, R, F, T>,
+    prepared: &WorthQueryPreparedInvariantDerivedChanges<S, R, F, T>,
+) -> Result<usize, WorthQueryInvariantAccessDenial> {
+    Ok(context
+        .derived_relation_changes(binding, prepared)?
+        .affected_roots()
+        .len())
+}
+```
+
+Use this loan for structural before/after pullback. It does not grant projected
+scalar reads, managed-index queries or publication authority. Declare a managed
+Source requirement separately when a rule needs a provider-backed read.
+
+### Maintain a provider Source for an invariant
+
+Add `.managed_index_source(Index::reference())` to the invariant definition.
+Choose `managed_index_cold_sources(ApplicationManagedIndexColdSource::AdmitRebuild)`
+when its original request may construct an unopened scope; `Refuse` instead
+requires available material. Install the matching provider through the same
+contribution as the index. Implement its `update` receiver using the supplied
+before/after Source rows, changed occurrences and isolated node writer. Share
+unchanged nodes; do not replace a warm update with a complete Source rebuild.
+Provider and controlled-work refusals prevent publication.
+
+The Source must use `SameAdmittedScope` with `NoParameters`, public disclosure,
+physical scalar fields and supported stored/reverse/composed/union membership
+paths. Direct endpoint result relations may project scalar fields from the
+related entity. Their actual relation occurrences preserve cardinality: two
+physical links to the same endpoint are still two results. Child predicates,
+deeper nested shapes, optional parent-aspect result fields and child-field ordering remain unsupported; ordering may
+refer to root fields. Unsupported shapes return `UnsupportedInvariantSource`
+during installation.
+Source result limits remain enforced; unavailable material is not an empty set.
+Native discovers affected scopes from actual before/after changes, including
+scopes with no open public handle, and prepares their roots before validation.
+Applications do not supply an affected-scope list.
+
+Inside a mutation handler, read a managed Parent through
+`DecisionReader::index_query`. Declare the Parent's projected fields in the
+operation's reads and register its exact binding with
+`schema.operation_managed_index_read::<PrefixBinding, _, _>(RenameItem::reference())`.
+Installation rejects a Parent whose scope mapping differs from that mutation;
+execution requires the resolved scope to equal the operation's admitted scope.
+Parent admission and the Source's own fresh principal, scope
+and READ checks still run. The decision retains the same qualified candidate
+influence or conservative whole-Source expectation described above, including
+future entrants and empty membership, for the actual consuming candidate.
+Ordinary row/result-set expectations use `expect_source` and `expect_result_set`.
+
+<!-- compiled: managed_prefix_decision.rs -->
+```rust
+                let rows = reader.index_query::<query::PrefixBinding>(query::FindPrefix {
+                    directory: input.directory.clone(),
+                    prefix: input.prefix.clone(),
+                });
+```
+
+Resolve the index with `resolver.typed_managed_index(Index::reference())` in its
+installed rule factory. Retain `planner.retain_managed_index(&binding)` in the
+rule's `Scope`, then use `context.managed_index(&prepared)` during evaluation.
+Each committed/proposed query borrows that actual Native observation and original
+request. A retained preparation from another observation cannot supply this loan.
+
+<!-- compiled: managed_prefix_invariant.rs -->
+```rust
+        let pair = context
+            .managed_index(scope)
+            .map_err(|cause| execution(format!("{cause:?}")))?;
+        let probe = query::Probe {
+            prefix: "taken".into(),
+        };
+        let after = pair.proposed().query(&probe).map_err(execution)?;
+```
+
+An ordinary successful commit publishes the matching graph and provider image.
+An admitted `open_index` attaches that maintained root as `Ready`; it does not
+call the provider's cold build. A current read still performs fresh Source READ.
+The standalone explicit-rebuild registration described above retains its own
+Created/Ready lifecycle. Closing a public attachment does not remove material
+still owned by an installed invariant or a retained Native/World basis.
+The handle's request-free `evict` returns `InvariantOwned` for such an
+attachment. To make its selected material cold, use
+`request.query(parent).evict_index(&index)`. This entrance freshly admits the
+Parent, validates the handle's runtime, installation, principal, scope and branch
+incarnation, and funds copied cache paths through that request. Governed and
+approved Parents use `evict_index_governed` and `evict_index_approved` with their
+usual capability arguments. Cleanup performs no Source content read or provider
+callback. A completed cleanup remains successful if cancellation arrives at the
+outer request's final poll; pre-effect interruption still refuses.
+
+A fresh content read of that cold image returns the typed
+`WorthQueryManagedIndexRefusal::RootUnavailable` before provider query callbacks.
+The installed invariant's `AdmitRebuild` policy permits the next affected candidate
+to reconstruct from its actual Native committed Source before validation; it
+still has to satisfy the original request and every rule. Explicit
+`request.query(parent).rebuild_index(&index)` freshly admits the Parent and the
+Source's independent Public READ, then rebuilds provider nodes outside Native
+locks and refills that same selected Native cache. Governed and approved Parents
+use `rebuild_index_governed` and `rebuild_index_approved`. An intervening eviction
+or refill rejects the stale reconstruction before install; cancellation before
+install preserves the previous canonical cache (a cold cache stays cold). A
+completed install survives the outer request's final cancellation poll. This cold lane performs the ordinary Source query and
+a second Native occurrence projection; both use the original request, and their
+combined peak memory is reconstructive cost. It does not initialize a nonexistent
+scope. Initial construction under `Cold::Refuse` uses the separate bootstrap
+entrance below.
+Eviction and reconstruction do not change a complete Source condition when its
+actual support stays unchanged.
+
+An invariant's default `Cold::Refuse` also refuses new scopes during ordinary
+preparation. For a fresh unpublished installation, explicitly select each index
+whose newly created scopes may be constructed in the next seed-batch attempt:
+
+<!-- compiled: managed_prefix_initialization.rs -->
+```rust
+    graph.initialize_managed_index::<prefix::PrefixIndex>(phase)?;
+```
+
+Bind the ordinary principal/entity/relation seeds, then call
+`graph.commit_seed_batch(phase)` or finish normal bootstrap publication. Initial
+program activation still precedes those seeds, and all normal invariants judge
+the canonical roots before the application becomes visible. Initialization does
+not change the declared cold policy or grant public Source READ. A foreign typed
+binding refuses even if its descriptive names match. The next attempted batch
+consumes selection; an empty attempt returns `EmptyBootstrap` and poisons that
+bootstrap. A nonempty unrelated batch also consumes unused selection. A recovered
+bootstrap rejects initialization; an installed runtime has no initialization method.
+
+Once that attempt ends, ordinary new/cold scopes still refuse under `Refuse`.
+A fresh public `rebuild_index` can refill an existing cold association after its
+independent Source READ; it cannot create a nonexistent scope. A refusing seed
+commit preserves its original Source cause through
+`denial.managed_source_denial()` and custom-rule verdict through
+`denial.custom_invariant_denial()`. Failure does not turn an unavailable committed
+view into absent membership. Original proof/session/basis backing releases with
+its actual owners, beyond runtime guards.
+
+Cleanup follows the current World product's genuine selected Native component.
+A `ReuseExact` product can therefore evict and rebuild its selected older image while newer
+main and fork images remain warm. Earlier Native/World images and observations
+may retain their immutable temporal shares; eviction does not erase historical
+material. Physical backing releases after its last relevant owner closes.
+
+After its Native component deletion completes, closing the owning product also
+releases its live managed Source lookup.
+An existing `ReuseExact` alias retains its selected immutable component, so fresh
+admitted reads, eviction and refill through that alias remain available. This
+retained read custody grants no fresh Native branch admission, fork or write.
+The [close and alias court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/close.rs)
+checks the complete journey and final allocation balance.
+
+See the [authored maintained catalog](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs)
+and [its installed rule](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs).
+
+For an edge Source, declare the start and end relations in its result shape and
+include both endpoint entities and relation kinds in the invariant's read and
+affected closure. A vertex field edit then pulls back through those actual
+relations to incident edge rows and every affected directory, on both physical
+sides. Rewiring removes the former endpoint's dependency. The box provider keeps
+its integer unit/frame binding and delegates validation and enclosure union to
+its numerical owner. The [geometry composition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry.rs)
+uses this path with the same provider installation and both reader entrances.
+
+The [whole-path growth court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth.rs)
+authors 1,000/2,000-vertex chains and 50,000 genuine remote enclosures through
+installed actions. Both affected directories contain the remote geometry; the
+edited vertex keeps degree two and the fixed probe keeps sparse output. Complete
+ordinary Source reads are checked against authored coordinates outside measured
+work. The checked Source-tree and summary path passes this court's original
+whole-request SDK growth guards, including Source acquisition, reverse-scope
+discovery, provider updates, rules and publication. Before/after public probes
+also verify authored membership with bounded summary comparisons. Cold setup is
+admitted and invoiced separately; unchanged warm roots are never rebuilt.
+This evidence covers the indirect geometry composition. Prefix-specific large
+qualification remains open. Retaining a one-shot response does not register a
+live predicate or qualify later retained-query routing.
+
+A branch created through `ForkExact` attaches the selected immutable managed
+Source under a fresh Native association for that branch. Subsequent edits on
+either sibling maintain their own image. `ReuseExact` continues reading the
+actual selected Native component even after sibling heads advance. Neither path
+rebuilds the provider merely to attach an unchanged Source. A retained Source
+expectation from another branch returns `ForeignBranch` before provider work;
+consume the observation only through its original branch and fresh admission.
+The [fork affinity court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/affinity.rs)
+exercises these paths through the installed public program.
+
+A validation failure's `invariant_execution_failure().and_then(|failure|
+failure.managed_source_denial())` borrows the original Source preparation cause.
+Its `provider_failure().cause()` preserves the owned provider or projection error
+chain, including `WorthQueryApplicationProjectionDenial` with
+`RelationCardinalityMismatch`. Request interruption remains a typed request stop.
+
+Handle `BranchMaterializationSuspended` or `SnapshotUnavailable` from a current
+physical read during generated-output suspension. Retaining an earlier result
+does not make it current. After resumption, open the index through a fresh
+admitted request and handle its returned lifecycle status; an old payload or
+equal values cannot establish a new physical basis.
+The [generated Catalog journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/court.rs)
+uses a real fixed-delivery source action, producer and reconstruction receiver.
+Suspension preserves logical invariant rows in both affected scopes while current
+public reads refuse. Reconstructing the exact manifest still runs the Source
+rules on the proposed values; the valid reconstruction publishes material used
+by fresh public reads. A retained result keeps its original values throughout.
+For an exact reconstruction, Native compares the actual authoritative manifest
+records with their retained suspension source before the first rule. It can then
+share the selected suspension image's immutable Source backing with a fresh
+available association. Query still checks the actual provider installation and
+World lineage; every required rule runs, and committed suspended Source reads
+remain unavailable. This conservative proof declines even an unprojected field
+change, which follows the declared cold-source policy. The same journey checks
+zero provider build/update calls on exact restoration, an ItemBounds change that
+rebuilds both scopes, and original-request cancellation after the first real rule
+query followed by a fresh retry.
+The [generated endpoint journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court.rs)
+publishes an Edge and both Vertices as declared output roles, including both
+Directory memberships and the real Starts/Ends relations. Full-range rule queries
+check the complete logical roster during suspension; changing a reconstructed
+endpoint reaches the existing enclosure rule in unopened B. Exact reconstruction
+reuses the same payload without provider build/update. Cancelling the original
+suspension request after a real rule query preserves selection and available
+public reads, then a fresh suspension succeeds. Use
+`WorthQueryGeneratedOutputSuspensionFailure::execution_control_stop()` to borrow
+its typed request stop; a preparation failure still owns its original Native
+denial. These are integer enclosure and Source lifecycle checks.
+The [cold generated Source court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court/cold_history.rs)
+evicts previously attached B, closes its public registration and proves its
+derived material stays cold while ordinary Native Source rows remain readable.
+Original cold-build cancellation reaches no rule; retry reconstructs B before
+both scope callbacks. This is separate evidence from never-opened B.
+
+A fresh `request.at(&observation).query(source).execute()` still resolves its
+principal and scope on the current product. During suspension it preserves
+`BranchMaterializationSuspended`; historical data cannot replace current security.
+After lawful endpoint-20 restoration, a fresh retained ordinary Source query
+returns the original endpoint 10 while current reads return 20. Managed Parent
+queries in retained mode continue to refuse `UnsupportedMode` before provider
+callbacks. Retaining decoded rows is a separate immutable-result property.
+The [pending materialization court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/court/pending.rs)
+uses the existing World comparison pause after real Native work. While publication
+holds activation admission, fresh selection returns `ProductActivationUnavailable`
+before disclosure. Cancelling there returns the actual `ProductUnpublished`
+suspension/restoration recovery carrier. Once the entry returns, fresh reads use
+the predecessor World image: available endpoint 10 for pending suspension, or the
+suspended principal refusal for pending restoration despite Native being ahead.
+
+Continue the returned recovery with a fresh request. A cancelled continuation
+returns its carrier through `into_recovery()`; successful continuation adopts the
+settled Native result without rebuilding provider data or rerunning rules. The
+court restores endpoint 20 and independently reads retained ordinary endpoint 10.
+This qualifies process-local pending recovery, separately from a competing
+publisher race or crash persistence.
+The compiled endpoint shape preserves each actual `Starts` and `Ends` relation
+occurrence and checks its declared cardinality before provider maintenance:
+
+<!-- compiled: managed_geometry_source.rs -->
+```rust
+fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
+) -> TypedApplicationQueryResultShape<Catalog, Q, Edge, Row, ResultBinding> {
+    ApplicationQueryResultShapeBuilder::new(Edge::reference())
+        .field(identity())
+        .relation(
+            start(),
+            ApplicationQueryResultShapeBuilder::<Catalog, Q, Vertex, Row, ResultBinding>::new(
+                Vertex::reference(),
+            )
+            .field(start_region()),
+        )
+        .relation(
+            end(),
+            ApplicationQueryResultShapeBuilder::<Catalog, Q, Vertex, Row, ResultBinding>::new(
+                Vertex::reference(),
+            )
+            .field(end_region()),
+        )
+        .build()
+}
+```
+
+An unavailable maintained Source returns its typed Native Source refusal.
+Logical invariant material never authorizes a current physical public read.
 
 ### Ordinary Query resource policies
 

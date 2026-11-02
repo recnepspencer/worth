@@ -22,9 +22,15 @@ impl WorthQueryApplicationObservedFact {
         };
         check_request()?;
         let equal = match self {
+            Self::ManagedIndexSource { observation } => observation.remains_equal(runtime, execution, snapshot).map_err(|cause| match cause {
+                super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "managed Source comparison"),
+                super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "managed Source comparison"),
+                _ => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "managed Source comparison"),
+            })?,
             Self::ComponentSelection { observation } => observation.remains_equal(runtime,execution,snapshot,None)
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
+                    super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
                     super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause,"component selection comparison"),
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,"component selection comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,"component selection comparison"),
@@ -32,6 +38,7 @@ impl WorthQueryApplicationObservedFact {
             Self::Aggregate { observation } => observation.remains_equal(runtime,execution,snapshot,None)
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
+                    super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
                     super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause,"aggregate comparison"),
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,"aggregate comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,"aggregate comparison"),
@@ -39,6 +46,7 @@ impl WorthQueryApplicationObservedFact {
             Self::StructuralWalk { observation } => observation.remains_equal(runtime,execution,snapshot)
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
+                    super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
                     super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause,"structural walk comparison"),
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,"structural walk comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,"structural walk comparison"),
@@ -46,6 +54,7 @@ impl WorthQueryApplicationObservedFact {
             Self::SourcePublication { observation } => observation.remains_equal(runtime, execution, snapshot)
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
+                    super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
                     super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "source publication comparison"),
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded, "source publication comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "source publication comparison"),

@@ -20,6 +20,37 @@ impl PublicationCellAdmission {
     }
 }
 
+/// Fork preparation has no mutation-candidate permission. Only its durable
+/// fork cutover can admit this lookup into the already-prepared target.
+pub(in crate::mvcc::publication::companion) struct PreparedManagedForkCell {
+    cell: CompanionBranchCell<crate::validation::candidate_source::ManagedIndexBranchImage>,
+    admission: Arc<PublicationCellAdmission>,
+}
+impl PreparedManagedForkCell {
+    pub(in crate::mvcc::publication::companion) fn new(
+        cell: CompanionBranchCell<crate::validation::candidate_source::ManagedIndexBranchImage>,
+    ) -> Self {
+        let admission = Arc::new(PublicationCellAdmission {
+            cell: OnceLock::new(),
+            pending: Arc::downgrade(&cell.core),
+        });
+        Self { cell, admission }
+    }
+    pub(in crate::mvcc::publication::companion) fn lookup_slot(
+        &self,
+    ) -> CompanionBranchCellSlot<crate::validation::candidate_source::ManagedIndexBranchImage> {
+        CompanionBranchCellSlot {
+            source: SlotSource::Cutover(Arc::clone(&self.admission)),
+        }
+    }
+    pub(in crate::mvcc::publication::companion) fn installed(&self) {
+        self.admission.installed(&self.cell.core);
+    }
+    pub(in crate::mvcc::publication::companion) fn metadata_bytes() -> usize {
+        std::mem::size_of::<PublicationCellAdmission>()
+    }
+}
+
 /// Preflight custody bound to its creator. It cannot read or edit a published image.
 pub struct PreparedCompanionBranchCell<T: Send + Sync + 'static> {
     cell: CompanionBranchCell<T>,
@@ -80,6 +111,14 @@ impl<T: Send + Sync + 'static> Clone for CompanionBranchCellSlot<T> {
     }
 }
 impl<T: Send + Sync + 'static> CompanionBranchCellSlot<T> {
+    /// Identity comparison for the owner's exact pending lookup cleanup.
+    pub fn same_registration(&self, other: &Self) -> bool {
+        match (&self.source, &other.source) {
+            (SlotSource::Head(a), SlotSource::Head(b)) => Arc::ptr_eq(&a.core, &b.core),
+            (SlotSource::Cutover(a), SlotSource::Cutover(b)) => Arc::ptr_eq(a, b),
+            _ => false,
+        }
+    }
     pub fn admitted(&self) -> Option<CompanionBranchCell<T>> {
         match &self.source {
             SlotSource::Head(cell) => Some(cell.clone()),

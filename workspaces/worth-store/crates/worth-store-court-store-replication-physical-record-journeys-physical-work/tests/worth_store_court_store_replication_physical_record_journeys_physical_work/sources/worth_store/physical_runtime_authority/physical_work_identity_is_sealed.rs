@@ -1,12 +1,20 @@
-use std::num::NonZeroU64;
-
 use worth_store::physical_runtime::{
-    PhysicalOperationIdentity, PhysicalSignalProfileIdentity, PhysicalWorkGeneration,
+    PhysicalOperationIdentity, PhysicalWorkGeneration, PhysicalWorkIdentity, RuntimeIdentity,
 };
+use worth_store_physical_format::store_namespace::StableStoreIdentity;
 
-fn main() {
-    let sequence = NonZeroU64::new(1).unwrap();
-    let _operation = PhysicalOperationIdentity::from_owner_sequence(sequence);
-    let _profile = PhysicalSignalProfileIdentity([0; 32]);
-    let _generation = PhysicalWorkGeneration::from_lifecycle(todo!());
+fn forge_identity(
+    store: StableStoreIdentity,
+    runtime: RuntimeIdentity,
+    generation: PhysicalWorkGeneration,
+    operation: PhysicalOperationIdentity,
+) -> PhysicalWorkIdentity {
+    PhysicalWorkIdentity {
+        store,
+        runtime,
+        generation,
+        operation,
+    }
 }
+
+fn main() {}

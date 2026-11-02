@@ -4,7 +4,7 @@ use crate::domain_computation::{
     primary_graph::{
         application_query::{
             managed_index::{
-                retention::{ManagedIndexState, ReadyIndex},
+                retention::{ManagedIndexState, ReadyIndex, ReadyIndexMaterial},
                 source_acquisition,
             },
             WorthQueryObservedScopeSelector,
@@ -66,6 +66,20 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
             allocation,
         )?;
         let build_identity = session.identity();
+        if let Some(loan) = &source.rebuild_loan {
+            return super::maintained_build::rebuild(
+                execution,
+                application,
+                state,
+                parent,
+                selected,
+                request,
+                epoch,
+                &source,
+                loan,
+                session,
+            );
+        }
         let (nodes, callback) = session
             .call(|actual| {
                 state.adapter.build(
@@ -77,10 +91,42 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
             .map_err(Denial::Session)?
             .map_err(Denial::Work)?;
         let proof = session.complete(callback).map_err(Denial::Session)?;
-        let root = ReadyIndex::retain(execution, source, nodes).map_err(Denial::Lifecycle)?;
         state
-            .finish_build(epoch, root, &proof, parent, request)
-            .map_err(Denial::Lifecycle)
+            .admit_build(epoch, &proof, parent, request, &source.terminal)
+            .map_err(Denial::Lifecycle)?;
+        let material = ReadyIndexMaterial::retain(execution, Arc::clone(&source.material), nodes)
+            .map_err(Denial::Lifecycle)?;
+        let root_allocation = SourceFactsAllocation::open(execution)?;
+        super::super::super::one_shot::outcome::material::MaterialCompletion::new(
+            execution,
+            &root_allocation,
+        )
+        .arc::<ReadyIndex<S, I>>()?;
+        let payload: Arc<dyn std::any::Any + Send + Sync> = material;
+        let graph = application
+            .runtime
+            .primary_graph()
+            .ok_or(Denial::ForeignAssociation)?;
+        let cache = graph
+            .with_runtime(execution, |runtime| {
+                runtime.read_truth().retain_public_managed_index_cache(
+                    execution,
+                    selected.application_basis().snapshot_handle(),
+                    &payload,
+                )
+            })
+            .map_err(Denial::NativeSource)?;
+        let installed = (|| {
+            let root = ReadyIndex::retain(execution, source, cache.clone(), root_allocation)
+                .map_err(Denial::Lifecycle)?;
+            state
+                .finish_build(epoch, root, &proof, parent, request)
+                .map_err(Denial::Lifecycle)
+        })();
+        if installed.is_err() {
+            drop(cache.retire());
+        }
+        installed
     })();
     if result.is_err() {
         state.failed(epoch);

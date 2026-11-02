@@ -91,7 +91,9 @@ pub mod history {
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
-        RelationalAuthoredEntityIndexDefinition, RelationalAuthoredWriteCursor,
+        RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceImpact,
+        RelationalAuthoredManagedSourceMaterial, RelationalAuthoredManagedSourcePayloads,
+        RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteCursor,
         RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence,
         RelationalAuthoredWritePage, RelationalAuthoredWritePageLimits,
         RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector,

@@ -386,3 +386,7 @@ pub(super) use worker_completion::join_completed_worker;
 #[path = "support/generated_materialization.rs"]
 mod generated_materialization;
 pub(crate) use generated_materialization::create_group_with_external_endpoint;
+
+#[path = "support/managed_cache.rs"]
+mod managed_cache;
+pub(crate) use managed_cache::managed_cache_schema;

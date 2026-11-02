@@ -37,6 +37,15 @@ fn restoration_preserves_real_execution_refusals() {
                         policy_ancestor: None
                     }
                 );
+                let suspension =
+                    super::super::super::WorthQueryGeneratedOutputSuspensionFailure::Preparation(
+                        error,
+                    );
+                assert_eq!(
+                    suspension.execution_control_stop(),
+                    None,
+                    "a resource refusal is not a control stop"
+                );
                 let source = CancellationSource::new();
                 source.cancel();
                 let mut canceled = request();
@@ -55,6 +64,12 @@ fn restoration_preserves_real_execution_refusals() {
                         panic!("restoration folded control stop");
                     };
                     assert_eq!(kind, expected);
+                    let suspension = super::super::super::WorthQueryGeneratedOutputSuspensionFailure::Preparation(error);
+                    assert_eq!(suspension.execution_control_stop(), Some(expected));
+                    let super::super::super::WorthQueryGeneratedOutputSuspensionFailure::Preparation(retained) = suspension else { panic!("borrowed stop projection must retain original Native error") };
+                    assert!(
+                        matches!(preparation_failure_cause(&retained), WorthQueryGeneratedOutputRestorationFailureCause::ExecutionControlStopped(kind) if kind == expected)
+                    );
                 }
             },
         );

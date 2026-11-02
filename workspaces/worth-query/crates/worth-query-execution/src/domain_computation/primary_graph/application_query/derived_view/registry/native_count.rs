@@ -85,12 +85,9 @@ impl ManagedDerivedViewRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(found) = state
-            .owned
+            .native_counts
             .iter()
-            .filter_map(|(_, entry)| match entry {
-                OwnedDerivedView::NativeCount(state) => Some(state),
-                OwnedDerivedView::ManagedIndex { .. } => None,
-            })
+            .map(|(_, state)| state)
             .find(|state| {
                 state.runtime_authority == runtime
                     && &state.binding == binding
@@ -107,7 +104,7 @@ impl ManagedDerivedViewRegistry {
         state.views.retain(|_, view| view.strong_count() > 0);
         // Both ordinary weak registrations and these framework-owned states
         // occupy this same index and its one existing capacity.
-        if state.views.len() >= MAXIMUM_REGISTERED_VIEWS {
+        if state.registration_count() >= MAXIMUM_REGISTERED_VIEWS {
             return None;
         }
         let id = state.next_id.checked_add(1)?;
@@ -121,9 +118,7 @@ impl ManagedDerivedViewRegistry {
         ));
         let erased: Arc<dyn RegisteredDerivedView> = retained.clone();
         state.views.insert(id, Arc::downgrade(&erased));
-        state
-            .owned
-            .push((id, OwnedDerivedView::NativeCount(Arc::clone(&retained))));
+        state.native_counts.push((id, Arc::clone(&retained)));
         state.next_id = id;
         Some(retained)
     }
@@ -134,22 +129,18 @@ impl ManagedDerivedViewRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let removed = state
-                .owned
-                .iter()
-                .position(|(_, entry)| matches!(entry, OwnedDerivedView::NativeCount(_)))
-                .map(|position| state.owned.remove(position));
+            let removed = state.native_counts.pop();
             if let Some((id, _)) = &removed {
                 state.views.remove(id);
             }
-            let empty = state.take_empty_material_storage();
+            let empty = state
+                .views
+                .is_empty()
+                .then(|| std::mem::take(&mut state.views));
             drop(state);
             drop(empty);
             match removed {
-                Some((_, OwnedDerivedView::NativeCount(state))) => state.dispose(),
-                Some((_, OwnedDerivedView::ManagedIndex { .. })) => {
-                    unreachable!("selected Native count")
-                }
+                Some((_, state)) => state.dispose(),
                 None => break,
             }
         }
@@ -162,12 +153,9 @@ impl ManagedDerivedViewRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .owned
+            .native_counts
             .iter()
-            .filter_map(|(_, entry)| match entry {
-                OwnedDerivedView::NativeCount(state) => Some(Arc::clone(state)),
-                OwnedDerivedView::ManagedIndex { .. } => None,
-            })
+            .map(|(_, state)| Arc::clone(state))
             .collect::<Vec<_>>();
         owned.iter().map(|state| state.lifecycle()).collect()
     }

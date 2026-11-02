@@ -26,18 +26,27 @@ use super::{
 pub(super) fn commit_bootstrap_rows(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
+    initialization: Option<super::application_query::managed_index::SourceInitializationRequest>,
     first_principal_ordinal: usize,
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
     entity_rows: Vec<WorthQueryTypedEntityBootstrapRow>,
     relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
 ) -> Result<worth_relational::facade::history::CommitId, WorthQueryPrimaryGraphInstallationDenial> {
-    graph
+    let mut initialization = initialization;
+    let mut initialization_guard = None;
+    let result = graph
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
             let main_identity = runtime.main_branch_identity();
             let options = runtime
                 .admit_branch_basis(&main_identity)
                 .map_err(map_bootstrap_basis_denial)?;
+            if initialization.is_some() {
+                initialization_guard = Some(graph.integration_handle().managed_derived_views()
+                    .begin_source_initialization(execution, &options, &mut initialization)
+                    .map_err(|cause| primary_graph_denial(WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,
+                        format!("initial Source session: {cause:?}")))?);
+            }
             let mut transaction = runtime
                 .begin_branch_transaction(
                     &options,
@@ -64,7 +73,11 @@ pub(super) fn commit_bootstrap_rows(
                 &committed.snapshot,
             );
             Ok(commit_id)
-        })
+        });
+    // The session's retained Native basis, proof and original grants cannot
+    // reach their final Drop under the runtime borrow, including failed commits.
+    drop(initialization_guard);
+    result
 }
 
 pub(super) fn map_bootstrap_basis_denial(

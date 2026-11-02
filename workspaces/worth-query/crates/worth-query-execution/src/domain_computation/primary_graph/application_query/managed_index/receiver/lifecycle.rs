@@ -8,8 +8,10 @@ use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// Opens or reuses the same runtime-owned registration, initially Created.
-    /// This performs no Source read or provider build.
+    /// Opens or reuses the same runtime-owned registration without building it.
+    /// An invariant-maintained index attaches its matching published image as
+    /// Ready; a standalone registration starts Created. Content execution still
+    /// requires the Source's independent current READ admission.
     pub fn open_application_managed_index<
         B: ApplicationQueryBinding<S>,
         I: ApplicationManagedIndexBinding<S>,
@@ -48,6 +50,25 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .map_err(|cause| {
                     ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
                 })?;
+            if let Some(program) = graph.layout.managed_source(I::NAME) {
+                // Parent admission allows registration/status. Content is still
+                // read only after the Source's separate fresh READ in execute.
+                let observation = graph
+                    .with_runtime(&execution, |runtime| {
+                        runtime.read_truth().observe_managed_index_source(
+                            &execution,
+                            context.selected.application_basis().snapshot_handle(),
+                            program,
+                            context.selector.subject(),
+                        )
+                    })
+                    .map_err(|cause| {
+                        ReceiverCause::Provider(ProviderExecutionDenial::NativeSource(cause))
+                    })?;
+                state.attach_maintained(observation).map_err(|cause| {
+                    ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
+                })?;
+            }
             Ok(WorthQueryManagedIndex {
                 state,
                 id,
@@ -59,6 +80,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
 
     /// Explicitly rebuilds from the currently admitted complete Source.
     /// Providers execute outside Native and registry locks under this request.
+    /// Maintained indexes refill the same selected Native cache used by invariants.
     pub fn rebuild_application_managed_index<
         B: ApplicationQueryBinding<S>,
         I: ApplicationManagedIndexBinding<S>,

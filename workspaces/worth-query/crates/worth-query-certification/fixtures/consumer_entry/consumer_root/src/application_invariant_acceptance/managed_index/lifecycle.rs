@@ -11,10 +11,15 @@ use worth_query_host::facade::{
 };
 
 #[global_allocator]
-pub(super) static ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYSTEM;
+pub(in crate::application_invariant_acceptance) static ALLOCATOR: &StatsAlloc<std::alloc::System> =
+    &INSTRUMENTED_SYSTEM;
 
 mod affinity;
+mod complete_membership;
 mod installation;
+mod publication;
+mod registration;
+mod source_structure;
 
 fn find(prefix: &str) -> query::FindPrefix {
     query::FindPrefix {
@@ -22,7 +27,7 @@ fn find(prefix: &str) -> query::FindPrefix {
         prefix: prefix.into(),
     }
 }
-pub(super) fn run(test: fn()) {
+pub(in crate::application_invariant_acceptance) fn run(test: fn()) {
     std::thread::Builder::new()
         .name("managed-lifecycle-consumer".into())
         .stack_size(8 * 1024 * 1024)
@@ -313,7 +318,10 @@ fn warm_allocation_observation() {
     index.close();
 }
 
-pub(super) fn isolated_allocation_case(test: fn(), rust_path: &str) {
+pub(in crate::application_invariant_acceptance) fn isolated_allocation_case(
+    test: fn(),
+    rust_path: &str,
+) {
     // Follow the existing owner allocation court: another concurrent test's
     // allocator traffic cannot establish either a leak or a successful release.
     // This guard selects only the harness invocation, never an authority mode.

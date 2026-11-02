@@ -28,6 +28,8 @@ mod lookup;
 mod name;
 mod publication;
 mod registry;
+pub(in crate::physical_runtime) use publication::JournalPublicationShared;
+pub use publication::*;
 pub use registry::{OrderedJournalRegistry, OrderedJournalRegistryDenial};
 
 pub use name::{
@@ -99,9 +101,18 @@ pub struct OrderedJournalPublication {
     payload: Vec<u8>,
     placement: AdmittedRecordPlacementPolicy,
     deadline: PhysicalMutationDeadline,
+    input_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl OrderedJournalPublication {
+    /// Carries the encoder's original input charge until actual settlement.
+    pub fn with_input_memory(
+        mut self,
+        memory: worth_execution::ExecutionMemoryReservation,
+    ) -> Self {
+        self.input_memory = Some(memory);
+        self
+    }
     pub fn new(
         position: u64,
         payload: Vec<u8>,
@@ -113,6 +124,7 @@ impl OrderedJournalPublication {
             payload,
             placement,
             deadline,
+            input_memory: None,
         }
     }
 }
@@ -133,10 +145,13 @@ impl OrderedJournalPublished {
     }
 }
 
-/// A publication that did not make its entry durable. Every variant states its
-/// effect posture: only `Indeterminate` may have had an effect.
+/// Journal admission or publication failure. OwnedPublication retains stopped
+/// custody and actual optional physical facts, including a known committed
+/// entry when later settlement failed; inspect that custody before classifying fate.
 #[non_exhaustive]
 pub enum OrderedJournalPublicationFailure {
+    OwnedStart(Box<OrderedJournalOperationFailure>),
+    OwnedPublication(Box<OrderedJournalPublicationFailureCustody>),
     EmptyPayload,
     /// The position is not the head plus one. No effect.
     PositionGap {
@@ -172,6 +187,10 @@ pub enum OrderedJournalPublicationFailure {
 impl std::fmt::Debug for OrderedJournalPublicationFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::OwnedStart(cause) => f.debug_tuple("OwnedStart").field(cause).finish(),
+            Self::OwnedPublication(cause) => {
+                f.debug_tuple("OwnedPublication").field(cause).finish()
+            }
             Self::EmptyPayload => f.write_str("EmptyPayload"),
             Self::PositionGap { head, requested } => f
                 .debug_struct("PositionGap")
@@ -228,13 +247,15 @@ pub enum OrderedJournalDenial {
     ServingRequiresInspection,
 }
 
-/// Serializes publications across journals and remembers, per journal, the
+/// One short-lock owned publication phase serializes journals and remembers the
 /// position of a publication whose fate is indeterminate until the runtime is
 /// reopened. Other journals stay publishable: an unresolved entry orders only
 /// its own journal.
 #[derive(Debug, Default)]
 pub(in crate::physical_runtime) struct OrderedJournalState {
     unresolved: BTreeMap<OrderedJournalName, u64>,
+    admitting: bool,
+    active: Option<std::sync::Weak<JournalPublicationShared>>,
 }
 
 /// Borrowed access to one of the home's ordered journals.

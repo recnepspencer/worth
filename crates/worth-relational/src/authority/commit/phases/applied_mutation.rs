@@ -20,6 +20,8 @@ pub(crate) struct AppliedMutationDraft {
     pub(crate) outcome: MutationApplyOutcome,
     pub(crate) identities: PendingMutationIdentities,
     pub(crate) aggregate: Option<crate::aggregate_identity::AggregateProposal>,
+    pub(crate) source_interpretation:
+        std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
 }
 
 impl std::fmt::Debug for AppliedMutationDraft {
@@ -78,8 +80,12 @@ pub(crate) fn apply_mutation_draft(
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
     identity: &crate::mvcc::RelationalMutationProposalIdentity,
     mut symbols: PendingSymbolMeanings,
-    materialization: Option<crate::mvcc::RelationalMaterializationTransactionMode>,
+    source_interpretation: std::sync::Arc<
+        crate::validation::candidate_source::NativeManagedSourceInterpretation,
+    >,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
+    require_original_source_interpretation(identity, &source_interpretation)?;
+    let materialization = source_interpretation.materialization_mode();
     let version_id = identity.proposed_version_id();
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
@@ -130,6 +136,7 @@ pub(crate) fn apply_mutation_draft(
         materialization,
     );
     Ok(AppliedMutationDraft {
+        source_interpretation,
         aggregate,
         state,
         outcome,
@@ -146,7 +153,11 @@ pub(crate) fn apply_retained_entity_selection_draft(
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
     identity: &crate::mvcc::RelationalMutationProposalIdentity,
     mut symbols: PendingSymbolMeanings,
+    source_interpretation: std::sync::Arc<
+        crate::validation::candidate_source::NativeManagedSourceInterpretation,
+    >,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
+    require_original_source_interpretation(identity, &source_interpretation)?;
     crate::aggregate_identity::guard::retained_entity_selection(
         execution,
         runtime.commit_work_budget.as_ref(),
@@ -179,9 +190,30 @@ pub(crate) fn apply_retained_entity_selection_draft(
         None,
     );
     Ok(AppliedMutationDraft {
+        source_interpretation,
         state,
         outcome,
         aggregate,
         identities: PendingMutationIdentities { records, symbols },
     })
+}
+
+fn require_original_source_interpretation(
+    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    source: &std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
+) -> Result<(), MutationApplyDenial> {
+    if identity
+        .source_interpretation()
+        .is_some_and(|owner| std::sync::Arc::ptr_eq(&owner, source))
+    {
+        return Ok(());
+    }
+    Err(crate::transactions::data::TransactionCommitError::conflict(
+        crate::transactions::data::CommitConflict::new(
+            crate::transactions::data::ConflictClass::StaleValidationBasis {
+                detail: "candidate Source belongs to another proposal owner".into(),
+            },
+        ),
+    )
+    .into())
 }
