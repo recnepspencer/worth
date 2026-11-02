@@ -12,14 +12,12 @@ fn open(
     initialized: Arc<AtomicUsize>,
     contacts: Arc<AtomicUsize>,
 ) -> HostHome {
-    eprintln!("Host close court: entering original opening");
     let request = fixture::request(path.to_path_buf(), build(), initialized, contacts);
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
         request.open_in_advancement(&phase)
     })
     .unwrap()
     .unwrap_or_else(|refused| panic!("actual Host admission: {refused:?}"));
-    eprintln!("Host close court: opening returned");
     home
 }
 fn serial(bytes: Option<u64>, deadline: Option<std::time::Instant>) -> SerialRequest {
@@ -29,21 +27,19 @@ fn serial(bytes: Option<u64>, deadline: Option<std::time::Instant>) -> SerialReq
         deadline,
     )
 }
-fn assert_physical_lease_released(path: &std::path::Path, execution: &ExecutionRequest<'_, '_>) {
-    use worth_store_testkit_application_oracle::facade::home_opening;
-    // Physical recovery acquires the real mutation lease. It neither admits
-    // another descriptor nor reconstructs Native/Query service.
-    let recovered = recover_home(
-        home_opening::request(
-            path,
-            worth_relational::facade::runtime::RelationalRuntimeApi::builder(),
-        ),
-        execution,
-    )
-    .unwrap_or_else(|cause| {
-        panic!("physical lease must be released while retired owners remain alive: {cause:?}")
-    });
-    drop(recovered); // Explicit unbudgeted destruction of the independent probe.
+fn physical_media_admission() -> worth_store::physical_runtime::FilesystemMediaAdmission {
+    use worth_store::physical_runtime::{FilesystemAccessPosture, FilesystemMediaAdmission};
+    FilesystemMediaAdmission::production(FilesystemAccessPosture::CoordinatedServiceAccount)
+}
+fn assert_physical_lease_released(path: &std::path::Path, _: &ExecutionRequest<'_, '_>) {
+    // This owner port acquires the actual exclusive mutation lease, without
+    // running the separately governed Native/World recovery journey.
+    let held = physical_media_admission()
+        .qualify_home(path)
+        .unwrap_or_else(|cause| {
+            panic!("physical lease must be released while retired owners remain alive: {cause:?}")
+        });
+    drop(held);
 }
 #[test]
 fn fresh_read_host_physically_closes_with_original_retired_allocations_alive() {
@@ -57,6 +53,13 @@ fn fresh_read_host_physically_closes_with_original_retired_allocations_alive() {
         execution,
         initialized.clone(),
         contacts.clone(),
+    );
+    assert!(
+        matches!(
+        physical_media_admission().qualify_home(path.path()),
+        Err(worth_store::physical_runtime::RecoveryFilesystemQualificationError::OwnershipContended)
+    ),
+        "the independent probe must refuse while this same Home serves"
     );
     assert_eq!(balance(home.runtime()), 7);
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
@@ -81,10 +84,6 @@ fn fresh_read_host_physically_closes_with_original_retired_allocations_alive() {
 }
 #[test]
 fn expired_host_close_preserves_the_same_serving_home_and_a_live_retry_physically_closes() {
-    eprintln!(
-        "Host close court entered; close outcome bytes={}",
-        std::mem::size_of::<ApplicationHomeCloseOutcome>()
-    );
     let path = tempfile::tempdir().unwrap();
     let initialized = Arc::new(AtomicUsize::new(0));
     let contacts = Arc::new(AtomicUsize::new(0));
@@ -140,10 +139,6 @@ fn expired_host_close_preserves_the_same_serving_home_and_a_live_retry_physicall
 #[test]
 fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_remain_physically_closed(
 ) {
-    eprintln!(
-        "Host close court entered; close outcome bytes={}",
-        std::mem::size_of::<ApplicationHomeCloseOutcome>()
-    );
     let path = tempfile::tempdir().unwrap();
     let live = serial(None, None);
     let execution = ExecutionRequest::serial(&live);

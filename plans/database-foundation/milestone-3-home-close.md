@@ -235,3 +235,18 @@ separately qualifies D11's actual physical lease release while the original
 retired Query, handler, Native and Bridge allocations remain alive. It preserves
 all mutation-close and recovery controls; it does not certify their blocked
 receipt or reopen successors.
+
+The physical-release court independently qualifies the real filesystem media
+both before close (OwnershipContended) and after Closed (exclusive lease
+acquired), while all retired allocations remain alive. It uses that existing
+owner admission port directly; it does not require a second Native/World reopen
+in order to prove physical custody release. The original recover_home probe
+reached Closed, then overflowed inside recovery on the ordinary stack; the
+captured stack is close-stack-debug-publics.log. The kill/reopen court retains
+its full recovery requirement.
+
+The alias court separates the original mutation phase from its before/after
+close carriers, preserving every operation and assertion without another thread
+or stack allowance. Its original monolithic body overflowed in Native commit
+admission before reaching its final close; close-handler-stack-debug.log retains
+the actual stack. The phase split requires direct ordinary-stack qualification.

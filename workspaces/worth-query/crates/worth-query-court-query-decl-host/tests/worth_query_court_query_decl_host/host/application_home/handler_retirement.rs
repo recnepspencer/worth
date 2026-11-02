@@ -34,6 +34,27 @@ fn program_alias_refusal_resumes_the_same_query_and_ordinary_handler_retires() {
     let home = refused.resume().unwrap();
     drop(retained);
 
+    execute_original_mutation_after_query_alias_release(&home);
+    assert_eq!(initialized.load(Ordering::SeqCst), 1);
+    assert_eq!(contacts.load(Ordering::SeqCst), 1);
+    let closed = home
+        .close(&execution)
+        .unwrap_or_else(|refused| panic!("ordinary handler close: {refused:?}"));
+    assert!(closed.is_closed());
+    assert_eq!(
+        contacts.load(Ordering::SeqCst),
+        1,
+        "retirement never invokes business"
+    );
+    closed.reclaim();
+}
+
+fn execute_original_mutation_after_query_alias_release(
+    home: &worth_query_host::facade::WorthQueryApplicationHome<
+        fixture::schema::HomeIdentitySchema,
+        fixture::HomeProgram,
+    >,
+) {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
@@ -69,18 +90,6 @@ fn program_alias_refusal_resumes_the_same_query_and_ordinary_handler_retires() {
             .unwrap();
         assert_eq!(observed.rows(), &[8]);
     }
-    assert_eq!(initialized.load(Ordering::SeqCst), 1);
-    assert_eq!(contacts.load(Ordering::SeqCst), 1);
-    let closed = home
-        .close(&execution)
-        .unwrap_or_else(|refused| panic!("ordinary handler close: {refused:?}"));
-    assert!(closed.is_closed());
-    assert_eq!(
-        contacts.load(Ordering::SeqCst),
-        1,
-        "retirement never invokes business"
-    );
-    closed.reclaim();
 }
 
 #[test]
