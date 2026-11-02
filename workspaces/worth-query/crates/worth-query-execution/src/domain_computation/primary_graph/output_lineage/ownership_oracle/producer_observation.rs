@@ -6,10 +6,41 @@ use std::{sync::Arc, time::Duration};
 use worth_query_decl::facade::application_query::ApplicationQueryParameterSet;
 mod field_coordinates;
 
+impl primary_graph::source_disclosure::OriginalSourceInspectionDisclosure {
+    pub(in crate::domain_computation::primary_graph) fn court_public_settlement_rejects_disclosure(
+        self: Arc<Self>,
+    ) {
+        let runtime = installation::install();
+        let original = journey::complete(&runtime);
+        runtime
+            .with_host_advancement(|phase| {
+                let selected = runtime
+                    .on_branch(runtime.current_world())
+                    .select(&phase)
+                    .unwrap();
+                original.assert_original_provenance(None, Some(self), |settled| {
+                    selected.require_current_output_settlements(&phase, [settled])
+                });
+            })
+            .unwrap();
+    }
+}
+
 #[test]
 fn real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_read_custody() {
     let runtime = installation::install();
     let original = journey::complete(&runtime);
+    runtime
+        .with_host_advancement(|phase| {
+            let selected = runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap();
+            original.assert_original_provenance(None, None, |settled| {
+                selected.require_current_output_settlements(&phase, [settled])
+            });
+        })
+        .unwrap();
     let original_read = original.retained_read();
     let original_weak = Arc::downgrade(&original_read);
     let native = original

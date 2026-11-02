@@ -13,9 +13,16 @@ pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryAppr
     pub(in crate::domain_computation::primary_graph::provider) predicate:
         Option<PredicatePreparationOwner>,
 }
-pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryRetiredApplicationAttemptPhase(
-    PhaseState,
-);
+/// The caller releases the actual retired phase after leaving the attempt gate.
+pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryRetiredApplicationAttemptPhase
+{
+    phase_custody: Option<PhaseState>,
+}
+impl Drop for WorthQueryRetiredApplicationAttemptPhase {
+    fn drop(&mut self) {
+        drop(self.phase_custody.take());
+    }
+}
 
 pub(super) struct WorthQueryApplicationAttemptState {
     attempt: super::super::WorthQueryPrimaryGraphApplicationAttempt,
@@ -73,7 +80,9 @@ impl WorthQueryApplicationAttemptPhase {
         if matches!(&prior, PhaseState::InvariantApproved { .. }) {
             self.0 = PhaseState::InvariantApprovedAfterOverlayDiscard;
         }
-        Some(WorthQueryRetiredApplicationAttemptPhase(prior))
+        Some(WorthQueryRetiredApplicationAttemptPhase {
+            phase_custody: Some(prior),
+        })
     }
 
     pub(super) fn overlay(&self) -> Option<&WorthQueryPrimaryGraphOverlay> {

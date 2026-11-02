@@ -97,6 +97,17 @@ impl WorthQueryAdmittedGraphWorkPlan {
         self.identity
     }
 
+    /// Readonly provenance of the exact capacity reservation held by this plan.
+    #[doc(hidden)]
+    pub fn inspection_capacity_identity(&self) -> Option<crate::domain_computation::execution_resource_admission::WorthQueryGraphCapacityReservationIdentity>{
+        match &self.mechanics {
+            WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { capacity } => {
+                Some(capacity.identity())
+            }
+            _ => None,
+        }
+    }
+
     pub fn obligation_identity(&self) -> &WorthQueryInstalledGraphObligationSetIdentity {
         self.selected.identity()
     }

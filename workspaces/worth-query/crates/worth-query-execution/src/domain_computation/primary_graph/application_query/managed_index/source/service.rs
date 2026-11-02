@@ -49,7 +49,6 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
 pub(in crate::domain_computation::primary_graph) trait SourceService:
     Send + Sync
 {
-    fn program(&self) -> &Program;
     fn predicate_axis(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>;
     fn binding_type(&self) -> std::any::TypeId;
     fn admits_initialization(
@@ -101,9 +100,6 @@ where
     I: ApplicationManagedIndexBinding<S>,
     P: WorthQueryManagedIndexProvider<S, I>,
 {
-    fn program(&self) -> &Program {
-        &self.program
-    }
     fn predicate_axis(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>{
         self.predicate.as_ref()
     }

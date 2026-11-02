@@ -2,8 +2,9 @@
 
 mod postcommit_currentness;
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
-    FactlessCurrentness, FailedRebase, OwnEffectOnReads, RebaseVerificationReason,
+    FactlessCurrentness, FailedRebase,
 };
+pub use postcommit_currentness::{OwnEffectOnReads, RebaseVerificationReason};
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
 use crate::domain_computation::primary_graph::provider::{

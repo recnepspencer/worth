@@ -205,7 +205,8 @@ impl WorthQueryLiveDeliverySource {
         }
         Ok(())
     }
-    /// An authenticated lifecycle/untracked-movement owner calls this; no READ is issued.
+    /// Owner court injects an untracked movement; production publishes exact predicate notices.
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn invalidate_predicates(
         &self,
         observation: &ProductBranchObservation,

@@ -5,6 +5,27 @@ use crate::domain_computation::primary_graph::application_contribution::{
 };
 use worth_execution::MapKernelContext;
 
+pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn require_compared(
+    state: &ProducerOutputEvaluationState,
+) -> Result<
+    &crate::domain_computation::primary_graph::application_contribution::ComparedProducerOutput,
+    ConnectionRefusal,
+> {
+    match state {
+        ProducerOutputEvaluationState::Compared(compared) => Ok(compared),
+        // All members are fixed diagnostic values or share their original funded Arc.
+        ProducerOutputEvaluationState::CaptureUnavailable(cause) => {
+            Err(ConnectionRefusal::Capture(cause.clone()))
+        }
+        ProducerOutputEvaluationState::Ineligible(cause) => {
+            Err(WorthQueryProducerConnectionDenial::Evaluation(
+                WorthQueryProducerEvaluationDenial::Ineligible(*cause),
+            )
+            .into())
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProducerEvaluationDenial {
     EvaluationUnavailable,
@@ -213,19 +234,9 @@ fn evaluate_installed(
                 WorthQueryProducerEvaluationDenial::ObservedFieldUnconnected,
             ));
         }
-        let compared = match &evaluation.state {
-            ProducerOutputEvaluationState::Compared(compared) => compared,
-            ProducerOutputEvaluationState::CaptureUnavailable(_) => {
-                return Err(refuse(
-                    WorthQueryProducerEvaluationDenial::OriginalCaptureUnavailable,
-                ))
-            }
-            ProducerOutputEvaluationState::Ineligible(cause) => {
-                return Err(refuse(WorthQueryProducerEvaluationDenial::Ineligible(
-                    *cause,
-                )))
-            }
-        };
+        crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, 1)
+            .map_err(MapKernelFailure::Stop)?;
+        let compared = require_compared(&evaluation.state).map_err(MapKernelFailure::Domain)?;
         if !observed_field(&observed, context, compared)? {
             return Err(refuse(
                 WorthQueryProducerEvaluationDenial::ObservedFieldUnconnected,

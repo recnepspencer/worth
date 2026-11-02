@@ -1,264 +1,610 @@
-# Execution retained causes: partial slice and scope stop
+# Execution retained causes
 
-This lane starts at `52e7dba3dc` on `codex/cut-pub-causes-20261101`.
-Both required sync branches were fetched and merged before the slice;
-both merges reported already up to date. The governing external plan was read
-without changes. This report covers only exact inspection owner-cause
-projection. The complete lane is **not finished**.
+## Landing and scope
 
-## Boundary and implementation
+The lane starts at `52e7dba3dc` on `codex/cut-pub-causes-20261101`.
+Slice 1 is `c4b61d817783cb8e4f4ee973e414a3df73feb642` (items 1 and 2).
+The continuation is the commit containing this report (items 3 through 6).
+The continuation implements items 3 through 6 and the remaining warnings in
+Execution-owned source outside pub-mono. Its completed evidence is recorded below.
+Both required sync branches were fetched and merged before each slice; both
+merges were already current. The governing external plan was read only.
+No consumer in this lane requires a change in pub-mono's reserved files.
+The same independent reviewer remains `/root/lane_reviewer` throughout.
 
-Inspection admission owns its original typed refusals. Public inspection
-denials already retain those originals and their original request backing;
-resource and canonical projections consume their respective causes. The new
-`WorthQueryApplicationInspectionOwnerRefusal<'a>` projection borrows the exact
-query authorization, current authorization, capability, scope, security and
-governance causes. `owner_refusal()` also consumes diagnostic preparation's
-governance cause. It does not reconstruct owner denials or change resource
-classification. Outer query/scope/selection refusals use the same projection.
+## Field dispositions
 
-The existing governance denial enum is now publicly nameable through the
-inspection facade. Host's existing inspection module alias carries both types.
-The capability index documents that consumer path. There is no compatibility
-path, decoder or migration. No AspectShape form is added. The only new public
-shape is the borrowed six-variant owner-refusal enum; the governance enum's
-existing three variants are unchanged.
+Every retained field below has outcome **a**. No retained cause or proof field
+is deleted. Custody is a real retention/release consumer; names make that role
+explicit. Courts P1-P4, C, W, I and N are named in the next section.
 
-## Field disposition
-
-`a` means wired in this slice. `Pending` identifies work this lane has not
-implemented or certified; it is neither deletion nor a completed disposition.
-
-| Retained field | Outcome | Consumer or remaining obligation | Court |
+| Field | Outcome | Actual consumer | Court |
 |---|---|---|---|
-| DiagnosticPreparationDenial::Governance.0 | a | `owner_refusal()` returns borrowed Governance | `inspection_preserves_diagnostic_preparation_governance_cause` |
-| InspectionAdmissionDenial::Authorization.0 | a | Borrowed Authorization preserves full query denial | `inspection_preserves_query_authorization_cause` |
-| InspectionAdmissionDenial::CurrentAuthorization.0 | a | Borrowed CurrentAuthorization preserves exact kind | `inspection_preserves_current_authorization_cause` |
-| InspectionAdmissionDenial::Capability.0 | a | Borrowed Capability preserves full authorization denial | `inspection_preserves_capability_cause` |
-| InspectionAdmissionDenial::Scope.0 | a | Borrowed Scope preserves full entity denial | `inspection_preserves_scope_cause` |
-| InspectionAdmissionDenial::Security.0 | a | Borrowed Security preserves selected-basis refusal | `inspection_preserves_security_cause` |
-| InspectionAdmissionDenial::Governance.0 | a | Borrowed Governance preserves all existing variants | `inspection_preserves_governance_cause` |
-| InspectionCause::Query.0 | a | Outer query admission shares the same borrowed Authorization projection | `inspection_preserves_outer_query_cause` |
-| InspectionCause::Scope.0 | a | Outer scope resolution shares the same borrowed Scope projection | `inspection_preserves_outer_scope_cause` |
-| InspectionCause::Selection.0 | a | Outer branch selection shares the same borrowed Security projection | `inspection_preserves_outer_selection_cause` |
-| OriginalSettledProducerSource::Committed.settlement | Pending | Original provenance comparison not implemented | None added |
-| OriginalSettledProducerSource::Committed.publication | Pending | Original provenance comparison not implemented | None added |
-| OriginalSettledProducerSource::Committed.disclosure | Pending | Original provenance comparison not implemented | None added |
-| OriginalSettledProducerSource::StableReused.settlement | Pending | Reused provenance comparison not implemented | None added |
-| OriginalSettledProducerSource::Restored.checkpoint | Pending | Restored provenance comparison not implemented | None added |
-| WorthQueryInspectionReadCompletion.managed_run | Pending | Report completion check not extended | None added |
-| WorthQueryInspectionReadCompletion.basis | Pending | Report completion check not extended | None added |
-| WorthQueryInspectionReadCompletion.basis_release | Pending | Report completion check not extended | None added |
-| WorthQueryInspectionReadCompletion.release | Pending | Report completion check not extended | None added |
-| MaintainedWatchSelection.association | Pending | Watch refresh binding not extended | None added |
-| MaintainedWatchSelection.scope | Pending | Watch refresh binding not extended | None added |
-| MaintainedWatchSelection.native | Pending | Custody role/name not changed | None added |
+| DiagnosticPreparationDenial::Governance.0 | a | Public borrowed Governance refusal | I: diagnostic-preparation governance |
+| InspectionAdmissionDenial::Authorization.0 | a | Public exact Authorization refusal | I: query authorization |
+| InspectionAdmissionDenial::CurrentAuthorization.0 | a | Public exact CurrentAuthorization refusal | I: current authorization |
+| InspectionAdmissionDenial::Capability.0 | a | Public exact Capability refusal | I: capability |
+| InspectionAdmissionDenial::Scope.0 | a | Public exact Scope refusal | I: scope |
+| InspectionAdmissionDenial::Security.0 | a | Public exact Security refusal | I: security |
+| InspectionAdmissionDenial::Governance.0 | a | Public exact Governance refusal | I: governance |
+| InspectionCause::Query.0 | a | Same borrowed Authorization projection | I: outer query |
+| InspectionCause::Scope.0 | a | Same borrowed Scope projection | I: outer scope |
+| InspectionCause::Selection.0 | a | Same borrowed Security projection | I: outer selection |
+| InspectionCause::Principal.0 | a | Borrowed Principal refusal | I: principal |
+| InspectionBindingDenial::Installation.0 | a | Borrowed Installation refusal | C's genuine uninstalled-binding precondition |
+| DiagnosticContractDenial::Contract.0 | a | Borrowed DiagnosticContract refusal | diagnostic_contract_denial_survives_public_inspection |
+| InspectionPlanDenial::Graph.0 | a | Borrowed Graph admission refusal | I: graph admission |
+| InspectionReportDenial::Input.0 | a | Borrowed ReportingInput refusal | I: reporting input |
+| InspectionAdmissionDenial::Session.0 | a | Borrowed exact Session refusal | I: session start |
+| InspectionAdmissionDenial::Target.0 | a | ForeignTarget projection preserves the binding mismatch | I: foreign target |
+| ProducerOutputEvaluationState::CaptureUnavailable.0 | a | Real require_compared classifies the retained cause into ConnectionRefusal::Capture | I: original capture state |
+| ConnectionRefusal::Capture.0 | a | Borrowed ProducerCapture public projection | I: original capture state |
+| DecisionQueryPreparationStop::Native.0 | a | HandlerExecutionDenial::native_decision_refusal | N: ordinary decision |
+| IndexDecisionStop::Native.0 | a | Same public getter through managed-index error owner | N: managed-index decision |
+| OriginalSettledProducerSource::Committed.settlement | a | Real current-settlement reader compares original immutable owner against receipt | P1 |
+| OriginalSettledProducerSource::Committed.publication | a | Same reader compares observed publication identity | P1 |
+| OriginalSettledProducerSource::Committed.disclosure | a | Same reader compares original disclosure owner, including legitimate absence | P4 |
+| OriginalSettledProducerSource::StableReused.settlement | a | Same reader compares actual stable publication's settlement owner | P2 |
+| OriginalSettledProducerSource::Restored.checkpoint | a | Same reader compares complete restored checkpoint identity | P3 |
+| WorthQueryInspectionReadCompletion.managed_run | a | matches_report compares the report's actual managed run | C |
+| WorthQueryInspectionReadCompletion.basis | a | matches_report compares the report's actual basis | C |
+| WorthQueryInspectionReadCompletion.basis_release | a | Exact basis identity and valid local custody release | C |
+| WorthQueryInspectionReadCompletion.release | a | Exact owner-minted reservation identity, GraphWork scope and count one | C |
+| MaintainedWatchSelection.association | a | Refresh compares fresh context with retained selection association before poll/ACK | W |
+| MaintainedWatchSelection.scope | a | Refresh compares retained scope with watch audience | W |
+| MaintainedWatchSelection.native | a | native_custody keeps immutable Native backing alive after row loan ends; release at close | W: separate Weak observation |
+| MaintainedWatchSelection.source | a | source_custody retains completed original read | W: separate Weak observation |
+| MaintainedWatchSelection.coverage | a | coverage_custody retains admitted coverage | W: separate Weak observation |
+| MaintainedWatchSelection.dependencies | a | dependencies_custody retains original dependencies | W: separate Weak observation |
+| predicate::tree::Retired.empty_backing | a | empty_backing_custody releases backing outside tree gate | Existing 127-node removal/drop-count courts |
+| predicate::tree::Retired.record | a | record_custody releases actual removed record after backing | Same independent drop-count courts |
+| RetainedIndexImage::Maintained backing | a | native_custody releases image outside cache gate | Existing maintained-index release/allocation courts |
+| predicate::preparation::Child::Refused.round | a | round_custody drops through RoundLink outside Native retirement gate | Existing predicate retirement/allocation courts |
+| WorthQueryLiveCommitBatchCell allocation | a | allocation_custody releases after batch payload | Existing live delivery and resource-conservation courts |
+| WorthQueryRetiredApplicationAttempt entry | a | entry_custody drops outside attempt gate | Existing application attempt/resource courts |
+| WorthQueryRetiredApplicationAttemptPhase phase | a | phase_custody drops outside phase gate | Existing phase/resource courts |
 
-Both requested `fetch_update` replacements are also unimplemented. Their
-original checked arithmetic and MSRV remain unchanged. No retained field is
-deleted or renamed in this slice.
-
-## Scope stop
-
-The stable-source Clippy run reports warnings in admission re-entry, which the
-brief reserves to pub-mono and explicitly forbids this lane from editing:
-
-- `application_contribution/producer/execution/source_readmission/ready.rs:5`:
-  `function ready_work_denial is never used`.
-- `application_query/admission/permission/current_ready.rs:83`:
-  `method seal_current_ready is never used`.
-
-Narrow owner inspection and independent review confirm those functions belong
-to source readmission and ready-permission admission. The latter delegates to
-the actively used `seal_current_ready_with_control`. Suppressing their lints or
-inventing callers would hide the ownership conflict. Neither file was edited.
-Zero Execution warnings therefore requires coordination with the pub-mono
-owner. This report does not claim that these are the only remaining warnings.
+Both requested atomics use explicit compare_exchange_weak loops with Relaxed
+success/failure orderings and the original checked arithmetic. Their local
+courts check literal starting values, terminal MAX values, refusal without state
+change, and the 256-value lineage sequence. The new reservation identity's
+counter also refuses exhaustion precisely; six admission paths preserve
+IdentityExhausted instead of classifying it as capacity unavailability.
 
 ## Courts and independent oracles
 
-The new owner-local projection courts construct literal owner denials without
-creating an application runtime. Full-denial equality and pointer identity
-check that query/capability payloads survive as the original objects. Other
-causes are checked against independently chosen literal refusal values.
-Governance courts exercise all three existing variants separately at direct
-admission and diagnostic preparation, requiring Admission classification and
-no resource refusal. `unrelated_stops_do_not_project_owner_causes` excludes
-foreign-access and kernel-panic stops. These are projection-contract courts,
-not claims of end-to-end authorization issuance.
+- **P1:** real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_read_custody.
+- **P2:** genuine_input_cutoff_retains_stable_supplier_without_native_execution.
+- **P3:** tracked_aspect_absence_survives_query_checkpoint_then_invalidates_on_other_field.
+- **P4:** native_serial_capture_uses_effective_ancestor_funding_and_releases_its_last_payload.
+- **C:** cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer.
+- **W:** retained_watch_coordinates_refuse_refresh_and_keep_original_custody.
+- **I:** causal_inspection::application_inspection::stop::owner's literal/pointer courts.
+- **N:** handler_denial_preserves_native_decision_preparation_cause and handler_denial_preserves_native_managed_index_decision_cause.
 
-The shared public consumer was temporarily replaced with `None`. The first
-run, before the three outer-route courts were added, returned **1 passed,
-7 failed, 0 ignored/measured, 2235 filtered**, exit 101. The seven failures name
-each requested positive cause court; the unrelated-stop negative control
-passes. The expanded run returned **1 passed, 10 failed, 0 ignored/measured,
-2235 filtered**, exit 101. Its additional failures name each outer route. These
-are intended assertion failures after successful compilation, not build
-failures. The mutation command for both runs was:
+P1-P4 use genuine owner-issued settlements and disclosure from the existing
+runtime fixtures. They alter only retained descriptive provenance and call the
+actual current-settlement reader through an existing fixture's checking closure.
+The independent oracles are deliberately absent publication/settlement facts,
+a distinct earlier genuine settlement, a genuine foreign disclosure, and a
+flipped checkpoint idempotency byte. Every corruption must return the existing
+typed ForeignSettlement refusal, while each unmodified counterpart succeeds.
+The comparison algorithm is not reproduced in a test oracle.
 
-```text
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection::stop::owner::tests
-```
+C issues two genuine completions with the same provider label, distinct managed
+runs and distinct Native bases. It exchanges one completion fact at a time and
+calls the real validate_report entry, requiring ForeignIssuedAccess. The oracle
+is the issuance history and independently checked distinct owner identities;
+it does not copy matches_report. Session, plan, target and all four requested
+retained facts are attacked. A provider label alone is deliberately insufficient.
 
-Source bytes were restored in `finally` without restoring their modification
-time. The following final-source library build/run reports all eleven new
-courts passing, including the negative control. No mutation or instrumentation
-remains in source.
+W keeps the fresh request lawful and exchanges only the stored scope or
+association. Each must return typed ForeignContext before availability or ACK;
+restoring the original field returns Pending. Four independent Weak observations
+check actual backing lifetimes before and after close. The existing prefix-watch
+court installs 256 unrelated probes, requires fewer than 128 visited regions for
+one changed row, checks full-parent refresh and exact allocation conservation.
+No timing threshold is added; elapsed times are telemetry, not correctness.
 
-## Verification
+I and N use independently selected literal owner refusals and exact pointer/full
+value assertions. Installation's court obtains a real refusal by requesting an
+uninstalled binding from a genuine installed schema; it does not fabricate an
+installation error or introduce another runtime fixture. These diagnostic courts
+claim projection integrity, not independent end-to-end authorization issuance.
 
-All Cargo runs use a lane-isolated target directory:
+## Composition, shapes and bounded work
 
-```text
-CARGO_TARGET_DIR=C:/worth-build-cache/target-cut-pub-causes
-WORTH_IMPLEMENTATION_BUILD_ID=11111111-1111-1111-1111-111111111111
-```
+No AspectShape form, migration, decoder, shim or alternate representation is
+added. The borrowed public WorthQueryApplicationInspectionOwnerRefusal now has
+14 diagnostic cases; slice 1 supplied six and this continuation adds the remaining
+retained owner causes. Existing diagnostic types become read-only public names
+through the owning inspection facade and Host alias. HandlerExecutionDenial adds
+the borrowed Native-stop getter. Query Admission owns a new opaque process-local
+WorthQueryGraphCapacityReservationIdentity and its release receipt getter; the
+identity is provenance, not execution authority, and has no public constructor.
+The public Decl/Host compile-reference court checks diagnostic names/re-exports.
 
-Boundary/context tools use `C:/worth-build-cache/target-cut-pub-causes-tools`.
-Long Cargo commands run in hidden background PowerShell processes with output
-and exit status in `%TEMP%/worth-pub-causes`; no build is killed by a tool timeout.
-One waiting helper was stopped before it had started any final build, to add
-the outer-route courts before final verification.
+Provenance checks compare immutable settlement/disclosure owners in constant time.
+Read/publication names and restored producer, role and fact bytes are funded
+before semantic comparisons; no unrelated lineage is traversed. The report funds
+three times its basis clone bytes plus twice the shared Product branch-name
+bytes before cloning and before its two later basis comparisons. Memory retains
+only the original clone-byte quote. Arithmetic overflow is a typed refusal.
+No cost enters a production API type or signature.
 
-An attempted initial baseline Clippy run overlapped source construction and
-failed with **one E0583 error**, **39 Execution warning diagnostics** and
-**7 Relational warnings**, exit 101. Its failure output was:
-
-```text
-error[E0583]: file not found for module `tests`
-  --> .../application_inspection/stop/owner.rs:49:1
-49 | mod tests;
-```
-
-The test file had not yet been created when that compiler read the module.
-This is not baseline or final-source evidence. A subsequent stable-source
-run of the same command exited 0 with **71 Execution warning diagnostics**,
-**7 Relational warnings**, **0 errors**:
-
-```text
-cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json
-```
-
-It compiled the original two grouped new tests before they were split/extended;
-final-source Clippy is repeated below. The zero-warning requirement is unmet.
-
-Final-source gates already completed, all exit 0:
-
-```text
-cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
-cargo run --manifest-path tools/agent-context/Cargo.toml -- check
-bash scripts/ci/check_workspace_rust_line_caps.sh dirty
-git diff --check origin/master...HEAD
-git diff --check
-```
-
-Boundary-check reports `boundary-check: repository boundaries are valid`.
-Context emits no violations. Line caps check **8 Rust files**, all pass.
-The same gates also passed on the earlier two-test candidate.
-
-Final-source complete library command, exit 0:
-
-```text
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib
-```
-
-Result: **2245 passed, 0 failed, 1 existing ignored, 0 measured, 0 filtered**.
-This includes all eleven added owner-projection courts. The existing ignore is
-the subprocess maintenance-cleanup probe whose parent supplies its payload.
-Runtime 646.40 seconds is telemetry only.
-
-Final-source full Decl/Host binary, exit 0:
-
-```text
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host
-```
-
-Result: **325 passed, 0 failed, 2 existing ignored, 0 measured, 0 filtered**.
-The ignores remain the scheduled thousand-step and thousand-sibling history
-growth qualifications. Runtime 38.04 seconds is telemetry only. This is broad
-existing public facade/installed behavior regression evidence; its existing
-expected results were not changed.
-
-Final-source Query/Decl/Host inspection filter, exit 0:
-
-```text
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query-decl-host --test worth_query_court_query_decl_host inspection
-```
-
-Result: **47 passed, 0 failed/ignored/measured, 295 filtered**. Runtime 10.65
-seconds is telemetry only. Existing public inspection, genuine binding/runtime
-affinity and original causal-evidence journeys retain their existing literal
-row/refusal oracles and genuine positive counterparts. No expected result was
-changed. This does not certify the pending provenance or completion consumers.
-Final-source public Query inspection filter, exit 0:
-
-```text
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query --test worth_query_court_query inspection
-```
-
-Result: **3 passed, 0 failed/ignored/measured, 61 filtered**. Runtime 0.02 seconds
-is telemetry only. Two existing tests compile-reference real public inspection
-signatures and outcome-navigation traits; the third executes the existing
-inspection grammar journey and independently requires a settled outcome after
-its genuine read completion. Their original expectations are unchanged, and
-they add no claim about pending consumers.
-Final-source all-target Clippy repeated the command above, exit 0: **71
-Execution warning diagnostics, 7 upstream Relational warnings, 0 errors**.
-No zero-warning claim is made. The two confirmed reserved-file warnings remain.
-Final-source formatting, exit 0 with no output:
-
-```text
-cargo fmt --manifest-path workspaces/worth-query/Cargo.toml --check -p worth-query-execution
-```
-
-The formatting application before the expanded mutation also exited 0.
-
-The seven upstream Relational warning diagnostics are out of scope:
-
-- `mvcc/publication/companion/cell/managed_source.rs:15`: private
-  `CompanionBranchCellCore` in `ManagedIndexSourceObservation::core`.
-- The same file, line 27: private `CompanionBranchCellCore` in
-  `ManagedSourceRootImage::core`.
-- The same file, line 29: private `CompanionRootImage` in
-  `ManagedSourceRootImage::image`.
-- The same file, line 207: private `CompanionBranchCellCore` in
-  `ManagedSourceReadConditions::matches_reserved`.
-- The same file, line 207: private `CompanionRootImage` in that method.
-- `validation/candidate_source/preparation.rs:225`: unread `closure`.
-- `validation/candidate_source/authored_history.rs:54–55`: unread `records`
-  and `incidence` (one diagnostic).
-
-Public-court builds additionally emit two distinct untouched unused-import
-warnings: `application_schema` in the document-retention testkit's
-`certification/application_graph/cell_history/checkpoint.rs:6`, and
-`GovernedRetentionHistory as History` in the Decl/Host court's
-`certification/document_history/retention/governed.rs:14`. The testkit warning
-is repeated in both the full Decl/Host and inspection-host build logs. Neither
-source was edited.
+Unused entries_for_entity, predicate_factory, source program and completion
+session_identity view methods are deleted because no owner has a consumer for
+those facade views; the underlying routing, factory, program and identity remain
+consumed by their actual owners. The invalidate_predicates wrapper is cfg(test)
+because its only caller is its owner test; production uses its metered owning
+service. Visibility of source facts now matches their enclosing domain boundary.
+No allow, underscore rename, dummy read or unused getter is introduced.
 
 ## Independent review
 
-The same independent reviewer uses qa-loop, qa-tests and code-quality-qa for
-this slice. It accepted the borrowed cause design and literal/pointer oracles,
-flagged the missing capability-index entry, and closed that finding after the
-entry was added. It accepted the incremental split into seven positive courts
-and one negative control. It independently confirmed the admission re-entry
-scope blocker. A later focused evidence check identified missing coverage for
-the three additional outer routes; three local literal-oracle courts were added.
-Final independent review passes for this explicitly limited partial slice.
-The reviewer independently checked all final counts/gates, both mutation
-failure sets and source restoration. Both source/evidence findings are closed;
-the full lane's zero-warning scope blocker remains. No approval for items 3–6
-or for the zero-warning requirement is implied.
+The same reviewer uses qa-loop, qa-tests and code-quality-qa. It caught and closed:
+provider labels being insufficient reservation provenance; unpaid variable-width
+provenance/basis comparisons; a new runtime-bearing test helper; a court that
+called matches_report without the real validator; missing facade re-exports;
+coarse identity-exhaustion classification; and unnecessary changes to untouched
+capacity and consumer-value tests. The helper now receives a reader closure,
+completion corruption reaches validate_report, identity exhaustion is precise,
+facade names are compiled, and both unrelated files are restored exactly.
+The reviewer accepted all nine mutation invocations and independently checked their exact assertions and counts. The reviewer independently accepted the final restored-source evidence, diagnostic ownership and this report before committing; no material in-scope QA finding remains.
 
 ## Readings I chose
 
-The instruction to preserve exact governance causes is fulfilled through the
-owner-cause projection, rather than classifying governance as a resource stop.
-This keeps governance refusals classified as Admission. The instruction to
-stop for outside-lane scope governs the zero-warning conflict; completing this
-sound first slice does not certify the remaining lane. The brief's explicit
-package-scoped commands govern verification instead of wider skill defaults.
-Its specifically required downstream court binaries are affected proof targets
-for the Execution change even though their sources are unchanged; inspection
-runs filter within their registered binaries rather than building a workspace.
+1. The clarified warning ruling reserves admission re-entry, application_runtime*
+   and Installation warnings for pub-mono. No needed consumer crosses that scope.
+2. In-memory original provenance identifies the immutable owner retained by the
+   same seed/settlement. Restored checkpoint identity compares semantically.
+   General RecordedSettlementIdentity semantic equality is unchanged.
+3. The watch fixture belongs to its standalone consumer_entry manifest; package
+   selection uses that manifest with -p, never a workspace-wide command.
+4. Untouched physical-source debt stays with its owner under AGENTS.md, including
+   the fixture MIN constant that Cargo attributes to Execution through a path
+   mount, and the old Admission capacity_tests.rs thread-spawn Clippy error.
+   Actual emitted diagnostic counts are reported without claiming literal zero.
+5. Custody already existed and automatic Drop was its real consumer. Weak lifetime
+   assertions and owner review certify the clarification. The isolated Native=None
+   mutation trips the observer's required live-custody precondition; it does not
+   demonstrate a post-close Weak-lifetime mutation or four separate field mutations.
+6. The footer's package-scoped checks replace wider skill defaults. Its explicitly
+   required downstream court binaries are affected proof targets for this lane.
+
+## Verification and mutation ledger
+
+All counts below are **passed/failed/ignored/measured/filtered**. Cargo uses the
+lane-isolated `C:/worth-build-cache/target-cut-pub-causes`; boundary/context use
+its `-tools` sibling. WORTH_IMPLEMENTATION_BUILD_ID is fixed to
+11111111-1111-1111-1111-111111111111. Long Cargo commands run in hidden background
+processes with complete logs under `%TEMP%/worth-pub-causes`; none is killed by
+a tool timeout. Later final builds use CARGO_BUILD_JOBS=1. No workspace-wide
+Cargo build/test or make test runs. Runtime durations are telemetry only.
+
+### Final restored source
+
+| Log stem | Exit | Counts or result |
+|---|---:|---|
+| `remaining-final-fmt` | 0 | 0 formatting differences |
+| `remaining-final-lib` | 0 | 2256/0/1/0/0 |
+| `remaining-final-decl-host` | 0 | 326/0/2/0/0 |
+| `remaining-final-host-inspection` | 0 | 47/0/0/0/295 |
+| `remaining-final-query-inspection` | 0 | 3/0/0/0/61 |
+| `remaining-final-admission-clippy` | 101 | worth-query-admission: 1 error diagnostics |
+| `remaining-final-court-clippy` | 101 | worth-query-court-decl-host: 64 error diagnostics; worth-query-court-decl-host: 1 warning diagnostics; worth-query-execution: 6 warning diagnostics; worth-query-testkit-document-retention: 1 warning diagnostics; worth-relational: 7 warning diagnostics |
+| `remaining-final-execution-clippy` | 0 | worth-query-execution: 13 warning diagnostics; worth-relational: 7 warning diagnostics |
+| `remaining-final-consumer-fmt` | 0 | 0 formatting differences |
+| `remaining-final-watch` | 0 | 1/0/0/0/268 |
+| `remaining-final-watch-growth` | 0 | 1/0/0/0/268 |
+| `remaining-final-consumer-clippy` | 0 | worth-query-consumer-root: 129 warning diagnostics; worth-query-execution: 6 warning diagnostics; worth-query-topology-entry: 2 warning diagnostics; worth-relational: 7 warning diagnostics |
+| `remaining-final-boundary` | 0 | 0 violations; repository boundaries are valid |
+| `remaining-final-context` | 0 | 0 context violations |
+| `remaining-final-lines-gitbash` | 0 | 84 Rust files checked; 0 cap violations |
+| `remaining-final-diff-head` | 0 | 0 whitespace errors |
+| `remaining-final-diff-work` | 0 | 0 whitespace errors |
+| `remaining-final-diff-cached` | 0 | 0 whitespace errors |
+
+Exact final commands, in the same order:
+
+```text
+cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission -p worth-query-execution -p worth-query-court-decl-host --check
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query-decl-host --test worth_query_court_query_decl_host inspection
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-query --test worth_query_court_query inspection
+cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --all-targets --message-format=json
+cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --all-targets --message-format=json
+cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json
+cargo fmt --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --check
+cargo test --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --bin worth-query-consumer-root retained_watch_coordinates_refuse_refresh
+cargo test --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --bin worth-query-consumer-root predicate_watch_prefix_refreshes_full_parent_and_prunes_unrelated_probes
+cargo clippy --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --all-targets --message-format=json
+cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
+cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty
+git diff --check origin/master...HEAD
+git diff --check
+git diff --cached --check
+```
+
+The final library's existing ignored subprocess cleanup probe remains ignored;
+its parent supplies the payload. Decl/Host retains its two scheduled large-history
+qualification ignores. Neither is claimed as executed. Formatting was applied
+to the standalone consumer package before its final check (exit 0, no test run).
+
+### Focused positive baseline
+
+All following commands exited 0 on the same production source, before mutations.
+The one-test atomic filter selected only node lineage; the extra run explicitly
+selected both atomics and the contract court.
+
+| Log stem | Command suffix after cargo test | Counts |
+|---|---|---|
+| `positive-producer` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib producer_observation` | 2/0/0/0/2255 |
+| `positive-restored` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib tracked_aspect_absence_survives_query_checkpoint` | 1/0/0/0/2256 |
+| `positive-disclosure` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib native_serial_capture_uses_effective_ancestor_funding` | 1/0/0/0/2256 |
+| `positive-completion` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib cancelled_after_consuming_completion` | 1/0/0/0/2256 |
+| `positive-owner` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection::stop::owner` | 17/0/0/0/2240 |
+| `positive-native` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib handler_denial_preserves_native` | 2/0/0/0/2255 |
+| `positive-atomic` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib refuses_exhaustion_without_reusing_or_wrapping` | 1/0/0/0/2256 |
+| `positive-admission-identity` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --lib graph_reservation_identity_exhaustion` | 1/0/0/0/124 |
+| `positive-admission-graph` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --lib graph_obligation` | 5/0/0/0/120 |
+| `positive-watch` | `--manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --bin worth-query-consumer-root retained_watch_coordinates_refuse_refresh` | 1/0/0/0/268 |
+| `positive-watch-growth` | `--manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --bin worth-query-consumer-root predicate_watch_prefix_refreshes_full_parent_and_prunes_unrelated_probes` | 1/0/0/0/268 |
+| `positive-extra` | `--manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- exhaustion_without_reusing_or_wrapping diagnostic_contract_denial_survives_public_inspection` | 3/0/0/0/2254 |
+
+### Mutation results
+
+Each invocation compiled successfully and then exited 101 at the intended test
+assertions. Independent filters were combined after Cargo's `--` delimiter where
+the same package/binary could serve them; libtest's actual help confirmed multiple
+filters. Each failed name and assertion was checked independently. These are not
+compiler failures. Source bytes were restored in finally blocks with fresh writes;
+no source modification time was restored. The final suite rebuilds restored code.
+
+| Log stem | Counts | Specific lost consumer and assertion |
+|---|---|---|
+| `mut-A-execution` | 0/8/0/0/2249 | Committed settlement, reused settlement and restored checkpoint accepted corrupted provenance; validator accepted foreign managed_run; both Native getters returned None; both atomics returned Some(MAX) instead of None. |
+| `mut-A-watch` | 0/1/0/0/268 | Removed scope guard: coordinates court accepted foreign original scope (expect failed). |
+| `mut-B-execution` | 1/2/0/0/2254 | Removed publication and basis comparisons: publication accepted; validator accepted foreign basis. Unmodified reused-settlement control passed. |
+| `mut-B-watch` | 0/1/0/0/268 | Removed association guard: coordinates court accepted foreign original association (expect failed). |
+| `mut-C-execution` | 0/2/0/0/2255 | Removed disclosure and basis-release identity comparisons: disclosure accepted; validator accepted foreign basis_release. |
+| `mut-C-watch-custody` | 0/1/0/0/268 | Native custody=None: observer required live custody and panicked at selection.rs:269. This proves required-slot sensitivity, not a post-close Weak-lifetime mutation. |
+| `mut-D-execution` | 0/6/0/0/2251 | Removed actual provenance-reader call: P1/P2/P3 accepted corrupt seeds and P4 stopped at committed-settlement corruption; coarse real capture projection lost exact cause; validator accepted foreign capacity release. |
+| `mut-E-execution` | 1/18/0/0/2238 | Shared owner consumer=None: 16 owner positives, contract and genuine installation cause failed; unrelated-stop negative control passed. Installation failure precedes completion exchanges and is not completion sensitivity. |
+| `mut-E-identity` | 0/1/0/0/124 | Wrapping reservation mint returned Ok(MAX) where precise exhaustion Err was expected. |
+
+Exact mutation commands:
+
+```text
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- producer_observation tracked_aspect_absence_survives_query_checkpoint cancelled_after_consuming_completion handler_denial_preserves_native exhaustion_without_reusing_or_wrapping
+cargo test --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --bin worth-query-consumer-root retained_watch_coordinates_refuse_refresh
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- producer_observation cancelled_after_consuming_completion
+cargo test --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --bin worth-query-consumer-root retained_watch_coordinates_refuse_refresh
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- native_serial_capture_uses_effective_ancestor_funding cancelled_after_consuming_completion
+cargo test --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root --bin worth-query-consumer-root retained_watch_coordinates_refuse_refresh
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- cancelled_after_consuming_completion producer_observation tracked_aspect_absence_survives_query_checkpoint native_serial_capture_uses_effective_ancestor_funding inspection_preserves_original_capture_state_cause
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- causal_inspection::application_inspection::stop::owner diagnostic_contract_denial_survives_public_inspection cancelled_after_consuming_completion
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-admission --lib graph_reservation_identity_exhaustion
+```
+
+The nine invocations produce 40 intended assertion failures and 2 passing controls.
+Positive W separately observes all four real backings alive after runtime custody
+ends and all four dead after closing the last watch. Three other custody fields
+were not individually mutated; their independent Weak assertions and owner review
+are the evidence claimed. Existing destruction-custody regressions also run in the
+full library and existing watch allocation court.
+
+### Earlier candidate checks and failures
+
+These runs are not substituted for the final restored-source checks above.
+Slice 1's full historical record remains in commit c4b61d817783cb8e4f4ee973e414a3df73feb642.
+Its library passed 2245/0/1/0/0, Decl/Host 325/0/2/0/0, host inspection 47/0/0/0/295
+and Query inspection 3/0/0/0/61. Its public-owner=None mutations produced 1/7/0/0/2235
+then1/10/0/0/2235; final slice 1 owner courts all passed. Its final Clippy emitted 71
+Execution and 7 Relational warnings, 0 errors. Boundary/context/fmt/diff passed;
+line caps checked 8 Rust files. An initial overlapping candidate Clippy failed
+E0583 (`file not found for module tests`), with 39 Execution and 7 Relational
+warnings; that incomplete snapshot was never presented as a final pass.
+
+| Continuation log stem | Exit | Exact result/failure |
+|---|---:|---|
+| `remaining-first` | 101 | No tests ran; 3 E0277 errors (report resource conversion and two test Debug bounds) |
+| `remaining-second` | 101 | 1/1/0/0/2246; assertion failed: disclosure.is_some(); corrected using genuine foreign disclosure |
+| `remaining-completion` | 0 | 1/0/0/0/2247 |
+| `remaining-watch` | 101 | 0/1/0/0/268; BindingQueryNotInstalled for undeclared alias; corrected using a genuine second world |
+| `remaining-clippy` | 101 | worth-query-admission: 1 error diagnostics; worth-query-execution: 3 error diagnostics; worth-query-execution: 16 warning diagnostics; worth-relational: 7 warning diagnostics |
+| `remaining-clippy4` | 0 | worth-query-execution: 12 warning diagnostics; worth-relational: 7 warning diagnostics |
+| `remaining-clippy5` | 101 | worth-query-admission: 1 error diagnostics; worth-query-execution: 13 warning diagnostics; worth-relational: 7 warning diagnostics |
+
+The first continuation compiler failures preserved no passing claim. Resource
+conversion was corrected through the existing Bridge resource wrapper; tests
+inspect typed results without requiring unrelated Debug implementations. The
+initial Clippy failure included three items_after_test_module errors in changed
+files; their modules moved to the end. Its other error is the unchanged Admission
+thread-spawn debt below. The first boundary run exited 1 with
+BC9002_TEST_TOPOLOGY for a runtime-bearing provenance helper; the helper now takes
+a checking closure. Corrected boundary runs 2 and 3 exited 0; context runs 1 and 3
+exited 0; dirty cap runs checked 28 then 76 Rust files, both exit0. Intermediate
+format applications (remaining-fmt, fmt3, fmt4, fmt5, fmt6, consumer-fmt and
+values-fmt) exited 0. The unrelated value constant change was restored exactly.
+
+The first final line-cap command, `bash scripts/ci/check_workspace_rust_line_caps.sh dirty`,
+checked 0 files and exited 1 because Windows'
+WSL launcher returned `execvpe(/bin/bash) failed: No such file or directory`.
+The verified Git Bash rerun executes the unchanged dirty guard and passes 84 files.
+No guard or allowlist is bypassed or changed.
+
+### Warning and pre-existing-error ownership
+
+`remaining-final-execution-clippy` unique diagnostics (multiplicity is within this invocation):
+
+- 2x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/retained_read.rs:320`: function `query_execution_denial` is never used.
+- 2x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/retained_read.rs:339`: function `work_denial` is never used.
+- 2x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/execution/source_readmission/ready.rs:5`: function `ready_work_denial` is never used.
+- 2x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission/permission/current_ready.rs:83`: method `seal_current_ready` is never used.
+- 2x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/admitted_scope.rs:25`: method `resolve_encoded_entity_admitted` is never used.
+- 1x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/output_lineage/ownership_oracle/../../../../../../worth-query-certification/fixtures/consumer_values/src/integer_orientation.rs:13`: associated constant `MIN` is never used.
+- 2x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/navigation/output_correspondence.rs:18`: method `into_original` is never used.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:15`: type `companion::cell::CompanionBranchCellCore` is more private than the item `companion::cell::managed_source::ManagedIndexSourceObservation::core`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:27`: type `companion::cell::CompanionBranchCellCore` is more private than the item `companion::cell::managed_source::ManagedSourceRootImage::core`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:29`: type `companion::cell::CompanionRootImage` is more private than the item `companion::cell::managed_source::ManagedSourceRootImage::image`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:207`: type `companion::cell::CompanionBranchCellCore` is more private than the item `ManagedSourceReadConditions::matches_reserved`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:207`: type `companion::cell::CompanionRootImage` is more private than the item `ManagedSourceReadConditions::matches_reserved`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/validation/candidate_source/authored_history.rs:54`: fields `records` and `incidence` are never read.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/validation/candidate_source/preparation.rs:225`: field `closure` is never read.
+
+`remaining-final-admission-clippy` unique diagnostics (multiplicity is within this invocation):
+
+- 1x **error**, `worth-query-admission`, `crates/worth-query-admission/src/domain_computation/execution_resource_admission/capacity_tests.rs:81`: use of a disallowed method `std::thread::spawn`.
+
+`remaining-final-court-clippy` unique diagnostics (multiplicity is within this invocation):
+
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/cell_history/checkpoint_cases.rs:52`: unnecessary use of `clone` to create a slice from a reference.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/capability/grant_commands/mod.rs:40`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/capability/grant_commands/mod.rs:41`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs:63`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs:64`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs:120`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/mod.rs:122`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/retained_capacity/mod.rs:24`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/managed_cleanup/retained_capacity/mod.rs:27`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/native_postures/mod.rs:59`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/native_postures/mod.rs:60`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/retained/native_postures/mod.rs:20`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/source_only/retained/native_postures/mod.rs:21`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs:19`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs:20`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs:57`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/context/handoff.rs:58`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/cancellation.rs:158`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/cancellation.rs:160`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs:58`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs:60`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs:118`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/handoff.rs:120`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/mod.rs:154`: using `clone` on type `CommitId` which implements the `Copy` trait.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs:87`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/recovery.rs:90`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/group/resources.rs:48`: called `.err().expect()` on a `Result` value.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/cancellation.rs:98`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/cancellation.rs:99`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:45`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:46`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:98`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:99`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:165`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/race.rs:166`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/recovery.rs:82`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/recovery.rs:83`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:332`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:333`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:337`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:351`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:352`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs:356`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs:26`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs:27`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs:60`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs:61`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/capture_race.rs:40`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/capture_race.rs:41`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/handoff.rs:29`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/handoff.rs:31`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/recovery.rs:35`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/recovery.rs:36`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/redo/handoff.rs:35`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/redo/handoff.rs:36`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs:92`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs:93`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs:167`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/cancellation.rs:168`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/native_workflow_operations/capability/grant_commands/mod.rs:40`: use of a disallowed method `std::thread::scope`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/native_workflow_operations/capability/grant_commands/mod.rs:41`: use of a disallowed method `std::thread::Scope::spawn`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/group.rs:180`: the loop variable `member_index` is only used to index `samples`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/growth/scenario.rs:72`: manual implementation of `.is_multiple_of()`.
+- 1x **error**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/cost/document_history/growth/scenario.rs:217`: call to `std::mem::drop` with a value that does not implement `Drop`. Dropping such a type only extends its contained lifetimes.
+- 1x **warning**, `worth-query-court-decl-host`, `crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/retention/governed.rs:14`: unused import: `document_history::GovernedRetentionHistory as History`.
+- 1x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/retained_read.rs:320`: function `query_execution_denial` is never used.
+- 1x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/retained_read.rs:339`: function `work_denial` is never used.
+- 1x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/execution/source_readmission/ready.rs:5`: function `ready_work_denial` is never used.
+- 1x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission/permission/current_ready.rs:83`: method `seal_current_ready` is never used.
+- 1x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/admitted_scope.rs:25`: method `resolve_encoded_entity_admitted` is never used.
+- 1x **warning**, `worth-query-execution`, `crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/navigation/output_correspondence.rs:18`: method `into_original` is never used.
+- 1x **warning**, `worth-query-testkit-document-retention`, `crates/worth-query-testkit-document-retention/src/certification/application_graph/cell_history/checkpoint.rs:6`: unused import: `application_schema`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:15`: type `companion::cell::CompanionBranchCellCore` is more private than the item `companion::cell::managed_source::ManagedIndexSourceObservation::core`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:27`: type `companion::cell::CompanionBranchCellCore` is more private than the item `companion::cell::managed_source::ManagedSourceRootImage::core`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:29`: type `companion::cell::CompanionRootImage` is more private than the item `companion::cell::managed_source::ManagedSourceRootImage::image`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:207`: type `companion::cell::CompanionBranchCellCore` is more private than the item `ManagedSourceReadConditions::matches_reserved`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:207`: type `companion::cell::CompanionRootImage` is more private than the item `ManagedSourceReadConditions::matches_reserved`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/validation/candidate_source/authored_history.rs:54`: fields `records` and `incidence` are never read.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/validation/candidate_source/preparation.rs:225`: field `closure` is never read.
+
+`remaining-final-consumer-clippy` unique diagnostics (multiplicity is within this invocation):
+
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/authentication.rs:22`: associated function `issued_for_sibling_owner` is never used.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/candidate_index.rs:2`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\mod.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/candidate_index.rs:5`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\directory.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/candidate_index.rs:7`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\host.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/candidate_index.rs:10`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\mutation.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/candidate_index.rs:12`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/candidate_index.rs:14`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\query.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/candidate_index.rs:16`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\schema.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/installation.rs:33`: field `producer_domain_denial` is never read.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/access.rs:4`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\access\contract.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/access.rs:6`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\access\grants.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:2`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\access.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:3`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\affinity.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:5`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\authority.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:6`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\candidate_allocation.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:8`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\coordinates.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:9`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\field.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:10`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\geometry.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:11`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\lifecycle.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:13`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\provider.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:14`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\query.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:15`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\seed.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:16`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\status.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/mod.rs:17`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\summary.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/boxes/provider.rs:12`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\boxes\provider\storage.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/directory.rs:10`: variant `Retire` is never constructed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/directory.rs:10`: variants `Retire` and `Create` are never constructed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/host.rs:61`: variant `Incompatible` is never constructed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/host.rs:82`: function `try_install_prefix_version` is never used.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/../prefix.rs:20`: unused import: `installed_version::IncompatibleVersion`.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/../prefix.rs:49`: field `omit_refinement` is never read.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/../prefix.rs:97`: method `totals` is never used.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/../prefix/cost_stages.rs:18`: method `replace` is never used.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/../prefix/installed_version.rs:4`: struct `IncompatibleVersion` is never constructed.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/../prefix/structure.rs:8`: variants `OmitSource` and `DuplicateSource` are never constructed.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/../prefix/structure.rs:24`: unneeded `return` statement.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/authoring/handler.rs:11`: this `if` statement can be collapsed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/motion.rs:4`: unused import: `application_schema::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/motion.rs:5`: unused imports: `application_entry::*` and `primary_graph::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/mover.rs:3`: unused import: `application_schema::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/mover.rs:4`: unused imports: `application_entry::*` and `primary_graph::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/note.rs:8`: unused import: `application_schema::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/note.rs:9`: unused imports: `application_entry::*` and `primary_graph::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/recorded.rs:4`: unused imports: `*`, `application_aftermath::*`, and `application_schema::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/state.rs:3`: unused import: `application_schema::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/correction/state.rs:4`: unused import: `worth_query_host::facade::primary_graph::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/court.rs:8`: unused import: `application_contribution`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/court.rs:295`: call to `std::mem::drop` with a value that does not implement `Drop`. Dropping such a type only extends its contained lifetimes.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/exact_refinement.rs:52`: redundant pattern matching.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth/work_attribution.rs:24`: this `if` statement can be collapsed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/events.rs:2`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\maintained\nested\authoring.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/events.rs:14`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\maintained\nested\query.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/events.rs:18`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\maintained\nested\shape.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/composition.rs:2`: unused import: `query`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/court.rs:4`: unused import: `schema`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/rule.rs:49`: field `scope` is never read.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/indexed/operation.rs:8`: unused import: `*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/indexed/program.rs:6`: unused import: `application_contribution::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/indexed/request.rs:4`: unused import: `*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/indexed/request.rs:63`: struct `Request` is never constructed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/generated/program.rs:5`: unused import: `application_contribution::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court.rs:9`: unused import: `self`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/generated/program.rs:5`: unused import: `application_contribution::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/handler.rs:3`: unused import: `application_entry::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/authoring.rs:5`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\maintained\nested\authoring\handler.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/authoring.rs:20`: variants `Name`, `Enabled`, `Link`, `Unlink`, `Share`, and `Retire` are never constructed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/composition.rs:2`: unused import: `query`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/protected/expectation.rs:5`: unused import: `*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/refinement/mutation.rs:5`: unused import: `*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs:2`: unused import: `query`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs:7`: unused import: `worth_query_host::facade::application_invariants::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs:38`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\maintained\rule\evaluation.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule.rs:39`: unused imports: `Record` and `Rule`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule/evaluation.rs:3`: unused import: `super::ReservedName`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/rule/evaluation.rs:6`: unused import: `application_schema`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/maintained/source_authorization/expectation.rs:5`: unused imports: `*`, `application_query::*`, and `application_schema::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/mutation.rs:7`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\mutation\handler.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:13`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\cost_stages.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:16`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\installed_version.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:18`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\storage.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:20`: unused import: `installed_version::IncompatibleVersion`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:21`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\definition.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:23`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\predicate.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:25`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\refinement.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:27`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\structure.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:29`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\summary.rs`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:31`: file is loaded as a module multiple times: `consumer_root\src\application_invariant_acceptance\managed_index\prefix\text_read.rs`.
+- 3x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:49`: field `omit_refinement` is never read.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs:97`: method `totals` is never used.
+- 3x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix/cost_stages.rs:18`: method `replace` is never used.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix/installed_version.rs:4`: struct `IncompatibleVersion` is never constructed.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix/structure.rs:8`: variants `OmitSource` and `DuplicateSource` are never constructed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix/structure.rs:9`: variant `DuplicateSource` is never constructed.
+- 4x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/prefix/structure.rs:24`: unneeded `return` statement.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/query.rs:110`: function `source_definition` is never used.
+- 2x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/query.rs:127`: function `guarded_source_definition` is never used.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/query.rs:208`: struct `FindPrefixAlias` is never constructed.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/query.rs:221`: function `prefix_alias_scope` is never used.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/refusing/../maintained/rule/evaluation.rs:3`: unused import: `super::ReservedName`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/refusing/../maintained/rule/evaluation.rs:6`: unused import: `application_schema`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/refusing/../maintained/rule/evaluation.rs:25`: fields `scope` and `updates_before_callback` are never read.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/refusing/court.rs:8`: unused import: `admission::authenticated_principal::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/refusing/rule.rs:2`: unused import: `query`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/refusing/rule.rs:6`: unused import: `worth_query_host::facade::application_invariants::*`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/managed_index/refusing/rule.rs:38`: unused imports: `Record` and `Rule`.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group.rs:137`: using `clone` on type `CommitId` which implements the `Copy` trait.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/aggregate/group/disposal.rs:37`: called `.err().expect()` on a `Result` value.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/proof/application_program/document_history/navigation_outputs/profile.rs:48`: called `.err().expect()` on a `Result` value.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/resources.rs:85`: function `application_limits_with_policy` is never used.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/resources.rs:91`: function `application_limits_with_observations` is never used.
+- 1x **warning**, `worth-query-consumer-root`, `consumer_root/src/application_invariant_acceptance/seed.rs:12`: function `seed_cycles` is never used.
+- 1x **warning**, `worth-query-execution`, `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/retained_read.rs:320`: function `query_execution_denial` is never used.
+- 1x **warning**, `worth-query-execution`, `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/retained_read.rs:339`: function `work_denial` is never used.
+- 1x **warning**, `worth-query-execution`, `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/execution/source_readmission/ready.rs:5`: function `ready_work_denial` is never used.
+- 1x **warning**, `worth-query-execution`, `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission/permission/current_ready.rs:83`: method `seal_current_ready` is never used.
+- 1x **warning**, `worth-query-execution`, `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/admitted_scope.rs:25`: method `resolve_encoded_entity_admitted` is never used.
+- 1x **warning**, `worth-query-execution`, `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/navigation/output_correspondence.rs:18`: method `into_original` is never used.
+- 1x **warning**, `worth-query-topology-entry`, `topology_entry/src/island_coupling/handler.rs:48`: the `Err`-variant returned from this closure is very large.
+- 1x **warning**, `worth-query-topology-entry`, `topology_entry/src/owner_discovery/query.rs:5`: unused import: `application_schema::*`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:15`: type `companion::cell::CompanionBranchCellCore` is more private than the item `companion::cell::managed_source::ManagedIndexSourceObservation::core`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:27`: type `companion::cell::CompanionBranchCellCore` is more private than the item `companion::cell::managed_source::ManagedSourceRootImage::core`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:29`: type `companion::cell::CompanionRootImage` is more private than the item `companion::cell::managed_source::ManagedSourceRootImage::image`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:207`: type `companion::cell::CompanionBranchCellCore` is more private than the item `ManagedSourceReadConditions::matches_reserved`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/mvcc/publication/companion/cell/managed_source.rs:207`: type `companion::cell::CompanionRootImage` is more private than the item `ManagedSourceReadConditions::matches_reserved`.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/validation/candidate_source/authored_history.rs:54`: fields `records` and `incidence` are never read.
+- 1x **warning**, `worth-relational`, `crates/worth-relational/src/validation/candidate_source/preparation.rs:225`: field `closure` is never read.
+
+
+The six Execution functions belong to pub-mono's admission/re-entry work and
+are untouched: query_execution_denial, work_denial, ready_work_denial,
+seal_current_ready, resolve_encoded_entity_admitted and into_original.
+The mounted MIN warning belongs to untouched consumer_values source even though
+Cargo labels its library-test diagnostic Execution. There are zero warnings in
+other Execution-owned source; no claim of zero total emitted diagnostics is made.
+The seven upstream Relational diagnostics are outside this lane.
+
+Admission's all-target Clippy error is pre-existing in untouched
+execution_resource_admission/capacity_tests.rs:81:
+
+```text
+error: use of a disallowed method std::thread::spawn
+Threads and async executors belong only to the reviewed owning sites;
+computation belongs to worth-execution.
+```
+
+The file was restored exactly after removing an unnecessary new test; the genuine
+completion court already proves reservation uniqueness. AGENTS.md explicitly
+reports pre-existing failures in untouched files as debt without expanding or
+blocking a scoped task. The required failing command is recorded, not called green.
+Decl/Host's all-target Clippy command also exits 101 with 64 errors, all in
+untouched physical files: 58 disallowed thread methods and one each of
+cloned_ref_to_slice_refs, err_expect, clone_on_copy, needless_range_loop,
+manual_is_multiple_of and drop_non_drop. Its 15 emitted warnings and all exact
+locations are listed above. None is a diagnostic in this slice's changed files.
+These untouched court failures follow the same AGENTS.md debt ruling; the full
+court binary nevertheless passes independently. No Clippy failure is called green.
+
+Standalone consumer all-target Clippy exits 0 with 144 warning diagnostics:
+129 from worth-query-consumer-root, 2 from worth-query-topology-entry, 6 from
+Execution's reserved functions, and 7 upstream Relational warnings. The fixture
+warnings are pre-existing in untouched physical files; no final diagnostic from
+any of the four Clippy invocations points to a changed file.
+
+No item 3-6 consumer required changing a reserved pub-mono file. No scope stop
+remains; the listed untouched debt is not hidden or claimed repaired.

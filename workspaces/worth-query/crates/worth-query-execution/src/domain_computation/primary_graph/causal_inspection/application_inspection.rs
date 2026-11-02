@@ -50,9 +50,12 @@ pub use result::{
     WorthQueryPerformedSourceInspection,
 };
 pub use stop::{
+    IndexedSelectionReobserveDenial, OutputFieldCaptureFailure, OwnEffectOnReads,
+    RebaseVerificationReason, StoreDenial, WorthQueryApplicationDisclosureContractDenial,
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
     WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationInspectionResourceRefusal,
     WorthQueryApplicationInspectionStopKind, WorthQueryApplicationQueryGovernanceDenialKind,
+    WorthQueryManagedGraphWorkSessionStartDenial,
 };
 #[cfg(test)]
 #[path = "application_inspection/tests/scope_replacement.rs"]

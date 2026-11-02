@@ -48,6 +48,7 @@ fn native_serial_capture_uses_effective_ancestor_funding_and_releases_its_last_p
         })
         .unwrap();
     assert_eq!(payload.scope().subject(), account.entity_id());
+    payload.clone().court_public_settlement_rejects_disclosure();
     drop(payload);
 
     for saturate in [false, true] {

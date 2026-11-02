@@ -37,6 +37,8 @@ pub use anchor::{
     CausalObservationMissingReferencePosture,
 };
 pub use application_inspection::{
+    IndexedSelectionReobserveDenial, OutputFieldCaptureFailure, OwnEffectOnReads,
+    RebaseVerificationReason, StoreDenial, WorthQueryApplicationDisclosureContractDenial,
     WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
     WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationInspectionRequest,
     WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStopKind,
@@ -49,7 +51,8 @@ pub use application_inspection::{
     WorthQueryEvaluatedApplicationInspection, WorthQueryEvaluatedInspectionRequest,
     WorthQueryEvaluatedReferenceOnlyInspectionRequest, WorthQueryInspectionEvidenceAvailability,
     WorthQueryInspectionRetainedEvidence, WorthQueryInspectionSupplierEvidence,
-    WorthQueryMaterializedConditionalHistory, WorthQueryMaterializedConnectedInspectionRequest,
+    WorthQueryManagedGraphWorkSessionStartDenial, WorthQueryMaterializedConditionalHistory,
+    WorthQueryMaterializedConnectedInspectionRequest,
     WorthQueryMaterializedPerformedSourceInspection, WorthQueryMaterializedSourceInspectionRequest,
     WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest,
     WorthQueryPerformedSourceInspection, WorthQueryPerformedSourceInspectionRequest,

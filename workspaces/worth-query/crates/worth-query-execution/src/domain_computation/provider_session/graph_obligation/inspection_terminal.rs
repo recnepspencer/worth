@@ -8,6 +8,8 @@ use worth_query_admission::{
     facade::graph_obligation::WorthQueryGraphWorkPlanIdentity,
     integration::WorthQueryExecutionCapacityReleaseReceipt,
 };
+#[cfg(test)]
+mod court;
 
 pub(in crate::domain_computation) struct WorthQueryInspectionReadCompletion {
     pub(super) session: WorthQueryGraphWorkSessionIdentity,
@@ -23,16 +25,23 @@ impl WorthQueryInspectionReadCompletion {
     pub(in crate::domain_computation) fn matches_report(
         &self,
         session: WorthQueryGraphWorkSessionIdentity,
+        managed_run: WorthQueryGraphWorkManagedRunIdentity,
         plan: WorthQueryGraphWorkPlanIdentity,
         target: &std::sync::Arc<WorthQueryApplicationInspectionTarget>,
+        basis: &WorthQueryApplicationBasisIdentity,
+        capacity_identity: worth_query_admission::integration::WorthQueryGraphCapacityReservationIdentity,
     ) -> bool {
-        self.session == session && self.plan == plan && std::sync::Arc::ptr_eq(&self.target, target)
-    }
-
-    pub(in crate::domain_computation) const fn session_identity(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
-        self.session
+        self.session == session
+            && self.managed_run == managed_run
+            && self.plan == plan
+            && std::sync::Arc::ptr_eq(&self.target, target)
+            && self.basis == *basis
+            && self.basis_release.identity() == basis
+            && self.basis_release.custody_released()
+            && self.release.graph_reservation_identity() == Some(capacity_identity)
+            && self.release.scope()
+                == worth_query_admission::integration::WorthQueryExecutionCapacityReservationScope::GraphWork
+            && self.release.released_reservation_count() == 1
     }
 }
 

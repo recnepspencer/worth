@@ -17,9 +17,10 @@ pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
-    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
-    WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommittedApplication,
+    FactlessCurrentness, WorthQueryMutationWorkCommitSeal,
+    WorthQueryPrimaryGraphCommittedApplication,
 };
+pub use relational_commit::{OwnEffectOnReads, RebaseVerificationReason};
 
 pub(super) struct WorthQueryPreparedApplicationCommit {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,

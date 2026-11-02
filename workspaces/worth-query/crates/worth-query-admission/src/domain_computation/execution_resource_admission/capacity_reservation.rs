@@ -2,6 +2,8 @@ use super::{
     WorthQueryAdmittedExecutionResourcePlan, WorthQueryAdmittedWorkflowResourcePlan,
     WorthQueryExecutionCapacityReservation, WorthQueryExecutionResourceSupport,
 };
+mod graph_identity;
+pub use graph_identity::WorthQueryGraphCapacityReservationIdentity;
 
 pub struct WorthQueryCapacityReservedExecutionResourcePlan {
     resources: WorthQueryAdmittedExecutionResourcePlan,
@@ -10,14 +12,20 @@ pub struct WorthQueryCapacityReservedExecutionResourcePlan {
 }
 
 pub(crate) struct WorthQueryReservedGraphProviderCapacity {
+    identity: WorthQueryGraphCapacityReservationIdentity,
     support_identity: String,
     reservation: Box<dyn WorthQueryExecutionCapacityReservation>,
 }
 
 impl WorthQueryReservedGraphProviderCapacity {
+    pub(crate) fn identity(&self) -> WorthQueryGraphCapacityReservationIdentity {
+        self.identity
+    }
+
     pub(crate) fn release(self) -> WorthQueryExecutionCapacityReleaseReceipt {
         drop(self.reservation);
         WorthQueryExecutionCapacityReleaseReceipt {
+            graph_reservation: Some(self.identity),
             resource_plan_identity: self.support_identity,
             scope: WorthQueryExecutionCapacityReservationScope::GraphWork,
             released_reservation_count: 1,
@@ -42,6 +50,7 @@ impl WorthQueryCapacityReservedExecutionResourcePlan {
         let released_reservation_count = self.provider_reservations.len();
         drop(self.provider_reservations);
         WorthQueryExecutionCapacityReleaseReceipt {
+            graph_reservation: None,
             resource_plan_identity: self.release_identity,
             scope: WorthQueryExecutionCapacityReservationScope::Direct,
             released_reservation_count,
@@ -96,12 +105,16 @@ pub enum WorthQueryExecutionCapacityReservationScope {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryExecutionCapacityReleaseReceipt {
+    graph_reservation: Option<WorthQueryGraphCapacityReservationIdentity>,
     resource_plan_identity: String,
     scope: WorthQueryExecutionCapacityReservationScope,
     released_reservation_count: usize,
 }
 
 impl WorthQueryExecutionCapacityReleaseReceipt {
+    pub fn graph_reservation_identity(&self) -> Option<WorthQueryGraphCapacityReservationIdentity> {
+        self.graph_reservation
+    }
     pub fn resource_plan_identity(&self) -> &str {
         &self.resource_plan_identity
     }
@@ -140,11 +153,19 @@ pub fn reserve_workflow_resource_plan(
 
 pub(crate) fn reserve_graph_provider_capacity(
     support: &WorthQueryExecutionResourceSupport,
-) -> Option<WorthQueryReservedGraphProviderCapacity> {
-    Some(WorthQueryReservedGraphProviderCapacity {
+) -> Result<
+    Option<WorthQueryReservedGraphProviderCapacity>,
+    graph_identity::WorthQueryGraphCapacityReservationIdentityExhausted,
+> {
+    let identity = WorthQueryGraphCapacityReservationIdentity::mint()?;
+    let Some(reservation) = support.capacity().try_reserve() else {
+        return Ok(None);
+    };
+    Ok(Some(WorthQueryReservedGraphProviderCapacity {
+        identity,
         support_identity: support.identity().to_owned(),
-        reservation: support.capacity().try_reserve()?,
-    })
+        reservation,
+    }))
 }
 
 pub(crate) fn reserve_graph_provider_capacity_admitted<Stop>(
@@ -156,7 +177,7 @@ pub(crate) fn reserve_graph_provider_capacity_admitted<Stop>(
 > {
     // The capacity implementation owns its atomic/Arc/Box quote. The support
     // owner knows the exact copied identity that the reservation retains.
-    admit(2, 0).map_err(WorthQueryCapacityReservationAdmissionStop::Admission)?;
+    admit(3, 0).map_err(WorthQueryCapacityReservationAdmissionStop::Admission)?;
     let identity_bytes = u64::try_from(support.identity().len())
         .map_err(|_| WorthQueryCapacityReservationAdmissionStop::AccountingOverflow)?;
     let (reservation_work, reservation_bytes) = support
@@ -167,13 +188,15 @@ pub(crate) fn reserve_graph_provider_capacity_admitted<Stop>(
         .map_err(WorthQueryCapacityReservationAdmissionStop::Admission)?;
     admit(reservation_work, reservation_bytes)
         .map_err(WorthQueryCapacityReservationAdmissionStop::Admission)?;
-    Ok(reserve_graph_provider_capacity(support))
+    reserve_graph_provider_capacity(support)
+        .map_err(|_| WorthQueryCapacityReservationAdmissionStop::IdentityExhausted)
 }
 
 #[derive(Debug)]
 pub(crate) enum WorthQueryCapacityReservationAdmissionStop<Stop> {
     Admission(Stop),
     AccountingOverflow,
+    IdentityExhausted,
 }
 
 fn release_reservations(
@@ -184,6 +207,7 @@ fn release_reservations(
     let released_reservation_count = reservations.len();
     drop(reservations);
     WorthQueryExecutionCapacityReleaseReceipt {
+        graph_reservation: None,
         resource_plan_identity: resource_plan_identity.to_owned(),
         scope,
         released_reservation_count,

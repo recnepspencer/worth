@@ -84,15 +84,21 @@ enum RetainedIndexImage<S: ApplicationSchema, I: ApplicationManagedIndexBinding<
     Completed(Arc<ReadyIndex<S, I>>),
     // Status owns one observation directly. The funded registration header
     // includes this slot; replacing it creates no accumulating header charge.
-    Maintained(worth_relational::facade::runtime::ManagedIndexSourceObservation),
+    Maintained {
+        native_custody: worth_relational::facade::runtime::ManagedIndexSourceObservation,
+    },
 }
 
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> RetainedIndexImage<S, I> {
     fn retire(self) {
-        if let Self::Completed(root) = &self {
-            drop(root.cache.retire());
+        match self {
+            Self::Completed(root) => {
+                drop(root.cache.retire());
+                drop(root);
+            }
+            // Native backing stays alive until the caller retires it outside the cache gate.
+            Self::Maintained { native_custody } => drop(native_custody),
         }
-        drop(self);
     }
 }
 

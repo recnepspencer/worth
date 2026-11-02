@@ -87,6 +87,17 @@ fn tracked_aspect_absence_survives_query_checkpoint_then_invalidates_on_other_fi
     )
     .unwrap();
     assert_eq!(court::readmit(&restored, &retained, true), ids);
+    restored
+        .with_host_advancement(|phase| {
+            let selected = restored
+                .on_branch(restored.current_world())
+                .select(&phase)
+                .unwrap();
+            retained.assert_original_provenance(None, None, |settled| {
+                selected.require_current_output_settlements(&phase, [settled])
+            });
+        })
+        .unwrap();
     restored.with_host_advancement(|phase| {
         let read = retained.retained_read();
         let selected = restored.select_application_read_observation(&phase, &read).unwrap();

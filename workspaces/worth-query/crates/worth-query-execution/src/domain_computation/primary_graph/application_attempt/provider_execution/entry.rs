@@ -172,7 +172,11 @@ where
         )
     }
 
-    pub(crate) fn compare_and_commit_application_with_causality<Operation, Input, Scope>(
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_with_causality<
+        Operation,
+        Input,
+        Scope,
+    >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

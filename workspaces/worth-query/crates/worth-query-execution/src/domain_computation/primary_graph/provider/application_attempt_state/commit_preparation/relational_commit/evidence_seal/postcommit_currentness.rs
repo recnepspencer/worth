@@ -45,7 +45,7 @@ pub(super) enum RebasedSourceFacts {
 /// What a commit's own effect did to the facts its source query read, where
 /// its rebase failed. Only the rebase's walk builds one.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct OwnEffectOnReads(OwnEffect);
+pub struct OwnEffectOnReads(OwnEffect);
 
 /// The walk's answer, ordered as answers join: one moved read decides it, and
 /// one the walk asked about and could not compare leaves it undecidable.
@@ -87,7 +87,7 @@ pub(in crate::domain_computation::primary_graph) struct FailedRebase {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
+pub enum RebaseVerificationReason {
     ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeRevisionUnavailable,

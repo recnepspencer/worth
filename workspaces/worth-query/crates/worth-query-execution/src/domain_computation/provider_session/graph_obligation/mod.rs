@@ -10,11 +10,11 @@ pub(in crate::domain_computation) use inspection_terminal::{
 mod resource_terminal;
 pub(in crate::domain_computation) use resource_terminal::WorthQueryResourceReadCompletion;
 mod session;
+pub use session::WorthQueryManagedGraphWorkSessionStartDenial;
 pub(in crate::domain_computation) use session::{
-    WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
-    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
-    WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
-    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryManagedGraphReadDenial, WorthQueryManagedIndexReadSession,
+    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
+    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQuerySessionInspectionReadProof, WorthQuerySessionResourceReadProof,
 };
 mod session_identity;

@@ -3,12 +3,12 @@ mod decision_read_set;
 mod direct_attempt;
 mod execution_attempt_identity;
 mod graph_obligation;
+pub use graph_obligation::WorthQueryManagedGraphWorkSessionStartDenial;
 pub(in crate::domain_computation) use graph_obligation::{
     WorthQueryInspectionReadCompletion, WorthQueryInspectionReadTerminalDenial,
-    WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
-    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
-    WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
-    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryManagedGraphReadDenial, WorthQueryManagedIndexReadSession,
+    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
+    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQueryResourceReadCompletion, WorthQuerySessionInspectionReadProof,
     WorthQuerySessionResourceReadProof,
 };

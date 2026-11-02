@@ -24,6 +24,15 @@ impl std::fmt::Display for IndexDecisionStop {
     }
 }
 impl std::error::Error for IndexDecisionStop {}
+pub(in crate::domain_computation::primary_graph) fn native_index_decision_cause<'a>(
+    error: &'a (dyn std::error::Error + 'static),
+) -> Option<&'a worth_relational::facade::mvcc::CompanionPreflightStop> {
+    match error.downcast_ref::<IndexDecisionStop>()? {
+        IndexDecisionStop::Native(cause) => Some(cause),
+        _ => None,
+    }
+}
+
 fn unavailable() -> HandlerExecutionDenial {
     HandlerExecutionDenial::new(IndexDecisionStop::ContextUnavailable)
 }
@@ -132,5 +141,20 @@ impl<Schema: ApplicationSchema, Operation>
             self.decision_facts.fail_managed_source();
         }
         result
+    }
+}
+
+#[cfg(test)]
+mod cause_tests {
+    use super::*;
+    #[test]
+    fn handler_denial_preserves_native_managed_index_decision_cause() {
+        let denial = HandlerExecutionDenial::new(IndexDecisionStop::Native(
+            worth_relational::facade::mvcc::CompanionPreflightStop::SelectedSourceMismatch,
+        ));
+        assert!(matches!(
+            denial.native_decision_refusal(),
+            Some(worth_relational::facade::mvcc::CompanionPreflightStop::SelectedSourceMismatch)
+        ));
     }
 }

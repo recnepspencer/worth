@@ -5,6 +5,13 @@ use std::sync::Arc;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkIntentKind;
 
 impl WorthQueryManagedGraphWorkSession {
+    pub(in crate::domain_computation) fn inspection_capacity_identity(
+        &self,
+    ) -> Option<worth_query_admission::integration::WorthQueryGraphCapacityReservationIdentity>
+    {
+        self.plan.inspection_capacity_identity()
+    }
+
     pub(in crate::domain_computation) fn inspection_start_backing_bytes(
         basis: &WorthQueryApplicationBasisIdentity,
         product: &crate::basis::WorthQueryProductObservationLease,

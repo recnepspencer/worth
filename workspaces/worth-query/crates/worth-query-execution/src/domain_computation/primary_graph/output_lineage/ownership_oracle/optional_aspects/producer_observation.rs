@@ -25,6 +25,17 @@ fn genuine_input_cutoff_retains_stable_supplier_without_native_execution() {
     )
     .unwrap();
     assert!(stable.application_commit_receipt().is_none());
+    runtime
+        .with_host_advancement(|phase| {
+            let selected = runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap();
+            stable.assert_original_provenance(Some(&initial), None, |settled| {
+                selected.require_current_output_settlements(&phase, [settled])
+            });
+        })
+        .unwrap();
     assert!(stable
         .readiness_delivery()
         .unwrap()

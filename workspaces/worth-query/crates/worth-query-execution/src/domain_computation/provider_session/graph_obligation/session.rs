@@ -79,7 +79,7 @@ enum WorthQueryGraphWorkBasis {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryManagedGraphWorkSessionStartDenial {
+pub enum WorthQueryManagedGraphWorkSessionStartDenial {
     PlanAffinityMismatch,
     BasisBranchMismatch,
     IdentityExhausted,
