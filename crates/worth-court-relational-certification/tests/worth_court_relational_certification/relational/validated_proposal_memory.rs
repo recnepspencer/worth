@@ -4,8 +4,7 @@ use worth_relational::facade::transactions::{
     CommitExecutionDenialKind, RelationalExecutionDenialCause, TransactionCommitError,
 };
 use worth_testkit_relational::{
-    aspect_storage::publications::begin_main_transaction,
-    durable_publication::{batch_create, memory_runtime},
+    aspect_storage::publications::begin_main_transaction, durable_publication::memory_runtime,
 };
 
 const SMALL_OWNER_CEILING: u64 = 8192;
@@ -19,10 +18,7 @@ fn validated_proposal_backing_charges_original_request_until_native_consumption(
     let cancellation = CancellationSource::new();
     let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
     let request = ExecutionRequest::serial(&host);
-    let mut transaction = begin_main_transaction(&runtime);
-    transaction
-        .push_batch(batch_create("charged"), request.allocation_policy())
-        .unwrap();
+    let transaction = begin_main_transaction(&runtime);
     let proposal = transaction.validate(&request, &runtime).unwrap();
     assert!(
         budget.charged_memory_bytes() > SMALL_OWNER_CEILING,
@@ -57,10 +53,7 @@ fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
     let budget = SerialMemoryBudget::new(Some(SMALL_OWNER_CEILING));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&host);
-    let mut transaction = begin_main_transaction(&runtime);
-    transaction
-        .push_batch(batch_create("unfunded"), request.allocation_policy())
-        .unwrap();
+    let transaction = begin_main_transaction(&runtime);
     let denied = transaction.validate(&request, &runtime).unwrap_err();
     let TransactionCommitError::Execution { denial, .. } = denied else {
         panic!("unfunded real validation must preserve its typed execution refusal");

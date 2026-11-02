@@ -2012,3 +2012,14 @@ with only 290 bytes available. Its 8 KiB ceiling remains below the measured
 10,240-byte accepted-state backing, while allowing the ordinary preparation
 prefix to reach that backing admission. The strict requested-greater-than-total-
 ceiling assertion remains; no arbitrary error or earlier stop is accepted.
+
+The 8 KiB created-record fixture still stopped at an earlier 624-byte copy with
+386 bytes available. The final controls use a genuine zero-input public Native
+transaction to isolate the fixed accepted-state backing from input-copy cost.
+This preserves the strict requested-greater-than-total-ceiling assertion,
+actual original-request accounting, typed cancellation/refusal, zero-charge
+release and unchanged branch. Both unchanged test names pass on the normal
+libtest stack in `integration-accounting-empty-owner-qualified.log`.
+The same-harness fixture boundary correction is committed in `a6fbfc05a8`;
+it retires the prerequisite-projection claims/tests of the two named abandoned
+commits, with the original independent process guards restored.
