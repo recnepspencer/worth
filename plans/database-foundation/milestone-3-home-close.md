@@ -187,3 +187,12 @@ allocating a copied key after checkpoint. The court
 `ordinary_supplier_retirement_retains_payload_with_an_exhausted_memory_budget`
 traces D11 release after checkpoint memory exhaustion and preserves payload
 until the same registry is reclaimed.
+
+The source-close read-custody gate retires the original Native visibility-cache
+observations before classifying remaining detached custody and before source
+seal. Those cache pins belong to Native; treating them as external is a design
+error that makes every queried Home unclosable. Once any cache entry advances,
+service restoration is refused and the same closing owner retains its original
+cache payloads. A genuine retained Complete capture still vetoes source seal;
+its release permits that same closing owner to finish. The behavior court is
+`owned_visibility_cache_retires_before_external_capture_recheck_and_source_seal`.

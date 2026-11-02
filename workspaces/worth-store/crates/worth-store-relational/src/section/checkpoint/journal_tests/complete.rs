@@ -182,3 +182,77 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
         Err(Denial::OwnerUnavailable)
     ));
 }
+
+#[test]
+fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_seal() {
+    use worth_relational::facade::runtime::{
+        PreparedRelationalSourceClose, RelationalSourceCloseProgress as Progress,
+    };
+    let serial = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let execution = &ExecutionRequest::serial(&serial);
+    let (_directory, section, _selected) = section(execution);
+    let native = section.runtime();
+    let (_, basis) = native
+        .observe_branch(&native.main_branch_identity())
+        .unwrap();
+    let snapshot = native
+        .snapshots()
+        .snapshot_for_observation(&basis.observation())
+        .unwrap();
+    drop(basis);
+    drop(
+        native
+            .read_truth()
+            .read_snapshot(&snapshot, execution)
+            .unwrap()
+            .unwrap(),
+    );
+    native.snapshots().release_snapshot(&snapshot).unwrap();
+    drop(snapshot);
+    let preparation = section.complete_checkpoint_preparation();
+    let capture = preparation.prepare(execution).unwrap();
+    let serving = section.serving.clone();
+    let retirement = PreparedRelationalSourceClose::prepare(execution).unwrap();
+    let mut closing = section
+        .prepare_close(retirement, execution)
+        .unwrap_or_else(|(_, _, cause)| panic!("the actual cache owns its read pins: {cause:?}"));
+    let mut refused = false;
+    for _ in 0..1000 {
+        match closing.advance(execution, &serving) {
+            Ok(Progress::Advanced) => {}
+            Err(RelationalSectionCloseDenial::Native(
+                RelationalRuntimeCloseDenial::ReadCustodyRetained,
+            )) => {
+                refused = true;
+                break;
+            }
+            result => panic!("the original external capture must retain close: {result:?}"),
+        }
+    }
+    assert!(
+        refused,
+        "the real capture still owns its original Native custody"
+    );
+    let mut closing = match closing.resume() {
+        Err(closing) => closing,
+        Ok(_) => panic!("retiring the actual cache forbids service restoration"),
+    };
+    assert!(matches!(
+        preparation.prepare(execution),
+        Err(Denial::Capture(_))
+    ));
+    assert_eq!(capture.covered().0, 1);
+    drop(capture);
+    for _ in 0..1000 {
+        match closing.advance(execution, &serving) {
+            Ok(Progress::Advanced) => {}
+            Ok(Progress::Complete) => return,
+            result => panic!("same original owner must finish after capture release: {result:?}"),
+        }
+    }
+    panic!("the finite original source graph must finish retirement");
+}

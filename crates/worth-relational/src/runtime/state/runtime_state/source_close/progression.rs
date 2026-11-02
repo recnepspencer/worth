@@ -29,7 +29,14 @@ impl RelationalSourceClose {
                     Some(cause) => return Err(Denial::Native(cause)),
                     None => {}
                 }
-                if state.runtime.history.has_detached_retention_obligations() {
+                if !state
+                    .runtime
+                    .visibility
+                    .cache
+                    .try_has_memory_states()
+                    .map_err(|()| Denial::Busy)?
+                    && state.runtime.history.has_detached_retention_obligations()
+                {
                     return Err(Denial::Native(
                         RelationalRuntimeCloseDenial::ReadCustodyRetained,
                     ));
@@ -58,7 +65,7 @@ impl RelationalSourceClose {
                     .advance(&state.runtime, request, source)?
                 {
                     state.graph = None;
-                    state.stage = Stage::Seal;
+                    state.stage = Stage::Cache;
                 }
             }
             Stage::Seal => {
@@ -70,7 +77,11 @@ impl RelationalSourceClose {
                         .map_err(Denial::Medium)?,
                 );
                 // No fallible operation or callback separates this cut and posture.
-                state.stage = Stage::Cache;
+                state.graph = Some(graph::NativeSourceGraphRetirement::new(
+                    &state.runtime,
+                    NativeSourcePass::Retire,
+                ));
+                state.stage = Stage::Retire;
             }
             Stage::Cache => {
                 match state
@@ -80,14 +91,21 @@ impl RelationalSourceClose {
                     .try_retire_memory_state(state.cache)
                     .map_err(|()| Denial::Busy)?
                 {
-                    Some(true) => state.cache += 1,
-                    Some(false) => {}
+                    Some(true) => {
+                        state.cache_retired = true;
+                        state.cache += 1;
+                    }
+                    Some(false) => state.cache_retired = true,
                     None => {
-                        state.graph = Some(graph::NativeSourceGraphRetirement::new(
-                            &state.runtime,
-                            NativeSourcePass::Retire,
-                        ));
-                        state.stage = Stage::Retire;
+                        // Original cache pins have retired through their owners.
+                        // Any remaining detached custody is genuinely external;
+                        // refuse BEFORE sealing or retiring physical sources.
+                        if state.runtime.history.has_detached_retention_obligations() {
+                            return Err(Denial::Native(
+                                RelationalRuntimeCloseDenial::ReadCustodyRetained,
+                            ));
+                        }
+                        state.stage = Stage::Seal;
                     }
                 }
             }

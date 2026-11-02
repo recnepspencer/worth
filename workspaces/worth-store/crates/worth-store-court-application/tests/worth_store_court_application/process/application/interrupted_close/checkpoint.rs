@@ -100,7 +100,10 @@ fn close_deadline_retains_the_original_coupled_checkpoint_and_retry_closes_the_s
         }
     ));
     let home = home_opening::open(
-        home_opening::request(directory.path(), RelationalRuntimeApi::builder()),
+        home_opening::request(
+            directory.path(),
+            crate::workload::runtime_builder(crate::schema_transition::SOURCE),
+        ),
         &execution,
     )
     .unwrap();
@@ -178,7 +181,10 @@ fn last_home_loss_keeps_original_checkpoint_input_tickets_until_actual_terminal(
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
     let home = home_opening::open(
-        home_opening::request(directory.path(), RelationalRuntimeApi::builder()),
+        home_opening::request(
+            directory.path(),
+            crate::workload::runtime_builder(crate::schema_transition::SOURCE),
+        ),
         &execution,
     )
     .unwrap();

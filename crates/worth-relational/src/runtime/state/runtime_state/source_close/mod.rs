@@ -103,6 +103,7 @@ struct SourceCloseState {
     graph: Option<graph::NativeSourceGraphRetirement>,
     medium: Option<SealedRelationalMediumBinding>,
     cache: usize,
+    cache_retired: bool,
 }
 impl RelationalRuntime {
     /// Consume the original outer Arc into its original prepaid close frame.
@@ -186,6 +187,7 @@ impl PreparedRelationalSourceClose {
             graph: None,
             medium: None,
             cache: 0,
+            cache_retired: false,
         });
         RelationalSourceClose { allocation: self }
     }
@@ -205,12 +207,14 @@ impl RelationalSourceClose {
             .as_mut()
             .expect("active original close frame")
     }
-    /// Before seal, restore the SAME runtime/state and reuse its prepaid frame.
+    /// Before any cache or source retirement, restore the SAME runtime/state.
     pub fn resume(mut self) -> Result<(RelationalRuntime, PreparedRelationalSourceClose), Self> {
-        if !matches!(
-            self.state().stage,
-            Stage::Quiesce | Stage::Validate | Stage::Seal
-        ) {
+        if self.state().cache_retired
+            || !matches!(
+                self.state().stage,
+                Stage::Quiesce | Stage::Validate | Stage::Cache | Stage::Seal
+            )
+        {
             return Err(self);
         }
         let SourceCloseState { mut runtime, .. } = self
