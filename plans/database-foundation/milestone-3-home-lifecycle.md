@@ -1979,20 +1979,17 @@ unchanged owned adapter carries and validates the same observed graph for
 independent executables. A cheap manifest-backed regression verifies each
 prerequisite feature against its actual declaring package.
 
-The independent Store prerequisite builder also used `--workspace --bins`
-although its retained contract names only four executable requests. That
-expanded the scoped graph with unrelated workspace binaries and activated an
-extra Physical Format feature; the existing graph-drift guard correctly refused.
-The builder now selects the exact packages and binaries from its existing
-REQUESTS contract. The retained executable and library-signature checks are
-unchanged. The regression verifies that those exact requests, rather than an
-unbounded workspace binary set, determine the independent command.
-
-The scoped prerequisite command projects native feature facts only onto the
-actual normal/build dependency closure of those four executable packages,
-derived from the SAME captured Cargo metadata (with its digest checked before
-use). Native-only application/Relational package feature names are not valid
-Cargo flags for unrelated executable roots. No dev-only or unrelated root is
-added to make a product graph pass. The original shared-library signature guard
-still validates every common observed library; regression controls cover
-unrelated roots, immutable metadata and cached graph drift.
+The selected Store Home controls use ordinary library operations and, in
+`native_artifacts/idempotency.rs`, one child invocation of the SAME harness.
+The source search for `std::process`, `Command::`, `prebuilt_`,
+`physical_store_recover` and `physical_store_c8_writer` in the selected test
+families finds only that same-harness child. They do not request independent
+product executables. Their qualification therefore uses the existing owned
+prebuild/nextest runner and records no independent-product graph claim.
+The original Store process prebuild implementation and its strict feature and
+shared-library drift guards are retained unchanged. The prerequisite-scoping
+experiments from `7c9bb29029` and `306b782554` are retired as outside this
+selected qualification: the new unrelated-root/metadata-projection tests and
+new exact-four-command assertions described that abandoned algorithm, so they
+are removed with it. Existing tests and drift assertions remain intact. The
+manifest-backed prerequisite-declaration regression remains.

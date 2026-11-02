@@ -1,12 +1,11 @@
 import json
-import hashlib
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
 import tomllib
 import unittest
 
-from store_prebuild import ExecutablePrebuildFailure, REQUESTS, executable_features, prepare, retain
+from store_prebuild import ExecutablePrebuildFailure, REQUESTS, prepare, retain
 from filesystem_path import command_path, filesystem_path
 from native_features import NativeFeatureGraph, NativeFeatureRefusal, library_identity, signature
 
@@ -33,15 +32,8 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
                                profile={'test': False}, features=[], executable=str(binary)))
         library = dict(reason='compiler-artifact', package_id='authority', target={'name': 'authority', 'kind': ['lib']},
                        profile={'test': False}, features=['observed'], fresh=True, filenames=['authority-native.rlib'])
-        owners = sorted({request['package'] for request in REQUESTS})
-        metadata = {'packages': [{'id': owner, 'name': owner} for owner in [*owners, 'authority', 'unrelated']],
-                    'resolve': {'nodes': [{'id': owner, 'deps': [{'pkg': 'authority', 'dep_kinds': [{'kind': None}]}]} for owner in owners]
-                                + [{'id': 'authority', 'deps': []}, {'id': 'unrelated', 'deps': []}]}}
-        source = root / 'cargo-metadata.json'
-        source.write_text(json.dumps(metadata))
-        inputs = ({'path': str(source), 'sha256': hashlib.sha256(source.read_bytes()).hexdigest()},)
-        native = NativeFeatureGraph(root / 'workspaces/worth-store', ('authority/observed', 'unrelated/unused'),
-                                    {library_identity(library): {signature(library)}}, inputs)
+        native = NativeFeatureGraph(root / 'workspaces/worth-store', ('authority/observed',),
+                                    {library_identity(library): {signature(library)}}, ())
         return native, [*events, library]
 
     def test_only_independently_compiled_binary_can_be_retained(self):
@@ -95,28 +87,9 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
                 return SimpleNamespace(returncode=0, stdout='\n'.join(map(json.dumps, events)))
             result = prepare(root, root / 'output', runner, 'ci-test', native=native)
             self.assertEqual(calls[0][calls[0].index('--features') + 1], 'authority/observed')
-            self.assertNotIn('--workspace', calls[0])
-            self.assertNotIn('--bins', calls[0])
-            packages = {calls[0][index + 1] for index, value in enumerate(calls[0]) if value == '--package'}
-            binaries = {calls[0][index + 1] for index, value in enumerate(calls[0]) if value == '--bin'}
-            self.assertEqual(packages, {request['package'] for request in REQUESTS})
-            self.assertEqual(binaries, {request['binary'] for request in REQUESTS})
             self.assertTrue(Path(result['WORTH_PREBUILT_EXECUTABLES']).is_file())
             receipt = json.loads((root / 'output/native-feature-graph.json').read_text())
             self.assertEqual(receipt['validated_shared_libraries'], 1)
-
-    def test_unrelated_native_member_features_do_not_expand_executable_roots(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            native, _ = self.fixture(Path(temporary).resolve())
-            self.assertEqual(executable_features(native), ('authority/observed',))
-
-    def test_changed_native_metadata_cannot_choose_executable_feature_scope(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve()
-            native, _ = self.fixture(root)
-            (root / 'cargo-metadata.json').write_text('{}')
-            with self.assertRaisesRegex(NativeFeatureRefusal, 'changed after capture'):
-                executable_features(native)
 
     def test_product_adapter_refuses_cached_library_graph_drift_before_path_publication(self):
         with tempfile.TemporaryDirectory() as temporary:
