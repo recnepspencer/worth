@@ -45,9 +45,12 @@ impl RelationalRuntime {
                     .map(|artifact| artifact.envelope_residency())
                     .or_else(|| self.history.performed_envelope_residency(commit_id))
                     .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
-                let positioned = cell
-                    .demand_positioned(execution, 1 << 30)
-                    .map_err(Refusal::Source)?;
+                let positioned = if cell.source_placement().is_some() {
+                    cell.readmit_original_positioned(execution)
+                } else {
+                    cell.demand_positioned(execution, 1 << 30)
+                }
+                .map_err(Refusal::Source)?;
                 let envelope = basis
                     .inner
                     .root
