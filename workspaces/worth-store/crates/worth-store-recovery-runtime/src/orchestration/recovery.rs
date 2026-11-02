@@ -1,6 +1,8 @@
 //! Return source selection and planning owners before terminal progression.
 use crate::entry::{PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome};
-use crate::progression::{PlannedPhysicalRecovery, SelectedPhysicalRecovery};
+use crate::progression::{
+    PlannedPhysicalRecovery, ReopenedPhysicalRecovery, SelectedPhysicalRecovery,
+};
 
 #[inline(never)]
 pub(crate) fn recover(
@@ -15,7 +17,10 @@ pub(crate) fn recover(
         Ok(planned) => planned,
         Err(outcome) => return outcome,
     };
-    progress(planned)
+    match progress(planned) {
+        Ok(reopened) => reopened.finish(),
+        Err(outcome) => outcome,
+    }
 }
 
 #[inline(never)]
@@ -42,17 +47,16 @@ fn select_source(
 }
 
 #[inline(never)]
-fn progress(planned: PlannedPhysicalRecovery) -> PhysicalRecoveryOutcome {
+fn progress(
+    planned: PlannedPhysicalRecovery,
+) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
     let staged = match planned.stage() {
         Ok(staged) => staged,
-        Err(outcome) => return outcome,
+        Err(outcome) => return Err(outcome),
     };
     let published = match staged.publish() {
         Ok(published) => published,
-        Err(outcome) => return outcome,
+        Err(outcome) => return Err(outcome),
     };
-    match published.reopen() {
-        Ok(reopened) => reopened.finish(),
-        Err(outcome) => outcome,
-    }
+    published.reopen()
 }
