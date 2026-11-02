@@ -235,3 +235,14 @@ passes (1/1). It presents actual retained Native/World custody to another genuin
 World owner through all three receiver methods, checks typed ForeignHandle and
 proves the receiver head/catalog and original retained record are unchanged.
 It is memory-owner affinity evidence, not a fabricated filesystem N+1 proof.
+
+
+Boundary qualification rejected the new foreign-authority test file with
+BC9002_TEST_TOPOLOGY: it introduced an additional source court rooted in
+ExecutionRequest. The test is retained in the existing recovery-custody court
+`recovery_service/tests.rs`, with all assertions including actual Native
+Relational/Signal descriptors. Only the unchanged declarative resource-budget
+function moves into `test_budgets.rs`, which constructs no runtime or execution
+request. This preserves one court and the 400-line cap without a baseline or
+boundary-configuration exemption. The test's module-qualified name changes
+only by removing the intermediate foreign_authority_tests module.
