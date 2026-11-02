@@ -18,7 +18,9 @@ macro_rules! content_rejections {
         }
 
         impl RelationalContentDenial {
-            pub(crate) fn into_execution_cause(self) -> RelationalExecutionDenialCause {
+            /// Preserve semantic payloads when the receiving boundary carries
+            /// an execution cause; an original execution refusal stays exact.
+            pub fn into_execution_cause(self) -> RelationalExecutionDenialCause {
                 match self {
                     Self::Execution(cause) => cause,
                     $(Self::$variant $({ $($field),* })? =>

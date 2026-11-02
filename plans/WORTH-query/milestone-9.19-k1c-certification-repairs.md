@@ -132,3 +132,32 @@ The registration owner must refuse both exactly, before either binding path.
 - Retire the old raw-write court which deliberately installed Scalar(ContentRef)
   to exercise the later FormatBindingMissing refusal. Its deleted-form premise
   is replaced by the stronger literal installation matrix.
+
+## R4 boundary review
+
+Native RelationalContentFrame::same_content already owns exact identity/body
+comparison and its original request checkpoints. Query duplicates its byte loop
+in certify_frame_bytes, reached through both ordinary candidate revalidation and
+the erased retained-influence comparison. Every actual caller has the original
+ExecutionRequest; none has a CustomInvariantReadBudget. Adding a Source-budget
+API would therefore invent an unused boundary. The erased bridge must retain a
+frame comparison failure even if its boolean callee swallows it.
+
+## R4 implementation plan
+
+- Thread one erased genuine-frame comparator from the actual original-request
+  receivers through the existing projection traversal and scratch channels.
+  Call Native same_content, delete the Query byte checker and its exports, and
+  retire its synthetic raw-byte checker tests. Keep Native's conversion of its
+  exact denial public for receivers that carry execution causes.
+- Extend the erased bridge's first-failure channel to Native comparison; keep
+  the exact content payload and established request categories at every receiver.
+  Court the production pure first-failure latch with literal Native causes and
+  hostile boolean results. Genuine frame admission stays in Native's external
+  courts and public content-door Source courts. Mutate error capture and final
+  receiver normalization separately, require each new pure court to fail, then
+  restore and rebuild.
+- Existing scalar/deep-tree fixtures must panic if they unexpectedly reach a
+  Native-frame callback. Run affected execution tests, the public content door
+  court, scoped gates and reviewer. Measure the same debug rlib before/after;
+  the existing artifact is 319,059,810 bytes. Add no generic frame engine body.

@@ -18,8 +18,6 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 pub(in crate::domain_computation::primary_graph::application_query::projection) mod comparison;
 pub(in crate::domain_computation::primary_graph::application_query) mod content;
 mod content_comparison;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use content_comparison::certify_frame_bytes;
 pub(in crate::domain_computation::primary_graph) use content_comparison::ProjectionContentComparisonFault;
 mod disclosure_boundary;
 mod field;

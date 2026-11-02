@@ -64,6 +64,7 @@ fn swallowed_resource_refusals_preserve_first_cause_for_both_boolean_results() {
                     (scratch.fault)(Fault::CapacityOverflow);
                     equal // all original callbacks are now fenced
                 },
+                &mut |_, _| panic!("scalar fixture has no Native frames"),
             );
             assert_eq!(
                 result,
@@ -89,6 +90,7 @@ fn successful_resource_bridge_requires_original_final_poll_for_true_and_false() 
                     assert!((scratch.reserve)(32).is_ok());
                     equal
                 },
+                &mut |_, _| panic!("scalar fixture has no Native frames"),
             ),
             Err("final")
         );
@@ -96,34 +98,38 @@ fn successful_resource_bridge_requires_original_final_poll_for_true_and_false() 
 }
 
 #[test]
-fn corrupt_equal_identity_body_survives_the_actual_erased_comparison_receiver() {
-    use crate::domain_computation::primary_graph::application_query::{
-        certify_frame_bytes, ProjectionContentComparisonFault as Fault,
+fn erased_comparison_latches_literal_native_refusals_before_hostile_boolean_results() {
+    use std::cell::Cell;
+    use worth_relational::facade::{
+        content::RelationalContentDenial as Denial,
+        transactions::RelationalExecutionDenialCause as Cause,
     };
-    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Stop;
-    // Both purported content certificates name this same value. The checker
-    // receives independently supplied bodies, never an encoder's comparison.
-    let original = [3u8, 0, 0, 0, 7, 0, 0, 0, 11, 0, 0, 0];
-    for index in 0..original.len() {
-        let mut corrupt = original;
-        corrupt[index] ^= 1;
-        let result = super::with_resources(
-            &mut |_| Ok::<_, Stop>(()),
-            &mut |_| Ok(None),
-            &mut Fault::into_native,
-            &mut |checkpoint, scratch| {
-                let checked = certify_frame_bytes(
-                    &original,
-                    &corrupt,
-                    &mut |work| if checkpoint(work) { Ok(()) } else { Err(()) },
-                    &mut |cause| (scratch.fault)(cause),
+    for cause in [
+        Denial::Execution(Cause::Cancelled),
+        Denial::Execution(Cause::WorkExhausted),
+        Denial::ContentIdentityConflict,
+        Denial::SizeLimit {
+            observed: 97,
+            maximum: 31,
+        },
+    ] {
+        for equal in [false, true] {
+            let failure = super::FirstFailure::new();
+            let contacts = Cell::new(0);
+            for _ in 0..2 {
+                assert_eq!(
+                    failure.run(|| {
+                        contacts.set(contacts.get() + 1);
+                        Err::<bool, _>(cause)
+                    }),
+                    Err(())
                 );
-                // A hostile erased receiver tries to swallow the refusal.
-                let _ = checked;
-                true
-            },
-        );
-        assert_eq!(result, Err(Stop::ContentInconsistency));
+            }
+            assert_eq!(
+                failure.finish(equal, &mut |_| panic!("no poll after refusal")),
+                Err(cause)
+            );
+            assert_eq!(contacts.get(), 1);
+        }
     }
-    assert_eq!(Stop::ContentInconsistency.as_kernel_stop(), None);
 }

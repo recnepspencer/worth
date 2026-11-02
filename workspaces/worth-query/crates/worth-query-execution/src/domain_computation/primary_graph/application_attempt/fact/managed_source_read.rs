@@ -143,6 +143,10 @@ impl ManagedSourceRead {
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
         fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        frames: &mut dyn FnMut(
+            &worth_relational::facade::content::RelationalContentFrame,
+            &worth_relational::facade::content::RelationalContentFrame,
+        ) -> Result<bool, E>,
     ) -> Result<bool, E> {
         if self.key != other.key || !self.authorization.same_truth(&other.authorization, admit)? {
             return Ok(false);
@@ -151,7 +155,7 @@ impl ManagedSourceRead {
             (None, None) => self.native.same_source(&other.native),
             (Some(left), Some(right)) if Arc::ptr_eq(left, right) => true,
             (Some(left), Some(right)) => {
-                return left.same_inputs(right, admit, reserve, fault);
+                return left.same_inputs(right, admit, reserve, fault, frames);
             }
             _ => false,
         })

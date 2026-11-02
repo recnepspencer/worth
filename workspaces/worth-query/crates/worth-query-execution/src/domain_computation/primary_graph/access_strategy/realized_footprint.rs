@@ -109,18 +109,28 @@ impl CapturedManagedInfluence {
         admit: &mut impl FnMut(u64) -> Result<(), E>,
         reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
         fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault) -> E,
+        frames: &mut dyn FnMut(
+            &worth_relational::facade::content::RelationalContentFrame,
+            &worth_relational::facade::content::RelationalContentFrame,
+        ) -> Result<bool, E>,
     ) -> Result<bool, E> {
         admit(self.comparison_work())?;
         admit(other.comparison_work())?;
-        comparison::with_resources(admit, reserve, fault, &mut |checkpoint, scratch| {
-            self.authority.admits(&other.proof)
-                && other.authority.admits(&self.proof)
-                && self.support.same_inputs(
-                    other.support.as_ref(),
-                    CapturedInfluenceComparison::Content(scratch),
-                    checkpoint,
-                )
-        })
+        comparison::with_resources(
+            admit,
+            reserve,
+            fault,
+            &mut |checkpoint, scratch| {
+                self.authority.admits(&other.proof)
+                    && other.authority.admits(&self.proof)
+                    && self.support.same_inputs(
+                        other.support.as_ref(),
+                        CapturedInfluenceComparison::Content(scratch),
+                        checkpoint,
+                    )
+            },
+            frames,
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn same_selected_membership<E>(
         &self,

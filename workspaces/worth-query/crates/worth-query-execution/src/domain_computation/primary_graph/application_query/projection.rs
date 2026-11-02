@@ -22,8 +22,6 @@ pub use denial::{
 };
 mod optional_aspect;
 mod projected_tree;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use projected_tree::certify_frame_bytes;
 pub(in crate::domain_computation::primary_graph::application_query) use projected_tree::content::ContentWriter;
 pub(in crate::domain_computation::primary_graph) use projected_tree::content_storage::ContentScratch;
 pub(in crate::domain_computation::primary_graph) use projected_tree::content_storage::ProjectionContentStorageFault;

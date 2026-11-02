@@ -201,6 +201,4 @@ pub use projection::retained_projection::{
     WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
 };
 
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use projection::certify_frame_bytes;
 pub(in crate::domain_computation::primary_graph) use projection::ProjectionContentComparisonFault;

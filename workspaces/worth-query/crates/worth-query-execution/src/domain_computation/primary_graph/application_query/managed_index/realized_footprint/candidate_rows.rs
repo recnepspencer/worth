@@ -86,30 +86,21 @@ impl CapturedCandidateRows {
         }
         for ((left_key, left), (right_key, right)) in self.entries.iter().zip(other.entries.iter())
         {
-            if !checkpoint(32)
-                || left_key != right_key
-                || left.accepted != right.accepted
-                || (!whole_source
-                    && !Arc::ptr_eq(&left.body, &right.body)
-                    && !left
-                        .body
-                        .same_content(
-                            &right.body,
-                            &mut |work| {
-                                if checkpoint(work) {
-                                    Ok(())
-                                } else {
-                                    Err(())
-                                }
-                            },
-                            scratch.reserve,
-                            &mut |cause| {
-                                (scratch.fault)(cause);
-                            },
-                        )
-                        .unwrap_or(false))
-            {
+            if !checkpoint(32) || left_key != right_key || left.accepted != right.accepted {
                 return false;
+            }
+            if !whole_source && !Arc::ptr_eq(&left.body, &right.body) {
+                // Every Err has already latched its original cause in the
+                // erased receiver; false cannot swallow it into a decision.
+                let Ok(true) = left.body.same_content(
+                    &right.body,
+                    &mut |work| if checkpoint(work) { Ok(()) } else { Err(()) },
+                    scratch.reserve,
+                    &mut |cause| (scratch.fault)(cause),
+                    scratch.frames,
+                ) else {
+                    return false;
+                };
             }
         }
         checkpoint(0)
@@ -134,6 +125,7 @@ impl CapturedCandidateRows {
         &self,
         rows: &PersistentSourceRows,
         selected: &ReceivedSelection,
+        execution: &ExecutionRequest<'_, '_>,
         control: &Control<'_>,
     ) -> Result<bool, Denial> {
         control.checkpoint(1)?;
@@ -170,7 +162,11 @@ impl CapturedCandidateRows {
                                     Fault::CapacityOverflow => Stop::CapacityOverflow,
                                     Fault::AllocationFailed => Stop::MaterialStorage(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed),
                                 })
-                            })?)
+                            },
+                            &mut |left, right| left.same_content(execution, right).map_err(|cause| control.refuse(match cause {
+                                worth_relational::facade::content::RelationalContentDenial::Execution(cause) => Stop::MaterialStorage(cause),
+                                cause => Stop::Content(cause),
+                            })))?)
             {
                 return Ok(false);
             }

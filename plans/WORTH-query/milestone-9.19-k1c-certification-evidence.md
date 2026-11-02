@@ -163,3 +163,52 @@ The final Native/court Clippy rerun failed only on untouched payload.rs:34
 Line caps passed twice, checking four Rust files each time. Branch whitespace
 checks passed twice; working-tree whitespace checks passed four times, all with
 zero whitespace errors. These repetitions include the final source correction.
+
+## R4: one owner of exact frame equality
+
+Query's byte comparison loop and its reexports are deleted. The existing actual
+request receivers supply erased genuine-frame callbacks to Native same_content;
+no actual caller has a Source read budget, so no unused Native Source API was
+added. Native's exact denial conversion now serves the receiving boundaries.
+The two removed raw-byte helper tests belonged to the deleted duplicate checker.
+
+The new pure latch family injects literal Cancelled, WorkExhausted,
+ContentIdentityConflict and SizeLimit(97,31), checks both hostile boolean results,
+one callback contact and no final poll after refusal. It tests production's
+first-error mechanism, without claiming Native admission in a product-src test.
+The new pure receiver matrix independently expects literal final categories and
+exact Native causes for cancellation, deadline, work, conflict and size. Actual
+Native content/Source integration remains in the external public content court.
+
+| Exact command or experiment | Result |
+| --- | --- |
+| `git fetch origin master codex/919-provider-lifecycle-20261027`; `git merge --no-edit origin/master`; `git merge --no-edit origin/codex/919-provider-lifecycle-20261027` | All three succeeded; both merges already up to date. |
+| `cargo fmt -p worth-relational` | Two successes. |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | Two successes. |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib content_comparison:: -- --nocapture` | Initial compile failed: one E0004 in application_checkpoint/header.rs for the new Content retention arm, two execution-test warnings; no tests ran. Added the exact Native execution receiver. |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib comparison:: -- --nocapture` | Baseline and restored-source runs: 19 passed, 0 failed/ignored/measured, 2220 filtered each. |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib native_comparison_refusals_keep_literal_attempt_categories_and_causes -- --nocapture` | Baseline and restored-source runs: 1 passed, 0 failed/ignored/measured, 2238 filtered each. Mutant: 0 passed, 1 failed, 2238 filtered; actual cause None versus literal Some(Cancelled). |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib erased_comparison_latches_literal_native_refusals_before_hostile_boolean_results -- --nocapture` | Compiled mutant: 0 passed, 1 failed, 0 ignored/measured, 2238 filtered; literal panic `no poll after refusal` at comparison/tests.rs:129. |
+| Paired mutation Python install/restore, with PYTHONUTF8=1 | Two pre-edit anchor assertions and two exact restored-byte assertions passed; both timestamps refreshed. The two pure tests have disjoint owner call graphs. Both mutants shared one build, each test ran separately, then both originals were restored and rebuilt. The reviewer approved this attribution and compile saving. |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host content_door:: -- --nocapture` | 21 passed, 0 failed/ignored/measured, 327 filtered. This is K1c's actual public content owner; the separately existing query-decl-host aggregate has no content_door. |
+| `cargo test -p worth-relational --lib semantic_content_causes_keep_literal_payloads_and_execution_keeps_its_original_cause -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2272 filtered. |
+| Debug rlib measurement, same artifact/profile | libworth_query_execution-b7016cf434752ce1.rlib: 319,059,810 before, 319,335,294 after; increase 275,484 bytes (about 0.086%). This is an artifact-size observation, not isolated monomorphization attribution. The frame engine is concrete in Native; new generic failure-policy bodies are small. |
+
+The reviewer found callback/stack name shadowing, orphaned cfg(test) attributes
+after deleting reexports, inappropriate runtime construction in the first test
+draft, and receiver classification that would hide original execution causes.
+The corrected traversal names, production reexports, pure latch, NativeExecution
+normalization and normal-path MaterialStorage mapping close those source
+findings. The same reviewer passed R4 under qa-loop, qa-tests and code-quality-qa after inspecting the final source, compiled mutations, exact restoration, rebuilt tests, external court, required receipts and rlib measurement. No R4 findings remain.
+
+| Final exact command | Result |
+| --- | --- |
+| `cargo fmt --check -p worth-relational` | One success. |
+| `cargo fmt --check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | One success. |
+| `cargo clippy -p worth-relational --all-targets` | Failed solely on untouched payload.rs:34 let_and_return, 1 error and 8 warnings; no scoped lint error. |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets` | One success. |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | One success; repository boundaries valid. |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | One success. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | One success; 24 Rust files. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | One success each; zero whitespace errors. |
+| `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Four untouched lint-file scope assertions passed. |

@@ -94,7 +94,8 @@ impl Fact {
                         .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
                 }, &mut |bytes| execution.reserve_retained_memory(bytes)
                     .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest),
-                    &mut comparison_fault)?;
+                    &mut comparison_fault,
+                    &mut |left, right| left.same_content(&execution, right).map_err(super::super::retained_decision_facts::StoreDenial::Content))?;
                 control.check_live()?;
                 Ok(equal)
             }
@@ -293,30 +294,35 @@ fn comparison_fault(
         Fault::AllocationFailed => StoreDenial::PhysicalAllocation,
     }
 }
+
 #[cfg(test)]
 mod content_tests {
     #[test]
-    fn duplicate_source_fact_corruption_retains_its_exact_attempt_category() {
+    fn native_comparison_refusals_keep_literal_attempt_categories_and_causes() {
         use super::super::super::retained_decision_facts::StoreDenial;
-        use crate::domain_computation::primary_graph::{
-            application_query::certify_frame_bytes, WorthQueryApplicationAttemptDenialKind as Kind,
+        use crate::domain_computation::{
+            primary_graph::{
+                WorthQueryApplicationAttemptDenialKind as Kind,
+                WorthQueryManagedComputationResourceDenial as Resource,
+            },
+            WorthQueryProviderSessionDenialKind as Session,
         };
-        let literal = [7, 0, 0, 0, 11, 0, 0, 0];
-        for at in 0..literal.len() {
-            let mut damaged = literal;
-            damaged[at] ^= 1;
-            let refusal = certify_frame_bytes(
-                &literal,
-                &damaged,
-                &mut |_| Ok(()),
-                &mut super::comparison_fault,
-            )
-            .unwrap_err();
-            assert_eq!(refusal, StoreDenial::ContentInconsistency);
-            assert_eq!(
-                refusal.into_attempt_denial("source").kind(),
-                Kind::ContentInconsistency
-            );
+        use worth_relational::facade::{
+            content::{RelationalContentDenial as Denial, RelationalContentRejection as Rejection},
+            transactions::RelationalExecutionDenialCause as Cause,
+        };
+        for (input, cause, kind) in [
+            (Denial::Execution(Cause::Cancelled), Cause::Cancelled, Kind::Cancelled),
+            (Denial::Execution(Cause::DeadlineElapsed), Cause::DeadlineElapsed, Kind::DeadlineExceeded),
+            (Denial::Execution(Cause::WorkExhausted), Cause::WorkExhausted, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(Session::ExecutionResource {
+                denial: Resource::WorkExhausted, partition_identity: None, policy_ancestor: None,
+            })),
+            (Denial::ContentIdentityConflict, Cause::Content(Rejection::ContentIdentityConflict), Kind::ContentInconsistency),
+            (Denial::SizeLimit { observed: 97, maximum: 31 }, Cause::Content(Rejection::SizeLimit { observed: 97, maximum: 31 }), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(Session::Content(Rejection::SizeLimit { observed: 97, maximum: 31 }))),
+        ] {
+            let actual = StoreDenial::Content(input).into_attempt_denial("comparison");
+            assert_eq!(actual.relational_execution_cause(), Some(cause));
+            assert_eq!(actual.kind(), kind);
         }
     }
 }
