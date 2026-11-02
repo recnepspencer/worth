@@ -31,6 +31,7 @@ pub type WorthServerQueryMutationAnswer = Result<
 
 /// Opaque installed adapter. Its callback resolves actual application inputs;
 /// this owner always binds the admitted key and intent at the Query door.
+/// Selection borrows this installed runtime, so no second runtime capture is needed.
 #[derive(Clone)]
 pub struct WorthServerQueryApplicationMutationBinding {
     execute: Arc<
@@ -48,6 +49,7 @@ impl WorthServerQueryApplicationMutationBinding {
         runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
         key_namespace: <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
         select: impl Fn(
+                &WorthQueryProgramApplicationRuntime<Schema, Program>,
                 &WorthServerAdmittedQueryMutation,
             ) -> Result<
                 WorthServerQueryMutationSelection<Schema, Intent>,
@@ -75,7 +77,7 @@ impl WorthServerQueryApplicationMutationBinding {
     {
         Self {
             execute: Arc::new(move |admitted| {
-                let selected = select(admitted)?;
+                let selected = select(&runtime, admitted)?;
                 let outcome = runtime
                     .request(&selected.principal, &selected.scope)
                     .on_branch(selected.branch)

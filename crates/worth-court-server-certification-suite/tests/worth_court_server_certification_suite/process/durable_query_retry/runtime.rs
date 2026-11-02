@@ -49,11 +49,10 @@ pub(super) fn scope() -> WorthQueryRequestScope {
     )
 }
 pub(super) fn server(runtime: &Runtime) -> WorthServer {
-    let application = runtime.clone();
     let binding = WorthServerQueryApplicationMutationBinding::for_program(
         runtime.clone(),
         0_u64,
-        move |admitted| {
+        |application, admitted| {
             let context = admitted.prepared_request().admission().request_context();
             assert_eq!(
                 context.authenticated_principal().principal_id(),
