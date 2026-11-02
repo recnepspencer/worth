@@ -45,17 +45,24 @@ D16 transition execution is a separate unresolved seam. At this baseline,
 readmission for changed bindings. Query's only migration author is the
 checkpoint-transport `bootstrap/checkpoint_transition` path, before World
 construction; existing Home finalization requires the recovered initial schema
-and refuses pending codec transitions. Native's positioned transition payload
-contains only sequence/follows/branch transition, and branch transition variants
-are Fork/Archive/DeletionRequested/Delete. It carries no Home transition
-association. The exact searches were `rg --files` in Native durability and
-`rg -n 'Transition|Migration'` in Query's Home integration facade, followed by
-the actual `branch_transition_artifact/payload_wire.rs`,
-`branch/transition/{record,positioned}.rs` and Query Home finalization reads.
+and refuses pending codec transitions. Native already offers opaque caller
+associations on canonical commits, including schema transitions; these can
+carry positioned Home step associations without assuming a format change.
+World's associated-effect discovery explicitly ignores non-World associations.
+The ordinary Native schema-transition port preserves complete executable kind
+contracts and otherwise refuses `TargetContractMismatch`. Its recovered codec
+transition is a distinct admitted path currently joined only by Query's
+checkpoint migration. The exact searches were `rg --files` in Native durability
+and `rg -n 'Transition|Migration'` in Query's Home integration facade, followed
+by `runtime/schema_transition_admission.rs`,
+`durability/authority/checkpoint_transition.rs`,
+`mvcc/publication/caller_association.rs`, World's
+`home_readmission/associated_effects.rs` and Query Home finalization reads.
 Adding a marker after a migration effect would allow a kill between effect and
 marker to repeat that effect; opaque callbacks or the absence carrier cannot
-honestly implement D16. Native artifact/readmission changes require P-A's
-coordination. Transition success/resume/plan drift/pending/unrostered and each
+honestly implement D16. A changed-schema Home route through Query's installation
+split and actual Native/Section readmission requires P-A's coordination.
+Transition success/resume/plan drift/pending/unrostered and each
 step's kill proof remain unqualified; this disposal slice does not claim them.
 
 ## Required companion registration retirement prerequisite
