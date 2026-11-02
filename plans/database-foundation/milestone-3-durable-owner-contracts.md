@@ -2596,3 +2596,21 @@ for ordinary publication. Home recovery installs reconstructed original inputs
 from its admitted schema/chronology graph after source routes are finalized.
 The Host reproducer must kill a filesystem writer with only a journal, reopen
 without initializing, read its committed value and commit again.
+
+
+### Resolved index emission predecessor
+
+The concrete implementation review found that exposing a frozen live roster
+before deferred resolution left the Complete phase skippable. Frozen index
+inputs now consume into a distinct resolved original-index carrier. Frozen
+Complete metadata similarly consumes into captured metadata after original-read
+protection and index resolution. Both metadata-member emission and its index
+encoder require the resolved carrier; no raw-slice conversion or compatibility
+constructor exists.
+
+The pure cache-wire court retains its existing payload, locator, byte equality
+and allocation assertions through the production wire view and request encoder.
+It does not fabricate a resolved owner from those descriptive fixture rows.
+The metadata-directory court uses an actual empty index owner's captured and
+resolved state. The unchanged retained-plan second-Complete assertion and the
+nonempty covered-plus-tail court qualify the production continuation.

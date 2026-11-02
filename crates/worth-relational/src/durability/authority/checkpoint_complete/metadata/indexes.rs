@@ -8,10 +8,14 @@ use std::sync::Arc;
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 
 pub(in crate::durability::authority::checkpoint_complete) fn encode_indexes(
-    generations: &[Arc<DerivedIndexGeneration>],
+    indexes: &crate::runtime::OriginalCheckpointIndexes,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(RelationalDurableMemberLocator, ExecutionImmutableBytes), RelationalRecoveryStop> {
-    member_frame::encode_for_request(MemberKind::DerivedIndex, &view(generations), request)
+    member_frame::encode_for_request(
+        MemberKind::DerivedIndex,
+        &view(indexes.generations()),
+        request,
+    )
 }
 pub(super) fn view(generations: &[Arc<DerivedIndexGeneration>]) -> impl Serialize + '_ {
     (

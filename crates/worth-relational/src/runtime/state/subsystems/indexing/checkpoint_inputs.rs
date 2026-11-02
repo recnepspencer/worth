@@ -3,24 +3,34 @@ use super::*;
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
 use worth_execution::{ExecutionArray, ExecutionRequest};
 
+pub(crate) struct FrozenCheckpointIndexes {
+    catalog: CapturedIndexDefinitionCatalog,
+    generations: ExecutionArray<Arc<DerivedIndexGeneration>>,
+    generation_frontier: u64,
+    deferred: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
+}
 pub(crate) struct OriginalCheckpointIndexes {
     pub(crate) catalog: CapturedIndexDefinitionCatalog,
-    pub(crate) generations: ExecutionArray<Arc<DerivedIndexGeneration>>,
+    generations: ExecutionArray<Arc<DerivedIndexGeneration>>,
     pub(crate) generation_frontier: u64,
-    deferred: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
-    decoded: Option<
+    _decoded: Option<
         crate::durability::derived_index_artifacts::captured_decode::CapturedCheckpointGenerations,
     >,
+}
+impl OriginalCheckpointIndexes {
+    pub(crate) fn generations(&self) -> &[Arc<DerivedIndexGeneration>] {
+        &self.generations
+    }
 }
 impl IndexingSubsystem {
     pub(crate) fn checkpoint_inputs_for_request(
         &self,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<OriginalCheckpointIndexes, Denial> {
+    ) -> Result<FrozenCheckpointIndexes, Denial> {
         crate::execution::check_request(request).map_err(Denial::Request)?;
         let state = self.state.read();
         let generations = state.generations.snapshot_for_request(request)?;
-        Ok(OriginalCheckpointIndexes {
+        Ok(FrozenCheckpointIndexes {
             catalog: CapturedIndexDefinitionCatalog {
                 catalog: state.catalog.clone(),
                 coverage: state.catalog.coverage(),
@@ -29,18 +39,23 @@ impl IndexingSubsystem {
             generations,
             generation_frontier: state.generation_frontier(),
             deferred: state.cold_checkpoint.clone(),
-            decoded: None,
         })
     }
 }
 
-impl OriginalCheckpointIndexes {
+impl FrozenCheckpointIndexes {
     pub(crate) fn resolve_for_request(
-        &mut self,
+        self,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), Denial> {
-        let Some(image) = &self.deferred else {
-            return Ok(());
+    ) -> Result<OriginalCheckpointIndexes, Denial> {
+        crate::execution::check_request(request).map_err(Denial::Request)?;
+        let Some(image) = self.deferred else {
+            return Ok(OriginalCheckpointIndexes {
+                catalog: self.catalog,
+                generations: self.generations,
+                generation_frontier: self.generation_frontier,
+                _decoded: None,
+            });
         };
         let decoded = image
             .capture_generations(request)
@@ -82,11 +97,13 @@ impl OriginalCheckpointIndexes {
                 .push(generation.clone())
                 .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
         }
-        self.generations = roster
-            .seal()
-            .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
-        self.decoded = Some(decoded);
-        self.deferred = None;
-        Ok(())
+        Ok(OriginalCheckpointIndexes {
+            catalog: self.catalog,
+            generations: roster
+                .seal()
+                .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?,
+            generation_frontier: self.generation_frontier,
+            _decoded: Some(decoded),
+        })
     }
 }

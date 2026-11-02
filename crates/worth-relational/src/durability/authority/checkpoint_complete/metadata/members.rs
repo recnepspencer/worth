@@ -4,8 +4,7 @@ mod lineage_pages;
 use super::super::symbols::OriginalSymbolDictionary;
 use super::{array_stop, encode_indexes, map_stop, OriginalCheckpointLineage};
 use crate::durability::{data::*, medium::RelationalDurableMemberLocator};
-use crate::indexes::data::DerivedIndexGeneration;
-use std::sync::Arc;
+use crate::runtime::OriginalCheckpointIndexes;
 use worth_execution::{ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest};
 use RelationalNativeCheckpointCaptureDenial as Denial;
 pub(in crate::durability::authority::checkpoint_complete) struct CheckpointMetadataMembers {
@@ -23,7 +22,7 @@ pub(in crate::durability::authority::checkpoint_complete) struct CheckpointMetad
 pub(in crate::durability::authority::checkpoint_complete) fn capture_metadata_members(
     dictionary: &OriginalSymbolDictionary<'_>,
     lineage: &OriginalCheckpointLineage<'_>,
-    generations: &[Arc<DerivedIndexGeneration>],
+    indexes: &OriginalCheckpointIndexes,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<CheckpointMetadataMembers, Denial> {
     let mut members = ExecutionOrderedMap::default();
@@ -31,7 +30,7 @@ pub(in crate::durability::authority::checkpoint_complete) fn capture_metadata_me
     let (nodes, events) = lineage_pages::capture(lineage, request, &mut members)?;
     let derived_indexes = add(
         &mut members,
-        encode_indexes(generations, request).map_err(stop)?,
+        encode_indexes(indexes, request).map_err(stop)?,
         request,
     )?;
     Ok(CheckpointMetadataMembers {

@@ -1,13 +1,13 @@
 //! Assemble the same concrete manifest DATA without materializing legacy images.
 use super::{
-    canonical::CanonicalOutput, capture::FrozenCompleteMetadata,
+    canonical::CanonicalOutput, capture::CapturedCompleteMetadata,
     metadata::CheckpointMetadataMembers, Denial,
 };
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 pub(super) fn assemble(
-    source: &FrozenCompleteMetadata,
+    source: &CapturedCompleteMetadata,
     canonical: &CanonicalOutput,
     schemas: CheckpointSchemaImages,
     lineage_basis: CheckpointLineageBasis,
