@@ -13,7 +13,8 @@ pub use scalar_kind::ScalarAspectType;
 pub use scalar_wrappers::{
     decode_canonical_text_hex, encode_canonical_text_hex, CanonicalBigInt, CanonicalDate,
     CanonicalDecimal, CanonicalF32, CanonicalF64, CanonicalRational, CanonicalString,
-    CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, InternedString, Symbol,
+    CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, InlineBytes, InlineBytesLengthDenial,
+    InternedString, Symbol,
 };
 
 use crate::facade::ResponsibilityArea;

@@ -4,6 +4,7 @@ mod advancement;
 mod capacity;
 mod decision_read_set;
 mod denial_cause;
+mod domain_value;
 mod effect_lowering;
 mod execution;
 mod invariant_execution;
@@ -44,6 +45,8 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// An installed custom invariant refused the candidate; see
     /// `custom_invariant_denial()`.
     CustomInvariantDenied,
+    /// A domain field could not prove its emitted bytes readable before publication.
+    DomainValueRejected,
 
     /// The workflow step this commit carries could not be settled; `kind` says why.
     WorkflowSettlementDenied {

@@ -10,6 +10,7 @@ impl WorthQueryAdmittedNativeFieldFamily {
 
     pub fn as_str(&self) -> &'static str {
         match self.0 {
+            ScalarAspectType::InlineBytes => "inline-bytes",
             ScalarAspectType::Null => "null",
             ScalarAspectType::Bool => "bool",
             ScalarAspectType::Int8 => "int8",

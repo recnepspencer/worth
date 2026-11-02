@@ -15,6 +15,11 @@ pub(super) fn write_aspect_value(
     value: &AspectValue,
 ) -> Result<(), Denial> {
     match value {
+        AspectValue::InlineBytes(value) => {
+            output.u16(26)?;
+            output.u32(value.wire_length())?;
+            output.raw_bytes(value.as_bytes())
+        }
         AspectValue::Null => output.u16(1),
         AspectValue::Bool(value) => {
             output.u16(2)?;
@@ -71,6 +76,14 @@ pub(super) fn write_aspect_value(
 
 pub(super) fn decode_aspect_value(input: &mut BinaryInput<'_>) -> Result<AspectValue, Denial> {
     Ok(match input.u16()? {
+        26 => {
+            let length = input.u32()? as usize;
+            worth_foundational::InlineBytes::admit_length(length)
+                .map_err(|_| Denial::new(Kind::InvalidRecordLength))?;
+            let value = worth_foundational::InlineBytes::try_new(input.take(length)?.to_vec())
+                .map_err(|_| Denial::new(Kind::InvalidRecordLength))?;
+            AspectValue::InlineBytes(value)
+        }
         1 => AspectValue::Null,
         2 => AspectValue::Bool(decode_bool(input)?),
         3 => AspectValue::Int8(input.i8()?),
@@ -186,6 +199,9 @@ mod tests {
                 generation: Generation(26),
             }),
             AspectValue::ContentRef(ContentRefId(27)),
+            AspectValue::InlineBytes(
+                worth_foundational::InlineBytes::try_new(vec![0, 128, 255]).unwrap(),
+            ),
         ];
 
         for value in values {
@@ -201,7 +217,7 @@ mod tests {
 
     #[test]
     fn aspect_value_decoder_rejects_unknown_tags_and_non_boolean_values() {
-        let encoded_unknown = 26_u16.to_be_bytes();
+        let encoded_unknown = u16::MAX.to_be_bytes();
         let mut unknown = BinaryInput::new(&encoded_unknown);
         assert_eq!(
             decode_aspect_value(&mut unknown)

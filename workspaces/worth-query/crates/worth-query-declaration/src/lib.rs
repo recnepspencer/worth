@@ -76,6 +76,7 @@ mod application_operation_macro;
 mod aspect_removal_macro;
 #[macro_use]
 mod value_binding_macro;
+mod binary_value_binding_macro;
 #[macro_use]
 mod structured_value_binding_macro;
 mod binding;

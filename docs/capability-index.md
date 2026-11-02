@@ -216,8 +216,26 @@ propagate stopped-prefix or missing-qualification refusals. Accounted reuse foll
 the original receipt at its work boundary. See
 [persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
 
-For independently edited persisted structure, use the native representation
-linked native representation table. For an intentional identity-free, reference-free canonical atom or
+Platform scalar owners can carry opaque atoms using `ScalarAspectType::InlineBytes`
+and the immutable `InlineBytes` carrier. Its native framing ceiling is
+4,294,967,290 payload bytes; oversized lengths return `InlineBytesLengthDenial`
+before admission. The carrier supplies no domain comparison or index hooks.
+See [inline opaque values](build-an-application.md#inline-opaque-values).
+
+Applications adopt an identity-free, reference-free leaf through the existing
+value-binding macro's `binary: OwnerDelegate` arm. Its Query-free pure owner
+keeps normalization, canonical bytes, admission and terminal rendering; the entry
+delegate supplies finite bounds, identity, unit and frame. Binary and explicitly
+marked canonical domain atoms require the same per-binding source guard and have
+distinct portable protocols from established structured canonical artifacts.
+Ordinary domain field writes must pass the installed owner's admitted
+reader and canonical byte comparison under the original request before provider
+lowering or publication; an unreadable encoding returns a typed commit refusal.
+See the [compiled entry delegate](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs)
+and [representation and guard guidance](build-an-application.md#inline-opaque-values).
+
+For independently edited persisted structure, use the
+[native representation table](native-representations.md). For an intentional identity-free, reference-free canonical atom or
 an explicit document boundary, use
 `decl::worth_query_value_binding!`'s `scalar: String, canonical,` arm with
 `decl::application_schema::WorthValue` derivation (or the pure owner's existing

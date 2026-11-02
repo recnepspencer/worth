@@ -22,6 +22,7 @@ pub(super) const TIMESTAMP: u8 = 20;
 pub(super) const TIMESTAMP_TZ: u8 = 21;
 pub(super) const ENTITY_REF: u8 = 22;
 pub(super) const CONTENT_REF: u8 = 23;
+pub(super) const INLINE_BYTES: u8 = 24;
 
 pub(super) const RAW_STRING: u8 = 0;
 pub(super) const SYMBOL_STRING: u8 = 1;

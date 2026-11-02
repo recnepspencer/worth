@@ -165,6 +165,23 @@ impl WorthQueryInstalledApplicationValueBinding {
             .map_err(|_| rejected())
     }
 
+    /// Prove readability through the exact installed admitted decoder. Its
+    /// owner performs canonical byte comparison under this original loan.
+    pub fn validate_encoded_admitted(
+        &self,
+        value: &AspectValue,
+        admission: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<(), ApplicationValueDecodeDenial> {
+        let decode = self.recipe.admitted_decode().ok_or_else(|| {
+            ApplicationValueDecodeDenial::CodecRejected {
+                binding_identity: self.recipe.binding_identity().clone(),
+            }
+        })?;
+        // The erased dispatch admits its decoded allocation before constructing it.
+        // Its reservation remains with the caller through completion.
+        decode(value, admission).map(drop)
+    }
+
     /// Readmits a retained native literal through this exact installed decoder
     /// and validator. This cold binding check does not grant mutation authority.
     pub fn validate_encoded(

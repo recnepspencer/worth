@@ -73,6 +73,7 @@ fn display_text_from_comparison_key(key: AuthoritativeFieldComparisonKey) -> Opt
 
 fn display_text_for_test_aspect_value(value: AspectValue) -> String {
     match value {
+        AspectValue::InlineBytes(value) => format!("inline-bytes:{:02x?}", value.as_bytes()),
         AspectValue::Null => "null".to_string(),
         AspectValue::Bool(value) => value.to_string(),
         AspectValue::Int8(value) => value.to_string(),

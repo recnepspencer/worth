@@ -50,6 +50,10 @@ pub(super) fn raw_string_snapshot_value(
 pub(super) fn canonical_aspect_value(value: &AspectValue) -> String {
     let mut material = String::new();
     match value {
+        AspectValue::InlineBytes(value) => {
+            token(&mut material, "value.kind", "inline-bytes");
+            bytes(&mut material, "value.inline-bytes", value.as_bytes());
+        }
         AspectValue::Null => token(&mut material, "value.kind", "null"),
         AspectValue::Bool(value) => {
             token(&mut material, "value.kind", "bool");

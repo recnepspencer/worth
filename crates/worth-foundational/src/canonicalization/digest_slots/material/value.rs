@@ -55,6 +55,10 @@ fn append_scalar_material<S: CanonicalMaterialSink>(
     value: CanonicalScalarView<'_>,
 ) -> Result<(), S::Error> {
     match value {
+        CanonicalScalarView::InlineBytes(value) => {
+            append_token(material, "value.kind", "inline-bytes")?;
+            append_bytes(material, "value.inline-bytes", value)?;
+        }
         CanonicalScalarView::Null => append_token(material, "value.kind", "null")?,
         CanonicalScalarView::Bool(value) => {
             append_token(material, "value.kind", "bool")?;

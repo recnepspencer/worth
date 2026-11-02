@@ -23,12 +23,12 @@ worth_query_application_query!(pub FullQuery for NumericSchema, identity "numeri
     parameters ParametersBinding, result ResultBinding, scope Number => "Number", name "number_full");
 
 macro_rules! result_field {
-    ($name:ident, $Slot:ident, $Field:ty, $Value:ty, $Write:ty, $id:literal) => {
+    ($name:ident, $Slot:ident, $Field:ty, $Value:ty, $Write:ty, $Equality:ty, $id:literal) => {
         pub struct $Slot;
         worth_query_portable_type!($Slot => $id);
         fn $name() -> ApplicationQueryResultFieldRef<
             FullQuery, $Slot, NumericSchema, Number, NumberFacts,
-            $Field, $Value, $Write, EqualityPredicate, NoApplicationUnit,
+            $Field, $Value, $Write, $Equality, NoApplicationUnit,
         > {
             ApplicationQueryResultFieldRef::new(stringify!($name), <$Field>::reference())
         }
@@ -40,6 +40,7 @@ result_field!(
     Key,
     String,
     ReadOnly,
+    EqualityPredicate,
     "numeric-full-read.key.v1"
 );
 result_field!(
@@ -48,6 +49,7 @@ result_field!(
     Primary,
     u64,
     ReadWrite,
+    NoEqualityPredicate,
     "numeric-full-read.primary.v1"
 );
 result_field!(
@@ -56,6 +58,7 @@ result_field!(
     Secondary,
     u64,
     ReadWrite,
+    EqualityPredicate,
     "numeric-full-read.secondary.v1"
 );
 result_field!(
@@ -64,6 +67,7 @@ result_field!(
     ReadEnabled,
     bool,
     ReadWrite,
+    EqualityPredicate,
     "numeric-full-read.enabled.v1"
 );
 result_field!(
@@ -72,6 +76,7 @@ result_field!(
     Ceiling,
     u64,
     ReadWrite,
+    EqualityPredicate,
     "numeric-full-read.ceiling.v1"
 );
 result_field!(
@@ -80,6 +85,7 @@ result_field!(
     Calculated,
     u64,
     ReadWrite,
+    EqualityPredicate,
     "numeric-full-read.calculated.v1"
 );
 

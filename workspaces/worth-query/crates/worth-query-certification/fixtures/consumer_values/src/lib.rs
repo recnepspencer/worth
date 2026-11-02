@@ -39,7 +39,9 @@ pub use planar_operation::{
 };
 
 mod positive_length;
+mod ratio;
 pub use positive_length::PositiveLength;
+pub use ratio::{Ratio, RatioDenial};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PositiveCount(u64);

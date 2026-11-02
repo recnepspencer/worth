@@ -74,6 +74,7 @@ pub(super) fn measure<Stop>(
             }
         };
         let value = match entry.value() {
+            CanonicalBasisValue::InlineBytes(value) => value.as_bytes().len(),
             CanonicalBasisValue::ExactText(text)
             | CanonicalBasisValue::DecimalText(text)
             | CanonicalBasisValue::BigIntText(text) => interned_width(text).0,

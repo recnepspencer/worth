@@ -84,6 +84,7 @@ pub use source_adjustment::*;
 
 mod base_model;
 pub use base_model::*;
+pub mod domain_values;
 mod length_binding;
 pub use length_binding::TopologyLengthBinding;
 mod schema_binding;

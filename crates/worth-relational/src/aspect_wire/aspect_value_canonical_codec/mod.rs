@@ -1,4 +1,6 @@
 mod error;
+#[cfg(test)]
+mod inline_bytes_tests;
 mod reading;
 pub(crate) mod serde_canonical_aspect_value;
 mod tags;

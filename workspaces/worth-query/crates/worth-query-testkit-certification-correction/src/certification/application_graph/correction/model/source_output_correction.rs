@@ -58,7 +58,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordIssued {
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )
         .map_err(|_| UnsupportedSourceMeaning)?;
-        let payload = U64ApplicationValueBinding::decode(
+        let payload = InlineCounterBinding::decode(
             fields
                 .field(&payload_field())
                 .map_err(|_| UnsupportedSourceMeaning)?,

@@ -8,6 +8,33 @@
 /// Domain validators return `Result<(), &'static str>`.
 #[macro_export]
 macro_rules! worth_query_value_binding {
+    ($vis:vis $Binding:ident for $Value:ty {
+        identity: $identity:literal, scalar: String, canonical: $bounds:expr
+    }) => {
+        $crate::worth_query_value_binding!($vis $Binding for $Value {
+            identity: $identity, scalar: String, canonical: $bounds,
+        });
+    };
+    ($vis:vis $Binding:ident for $Value:ty {
+        identity: $identity:literal, binary: $Delegate:ty,
+        $(unit: $unit:literal,)? $(frame: $frame:literal,)?
+        $(validate: $validate:path $(,)?)?
+    }) => {
+        $crate::__worth_query_binary_value_binding!($vis $Binding for $Value {
+            identity: $identity, binary: $Delegate,
+            $(unit: $unit,)? $(frame: $frame,)? $(validate: $validate,)?
+        });
+    };
+    ($vis:vis $Binding:ident for $Value:ty {
+        identity: $identity:literal, scalar: String, canonical: $bounds:expr, domain_value,
+        $(unit: $unit:literal,)? $(frame: $frame:literal,)?
+        $(validate: $validate:path $(,)?)?
+    }) => {
+        $crate::worth_query_value_binding!(@canonical domain; $vis $Binding for $Value {
+            identity: $identity, scalar: String, canonical: $bounds,
+            $(unit: $unit,)? $(frame: $frame,)? $(validate: $validate,)?
+        });
+    };
     (
         $vis:vis $Binding:ident for $Value:ty {
             identity: $identity:literal, native_envelope: $Codec:ty $(,)?
@@ -56,12 +83,14 @@ macro_rules! worth_query_value_binding {
     (
         $vis:vis $Binding:ident for $Value:ty {
             identity: $identity:literal, scalar: String, canonical,
+            $(unit: $unit:literal,)? $(frame: $frame:literal,)?
             $(validate: $validate:path $(,)?)?
         }
     ) => {
         $crate::worth_query_value_binding!($vis $Binding for $Value {
             identity: $identity, scalar: String,
             canonical: $crate::facade::application_schema::ValueDecodeBounds::unrestricted(),
+            $(unit: $unit,)? $(frame: $frame,)?
             $(validate: $validate,)?
         });
     };
@@ -69,9 +98,21 @@ macro_rules! worth_query_value_binding {
         $vis:vis $Binding:ident for $Value:ty {
             identity: $identity:literal,
             scalar: String,
-            canonical: $bounds:expr $(, validate: $validate:path)? $(,)?
+            canonical: $bounds:expr,
+            $(unit: $unit:literal,)? $(frame: $frame:literal,)?
+            $(validate: $validate:path $(,)?)?
         }
     ) => {
+        $crate::worth_query_value_binding!(@canonical plain; $vis $Binding for $Value {
+            identity: $identity, scalar: String, canonical: $bounds,
+            $(unit: $unit,)? $(frame: $frame,)? $(validate: $validate,)?
+        });
+    };
+    (@canonical $posture:ident; $vis:vis $Binding:ident for $Value:ty {
+        identity: $identity:literal, scalar: String, canonical: $bounds:expr,
+        $(unit: $unit:literal,)? $(frame: $frame:literal,)?
+        $(validate: $validate:path $(,)?)?
+    }) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
         $vis struct $Binding;
         impl $Binding {
@@ -84,10 +125,13 @@ macro_rules! worth_query_value_binding {
             type Identity = $crate::facade::application_schema::ApplicationValueIsNotIdentity;
             type SignedAggregate = $crate::facade::application_schema::ApplicationValueSignedAggregateUnavailable;
             const IDENTITY_NAME: &'static str = $identity;
+            const DOMAIN_VALUE: bool = $crate::worth_query_value_binding!(@domain $posture);
+            const UNIT: Option<$crate::facade::application_schema::ApplicationUnitIdentity> = $crate::worth_query_value_binding!(@unit $($unit)?);
+            const FRAME: Option<$crate::facade::application_schema::ApplicationFrameIdentity> = $crate::worth_query_value_binding!(@frame $($frame)?);
             const SCALAR_FAMILY: $crate::facade::typed::ScalarAspectType = $crate::facade::typed::ScalarAspectType::String;
             const SUPPORTS_ADMITTED_DECODE: bool = <$Value as $crate::facade::application_schema::CanonicalValue>::SUPPORTS_ADMISSION;
             fn canonical_contract() -> Option<$crate::facade::application_schema::ApplicationCanonicalValueContract> {
-                Some($crate::facade::application_schema::ApplicationCanonicalValueContract::of::<$Value>(Self::CANONICAL_BOUNDS))
+                Some($crate::worth_query_value_binding!(@contract $posture; $Value; Self::CANONICAL_BOUNDS))
             }
             fn validate(value: &Self::Value) -> Result<(), $crate::facade::application_schema::ApplicationValueValidationDenial> {
                 $crate::worth_query_value_binding!(@validate
@@ -210,6 +254,14 @@ macro_rules! worth_query_value_binding {
                 Ok(decoded)
             }
         }
+    };
+    (@domain domain) => { true };
+    (@domain plain) => { false };
+    (@contract domain; $Value:ty; $bounds:expr) => {
+        $crate::facade::application_schema::ApplicationCanonicalValueContract::domain_of::<$Value>($bounds)
+    };
+    (@contract plain; $Value:ty; $bounds:expr) => {
+        $crate::facade::application_schema::ApplicationCanonicalValueContract::of::<$Value>($bounds)
     };
     (@unit $unit:literal) => {
         Some($crate::facade::application_schema::ApplicationUnitIdentity::declared($unit))

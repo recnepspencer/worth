@@ -26,6 +26,7 @@ pub enum ScalarAspectType {
     TimestampTz,
     EntityRef,
     ContentRef,
+    InlineBytes,
 }
 
 impl ScalarAspectType {
@@ -56,6 +57,7 @@ impl ScalarAspectType {
             Self::TimestampTz => "timestamp-tz",
             Self::EntityRef => "entity-ref",
             Self::ContentRef => "content-ref",
+            Self::InlineBytes => "inline-bytes",
         }
     }
 }
