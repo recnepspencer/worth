@@ -23,7 +23,7 @@ worth_proof::authority_marker!(pub(crate) CompositeBasisAdmissionAuthorityMarker
 /// equal-looking component values, or a consumer projection from minting it.
 #[derive(Debug, Clone)]
 pub struct AdmittedCompositeRuntimeWorldBasis {
-    inner: Option<Arc<AdmittedCompositeRuntimeWorldBasisInner>>,
+    inner: Arc<AdmittedCompositeRuntimeWorldBasisInner>,
 }
 
 #[derive(Debug, Clone)]
@@ -40,7 +40,7 @@ struct CompositeBasisAdmissionBinding {
 
 impl PartialEq for AdmittedCompositeRuntimeWorldBasis {
     fn eq(&self, other: &Self) -> bool {
-        self.original_inner().admission.identity == other.original_inner().admission.identity
+        self.inner.admission.identity == other.inner.admission.identity
     }
 }
 
@@ -51,20 +51,14 @@ impl AdmittedCompositeRuntimeWorldBasis {
         let authority =
             AuthorityWitness::from_authority_marker(CompositeBasisAdmissionAuthorityMarker::seal());
         Self {
-            inner: Some(Arc::new(AdmittedCompositeRuntimeWorldBasisInner {
+            inner: Arc::new(AdmittedCompositeRuntimeWorldBasisInner {
                 basis,
                 admission: CompositeBasisAdmissionBinding {
                     identity,
                     _authority: Arc::new(authority),
                 },
-            })),
+            }),
         }
-    }
-
-    fn original_inner(&self) -> &AdmittedCompositeRuntimeWorldBasisInner {
-        self.inner
-            .as_deref()
-            .expect("only serving admitted basis exposes its original inner")
     }
 
     pub fn owner_identity(&self) -> crate::identity::RuntimeWorldOwnerIdentity {
@@ -72,19 +66,19 @@ impl AdmittedCompositeRuntimeWorldBasis {
     }
 
     pub fn identity(&self) -> &CompositeBasisKey {
-        &self.original_inner().admission.identity
+        &self.inner.admission.identity
     }
 
     pub fn relational_basis(&self) -> &AdmittedRelationalBranchBasis {
-        self.original_inner().basis.relational_basis()
+        self.inner.basis.relational_basis()
     }
 
     pub fn signal_basis(&self) -> &AdmittedSignalBranchBasis {
-        self.original_inner().basis.signal_basis()
+        self.inner.basis.signal_basis()
     }
 
     pub fn correspondence_basis(&self) -> &AdmittedRuntimeWorldCorrespondenceBasis {
-        self.original_inner().basis.correspondence_basis()
+        self.inner.basis.correspondence_basis()
     }
 }
 

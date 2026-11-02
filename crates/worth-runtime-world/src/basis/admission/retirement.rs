@@ -12,9 +12,9 @@ pub(crate) struct CompositeBasisRetirement {
     complete: bool,
 }
 impl AdmittedCompositeRuntimeWorldBasis {
-    pub(crate) fn into_home_retirement(mut self) -> CompositeBasisRetirement {
+    pub(crate) fn into_home_retirement(self) -> CompositeBasisRetirement {
         CompositeBasisRetirement {
-            shared: self.inner.take(),
+            shared: Some(self.inner),
             original: None,
             native: None,
             complete: false,
