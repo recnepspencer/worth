@@ -13,14 +13,22 @@ use worth_foundational::FoundationalBranchTarget;
 /// Deserialized descriptions cannot construct this observation.
 #[derive(Debug, Clone)]
 pub struct ObservedRelationalMemoryComponent {
-    owner: Weak<RelationalRuntimeState>,
-    original: Arc<MemoryComponentMeaning>,
+    original: Arc<dyn MemoryComponentObservationOwner>,
+}
+trait MemoryComponentObservationOwner: std::fmt::Debug + Send + Sync {
+    fn meaning(&self) -> &MemoryComponentMeaning;
 }
 #[derive(Debug)]
 struct MemoryComponentMeaning {
+    owner: Weak<RelationalRuntimeState>,
     descriptor: RelationalBranchBasisDescriptor,
     canonical: Option<Weak<CanonicalCommitEnvelope>>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl MemoryComponentObservationOwner for MemoryComponentMeaning {
+    fn meaning(&self) -> &MemoryComponentMeaning {
+        self
+    }
 }
 impl ObservedRelationalMemoryComponent {
     pub fn matches_original(
@@ -28,6 +36,7 @@ impl ObservedRelationalMemoryComponent {
         original: &crate::durability::authority::ObservedRelationalMemoryCommit,
     ) -> bool {
         self.original
+            .meaning()
             .canonical
             .as_ref()
             .is_some_and(|canonical| original.matches_original_envelope(canonical))
@@ -90,8 +99,8 @@ impl RelationalRuntime {
             });
         }
         Ok(ObservedRelationalMemoryComponent {
-            owner: self.state_binding(),
             original: Arc::new(MemoryComponentMeaning {
+                owner: self.state_binding(),
                 descriptor: descriptor.clone(),
                 canonical: canonical.map(Arc::downgrade),
                 _funding: funding,
@@ -104,12 +113,12 @@ impl RelationalRuntime {
         component: &ObservedRelationalMemoryComponent,
     ) -> Result<RecordedRelationalComponentReference, Refusal> {
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
-        if !Weak::ptr_eq(&component.owner, &self.state_binding()) {
+        if !Weak::ptr_eq(&component.original.meaning().owner, &self.state_binding()) {
             return Err(Refusal::Basis(
                 crate::branch::RelationalBranchBasisDenial::OwnerUnavailable,
             ));
         }
-        let descriptor = &component.original.descriptor;
+        let descriptor = &component.original.meaning().descriptor;
         match descriptor.reference().target() {
             FoundationalBranchTarget::Empty => {
                 RecordedRelationalComponentReference::copy_original(execution, descriptor, None)
@@ -124,13 +133,15 @@ impl RelationalRuntime {
                 let positioned = cell
                     .demand_positioned(execution, 1 << 30)
                     .map_err(Refusal::Source)?;
-                let same_original = component
-                    .original
-                    .canonical
-                    .as_ref()
-                    .is_some_and(|original| {
-                        Weak::ptr_eq(original, &Arc::downgrade(positioned.canonical_arc()))
-                    });
+                let same_original =
+                    component
+                        .original
+                        .meaning()
+                        .canonical
+                        .as_ref()
+                        .is_some_and(|original| {
+                            Weak::ptr_eq(original, &Arc::downgrade(positioned.canonical_arc()))
+                        });
                 if !same_original
                     || positioned.envelope().commit.commit_id != commit_id
                     || positioned.envelope().commit.version_id.0 != target.version_id()
