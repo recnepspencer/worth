@@ -285,7 +285,9 @@ fn original_basis_retirement_preserves_independent_reads_and_retained_payload() 
     ));
     assert!(matches!(
         task.advance(&ExecutionRequest::serial(&stopped), &runtime),
-        Err(Denial::Execution(_))
+        Err(Denial::Execution(
+            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        ))
     ));
     assert_eq!(
         task.advance(&request, &runtime).unwrap(),

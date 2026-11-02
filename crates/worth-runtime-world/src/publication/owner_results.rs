@@ -110,7 +110,7 @@ impl CompositeOwnerExecutionResults {
     pub(crate) fn with_relational_settled(
         self,
         commit_identity: RelationalCommitIdentity,
-        successor_basis: Option<AdmittedRelationalBranchBasis>,
+        successor_basis: AdmittedRelationalBranchBasis,
         result: CommitResult,
     ) -> Self {
         let (_relational, signal) = self.into_parts();
@@ -127,7 +127,7 @@ impl CompositeOwnerExecutionResults {
     pub(crate) fn with_relational_settled_receipt(
         self,
         commit_identity: RelationalCommitIdentity,
-        successor_basis: Option<AdmittedRelationalBranchBasis>,
+        successor_basis: AdmittedRelationalBranchBasis,
         receipt: worth_relational::facade::history::RelationalCommitReceipt,
     ) -> Self {
         let (_relational, signal) = self.into_parts();
