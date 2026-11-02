@@ -1,0 +1,3101 @@
+{
+  "records": [
+    {
+      "slice": "Engine-once slice 2: admitted operation core and brand",
+      "comparison": "slice-2 base (slice 1 landed) to slice 2",
+      "baseline_source": "c1b656df11c7ebc4e429facb18ee3f73e2c4b2e3",
+      "implementation_parent": "bfa9f3184490d4db48ec365332a293daa5486e03",
+      "measured_source": "5aeab9fcf6aea6e531c46002520b09709c18f114",
+      "fixture": "worth-query-testkit-certification-canonical",
+      "instrument": "scripts/quality/query_monomorphization.py (unchanged)",
+      "slope_definition": "sum(bytes/copies) over normalized families with copies >= 7; a fixture proxy, not a measured multi-fixture derivative",
+      "before": {
+        "exported_symbols": 150585,
+        "rlib_bytes": 621452892,
+        "code_bytes": 44915034,
+        "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_canonical-15d7b7f23c793455.rlib",
+        "archive_sha256": "d38ea9b5295648e608178ec5c708ddb8b924277eab5dc8c8738d1da4d18aebae",
+        "raw_report": "target/pub-mono-logs/mono-slice2-base-certification-canonical.json",
+        "raw_report_sha256": "2a5fa6d37a74834f17fe4e82439f85969338d0a5f71d88838f255577a34aff01",
+        "independent_nm_symbols": 150585,
+        "independent_size_code_bytes": 44915034,
+        "unattributed_code_bytes": 67886,
+        "shared_alias_code_bytes": 0,
+        "slope_all_owners": {
+          "family_count": 3675,
+          "bytes_per_copy": 1790090.764898,
+          "exact_numerator": 24257673188204039914628844779391713321544643303994090163204869293503184123703805159102588979,
+          "exact_denominator": 13551085600725781326792130327041904342221624317541013986952317189731672032305052752000
+        },
+        "slope_worth_query_execution": {
+          "family_count": 2229,
+          "bytes_per_copy": 1374384.581767,
+          "exact_numerator": 6304339097332201732519847415923,
+          "exact_denominator": 4587026936249684452125600
+        }
+      },
+      "after": {
+        "exported_symbols": 150134,
+        "rlib_bytes": 619715596,
+        "code_bytes": 44852822,
+        "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_canonical-15d7b7f23c793455.rlib",
+        "archive_sha256": "c7382eee83c7040c19abb94fae9d7959d5edbe92f80be07d69858fde41392ab9",
+        "raw_report": "target/pub-mono-logs/mono-slice2-certification-canonical.json",
+        "raw_report_sha256": "194360731a951566feed7c30ace1882a6e70ce8d945e078b3e0569a9a98bafdd",
+        "independent_nm_symbols": 150134,
+        "independent_size_code_bytes": 44852822,
+        "unattributed_code_bytes": 68043,
+        "shared_alias_code_bytes": 0,
+        "slope_all_owners": {
+          "family_count": 3666,
+          "bytes_per_copy": 1789712.916065,
+          "exact_numerator": 16325237478381000684681078981168980477421139867312446090970224106655344965269494895269729129,
+          "exact_denominator": 9121707359788356414898736082439530287081291028746441526359902323355396129835285232000
+        },
+        "slope_worth_query_execution": {
+          "family_count": 2218,
+          "bytes_per_copy": 1373834.581767,
+          "exact_numerator": 6301816232517264406071178335923,
+          "exact_denominator": 4587026936249684452125600
+        }
+      },
+      "delta_after_minus_before": {
+        "exported_symbols": -451,
+        "rlib_bytes": -1737296,
+        "code_bytes": -62212
+      },
+      "slope_delta_after_minus_before": {
+        "all_owners": -377.848833,
+        "worth_query_execution": -550.0
+      },
+      "disappeared_family_count": 16,
+      "disappeared_top40_definition": "Old normalized names absent from the new roster, ordered by old bytes descending, then name; at most 40. Old family bytes are not net savings.",
+      "disappeared_top40": [
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::authorization_basis::WorthQueryOperationAuthorizationBasis<>::shared_capability_input",
+          "bytes": 4646,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_input::{closure#0}",
+          "bytes": 2185,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::capability_revocation_binding",
+          "bytes": 1932,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::delegation_activation_binding",
+          "bytes": 1932,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::take_authorization_dependencies::{closure#0}",
+          "bytes": 1541,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#1}::{closure#0}",
+          "bytes": 1449,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#1}",
+          "bytes": 1426,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::authorization_basis::WorthQueryOperationAuthorizationBasis<>::is_elevation_lifecycle",
+          "bytes": 1127,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#1}",
+          "bytes": 529,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#0}",
+          "bytes": 437,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#0}",
+          "bytes": 345,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#1}::{closure#0}",
+          "bytes": 345,
+          "copies": 23
+        },
+        {
+          "name": "worth_foundational::values::scalar_wrappers::numerics::CanonicalRational::clone",
+          "bytes": 158,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_encoded_input::{closure#0}",
+          "bytes": 92,
+          "copies": 23
+        },
+        {
+          "name": "worth_foundational::values::scalar_wrappers::numerics::CanonicalBigInt::clone",
+          "bytes": 65,
+          "copies": 1
+        },
+        {
+          "name": "worth_foundational::values::scalar_wrappers::numerics::CanonicalDecimal::clone",
+          "bytes": 65,
+          "copies": 1
+        }
+      ],
+      "owner_symbol_counts": {
+        "!": {
+          "before": 1,
+          "after": 1
+        },
+        "&&[alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&&worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "&(&str, i64, &[alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&(alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&<>": {
+          "before": 55,
+          "after": 55
+        },
+        "&[&str; 2]": {
+          "before": 1,
+          "after": 1
+        },
+        "&[(alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&[alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&[worth_query_execution": {
+          "before": 9,
+          "after": 9
+        },
+        "&[worth_relational": {
+          "before": 1,
+          "after": 1
+        },
+        "&alloc": {
+          "before": 27,
+          "after": 27
+        },
+        "&core": {
+          "before": 3,
+          "after": 3
+        },
+        "&im": {
+          "before": 1,
+          "after": 1
+        },
+        "&mut &mut &mut core": {
+          "before": 52,
+          "after": 52
+        },
+        "&mut &mut core": {
+          "before": 104,
+          "after": 104
+        },
+        "&mut <>": {
+          "before": 156,
+          "after": 156
+        },
+        "&mut alloc": {
+          "before": 5,
+          "after": 5
+        },
+        "&mut core": {
+          "before": 578,
+          "after": 578
+        },
+        "&mut dyn core": {
+          "before": 1,
+          "after": 1
+        },
+        "&mut serde_json": {
+          "before": 88,
+          "after": 88
+        },
+        "&mut worth_query_execution": {
+          "before": 62,
+          "after": 62
+        },
+        "&mut worth_query_installation": {
+          "before": 54,
+          "after": 54
+        },
+        "&str": {
+          "before": 2,
+          "after": 2
+        },
+        "&worth_foundational": {
+          "before": 7,
+          "after": 7
+        },
+        "&worth_query_declaration": {
+          "before": 12,
+          "after": 12
+        },
+        "&worth_query_execution": {
+          "before": 28,
+          "after": 28
+        },
+        "&worth_query_testkit_certification_canonical": {
+          "before": 22,
+          "after": 22
+        },
+        "(&str, i64, &[alloc": {
+          "before": 2,
+          "after": 2
+        },
+        "((worth_relational": {
+          "before": 5,
+          "after": 5
+        },
+        "(alloc": {
+          "before": 36,
+          "after": 36
+        },
+        "(worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "(worth_query_declaration": {
+          "before": 8,
+          "after": 8
+        },
+        "(worth_query_execution": {
+          "before": 6,
+          "after": 6
+        },
+        "(worth_query_testkit_certification_canonical": {
+          "before": 14,
+          "after": 14
+        },
+        "(worth_relational": {
+          "before": 9,
+          "after": 9
+        },
+        "*const _": {
+          "before": 1,
+          "after": 1
+        },
+        "[&str; 2]": {
+          "before": 1,
+          "after": 1
+        },
+        "[&str; 3]": {
+          "before": 4,
+          "after": 4
+        },
+        "[&worth_query_declaration": {
+          "before": 48,
+          "after": 48
+        },
+        "[&worth_query_execution": {
+          "before": 4,
+          "after": 4
+        },
+        "[&worth_query_installation": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&str, worth_foundational": {
+          "before": 79,
+          "after": 79
+        },
+        "[(&worth_query_declaration": {
+          "before": 14,
+          "after": 14
+        },
+        "[(&worth_query_execution": {
+          "before": 4,
+          "after": 4
+        },
+        "[((alloc": {
+          "before": 14,
+          "after": 14
+        },
+        "[((worth_relational": {
+          "before": 2,
+          "after": 2
+        },
+        "[([u8; 32], alloc": {
+          "before": 46,
+          "after": 46
+        },
+        "[(alloc": {
+          "before": 93,
+          "after": 93
+        },
+        "[(worth_foundational": {
+          "before": 22,
+          "after": 22
+        },
+        "[(worth_query_declaration": {
+          "before": 14,
+          "after": 14
+        },
+        "[(worth_query_execution": {
+          "before": 38,
+          "after": 38
+        },
+        "[(worth_relational": {
+          "before": 16,
+          "after": 16
+        },
+        "[_]": {
+          "before": 15,
+          "after": 15
+        },
+        "[alloc": {
+          "before": 9,
+          "after": 9
+        },
+        "[core": {
+          "before": 12,
+          "after": 12
+        },
+        "[im": {
+          "before": 2,
+          "after": 2
+        },
+        "[worth_foundational": {
+          "before": 18,
+          "after": 18
+        },
+        "[worth_query_declaration": {
+          "before": 16,
+          "after": 16
+        },
+        "[worth_query_execution": {
+          "before": 56,
+          "after": 56
+        },
+        "[worth_query_publication": {
+          "before": 1,
+          "after": 1
+        },
+        "[worth_query_testkit_certification_canonical": {
+          "before": 5,
+          "after": 5
+        },
+        "[worth_relational": {
+          "before": 2,
+          "after": 2
+        },
+        "_": {
+          "before": 4,
+          "after": 4
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission14repeated_query8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission14repeated_query8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live23CANCEL_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live23CANCEL_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission6opaque16IGNORED_REFUSALS0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission6opaque16IGNORED_REFUSALS0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission9operation8OBSERVED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission9operation8OBSERVED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23CANCEL_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23CANCEL_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23REJECT_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23REJECT_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection5COUNT0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection5COUNT0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6CANCEL0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6CANCEL0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6REJECT0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6REJECT0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7IGNORED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7IGNORED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection5COUNT0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection5COUNT0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6CANCEL0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6CANCEL0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6REJECT0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6REJECT0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7IGNORED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7IGNORED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor18unchanged_revision6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor18unchanged_revision6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__rustc": {
+          "before": 2,
+          "after": 2
+        },
+        "__xmm@068c2d387bae19f257190dee944fadb1": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@0ad8958b9be588bbd5c4704d53b0c937": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@0ed0ef8681c64a9609bac2d3f74cf20e": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@10f3fb0758d4c85740cdc392436443ce": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@18525caf856daed23a2dfaa90d506b02": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@2788ae65886349e7e3846ca9125469bc": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@298904eb919ea9ea325f1eacebb6b312": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@310a5cbdbe4a29df48dc6548c65997f6": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@43bbd7a68aa589c6b9b95887be3da0b5": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@55fdd3f2e42f326b88c35f0809554f65": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@56ce5e494e4f0849c163ef3abbd72176": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@590ad905a09add3210a306d89d561f46": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@5bdba930b260f89a2275a3e2a6dbe64a": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@700ba0c3d3b16390fa051d2311d795a7": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@70a92fbce97dba617bca5251852ffc28": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@74328ac2420d9390ccfc984ec76b641f": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@868ffa933c31df99e709ca6a2a98bb4c": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@933c682c3f72896673405d9433e001bd": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@a95b25fba88f12347e299cc526bf4a61": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@afd454f46fb6079258694830221a9efc": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@bb9e4cb6002d5de40d04ac7f6bc8038f": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@c932947b0aba8dd304e7dffcf2fc1f78": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@cc6440d9e15bcf8c3692a1f099dde010": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@d2a1855b0c68729afbe5211743d93b18": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@d9924e02b236b089ac4e4d91612c06b9": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@dd86ed37a251f6fd6911e3c17ed0aba6": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@de81b0d0aa85d841c36a43a10f8719cd": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@e5b49972a2ef540b048391cbab479de9": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@f050cde6deb95da26a47bd4f97bb16a7": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@f7a24dcf4b9be017c1e151cada6872bd": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@fe87e651f8330d71a2dd5b532625305f": {
+          "before": 1,
+          "after": 1
+        },
+        "alloc": {
+          "before": 13307,
+          "after": 13307
+        },
+        "bool": {
+          "before": 166,
+          "after": 166
+        },
+        "core": {
+          "before": 65772,
+          "after": 65529
+        },
+        "dyn core": {
+          "before": 125,
+          "after": 125
+        },
+        "for<> fn(&'a dyn core": {
+          "before": 2,
+          "after": 2
+        },
+        "for<> fn(&'a worth_query_execution": {
+          "before": 7,
+          "after": 7
+        },
+        "hashbrown": {
+          "before": 439,
+          "after": 439
+        },
+        "i32": {
+          "before": 8,
+          "after": 8
+        },
+        "i64": {
+          "before": 19,
+          "after": 19
+        },
+        "im": {
+          "before": 106,
+          "after": 106
+        },
+        "isize": {
+          "before": 2,
+          "after": 2
+        },
+        "rayon_core": {
+          "before": 23,
+          "after": 23
+        },
+        "serde_json": {
+          "before": 167,
+          "after": 167
+        },
+        "serde_stacker": {
+          "before": 434,
+          "after": 434
+        },
+        "sized_chunks": {
+          "before": 112,
+          "after": 112
+        },
+        "stacker": {
+          "before": 468,
+          "after": 468
+        },
+        "std": {
+          "before": 713,
+          "after": 714
+        },
+        "str": {
+          "before": 10,
+          "after": 10
+        },
+        "u16": {
+          "before": 1,
+          "after": 1
+        },
+        "u32": {
+          "before": 3,
+          "after": 3
+        },
+        "u64": {
+          "before": 9,
+          "after": 9
+        },
+        "u8": {
+          "before": 1,
+          "after": 1
+        },
+        "usize": {
+          "before": 91,
+          "after": 91
+        },
+        "worth_execution": {
+          "before": 7606,
+          "after": 7606
+        },
+        "worth_foundational": {
+          "before": 447,
+          "after": 444
+        },
+        "worth_proof": {
+          "before": 3,
+          "after": 3
+        },
+        "worth_query_admission": {
+          "before": 370,
+          "after": 370
+        },
+        "worth_query_declaration": {
+          "before": 5769,
+          "after": 5769
+        },
+        "worth_query_execution": {
+          "before": 43428,
+          "after": 43168
+        },
+        "worth_query_installation": {
+          "before": 4052,
+          "after": 4106
+        },
+        "worth_query_publication": {
+          "before": 1088,
+          "after": 1088
+        },
+        "worth_query_testkit_certification_canonical": {
+          "before": 2327,
+          "after": 2327
+        },
+        "worth_query_testkit_document_retention": {
+          "before": 21,
+          "after": 21
+        },
+        "worth_relational": {
+          "before": 859,
+          "after": 859
+        },
+        "worth_runtime_bridge": {
+          "before": 83,
+          "after": 83
+        },
+        "worth_runtime_world": {
+          "before": 574,
+          "after": 574
+        },
+        "worth_signal": {
+          "before": 2,
+          "after": 2
+        }
+      },
+      "scope": "Physical code and defined external symbols in this fixture archive only. Not total linked size, downstream build time, or a release measurement."
+    },
+    {
+      "slice": "Engine-once slice 2: admitted operation core and brand",
+      "comparison": "slice-2 base (slice 1 landed) to slice 2",
+      "baseline_source": "c1b656df11c7ebc4e429facb18ee3f73e2c4b2e3",
+      "implementation_parent": "bfa9f3184490d4db48ec365332a293daa5486e03",
+      "measured_source": "5aeab9fcf6aea6e531c46002520b09709c18f114",
+      "fixture": "worth-query-testkit-document-retention",
+      "instrument": "scripts/quality/query_monomorphization.py (unchanged)",
+      "slope_definition": "sum(bytes/copies) over normalized families with copies >= 7; a fixture proxy, not a measured multi-fixture derivative",
+      "before": {
+        "exported_symbols": 77116,
+        "rlib_bytes": 286444650,
+        "code_bytes": 19279417,
+        "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_document_retention-1276163b2c10b165.rlib",
+        "archive_sha256": "c33fc0ca747ab1043452aee0ba5f89c4cc7be70c2d00b11785c2ee262e5153d3",
+        "raw_report": "target/pub-mono-logs/mono-slice2-base-document-retention.json",
+        "raw_report_sha256": "2d42e11a90b17ef1aa465156e576be11843a5ec8e97e0ebc08e1a29e30a1b69b",
+        "independent_nm_symbols": 77116,
+        "independent_size_code_bytes": 19279417,
+        "unattributed_code_bytes": 77205,
+        "shared_alias_code_bytes": 0,
+        "slope_all_owners": {
+          "family_count": 1527,
+          "bytes_per_copy": 549420.651539,
+          "exact_numerator": 579883520304916444269615194824007812353232853328806097109045680085714507604796728729,
+          "exact_denominator": 1055445438173642066643060394885722730773126230196048359282797209498594735888000
+        },
+        "slope_worth_query_execution": {
+          "family_count": 647,
+          "bytes_per_copy": 324503.840405,
+          "exact_numerator": 42300391885825982131,
+          "exact_denominator": 130354056312480
+        }
+      },
+      "after": {
+        "exported_symbols": 76865,
+        "rlib_bytes": 285633012,
+        "code_bytes": 19238849,
+        "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_document_retention-1276163b2c10b165.rlib",
+        "archive_sha256": "c368f8bbb7c100d547bdc647669283d32e96f06e9b108b81cc6d885829f4370c",
+        "raw_report": "target/pub-mono-logs/mono-slice2-document-retention.json",
+        "raw_report_sha256": "a63afe33899afae4e4f2f4378e4fc848b967aabd2e5ff7bfdc1719a6653a8126",
+        "independent_nm_symbols": 76865,
+        "independent_size_code_bytes": 19238849,
+        "unattributed_code_bytes": 76359,
+        "shared_alias_code_bytes": 0,
+        "slope_all_owners": {
+          "family_count": 1516,
+          "bytes_per_copy": 548378.678266,
+          "exact_numerator": 430274364805857762224834295159872431102345624744390056615871167071421700883146503917,
+          "exact_denominator": 784630004518422738764254245440242325165073751150969837488657333053004319824000
+        },
+        "slope_worth_query_execution": {
+          "family_count": 634,
+          "bytes_per_copy": 323271.415405,
+          "exact_numerator": 42139740287975073967,
+          "exact_denominator": 130354056312480
+        }
+      },
+      "delta_after_minus_before": {
+        "exported_symbols": -251,
+        "rlib_bytes": -811638,
+        "code_bytes": -40568
+      },
+      "slope_delta_after_minus_before": {
+        "all_owners": -1041.973272,
+        "worth_query_execution": -1232.425
+      },
+      "disappeared_family_count": 34,
+      "disappeared_top40_definition": "Old normalized names absent from the new roster, ordered by old bytes descending, then name; at most 40. Old family bytes are not net savings.",
+      "disappeared_top40": [
+        {
+          "name": "worth_query_execution::domain_computation::primary_graph::workflow::actor::encoding::encode::<>",
+          "bytes": 3338,
+          "copies": 2
+        },
+        {
+          "name": "worth_query_execution::domain_computation::primary_graph::freshness::DurablePrincipalView::serialize::<>",
+          "bytes": 1631,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::authorization_basis::WorthQueryOperationAuthorizationBasis<>::shared_capability_input",
+          "bytes": 1414,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_input::{closure#0}",
+          "bytes": 855,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::capability_revocation_binding",
+          "bytes": 756,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::delegation_activation_binding",
+          "bytes": 756,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::take_authorization_dependencies::{closure#0}",
+          "bytes": 603,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#1}::{closure#0}",
+          "bytes": 567,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#1}",
+          "bytes": 558,
+          "copies": 9
+        },
+        {
+          "name": "worth_relational::identity::data::record_ids::RecordId<>::serialize::<>",
+          "bytes": 529,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::reference::PublishedWorkflowProposalRef::fmt",
+          "bytes": 389,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::required_proposal::RequiredWorkflowProposal::fmt",
+          "bytes": 346,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::authorization_basis::WorthQueryOperationAuthorizationBasis<>::is_elevation_lifecycle",
+          "bytes": 343,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_declaration::application_query::managed_index::definition::ErasedApplicationManagedIndexDefinition::clone",
+          "bytes": 292,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#1}",
+          "bytes": 207,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#0}",
+          "bytes": 171,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::workflow_approval_principal_snapshot::{closure#0}",
+          "bytes": 140,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#0}",
+          "bytes": 135,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#1}::{closure#0}",
+          "bytes": 135,
+          "copies": 9
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::workflow_approval_lineage_snapshot::{closure#0}",
+          "bytes": 86,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::workflow_approval_request_snapshot::{closure#0}",
+          "bytes": 65,
+          "copies": 1
+        },
+        {
+          "name": "worth_relational::identity::data::primitives::KindId::serialize::<>",
+          "bytes": 41,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::capability_decision_fact::WorthQueryRetainedCapabilityAuthorization::installed_capability_identity::call_once",
+          "bytes": 37,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_context::RequiredOutputDemandContext::computation_prior::call_once",
+          "bytes": 37,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_encoded_input::{closure#0}",
+          "bytes": 36,
+          "copies": 9
+        },
+        {
+          "name": "&mut serde_json::ser::Serializer<>::serialize_some::<>",
+          "bytes": 28,
+          "copies": 1
+        },
+        {
+          "name": "core::any::TypeId::into",
+          "bytes": 27,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::denial::WorthQueryOperationAuthorizationDenial::into",
+          "bytes": 27,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::workflow_approval_dependencies_snapshot::{closure#0}",
+          "bytes": 27,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::workflow_approval_support_snapshot::{closure#0}",
+          "bytes": 27,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::decision_facts::WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization::call_once",
+          "bytes": 25,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::decision_facts::WorthQueryRetainedAuthorizationDecisionFacts::signing_principal::call_once",
+          "bytes": 25,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::workflow_approval_signing_principal::{closure#0}",
+          "bytes": 23,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::committed_changes::WorthQueryApplicationCommittedChanges::clone",
+          "bytes": 15,
+          "copies": 1
+        }
+      ],
+      "owner_symbol_counts": {
+        "&&worth_query_execution": {
+          "before": 1,
+          "after": 1
+        },
+        "&(u32, u64, u32)": {
+          "before": 1,
+          "after": 1
+        },
+        "&(u64, [u8; 32], [u8; 32])": {
+          "before": 1,
+          "after": 1
+        },
+        "&(u8, core": {
+          "before": 1,
+          "after": 1
+        },
+        "&(worth_query_execution": {
+          "before": 1,
+          "after": 1
+        },
+        "&<>": {
+          "before": 23,
+          "after": 23
+        },
+        "&[(u64, u64, u64)]": {
+          "before": 1,
+          "after": 1
+        },
+        "&[(worth_query_execution": {
+          "before": 1,
+          "after": 1
+        },
+        "&[alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&[u8]": {
+          "before": 1,
+          "after": 1
+        },
+        "&[worth_query_admission": {
+          "before": 2,
+          "after": 2
+        },
+        "&[worth_query_declaration": {
+          "before": 9,
+          "after": 9
+        },
+        "&[worth_query_execution": {
+          "before": 4,
+          "after": 4
+        },
+        "&[worth_query_installation": {
+          "before": 5,
+          "after": 5
+        },
+        "&alloc": {
+          "before": 34,
+          "after": 34
+        },
+        "&bool": {
+          "before": 1,
+          "after": 1
+        },
+        "&core": {
+          "before": 6,
+          "after": 6
+        },
+        "&mut &mut &mut core": {
+          "before": 52,
+          "after": 52
+        },
+        "&mut &mut core": {
+          "before": 106,
+          "after": 106
+        },
+        "&mut &mut dyn core": {
+          "before": 3,
+          "after": 3
+        },
+        "&mut <>": {
+          "before": 115,
+          "after": 115
+        },
+        "&mut alloc": {
+          "before": 3,
+          "after": 3
+        },
+        "&mut core": {
+          "before": 516,
+          "after": 516
+        },
+        "&mut dyn core": {
+          "before": 4,
+          "after": 4
+        },
+        "&mut dyn worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "&mut serde_json": {
+          "before": 54,
+          "after": 53
+        },
+        "&mut worth_query_execution": {
+          "before": 35,
+          "after": 35
+        },
+        "&mut worth_query_installation": {
+          "before": 33,
+          "after": 33
+        },
+        "&str": {
+          "before": 3,
+          "after": 3
+        },
+        "&u8": {
+          "before": 1,
+          "after": 1
+        },
+        "&worth_query_admission": {
+          "before": 5,
+          "after": 5
+        },
+        "&worth_query_declaration": {
+          "before": 37,
+          "after": 37
+        },
+        "&worth_query_execution": {
+          "before": 47,
+          "after": 47
+        },
+        "&worth_query_installation": {
+          "before": 11,
+          "after": 11
+        },
+        "&worth_query_publication": {
+          "before": 1,
+          "after": 1
+        },
+        "&worth_query_testkit_document_retention": {
+          "before": 4,
+          "after": 4
+        },
+        "&worth_relational": {
+          "before": 4,
+          "after": 4
+        },
+        "&worth_runtime_bridge": {
+          "before": 12,
+          "after": 12
+        },
+        "&worth_signal": {
+          "before": 4,
+          "after": 4
+        },
+        "(&alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "(&str, &str, u16, u16, worth_query_declaration": {
+          "before": 2,
+          "after": 2
+        },
+        "(&str, &str, worth_query_execution": {
+          "before": 2,
+          "after": 2
+        },
+        "(&str, &worth_query_declaration": {
+          "before": 1,
+          "after": 1
+        },
+        "(&str, worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "(&str, worth_query_declaration": {
+          "before": 2,
+          "after": 2
+        },
+        "(&worth_foundational": {
+          "before": 2,
+          "after": 2
+        },
+        "(&worth_query_declaration": {
+          "before": 1,
+          "after": 1
+        },
+        "((alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "([u8; 32], alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "(alloc": {
+          "before": 23,
+          "after": 23
+        },
+        "(u32, u64, u32)": {
+          "before": 2,
+          "after": 2
+        },
+        "(u64, [u8; 32], [u8; 32])": {
+          "before": 2,
+          "after": 2
+        },
+        "(u64, worth_query_testkit_document_retention": {
+          "before": 2,
+          "after": 2
+        },
+        "(u8, core": {
+          "before": 4,
+          "after": 4
+        },
+        "(worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "(worth_query_declaration": {
+          "before": 1,
+          "after": 1
+        },
+        "(worth_query_execution": {
+          "before": 7,
+          "after": 7
+        },
+        "(worth_query_testkit_document_retention": {
+          "before": 4,
+          "after": 4
+        },
+        "(worth_relational": {
+          "before": 16,
+          "after": 16
+        },
+        "*const _": {
+          "before": 1,
+          "after": 1
+        },
+        "[&[worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "[&str; 13]": {
+          "before": 1,
+          "after": 1
+        },
+        "[&str; 16]": {
+          "before": 1,
+          "after": 1
+        },
+        "[&str; 1]": {
+          "before": 1,
+          "after": 1
+        },
+        "[&str; 2]": {
+          "before": 1,
+          "after": 1
+        },
+        "[&worth_query_declaration": {
+          "before": 27,
+          "after": 27
+        },
+        "[&worth_query_execution": {
+          "before": 3,
+          "after": 3
+        },
+        "[&worth_query_installation": {
+          "before": 2,
+          "after": 2
+        },
+        "[(&str, &str); 11]": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&str, &str, &[&str]); 4]": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&str, &worth_query_declaration": {
+          "before": 5,
+          "after": 5
+        },
+        "[(&str, u64, u64); 14]": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&str, u64, worth_query_declaration": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&str, worth_foundational": {
+          "before": 20,
+          "after": 20
+        },
+        "[(&worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&worth_query_declaration": {
+          "before": 7,
+          "after": 7
+        },
+        "[((alloc": {
+          "before": 7,
+          "after": 7
+        },
+        "[([u8; 32], alloc": {
+          "before": 21,
+          "after": 21
+        },
+        "[(alloc": {
+          "before": 51,
+          "after": 51
+        },
+        "[(worth_foundational": {
+          "before": 18,
+          "after": 18
+        },
+        "[(worth_query_declaration": {
+          "before": 7,
+          "after": 7
+        },
+        "[(worth_query_execution": {
+          "before": 7,
+          "after": 7
+        },
+        "[(worth_relational": {
+          "before": 12,
+          "after": 12
+        },
+        "[[u8; 8]]": {
+          "before": 1,
+          "after": 1
+        },
+        "[_]": {
+          "before": 48,
+          "after": 48
+        },
+        "[alloc": {
+          "before": 5,
+          "after": 5
+        },
+        "[core": {
+          "before": 27,
+          "after": 27
+        },
+        "[u64; 0]": {
+          "before": 1,
+          "after": 1
+        },
+        "[u64; 2]": {
+          "before": 1,
+          "after": 1
+        },
+        "[u8; 16]": {
+          "before": 1,
+          "after": 1
+        },
+        "[u8; 64]": {
+          "before": 1,
+          "after": 1
+        },
+        "[u8]": {
+          "before": 2,
+          "after": 2
+        },
+        "[worth_foundational": {
+          "before": 8,
+          "after": 8
+        },
+        "[worth_query_admission": {
+          "before": 7,
+          "after": 7
+        },
+        "[worth_query_declaration": {
+          "before": 133,
+          "after": 133
+        },
+        "[worth_query_execution": {
+          "before": 43,
+          "after": 43
+        },
+        "[worth_query_installation": {
+          "before": 41,
+          "after": 41
+        },
+        "[worth_query_testkit_document_retention": {
+          "before": 6,
+          "after": 6
+        },
+        "[worth_relational": {
+          "before": 5,
+          "after": 5
+        },
+        "[worth_runtime_bridge": {
+          "before": 2,
+          "after": 2
+        },
+        "[worth_signal": {
+          "before": 1,
+          "after": 1
+        },
+        "_": {
+          "before": 11,
+          "after": 11
+        },
+        "__imp__RNvNCNKNvNtNtNtCselT1Yz1VmA8_38worth_query_testkit_document_retention6facade24document_retention_model6schema29SET_RETENTION_INPUT_ENCODINGS0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtCselT1Yz1VmA8_38worth_query_testkit_document_retention6facade24document_retention_model6schema29SET_RETENTION_INPUT_ENCODINGS0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCselT1Yz1VmA8_38worth_query_testkit_document_retention6facade24document_retention_model15retention_entry21set_retention_handler11observation10INSTALLING0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCselT1Yz1VmA8_38worth_query_testkit_document_retention6facade24document_retention_model15retention_entry21set_retention_handler11observation10INSTALLING0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__rustc": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@48b8ecb862ccd30b9cf7709b82abc832": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@6bd3aaa2f699431c47c13e4a849ed99f": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@8e15636b739e83c5816827f8b0a74ae7": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@9110c405939d5d41da31bd531a9a1255": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@e573a92e3004c8304b92335326a863dd": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@f5ba2e9eb492b7c68b75a6989fa3ad0c": {
+          "before": 1,
+          "after": 1
+        },
+        "alloc": {
+          "before": 10836,
+          "after": 10832
+        },
+        "bool": {
+          "before": 55,
+          "after": 55
+        },
+        "core": {
+          "before": 36269,
+          "after": 36129
+        },
+        "dyn core": {
+          "before": 31,
+          "after": 31
+        },
+        "for<> fn(&'a dyn core": {
+          "before": 2,
+          "after": 2
+        },
+        "for<> fn(&'a worth_query_execution": {
+          "before": 2,
+          "after": 2
+        },
+        "getrandom": {
+          "before": 1,
+          "after": 1
+        },
+        "hashbrown": {
+          "before": 391,
+          "after": 391
+        },
+        "i128": {
+          "before": 1,
+          "after": 1
+        },
+        "i16": {
+          "before": 1,
+          "after": 1
+        },
+        "i32": {
+          "before": 2,
+          "after": 2
+        },
+        "i64": {
+          "before": 2,
+          "after": 2
+        },
+        "i8": {
+          "before": 1,
+          "after": 1
+        },
+        "im": {
+          "before": 10,
+          "after": 10
+        },
+        "isize": {
+          "before": 2,
+          "after": 2
+        },
+        "serde_json": {
+          "before": 86,
+          "after": 74
+        },
+        "serde_stacker": {
+          "before": 29,
+          "after": 29
+        },
+        "stacker": {
+          "before": 45,
+          "after": 45
+        },
+        "std": {
+          "before": 401,
+          "after": 401
+        },
+        "str": {
+          "before": 10,
+          "after": 10
+        },
+        "u128": {
+          "before": 1,
+          "after": 1
+        },
+        "u16": {
+          "before": 3,
+          "after": 3
+        },
+        "u32": {
+          "before": 7,
+          "after": 7
+        },
+        "u64": {
+          "before": 16,
+          "after": 16
+        },
+        "u8": {
+          "before": 5,
+          "after": 5
+        },
+        "usize": {
+          "before": 47,
+          "after": 47
+        },
+        "worth_execution": {
+          "before": 2814,
+          "after": 2814
+        },
+        "worth_foundational": {
+          "before": 217,
+          "after": 218
+        },
+        "worth_proof": {
+          "before": 5,
+          "after": 5
+        },
+        "worth_query_admission": {
+          "before": 212,
+          "after": 212
+        },
+        "worth_query_declaration": {
+          "before": 4176,
+          "after": 4179
+        },
+        "worth_query_execution": {
+          "before": 15030,
+          "after": 14908
+        },
+        "worth_query_installation": {
+          "before": 2368,
+          "after": 2391
+        },
+        "worth_query_publication": {
+          "before": 555,
+          "after": 555
+        },
+        "worth_query_testkit_document_retention": {
+          "before": 1025,
+          "after": 1025
+        },
+        "worth_relational": {
+          "before": 436,
+          "after": 436
+        },
+        "worth_runtime_bridge": {
+          "before": 130,
+          "after": 131
+        },
+        "worth_runtime_world": {
+          "before": 108,
+          "after": 108
+        },
+        "worth_signal": {
+          "before": 11,
+          "after": 11
+        }
+      },
+      "scope": "Physical code and defined external symbols in this fixture archive only. Not total linked size, downstream build time, or a release measurement."
+    },
+    {
+      "slice": "Engine-once slice 2: admitted operation core and brand",
+      "comparison": "slice-2 base (slice 1 landed) to slice 2",
+      "baseline_source": "c1b656df11c7ebc4e429facb18ee3f73e2c4b2e3",
+      "implementation_parent": "bfa9f3184490d4db48ec365332a293daa5486e03",
+      "measured_source": "5aeab9fcf6aea6e531c46002520b09709c18f114",
+      "fixture": "worth-query-testkit-certification-operation",
+      "instrument": "scripts/quality/query_monomorphization.py (unchanged)",
+      "slope_definition": "sum(bytes/copies) over normalized families with copies >= 7; a fixture proxy, not a measured multi-fixture derivative",
+      "before": {
+        "exported_symbols": 54247,
+        "rlib_bytes": 237386672,
+        "code_bytes": 13958450,
+        "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_operation-3e1d9c402abb0e26.rlib",
+        "archive_sha256": "5e88e165b678741dcc2747330794c699eb18f20f893935a32d031597f9251b71",
+        "raw_report": "target/pub-mono-logs/mono-slice2-base-certification-operation.json",
+        "raw_report_sha256": "c8d350beaa8962117845a652746d66418a2f01eae5966878d91e89badd04ff0c",
+        "independent_nm_symbols": 54247,
+        "independent_size_code_bytes": 13958450,
+        "unattributed_code_bytes": 45403,
+        "shared_alias_code_bytes": 0,
+        "slope_all_owners": {
+          "family_count": 1150,
+          "bytes_per_copy": 455108.902753,
+          "exact_numerator": 176576385297389953876102737191192427877538265007400755575552303683,
+          "exact_denominator": 387987104249940374293960941924452623894924985039089914909000
+        },
+        "slope_worth_query_execution": {
+          "family_count": 569,
+          "bytes_per_copy": 309301.913443,
+          "exact_numerator": 138326481310491191563,
+          "exact_denominator": 447221550525750
+        }
+      },
+      "after": {
+        "exported_symbols": 54109,
+        "rlib_bytes": 236852162,
+        "code_bytes": 13939883,
+        "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_operation-3e1d9c402abb0e26.rlib",
+        "archive_sha256": "391a3d801c919009aa62b1d615e6f2868e75022a00be2a2fe07c7f99c1433c41",
+        "raw_report": "target/pub-mono-logs/mono-slice2-certification-operation.json",
+        "raw_report_sha256": "70d1ddc120cba60f69561aaceea61c442930e16aa22fdac22af57cd249a19cb0",
+        "independent_nm_symbols": 54109,
+        "independent_size_code_bytes": 13939883,
+        "unattributed_code_bytes": 45973,
+        "shared_alias_code_bytes": 0,
+        "slope_all_owners": {
+          "family_count": 1140,
+          "bytes_per_copy": 454813.8373,
+          "exact_numerator": 23540341079028790715351789153394477011215350581848193438400875689009,
+          "exact_denominator": 51758190161456440531703229052208718598003146478246202341482000
+        },
+        "slope_worth_query_execution": {
+          "family_count": 558,
+          "bytes_per_copy": 308889.067289,
+          "exact_numerator": 138141847613439522313,
+          "exact_denominator": 447221550525750
+        }
+      },
+      "delta_after_minus_before": {
+        "exported_symbols": -138,
+        "rlib_bytes": -534510,
+        "code_bytes": -18567
+      },
+      "slope_delta_after_minus_before": {
+        "all_owners": -295.065453,
+        "worth_query_execution": -412.846154
+      },
+      "disappeared_family_count": 19,
+      "disappeared_top40_definition": "Old normalized names absent from the new roster, ordered by old bytes descending, then name; at most 40. Old family bytes are not net savings.",
+      "disappeared_top40": [
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::authorization_basis::WorthQueryOperationAuthorizationBasis<>::shared_capability_input",
+          "bytes": 808,
+          "copies": 4
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_input::{closure#0}",
+          "bytes": 665,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::delegation_activation_binding",
+          "bytes": 588,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::take_authorization_dependencies::{closure#0}",
+          "bytes": 469,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#1}::{closure#0}",
+          "bytes": 441,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#1}",
+          "bytes": 434,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_declaration::application_schema::operation_definition::body::value::ApplicationOperationBodyValueProgram::fmt",
+          "bytes": 274,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_declaration::application_schema::operation_definition::body::signing::ApplicationOperationBodySigningSpec::fmt",
+          "bytes": 207,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::authorization_basis::WorthQueryOperationAuthorizationBasis<>::is_elevation_lifecycle",
+          "bytes": 196,
+          "copies": 4
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#1}",
+          "bytes": 161,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#0}",
+          "bytes": 133,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#0}",
+          "bytes": 105,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#1}::{closure#0}",
+          "bytes": 105,
+          "copies": 7
+        },
+        {
+          "name": "worth_query_execution::domain_computation::primary_graph::workflow::instance::progression::replay::WorkflowTransitionReplayRetention::clone",
+          "bytes": 74,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::primary_graph::workflow::instance::progression::replay::WorkflowTransitionReplayRetention::default",
+          "bytes": 66,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_declaration::application_schema::external_effect_correlation_family::WorthQueryExternalEffectCorrelationFamily::clone",
+          "bytes": 65,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_declaration::application_program::workflow::validation::work::ValidationWorkMeter::default",
+          "bytes": 61,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_encoded_input::{closure#0}",
+          "bytes": 28,
+          "copies": 7
+        },
+        {
+          "name": "worth_relational::branch::basis_admission_identity::RelationalBranchBasisAdmissionIdentity::clone",
+          "bytes": 15,
+          "copies": 1
+        }
+      ],
+      "owner_symbol_counts": {
+        "&&worth_query_execution": {
+          "before": 1,
+          "after": 1
+        },
+        "&&worth_query_publication": {
+          "before": 1,
+          "after": 1
+        },
+        "&(usize, usize, usize)": {
+          "before": 1,
+          "after": 1
+        },
+        "&<>": {
+          "before": 12,
+          "after": 12
+        },
+        "&[worth_query_declaration": {
+          "before": 1,
+          "after": 1
+        },
+        "&[worth_relational": {
+          "before": 1,
+          "after": 1
+        },
+        "&alloc": {
+          "before": 16,
+          "after": 16
+        },
+        "&bool": {
+          "before": 1,
+          "after": 1
+        },
+        "&core": {
+          "before": 12,
+          "after": 12
+        },
+        "&mut &mut &mut core": {
+          "before": 46,
+          "after": 46
+        },
+        "&mut &mut core": {
+          "before": 122,
+          "after": 122
+        },
+        "&mut <>": {
+          "before": 79,
+          "after": 79
+        },
+        "&mut alloc": {
+          "before": 2,
+          "after": 2
+        },
+        "&mut core": {
+          "before": 536,
+          "after": 536
+        },
+        "&mut dyn core": {
+          "before": 1,
+          "after": 1
+        },
+        "&mut worth_execution": {
+          "before": 1,
+          "after": 1
+        },
+        "&mut worth_query_execution": {
+          "before": 22,
+          "after": 22
+        },
+        "&mut worth_query_installation": {
+          "before": 16,
+          "after": 16
+        },
+        "&str": {
+          "before": 2,
+          "after": 2
+        },
+        "&u64": {
+          "before": 1,
+          "after": 1
+        },
+        "&worth_foundational": {
+          "before": 5,
+          "after": 5
+        },
+        "&worth_query_declaration": {
+          "before": 94,
+          "after": 94
+        },
+        "&worth_query_execution": {
+          "before": 12,
+          "after": 12
+        },
+        "&worth_query_publication": {
+          "before": 6,
+          "after": 6
+        },
+        "&worth_query_testkit_certification_operation": {
+          "before": 8,
+          "after": 8
+        },
+        "&worth_relational": {
+          "before": 1,
+          "after": 1
+        },
+        "(&str, &u64)": {
+          "before": 1,
+          "after": 1
+        },
+        "()": {
+          "before": 1,
+          "after": 1
+        },
+        "(alloc": {
+          "before": 2,
+          "after": 2
+        },
+        "(usize, usize)": {
+          "before": 1,
+          "after": 1
+        },
+        "(usize, usize, usize)": {
+          "before": 2,
+          "after": 2
+        },
+        "(worth_query_execution": {
+          "before": 1,
+          "after": 1
+        },
+        "(worth_query_installation": {
+          "before": 1,
+          "after": 1
+        },
+        "(worth_query_testkit_certification_operation": {
+          "before": 4,
+          "after": 4
+        },
+        "(worth_relational": {
+          "before": 1,
+          "after": 1
+        },
+        "*const _": {
+          "before": 1,
+          "after": 1
+        },
+        "[&worth_query_declaration": {
+          "before": 14,
+          "after": 14
+        },
+        "[(&str, &worth_query_declaration": {
+          "before": 2,
+          "after": 2
+        },
+        "[(&str, worth_foundational": {
+          "before": 8,
+          "after": 8
+        },
+        "[(&worth_query_declaration": {
+          "before": 4,
+          "after": 4
+        },
+        "[((alloc": {
+          "before": 4,
+          "after": 4
+        },
+        "[([u8; 32], alloc": {
+          "before": 16,
+          "after": 16
+        },
+        "[(alloc": {
+          "before": 28,
+          "after": 28
+        },
+        "[(bool, u64); 2]": {
+          "before": 1,
+          "after": 1
+        },
+        "[(worth_foundational": {
+          "before": 6,
+          "after": 6
+        },
+        "[(worth_query_declaration": {
+          "before": 4,
+          "after": 4
+        },
+        "[(worth_query_installation": {
+          "before": 5,
+          "after": 5
+        },
+        "[(worth_relational": {
+          "before": 4,
+          "after": 4
+        },
+        "[_]": {
+          "before": 5,
+          "after": 5
+        },
+        "[alloc": {
+          "before": 2,
+          "after": 2
+        },
+        "[core": {
+          "before": 4,
+          "after": 4
+        },
+        "[u8; 17]": {
+          "before": 2,
+          "after": 2
+        },
+        "[worth_foundational": {
+          "before": 4,
+          "after": 4
+        },
+        "[worth_query_declaration": {
+          "before": 46,
+          "after": 46
+        },
+        "[worth_query_execution": {
+          "before": 5,
+          "after": 5
+        },
+        "[worth_query_installation": {
+          "before": 6,
+          "after": 6
+        },
+        "[worth_query_testkit_certification_operation": {
+          "before": 2,
+          "after": 2
+        },
+        "[worth_relational": {
+          "before": 1,
+          "after": 1
+        },
+        "[worth_runtime_world": {
+          "before": 1,
+          "after": 1
+        },
+        "__rustc": {
+          "before": 4,
+          "after": 4
+        },
+        "__xmm@ee36238d70147b505067c275eb2e00fa": {
+          "before": 1,
+          "after": 1
+        },
+        "alloc": {
+          "before": 4537,
+          "after": 4537
+        },
+        "bool": {
+          "before": 46,
+          "after": 46
+        },
+        "char": {
+          "before": 1,
+          "after": 1
+        },
+        "core": {
+          "before": 26020,
+          "after": 25944
+        },
+        "dyn core": {
+          "before": 18,
+          "after": 18
+        },
+        "for<> fn(&'a dyn core": {
+          "before": 2,
+          "after": 2
+        },
+        "for<> fn(&'a worth_query_execution": {
+          "before": 2,
+          "after": 2
+        },
+        "hashbrown": {
+          "before": 113,
+          "after": 113
+        },
+        "im": {
+          "before": 7,
+          "after": 7
+        },
+        "isize": {
+          "before": 1,
+          "after": 1
+        },
+        "std": {
+          "before": 281,
+          "after": 281
+        },
+        "str": {
+          "before": 6,
+          "after": 6
+        },
+        "u16": {
+          "before": 1,
+          "after": 1
+        },
+        "u32": {
+          "before": 2,
+          "after": 2
+        },
+        "u64": {
+          "before": 9,
+          "after": 9
+        },
+        "u8": {
+          "before": 1,
+          "after": 1
+        },
+        "usize": {
+          "before": 34,
+          "after": 34
+        },
+        "worth_execution": {
+          "before": 3144,
+          "after": 3144
+        },
+        "worth_foundational": {
+          "before": 75,
+          "after": 75
+        },
+        "worth_proof": {
+          "before": 1,
+          "after": 1
+        },
+        "worth_query_admission": {
+          "before": 157,
+          "after": 157
+        },
+        "worth_query_declaration": {
+          "before": 3957,
+          "after": 3954
+        },
+        "worth_query_execution": {
+          "before": 11647,
+          "after": 11570
+        },
+        "worth_query_installation": {
+          "before": 1108,
+          "after": 1126
+        },
+        "worth_query_publication": {
+          "before": 852,
+          "after": 852
+        },
+        "worth_query_testkit_certification_operation": {
+          "before": 706,
+          "after": 706
+        },
+        "worth_query_testkit_document_retention": {
+          "before": 19,
+          "after": 19
+        },
+        "worth_relational": {
+          "before": 215,
+          "after": 214
+        },
+        "worth_runtime_bridge": {
+          "before": 40,
+          "after": 40
+        },
+        "worth_runtime_world": {
+          "before": 48,
+          "after": 49
+        },
+        "worth_signal": {
+          "before": 3,
+          "after": 3
+        }
+      },
+      "scope": "Physical code and defined external symbols in this fixture archive only. Not total linked size, downstream build time, or a release measurement."
+    },
+    {
+      "slice": "Engine-once slice 2: admitted operation core and brand",
+      "comparison": "slice-1 measurement to slice 2",
+      "baseline_source": "1-slice measurement report target/pub-mono-logs/mono-advancement-runner.json",
+      "implementation_parent": "bfa9f3184490d4db48ec365332a293daa5486e03",
+      "measured_source": "5aeab9fcf6aea6e531c46002520b09709c18f114",
+      "fixture": "worth-query-testkit-certification-canonical",
+      "instrument": "scripts/quality/query_monomorphization.py (unchanged)",
+      "slope_definition": "sum(bytes/copies) over normalized families with copies >= 7; a fixture proxy, not a measured multi-fixture derivative",
+      "before": {
+        "exported_symbols": 150562,
+        "rlib_bytes": 621368176,
+        "code_bytes": 44893095,
+        "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_canonical-15d7b7f23c793455.rlib",
+        "archive_sha256": "223bae87f565496e3fe0005213227737ba27c0b70a6bd46680c9be949b71573f",
+        "raw_report": "target/pub-mono-logs/mono-advancement-runner.json",
+        "raw_report_sha256": "3b3ed48af60ac85f51223c917022ced6e08bad96227ba3380b04f5f569c146ce",
+        "independent_nm_symbols": 150562,
+        "independent_size_code_bytes": 44893095,
+        "unattributed_code_bytes": 67886,
+        "shared_alias_code_bytes": 0,
+        "slope_all_owners": {
+          "family_count": 3674,
+          "bytes_per_copy": 1789349.764898,
+          "exact_numerator": 24247631833773902110665691810819375270427057080374792271840537626465592954727867115013356979,
+          "exact_denominator": 13551085600725781326792130327041904342221624317541013986952317189731672032305052752000
+        },
+        "slope_worth_query_execution": {
+          "family_count": 2228,
+          "bytes_per_copy": 1373643.581767,
+          "exact_numerator": 6300940110372440716340822346323,
+          "exact_denominator": 4587026936249684452125600
+        }
+      },
+      "after": {
+        "exported_symbols": 150134,
+        "rlib_bytes": 619715596,
+        "code_bytes": 44852822,
+        "archive": "C:\\worth-build-cache\\target-cut-pub-mono\\debug\\deps\\libworth_query_testkit_certification_canonical-15d7b7f23c793455.rlib",
+        "archive_sha256": "c7382eee83c7040c19abb94fae9d7959d5edbe92f80be07d69858fde41392ab9",
+        "raw_report": "target/pub-mono-logs/mono-slice2-certification-canonical.json",
+        "raw_report_sha256": "194360731a951566feed7c30ace1882a6e70ce8d945e078b3e0569a9a98bafdd",
+        "independent_nm_symbols": 150134,
+        "independent_size_code_bytes": 44852822,
+        "unattributed_code_bytes": 68043,
+        "shared_alias_code_bytes": 0,
+        "slope_all_owners": {
+          "family_count": 3666,
+          "bytes_per_copy": 1789712.916065,
+          "exact_numerator": 16325237478381000684681078981168980477421139867312446090970224106655344965269494895269729129,
+          "exact_denominator": 9121707359788356414898736082439530287081291028746441526359902323355396129835285232000
+        },
+        "slope_worth_query_execution": {
+          "family_count": 2218,
+          "bytes_per_copy": 1373834.581767,
+          "exact_numerator": 6301816232517264406071178335923,
+          "exact_denominator": 4587026936249684452125600
+        }
+      },
+      "delta_after_minus_before": {
+        "exported_symbols": -428,
+        "rlib_bytes": -1652580,
+        "code_bytes": -40273
+      },
+      "slope_delta_after_minus_before": {
+        "all_owners": 363.151167,
+        "worth_query_execution": 191.0
+      },
+      "disappeared_family_count": 16,
+      "disappeared_top40_definition": "Old normalized names absent from the new roster, ordered by old bytes descending, then name; at most 40. Old family bytes are not net savings.",
+      "disappeared_top40": [
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::authorization_basis::WorthQueryOperationAuthorizationBasis<>::shared_capability_input",
+          "bytes": 4646,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_input::{closure#0}",
+          "bytes": 2185,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::capability_revocation_binding",
+          "bytes": 1932,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::delegation_activation_binding",
+          "bytes": 1932,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::take_authorization_dependencies::{closure#0}",
+          "bytes": 1541,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#1}::{closure#0}",
+          "bytes": 1449,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#1}",
+          "bytes": 1426,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::authorization_basis::WorthQueryOperationAuthorizationBasis<>::is_elevation_lifecycle",
+          "bytes": 1127,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#1}",
+          "bytes": 529,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_mutation_binding::{closure#0}",
+          "bytes": 437,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#0}",
+          "bytes": 345,
+          "copies": 23
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::governed_proposal_identity::{closure#1}::{closure#0}",
+          "bytes": 345,
+          "copies": 23
+        },
+        {
+          "name": "worth_foundational::values::scalar_wrappers::numerics::CanonicalRational::clone",
+          "bytes": 158,
+          "copies": 1
+        },
+        {
+          "name": "worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryAdmittedApplicationOperation<>::original_encoded_input::{closure#0}",
+          "bytes": 92,
+          "copies": 23
+        },
+        {
+          "name": "worth_foundational::values::scalar_wrappers::numerics::CanonicalBigInt::clone",
+          "bytes": 65,
+          "copies": 1
+        },
+        {
+          "name": "worth_foundational::values::scalar_wrappers::numerics::CanonicalDecimal::clone",
+          "bytes": 65,
+          "copies": 1
+        }
+      ],
+      "owner_symbol_counts": {
+        "!": {
+          "before": 1,
+          "after": 1
+        },
+        "&&[alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&&worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "&(&str, i64, &[alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&(alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&<>": {
+          "before": 55,
+          "after": 55
+        },
+        "&[&str; 2]": {
+          "before": 1,
+          "after": 1
+        },
+        "&[(alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&[alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "&[worth_query_execution": {
+          "before": 9,
+          "after": 9
+        },
+        "&[worth_relational": {
+          "before": 1,
+          "after": 1
+        },
+        "&alloc": {
+          "before": 27,
+          "after": 27
+        },
+        "&core": {
+          "before": 3,
+          "after": 3
+        },
+        "&im": {
+          "before": 1,
+          "after": 1
+        },
+        "&mut &mut &mut core": {
+          "before": 52,
+          "after": 52
+        },
+        "&mut &mut core": {
+          "before": 104,
+          "after": 104
+        },
+        "&mut <>": {
+          "before": 156,
+          "after": 156
+        },
+        "&mut alloc": {
+          "before": 5,
+          "after": 5
+        },
+        "&mut core": {
+          "before": 578,
+          "after": 578
+        },
+        "&mut dyn core": {
+          "before": 1,
+          "after": 1
+        },
+        "&mut serde_json": {
+          "before": 88,
+          "after": 88
+        },
+        "&mut worth_query_execution": {
+          "before": 62,
+          "after": 62
+        },
+        "&mut worth_query_installation": {
+          "before": 54,
+          "after": 54
+        },
+        "&str": {
+          "before": 2,
+          "after": 2
+        },
+        "&worth_foundational": {
+          "before": 7,
+          "after": 7
+        },
+        "&worth_query_declaration": {
+          "before": 12,
+          "after": 12
+        },
+        "&worth_query_execution": {
+          "before": 28,
+          "after": 28
+        },
+        "&worth_query_testkit_certification_canonical": {
+          "before": 22,
+          "after": 22
+        },
+        "(&str, i64, &[alloc": {
+          "before": 2,
+          "after": 2
+        },
+        "((worth_relational": {
+          "before": 5,
+          "after": 5
+        },
+        "(alloc": {
+          "before": 36,
+          "after": 36
+        },
+        "(worth_foundational": {
+          "before": 1,
+          "after": 1
+        },
+        "(worth_query_declaration": {
+          "before": 8,
+          "after": 8
+        },
+        "(worth_query_execution": {
+          "before": 6,
+          "after": 6
+        },
+        "(worth_query_testkit_certification_canonical": {
+          "before": 14,
+          "after": 14
+        },
+        "(worth_relational": {
+          "before": 9,
+          "after": 9
+        },
+        "*const _": {
+          "before": 1,
+          "after": 1
+        },
+        "[&str; 2]": {
+          "before": 1,
+          "after": 1
+        },
+        "[&str; 3]": {
+          "before": 4,
+          "after": 4
+        },
+        "[&worth_query_declaration": {
+          "before": 48,
+          "after": 48
+        },
+        "[&worth_query_execution": {
+          "before": 4,
+          "after": 4
+        },
+        "[&worth_query_installation": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&alloc": {
+          "before": 1,
+          "after": 1
+        },
+        "[(&str, worth_foundational": {
+          "before": 79,
+          "after": 79
+        },
+        "[(&worth_query_declaration": {
+          "before": 14,
+          "after": 14
+        },
+        "[(&worth_query_execution": {
+          "before": 4,
+          "after": 4
+        },
+        "[((alloc": {
+          "before": 14,
+          "after": 14
+        },
+        "[((worth_relational": {
+          "before": 2,
+          "after": 2
+        },
+        "[([u8; 32], alloc": {
+          "before": 46,
+          "after": 46
+        },
+        "[(alloc": {
+          "before": 93,
+          "after": 93
+        },
+        "[(worth_foundational": {
+          "before": 22,
+          "after": 22
+        },
+        "[(worth_query_declaration": {
+          "before": 14,
+          "after": 14
+        },
+        "[(worth_query_execution": {
+          "before": 38,
+          "after": 38
+        },
+        "[(worth_relational": {
+          "before": 16,
+          "after": 16
+        },
+        "[_]": {
+          "before": 15,
+          "after": 15
+        },
+        "[alloc": {
+          "before": 9,
+          "after": 9
+        },
+        "[core": {
+          "before": 12,
+          "after": 12
+        },
+        "[im": {
+          "before": 2,
+          "after": 2
+        },
+        "[worth_foundational": {
+          "before": 18,
+          "after": 18
+        },
+        "[worth_query_declaration": {
+          "before": 16,
+          "after": 16
+        },
+        "[worth_query_execution": {
+          "before": 56,
+          "after": 56
+        },
+        "[worth_query_publication": {
+          "before": 1,
+          "after": 1
+        },
+        "[worth_query_testkit_certification_canonical": {
+          "before": 5,
+          "after": 5
+        },
+        "[worth_relational": {
+          "before": 2,
+          "after": 2
+        },
+        "_": {
+          "before": 4,
+          "after": 4
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission14repeated_query8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission14repeated_query8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live23CANCEL_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live23CANCEL_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission4live8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission6opaque16IGNORED_REFUSALS0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission6opaque16IGNORED_REFUSALS0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission9operation8OBSERVED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission9operation8OBSERVED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23CANCEL_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23CANCEL_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23REJECT_AFTER_PROJECTION0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query23REJECT_AFTER_PROJECTION0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query8RETURNED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph19canonical_admission12continuation5query8RETURNED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection5COUNT0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection5COUNT0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6CANCEL0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6CANCEL0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6REJECT0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related10projection6REJECT0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7IGNORED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related6output7IGNORED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection5COUNT0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection5COUNT0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6CANCEL0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6CANCEL0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6REJECT0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor10projection6REJECT0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7IGNORED0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition7related9successor6output7IGNORED0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor18unchanged_revision6output7DECODES0023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__imp__RNvNCNKNvNtNtNtNtNtNtNtCs7eufiTEdctw_43worth_query_testkit_certification_canonical6facade13certification17application_graph20canonical_transition9successor18unchanged_revision6output7DECODES0s_023___RUST_STD_INTERNAL_VAL": {
+          "before": 1,
+          "after": 1
+        },
+        "__rustc": {
+          "before": 2,
+          "after": 2
+        },
+        "__xmm@068c2d387bae19f257190dee944fadb1": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@0ad8958b9be588bbd5c4704d53b0c937": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@0ed0ef8681c64a9609bac2d3f74cf20e": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@10f3fb0758d4c85740cdc392436443ce": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@18525caf856daed23a2dfaa90d506b02": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@2788ae65886349e7e3846ca9125469bc": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@298904eb919ea9ea325f1eacebb6b312": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@310a5cbdbe4a29df48dc6548c65997f6": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@43bbd7a68aa589c6b9b95887be3da0b5": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@55fdd3f2e42f326b88c35f0809554f65": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@56ce5e494e4f0849c163ef3abbd72176": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@590ad905a09add3210a306d89d561f46": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@5bdba930b260f89a2275a3e2a6dbe64a": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@700ba0c3d3b16390fa051d2311d795a7": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@70a92fbce97dba617bca5251852ffc28": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@74328ac2420d9390ccfc984ec76b641f": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@868ffa933c31df99e709ca6a2a98bb4c": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@933c682c3f72896673405d9433e001bd": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@a95b25fba88f12347e299cc526bf4a61": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@afd454f46fb6079258694830221a9efc": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@bb9e4cb6002d5de40d04ac7f6bc8038f": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@c932947b0aba8dd304e7dffcf2fc1f78": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@cc6440d9e15bcf8c3692a1f099dde010": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@d2a1855b0c68729afbe5211743d93b18": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@d9924e02b236b089ac4e4d91612c06b9": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@dd86ed37a251f6fd6911e3c17ed0aba6": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@de81b0d0aa85d841c36a43a10f8719cd": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@e5b49972a2ef540b048391cbab479de9": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@f050cde6deb95da26a47bd4f97bb16a7": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@f7a24dcf4b9be017c1e151cada6872bd": {
+          "before": 1,
+          "after": 1
+        },
+        "__xmm@fe87e651f8330d71a2dd5b532625305f": {
+          "before": 1,
+          "after": 1
+        },
+        "alloc": {
+          "before": 13307,
+          "after": 13307
+        },
+        "bool": {
+          "before": 166,
+          "after": 166
+        },
+        "core": {
+          "before": 65772,
+          "after": 65529
+        },
+        "dyn core": {
+          "before": 125,
+          "after": 125
+        },
+        "for<> fn(&'a dyn core": {
+          "before": 2,
+          "after": 2
+        },
+        "for<> fn(&'a worth_query_execution": {
+          "before": 7,
+          "after": 7
+        },
+        "hashbrown": {
+          "before": 439,
+          "after": 439
+        },
+        "i32": {
+          "before": 8,
+          "after": 8
+        },
+        "i64": {
+          "before": 19,
+          "after": 19
+        },
+        "im": {
+          "before": 106,
+          "after": 106
+        },
+        "isize": {
+          "before": 2,
+          "after": 2
+        },
+        "rayon_core": {
+          "before": 23,
+          "after": 23
+        },
+        "serde_json": {
+          "before": 167,
+          "after": 167
+        },
+        "serde_stacker": {
+          "before": 434,
+          "after": 434
+        },
+        "sized_chunks": {
+          "before": 112,
+          "after": 112
+        },
+        "stacker": {
+          "before": 468,
+          "after": 468
+        },
+        "std": {
+          "before": 713,
+          "after": 714
+        },
+        "str": {
+          "before": 10,
+          "after": 10
+        },
+        "u16": {
+          "before": 1,
+          "after": 1
+        },
+        "u32": {
+          "before": 3,
+          "after": 3
+        },
+        "u64": {
+          "before": 9,
+          "after": 9
+        },
+        "u8": {
+          "before": 1,
+          "after": 1
+        },
+        "usize": {
+          "before": 91,
+          "after": 91
+        },
+        "worth_execution": {
+          "before": 7606,
+          "after": 7606
+        },
+        "worth_foundational": {
+          "before": 447,
+          "after": 444
+        },
+        "worth_proof": {
+          "before": 3,
+          "after": 3
+        },
+        "worth_query_admission": {
+          "before": 370,
+          "after": 370
+        },
+        "worth_query_declaration": {
+          "before": 5769,
+          "after": 5769
+        },
+        "worth_query_execution": {
+          "before": 43405,
+          "after": 43168
+        },
+        "worth_query_installation": {
+          "before": 4052,
+          "after": 4106
+        },
+        "worth_query_publication": {
+          "before": 1088,
+          "after": 1088
+        },
+        "worth_query_testkit_certification_canonical": {
+          "before": 2327,
+          "after": 2327
+        },
+        "worth_query_testkit_document_retention": {
+          "before": 21,
+          "after": 21
+        },
+        "worth_relational": {
+          "before": 859,
+          "after": 859
+        },
+        "worth_runtime_bridge": {
+          "before": 83,
+          "after": 83
+        },
+        "worth_runtime_world": {
+          "before": 574,
+          "after": 574
+        },
+        "worth_signal": {
+          "before": 2,
+          "after": 2
+        }
+      },
+      "scope": "Physical code and defined external symbols in this fixture archive only. Not total linked size, downstream build time, or a release measurement."
+    }
+  ]
+}
