@@ -22,6 +22,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        self.require_program_incarnation(&program)?;
         let prepared = match prepare_application_commit(
             execution,
             phase,

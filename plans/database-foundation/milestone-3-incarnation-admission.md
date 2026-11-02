@@ -323,3 +323,13 @@ Foreign ownership retains PolicyMismatch. The first compile also caught three
 incorrect stop-projection patterns: branch StaleIncarnation is nested inside
 AdmissionDenial::Refused(AdmissionRefusalKind), not a top-level denial variant.
 Those patterns now preserve the actual existing typed shape.
+
+
+The effect-program caller audit found current-owner program/posture checks
+before the later World fence. The commit entry owner now shares one carried
+program-incarnation check across public/direct, program, output-producer and
+managed-start entrances, before policy/occurrence lookup or provider work.
+It retains the existing typed request-authorization cause at BasisAdmission.
+This is a further narrow P-D call-admission seam; current and foreign-owner
+policy handling remains unchanged. The earlier shared disclosure/recovery
+correction passes 213 selected controls before this additional entry correction.

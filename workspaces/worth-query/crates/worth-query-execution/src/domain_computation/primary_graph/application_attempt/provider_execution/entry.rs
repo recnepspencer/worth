@@ -51,6 +51,7 @@ where
         presented: &WorthQueryPresentedProgram<'_>,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome> {
+        self.require_program_incarnation(program)?;
         let Some(support) = self.program_support.as_ref() else {
             return Err(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
@@ -83,6 +84,7 @@ where
     where
         Operation: 'static,
     {
+        self.require_program_incarnation(program)?;
         let Some(support) = self.program_support.as_ref() else {
             return Err(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
@@ -113,6 +115,9 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
         if !self.has_installed_application_program() {
             return self.compare_and_commit_application_in_advancement(
                 phase,
@@ -181,6 +186,9 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
         if let Some(denial) = plain_publication_posture(&program.read_set.admission) {
             return WorthQueryApplicationCommitOutcome::Denied(denial);
         }
@@ -297,6 +305,7 @@ fn plain_publication_posture<Schema, Operation, Input, Scope>(
 
 mod application_commit;
 mod commit_progression;
+mod incarnation;
 
 mod output_source;
 

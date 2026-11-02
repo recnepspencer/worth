@@ -11,6 +11,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
         let request = program.read_set.admission.publication_request().clone();
         self.with_funded_application_advancement(&request, allocation_policy, |phase| {
             self.compare_and_commit_application_in_advancement(
@@ -35,6 +38,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) = self.require_program_incarnation(&program) {
+            return outcome;
+        }
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
