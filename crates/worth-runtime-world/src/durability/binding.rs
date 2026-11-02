@@ -63,6 +63,8 @@ pub(crate) struct WorldDurableMediumBinding {
     gates: Mutex<PublicationGates>,
     pub(in crate::durability) checkpoint_acknowledgement:
         Mutex<super::checkpoint::WorldCheckpointAcknowledgement>,
+    pub(in crate::durability) checkpoint_origin:
+        Mutex<super::checkpoint::WorldCheckpointOriginState>,
 }
 impl WorldDurableMediumBinding {
     pub(crate) fn new(medium: Arc<dyn RuntimeWorldDurableMedium>) -> Arc<Self> {
@@ -70,6 +72,7 @@ impl WorldDurableMediumBinding {
             medium,
             gates: Mutex::new(PublicationGates::default()),
             checkpoint_acknowledgement: Mutex::new(Default::default()),
+            checkpoint_origin: Mutex::new(Default::default()),
         })
     }
     pub(crate) fn binding(&self) -> &WorldDurableHomeBinding {

@@ -7,7 +7,7 @@ use crate::identity::{CompositeBasisKey, RuntimeWorldOwnerIdentity};
 use crate::inspection::RuntimeWorldRetentionKey;
 
 /// Exact history-owned dependencies. One pair lives in each installed history
-/// occurrence; it shares the already acquired component-owner leases.
+/// occurrence or durable origin recipe; it shares the already acquired leases.
 #[derive(Debug)]
 pub(crate) struct HistoryRetentionObligation {
     owner: RuntimeWorldOwnerIdentity,

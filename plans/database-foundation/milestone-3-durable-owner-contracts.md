@@ -2801,3 +2801,36 @@ publish and reopen. All original owners, effects and refusal returns remain;
 this structural change has no stack-size or profile override. Default-stack
 sufficiency remains a qualification obligation until the named direct controls
 complete successfully.
+
+The bounded-tail filesystem court exposed a distinct World origin obligation.
+The durable Branch recipe still names the original Native input after ordinary
+World history retirement. The recipe's binding now holds the SAME admitted
+Native basis and a shared claim on its existing World component pin pair. A
+basis clone alone would keep root bytes alive but would lose the Native external
+component roster once the last World pin retired. The original recipe's separate
+historical obligation keeps that SAME existing external lease registered; it
+creates no new dependency class or owner lease. Preparation acquires this claim
+before the durable step, and pending/refused preparation retains it. Fresh durable bootstrap
+installs that holder after its actual root installation and before retiring the
+pending bundle; readmission installs it from the actual admitted original root.
+No current-schema reconstruction, old-header union or additional owner lease is
+used. Root installation moves the prepared holder; it never reacquires custody.
+
+The holder has Uninstalled, Held and Retired states and cannot be reseeded.
+WorldCheckpointOrigin::retire consumes the holder outside locks and yields
+WorldCheckpointOriginRetirement, which reports release of this one obligation,
+not global source retirement. Its retention_keys identify the exact registry
+entries for the owning close's subsequent reclamation. RuntimeWorldOwner::retire_checkpoint_origin is
+reachable by the owning Home close and requires World Closed. Busy, open or
+closing World, absent binding, uninstalled origin and repeated retirement have
+typed refusals. The coordinator will wire this method into P-B Home close at
+integration; this slice does not change close progression or history reclamation.
+
+Cold derived-index reconstruction admits Head through the original request
+before borrowing accepted immutable custody. Cold-budget eligibility remains
+before any demand. Both changed-record discovery and field-key preparation use
+the admitted Head; they do not require Full or fetch omitted History. The court
+cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history
+uses a real selected source with its actual History member unavailable, checks
+the pre-I/O budget refusal, then requires changed current entries, actual Head
+reads, no History read, no Full admission and no canonical publication.

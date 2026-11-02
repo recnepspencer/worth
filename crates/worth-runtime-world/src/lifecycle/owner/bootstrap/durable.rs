@@ -282,6 +282,12 @@ where
         };
         match prepared.install() {
             Ok(performed) => {
+                pending.binding.retain_checkpoint_origin(
+                    prepared
+                        .checkpoint_origin
+                        .take()
+                        .expect("same prepared durable origin obligation"),
+                );
                 let retired = std::mem::replace(
                     &mut *self
                         .state

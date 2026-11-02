@@ -79,6 +79,16 @@ where
             // The branch frame was already selected through actual Home
             // recovery; installing its SAME identities performs no new I/O.
             let performed = prepared.install().map_err(Denial::RootAdmission)?;
+            self.state
+                .durable
+                .as_ref()
+                .expect("readmitted Home binding")
+                .retain_checkpoint_origin(
+                    prepared
+                        .checkpoint_origin
+                        .take()
+                        .expect("same prepared admitted origin obligation"),
+                );
             *self
                 .state
                 .bootstrap

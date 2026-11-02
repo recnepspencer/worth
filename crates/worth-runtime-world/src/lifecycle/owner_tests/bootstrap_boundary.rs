@@ -80,6 +80,26 @@ fn close_refuses_busy_admission_then_excludes_bootstrap() {
         .bootstrap_root(fixture.bootstrap_intent())
         .is_err());
 }
+
+#[test]
+fn checkpoint_origin_retirement_requires_closed_world_and_an_actual_home_binding() {
+    use crate::facade::WorldCheckpointOriginRetirementDenial as Denial;
+    let (_fixture, owner) = empty_world();
+    assert_eq!(
+        owner.retire_checkpoint_origin().unwrap_err(),
+        Denial::OwnerNotClosed
+    );
+    let close = owner.root.state.close.lock().unwrap();
+    assert_eq!(owner.retire_checkpoint_origin().unwrap_err(), Denial::Busy);
+    drop(close);
+    let policy = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&policy);
+    drop(owner.root.close(&request).unwrap());
+    assert_eq!(
+        owner.retire_checkpoint_origin().unwrap_err(),
+        Denial::NotHomeBound
+    );
+}
 #[test]
 fn cancellation_and_owner_loss_during_pin_acquisition_never_expose_a_root() {
     use std::time::Duration;

@@ -19,6 +19,7 @@ use super::owner_inputs::RuntimeWorldOwnerInputs;
 
 mod bootstrap;
 mod branch_service;
+mod checkpoint_origin;
 mod construction;
 mod execution_service;
 mod inspection_service;

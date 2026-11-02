@@ -5,10 +5,12 @@ mod binding;
 mod checkpoint;
 mod codec;
 pub(crate) use checkpoint::WorldCheckpointImage;
+pub(crate) use checkpoint::WorldCheckpointOrigin;
 pub use checkpoint::{
-    PreparedWorldCheckpoint, WorldCheckpointJournalRecord, WorldCheckpointPort,
-    WorldCheckpointReadSource, WorldCheckpointReadView, WorldCheckpointSelection,
-    WorldCheckpointSubject, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
+    PreparedWorldCheckpoint, WorldCheckpointJournalRecord, WorldCheckpointOriginRetirement,
+    WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
+    WorldCheckpointReadView, WorldCheckpointSelection, WorldCheckpointSubject,
+    WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
 };
 pub(crate) use codec::DecodedWorldRecord;
 mod frontiers;
