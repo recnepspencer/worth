@@ -96,19 +96,13 @@ fn contract_has_references(
     contract: &worth_foundational::facade::AspectContract,
 ) -> Result<bool, super::RelationalContentDenial> {
     control.checkpoint(1)?;
-    match contract.shape() {
-        AspectShape::Content | AspectShape::Scalar(ScalarAspectType::ContentRef) => {
-            return Ok(true)
-        }
-        AspectShape::Struct(shape) => {
-            for field in shape.fields() {
-                control.checkpoint(1)?;
-                if field.value_type() == ScalarAspectType::ContentRef {
-                    return Ok(true);
-                }
+    if let AspectShape::Struct(shape) = contract.shape() {
+        for field in shape.fields() {
+            control.checkpoint(1)?;
+            if field.value_type() == ScalarAspectType::ContentRef {
+                return Ok(true);
             }
         }
-        _ => {}
     }
     Ok(false)
 }

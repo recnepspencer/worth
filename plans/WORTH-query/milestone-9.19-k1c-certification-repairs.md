@@ -109,3 +109,26 @@ complete historical directory; transported frame admission is insufficient.
   classification court to fail, restore exact source with a fresh timestamp and
   rebuild the passing court. Run affected Native checks and the same reviewer
   before R2's separate commit. No Query engine body or AspectShape is added.
+
+## R3 boundary review
+
+Native registration validates authoritative contracts before compiling their plans.
+Only a struct field can bind its ContentRef meaning to an installed content format.
+Scalar(ContentRef) nevertheless passes the scalar shape gate, while Content is
+rejected generically. Neither can carry the required field format evidence.
+Reconstruction still treats both dead top-level forms as supported references.
+The registration owner must refuse both exactly, before either binding path.
+
+## R3 implementation plan
+
+- Use the existing typed InvalidAspectDeclaration refusal with an exact detail.
+  Reject both top-level forms at declaration validation; preserve supported struct
+  fields and remove the dead forms from reconstruction's reference predicate.
+- Court actual entity and relation registration with literal refusal payloads,
+  plus successful scalar and bound-struct controls. Disable the new validation
+  guard in a compiled mutation; the scalar registration must incorrectly succeed
+  and fail the court. Restore and rebuild, run scoped gates, obtain the same
+  reviewer's pass and commit R3 separately.
+- Retire the old raw-write court which deliberately installed Scalar(ContentRef)
+  to exercise the later FormatBindingMissing refusal. Its deleted-form premise
+  is replaced by the stronger literal installation matrix.

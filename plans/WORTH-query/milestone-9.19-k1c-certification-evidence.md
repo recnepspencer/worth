@@ -131,3 +131,35 @@ The same reviewer found a shifted-tag risk from inserting the new enum case; it
 closed by appending the case. It approved the corrected compositional cold proof
 and directory distinction, inspected the compiled mutation and restored 63-test
 run, and passed R2 under all three QA skills. No R2 findings remain open.
+
+## R3: refuse dead top-level content at installation
+
+The real entity/relation registration matrix expects literal
+`InvalidAspectDeclaration { kind_id: KindId(42), detail: "content references require a format-bound struct field" }`.
+Its oracle is the specified literal, independently of declaration validation.
+Successful integer registration and the real two-field content fixture protect
+the lawful neighbors. No AspectShape or additional runtime door was added.
+
+| Exact command or experiment | Result |
+| --- | --- |
+| `git fetch origin master codex/919-provider-lifecycle-20261027`; `git merge --no-edit origin/master`; `git merge --no-edit origin/codex/919-provider-lifecycle-20261027` | All three succeeded; both merges already up to date. |
+| `cargo fmt -p worth-relational -p worth-court-relational-certification` | One success. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content_install_refuses_both_unbound_top_level_forms_on_both_kind_doors -- --nocapture` | Baseline: 1 passed, 212 filtered. Compiled mutant: 0 passed, 1 failed, 212 filtered; scalar installation incorrectly returned Ok at schema_install.rs:58. |
+| Python mutation installation/restoration, with PYTHONUTF8=1 | Both succeeded; one exact restored-byte equality assertion passed, timestamp refreshed. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | First restored run: 63 passed, 1 failed, 149 filtered. The old raw_write court panicked installing the now-deleted scalar form. Retired that court in favor of the install matrix. Final restored run: 63 passed, 0 failed, 149 filtered. Both runs had 0 ignored/measured. |
+| `cargo fmt --check -p worth-relational -p worth-court-relational-certification` | Two successes. |
+| `cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets` | Initial failure: 2 errors, 8 warnings. Scoped reconstruction.rs:99 single_match fixed to if-let. Untouched payload.rs:34 let_and_return remains repository debt. Final failure is detailed below. |
+| `cargo clippy -p worth-court-relational-certification --all-targets --no-deps` | Failed on the same 4 untouched court lint errors in 3 files, 2 warnings, as R1/R2. |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | One success; repository boundaries valid. |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | One success. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | Two successes: 4 Rust files each. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | Both succeeded with zero whitespace errors. |
+| `python target/k1c-repair-logs/r1-lint-scope.py`, with PYTHONUTF8=1 | Four untouched lint-file scope assertions passed. |
+
+The same reviewer passed R3 under qa-loop, qa-tests and code-quality-qa after independently inspecting the install boundary, exact matrix, retired dead-form court, field checkpoints, compiled mutation and final receipts. No R3 findings remain.
+
+The final Native/court Clippy rerun failed only on untouched payload.rs:34
+`let_and_return` (1 error, 8 warnings). The scoped single_match failure is closed.
+Line caps passed twice, checking four Rust files each time. Branch whitespace
+checks passed twice; working-tree whitespace checks passed four times, all with
+zero whitespace errors. These repetitions include the final source correction.
