@@ -114,6 +114,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
+        // The handler is found but never called unless the brand was minted
+        // for this installed binding's operation and input types.
+        if let Err(denial) = admission.validate_installed_mutation_binding(
+            self.installed_schema
+                .installed_mutation_binding_descriptor(Binding::IDENTITY),
+        ) {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Err(denial),
+                WorthQueryMutationHandlerWork::NotStarted,
+            ));
+        }
 
         let input = identities.mutation_input();
         let request = admission.publication_request();

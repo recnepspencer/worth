@@ -26,9 +26,8 @@ mod precondition_binding;
 mod projection_equivalence;
 
 use super::super::super::super::super::{
-    original_input::retain_original_scope,
-    WorthQueryAdmittedApplicationOperation as OwnerAdmittedOperation,
-    WorthQueryOperationAuthorizationBasis,
+    brand_tag::BrandTag, original_input::retain_original_scope, ErasedAuthorizationBasis,
+    WorthQueryAdmittedApplicationOperation as OwnerAdmittedOperation, WorthQueryAdmittedOperation,
 };
 use authority_validation::{
     validate_operation_graph_work_authority, validate_progression_authority,
@@ -239,7 +238,14 @@ where
         WorthQueryCanonicalWorkEvidence::zero(),
         WorthQueryCanonicalWorkEvidence::zero(),
     );
-    Ok(OwnerAdmittedOperation {
+    let tag = BrandTag::new(
+        runtime.runtime.authority_identity(),
+        operation.authority_identity_bytes(),
+        operation.definition_identity_bytes(),
+        operation.operation_type_id(),
+        operation.input_type_id(),
+    );
+    let core = WorthQueryAdmittedOperation {
         runtime_authority: runtime.runtime.authority_identity(),
         binding_identity: operation.binding_identity().clone(),
         operation: operation.operation().to_string(),
@@ -262,15 +268,15 @@ where
         original_input: None,
         original_inspection_disclosure: None,
         original_scope,
-        authorization_basis: WorthQueryOperationAuthorizationBasis::Capability { input },
+        authorization_basis: ErasedAuthorizationBasis::Capability,
         graph_work: revalidated.graph_work,
         source_partition_identity: None,
         source_expectation_kind: None,
         source_facts: Vec::new(),
         query_context: None,
         required_output_demand: None,
-        _marker: std::marker::PhantomData,
-    })
+    };
+    OwnerAdmittedOperation::mint(core, tag, Some(input))
 }
 
 fn revalidate_operation_authorization<Schema>(

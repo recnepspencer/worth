@@ -1,6 +1,5 @@
 //! Public conventional mutation authority on one issued selected Product.
 
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
@@ -16,10 +15,12 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;
 use worth_query_installation::facade::WorthQueryCurrentRetainedMutationBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationOperationAuthorization;
 
+use super::brand_tag::BrandTag;
 use super::identity_admitted::mint_operation_identity_admitted;
 use super::identity_admitted::AdmittedOperationIdentityStop;
+use super::ErasedAuthorizationBasis;
 use super::WorthQueryAdmittedApplicationOperation;
-use super::WorthQueryOperationAuthorizationBasis;
+use super::WorthQueryAdmittedOperation;
 use crate::domain_computation::authorization::admission::validate_static_authority_retained;
 use crate::domain_computation::authorization::admission::WorthQueryRetainedMutationStaticStop;
 use crate::domain_computation::authorization::start_selected_operation_graph_work_admitted;
@@ -200,7 +201,14 @@ where
     // the last safe-point checks now and run them after construction, before
     // handing authority to the executor.
 
-    let admitted = WorthQueryAdmittedApplicationOperation {
+    let tag = BrandTag::new(
+        runtime.runtime.authority_identity(),
+        operation.authority_identity_bytes(),
+        operation.definition_identity_bytes(),
+        operation.operation_type_id(),
+        operation.input_type_id(),
+    );
+    let core = WorthQueryAdmittedOperation {
         runtime_authority: runtime.runtime.authority_identity(),
         binding_identity: operation.binding_identity().clone(),
         operation: operation.operation().to_owned(),
@@ -234,15 +242,16 @@ where
         governed_input_identity: None,
         original_input: None,
         original_inspection_disclosure: None,
-        authorization_basis: WorthQueryOperationAuthorizationBasis::Conventional,
+        authorization_basis: ErasedAuthorizationBasis::Conventional,
         graph_work,
         source_partition_identity: None,
         source_expectation_kind: None,
         source_facts: Vec::new(),
         query_context: None,
         required_output_demand: None,
-        _marker: PhantomData,
     };
+    let admitted = WorthQueryAdmittedApplicationOperation::mint(core, tag, None)
+        .map_err(Stop::Authorization)?;
     if let Some(interruption) = request.interruption() {
         return Err(Stop::Interrupted(interruption));
     }

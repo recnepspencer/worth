@@ -1,7 +1,6 @@
 //! Conventional-operation admission phases.
 
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
@@ -9,9 +8,10 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationOperation,
 };
 
+use super::brand_tag::BrandTag;
 use super::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryOperationAdmissionIdentity,
-    WorthQueryOperationAuthorizationBasis,
+    ErasedAuthorizationBasis, WorthQueryAdmittedApplicationOperation, WorthQueryAdmittedOperation,
+    WorthQueryOperationAdmissionIdentity,
 };
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
@@ -258,8 +258,16 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         WorthQueryCanonicalWorkEvidence::zero(),
         WorthQueryCanonicalWorkEvidence::zero(),
     );
-    Ok(WorthQueryAdmittedApplicationOperation {
-        runtime_authority: preparation.runtime.runtime.authority_identity(),
+    let runtime_authority = preparation.runtime.runtime.authority_identity();
+    let tag = BrandTag::new(
+        runtime_authority,
+        preparation.operation.authority_identity_bytes(),
+        preparation.operation.definition_identity_bytes(),
+        preparation.operation.operation_type_id(),
+        preparation.operation.input_type_id(),
+    );
+    let core = WorthQueryAdmittedOperation {
+        runtime_authority,
         binding_identity: preparation.operation.binding_identity().clone(),
         operation: preparation.operation.operation().to_string(),
         operation_authority_identity: preparation.operation.authority_identity().into(),
@@ -291,13 +299,13 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         governed_input_identity: None,
         original_input: None,
         original_inspection_disclosure: None,
-        authorization_basis: WorthQueryOperationAuthorizationBasis::Conventional,
+        authorization_basis: ErasedAuthorizationBasis::Conventional,
         graph_work: preparation.graph_work,
         source_partition_identity: None,
         source_expectation_kind: None,
         source_facts: Vec::new(),
         query_context: None,
         required_output_demand: None,
-        _marker: PhantomData,
-    })
+    };
+    WorthQueryAdmittedApplicationOperation::mint(core, tag, None)
 }

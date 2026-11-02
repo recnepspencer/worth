@@ -1,9 +1,5 @@
-//! Original typed handler input retained independently of authorization mode.
-use worth_query_declaration::facade::application_operation::{
-    ApplicationEncodedInput, ApplicationSharedInput,
-};
-
-use super::WorthQueryAdmittedApplicationOperation;
+//! Original handler input retained independently of authorization mode.
+use super::WorthQueryAdmittedOperation;
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
@@ -41,23 +37,22 @@ pub(in crate::domain_computation::authorization) fn retain_original_scope<Schema
         .then(|| scope.retain_scope_selector()))
 }
 
-pub(super) struct OriginalOperationInput<Input> {
-    encoded: std::sync::Arc<dyn std::any::Any + Send + Sync>,
-    program:
+/// The encoded original input and its exact identities; the brand holds the
+/// typed shared input beside it.
+pub(super) struct ErasedOriginalInput {
+    pub(super) encoded: std::sync::Arc<dyn std::any::Any + Send + Sync>,
+    pub(super) program:
         Option<std::sync::Arc<crate::domain_computation::primary_graph::OriginalProgramMeaning>>,
-    input: ApplicationSharedInput<Input>,
-    identity: [u8; 32],
-    binding_type: std::any::TypeId,
-    correction: Option<
+    pub(super) identity: [u8; 32],
+    pub(super) binding_type: std::any::TypeId,
+    pub(super) correction: Option<
         std::sync::Arc<
             crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure,
         >,
     >,
 }
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
+impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn original_scope(
         &self,
     ) -> Option<
@@ -65,38 +60,6 @@ impl<Schema, Operation, Input, Scope>
     > {
         self.original_scope.as_ref()
     }
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
-    pub(in crate::domain_computation) fn retain_original_input<Binding>(
-        &mut self,
-        input: ApplicationEncodedInput<Binding::InputBinding>,
-        correction: Option<
-            std::sync::Arc<
-                crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure,
-            >,
-        >,
-    ) where
-        Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
-        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
-            Schema,
-            Operation = Operation,
-            Input = Input,
-        >,
-        Input: Send + Sync + 'static,
-    {
-        // The caller has checked the sealed handler's binding and input identity.
-        self.original_input = Some(OriginalOperationInput {
-            encoded: std::sync::Arc::new(input.clone()),
-            program: None,
-            identity: *input.identity(),
-            binding_type: std::any::TypeId::of::<Binding>(),
-            input: input.into_shared_input(),
-            correction,
-        });
-    }
-
     pub(in crate::domain_computation) fn original_mutation_binding(
         &self,
     ) -> Option<std::any::TypeId> {
@@ -156,11 +119,9 @@ impl<Schema, Operation, Input, Scope>
         self.original_input.as_ref()?.correction.as_ref()
     }
 
-    pub(in crate::domain_computation) fn original_input(
-        &self,
-    ) -> Option<(&ApplicationSharedInput<Input>, [u8; 32])> {
+    pub(super) fn original_input_identity(&self) -> Option<[u8; 32]> {
         self.original_input
             .as_ref()
-            .map(|original| (&original.input, original.identity))
+            .map(|original| original.identity)
     }
 }

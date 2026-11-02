@@ -89,6 +89,8 @@ pub struct WorthQueryInstalledApplicationOperation<Schema, Operation, Input> {
     obligations: WorthQueryInstalledGraphObligationSet,
     authority_identity: AuthoritySeal,
     definition_identity: [u8; 32],
+    operation_type_id: std::any::TypeId,
+    input_type_id: std::any::TypeId,
     _marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -202,7 +204,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     ) -> Result<Self, WorthQueryApplicationOperationInstallationDenial>
     where
         Schema: ApplicationSchema,
-        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: 'static,
     {
@@ -260,6 +262,14 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             obligations.identity(),
         );
         let definition_identity = definition_identity(&binding_identity, operation, input_type)?;
+        #[expect(
+            clippy::disallowed_methods,
+            reason = "Rust type identity is kept for exact admission equality; it never orders operations"
+        )]
+        let (operation_type_id, input_type_id) = (
+            std::any::TypeId::of::<Operation>(),
+            std::any::TypeId::of::<Input>(),
+        );
         Ok(Self {
             binding_identity,
             owner: schema.owner().to_string(),
@@ -273,6 +283,8 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             obligations,
             authority_identity,
             definition_identity,
+            operation_type_id,
+            input_type_id,
             _marker: PhantomData,
         })
     }
@@ -349,6 +361,18 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     #[doc(hidden)]
     pub const fn definition_identity_bytes(&self) -> [u8; 32] {
         self.definition_identity
+    }
+
+    /// The `Operation` and `Input` type identities, captured where both are
+    /// `'static`, so an admission's brand is compared with them by value.
+    #[doc(hidden)]
+    pub const fn operation_type_id(&self) -> std::any::TypeId {
+        self.operation_type_id
+    }
+
+    #[doc(hidden)]
+    pub const fn input_type_id(&self) -> std::any::TypeId {
+        self.input_type_id
     }
 
     pub const fn graph_obligations(&self) -> WorthQueryInstalledGraphObligationInspection<'_> {

@@ -30,6 +30,9 @@ mod decision_manifest_ceiling;
 mod effect_authority;
 #[path = "application_attempt/emitted_effects.rs"]
 mod emitted_effects;
+// The court sits beside the brand it forges and drives these fixtures.
+#[path = "../../authorization/operation_admission/erased_core_forgery_tests.rs"]
+mod erased_core_forgery;
 #[path = "application_attempt/guarded_operation_custody.rs"]
 mod guarded_operation_custody;
 #[path = "application_attempt/guarded_publication_pending.rs"]

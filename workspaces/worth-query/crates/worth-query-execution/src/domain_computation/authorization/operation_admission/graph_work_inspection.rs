@@ -1,8 +1,6 @@
-use super::WorthQueryAdmittedApplicationOperation;
+use super::WorthQueryAdmittedOperation;
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
+impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
