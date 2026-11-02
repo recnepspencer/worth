@@ -6,6 +6,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionDenial,
 };
 use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
+mod captured_domain;
+mod kind;
 mod resource;
 pub use resource::WorthQueryApplicationInspectionResourceRefusal;
 mod canonical;
@@ -58,18 +60,55 @@ impl WorthQueryApplicationInspectionDenial {
     pub fn producer_evaluation_refusal(&self) -> Option<super::WorthQueryProducerEvaluationDenial> {
         match self.producer_connection_refusal()? {
             super::WorthQueryProducerConnectionDenial::Evaluation(cause) => Some(cause),
-            _ => None,
+            super::WorthQueryProducerConnectionDenial::ForeignSource
+            | super::WorthQueryProducerConnectionDenial::SourceDisclosureUnavailable
+            | super::WorthQueryProducerConnectionDenial::SourceDisclosureMismatch
+            | super::WorthQueryProducerConnectionDenial::ProducerUnavailable
+            | super::WorthQueryProducerConnectionDenial::PerformedInputsUnavailable
+            | super::WorthQueryProducerConnectionDenial::SourceInputUnconnected
+            | super::WorthQueryProducerConnectionDenial::OutputUnconnected => None,
         }
     }
 
     pub fn materialization_refusal(&self)->Option<crate::domain_computation::primary_graph::application_query::WorthQueryProjectionMaterializationRefusal>{
         match &self.cause {
-            InspectionCause::Admission(super::admission::InspectionAdmissionDenial::Rich(
-                CaptureStop::Kernel(worth_execution::ScopeStop::Failure(
-                    worth_execution::MapKernelFailure::Domain(cause),
-                )),
-            )) => Some(*cause),
-            _ => None,
+            InspectionCause::Admission(cause) => match cause {
+                InspectionAdmissionDenial::Rich(stop) => captured_domain::captured(stop).copied(),
+                InspectionAdmissionDenial::Request(_)
+                | InspectionAdmissionDenial::RequestControl(_)
+                | InspectionAdmissionDenial::ForeignIssuedAccess
+                | InspectionAdmissionDenial::MissingGraph
+                | InspectionAdmissionDenial::MissingInspection
+                | InspectionAdmissionDenial::Authorization(_)
+                | InspectionAdmissionDenial::CurrentAuthorization(_)
+                | InspectionAdmissionDenial::Capability(_)
+                | InspectionAdmissionDenial::Scope(_)
+                | InspectionAdmissionDenial::Security(_)
+                | InspectionAdmissionDenial::Governance(_)
+                | InspectionAdmissionDenial::FacetDenied
+                | InspectionAdmissionDenial::DiagnosticAdmission(_)
+                | InspectionAdmissionDenial::ComparisonParameters(_)
+                | InspectionAdmissionDenial::Connection(_)
+                | InspectionAdmissionDenial::MissingOriginalProjection
+                | InspectionAdmissionDenial::RichSource(_)
+                | InspectionAdmissionDenial::Comparison(_)
+                | InspectionAdmissionDenial::DiagnosticContract(_)
+                | InspectionAdmissionDenial::DiagnosticPreparation(_)
+                | InspectionAdmissionDenial::Target(_)
+                | InspectionAdmissionDenial::Storage(_)
+                | InspectionAdmissionDenial::Plan(_)
+                | InspectionAdmissionDenial::Session(_)
+                | InspectionAdmissionDenial::Read(_)
+                | InspectionAdmissionDenial::Terminal(_)
+                | InspectionAdmissionDenial::Report(_) => None,
+            },
+            InspectionCause::Unavailable
+            | InspectionCause::Advancement(_)
+            | InspectionCause::Selection(_)
+            | InspectionCause::Binding(_)
+            | InspectionCause::Principal(_)
+            | InspectionCause::Scope(_)
+            | InspectionCause::Query(_) => None,
         }
     }
 
@@ -81,18 +120,50 @@ impl WorthQueryApplicationInspectionDenial {
     ) -> Option<super::WorthQueryProducerOutputConnectionDenial> {
         match self.connection_refusal()? {
             super::connection::ConnectionRefusal::Output(cause) => Some(*cause),
-            _ => None,
+            super::connection::ConnectionRefusal::General(_)
+            | super::connection::ConnectionRefusal::Capture(_) => None,
         }
     }
 
     fn connection_refusal(&self) -> Option<&super::connection::ConnectionRefusal> {
         match &self.cause {
-            InspectionCause::Admission(InspectionAdmissionDenial::Connection(
-                CaptureStop::Kernel(worth_execution::ScopeStop::Failure(
-                    worth_execution::MapKernelFailure::Domain(cause),
-                )),
-            )) => Some(cause),
-            _ => None,
+            InspectionCause::Admission(cause) => match cause {
+                InspectionAdmissionDenial::Connection(stop) => captured_domain::captured(stop),
+                InspectionAdmissionDenial::Request(_)
+                | InspectionAdmissionDenial::RequestControl(_)
+                | InspectionAdmissionDenial::ForeignIssuedAccess
+                | InspectionAdmissionDenial::MissingGraph
+                | InspectionAdmissionDenial::MissingInspection
+                | InspectionAdmissionDenial::Authorization(_)
+                | InspectionAdmissionDenial::CurrentAuthorization(_)
+                | InspectionAdmissionDenial::Capability(_)
+                | InspectionAdmissionDenial::Scope(_)
+                | InspectionAdmissionDenial::Security(_)
+                | InspectionAdmissionDenial::Governance(_)
+                | InspectionAdmissionDenial::FacetDenied
+                | InspectionAdmissionDenial::DiagnosticAdmission(_)
+                | InspectionAdmissionDenial::ComparisonParameters(_)
+                | InspectionAdmissionDenial::MissingOriginalProjection
+                | InspectionAdmissionDenial::RichSource(_)
+                | InspectionAdmissionDenial::Rich(_)
+                | InspectionAdmissionDenial::Comparison(_)
+                | InspectionAdmissionDenial::DiagnosticContract(_)
+                | InspectionAdmissionDenial::DiagnosticPreparation(_)
+                | InspectionAdmissionDenial::Target(_)
+                | InspectionAdmissionDenial::Storage(_)
+                | InspectionAdmissionDenial::Plan(_)
+                | InspectionAdmissionDenial::Session(_)
+                | InspectionAdmissionDenial::Read(_)
+                | InspectionAdmissionDenial::Terminal(_)
+                | InspectionAdmissionDenial::Report(_) => None,
+            },
+            InspectionCause::Unavailable
+            | InspectionCause::Advancement(_)
+            | InspectionCause::Selection(_)
+            | InspectionCause::Binding(_)
+            | InspectionCause::Principal(_)
+            | InspectionCause::Scope(_)
+            | InspectionCause::Query(_) => None,
         }
     }
 
@@ -109,28 +180,32 @@ impl WorthQueryApplicationInspectionDenial {
             return Kind::Request;
         }
         match &self.cause {
-            InspectionCause::Unavailable
-            | InspectionCause::Admission(InspectionAdmissionDenial::MissingOriginalProjection)
-            | InspectionCause::Admission(InspectionAdmissionDenial::DiagnosticContract(
-                CaptureStop::Kernel(worth_execution::ScopeStop::Failure(worth_execution::MapKernelFailure::Domain(
-                    crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial::NotDeclared
-                    | crate::domain_computation::authorization::application_disclosure::DiagnosticContractDenial::UnsupportedShape,
-                ))),
-            )) => Kind::Unavailable,
-            InspectionCause::Advancement(_)
-            | InspectionCause::Binding(CaptureStop::Request(_))
-            | InspectionCause::Admission(
-                InspectionAdmissionDenial::Request(_)
-                | InspectionAdmissionDenial::RequestControl(_),
-            ) => Kind::Request,
-            _ => Kind::Admission,
+            InspectionCause::Unavailable => Kind::Unavailable,
+            InspectionCause::Advancement(_) | InspectionCause::Binding(CaptureStop::Request(_)) => {
+                Kind::Request
+            }
+            InspectionCause::Admission(cause) => kind::admission(cause),
+            InspectionCause::Binding(CaptureStop::Kernel(_))
+            | InspectionCause::Selection(_)
+            | InspectionCause::Principal(_)
+            | InspectionCause::Scope(_)
+            | InspectionCause::Query(_) => Kind::Admission,
         }
     }
 
     pub fn execution_stop(&self) -> Option<&WorkCeilingDenial> {
         match self.resource_refusal() {
             Some(WorthQueryApplicationInspectionResourceRefusal::Request(cause)) => Some(cause),
-            _ => None,
+            None
+            | Some(
+                WorthQueryApplicationInspectionResourceRefusal::Advancement(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Kernel(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Native(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Lease(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Memory(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Allocation(_)
+                | WorthQueryApplicationInspectionResourceRefusal::Array(_),
+            ) => None,
         }
     }
 
@@ -154,10 +229,43 @@ impl WorthQueryApplicationInspectionDenial {
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {
         match &self.cause {
-            InspectionCause::Admission(InspectionAdmissionDenial::RequestControl(cause)) => {
-                Some(*cause)
-            }
-            _ => None,
+            InspectionCause::Admission(cause) => match cause {
+                InspectionAdmissionDenial::RequestControl(cause) => Some(*cause),
+                InspectionAdmissionDenial::Request(_)
+                | InspectionAdmissionDenial::ForeignIssuedAccess
+                | InspectionAdmissionDenial::MissingGraph
+                | InspectionAdmissionDenial::MissingInspection
+                | InspectionAdmissionDenial::Authorization(_)
+                | InspectionAdmissionDenial::CurrentAuthorization(_)
+                | InspectionAdmissionDenial::Capability(_)
+                | InspectionAdmissionDenial::Scope(_)
+                | InspectionAdmissionDenial::Security(_)
+                | InspectionAdmissionDenial::Governance(_)
+                | InspectionAdmissionDenial::FacetDenied
+                | InspectionAdmissionDenial::DiagnosticAdmission(_)
+                | InspectionAdmissionDenial::ComparisonParameters(_)
+                | InspectionAdmissionDenial::Connection(_)
+                | InspectionAdmissionDenial::MissingOriginalProjection
+                | InspectionAdmissionDenial::RichSource(_)
+                | InspectionAdmissionDenial::Rich(_)
+                | InspectionAdmissionDenial::Comparison(_)
+                | InspectionAdmissionDenial::DiagnosticContract(_)
+                | InspectionAdmissionDenial::DiagnosticPreparation(_)
+                | InspectionAdmissionDenial::Target(_)
+                | InspectionAdmissionDenial::Storage(_)
+                | InspectionAdmissionDenial::Plan(_)
+                | InspectionAdmissionDenial::Session(_)
+                | InspectionAdmissionDenial::Read(_)
+                | InspectionAdmissionDenial::Terminal(_)
+                | InspectionAdmissionDenial::Report(_) => None,
+            },
+            InspectionCause::Unavailable
+            | InspectionCause::Advancement(_)
+            | InspectionCause::Selection(_)
+            | InspectionCause::Binding(_)
+            | InspectionCause::Principal(_)
+            | InspectionCause::Scope(_)
+            | InspectionCause::Query(_) => None,
         }
     }
 }
@@ -169,3 +277,6 @@ impl std::fmt::Debug for WorthQueryApplicationInspectionDenial {
             .finish_non_exhaustive()
     }
 }
+
+#[cfg(test)]
+mod projection_tests;

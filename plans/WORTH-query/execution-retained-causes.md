@@ -1314,3 +1314,66 @@ Exact second correction 3 final footer gates commands and results:
 Final slice 3 footer: all seven commands exit 0, dirty caps check 11 Rust files, boundary/context/fmt/whitespace have 0 violations. All-target Clippy reports 13 Execution-labelled and 7 upstream Relational warnings, 0 errors; no primary spans in dirty files. The same 12 pub-mono method warnings and physically mounted Certification `MIN` warning remain, with no owned Execution warning outside the excluded files. Relational's seven unchanged upstream warnings remain listed above. No public shape, authority, dependency, Native form or compatibility path is added; the mirrored private enum and conversion are deleted in this slice. The source-request-stop forwarding seam has the stated structural evidence only, without a claimed dedicated court.
 
 Final independent clearance: qa-loop, qa-tests and code-quality-qa all PASS for second correction 3. The reviewer independently reconciled the corrected source reader, both compiled four-failure campaigns, final restored/Host results, exact ledger and all seven footer checks. The pattern finding is closed; no in-scope blocker remains.
+
+
+### 4. Make sibling inspection projections exhaustive and preserve canonical stage.
+
+Boundary review and plan: the stop owner retains each typed cause. Every resource, canonical, kind, materialization, connection/evaluation/output and request reader now names the alternatives it accepts or declines, including nested report/read/capture causes. A new outer or admission stop must require an explicit compiler-visible decision. The shared captured-domain borrower has one responsibility and enumerates all capture/kernel alternatives; it carries no authority or new public API.
+
+Public canonical refusals retain the existing `WorthQueryApplicationInspectionStage` on every variant, keeping report-identity and bridge causes distinct. This is descriptive Rust vocabulary; no Native `AspectShape`, stored data form, authority or compatibility path is added.
+
+Nine small descriptive projection courts cover each reader, including separate Basis and Digest stage routes, alongside the existing output-detail court. Literal admitted/request/unavailable categories, negative stops formerly absorbed by catch-alls, distinct report stages and exact borrowed-owner pointer identity are independent oracles. These descriptive denials grant no authority. Planned mutations introduce new outer/admission variants for compiler exhaustiveness, remove independent consumers while keeping their dependency readers real, and then remove connection/request readers after those dependencies are restored. This separates consumer sensitivity from dependency failures and keeps all fixture work constant with no installed world added.
+
+
+Exact second correction 4 initial reader evidence commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 6 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection` | 0 | 95/0/0/0/2237 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection` | 101 | 84/11/0/0/2237 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection` | 101 | 89/6/0/0/2237 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection` | 0 | 95/0/0/0/2237 (passed/failed/ignored/measured/filtered) |
+
+
+The compiler mutation ran exactly `cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib --tests`; exit 101 with 14 E0004 errors and 0 tests executed. The primary errors are kind 1, resource 2, canonical 2, root stop 7 and the existing owner 2: the newly exhaustive sibling readers require choices beyond the existing owner match. Both temporary variants were restored byte for byte. This intended compile failure is not a runtime mutation kill.
+
+The initial actual inspection filter passes 95/0/0/0/2237, not the earlier estimated size; its scope includes real admission/publication cases as well as the stop courts. Semantic campaign A compiles and fails 84/11/0/0/2237: the resource, kind, evaluation, materialization, output-detail and Basis-stage assertions fail directly. Its execution-stop failure is collateral because the resource consumer is muted and is not claimed as execution-stop evidence. Campaign B restores those dependency readers, then compiles and fails 89/6/0/0/2237: connection, execution-stop and interruption fail their own assertions, with the actual resource precondition succeeding before the execution-stop reader fails. Evaluation/output failures in B are collateral to connection and are not claimed as separate B kills. The reviewer independently verified these limits and all assertions; no additional masking was found. Restored source passes all 95 cases again.
+
+Reviewer finding and correction in progress: the first canonical case protected only Basis routing. Mutating both Basis and Digest at once did not prove the untested Digest route, so that Digest edit in campaign A is not claimed as evidence. A separate Digest Identity/Bridge literal court and Digest-only Bridge-to-Identity misrouting campaign, with the Basis court as a passing control, are required before final footer checks and commit. No new installed fixture is needed.
+
+
+Exact second correction 4 Digest closure and Host integration commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/327 (passed/failed/ignored/measured/filtered) |
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution` | 0 | Formatting applied |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 6 Rust files; 0 cap violations |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection` | 0 | 96/0/0/0/2237 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib sibling_canonical` | 101 | 1/1/0/0/2331 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib causal_inspection::application_inspection` | 0 | 96/0/0/0/2237 (passed/failed/ignored/measured/filtered) |
+| `cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-court-decl-host --test worth_query_court_decl_host inspection` | 0 | 6/0/0/0/327 (passed/failed/ignored/measured/filtered) |
+
+
+Digest finding closed: the isolated Digest-only Bridge-to-Identity mutation compiled and failed exactly the separate Digest literal stage court, while the Basis control passed: 1/1/0/0/2331. No Basis-route failure is used as evidence for Digest. Exact production routing was restored; all 96 inspection cases and all 6 Host inspection cases pass. The same reviewer independently verified the actual mutation, both restored routes, assertions and final source; there are no remaining source/test blockers. Final footer and commit clearance follow below.
+
+
+Exact second correction 4 final footer gates commands and results:
+
+| Command | Exit | Result |
+|---|---:|---|
+| `cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --check` | 0 | 0 formatting differences |
+| `cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json` | 0 | 13 warning diagnostics from worth-query-execution; 7 warning diagnostics from worth-relational |
+| `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .` | 0 | 0 boundary violations |
+| `cargo run --manifest-path tools/agent-context/Cargo.toml -- check` | 0 | 0 context violations |
+| `"C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty` | 0 | 6 Rust files; 0 cap violations |
+| `git diff --check origin/master...HEAD` | 0 | 0 whitespace errors |
+| `git diff --check` | 0 | 0 whitespace errors |
+
+
+All seven slice 4 footer checks exit 0; dirty caps check 6 Rust files with 0 violations. All-target Clippy has 13 Execution-labelled and 7 upstream Relational warnings, 0 errors, and 0 dirty primary diagnostic spans. The 12 pub-mono method warnings plus physically mounted Certification MIN warning retain the ownership documented above; there are zero owned Execution warnings outside the excluded files. No reserved pub-mono file changed. The exhaustive compiler probe, two dependency-separated runtime campaigns and isolated Digest campaign have the exact evidence and limits above. Full Execution and DeclHost suites remain scheduled for slice 5. No hard-rule or scope stop occurred.
+
+
+Final independent clearance: qa-loop, qa-tests and code-quality-qa all PASS for second correction 4. The same reviewer independently reconciled the exact final ledgers, compiler probe, masking limits, separate Digest mutation, restored readers, both Host runs and all seven footer checks. The Digest gap is closed; no in-scope blocker remains.
