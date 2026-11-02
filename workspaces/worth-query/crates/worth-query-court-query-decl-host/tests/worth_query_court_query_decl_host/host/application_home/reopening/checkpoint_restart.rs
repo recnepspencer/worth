@@ -133,7 +133,16 @@ fn restart(case: Case, test: &str) {
         request.open_in_advancement(&phase)
     })
     .unwrap()
-    .unwrap_or_else(|refused| opening_failed("selected Complete restart", &refused));
+    .unwrap_or_else(|refused| {
+        use worth_query_host::facade::WorthQueryApplicationHomeOpenRefused as Refused;
+        if let Refused::ExistingNativeFinalization { .. } = &refused {
+            opening_failed("restart latest-Native family readmission", &refused);
+        }
+        if let Refused::ExistingQueryAttachment { .. } = &refused {
+            opening_failed("restart selected-World Query attachment", &refused);
+        }
+        opening_failed("selected Complete restart", &refused)
+    });
     let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), *value);
     let inspection = home.inspect_checkpoint(&execution).unwrap();

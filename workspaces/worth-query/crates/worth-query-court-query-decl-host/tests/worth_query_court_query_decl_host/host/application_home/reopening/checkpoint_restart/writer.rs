@@ -41,9 +41,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
                 .unwrap()
                 .pending
                 .is_none());
-            let next = interrupt(&home, &execution);
-            assert_eq!(next, original + 1);
-            next
+            original
         }
         Case::Image | Case::ImageAndTail | Case::BoundedTail => {
             home.checkpoint(&execution).unwrap().generation()
@@ -66,6 +64,15 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.load(Ordering::SeqCst), 1 + additional as usize);
     assert_eq!(balance(home.runtime(), &live), value);
+    // An ordinary Query read resumes pending Home maintenance. Park the second
+    // interruption after that read so the original unacked attempt reaches kill.
+    let generation = if matches!(case, Case::InterruptedAck) {
+        let next = interrupt(&home, &execution);
+        assert_eq!(next, generation + 1);
+        next
+    } else {
+        generation
+    };
     let observed = home.inspect_checkpoint(&execution).unwrap();
     let tail = observed
         .journals
