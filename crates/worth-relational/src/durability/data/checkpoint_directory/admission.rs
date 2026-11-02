@@ -79,7 +79,12 @@ pub(super) fn opening_stop(cause: Ack) -> super::super::RelationalRecoveryStop {
     use super::super::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
     match cause {
         Ack::Recovery(cause) => cause,
-        Ack::OwnedRead(cause) => crate::durability::checkpoint_history::capture::owned_stop(cause),
+        Ack::OwnedRead(cause) => crate::durability::checkpoint_history::capture::owned_stop(
+            cause,
+            crate::storage::data::RelationalStorageSubject::Envelope(
+                crate::publication::patch::data::PatchStreamPosition(0),
+            ),
+        ),
         Ack::Stopped(cause) => RelationalRecoveryStop::Request(cause.into()),
         _ => DurabilityError::new(
             RecoveryFailureClass::ColdStorageUnavailable,

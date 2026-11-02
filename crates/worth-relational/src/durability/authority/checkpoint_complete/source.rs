@@ -131,6 +131,9 @@ impl FrozenOriginalInputs {
             .map_err(|cause| {
                 capture_stop(crate::durability::checkpoint_history::capture::owned_stop(
                     cause,
+                    crate::storage::data::RelationalStorageSubject::Envelope(
+                        crate::publication::patch::data::PatchStreamPosition(0),
+                    ),
                 ))
             })?;
             for artifact in self.artifacts.iter() {
@@ -152,6 +155,9 @@ impl FrozenOriginalInputs {
                     .map_err(|cause| {
                         capture_stop(crate::durability::checkpoint_history::capture::owned_stop(
                             cause,
+                            crate::storage::data::RelationalStorageSubject::Envelope(
+                                crate::publication::patch::data::PatchStreamPosition(0),
+                            ),
                         ))
                     })?
                     .ok_or(Denial::OriginalAuthorityUnavailable)?;

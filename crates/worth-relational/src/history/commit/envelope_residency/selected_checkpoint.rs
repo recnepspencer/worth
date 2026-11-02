@@ -138,7 +138,12 @@ impl RelationalCommitEnvelopeResidency {
         let bytes = directory
             .canonical_read
             .read_member(&directory.source, execution, member, limit)
-            .map_err(crate::durability::checkpoint_history::capture::owned_stop)?;
+            .map_err(|cause| {
+                crate::durability::checkpoint_history::capture::owned_stop(
+                    cause,
+                    RelationalStorageSubject::Envelope(entry.position),
+                )
+            })?;
         // Only this consumer read a canonical body; generic selected reads
         // also carry derived-index members and cannot certify this event.
         directory.source.observe_canonical_member_read(member);

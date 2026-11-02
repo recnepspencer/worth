@@ -46,8 +46,15 @@ impl DurabilityRecoveryAuthority<'_> {
             return Err(refused("fresh source belongs to another attachment").into());
         }
         // Provider locks and protected source observation precede logical epochs.
-        let mut protection = RelationalDurableReadProtection::capture(source, execution)
-            .map_err(crate::durability::checkpoint_history::capture::owned_stop)?;
+        let mut protection =
+            RelationalDurableReadProtection::capture(source, execution).map_err(|cause| {
+                crate::durability::checkpoint_history::capture::owned_stop(
+                    cause,
+                    crate::storage::data::RelationalStorageSubject::Envelope(
+                        crate::publication::patch::data::PatchStreamPosition(0),
+                    ),
+                )
+            })?;
         if protection.bounds().canonical.0 != 0
             || protection.bounds().transitions.0 != 0
             || protection.bounds().selected_checkpoint
@@ -62,8 +69,15 @@ impl DurabilityRecoveryAuthority<'_> {
         )? {
             // This original owner just published Birth. Observe its own actual
             // successor cut; existing-source recovery never takes this route.
-            protection = RelationalDurableReadProtection::capture(source, execution)
-                .map_err(crate::durability::checkpoint_history::capture::owned_stop)?;
+            protection =
+                RelationalDurableReadProtection::capture(source, execution).map_err(|cause| {
+                    crate::durability::checkpoint_history::capture::owned_stop(
+                        cause,
+                        crate::storage::data::RelationalStorageSubject::Envelope(
+                            crate::publication::patch::data::PatchStreamPosition(0),
+                        ),
+                    )
+                })?;
             initial_inputs::ensure_original_initialization(
                 self.runtime,
                 execution,

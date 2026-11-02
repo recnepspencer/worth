@@ -70,7 +70,12 @@ impl RelationalCommitEnvelopeResidency {
                 }
                 protection
                     .read_commit_owned_at(actual, execution, entry.position, 1 << 30)
-                    .map_err(crate::durability::checkpoint_history::capture::owned_stop)?
+                    .map_err(|cause| {
+                        crate::durability::checkpoint_history::capture::owned_stop(
+                            cause,
+                            RelationalStorageSubject::Envelope(entry.position),
+                        )
+                    })?
             }
         };
         Artifact::from_owned_bytes(bytes).map_err(|_| failure(Cause::Damaged))

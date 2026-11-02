@@ -2738,3 +2738,13 @@ member demand. The aggregate fixture independently counts its selected head
 reads and forbids journal calls. Replacement and corrupt-byte wrappers now
 implement the actual owned ports while retaining their original pin/Drop or
 byte-corruption semantics and request-funded returned buffers.
+
+
+Protected-read refusal conversion now requires the caller's explicit storage
+subject. Eight unchanged cold-source courts exposed the old converter's erased
+position (Envelope(0) for actual positions1/3/4); this was a product defect.
+Selected singleton and journal artifact reads pass their actual indexed position.
+The deferred index frame uses its existing aggregate Index(0) subject. Source-
+wide/Birth/selection doors retain their explicit existing source-level Envelope(0)
+context. One exhaustive mapping still preserves every request, allocation,
+provider and frame refusal. There is no implicit default or parallel classifier.

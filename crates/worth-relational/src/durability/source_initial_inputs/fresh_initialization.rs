@@ -101,6 +101,9 @@ impl RelationalFreshInitialization {
 fn owned_refusal(cause: crate::durability::medium::RelationalDurableOwnedReadRefusal) -> Refusal {
     Refusal::Native(crate::durability::checkpoint_history::capture::owned_stop(
         cause,
+        crate::storage::data::RelationalStorageSubject::Envelope(
+            crate::publication::patch::data::PatchStreamPosition(0),
+        ),
     ))
 }
 

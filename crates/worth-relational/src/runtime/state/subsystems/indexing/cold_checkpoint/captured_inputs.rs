@@ -13,7 +13,12 @@ impl DeferredIndexImage {
             .directory
             .canonical_read
             .read_member(&self.directory.source, request, key, 1 << 30)
-            .map_err(crate::durability::checkpoint_history::capture::owned_stop)?;
+            .map_err(|cause| {
+                crate::durability::checkpoint_history::capture::owned_stop(
+                    cause,
+                    RelationalStorageSubject::Index(crate::indexes::data::DerivedIndexId(0)),
+                )
+            })?;
         let payload = member_frame::decode(bytes.bytes(), key, MemberKind::DerivedIndex).map_err(
             |cause| RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Index(crate::indexes::data::DerivedIndexId(0)),

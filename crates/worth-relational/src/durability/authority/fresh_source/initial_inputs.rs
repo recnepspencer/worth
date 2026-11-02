@@ -24,7 +24,14 @@ pub(super) fn ensure_original_initialization(
         })?;
     let durable = protection
         .read_initial_inputs_owned(source, request, 1 << 30)
-        .map_err(crate::durability::checkpoint_history::capture::owned_stop)?;
+        .map_err(|cause| {
+            crate::durability::checkpoint_history::capture::owned_stop(
+                cause,
+                crate::storage::data::RelationalStorageSubject::Envelope(
+                    crate::publication::patch::data::PatchStreamPosition(0),
+                ),
+            )
+        })?;
     match (&original.accepted_initial_inputs, durable) {
         (Some(original), Some(bytes)) => {
             let expected = original
