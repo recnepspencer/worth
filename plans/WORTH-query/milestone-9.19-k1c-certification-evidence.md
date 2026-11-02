@@ -502,3 +502,83 @@ a literal typed refusal, not the equality algorithm copied into the court.
 The same reviewer passed R9 under qa-loop, qa-tests and code-quality-qa after
 independently checking the staged owner/court/guard, actual compiled kill, exact
 restoration, rebuilt portfolio and final receipts. No R9 finding remains open.
+
+# Full Native red repairs: production accounting, Source and recovery
+
+Content evidence now settles through the existing commit RequestWorkBudget once
+per initial/final evidence stage. Kernels do not receive or re-enter that
+account. R7's precedence owner preserves exact inner refusals only against the
+nested sentinel. Direct physical suspension uses physical-after content; only
+real matching Source custody can supply logical-before content. Journal FieldText
+semantic corruption receives CorruptCanonicalArtifact at that receiver, while
+checkpoint classification and typed resource/storage causes stay unchanged.
+
+The kind-forgery fixture now supplies the actual attached journal alongside its
+physical members, and proves zero member reads at the same exact corruption
+refusal. No semantic expectation was changed. The two allocation courts now
+expect the actual first Native SDK framework admission: literal 408 bytes before
+its callback. The earlier first-member 161 and first-envelope 3922 input quotes
+were real but unreachable on original budgets 1/0. Both our initial reading and
+the reviewer's payload-first advice missed that enclosing scope admission; the
+failed runs are recorded below. No production bypass was added to force the
+old allocation site. Capture's first substage can be digest or sizing depending
+on residency. Readmission's first stage hashes a physical member.
+
+Checkpoint fixture Work 1 could no longer fund controlled hashing/emission;
+it is now bounded at 1, 000, 000. Positive peak memory is bounded at 1, 048,576 bytes,
+allowing simultaneous envelope/outer-frame/framework custody; this is an upper
+bound, not a measured minimal peak. Actual retained original custody is 12,886
+outer bytes plus 0 newly charged member bytes, exactly matching parent charges.
+Existing member backing is external to that parent. Clone pointer equality,
+exact denied over-reservation, genuine restore/edit, unchanged Allocation
+cancellation cause and final parent charge 0 all pass. The original lower-memory
+refusals retain exact original PolicyMemoryExhausted(408,1/0, 0) causes.
+No new court function or aspect shape is introduced.
+
+All commands below use `cargo test -p worth-relational --lib <filter> -- --nocapture`.
+Each of the seven reproduction runs before repair selected one test and failed with 0 passed,
+1 failed, 0 ignored/measured, 2273 filtered. Every corrected row selected one and
+passed with 1 passed, 0 failed/ignored/measured, 2273 filtered. Literal semantic
+expectations stay unchanged; only the explained memory invoices changed.
+
+| Exact test filter | Corrected focused result |
+| --- | --- |
+| `one_work_account_bounds_the_same_proposal_on_every_entry` | 1 passed, 0 failed, 2273 filtered. |
+| `durability_replays_suspended_and_restored_materialization_roots` | 1 passed, 0 failed, 2273 filtered. |
+| `forged_cross_region_kind_commitment_is_refused_before_member_reads` | 1 passed, 0 failed, 2273 filtered; exact class/detail and0 member reads. |
+| `native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_intact` | 1 passed, 0 failed, 2273 filtered; exact408/1/0 invoice, bytes/root unchanged and funded restore passes. |
+| `native_field_text_missing_tail_dictionary_refuses_without_target_or_source_effect` | 1 passed, 0 failed, 2273 filtered. |
+| `native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_truth` | 1 passed, 0 failed, 2273 filtered; exact408/0/0 invoice and12886 retained bytes. |
+| `request_includes_rematerialized_relation_as_a_planned_edge` | 1 passed, 0 failed, 2273 filtered. |
+
+| Further exact command or attempt | Result |
+| --- | --- |
+| Fetch master/provider; merge both with `--no-edit` | Three successes; already up to date. |
+| Initial `cargo fmt -p worth-relational` | Success. |
+| First work-account correction build | E0603: private request_work module, no tests. Used its existing execution facade re-export. |
+| Next materialization and kind correction builds | Two E0308 failures: AttachedTestMedium wrapper where Arc ColdSource required; no tests. Used existing attached_durable_medium Arc accessor. |
+| First managed-text correction run | Compiled: 0 passed/1 failed, 2273 filtered: actual408/1/0 differed from input-derived161/1/0. |
+| First allocation correction run | Compiled: 0 passed/1 failed, 2273 filtered: actual408/0/0 differed from input-derived3922/0/0. |
+| First missing-dictionary and rematerialized correction runs | Each 1 passed, 0 failed/ignored/measured, 2273 filtered (additional to corrected seven-row run). |
+| Corrected `cargo fmt -p worth-relational` | Success. |
+| `cargo test -p worth-relational --lib empty_commit_request_refuses_before_publication -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2273 filtered. |
+| `cargo test -p worth-relational --lib unfunded_native_validation_preserves_the_branch_and_releases_request_memory -- --nocapture` | 1 passed, 0 failed/ignored/measured, 2273 filtered. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification leased_preparation -- --nocapture` | Before this slice 16 passed, 0 failed/ignored/measured, 197 filtered; after 16 passed, 0 failed/ignored/measured, 198 filtered, 2.96s. R9 added one unrelated court. |
+| `cargo test -p worth-court-relational-certification --test worth_court_relational_certification content:: -- --nocapture` | 65 passed, 0 failed/ignored/measured, 149 filtered, 17.53s. |
+
+| Native repair final exact gates | Result |
+| --- | --- |
+| Final `cargo fmt -p worth-relational` | Third formatting success in this slice. |
+| `cargo test -p worth-relational --lib one_work_account_bounds_the_same_proposal_on_every_entry -- --nocapture` after measurement/comment refinement | 1 passed, 0 failed/ignored/measured, 2273 filtered, 0.06s. Independent whole Work 658 equals settled 658; previous recorded 268 was missing 390. No work expectation changed. |
+| `cargo fmt --check -p worth-relational` | Success. |
+| `cargo clippy -p worth-relational --all-targets` | Failed only untouched payload.rs:34,1 error/8 warnings. |
+| Boundary check; context check | One success each. |
+| `bash scripts/ci/check_workspace_rust_line_caps.sh dirty` | Success,10 Rust files. |
+| `git diff --check origin/master...HEAD`; `git diff --check` | One success each, zero errors. |
+| Python lint-scope check, PYTHONUTF8=1 | Four scope assertions passed. |
+
+Staged whitespace passed with zero errors. The same reviewer passed this Native
+repair under qa-loop, qa-tests and code-quality-qa after independently checking
+the final source, unchanged semantic oracles, exact resource invoices, all scoped
+receipts and the corrected funding reading. Full-binary qualification and the
+Store withdrawal/Native lifecycle proof remain required.

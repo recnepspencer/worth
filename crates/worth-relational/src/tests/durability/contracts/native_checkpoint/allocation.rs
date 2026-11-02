@@ -3,8 +3,7 @@ use crate::facade::durability::RelationalNativeCheckpointCaptureDenial as Denial
 use std::num::NonZeroUsize;
 use worth_execution::{
     CancellationSource, CancellationToken, ExecutionAllocationDenialClass,
-    ExecutionAllocationPolicy as Policy, LeaseDenial, LeaseRequest, MemoryLimitDenial,
-    MemoryLimitLevel,
+    ExecutionAllocationPolicy as Policy, LeaseRequest, MemoryLimitDenial, MemoryLimitLevel,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -15,7 +14,7 @@ fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1_000_000)),
         ),
         deadline: None,
         cancellation,
@@ -35,32 +34,33 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
         .native_checkpoint(execution, Policy::SystemAllocation)
         .unwrap();
     let quote = u64::try_from(system.bytes().len()).unwrap();
+    // The first original-controlled evidence/encoding scope enters the SDK before
+    // emitting any envelope. Its current framework admission is an independent
+    // literal invoice, not the eventual encoded checkpoint length.
+    const FIRST_SCOPE_BYTES: u64 = 408;
+    const PEAK_BYTES: u64 = 1024 * 1024;
     let authority = crate::tests::support::test_execution_authority();
     let parent = authority
-        .request_lease(request(quote, CancellationToken::new()))
+        .request_lease(request(PEAK_BYTES, CancellationToken::new()))
         .unwrap();
     let zero = parent.child(request(0, CancellationToken::new())).unwrap();
-    let Denial::Allocation(error) = runtime
+    let error = runtime
         .durability_authority()
         .native_checkpoint(
             &worth_execution::ExecutionRequest::leased(&zero),
             Policy::Execution(&zero),
         )
-        .unwrap_err()
-    else {
-        panic!("the encoded backing admission is the reached owner");
-    };
+        .unwrap_err();
     assert_eq!(
-        error.classify(),
-        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
-            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
-                requested: quote,
+        error,
+        Denial::Request(
+            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                requested: FIRST_SCOPE_BYTES,
                 admitted: 0,
-                level: MemoryLimitLevel::Policy { ancestor: 0 }
-            })
-        ))
+                ancestor: 0,
+            }
+        )
     );
-    assert_eq!(error.requested_payload_bytes(), Some(quote));
     assert_eq!(
         runtime.history().branch_head(&BranchId("main".into())),
         head
@@ -68,7 +68,9 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     drop(zero);
 
     let cancellation = CancellationSource::new();
-    let stopped = parent.child(request(quote, cancellation.token())).unwrap();
+    let stopped = parent
+        .child(request(PEAK_BYTES, cancellation.token()))
+        .unwrap();
     cancellation.cancel();
     let Denial::Allocation(error) = runtime
         .durability_authority()
@@ -91,7 +93,7 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
 
     let retained = {
         let child = parent
-            .child(request(quote, CancellationToken::new()))
+            .child(request(PEAK_BYTES, CancellationToken::new()))
             .unwrap();
         let captured = runtime
             .durability_authority()
@@ -107,12 +109,30 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
         drop(captured);
         clone
     };
+    let member_quote = retained
+        .members()
+        .iter()
+        .map(|member| match member {
+            crate::durability::data::RelationalCheckpointMember::New { bytes, .. } => {
+                match bytes.charged_payload_bytes() {
+                    Some(bytes) => bytes,
+                    None => 0,
+                }
+            }
+            _ => panic!("embedded capture resolves every member"),
+        })
+        .sum::<u64>();
+    let retained_quote = quote + member_quote;
+    eprintln!("checkpoint capture first_scope={FIRST_SCOPE_BYTES} outer={quote} retained_members={member_quote} parent_charged={}", parent.charged_memory_bytes());
+    assert_eq!(parent.charged_memory_bytes(), retained_quote);
     assert_eq!(
-        parent.reserve_memory(1).unwrap_err(),
+        parent
+            .reserve_memory(PEAK_BYTES - retained_quote + 1)
+            .unwrap_err(),
         MemoryLimitDenial::Capacity {
-            requested: 1,
-            admitted: 0,
-            level: MemoryLimitLevel::Policy { ancestor: 0 }
+            requested: PEAK_BYTES - retained_quote + 1,
+            admitted: PEAK_BYTES - retained_quote,
+            level: MemoryLimitLevel::Policy { ancestor: 0 },
         }
     );
     let mut recovered = durable_runtime_with_test_schema();
@@ -133,9 +153,10 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
         Some(&later.commit)
     );
     drop(retained);
+    assert_eq!(parent.charged_memory_bytes(), 0);
     drop(
         parent
-            .reserve_memory(quote)
-            .expect("last native clone releases the complete backing charge"),
+            .reserve_memory(PEAK_BYTES)
+            .expect("last clone releases all original custody"),
     );
 }

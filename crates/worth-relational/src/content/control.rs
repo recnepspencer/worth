@@ -144,3 +144,29 @@ pub(super) fn run_source<T>(
         cause => Read::Content(cause),
     })
 }
+
+/// Top-level content evidence settles once into the existing commit account.
+/// Kernels remain unaware of the dispatcher and cannot recursively borrow it.
+pub(crate) fn run_commit_stage<T>(
+    execution: &ExecutionRequest<'_, '_>,
+    budget: Option<&crate::execution::RequestWorkBudget>,
+    operation: impl FnOnce() -> Result<T, Denial>,
+) -> Result<T, Denial> {
+    let budget = match (
+        crate::authority::commit::pipeline::request_lease(execution),
+        budget,
+    ) {
+        (Some(_), Some(budget)) => budget,
+        _ => return operation(),
+    };
+    let mut result = None;
+    let handoff = budget.run_stage(*execution, || result = Some(operation()));
+    match (handoff, result) {
+        (Ok(()), Some(result)) => result,
+        (Ok(()), None) => Err(Denial::EncodingInconsistency),
+        (Err(cause), result) => Err(final_denial(
+            result.and_then(Result::err),
+            Denial::Execution(cause.into()),
+        )),
+    }
+}

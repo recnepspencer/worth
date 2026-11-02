@@ -5,7 +5,10 @@ use crate::durability::medium::*;
 use crate::identity::data::PartitionId;
 use crate::tests::support::*;
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
 #[test]
 fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
@@ -50,15 +53,19 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
     }
     let mut bytes = CHECKPOINT_MAGIC.to_vec();
     bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
-    let source = Arc::new(member_source::InlineCheckpointSource {
-        members: native
-            .members()
-            .iter()
-            .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-                _ => panic!("first capture owns its members"),
-            })
-            .collect(),
+    let source = Arc::new(ForgedKindSource {
+        members: member_source::InlineCheckpointSource {
+            members: native
+                .members()
+                .iter()
+                .map(|member| match member {
+                    RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                    _ => panic!("first capture owns its members"),
+                })
+                .collect(),
+        },
+        journal: attached_durable_medium(&runtime).expect("fixture owns its actual durable medium"),
+        reads: AtomicUsize::new(0),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
@@ -68,7 +75,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
         )),
         Vec::new(),
         Vec::new(),
-        source,
+        source.clone(),
     );
     let mut receiving = durable_runtime_with_test_schema();
     let plan = receiving
@@ -83,6 +90,40 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
         .durability_recovery()
         .recover(&execution, plan)
         .unwrap_err();
+    assert_eq!(source.reads.load(Ordering::SeqCst), 0);
     assert!(matches!(failure, RelationalRecoveryStop::Durability(error)
         if error.class == RecoveryFailureClass::CorruptCheckpoint && error.detail.contains("StorageContentMismatch")));
+}
+
+#[derive(Debug)]
+struct ForgedKindSource {
+    members: member_source::InlineCheckpointSource,
+    journal: Arc<dyn RelationalDurableColdSource>,
+    reads: AtomicUsize,
+}
+impl RelationalDurableColdSource for ForgedKindSource {
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        crate::storage::data::RelationalStorageUnavailableCause,
+    > {
+        self.members.retain_members(members)
+    }
+    fn read_member(
+        &self,
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
+        self.reads.fetch_add(1, Ordering::SeqCst);
+        self.members.read_member(locator, limit)
+    }
+    fn read_commit(
+        &self,
+        position: crate::publication::patch::data::PatchStreamPosition,
+        limit: u64,
+    ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
+        self.journal.read_commit(position, limit)
+    }
 }

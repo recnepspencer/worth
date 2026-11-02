@@ -97,16 +97,17 @@ pub(super) fn prepare_publication_artifacts(
             .retained_schema_authority()
             .registry_arc(),
     };
-    working_state.content = working_state
-        .content
-        .prepare_final_fields(
-            execution,
-            selected_branch_state.state().root(),
-            &content_schema,
-            working_state,
-            &publication.changed_records,
-            version_id,
-        )
+    working_state.content =
+        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
+            working_state.content.prepare_final_fields(
+                execution,
+                selected_branch_state.state().root(),
+                &content_schema,
+                working_state,
+                &publication.changed_records,
+                version_id,
+            )
+        })
         .map_err(crate::content::commit_denial)?;
     let descriptive_touches = super::descriptive_touches::prepare(
         runtime,

@@ -277,3 +277,49 @@ full descriptor and restored original-funded memory, then verifies scoped
 cleanup and unarmed duplicate publication. Remove only the duplicate comparison
 to kill the court via wrongly successful publication; restore exact bytes,
 rebuild, run the content portfolio and scoped gates, review and commit separately.
+
+# Full Native red repair boundary and plan
+
+The seven remaining full-library failures reproduce individually with unchanged
+oracles. Content's two initial draft admissions and final_fields spend original
+SDK Work outside the carried RequestWorkBudget, leaving268 recorded against658
+actual. Dispatch only those top-level evidence calls through the existing budget,
+under the same leased activation as authored index evidence. A content dispatch
+shell preserves exact inner refusals only against NestedStopped, using R7's
+single precedence owner; no nested kernel receives or re-enters this account.
+Binding/schema clones poll but consume no positive SDK Work today.
+
+Physical Suspend without a real materialization Source is legal; only a genuine
+Source can lend logical-before content. Keep its exact basis check. The journal
+artifact receiver reclassifies only the shared FieldText helper's semantic
+CorruptCheckpoint outcome to CorruptCanonicalArtifact, preserving every typed
+resource/storage refusal. Existing work, suspension and missing-dictionary tests
+stay unchanged and provide the independent before/after failure evidence.
+
+The kind-forgery fixture must supply actual journal artifacts as well as member
+bytes. Compose its existing member source with the actual attached test medium,
+and count member reads; keep its exact corruption classification and detail.
+Readmission now funds the first actual inline checkpoint member before symbols;
+quote that input locator independently instead of obsolete JSON length.
+Checkpoint capture now hashes, emits embedded envelopes, retains member bytes
+and emits the outer frame. Fund real Work and peak coexistence. Parse only the
+external checkpoint's envelope lengths as an independent first-allocation quote;
+retain exact original memory refusal and cancellation owner. Invoice retained
+outer/member payloads against the parent's own charged bytes, prove clone alias
+and last-drop release, and retain genuine restore/edit behavior. No expectation
+changes for semantic behavior; report every changed work/allocation invoice.
+
+Run the seven exact previously red tests, the two R7 original-stop tests,
+relevant checkpoint/FieldText/request families and leased preparation courts.
+No new test function is needed. Review all production/fixture changes under the
+same three skills, required gates, then commit this coherent Native repair.
+Full Native, certification and public binaries still qualify only at the end.
+
+Actual focused runs corrected the funding reading: both zero/one-byte originals
+refuse the SDK native-scope framework's 408-byte admission BEFORE any member or
+embedded-envelope payload. The first-member161 and embedded-envelope3922 quotes
+were independently observed inputs but were not the reached owners. Keep exact
+literal408 refusals instead; do not route around original framework funding to
+force the old payload owner. Remove the unused envelope observer. Peak and
+retained-backing invoices remain separately verified. This is an explicit changed
+allocation bill, not a change to a semantic expectation or resource cause.

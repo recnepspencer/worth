@@ -22,10 +22,9 @@ impl NativeManagedSourceInterpretation {
             root.retained_content().clone(),
             root.retained_schema_authority().as_ref().clone(),
         );
-        let after = if self.posture == Some(RelationalMaterializationTransactionMode::Suspend) {
-            let source = self
-                .materialization_source()
-                .ok_or(Denial::EncodingInconsistency)?;
+        let after = if let (Some(RelationalMaterializationTransactionMode::Suspend), Some(source)) =
+            (self.posture, self.materialization_source())
+        {
             if source.basis() != &self.physical_basis {
                 return Err(Denial::EncodingInconsistency);
             }

@@ -30,6 +30,7 @@ pub(crate) use source::NativeContentSourceView;
 
 pub use attachments::RelationalContentAttachments;
 pub use codec::{RelationalContentCodec, RelationalContentSink};
+pub(crate) use control::run_commit_stage;
 pub use control::RelationalContentControl;
 pub use denial::{RelationalContentDenial, RelationalContentRejection};
 pub(crate) use directory::ContentDirectory;

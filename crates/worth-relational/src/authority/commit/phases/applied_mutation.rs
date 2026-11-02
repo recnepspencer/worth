@@ -124,17 +124,20 @@ pub(crate) fn apply_mutation_draft(
         crate::authority::commit::pipeline::request_lease(execution),
         runtime.commit_work_budget.clone(),
     )?;
-    state.content = crate::content::prepare_publication(
-        execution,
-        selected_state.selected().state().root(),
-        schema.registry(),
-        content,
-        &state,
-        &outcome.effect.publication.changed_records,
-        version_id,
-        source_interpretation.restoration_content(),
-    )
-    .map_err(crate::content::commit_denial)?;
+    state.content =
+        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
+            crate::content::prepare_publication(
+                execution,
+                selected_state.selected().state().root(),
+                schema.registry(),
+                content,
+                &state,
+                &outcome.effect.publication.changed_records,
+                version_id,
+                source_interpretation.restoration_content(),
+            )
+        })
+        .map_err(crate::content::commit_denial)?;
     state
         .content
         .bind_schema(schema)
@@ -210,17 +213,20 @@ pub(crate) fn apply_retained_entity_selection_draft(
         &mut records,
         runtime.commit_work_budget.clone(),
     )?;
-    state.content = crate::content::prepare_publication(
-        execution,
-        selected_state.selected().state().root(),
-        schema.registry(),
-        content,
-        &state,
-        &outcome.effect.publication.changed_records,
-        identity.proposed_version_id(),
-        Some(retained._source.inner.root.retained_content()),
-    )
-    .map_err(crate::content::commit_denial)?;
+    state.content =
+        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
+            crate::content::prepare_publication(
+                execution,
+                selected_state.selected().state().root(),
+                schema.registry(),
+                content,
+                &state,
+                &outcome.effect.publication.changed_records,
+                identity.proposed_version_id(),
+                Some(retained._source.inner.root.retained_content()),
+            )
+        })
+        .map_err(crate::content::commit_denial)?;
     state
         .content
         .bind_schema(schema)
