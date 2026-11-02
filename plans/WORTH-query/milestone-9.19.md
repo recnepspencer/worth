@@ -2097,9 +2097,18 @@ compatibility commitment before choosing current-format-only rejection versus
 migration; never reinterpret or erase unsupported historical bytes.
 
 **Mechanical work and coordination.** Use syntax-aware, mapping-driven codemods
-for reviewed declarations, gather/write call sites and fixtures. Check mode is
-read-only; apply is scoped and idempotent, refuses unknown/drifted input and
-edits generated artifacts only through their real generators. Codemods do not
+for reviewed declarations, gather/write call sites and fixtures. Iterate using
+read-only dry-run diffs and explicit residual-site reports until common rules
+cover most mechanical work. Apply the reviewed batch, then finish the small
+remainder and last compile/behavior failures by hand. Stop extending the script
+when another condition costs more than those hand edits; full script coverage
+or zero compiler errors from the generated patch is not a requirement.
+Unsupported sites remain untouched and reported for manual work, without
+blocking independent supported edits. Ambiguous matches or failed source
+preconditions block unsafe apply. Apply is scoped and idempotent and edits
+generated artifacts only through their real generators. Every required cutover
+and acceptance gate still applies to the combined scripted/manual result.
+Codemods do not
 decide schema ownership, references, order, provenance, inverses or recovery.
 Keep tests in existing owner/leaf targets, with source/configuration checks
 before compilation. No new list/variant/nested AspectShape forms are authorized
