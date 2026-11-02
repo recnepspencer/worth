@@ -1813,6 +1813,18 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
 
 ## 4. Install the application graph
 
+Installation derives each operation's graph-obligation identity under a fixed
+4,096-entry / 1 MiB canonical-work limit. Each distinct aspect contract costs
+its full canonical fields once, plus table framing; each read projection or
+touch costs a contract reference. Projection masks, selected field paths,
+schema/entity bindings, relations and other scopes also count. Writing many
+fields in one aspect does not repeatedly charge its whole contract. This limit
+is separate from the program revision budget and application runtime resource
+profile. An operation refusal's `canonical_denial()` retains `maximum` and the
+requested `actual` entries or `attempted` bytes. Entry admission stops at the
+first excess append. See the
+[installation contract](../workspaces/worth-query/crates/worth-query-installation/README.md#canonicality).
+
 ### Application build identity
 
 Each complete build supplies a fresh UUID through `WORTH_IMPLEMENTATION_BUILD_ID`.

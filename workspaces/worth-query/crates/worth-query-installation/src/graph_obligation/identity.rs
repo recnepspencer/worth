@@ -10,7 +10,11 @@ use super::{
     WorthQueryInstalledGraphObligationContract, WorthQueryInstalledGraphObligationResourcePosture,
 };
 
+mod aspect_contract_table;
 mod contract_encoding;
+mod scope_encoding;
+#[cfg(test)]
+mod scope_identity_tests;
 
 use contract_encoding::{encode_contract, encode_resources};
 
@@ -53,7 +57,7 @@ pub(super) fn derive_set_identity(
 > {
     let mut basis = InstallationCanonicalIdentityBasis::new(
         "worth-query.installed-graph-obligations",
-        "worth-query-installed-graph-obligations-v1",
+        "worth-query-installed-graph-obligations-v2",
         OBLIGATION_IDENTITY_BUDGET,
     );
     basis.digest("package", *binding.package_identity())?;
@@ -72,8 +76,9 @@ pub(super) fn derive_set_identity(
         )?;
     }
     basis.unsigned_usize("obligation-count", contracts.len())?;
+    let mut table = aspect_contract_table::AspectContractTable::default();
     for (index, contract) in contracts.iter().enumerate() {
-        encode_contract(&mut basis, index, contract)?;
+        encode_contract(&mut basis, &mut table, index, contract)?;
     }
     encode_resources(&mut basis, resources)?;
     let (identity, work) = basis.derive()?;
