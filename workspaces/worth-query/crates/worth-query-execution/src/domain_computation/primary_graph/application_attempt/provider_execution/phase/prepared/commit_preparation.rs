@@ -49,6 +49,7 @@ where
         .as_ref()
         .and_then(|binding| binding.approval_authority.clone());
     let mut admission = *read_set.admission;
+    drop(read_set._admission_memory);
     if admission.allowed_graph_contract().body().is_some()
         && mutation_proof.is_none()
         && read_set.local_action_settlement.is_none()

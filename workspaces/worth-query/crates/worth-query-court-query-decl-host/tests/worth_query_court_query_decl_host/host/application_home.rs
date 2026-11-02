@@ -98,10 +98,10 @@ fn fresh_directory_home_journey() {
         .close(&execution)
         .err()
         .expect("the actual retained Query runtime keeps Store's composition alive");
-    assert!(matches!(
-        refused.directory_denial(),
-        Some(WorldCompositionRetained)
-    ));
+    assert!(
+        matches!(refused.directory_denial(), Some(WorldCompositionRetained)),
+        "same retained-runtime close: {refused:?}"
+    );
     {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
