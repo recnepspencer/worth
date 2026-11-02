@@ -14,6 +14,7 @@ pub(in super::super) fn quote(
         let bit = match field {
             "position" => 1,
             "canonical" => 2,
+            "original_inputs" => 4,
             _ => return Err(Refusal::NonCanonicalPayload),
         };
         if seen & bit != 0 {
@@ -29,6 +30,9 @@ pub(in super::super) fn quote(
         }
         Ok(())
     })?;
+    if seen != 7 {
+        return Err(malformed());
+    }
     result.ok_or_else(malformed)
 }
 pub(in super::super) fn canonical(

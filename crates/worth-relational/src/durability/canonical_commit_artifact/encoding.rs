@@ -20,7 +20,7 @@ impl RelationalCanonicalCommitArtifact {
         position: crate::publication::patch::data::PatchStreamPosition,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
     ) -> Result<[u8; 32], rmp_serde::encode::Error> {
-        use sha2::{Digest, Sha256};
+        use sha2::{Digest as _, Sha256};
         struct HashWriter(Sha256);
         impl std::io::Write for HashWriter {
             fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
@@ -31,9 +31,23 @@ impl RelationalCanonicalCommitArtifact {
                 Ok(())
             }
         }
-        let mut writer = HashWriter(Sha256::new());
-        rmp_serde::encode::write_named(&mut writer, &ArtifactPayloadRef::new(position, envelope))?;
-        Ok(writer.0.finalize().into())
+        let mut position_writer = HashWriter(Sha256::new());
+        rmp_serde::encode::write_named(&mut position_writer, &position)?;
+        let mut envelope_writer = HashWriter(Sha256::new());
+        rmp_serde::encode::write_named(
+            &mut envelope_writer,
+            &crate::history::data::AuthoritativeArtifactEnvelopeRef::new(envelope),
+        )?;
+        let mut input_writer = HashWriter(Sha256::new());
+        rmp_serde::encode::write_named(&mut input_writer, &envelope.recorded_original_inputs())?;
+        Ok(*Digest::from_leaves(
+            position.0,
+            envelope.commit.commit_id.0,
+            position_writer.0.finalize().into(),
+            envelope_writer.0.finalize().into(),
+            input_writer.0.finalize().into(),
+        )
+        .as_bytes())
     }
 
     pub(crate) fn matches_positioned_payload(
@@ -82,7 +96,16 @@ impl RelationalCanonicalCommitArtifact {
                 },
             );
         }
-        let digest = Digest::of_payload(&frame.bytes()[HEADER_LEN..]);
+        let digest = Digest::of_payload(
+            commit.position().0,
+            commit.envelope().commit.commit_id.0,
+            &frame.bytes()[HEADER_LEN..],
+        )
+        .map_err(|cause| {
+            RelationalCanonicalCommitArtifactEncodeDenial::PayloadEncoding {
+                detail: cause.to_string(),
+            }
+        })?;
         frame.overwrite(DIGEST_OFFSET, digest.as_bytes())?;
         Ok(Self {
             bytes: frame.seal()?,

@@ -2,14 +2,17 @@ use crate::runtime::{
     RelationalRuntime, RelationalRuntimeConfigurationSnapshot, RuntimeSubsystem,
     SchemaContractRuntimeSubsystem,
 };
-use crate::schema::data::{RelationalSchemaRegistry, SchemaRegistryError};
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariantRegistry};
 use std::sync::Arc;
 
 mod application_publication;
 mod fresh_admission;
 mod inventory_digest;
+mod publication;
 mod receipt;
+pub use publication::FreshRelationalInitialSchemaInstallation;
+pub(crate) use publication::InitialSchemaCutover;
 pub use receipt::RelationalInitialSchemaInstallationReceipt;
 mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
@@ -26,58 +29,11 @@ pub struct RelationalInitialSchemaInstallation<'runtime> {
     transition_pause: Option<(std::sync::mpsc::Sender<()>, std::sync::mpsc::Receiver<()>)>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum RelationalInitialSchemaInstallationDenialKind {
-    RuntimeAlreadyCommitted,
-    InitialInvariantsAlreadySealed,
-    DuplicateCustomInvariant,
-    ManagedIndexSourceRejected,
-    SchemaRejected,
-    BranchTransitionRejected,
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    RetentionOwnerUnavailable,
-    RetentionRootSetTooLarge,
-    RecoveredAuthorityMismatch,
-    FreshSourceMismatch,
-    Request(crate::execution::RelationalExecutionDenialCause),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RelationalInitialSchemaInstallationDenial {
-    kind: RelationalInitialSchemaInstallationDenialKind,
-    detail: String,
-}
-
-impl RelationalInitialSchemaInstallationDenial {
-    fn new(kind: RelationalInitialSchemaInstallationDenialKind, detail: impl Into<String>) -> Self {
-        Self {
-            kind,
-            detail: detail.into(),
-        }
-    }
-
-    pub const fn kind(&self) -> RelationalInitialSchemaInstallationDenialKind {
-        self.kind
-    }
-
-    pub fn detail(&self) -> &str {
-        &self.detail
-    }
-}
-
-impl std::fmt::Display for RelationalInitialSchemaInstallationDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "initial Relational schema installation denied: {:?} ({})",
-            self.kind, self.detail
-        )
-    }
-}
-
-impl std::error::Error for RelationalInitialSchemaInstallationDenial {}
-
+pub(in crate::runtime) mod denial;
+use denial::schema_denial;
+pub use denial::{
+    RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
+};
 impl RelationalRuntime {
     pub(crate) fn initial_schema_authority_snapshot(
         &self,
@@ -217,8 +173,38 @@ impl RelationalInitialSchemaInstallation<'_> {
         managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
     {
+        self.install_with_publication(additions, custom_invariants, managed_sources, None)
+    }
+
+    fn install_with_publication(
+        self,
+        additions: RelationalSchemaRegistry,
+        custom_invariants: Vec<CustomInvariantRegistration>,
+        managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
+        publication: Option<(
+            crate::durability::source_initial_inputs::RelationalFreshInitialization,
+            &worth_execution::ExecutionRequest<'_, '_>,
+        )>,
+    ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
+    {
+        if let Some((initialization, request)) = &publication {
+            initialization
+                .validate(self.runtime, request)
+                .map_err(RelationalInitialSchemaInstallationDenial::from_initial_inputs)?;
+        }
         let configuration = self.runtime.configuration_binding();
         let mut installed = configuration.initial_installation();
+        let routes = self.runtime.history.canonical_checkpoint_gate();
+        let publication_guard = if publication.is_some() {
+            Some(routes.try_initial_schema_publication().map_err(|_| {
+                RelationalInitialSchemaInstallationDenial::new(
+                    RelationalInitialSchemaInstallationDenialKind::InitialPublicationBusy,
+                    "Native publication is in flight before initialization",
+                )
+            })?)
+        } else {
+            None
+        };
         // Retained ports may have published since the installation token was
         // issued. Eligibility is decided under the same epoch lock as cutover.
         if self.runtime.history().latest_commit().is_some()
@@ -298,8 +284,19 @@ impl RelationalInitialSchemaInstallation<'_> {
         // first owner mutation. This keeps the initial installation atomic.
         self.runtime
             .history
-            .transition_empty_branches_to_initial_schema(&merged)
-            .map_err(branch_transition_denial)?;
+            .transition_empty_branches_to_initial_schema(&merged, |before, after| {
+                match publication {
+                    None => Ok(InitialSchemaCutover::Receiver),
+                    Some((_initialization, request)) => {
+                        let original = self.runtime.history.capture_original_branch_schema_inputs(request).map_err(RelationalInitialSchemaInstallationDenial::original_capture)?;
+                        let image = crate::durability::source_initial_inputs::capture::capture(
+                            &installed.config.history.main_branch, &original, Some((before, after, routes.branch_transition_head())), request,
+                        ).map_err(RelationalInitialSchemaInstallationDenial::from_initial_inputs)?;
+                        let medium = self.runtime.durability.medium().ok_or_else(|| RelationalInitialSchemaInstallationDenial::new(RelationalInitialSchemaInstallationDenialKind::InitialInputsRejected, "initialization medium detached"))?;
+                        medium.publish_initial_inputs(image, request).map(InitialSchemaCutover::Durable).map_err(RelationalInitialSchemaInstallationDenial::publication)
+                    }
+                }
+            })?;
         #[cfg(test)]
         if let Some((reached, resume)) = self.transition_pause {
             reached
@@ -312,6 +309,7 @@ impl RelationalInitialSchemaInstallation<'_> {
         Arc::make_mut(&mut installed.config).schema.registry = merged;
         installed.schema_contract_runtime = Arc::new(rebuilt);
         drop(installed);
+        drop(publication_guard);
         // Refresh the exclusive owner's cached references after releasing the
         // write guard: reconfigure takes a fresh snapshot of this same authority.
         self.runtime.reconfigure(|_| {});
@@ -345,36 +343,6 @@ fn rebuilt_schema_contract_runtime(
     rebuilt
 }
 
-fn schema_denial(error: SchemaRegistryError) -> RelationalInitialSchemaInstallationDenial {
-    RelationalInitialSchemaInstallationDenial::new(
-        RelationalInitialSchemaInstallationDenialKind::SchemaRejected,
-        error.detail,
-    )
-}
-
-fn branch_transition_denial(
-    denial: crate::branch::RelationalBranchCellDenial,
-) -> RelationalInitialSchemaInstallationDenial {
-    let kind = match denial {
-        crate::branch::RelationalBranchCellDenial::RetentionCapacityExhausted => {
-            RelationalInitialSchemaInstallationDenialKind::RetentionCapacityExhausted
-        }
-        crate::branch::RelationalBranchCellDenial::RetentionIdentityExhausted => {
-            RelationalInitialSchemaInstallationDenialKind::RetentionIdentityExhausted
-        }
-        crate::branch::RelationalBranchCellDenial::RetentionOwnerUnavailable => {
-            RelationalInitialSchemaInstallationDenialKind::RetentionOwnerUnavailable
-        }
-        crate::branch::RelationalBranchCellDenial::RetentionRootSetTooLarge => {
-            RelationalInitialSchemaInstallationDenialKind::RetentionRootSetTooLarge
-        }
-        _ => RelationalInitialSchemaInstallationDenialKind::BranchTransitionRejected,
-    };
-    RelationalInitialSchemaInstallationDenial::new(
-        kind,
-        format!("empty branch schema transition failed: {denial:?}"),
-    )
-}
-
+mod recovery_configuration;
 #[cfg(test)]
 mod tests;

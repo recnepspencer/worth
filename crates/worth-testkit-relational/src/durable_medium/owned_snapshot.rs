@@ -26,6 +26,7 @@ pub struct OwnedNativeReadSnapshot {
     canonical: ExecutionOrderedMap<u64, ExecutionImmutableBytes>,
     transitions: ExecutionOrderedMap<u64, ExecutionImmutableBytes>,
     members: ExecutionOrderedMap<([u8; 32], u64), ExecutionImmutableBytes>,
+    initial_inputs: Option<ExecutionImmutableBytes>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl OwnedNativeReadSnapshot {
@@ -36,6 +37,7 @@ impl OwnedNativeReadSnapshot {
         canonical: impl Iterator<Item = (u64, &'a [u8])>,
         transitions: impl Iterator<Item = (u64, &'a [u8])>,
         members: &MemberBytes,
+        initial_inputs: Option<&[u8]>,
     ) -> Result<Box<Self>, Refusal> {
         let memory = request.reserve_retained_memory(std::mem::size_of::<Self>() as u64)?;
         let mut snapshot = Self {
@@ -43,6 +45,9 @@ impl OwnedNativeReadSnapshot {
             canonical: Default::default(),
             transitions: Default::default(),
             members: Default::default(),
+            initial_inputs: initial_inputs
+                .map(|bytes| copy(request, bytes))
+                .transpose()?,
             _memory: memory,
         };
         for (position, bytes) in canonical {
@@ -73,6 +78,16 @@ impl OwnedNativeReadSnapshot {
     pub fn bounds(&self) -> [u64; 2] {
         self.bounds
     }
+    pub fn initial_inputs(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<Option<ExecutionImmutableBytes>, Refusal> {
+        self.initial_inputs
+            .as_ref()
+            .map(|bytes| self.read(request, Some(bytes), limit))
+            .transpose()
+    }
     pub fn canonical(
         &self,
         request: &ExecutionRequest<'_, '_>,
@@ -102,6 +117,23 @@ impl OwnedNativeReadSnapshot {
             return Err(Refusal::Integrity);
         }
         Ok(bytes)
+    }
+    /// Bounded descriptive framing read; it makes no full-member integrity claim.
+    pub fn member_prefix(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        digest: [u8; 32],
+        length: u64,
+        prefix: usize,
+    ) -> Result<ExecutionImmutableBytes, Refusal> {
+        let bytes = self
+            .members
+            .get(&(digest, length))
+            .ok_or(Refusal::Missing)?;
+        if bytes.len() as u64 != length {
+            return Err(Refusal::Integrity);
+        }
+        copy(request, bytes.get(..prefix).ok_or(Refusal::Missing)?)
     }
     fn read(
         &self,

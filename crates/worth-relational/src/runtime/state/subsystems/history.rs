@@ -66,10 +66,10 @@ pub(crate) use canonical_publication_routes::{
     authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
     CanonicalPositionAdmission, CanonicalPublicationRecordError, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
-    PatchPositionReservationAdmission, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
-    RetainedBranchTransition, RetainedCanonicalPosition,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, PatchPositionReservationAdmission,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
+    RelationalCanonicalPublicationRoutes, RetainedBranchTransition, RetainedCanonicalPosition,
 };
 pub use canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,

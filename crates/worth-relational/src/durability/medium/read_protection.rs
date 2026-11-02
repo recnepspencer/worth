@@ -14,6 +14,7 @@ use RelationalDurableOwnedReadRefusal as Refusal;
 /// Descriptive immutable bounds selected by the actual provider cut.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RelationalDurableReadBounds {
+    pub selected_checkpoint: bool,
     pub canonical: PatchStreamPosition,
     pub transitions: RelationalBranchTransitionSequence,
 }
@@ -32,6 +33,18 @@ impl std::fmt::Debug for RelationalDurableReadProtection {
     }
 }
 impl RelationalDurableReadProtection {
+    pub fn read_initial_inputs_owned(
+        &self,
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<Option<ExecutionImmutableBytes>, Refusal> {
+        self.validate(source)?;
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        source.read_initial_inputs_owned(request, self.original.as_ref(), limit)
+    }
     pub fn capture(
         source: &Arc<dyn RelationalDurableColdSource>,
         request: &ExecutionRequest<'_, '_>,

@@ -1,8 +1,9 @@
 pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
     MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
-    OriginalRecordAllocationCursor, OriginalSymbolMeanings, RetainedBranchTransition,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
+    RetainedBranchTransition,
 };
 pub mod builder;
 mod construction;
@@ -59,9 +60,9 @@ pub(crate) use initial_schema_installation::{
     codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
 };
 pub use initial_schema_installation::{
-    custom_invariant_inventory_digest, RelationalInitialSchemaInstallation,
-    RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
-    RelationalInitialSchemaInstallationReceipt,
+    custom_invariant_inventory_digest, FreshRelationalInitialSchemaInstallation,
+    RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
+    RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
 };
 pub use interruption_counters::RelationalInterruptionCostCounters;
 pub use operation_control::RelationalPatchPositionReservationGateForTest;

@@ -25,9 +25,8 @@ impl RecoveredRootHold {
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .upgrade(),
-            Self::Empty(schema) => Some(RelationalBranchRoot::empty_with_schema(
-                schema.registry(),
-                schema.descriptor_semantics_version(),
+            Self::Empty(schema) => Some(RelationalBranchRoot::empty_with_schema_authority(
+                schema.clone(),
             )),
         }
     }

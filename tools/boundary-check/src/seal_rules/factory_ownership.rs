@@ -1,5 +1,12 @@
 //! Named factory reach follows its semantic owner and exact caller class.
 pub(super) const FACTORIES: &[&str] = &[
+    "begin_fresh_home_initialization",
+    "prepare_fresh_home_schema_installation",
+    "from_home_original_bytes",
+    "copy_home_input_for_request",
+    "from_absent_home_read",
+    "from_original_home_read",
+    "home_fresh_schema_initialization",
     "registered_authoritative_source",
     "with_authoritative_source",
     "from_owner_publication",
@@ -9,7 +16,6 @@ pub(super) const FACTORIES: &[&str] = &[
     "admit_fresh_world_home",
     "admit_fresh_home_source",
     "admit_fresh_home_from_source",
-    "readmit_home_from_read_without_schema",
     "validate_fresh_source_runtime",
     "validate_fresh_initial_schema_installation",
     "world_fresh_source_admission",
@@ -17,7 +23,7 @@ pub(super) const FACTORIES: &[&str] = &[
     "home_recovered_query_finalization_parts",
     "fresh_query_finalization_parts",
     "recovered_query_finalization_parts",
-    "readmit_home_from_read",
+    "readmit_prepared_home",
     "begin_after_world_seal",
     "world_composition_runtime",
     "world_recovery_authority",
@@ -30,18 +36,20 @@ pub(super) const FACTORIES: &[&str] = &[
     "from_protected_world_journal",
     "query_runtime_handle",
     "prepare_home_program",
-    "install_home_native_schema",
+    "initialize_home_native_schema",
+    "prepare_home_native_receiver_schema",
     "finish_fresh_home_native_readmission",
     "finish_existing_home_native_readmission",
     "attach_existing_home_registered_source",
     "attach_existing_home_world",
     "attach_home_registered_source",
     "attach_home_world",
-    "native_for_schema_installation",
+    "prepare_native_schema_for_home",
     "query_finalization_parts",
     "initialize_new_home",
     "query_composition_parts",
-    "attach_unrecovered_home",
+    "attach_fresh_home",
+    "attach_prepared_home",
     "home_schema_installation_runtime",
     "home_query_finalization_parts",
     "query_publication_home_binding",
@@ -53,16 +61,40 @@ pub(super) const FACTORIES: &[&str] = &[
 ];
 
 pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
-    if name == "admit_fresh_home_source" {
+    if name == "begin_fresh_home_initialization" {
+        ("native-fresh-initialization", "crates/worth-relational/")
+    } else if name == "prepare_fresh_home_schema_installation" {
+        (
+            "native-durable-initial-installation",
+            "crates/worth-relational/",
+        )
+    } else if name == "from_home_original_bytes" {
+        ("native-home-original-source", "crates/worth-relational/")
+    } else if name == "copy_home_input_for_request" {
+        (
+            "native-home-original-source-copy",
+            "crates/worth-relational/",
+        )
+    } else if name == "from_absent_home_read" {
+        (
+            "native-source-origin-preparation",
+            "workspaces/worth-store/crates/worth-store-relational/",
+        )
+    } else if name == "from_original_home_read" {
+        (
+            "native-source-origin-preparation",
+            "workspaces/worth-store/crates/worth-store-relational/",
+        )
+    } else if name == "home_fresh_schema_initialization" {
+        (
+            "native-home-schema-installation",
+            "workspaces/worth-store/crates/worth-store-relational/",
+        )
+    } else if name == "admit_fresh_home_source" {
         ("native-fresh-home-source", "crates/worth-relational/")
     } else if name == "admit_fresh_home_from_source" {
         (
             "native-fresh-home-readmission",
-            "workspaces/worth-store/crates/worth-store-relational/",
-        )
-    } else if name == "readmit_home_from_read_without_schema" {
-        (
-            "native-unconfigured-home-readmission",
             "workspaces/worth-store/crates/worth-store-relational/",
         )
     } else if name == "world_fresh_source_admission" {
@@ -107,7 +139,7 @@ pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
             "query-home-retirement",
             "workspaces/worth-query/crates/worth-query-execution/",
         )
-    } else if name == "readmit_home_from_read" {
+    } else if name == "readmit_prepared_home" {
         (
             "native-selected-home-readmission",
             "workspaces/worth-store/crates/worth-store-relational/",
@@ -149,7 +181,8 @@ pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
     } else if matches!(
         name,
         "prepare_home_program"
-            | "install_home_native_schema"
+            | "initialize_home_native_schema"
+            | "prepare_home_native_receiver_schema"
             | "finish_fresh_home_native_readmission"
             | "finish_existing_home_native_readmission"
             | "attach_existing_home_registered_source"
@@ -163,7 +196,7 @@ pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
         )
     } else if matches!(
         name,
-        "native_for_schema_installation"
+        "prepare_native_schema_for_home"
             | "query_finalization_parts"
             | "initialize_new_home"
             | "query_composition_parts"
@@ -172,7 +205,7 @@ pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
             "native-home-query-preparation",
             "workspaces/worth-store/crates/worth-store-application/",
         )
-    } else if name == "attach_unrecovered_home" {
+    } else if matches!(name, "attach_fresh_home" | "attach_prepared_home") {
         (
             "native-home-attachment",
             "workspaces/worth-store/crates/worth-store-relational/",

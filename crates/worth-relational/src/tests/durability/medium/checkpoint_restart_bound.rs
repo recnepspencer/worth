@@ -32,7 +32,12 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
     let mut consolidations = 0;
     let mut previous_depth = 0;
     for _ in 0..(HISTORY_CAPTURE_MAX_LAYERS * 4) {
-        let runtime = recover(execution, recovery.clone());
+        let runtime = recover(
+            execution,
+            recovery
+                .copy_original_transport_for_request(execution)
+                .unwrap(),
+        );
         let mut reader = test_owner_begin_transaction_for_main(&runtime);
         let expected = reader
             .read_entity(execution, entity)
@@ -108,7 +113,12 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
             Vec::new(),
             archive.clone(),
         );
-        let maintenance = recover(execution, recovery.clone());
+        let maintenance = recover(
+            execution,
+            recovery
+                .copy_original_transport_for_request(execution)
+                .unwrap(),
+        );
         maintenance.retention().run_pass(execution).unwrap();
         let mut reader = test_owner_begin_transaction_for_main(&maintenance);
         assert_eq!(

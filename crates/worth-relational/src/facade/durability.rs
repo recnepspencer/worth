@@ -24,6 +24,7 @@ pub use crate::durability::data::{
     RelationalCheckpointArtifactPolicy, RelationalCheckpointMember, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
 };
+pub use crate::durability::medium::RelationalInitialInputsPublicationStop;
 pub use crate::durability::medium::{
     CheckpointSelectionIdentity, CheckpointSelectionObservation, DurablePublicationFate,
     OpaqueCapturedCheckpointSubject, RelationalCheckpointAcknowledgementDenial,
@@ -36,6 +37,11 @@ pub use crate::durability::medium::{
     RetiredRelationalDurableMemberCustody,
 };
 pub use crate::durability::migration::ReadmittedCanonicalCommit;
+pub use crate::durability::source_initial_inputs::{
+    RelationalCompleteSourceArtifact, RelationalFreshInitialization,
+    RelationalInitialInputsPublicationDetail, RelationalInitialInputsRefusal,
+    RelationalSourceInitialInputsArtifact,
+};
 pub use crate::durability::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,

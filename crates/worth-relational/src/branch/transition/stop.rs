@@ -16,6 +16,7 @@ pub enum RelationalBranchTransitionStop<D> {
     /// transition waited for the patch-position reservation, before any
     /// effect.
     RequestStopped(worth_execution::WorkCeilingDenial),
+    OriginalInputsStopped(crate::durability::data::RelationalRecoveryStop),
     /// The medium could not tell whether the transition became durable.
     DurabilityUnresolved(RelationalDurabilityUnresolved),
 }
@@ -25,7 +26,9 @@ impl<D> RelationalBranchTransitionStop<D> {
     pub fn denied(&self) -> Option<&D> {
         match self {
             Self::Denied(denial) => Some(denial),
-            Self::RequestStopped(_) | Self::DurabilityUnresolved(_) => None,
+            Self::RequestStopped(_)
+            | Self::OriginalInputsStopped(_)
+            | Self::DurabilityUnresolved(_) => None,
         }
     }
 
@@ -33,7 +36,7 @@ impl<D> RelationalBranchTransitionStop<D> {
     pub fn durability_unresolved(&self) -> Option<&RelationalDurabilityUnresolved> {
         match self {
             Self::DurabilityUnresolved(unresolved) => Some(unresolved),
-            Self::Denied(_) | Self::RequestStopped(_) => None,
+            Self::Denied(_) | Self::RequestStopped(_) | Self::OriginalInputsStopped(_) => None,
         }
     }
 }
@@ -58,6 +61,7 @@ impl<D: super::RelationalBranchTransitionDenial>
         match error {
             Record::Denied(denial) => Self::Denied(denial),
             Record::ReservationWaitStopped(stop) => Self::RequestStopped(stop),
+            Record::OriginalInputsStopped(stop) => Self::OriginalInputsStopped(stop),
             Record::SequenceCapacityExhausted => Self::Denied(D::transition_sequence_exhausted()),
             Record::StorageCapacityExhausted => Self::Denied(D::transition_storage_exhausted()),
             Record::OriginalPrefixMismatch => {

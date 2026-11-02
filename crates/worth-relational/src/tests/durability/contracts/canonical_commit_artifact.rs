@@ -200,11 +200,13 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
         &setup_execution,
     )
     .unwrap());
-    // Actual verified v4 wire: length is the last u64 of its 66-byte header.
-    // This is an independent emitted-byte count, not the digest writer's cost.
+    // Actual verified v5 wire: the commitment hashes the three VALUES, without
+    // their outer map header/keys. Count exact original slices independently.
     let payload_len = u64::from_le_bytes(artifact.as_bytes()[58..66].try_into().unwrap());
     assert_eq!(artifact.as_bytes().len() as u64, 66 + payload_len);
     assert!(payload_len > 64 * 1024);
+    let value_bytes = commitment_value_bytes(artifact.as_bytes());
+    assert!(value_bytes > 64 * 1024 && value_bytes < payload_len);
     let policy = |work| {
         ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
@@ -215,7 +217,7 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
     // Entry/controller charges no payload work. This ceiling admits the whole
     // first hash and all but the final byte of the second, so entry-only polls
     // or a fresh/reset second-pass budget cannot make this test pass.
-    let two_pass_work = payload_len.checked_mul(2).unwrap() - 1;
+    let two_pass_work = value_bytes.checked_mul(2).unwrap() - 1;
     let limited = SerialRequest::from_policy(
         &policy(two_pass_work),
         CancellationSource::new().token(),
@@ -231,7 +233,7 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
     assert_eq!(limited.memory().unwrap().charged_memory_bytes(), 0);
     // The cold retained-entry digest door also stops INSIDE its one pass.
     let cold = SerialRequest::from_policy(
-        &policy(payload_len - 1),
+        &policy(value_bytes - 1),
         CancellationSource::new().token(),
         None,
     );
@@ -276,4 +278,21 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
     assert_eq!(expired.memory().unwrap().charged_memory_bytes(), 0);
     release_test_commit_snapshot(&runtime, &other);
     release_test_commit_snapshot(&runtime, &created);
+}
+
+fn commitment_value_bytes(frame: &[u8]) -> u64 {
+    let payload = &frame[66..];
+    assert_eq!(payload[0], 0x83, "v5 has exactly three named fields");
+    let mut cursor = std::io::Cursor::new(payload);
+    cursor.set_position(1);
+    let mut bytes = 0;
+    for expected in ["position", "canonical", "original_inputs"] {
+        let key: String = rmp_serde::from_read(&mut cursor).unwrap();
+        assert_eq!(key, expected);
+        let start = cursor.position();
+        let _: serde::de::IgnoredAny = rmp_serde::from_read(&mut cursor).unwrap();
+        bytes += cursor.position() - start;
+    }
+    assert_eq!(cursor.position() as usize, payload.len());
+    bytes
 }

@@ -44,6 +44,8 @@ pub(crate) struct RetainedBranchTransition {
 pub(crate) struct OriginalBranchSchemaInputs {
     pub(crate) birth: Option<OriginalEmptySchemaObservation>,
     pub(crate) installation: Option<OriginalEmptySchemaInstallation>,
+    pub(crate) accepted_initial_inputs:
+        Option<Arc<crate::durability::source_initial_inputs::image::InitialInputsImage>>,
     transitions: Vec<RetainedBranchTransition>,
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -156,9 +158,17 @@ impl RelationalCanonicalPublicationRoutes {
         Ok(OriginalBranchSchemaInputs {
             birth: state.birth.clone(),
             installation: state.installation.clone(),
+            accepted_initial_inputs: state.initial_inputs.clone(),
             transitions,
             _memory: memory,
         })
+    }
+
+    pub(crate) fn retain_accepted_initial_inputs(
+        &self,
+        inputs: Arc<crate::durability::source_initial_inputs::image::InitialInputsImage>,
+    ) {
+        self.branch_transitions.state().initial_inputs = Some(inputs);
     }
 }
 

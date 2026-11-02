@@ -22,6 +22,7 @@ mod plan;
 mod portable_aspects;
 mod required_output;
 pub(super) mod schema;
+pub(crate) mod schema_image;
 mod semantic;
 mod strategy;
 mod symbols;

@@ -17,6 +17,7 @@ pub struct TestDurableMedium {
 }
 #[derive(Debug, Default)]
 struct Contents {
+    initial_inputs: Option<RelationalSourceInitialInputsArtifact>,
     commits: ByteJournal,
     transitions: ByteJournal,
     members: MemberBytes,

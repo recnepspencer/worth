@@ -10,6 +10,7 @@ mod recovered_associated_effects;
 mod recovered_publication;
 mod result_snapshot_cleanup;
 mod semantic_result;
+mod source_initial_inputs;
 
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{

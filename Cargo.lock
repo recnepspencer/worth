@@ -1896,6 +1896,7 @@ name = "worth-court-relational-certification"
 version = "0.1.0"
 dependencies = [
  "rmp-serde",
+ "serde",
  "serde_json",
  "sha2",
  "worth-execution",
@@ -2568,6 +2569,7 @@ name = "worth-store-relational"
 version = "0.1.0"
 dependencies = [
  "worth-execution",
+ "worth-foundational",
  "worth-proof",
  "worth-relational",
  "worth-store",

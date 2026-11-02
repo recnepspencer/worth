@@ -39,7 +39,7 @@ pub(in super::super::super) fn prepare_canonical_readmission(
         retained,
     ))
 }
-fn prepare_declaration(
+pub(in super::super) fn prepare_declaration(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<DurableSchemaDeclarationMemory, Refusal> {
@@ -111,6 +111,32 @@ fn visit_leaves<'a>(
         policy(field(declaration, "policy", request)?)
     })?;
     Ok(())
+}
+pub(in super::super) fn declaration_leaf_bytes(
+    value: BorrowedPayload<'_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<u64, Refusal> {
+    let mut identity_bytes = 0u64;
+    let mut policy_bytes = 0u64;
+    visit_leaves(
+        value,
+        request,
+        &mut |raw| {
+            sum(
+                &mut identity_bytes,
+                identities::basis(raw, request)?.retained,
+            )
+        },
+        &mut |raw| {
+            sum(
+                &mut policy_bytes,
+                identities::policy(raw, request)?.retained,
+            )
+        },
+    )?;
+    identity_bytes
+        .checked_add(policy_bytes)
+        .ok_or_else(malformed)
 }
 fn identity(
     value: BorrowedPayload<'_>,

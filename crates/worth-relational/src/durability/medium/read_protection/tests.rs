@@ -28,6 +28,7 @@ impl RelationalDurableColdSource for LegacyCut {
     ) -> Result<(RelationalDurableReadBounds, RelationalDurableReadPayload), Refusal> {
         Ok((
             RelationalDurableReadBounds {
+                selected_checkpoint: false,
                 canonical: PatchStreamPosition(1),
                 transitions: RelationalBranchTransitionSequence(1),
             },
@@ -121,6 +122,7 @@ fn memory_cut_keeps_original_buffers_and_refunds_after_last_owned_clone() {
         [(1, original.as_slice())].into_iter(),
         [(1, transition.as_slice())].into_iter(),
         &MemberBytes::default(),
+        None,
     )
     .unwrap();
     assert_eq!(snapshot.bounds()[0], 1);
@@ -155,7 +157,8 @@ fn memory_cut_keeps_original_buffers_and_refunds_after_last_owned_clone() {
             &denied,
             [(1, original.as_slice())].into_iter(),
             std::iter::empty(),
-            &MemberBytes::default()
+            &MemberBytes::default(),
+            None,
         ),
         Err(OwnedSnapshotDenial::Request(_))
     ));

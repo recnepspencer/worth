@@ -85,7 +85,7 @@ fn domain(
     })?;
     Ok(bytes)
 }
-fn projected(
+pub(super) fn projected(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {
@@ -102,7 +102,7 @@ fn projected(
     })?;
     Ok(bytes)
 }
-fn derived(
+pub(super) fn derived(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {

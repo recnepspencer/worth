@@ -1,6 +1,6 @@
 pub(crate) use history::{
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
-    RetainedBranchTransition,
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub(crate) use record_identity::{MutationRecordAllocations, OriginalRecordAllocationCursor};
 mod commit_strategies;

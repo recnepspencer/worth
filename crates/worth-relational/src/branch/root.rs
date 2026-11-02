@@ -206,6 +206,16 @@ impl RelationalBranchRoot {
         let schema_authority_id = issuer
             .issue_schema_authority_id()
             .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has schema authority capacity");
+        let schema = RelationalBranchRootSchemaAuthority::capture(
+            schema_authority_id, registry, &expected, descriptor_semantics_version, None,
+        ).expect(/* Proof: the authority is captured from this same validated registry and its own snapshot. */ "empty schema matches registry");
+        Self::empty_with_schema_authority(schema)
+    }
+
+    pub(crate) fn empty_with_schema_authority(
+        schema: Arc<RelationalBranchRootSchemaAuthority>,
+    ) -> Arc<Self> {
+        let issuer = RelationalBranchRootIdentityIssuer::default();
         Arc::new(Self {
             id: 0,
             regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
@@ -214,14 +224,7 @@ impl RelationalBranchRoot {
             relation_slot_count: 0,
             content_accumulator: [0; 32],
             output_publication_positions: Default::default(),
-            schema_authority: RelationalBranchRootSchemaAuthority::capture(
-                schema_authority_id,
-                registry,
-                &expected,
-                descriptor_semantics_version,
-                None,
-            )
-            .expect(/* Proof: Both runtime schema plans and this initial root are built from the same validated registry and current descriptor semantics policy. */ "runtime schema plans match the runtime registry"),
+            schema_authority: schema,
             committed: None,
             _memory: None,
             managed_source_image: std::sync::OnceLock::new(),

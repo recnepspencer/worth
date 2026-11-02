@@ -12,6 +12,11 @@ pub(crate) struct PreparedCheckpointDirectoryRetirement {
     memory: Option<ExecutionMemoryReservation>,
 }
 pub(crate) struct CheckpointDirectoryRetirement {
+    _source_schemas: std::sync::OnceLock<
+        Arc<
+            crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog,
+        >,
+    >,
     manifest: RelationalCheckpointManifest,
     source: Arc<dyn RelationalDurableColdSource>,
     history_members: Arc<super::super::RelationalHistoryMemberDirectory>,
@@ -38,6 +43,7 @@ impl PreparedCheckpointDirectoryRetirement {
         directory: RelationalCheckpointDirectory,
     ) -> Box<CheckpointDirectoryRetirement> {
         let RelationalCheckpointDirectory {
+            source_schemas,
             manifest,
             source,
             history_members,
@@ -45,6 +51,7 @@ impl PreparedCheckpointDirectoryRetirement {
             _basis,
         } = directory;
         let task = CheckpointDirectoryRetirement {
+            _source_schemas: source_schemas,
             manifest,
             source,
             history_members,

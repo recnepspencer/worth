@@ -6,7 +6,6 @@ native-fresh-initial-installation workspaces/worth-query/crates/worth-query-exec
 world-fresh-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
 world-fresh-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
 native-fresh-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
-native-unconfigured-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
 native-home-source-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
 application-home-fresh-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
 application-home-fresh-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
@@ -148,8 +147,29 @@ native-checkpoint-read-protection workspaces/worth-store/crates/worth-store-rela
 world-home-checkpoint-selection workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/selection.rs
 world-home-checkpoint-source workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/read.rs
 # Coupled opening consumes one original selected Home payload and its EOF custody.
-native-selected-home-readmission workspaces/worth-store/crates/worth-store-application/src/open/mod.rs
 native-selected-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
 # Exact owner-private selected-source refusal proof uses the existing genuine recipe.
 world-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
+# Complete Home original-input persistence: exact source, initialization and replay owners.
+native-fresh-initialization workspaces/worth-store/crates/worth-store-relational/src/section/unshared.rs
+native-durable-initial-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/initial_installation.rs
+native-home-original-source workspaces/worth-store/crates/worth-store-relational/src/section/source_preparation.rs
+native-home-original-source-copy workspaces/worth-store/crates/worth-store-relational/src/section/readmission/prepared_source.rs
+native-source-origin-preparation workspaces/worth-store/crates/worth-store-application/src/open/native_source.rs
+
+# Genuine producer fixture for external source-input courts.
+native-fresh-initialization crates/worth-testkit-relational/src/initial_input_source.rs
+native-durable-initial-installation crates/worth-testkit-relational/src/initial_input_source.rs
+native-home-original-source crates/worth-testkit-relational/src/initial_input_source.rs
+native-fresh-initialization crates/worth-testkit-relational/src/initial_input_source/schema_history.rs
+native-durable-initial-installation crates/worth-testkit-relational/src/initial_input_source/schema_history.rs
+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
+native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
+native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
+native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
+
+# Existing Complete capture door, exact relocated public court/fixture callers.
+native-home-complete-checkpoint crates/worth-testkit-relational/src/initial_input_source.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs

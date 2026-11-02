@@ -1,5 +1,6 @@
 mod original_inputs;
 mod readmission;
+mod reconstructed_inputs;
 pub(crate) use original_inputs::OriginalCanonicalInputs;
 
 use std::sync::Arc;

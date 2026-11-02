@@ -137,9 +137,31 @@ fn field_initializers_and_renamed_imports_cannot_claim_a_foreign_door() {
 #[test]
 fn certification_factory_callers_are_class_and_file_exact() {
     for (factory, class) in [
+        (
+            "begin_fresh_home_initialization",
+            "native-fresh-initialization",
+        ),
+        (
+            "prepare_fresh_home_schema_installation",
+            "native-durable-initial-installation",
+        ),
+        ("from_home_original_bytes", "native-home-original-source"),
+        (
+            "copy_home_input_for_request",
+            "native-home-original-source-copy",
+        ),
+        ("from_absent_home_read", "native-source-origin-preparation"),
+        (
+            "from_original_home_read",
+            "native-source-origin-preparation",
+        ),
+        (
+            "home_fresh_schema_initialization",
+            "native-home-schema-installation",
+        ),
         ("certification_query", "installation"),
         ("readmit_world_home", "world-home"),
-        ("readmit_home_from_read", "native-selected-home-readmission"),
+        ("readmit_prepared_home", "native-selected-home-readmission"),
         ("begin_after_world_seal", "query-home-retirement"),
         ("world_composition_runtime", "native-home-composition"),
         ("world_recovery_authority", "native-world-readmission"),
@@ -175,7 +197,11 @@ fn certification_factory_callers_are_class_and_file_exact() {
             "world-home-checkpoint-source",
         ),
         ("prepare_home_program", "query-home-preparation"),
-        ("install_home_native_schema", "query-home-preparation"),
+        ("initialize_home_native_schema", "query-home-preparation"),
+        (
+            "prepare_home_native_receiver_schema",
+            "query-home-preparation",
+        ),
         (
             "finish_fresh_home_native_readmission",
             "query-home-preparation",
@@ -192,7 +218,7 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ),
         ("attach_existing_home_world", "query-home-preparation"),
         (
-            "native_for_schema_installation",
+            "prepare_native_schema_for_home",
             "native-home-query-preparation",
         ),
         ("query_finalization_parts", "native-home-query-preparation"),
@@ -212,10 +238,6 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ),
         ("world_fresh_source_admission", "native-world-fresh-source"),
         (
-            "readmit_home_from_read_without_schema",
-            "native-unconfigured-home-readmission",
-        ),
-        (
             "home_fresh_query_finalization_parts",
             "native-home-source-finalization",
         ),
@@ -233,7 +255,8 @@ fn certification_factory_callers_are_class_and_file_exact() {
         ),
         ("initialize_new_home", "native-home-query-preparation"),
         ("query_composition_parts", "native-home-query-preparation"),
-        ("attach_unrecovered_home", "native-home-attachment"),
+        ("attach_fresh_home", "native-home-attachment"),
+        ("attach_prepared_home", "native-home-attachment"),
         (
             "home_schema_installation_runtime",
             "native-home-schema-installation",

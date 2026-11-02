@@ -40,9 +40,11 @@ mod unresolved;
 pub use transition_read::RelationalDurableTransitionReadFailure;
 pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
+pub use binding::RelationalInitialInputsPublicationStop;
 pub(crate) use binding::{
-    CheckpointPublication, RelationalDurableCommitReadmission, RelationalDurableMediumBinding,
-    RelationalDurableStepStop, RelationalDurableTransitionPublication,
+    CheckpointPublication, RelationalCommittedInitialInputs, RelationalDurableCommitReadmission,
+    RelationalDurableMediumBinding, RelationalDurableStepStop,
+    RelationalDurableTransitionPublication,
 };
 pub(crate) use commit_publication::RelationalCommitPublication;
 pub use recovery_source::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
@@ -69,6 +71,15 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 /// runtime, and a forked runtime never inherits publication access. Speculative
 /// forks may carry only a read-only historical-transition reader.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
+    fn publish_initial_inputs(
+        &self,
+        _artifact: &crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> DurablePublicationFate<
+        crate::durability::source_initial_inputs::RelationalInitialInputsPublicationDetail,
+    > {
+        DurablePublicationFate::ProvenNoEffect { detail: crate::durability::source_initial_inputs::RelationalInitialInputsPublicationDetail::UnsupportedProvider }
+    }
     /// Read the exact Home attempt's actual terminal receipt. A caller-supplied
     /// fate or separately paired receipt is not an answer to this question.
     fn checkpoint_selection(

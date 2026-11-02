@@ -43,6 +43,7 @@ pub(super) fn restore_checkpoint_state(
     restored: &mut RelationalRuntime,
     checkpoint: DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
+    original_schemas: Option<&super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<(), RelationalRecoveryStop> {
     if let Some(directory) = checkpoint.directory.clone() {
         cold_directory::restore(execution, restored, &checkpoint, directory, work)?;
@@ -51,7 +52,8 @@ pub(super) fn restore_checkpoint_state(
             .push_checkpoint(checkpoint);
         return Ok(());
     }
-    let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
+    let prepared =
+        prepare_checkpoint_state(execution, restored, &checkpoint, work, original_schemas)?;
     let restored = super::unshared_state(restored)?;
     install_checkpoint_state(restored, prepared);
     if let Some(directory) = checkpoint.canonical_directory.clone() {
@@ -69,11 +71,13 @@ fn prepare_checkpoint_state(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
+    original_schemas: Option<&super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<PreparedCheckpointState, RelationalRecoveryStop> {
     validate_checkpoint_lineage_artifact(checkpoint)?;
     let symbols = prepare_symbols(restored, checkpoint)?;
     let record_identity = prepare_record_identity(checkpoint)?;
-    let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
+    let branch_root_images =
+        restore_branch_root_images(restored, checkpoint, work, original_schemas)?;
     recovered_schema_meaning::check_current_schema_meaning(
         execution,
         checkpoint,

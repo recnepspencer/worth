@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 mod checkpoint_selection;
+mod initial_inputs;
 pub(crate) use checkpoint_selection::CheckpointPublication;
+pub(crate) use initial_inputs::RelationalCommittedInitialInputs;
+pub use initial_inputs::RelationalInitialInputsPublicationStop;
 use worth_proof::{AuthorityMarker, DurablyCommitted};
 
 use super::{

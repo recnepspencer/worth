@@ -8,7 +8,6 @@ use super::{
 };
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::publication::patch::data::PatchStreamPosition;
-use sha2::{Digest as _, Sha256};
 use std::io::{self, Write};
 use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
 
@@ -23,7 +22,6 @@ impl Artifact {
         let mut count = Sizing {
             request: *request,
             length: 0,
-            hash: Sha256::new(),
             failure: None,
         };
         let result = rmp_serde::encode::write_named(&mut count, &payload);
@@ -35,7 +33,10 @@ impl Artifact {
         let header = CanonicalCommitArtifactHeader {
             position,
             commit_id: envelope.commit.commit_id,
-            digest: Digest::recorded(count.hash.finalize().into()),
+            digest: Digest::recorded(
+                Self::envelope_payload_digest_for_request(position, envelope, request)
+                    .map_err(Denial::Readmission)?,
+            ),
         };
         let mut buffer = ExecutionRequestArrayBuilder::<u8>::allocate(*request, frame_len)?;
         buffer.extend_from_slice(
@@ -65,7 +66,6 @@ impl Artifact {
 struct Sizing<'r, 'a> {
     request: ExecutionRequest<'r, 'a>,
     length: usize,
-    hash: Sha256,
     failure: Option<Denial>,
 }
 impl Write for Sizing<'_, '_> {
@@ -81,12 +81,11 @@ impl Write for Sizing<'_, '_> {
                 return Err(stopped());
             }
         };
-        for chunk in bytes.chunks(64 * 1024) {
+        for _ in bytes.chunks(64 * 1024) {
             if let Err(cause) = self.request.consult() {
                 self.failure = Some(Denial::Request(cause));
                 return Err(stopped());
             }
-            self.hash.update(chunk);
         }
         self.length = next;
         Ok(bytes.len())

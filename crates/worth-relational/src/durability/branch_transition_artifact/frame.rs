@@ -8,7 +8,7 @@ use crate::branch::RelationalBranchTransitionSequence;
 use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRBTA";
-pub(super) const FORMAT_VERSION: u16 = 1;
+pub(super) const FORMAT_VERSION: u16 = 2;
 
 const VERSION_OFFSET: usize = MAGIC.len();
 const SEQUENCE_OFFSET: usize = VERSION_OFFSET + 2;
@@ -53,12 +53,16 @@ impl BranchTransitionArtifactHeader {
             return Err(Refusal::UnrecognizedMagic);
         }
         let version = u16::from_le_bytes(fixed(frame, VERSION_OFFSET)?);
-        if version != FORMAT_VERSION {
-            return Err(Refusal::UnsupportedVersion {
-                found: version,
-                supported: FORMAT_VERSION,
-            });
-        }
+        let version =
+            worth_foundational::facade::BoundaryProtocolVersion::try_new(u32::from(version))
+                .map_err(|_| Refusal::InvalidVersion)?;
+        let supported =
+            worth_foundational::facade::BoundaryProtocolVersion::new(FORMAT_VERSION as u32);
+        worth_foundational::facade::BoundaryProtocolCompatibilityWindow::inclusive(
+            supported, supported,
+        )
+        .admit(version)
+        .map_err(Refusal::UnsupportedVersion)?;
         let header = Self {
             sequence: RelationalBranchTransitionSequence(u64::from_le_bytes(fixed(
                 frame,

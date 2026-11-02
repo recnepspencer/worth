@@ -8,6 +8,8 @@ use crate::schema::data::{
     AspectContractPlanCatalog, LoweredAspectContractPlan, RelationalSchemaRegistry,
     SchemaAuthoritySnapshot,
 };
+#[path = "root_schema/recorded_image.rs"]
+mod recorded_image;
 #[path = "root_schema/registry_binding.rs"]
 mod registry_binding;
 #[path = "root_schema/snapshot_match.rs"]
@@ -28,6 +30,7 @@ pub(crate) struct RelationalBranchRootSchemaAuthority {
     // snapshot admission. Sharing this fixed DATA avoids recomputing integrity
     // plans and allocating a second snapshot during exact root checks.
     relation_integrity_revisions: Arc<[crate::schema::data::RelationIntegrityPlanRevision]>,
+    recorded_image: std::sync::OnceLock<crate::durability::data::DurableBranchRootSchemaImage>,
 }
 
 impl RelationalBranchRootSchemaAuthority {
@@ -43,6 +46,7 @@ impl RelationalBranchRootSchemaAuthority {
             let retained_aspect_contracts = retain_aspect_contracts(previous, &aspect_plans);
             debug_assert!(/* Proof: RelationalBranchRootSchemaAuthority constructors lower these plans directly from the retained immutable schema snapshot with the selected descriptor semantics; the private plan table cannot be independently supplied or changed. */ plans_match_snapshot(&aspect_plans, expected));
             Arc::new(Self {
+                recorded_image: Default::default(),
                 allocation_id,
                 authority_digest: crate::schema::data::schema_authority_snapshot_digest_bytes(
                     expected,
@@ -67,6 +71,7 @@ impl RelationalBranchRootSchemaAuthority {
             let aspect_plans = crate::schema::lower_aspect_plans(&registry);
             debug_assert!(/* Proof: RelationalBranchRootSchemaAuthority constructors lower these plans directly from the retained immutable schema snapshot with the selected descriptor semantics; the private plan table cannot be independently supplied or changed. */ plans_match_snapshot(&aspect_plans, expected));
             Arc::new(Self {
+                recorded_image: Default::default(),
                 allocation_id,
                 authority_digest: crate::schema::data::schema_authority_snapshot_digest_bytes(
                     expected,
@@ -83,6 +88,7 @@ impl RelationalBranchRootSchemaAuthority {
     #[cfg(test)]
     pub(crate) fn empty() -> Arc<Self> {
         Arc::new(Self {
+            recorded_image: Default::default(),
             allocation_id: 0,
             authority_digest: RelationalSchemaRegistry::default().authority_digest_bytes(),
             registry: Arc::new(RelationalSchemaRegistry::default()),

@@ -1733,8 +1733,61 @@ must not be described as multi-owner checkpoint completion.
 
 ## Complete Home original-input persistence and reopen (P-A design)
 
-Status: revised design awaiting scope handoff and fresh independent review;
-not implemented qualification. The
+### Canonical v5 commitment refinement (implementation design review)
+
+The additive normalized image must prove original-role derivation against the
+unchanged CHK18 index. A copied canonical digest next to role DATA does not do
+this. Independent review rejected that design on 2026-11-02: a rewritten policy
+and recomputed Complete wrapper checksum could retain the original index digest.
+
+Canonical v5 therefore changes the digest grammar as part of its already
+authorized format cutover. Its commitment is
+`SHA256("worth.relational.canonical.v5\0" || LE64(position) || LE64(commit) ||
+SHA256(position-value) || SHA256(canonical-value) || SHA256(original-inputs-value))`.
+The three values are exact, canonical, named-MessagePack field values from the
+v5 payload. The map has exactly the required position, canonical and
+original-inputs fields. Full-frame verification hashes the actual borrowed
+value slices; full admission retains header agreement, exact canonical encoding
+and result-carrier validation. The input value explicitly carries the optional
+result image, whose presence must equal a change of schema carrier. Each image
+must validate its own full carrier content and agree with its result reference.
+
+The v5 original-inputs map has exactly four fields in this fixed canonical
+order: `result_image`, `prestate_schema`, `result_schema`, `mutation`. This order
+is part of v5, not a reinterpretation of any landed payload. The normalized row
+retains the canonical-value leaf, position, commit and the original role/policy
+DATA. Source admission reconstructs its input commitment from the corresponding
+CHK18 schema image when the schema changes. It hashes the map header, first
+key and exact result-image value ONCE per distinct carrier, retaining a cloneable
+SHA-256 prefix state in a request-funded concrete Native map. The nil-result
+prefix is computed once too. Each row clones the matching prefix state and
+appends only the three small named role/policy fields, then finalizes its input
+leaf. It recomputes the position leaf and composite commitment and compares it
+with the unchanged index digest. This is O(C + T + Sbytes) work and
+O(S * sizeof(Sha256)) prefix storage in addition to existing manifest/roster
+owners, where S counts distinct selected schema carriers; alternating large
+carriers across history cannot multiply schema bytes by C. Original schema
+images are shared. No covered canonical body is read. Every map node/prefix
+state is admitted from the invoking request before allocation and dies with
+that admission. Full-frame verification still hashes its actual input slice.
+
+All v5 digest producers, stream index producers and payload agreement checks
+use this one grammar. The omitted canonical-value bytes and reusable hash
+states are DATA, not authority witnesses. No landed CHK18, transition or Home
+manifest format changes are introduced by this refinement.
+
+Required adversarial courts preserve CHK18/index and covered canonical members,
+alter a normalized policy or schema reference, recompute the Complete wrapper
+checksum, and require refusal. The positive image-plus-tail court makes covered
+canonical-body reads unavailable during reopen. A cost court varies both the
+covered history length and carrier size and verifies that each distinct image
+contributes once to admission hashing, independently of schema-change count.
+
+Status: the coordinator accepted design `f8c881ba9a` and granted the exact
+Store, Query, Host and facade/caller handoff on 2026-11-02. A fresh independent
+review approved the cached-prefix commitment refinement after rejecting the
+unbound digest copy and then the per-row full-image hashing design. Implementation
+and qualification are in progress; no reopen completion is claimed yet. The
 starting point is `c068abc047`. This section governs only the original Native
 input chronology and its Home source admission; Query source retirement,
 Home transitions/discard and receipt reconstruction retain their other owners.
@@ -1978,11 +2031,33 @@ or the exhaustive Home oracle. Completion also requires touched formatting,
 dirty line caps, boundary-check, agent-context and fresh independent review.
 Exact commands and final counts belong in target/lane-evidence logs.
 
-### Exact scope handoff required before implementation
+### Original-input requirement trace (qualification in progress)
 
-The user-assigned P-A paths omit the following necessary participants. This
-design does not authorize editing them or widening caller patterns. Request
-the narrow change set from the coordinator/integration owner before coding:
+| Requirement | Named behavior court |
+| --- | --- |
+| D12 original-role reconstruction and repeat Complete | `complete_source_recovery_restores_original_inputs_for_another_complete_capture` |
+| D12 original canonical policy binding | `normalized_policy_rewrite_refuses_with_unchanged_canonical_index_and_resealed_wrapper` |
+| D12 original schema role binding | `normalized_schema_role_rewrite_refuses_with_unchanged_canonical_index_and_resealed_wrapper` |
+| D12 zero-C initialization successor and exact T insertion | `birth_checkpoint_reopens_with_archived_empty_installation_tail_at_zero_commits` |
+| D17 exact initialization fate and original live cutover | `initialization_no_effect_preserves_original_cells_and_indeterminate_blocks_later_publication` |
+| Bounded original-role hash work, both independent axes | `cached_input_commitments_hash_each_schema_once_as_history_and_carrier_size_grow` |
+| Format stability and pre-effect predecessor refusal | `native_format_predecessors_refuse_filesystem_home_before_incarnation_or_owner_publication` |
+| Ordinary selected sections cannot grant Complete admission | `ordinary_selected_native_refuses_before_incarnation_and_native_or_world_publication` |
+| Same-cut owning retry after cancellation/anchor replacement | `controlled_home_refusal_retains_original_selection_across_anchor_advance` |
+| D12 filesystem selected-image reopen and another Complete | `selected_complete_home_reopens_and_selects_another_complete_checkpoint` |
+| D12 process kill, normalized image plus nonempty tail | `killed_home_reopens_normalized_image_plus_nonempty_tail` |
+| D12 original ACK resume and killed unacknowledged selection | `interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection` |
+| Phase 3 bounded Host tail, actual body-read counts with headroom | `automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom` |
+
+These are implementation obligations, not a pass ledger. Real Host reopen,
+process-kill/tail, ACK and bounded-tail executions remain required above; their exact
+source HEAD, command, outcome and counts must appear in lane evidence.
+
+### Exact scope handoff (granted by coordinator)
+
+The coordinator granted the following exact participants after accepting this
+design. Caller patterns remain exact; Host opening is changed last, after
+checking the integration branch and its session report:
 
 - Store Application registry.rs: the exact relational.initial-inputs anchor,
   plus the explicit registry-version compatibility decision if required by
@@ -2005,6 +2080,13 @@ the narrow change set from the coordinator/integration owner before coding:
 - Proof/Native/Store facades and factory configuration: only the concrete phase
   export and exact Section/Application/Host callers of the final named doors.
   A generic factory family or broad source-pattern exception is forbidden.
+
+The physical registry's anchored-name list checks disjoint reservation names;
+it is not the persisted ordered-journal identity. Adding the single initialization
+anchor therefore preserves journal registry version 3 and its exact eleven
+journals. No older journal identity is reinterpreted. Descriptor preparation
+continues to validate existing binding/legacy shape before Native eligibility;
+only descriptor publication follows the preflight.
 
 The new original-input artifacts and their codecs alone cannot satisfy the
 task without this handoff. Keep the selected-Home refusal until the integrated
@@ -2347,3 +2429,56 @@ Query installation/receipt reconstruction, or Relational's envelope version
 and association field. The Phase 3 implementation agent owns those integration
 edits; the main chat's Root coordinates assignment and final landing. Local World proofs do
 not certify the joint production-host lost-response/kill/reopen/retry journey.
+
+
+### Original-input source court placement ruling
+
+The four newly introduced in-crate source courts are relocated, preserving their
+six behaviour names, into the existing relational certification binary. The
+commitment growth court now creates actual schema-transition commits with two
+carriers and compares every computed leaf against the original wire frame. Its
+compiled sealed receiver observation reads only the actual Complete artifact,
+uses the production catalog, and returns immutable computed DATA. It accepts no
+schema, policy, repetition count, callback, or authority override.
+
+The existing Native owner medium's `runtime_attachment.rs` baseline gains only
+`ExecutionRequest`: the mandatory durable publication trait now borrows that
+request. This creates no request or composition root. D14 permits the existing
+owner-private medium; this exact signature update does not permit new courts.
+Runner-generated timing catalogs are archived with lane evidence and excluded
+from the implementation diff.
+
+
+The anchored-record failure classification is owned by the physical Store:
+`AnchoredRecordPublicationFailure::into_publication_fate` reuses the existing
+foundational fate and retains its actual failure/custody payload. Its internal
+match is exhaustive despite the external failure enum being non-exhaustive.
+The initial-input medium exhaustively consumes that fate; it does not classify
+unknown physical variants itself. This is one method on the existing facade
+failure type, with no additional type, feature, or boundary pattern.
+
+
+### P-A implementation qualification at the World caller seam
+
+The relocated original-input courts have six passing behaviour results,
+including real two-carrier commit history, independent original-frame leaf
+comparisons, resealed-role refusals, C0 installation tail and repeat Complete.
+The focused Native restore/transition/canonical/initial-installation packet has
+38 initial passes and two passing targeted accounting reruns. The two stale
+accounting assumptions were the v4 whole-map hash bill and charging the new
+schema carrier to the stream-backing-only fixture. Their refusal assertions
+remain intact.
+
+Filesystem Home courts are implemented but **unrun**. Store Application/Query
+compilation stops at the exhaustive match in
+`crates/worth-runtime-world/src/lifecycle/owner/branch_service/creation/execution/forks.rs:238`:
+`RelationalBranchTransitionStop::OriginalInputsStopped` needs its corresponding
+World denial projection. World is outside this owner's granted paths; its
+narrow caller migration is awaiting the coordinator's scope answer. No fallback
+or wildcard is added to hide that required integration.
+
+The integration report now exists, at final integration HEAD
+`6750f1376fd6780e0e33de78b8d70a5b0d25f15f`, but explicitly says blocked and not
+ready to land. It is not merged. The minimal Host `opening.rs` routing edit is a
+pending merge seam with that owner's split. No final implementation approval or
+Phase 3 completion is claimed by this qualification note.

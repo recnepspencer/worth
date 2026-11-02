@@ -10,6 +10,11 @@ use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMe
 /// An admitted directory intrinsically retains its complete semantic basis.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalCheckpointDirectory {
+    pub(crate) source_schemas: std::sync::OnceLock<
+        Arc<
+            crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog,
+        >,
+    >,
     pub(crate) manifest: RelationalCheckpointManifest,
     pub(crate) source: Arc<dyn RelationalDurableColdSource>,
     pub(crate) history_members: Arc<super::RelationalHistoryMemberDirectory>,

@@ -25,6 +25,7 @@ mod index_catalog;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod live_managed_source_history;
+mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
 mod authoritative_payload;
@@ -87,6 +88,10 @@ pub(crate) use wire_projection::EnvelopeProjection;
 /// ```
 #[derive(Debug, Deserialize)]
 pub struct CanonicalCommitEnvelope {
+    #[serde(skip)]
+    original_inputs: std::sync::OnceLock<
+        crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs,
+    >,
     #[serde(skip)]
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
     #[serde(flatten)]

@@ -66,8 +66,8 @@ pub use crate::dx::{
 pub use durable_publication::DurablyCommitted;
 pub use home_binding::AdmittedApplicationHomeBinding;
 pub use home_recovery::{
-    CustodyReadmitted, HomeAdmitted, QueryReadmitted, RelationalReadmitted, StoreRecovered,
-    TransitionSettled, WorldReconciled,
+    CustodyReadmitted, FreshNativeInitialization, HomeAdmitted, QueryReadmitted,
+    RelationalReadmitted, StoreRecovered, TransitionSettled, WorldReconciled,
 };
 pub use raw::PhaseMarker;
 pub use raw::{

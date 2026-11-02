@@ -17,3 +17,5 @@ pub(crate) mod relational;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_relational_certification/support/relational_certification/mod.rs"]
 pub(crate) mod relational_certification;
+#[path = "worth_court_relational_certification/support/source_wire_value.rs"]
+pub(crate) mod source_wire_value;

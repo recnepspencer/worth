@@ -11,22 +11,29 @@
 //! | 8..10  | artifact format version (`u16`)         |
 //! | 10..18 | `PatchStreamPosition` (`u64`)           |
 //! | 18..26 | `CommitId` (`u64`)                      |
-//! | 26..58 | SHA-256 of the payload                  |
+//! | 26..58 | v5 composite payload commitment                  |
 //! | 58..66 | payload length (`u64`)                  |
 //! | 66..   | payload: MessagePack named map          |
 //!
-//! The payload is `{position, canonical}` where `canonical` is the
-//! authoritative envelope projection. The position is inside the digested
-//! payload so a rewritten header position cannot pass readmission.
+//! Version 5 carries `{position, canonical, original_inputs}`. The canonical
+//! projection and exact schema/policy input DATA have separate SHA-256 leaves;
+//! the composite commitment also binds the header position and commit. See
+//! `payload_digest` for its exact domain-separated grammar.
 
 pub(crate) mod borrowed_payload;
 #[cfg(test)]
 mod checkpoint_body;
 mod decoded_quote;
+pub(crate) use decoded_quote::schema_image::{
+    prepare as prepare_schema_image_decode, SchemaImageDecodeAdmission,
+};
 mod encode_denial;
 mod encoding;
 mod frame;
+pub(crate) use frame::validate_frame_version;
+mod commitment_writer;
 mod frame_refusal;
+pub(crate) mod input_commitment;
 mod memory_publication;
 mod payload_digest;
 mod payload_wire;
@@ -60,6 +67,10 @@ pub struct RelationalCanonicalCommitArtifact {
 }
 
 impl RelationalCanonicalCommitArtifact {
+    pub const PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
+        worth_foundational::facade::BoundaryProtocolIdentity::new(
+            "worth.relational.canonical-commit",
+        );
     /// The artifact format version this build writes and readmits. Bytes
     /// carrying any other version are refused, never reinterpreted.
     pub const FORMAT_VERSION: u16 = frame::FORMAT_VERSION;

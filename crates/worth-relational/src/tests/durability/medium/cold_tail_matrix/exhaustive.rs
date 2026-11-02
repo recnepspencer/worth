@@ -78,7 +78,14 @@ fn residency_failure_matrix_tail_recovery_stages_every_consumed_subject_before_e
             let frontier = runtime.history().latest_patch_stream_position();
             let offers = attached_test_medium(&runtime).offered().len();
             let reservations = runtime.patch_position_reservation_counters();
-            let result = recover(execution, &mut runtime, fixture.recovery.clone());
+            let result = recover(
+                execution,
+                &mut runtime,
+                fixture
+                    .recovery
+                    .copy_original_transport_for_request(execution)
+                    .unwrap(),
+            );
             if matches!(
                 input,
                 Input::Head | Input::Symbols | Input::Index | Input::Envelope

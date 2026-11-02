@@ -13,8 +13,56 @@ impl RelationalCanonicalCommitArtifactDigest {
     }
 
     /// Cost: one SHA-256 pass over `payload`.
-    pub(super) fn of_payload(payload: &[u8]) -> Self {
-        Self(Sha256::digest(payload).into())
+    pub(super) fn of_payload(
+        position: u64,
+        commit: u64,
+        payload: &[u8],
+    ) -> Result<Self, super::RelationalCanonicalCommitArtifactFrameRefusal> {
+        use super::borrowed_payload::{malformed, BorrowedPayload};
+        let mut leaves = [[0; 32]; 3];
+        let mut seen = 0u8;
+        BorrowedPayload(payload)
+            .frame_fields(|name, value| {
+                let index = match name {
+                    "position" => 0,
+                    "canonical" => 1,
+                    "original_inputs" => 2,
+                    _ => return Err(malformed()),
+                };
+                let bit = 1 << index;
+                if seen & bit != 0 {
+                    return Err(malformed());
+                }
+                seen |= bit;
+                leaves[index] = Sha256::digest(value.0).into();
+                Ok(())
+            })
+            .map_err(|_| {
+                super::RelationalCanonicalCommitArtifactFrameRefusal::InvalidPayloadShape
+            })?;
+        if seen != 7 {
+            return Err(super::RelationalCanonicalCommitArtifactFrameRefusal::InvalidPayloadShape);
+        }
+        Ok(Self::from_leaves(
+            position, commit, leaves[0], leaves[1], leaves[2],
+        ))
+    }
+
+    pub(crate) fn from_leaves(
+        position: u64,
+        commit: u64,
+        position_leaf: [u8; 32],
+        envelope_leaf: [u8; 32],
+        inputs_leaf: [u8; 32],
+    ) -> Self {
+        let mut digest = Sha256::new();
+        digest.update(b"worth.relational.canonical.v5\0");
+        digest.update(position.to_le_bytes());
+        digest.update(commit.to_le_bytes());
+        digest.update(position_leaf);
+        digest.update(envelope_leaf);
+        digest.update(inputs_leaf);
+        Self(digest.finalize().into())
     }
 
     /// The value a frame header records; it is trusted only after it equals

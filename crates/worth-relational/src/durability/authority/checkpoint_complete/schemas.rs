@@ -91,7 +91,8 @@ fn record(
     if identities.get(&identity).is_some() {
         return Ok(());
     }
-    let image = DurableBranchRootSchemaImage::capture_for_request(authority, request)
+    let image = authority
+        .descriptive_image_for_request(request)
         .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
     let carrier = image.carrier_digest();
     if let Some(previous) = images.get(&carrier) {

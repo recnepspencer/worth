@@ -101,6 +101,7 @@ impl CanonicalCommitEnvelopeDraft {
         crate::transactions::data::RelationalCommitSemanticResultRefusal,
     > {
         let envelope = CanonicalCommitEnvelope {
+            original_inputs: Default::default(),
             live_managed_source_history: Default::default(),
             decoded_bytes: None,
             decoded_memory: None,

@@ -18,3 +18,4 @@ pub(crate) mod log;
 pub(crate) mod medium;
 pub(crate) mod migration;
 pub(crate) mod recovery;
+pub(crate) mod source_initial_inputs;

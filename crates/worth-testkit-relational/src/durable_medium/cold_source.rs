@@ -11,6 +11,36 @@ fn bounded(bytes: Option<&[u8]>, limit: u64) -> Result<Vec<u8>, Cause> {
     Ok(bytes.to_vec())
 }
 impl RelationalDurableColdSource for TestDurableMedium {
+    fn read_member_prefix_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        length: usize,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        let snapshot = original.downcast_ref::<super::OwnedNativeReadSnapshot>()
+            .ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
+        snapshot
+            .member_prefix(request, member.sha256, member.length, length)
+            .map_err(owned_failure)
+    }
+    fn read_initial_inputs_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        limit: u64,
+    ) -> Result<
+        Option<worth_execution::ExecutionImmutableBytes>,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        let snapshot = original.downcast_ref::<super::OwnedNativeReadSnapshot>().ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
+        snapshot
+            .initial_inputs(request, limit)
+            .map_err(owned_failure)
+    }
     fn checkpoint_read_protection(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -35,11 +65,16 @@ impl RelationalDurableColdSource for TestDurableMedium {
                 .iter()
                 .map(|(id, bytes)| (*id, bytes.as_ref())),
             &contents.members,
+            contents
+                .initial_inputs
+                .as_ref()
+                .map(|artifact| artifact.as_bytes()),
         )
         .map_err(owned_failure)?;
         let [canonical, transitions] = snapshot.bounds();
         Ok((
             worth_relational::facade::durability::RelationalDurableReadBounds {
+                selected_checkpoint: contents.checkpoint.is_some(),
                 canonical: PatchStreamPosition(canonical),
                 transitions: worth_relational::facade::branch::RelationalBranchTransitionSequence(
                     transitions,
@@ -61,6 +96,10 @@ impl RelationalDurableColdSource for TestDurableMedium {
             std::iter::empty(),
             std::iter::empty(),
             &contents.members,
+            contents
+                .initial_inputs
+                .as_ref()
+                .map(|artifact| artifact.as_bytes()),
         )
         .map(|original| {
             original as worth_relational::facade::durability::RelationalDurableReadPayload

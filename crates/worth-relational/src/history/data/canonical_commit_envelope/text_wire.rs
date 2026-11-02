@@ -218,6 +218,7 @@ impl CanonicalEnvelopeWire<'_> {
             descriptor_semantics_version: self.descriptor_semantics_version,
         };
         let envelope = super::CanonicalCommitEnvelope {
+            original_inputs: Default::default(),
             live_managed_source_history: Default::default(),
             decoded_bytes: self.readmission_memory.input.take(),
             decoded_memory: self.readmission_memory.envelope.take(),
