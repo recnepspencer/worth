@@ -38,7 +38,7 @@ pub use worth_relational::facade::{
     mvcc::{
         CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
     },
-    publication::RecordStructuralChange,
+    publication::{AuthoredRetirementRefusal, RecordStructuralChange},
     runtime::{
         HistoricalVisibilityDenial, RelationalProjectionContractDenial, StructuralWalkDenialKind,
     },

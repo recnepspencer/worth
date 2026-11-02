@@ -6,6 +6,8 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{AspectContract, AspectFieldLocator, FieldKey};
 #[path = "proposal_touches/aspect_patch.rs"]
 mod aspect_patch;
+#[path = "proposal_touches/authored_restoration.rs"]
+mod authored_restoration;
 #[path = "proposal_touches/collection.rs"]
 mod collection;
 #[path = "proposal_touches/intent_projection.rs"]
@@ -152,19 +154,29 @@ impl ValidatedMutationTouches<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ValidatedMutationTouchProjectionError {
+    AuthoredRestoration(crate::publication::data::PublicationError),
     MissingEntityKind(EntityId),
     MissingRelationKind(RelationId),
     Execution(crate::transactions::data::CommitExecutionDenial),
     Allocation(worth_execution::ExecutionAllocationDenial),
 }
 impl ValidatedRelationalProposal {
+    /// Application-authored touches after checking the sealed Native restoration inverse.
+    /// Complete mutation inspection remains available through `mutation_touches`.
+    pub fn application_mutation_touches(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
+        preparation::project(self, execution, true)
+    }
+
     /// O(reached intents + prior/supplied fields), plus canonical sorting.
     /// Native retained before/after state supplies presence; no history is read.
     pub fn mutation_touches(
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
-        preparation::project(self, execution)
+        preparation::project(self, execution, false)
     }
 }
 #[cfg(test)]

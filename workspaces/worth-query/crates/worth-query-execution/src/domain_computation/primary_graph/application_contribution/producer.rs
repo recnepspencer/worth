@@ -1,3 +1,4 @@
+pub use worth_foundational::facade::ProducerPublicationOwnership;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationInputScope, ApplicationMutationScopeResolution,
     ApplicationQueryMutationSource, WorthQueryApplicationOutputRole, WorthQueryExactlyOneOutput,
@@ -265,6 +266,9 @@ where
     /// scoped out for any other reason, or missing, refuses the publication.
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
     const REUSE_POLICY: &'static str;
+    /// SourceScopeCascade opts complete publications into authored cascade
+    /// retirement. Installation requires an entity-specific source query scope.
+    const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::Independent;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 
     /// Opt in to a bounded actual output-field evaluation. The field must belong

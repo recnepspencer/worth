@@ -178,6 +178,27 @@ impl InstalledProducerEdition {
                 ))
             }
         };
+        let digest = match declaration.ownership {
+            worth_foundational::facade::ProducerPublicationOwnership::Independent => digest,
+            worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade => {
+                application_value_identity(
+                    ApplicationValueIdentityDomain::ProducerImplementationEdition,
+                    &declaration.identity,
+                    &(
+                        "producer-source-scope-cascade.v1",
+                        digest,
+                        &declaration.owned_scope_entity,
+                    ),
+                )
+                .map_err(|_| {
+                    WorthQueryPrimaryGraphInstallationDenial::new(
+                        DenialKind::ProducerBindingMeaningMismatch,
+                        declaration.identity.clone(),
+                    )
+                })?
+                .identity()
+            }
+        };
         let digest = application_value_identity(
             ApplicationValueIdentityDomain::ProducerImplementationEdition,
             &declaration.identity,

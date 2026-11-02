@@ -185,6 +185,7 @@ where
             runtime.installed_packages(),
         )
         .map_err(Denial::Contributions)?;
+    super::source_scope_ownership::seal(&mut graph, &producers).map_err(Denial::Graph)?;
     if restoring && let Some(support) = &admitted_program_support {
         if let Some(transition) = checkpoint_transition {
             super::super::bootstrap::checkpoint_transition::transition_checkpoint(
@@ -209,6 +210,9 @@ where
             .map_err(Denial::Graph)?;
         }
     }
+    // Codec/program activation may rebind the native publisher. Install the
+    // same immutable declaration roster on that final publication authority.
+    super::source_scope_ownership::seal(&mut graph, &producers).map_err(Denial::Graph)?;
     if !restoring {
         if let Some(support) = &admitted_program_support {
             graph.program_activation_seed = Some(

@@ -1,6 +1,7 @@
 //! Pre-publication application denial categories and owner evidence.
 
 mod advancement;
+mod authored_retirement;
 mod capacity;
 mod decision_read_set;
 mod denial_cause;
