@@ -25,6 +25,22 @@ impl WorthQueryOutputDemandSettlement {
                     *settlement = None;
                 }
                 sources.push(("committed settlement", corrupted));
+                if let Some(other) = other {
+                    let foreign = other
+                        .application_commit_receipt()
+                        .unwrap()
+                        .exact_output_settlement()
+                        .unwrap()
+                        .clone();
+                    assert!(!Arc::ptr_eq(settlement.as_ref().unwrap(), &foreign));
+                    let mut corrupted = original.source.clone();
+                    if let OriginalSettledProducerSource::Committed { settlement, .. } =
+                        &mut corrupted
+                    {
+                        *settlement = Some(foreign);
+                    }
+                    sources.push(("present foreign committed settlement", corrupted));
+                }
                 let mut corrupted = original.source.clone();
                 if let OriginalSettledProducerSource::Committed { publication, .. } = &mut corrupted
                 {
@@ -114,5 +130,24 @@ impl WorthQueryOutputDemandSettlement {
                 "{fact}: {cause:?}"
             );
         }
+    }
+}
+
+impl OriginalSourceInspectionDisclosure {
+    pub(in crate::domain_computation::primary_graph) fn court_rejects_present_foreign_disclosure(
+        self: Arc<Self>,
+        foreign: Arc<Self>,
+    ) {
+        assert!(
+            !Arc::ptr_eq(&self, &foreign),
+            "independently captured owners"
+        );
+        provenance::require_disclosure_owner(Some(&self), Some(&self)).unwrap();
+        let cause = provenance::require_disclosure_owner(Some(&foreign), Some(&self))
+            .expect_err("present foreign disclosure");
+        assert_eq!(
+            cause.kind(),
+            WorthQueryOutputDemandDenialKind::ForeignSettlement
+        );
     }
 }

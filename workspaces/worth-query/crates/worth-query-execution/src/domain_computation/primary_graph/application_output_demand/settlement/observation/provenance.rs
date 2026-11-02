@@ -88,11 +88,7 @@ impl OriginalSettledProducerObservation {
                 let expected_disclosure = receipt
                     .authority_binding()
                     .retain_original_inspection_disclosure();
-                if !same_owner(disclosure.as_ref(), expected_disclosure.as_ref()) {
-                    return Err(refused(
-                        "original producer disclosure differs from its receipt",
-                    ));
-                }
+                require_disclosure_owner(disclosure.as_ref(), expected_disclosure.as_ref())?;
             }
             OriginalSettledProducerSource::StableReused { settlement } => {
                 let stable = settled.stable.as_ref().ok_or_else(|| {
@@ -169,5 +165,18 @@ fn same_owner<T>(left: Option<&Arc<T>>, right: Option<&Arc<T>>) -> bool {
         (Some(left), Some(right)) => Arc::ptr_eq(left, right),
         (None, None) => true,
         _ => false,
+    }
+}
+
+pub(super) fn require_disclosure_owner(
+    original: Option<&Arc<OriginalSourceInspectionDisclosure>>,
+    expected: Option<&Arc<OriginalSourceInspectionDisclosure>>,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    if same_owner(original, expected) {
+        Ok(())
+    } else {
+        Err(refused(
+            "original producer disclosure differs from its receipt",
+        ))
     }
 }

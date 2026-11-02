@@ -86,7 +86,7 @@ P1-P4 use genuine owner-issued settlements and disclosure from the existing
 runtime fixtures. They alter only retained descriptive provenance and call the
 actual current-settlement reader through an existing fixture's checking closure.
 The independent oracles are deliberately absent publication/settlement facts,
-a distinct earlier genuine settlement, a genuine foreign disclosure, and a
+a distinct earlier genuine settlement, an absent/present disclosure substitution (not two present owners), and a
 flipped checkpoint idempotency byte. Every corruption must return the existing
 typed ForeignSettlement refusal, while each unmodified counterpart succeeds.
 The comparison algorithm is not reproduced in a test oracle.
@@ -608,3 +608,76 @@ any of the four Clippy invocations points to a changed file.
 
 No item 3-6 consumer required changing a reserved pub-mono file. No scope stop
 remains; the listed untouched debt is not hidden or claimed repaired.
+
+## Independent certification follow-ups
+
+The certification review found no blocking production refusal defect in
+52e7dba3dc..a26581c5aa, and identified five in-scope corrections. Each correction
+is separately reviewed and committed. Python verification sets PYTHONUTF8=1.
+The first sync merged origin/master without conflicts in
+512c521a514dcc258539394782071bd638ed63f0. Its automatic Git merge message omitted
+the required co-author trailer; this is a process mistake, not a compliant commit
+message. History is not rewritten. Subsequent merges and fix commits use explicit
+full-sentence messages and the required trailer.
+The two causes handed over from pub-mono remain deferred until its slice 3;
+this round does not modify DecisionQueryPreparationStop::Native or
+InspectionPlanDenial::Graph.
+
+### 1. Present, distinct provenance owners
+
+The earlier P4 claim was too strong: a genuine disclosure payload was placed
+against an absent expected disclosure. That was not evidence for two present
+owners, and the historical description above is corrected.
+
+The settlement court committed_provenance_rejects_present_foreign_settlement_owner
+uses two actual producer completions from independently installed runtimes. It
+exchanges only the retained descriptive settlement owner, keeping both sides
+present, and reaches the real current-settlement reader. Issuance history and
+distinct live Arc owners are the independent oracle.
+
+P4 now issues two separate genuine source-inspection capture payloads. Its new
+local court calls require_disclosure_owner, the named typed comparison used by
+the actual provenance checker. The same-owner positive succeeds; two present,
+distinct owners must refuse ForeignSettlement. This is local comparison evidence,
+not a claim that a producer receipt with present disclosure was issued. Existing
+P4 currentness coverage still checks legitimate absence against foreign present
+capture; the previously accepted reader-removal mutation proves that wiring.
+
+An initial opt-in disclosed-producer fixture compiled but failed both tests at
+its required present-disclosure precondition (0 passed, 2 failed, 2257 filtered).
+Declaring source inspection did not capture it on that producer path. That fixture
+was removed completely; no producer implementation was changed to stage a world.
+The narrower real-owner comparison court avoids fabricated receipt custody.
+
+The initial corrected positive and final restored runs each pass 2/0/0/0/2256
+(passed/failed/ignored/measured/filtered). Weakening same_owner to
+left.is_some() == right.is_some() compiles, then fails 0/2/0/0/2256 at precisely
+"present foreign committed settlement: ()" and "present foreign disclosure: ()".
+The final source restores pointer identity and rebuilds the cleaned harness.
+An unexercised present-disclosure seed branch was removed while the mutant build
+was active; mutation observations cover the unchanged exercised paths, and the
+restored positive/Clippy compile the final harness. No extra production shape is
+introduced. Exact per-commit checks follow.
+
+
+Slice 1 verification (all commands use the lane target/build identity above):
+
+| Exact command | Exit | Result |
+|---|---:|---|
+| cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib committed_provenance_rejects_present_foreign | 101 | Initial removed fixture: 0/2/0/0/2257; missing real disclosure precondition |
+| cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution | 0 | Formatting applied; both candidate invocations |
+| cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- committed_provenance_rejects_present_foreign native_serial_capture_uses_effective_ancestor_funding | 0 / 101 / 0 | Positive 2/0/0/0/2256; presence-only mutant 0/2/0/0/2256; restored 2/0/0/0/2256 |
+| cargo fmt --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --check | 0 | 0 differences |
+| cargo clippy --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --all-targets --message-format=json | 0 | 13 Execution-labelled warnings, 7 Relational warnings, 0 errors; unchanged ownership inventory above |
+| cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root . | 0 | 0 boundary violations |
+| cargo run --manifest-path tools/agent-context/Cargo.toml -- check | 0 | 0 context violations |
+| "C:/Program Files/Git/usr/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty | 0 | 4 Rust files checked, 0 violations |
+| git diff --check origin/master...HEAD | 0 | 0 whitespace errors |
+| git diff --check | 0 | 0 whitespace errors |
+
+No new broad runtime worlds were added for disclosure. The same reviewer accepted
+the corrected ownership boundary and independently verified the two intended
+mutation assertions and restored run; final gate review precedes the commit.
+Per-slice focused library courts and footer gates run before each fix commit.
+Full Execution library, full Decl/Host and both inspection binaries run at final
+round closure; they are not claimed re-run for this first correction.
