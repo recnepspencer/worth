@@ -55,6 +55,7 @@ mod planar_islands;
 mod planar_output_read;
 mod planar_read;
 mod planar_topology;
+mod planar_vertex;
 mod principal;
 mod prior_cycle_adjustment;
 mod producer;
@@ -83,6 +84,8 @@ pub use source_adjustment::*;
 
 mod base_model;
 pub use base_model::*;
+mod length_binding;
+pub use length_binding::TopologyLengthBinding;
 mod schema_binding;
 pub use schema_binding::TopologySchemaBinding;
 

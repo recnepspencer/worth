@@ -80,7 +80,10 @@ impl DurabilityRecoveryAuthority<'_> {
         source_schema::admit_single_codec_head(&checkpoint)
             .map_err(source_schema::schema_denial)?;
         source_schema::admit_supported_consequences(
-            self.runtime,
+            &self
+                .runtime
+                .schema_contract_runtime
+                .custom_invariant_registries,
             &checkpoint.index_definitions,
             &changes,
         )

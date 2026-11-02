@@ -211,7 +211,7 @@ impl ProjectionHarness {
         let runtime = in_memory_program(
             validated_bank_application().unwrap(),
             BankSchema::declaration().unwrap(),
-            ((), (), ()),
+            (Default::default(), (), ()),
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             crate::identity_runtime::bank_application_limits(),
             |_phase, graph, installed_schema| {

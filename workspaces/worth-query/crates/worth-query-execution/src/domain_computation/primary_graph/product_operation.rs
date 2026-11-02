@@ -8,6 +8,7 @@ mod cleanup;
 mod close;
 mod conditional_definition;
 mod context;
+pub(in crate::domain_computation::primary_graph) use context::SelectedQueryOrigin;
 pub(in crate::domain_computation::primary_graph) mod correction_source;
 pub(in crate::domain_computation::primary_graph) mod document_history;
 pub use correction_source::{

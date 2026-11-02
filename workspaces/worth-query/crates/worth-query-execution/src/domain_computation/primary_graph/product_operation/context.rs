@@ -7,10 +7,30 @@ use worth_query_installation::facade::ApplicationSchema;
 #[cfg(test)]
 use worth_runtime_world::facade::ProductBranchIdentity;
 
+/// How the live selected snapshot entered this operation. This is selection
+/// provenance, not a promise that its head remains latest during execution.
+#[derive(Clone, Copy, Debug, Default)]
+pub(in crate::domain_computation::primary_graph) struct SelectedQueryOrigin {
+    current_at_selection: bool,
+}
+
+impl SelectedQueryOrigin {
+    fn current_at_selection() -> Self {
+        Self {
+            current_at_selection: true,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn is_current(self) -> bool {
+        self.current_at_selection
+    }
+}
+
 /// Shared application entry bound to one retained World occurrence. Selecting
 /// another occurrence requires a new admission; this context never resolves latest.
 pub struct WorthQuerySelectedProductOperation<'runtime, Schema> {
     application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    selection_origin: SelectedQueryOrigin,
     product: WorthQueryProductBranchLease,
     application_basis:
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
@@ -88,6 +108,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.on_product_with_basis_admission(execution, product, |_| Ok(()))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn on_mutation_product(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        lease: &super::super::application_attempt::WorthQueryApplicationSnapshotLease,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        let mut selected = self.on_product(execution, lease.product().retained_clone())?;
+        selected.selection_origin = lease.selection_origin();
+        Ok(selected)
+    }
+
     fn on_product_with_basis_admission<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -112,6 +145,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )?;
         Ok(WorthQuerySelectedProductOperation {
             application: self,
+            selection_origin: SelectedQueryOrigin::default(),
             product,
             application_basis,
             selected_program,
@@ -141,6 +175,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         Ok(WorthQuerySelectedProductOperation {
             application: self,
+            selection_origin: SelectedQueryOrigin::default(),
             product,
             application_basis,
             selected_program,
@@ -169,7 +204,10 @@ where
                 .product_runtime
                 .admit_product_occurrence(self.branch.occurrence())
         })?;
-        application.on_product_with_basis_admission(request, product, before_basis)
+        let mut selected =
+            application.on_product_with_basis_admission(request, product, before_basis)?;
+        selected.selection_origin = SelectedQueryOrigin::current_at_selection();
+        Ok(selected)
     }
 
     pub fn select(
@@ -195,14 +233,16 @@ where
         WorthQueryProductBranchAdmissionDenial,
     > {
         let application = self.application;
-        application.on_product(
+        let mut selected = application.on_product(
             request,
             application.admit_with_observation_room(|| {
                 application
                     .product_runtime
                     .admit_product_occurrence(self.branch.occurrence())
             })?,
-        )
+        )?;
+        selected.selection_origin = SelectedQueryOrigin::current_at_selection();
+        Ok(selected)
     }
 }
 
@@ -218,6 +258,12 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         Schema: ApplicationSchema,
     {
         self.selected_program.clone()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn selection_origin(
+        &self,
+    ) -> SelectedQueryOrigin {
+        self.selection_origin
     }
 
     pub fn product(&self) -> &WorthQueryProductBranchLease {
@@ -282,6 +328,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
         self.application
             .on_product(execution, self.product.retained_clone())
-            .map(|selected| selected.with_original_settled_producer(self.producer.clone()))
+            .map(|mut selected| {
+                selected.selection_origin = self.selection_origin;
+                selected.with_original_settled_producer(self.producer.clone())
+            })
     }
 }

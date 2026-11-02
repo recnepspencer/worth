@@ -75,6 +75,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 )))
             })?
         }
+        .with_selection_origin(self.shared.selected().selection_origin())
         .with_original_settled_producer(
             self.shared.selected().original_settled_producer().cloned(),
         );

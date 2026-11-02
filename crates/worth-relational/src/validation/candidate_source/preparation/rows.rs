@@ -80,6 +80,15 @@ impl ManagedIndexSourceRows<'_> {
         &self,
         row: EntityId,
     ) -> Result<Option<ManagedIndexSourceOccurrence>, ReadDenial> {
+        Ok(self
+            .prepare_occurrence(row)?
+            .map(|prepared| prepared.occurrence))
+    }
+    /// Retain the actual inverse read for current-loan projection consumers.
+    pub fn prepare_occurrence(
+        &self,
+        row: EntityId,
+    ) -> Result<Option<super::PreparedManagedIndexSourceOccurrence>, ReadDenial> {
         match self.projection.entity_kind(row) {
             Err(ReadDenial::Definition(Definition::RecordUnavailable)) => return Ok(None),
             Err(ReadDenial::Structural(
@@ -99,10 +108,13 @@ impl ManagedIndexSourceRows<'_> {
             .endpoints()
             .iter()
             .any(|root| root.entity() == Some(self.scope))
-            .then(|| ManagedIndexSourceOccurrence {
-                program: self.projection.program.clone(),
-                scope: self.scope,
-                row,
+            .then(|| super::PreparedManagedIndexSourceOccurrence {
+                occurrence: ManagedIndexSourceOccurrence {
+                    program: self.projection.program.clone(),
+                    scope: self.scope,
+                    row,
+                },
+                read,
             }))
     }
     /// Field borrows cannot escape the actual loan's exact state callback.
@@ -112,33 +124,13 @@ impl ManagedIndexSourceRows<'_> {
         column: usize,
         project: impl FnOnce(Option<&worth_foundational::facade::AspectValue>) -> T,
     ) -> Result<T, ReadDenial> {
-        self.admit_occurrence(occurrence)?;
-        let field = self
-            .program()
-            .fields()
-            .get(column)
-            .ok_or(Definition::InvalidExpression)?;
-        self.projection
-            .with_field_at(occurrence.row, self.program().row_kind(), field, project)
+        self.prepare_row(occurrence)?.with_field(column, project)
     }
+
     pub(super) fn admit_occurrence(
         &self,
         occurrence: &ManagedIndexSourceOccurrence,
     ) -> Result<(), ReadDenial> {
-        if occurrence.program != *self.projection.program || occurrence.scope != self.scope {
-            return Err(Definition::ForeignDefinition.into());
-        }
-        let shape = DerivedRelationReadShape::Adjacency { reverse: true };
-        let path = &self.projection.program.0.path;
-        let read = self.projection.prepare(path, occurrence.row, shape)?;
-        let data = self.projection.read(&read, path, occurrence.row, shape)?;
-        if !data
-            .endpoints()
-            .iter()
-            .any(|root| root.entity() == Some(self.scope))
-        {
-            return Err(Definition::RecordUnavailable.into());
-        }
-        Ok(())
+        self.prepare_row(occurrence).map(|_| ())
     }
 }

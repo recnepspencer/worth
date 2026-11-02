@@ -8,8 +8,9 @@ pub use crate::aggregate_identity::{
 pub use crate::derived_relation::{
     DerivedRelationAdjacency, DerivedRelationChangeData, DerivedRelationData,
     DerivedRelationReadDenial, DerivedRelationReadIdentity, DerivedRelationReadShape,
-    DerivedRelationReads, DerivedRelationWalkStep, PinnedDerivedRelationRead,
-    PreparedDerivedRelationChanges, PreparedDerivedRelationRead,
+    DerivedRelationReads, DerivedRelationWalkStep, PinnedDerivedRelationDenial,
+    PinnedDerivedRelationRead, PinnedDerivedRelationScope, PreparedDerivedRelationChanges,
+    PreparedDerivedRelationRead,
 };
 pub use crate::validation::data::CustomInvariantNativeCheckpointDenial;
 pub use crate::validation::data::{
@@ -42,7 +43,8 @@ pub use crate::validation::candidate_source::{
     ManagedIndexSourcePublicationRoot, ManagedIndexSourceRead, ManagedIndexSourceRows,
     ManagedIndexSourceScope, NativeSourceInterpretationIdentity,
     PreparedManagedIndexProjectionRead, PreparedManagedIndexRelationRead,
-    PreparedManagedIndexSourceRead, PreparedManagedIndexSourceRoot,
+    PreparedManagedIndexSourceOccurrence, PreparedManagedIndexSourceRead,
+    PreparedManagedIndexSourceRoot, PreparedManagedIndexSourceRowRead,
 };
 pub use crate::validation::DuplicateCustomInvariantRegistration;
 

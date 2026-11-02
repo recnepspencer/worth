@@ -14,7 +14,9 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for IncompatibleVersio
         count: usize,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<usize, Stop> {
-        self.0.node_capacity(count, control)
+        <Provider as WorthQueryManagedIndexProvider<Catalog, PrefixIndex>>::node_capacity(
+            &self.0, count, control,
+        )
     }
     fn build(
         &self,

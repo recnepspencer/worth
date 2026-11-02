@@ -51,8 +51,8 @@ pub(super) fn describe(
 }
 
 #[cfg(test)]
-pub(super) fn cyclic_sources(
-    sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+pub(super) fn cyclic_sources<I: PrefixSourceIndex>(
+    sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, I>,
     nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
 ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
     let mut root = None;

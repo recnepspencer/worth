@@ -121,6 +121,11 @@ pub struct WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) model_root: EntityId,
     // The current invocation's actual Source custody cannot be replaced by an
     // interned semantic Meaning retaining an older admitted footprint.
+    pub(super) invocation_source_authorization: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization,
+        >,
+    >,
     pub(super) invocation_managed_source: Option<
         std::sync::Arc<
             crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,

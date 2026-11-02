@@ -95,7 +95,7 @@ pub fn end_region<Q>() -> RegionSelector<Q, EndRegionSlot> {
 }
 
 // compiled-example: begin
-fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
+pub(super) fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
 ) -> TypedApplicationQueryResultShape<Catalog, Q, Edge, Row, ResultBinding> {
     ApplicationQueryResultShapeBuilder::new(Edge::reference())
         .field(identity())

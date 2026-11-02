@@ -1,6 +1,11 @@
 //! Exact centroid Morton order groups both axes before raw-bound/occurrence ties.
-use super::Box2;
+use super::{BoxSpace, IntegerBox2};
+#[cfg(test)]
+use crate::Box2;
+use crate::PlanarInteger;
 use std::cmp::Ordering;
+#[cfg(test)]
+mod model_local_tests;
 #[cfg(test)]
 mod tests;
 
@@ -21,13 +26,17 @@ impl PartialOrd for Morton {
     }
 }
 
-pub(super) fn key<Source: Copy>(bounds: Box2, source: Source) -> (Morton, [i64; 4], Source) {
+pub(super) fn key<Source: Copy, Space: BoxSpace>(
+    bounds: IntegerBox2<Space>,
+    source: Source,
+) -> (Morton, [Space::Coordinate; 4], Source) {
     let raw = bounds.coordinates();
     let center = std::array::from_fn(|axis| {
-        // An i64 endpoint sum is in [-2^64, 2^64-2]. The biased exact sum
-        // fits 65 unsigned bits; neither averaging nor rounding is performed.
-        let biased = i128::from(raw.lower[axis]) + i128::from(raw.upper[axis]) + (1_i128 << 64);
-        u128::try_from(biased).expect("biased i64 endpoint sum fits unsigned65 bits")
+        // Normalize to the sealed coordinate minimum before exact endpoint sum.
+        // Both domains occupy [0, 2^65-2]; signed reproduces the original bias.
+        let normalized =
+            raw.lower[axis].into() + raw.upper[axis].into() - 2 * Space::Coordinate::MIN.into();
+        u128::try_from(normalized).expect("normalized endpoint sum fits unsigned65 bits")
     });
     (
         Morton(center),
@@ -37,6 +46,9 @@ pub(super) fn key<Source: Copy>(bounds: Box2, source: Source) -> (Morton, [i64; 
 }
 
 /// The same exact spatial order for immutable probes, before framework slot ties.
-pub fn compare_box_bounds(a: Box2, b: Box2) -> Ordering {
+pub fn compare_box_bounds<Space: BoxSpace>(
+    a: IntegerBox2<Space>,
+    b: IntegerBox2<Space>,
+) -> Ordering {
     key(a, ()).cmp(&key(b, ()))
 }

@@ -26,7 +26,12 @@ impl<Query> WorthQueryObservedSource<Query> {
     ) -> Option<WorthQueryObservedSourceSelection> {
         let footprint = self.source_meaning.footprint();
         let selection = footprint.root_selection.as_ref()?;
-        if !footprint.complete || selection.walks.is_some() || selection.components.is_some() {
+        if !footprint.complete
+            || selection.walks.is_some()
+            || selection.derived.is_some()
+            || has_derived_source_path(selection)
+            || selection.components.is_some()
+        {
             return None;
         }
         let managed = match (&selection.managed_index, &self.invocation_managed_source) {
@@ -151,6 +156,10 @@ fn same_root_selection(
     right: &WorthQueryObservedRootSelection,
 ) -> bool {
     if left.walks.is_some()
+        || left.derived.is_some()
+        || right.derived.is_some()
+        || has_derived_source_path(left)
+        || has_derived_source_path(right)
         || right.walks.is_some()
         || left.components.is_some()
         || right.components.is_some()
@@ -250,3 +259,13 @@ fn same_text(left: &str, right: &str) -> bool {
 
 #[cfg(test)]
 mod tests;
+
+// A managed Parent can hide the path inside its maintained Source contract.
+// This entrance admits no selected-membership cutoff for that whole support.
+fn has_derived_source_path(selection: &WorthQueryObservedRootSelection) -> bool {
+    selection.managed_index.as_ref().is_some_and(|managed| {
+        managed.access.meaning().source_graph().root_paths().iter()
+            .flat_map(|path| path.steps()).any(|step| step.source_kind() ==
+                worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived)
+    })
+}

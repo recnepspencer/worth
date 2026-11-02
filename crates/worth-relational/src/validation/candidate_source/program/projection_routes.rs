@@ -8,6 +8,7 @@ use crate::derived_relation::DerivedRelationNode;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ManagedIndexSourceProjectionRoute {
     name: String,
+    parent: Option<usize>,
     pub(in crate::validation::candidate_source) path: DerivedRelationHandle,
     fields: Arc<[ManagedIndexSourceField]>,
 }
@@ -34,9 +35,27 @@ impl ManagedIndexSourceProjectionRoute {
         }
         Ok(Self {
             name,
+            parent: None,
             path,
             fields: fields.into(),
         })
+    }
+
+    /// Describe a direct child route. The receiving registry validates its
+    /// preceding parent and endpoint continuity when binding the whole forest.
+    pub fn nested(
+        name: String,
+        parent: usize,
+        path: DerivedRelationHandle,
+        fields: Vec<ManagedIndexSourceField>,
+    ) -> Result<Self, Denial> {
+        let mut route = Self::new(name, path, fields)?;
+        route.parent = Some(parent);
+        Ok(route)
+    }
+
+    pub const fn parent_route(&self) -> Option<usize> {
+        self.parent
     }
 
     pub fn name(&self) -> &str {
@@ -90,6 +109,36 @@ impl ManagedIndexSourceProjectionRoute {
             .ok_or(Denial::InvalidMemberDomain)?;
         validate_fields(registry, endpoint, &self.fields)
     }
+}
+
+pub(super) fn validate_routes(
+    registry: &RelationalSchemaRegistry,
+    row: KindId,
+    routes: &[ManagedIndexSourceProjectionRoute],
+) -> Result<(), Denial> {
+    for (index, route) in routes.iter().enumerate() {
+        let parent = match route.parent {
+            None => row,
+            Some(parent) if parent < index => routes[parent].endpoint_kind(),
+            Some(_) => return Err(Denial::InvalidExpression),
+        };
+        route.validate(registry, parent)?;
+    }
+    Ok(())
+}
+
+/// Names are admitted once during binding. Immutable program re-admission
+/// checks registry/topology without rebuilding a name set on each proposal.
+pub(super) fn validate_route_names(
+    routes: &[ManagedIndexSourceProjectionRoute],
+) -> Result<(), Denial> {
+    let mut names = std::collections::BTreeSet::new();
+    for route in routes {
+        if !names.insert(route.name()) {
+            return Err(Denial::InvalidExpression);
+        }
+    }
+    Ok(())
 }
 
 pub(super) fn validate_fields(

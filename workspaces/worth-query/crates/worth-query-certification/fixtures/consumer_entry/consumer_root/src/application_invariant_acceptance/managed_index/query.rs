@@ -76,6 +76,20 @@ pub(super) fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = Re
     reference: ApplicationQueryReference<Catalog, Q, Parameters, ItemRow, Directory>,
     lanes: ApplicationQueryLaneEligibility,
 ) -> ApplicationQueryDefinitionBuilder<Catalog, Q, Parameters, ItemRow, Directory> {
+    authoring(
+        reference,
+        lanes,
+        ApplicationQueryBasisSupport::current_and_pinned(),
+    )
+    .public()
+}
+pub(super) fn authoring<
+    Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding>,
+>(
+    reference: ApplicationQueryReference<Catalog, Q, Parameters, ItemRow, Directory>,
+    lanes: ApplicationQueryLaneEligibility,
+    basis: ApplicationQueryBasisSupport,
+) -> ApplicationQueryAuthorizationAuthoring<Catalog, Q, Parameters, ItemRow, Directory, Item> {
     ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Item::reference())
         .scope(Directory::reference())
@@ -90,9 +104,8 @@ pub(super) fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = Re
         )
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(ApplicationQueryDisclosureContract::public())
-        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
+        .basis_support(basis)
         .lanes(lanes)
-        .public()
 }
 pub fn source_definition(
 ) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, ItemRow, Directory> {

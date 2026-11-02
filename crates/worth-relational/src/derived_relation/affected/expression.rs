@@ -77,6 +77,28 @@ pub(super) fn collect(
                     continue;
                 }
                 match &key.definition.parts().nodes[key.node] {
+                    Node::OrderedEvents {
+                        predecessor,
+                        introduced,
+                        retired,
+                    } => {
+                        let acquired = crate::derived_relation::ordered_events::affected::collect(
+                            registry,
+                            &key.definition,
+                            crate::derived_relation::ordered_events::Recipe {
+                                predecessor: *predecessor,
+                                introduced: *introduced,
+                                retired: *retired,
+                            },
+                            key.reverse,
+                            adjacency,
+                            events,
+                            before,
+                            after,
+                        )?;
+                        super::super::support::append(after, &mut support, acquired.support)?;
+                        (key, acquired.members)
+                    }
                     Node::Stored { relation, .. } => {
                         let mut roots = BTreeSet::new();
                         for delta in adjacency {

@@ -6,6 +6,7 @@ rust-version = "1.94"
 publish = false
 
 [dependencies]
+worth-execution = { path = "../../../../../../crates/worth-execution" }
 serde = { version = "1", features = ["derive"] }
 
 [workspace]

@@ -3197,6 +3197,15 @@ retries the original cleanup with a fresh scope, retaining its actual refusal
 while readers still hold history. Release those readers and retry the same owner.
 The selected new head stays in place throughout.
 
+Inside `runtime.with_application_advancement(scope, |phase| ...)`, call the
+application cleanup owner's `retry_in_advancement(&phase)`. It uses that original
+runtime's admitted request for history, conditional and component cleanup. A
+foreign or interrupted phase returns the original cleanup with a typed denial
+before effects. Use `failure.into_cleanup()` for a fresh retry. The standalone
+`retry()` owns a separate serial request; an existing advancement supplies its
+phase instead. Preserve an actual successful cleanup receipt if the outer
+advancement reports a later handoff interruption.
+
 The example's `FinishedAdoption` distinguishes an ordinary previous-head close
 receipt from a settled retired-head cleanup receipt. Inspect the corresponding
 variant; cleanup settlement supplies its actual cleanup receipt. Keep adoption,
@@ -6208,10 +6217,16 @@ an owned result such as a boolean or ordering. A text read returns either a
 projection denial or the original controlled stop.
 
 
-Source queries have no parameters and must have Public authorization and Public
-disclosure without capability or rule governance. Parent queries may use Public
-or Governed disclosure, with their own installed READ ability and capability
-admission. Opaque `InstalledPolicyRequired` disclosure is unsupported. Run index
+Source queries have no parameters and use Public disclosure without capability or
+rule governance. Source authorization may be Public or an installed conventional
+READ ability. An ability-authorized Source requires a current-only Parent; the
+ordinary Source query may still declare its own current and pinned support.
+Each Source execution admits its actual principal, scope and READ policy. Completed
+caches retain that original authorization support and recheck it before provider
+callbacks; Native maintenance also checks the actual Source READ independently of
+the Parent. A current structural root or Ready cache does not grant permission.
+Parent queries may use Public or Governed disclosure, with their own installed
+READ ability and capability admission. Opaque `InstalledPolicyRequired` disclosure is unsupported. Run index
 requests as current committed one-shot reads with the same admitted principal
 and full-generation scope.
 Parent admission and current READ/security checks precede cache/provider access;
@@ -6236,8 +6251,8 @@ with the actual capability, operation and request input, then `execute_governed`
 for each read. Approved elevation has corresponding `open_index_approved`,
 `rebuild_index_approved` and `execute_approved` entrances. Each call freshly
 admits the Parent capability and READ policy before cache or provider access;
-its normal final disclosure still applies. A valid Public Source or a Ready
-cache does not authorize the Parent.
+its normal final disclosure still applies. Source admission and a Ready cache
+leave the independent Parent authorization check in force.
 
 Repeated opens share one registration for the actual installed Index/Parent
 binding, principal, full-generation scope and World incarnation. Two bindings to
@@ -6450,8 +6465,8 @@ uses the same installed forward provider and exact evaluator to verify complete
 candidate coverage again. Equal membership, exact decisions and complete
 candidate bodies can preserve an expectation across edits to noncandidates or
 restoration of candidate content. Shared immutable bodies provide the fast path;
-otherwise Query pays for exact occurrence, dependency and full one-hop projection
-comparison. Commitments only shortlist that comparison. A previously nonmatching
+otherwise Query pays for exact occurrence, dependency and the complete declared
+scalar/relation projection comparison. Commitments only shortlist that comparison. A previously nonmatching
 record entering an empty range invalidates it. A changed candidate input prevents
 equality even if the returned exact rows stay empty. Installed slot correspondence,
 full-generation relation/row identities, predicate support and order remain part
@@ -6554,6 +6569,68 @@ a handle from another branch, installation or generation cannot be reused.
 Keep result owners only as long as needed, and close the shared registration
 when the application no longer needs the index.
 
+Declare `ApplicationManagedIndexBinding::MAINTENANCE` as
+`ApplicationManagedIndexMaintenance::Native { cold:
+ApplicationManagedIndexColdSource::AdmitRebuild }` to require Native maintenance
+for public reads even when no invariant consumes the index. Use the same
+contribution `setup.managed_index::<Index, _>(provider)` entrance. The default
+`WhenRequired` adds no public requirement; existing invariant requirements still
+apply. When public and invariant audiences share an index, `Refuse` wins over
+`AdmitRebuild`. Unsupported Source shapes return a typed installation refusal.
+Initialization and updates retain the original request's controls and budget.
+
+A Source and its Parent can declare the same finite nested direct-relation shape
+with the existing `.relation(selector, child_builder)` surface. Forward and reverse
+routes preserve every physical occurrence, including convergent paths and empty
+child collections. Native parent-occurrence custody supplies the projected fields;
+entity coordinates and caller-owned DTOs cannot issue them. Complete projected
+candidate influence includes every declared descendant, even for rejected candidates.
+Original work, memory and cancellation controls apply to acquisition, comparison
+and nested Entry content. Child predicates and OptionalAspect Source fields remain
+unsupported. Existing one-hop Entry content retains its v1 bytes; the compiled
+nested profile uses framed v2 content, including currently empty children.
+See the executable [nested shape](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/shape.rs)
+and [ordinary integration courts](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/court.rs).
+This qualifies the finite nested Source profile, not arbitrary payload traversal,
+new historical correction policy, or a new public CAD model.
+
+Explicit maintenance is portable v5 meaning, with optional refinement. Existing
+default definitions retain their v3/v4 bytes and canonical meaning. A one-shot
+Parent can declare `ApplicationQueryBasisSupport::current_only()`; actual current
+selection succeeds, while an explicit retained `.at(...)` read returns
+`BasisUnsupported` even at the same unchanged head. Result rows still come from
+one snapshot selected at admission. This does not enable historical managed
+reads or continuation without pinned support. The
+[public geometry consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/public_only.rs)
+uses a distinct maintained index with no invariant requirement. Bank integration
+and the generic provider qualification are tracked in Query9.19 Phase5; real CAD
+adoption belongs to Phase6.
+
+The shared Query-free box/tree/segment-contact mechanics support both the signed
+fixture `Box2` and unsigned `IntegerBox2<ModelLocalMetre>` domain. The raw
+`{ lower, upper }` serde carrier retains its default i64 meaning. Typed domain
+classes cannot be combined accidentally and do not establish model-instance
+origin affinity. The concrete topology length binding retains explicit bounded
+admitted UInt64 decoding, its original identity/wire/Metre/frame and nonzero
+constructor, and original admission refusal. Strict managed reads never silently
+fall back to an unadmitted decoder.
+
+Phase5 uses Bank and the existing bounded provider fixtures for contract evidence.
+The former public Scene/Face application has been removed; real CAD adaptation
+uses its private numerical/topology/contact owners in Phase6. See the
+[cleanup evidence](../plans/WORTH-query/milestone-9.19-phase5-public-cad-cleanup-evidence.md).
+The [Phase5 contract matrix](../plans/WORTH-query/milestone-9.19-phase5-closure.md)
+records the qualified public boundary, evidence provenance and remaining private gate.
+
+A result-set/source expectation also retains the original Source READ support.
+Revoking a Source-only permission refuses a later non-querying mutation before
+publication. Recorded correction includes those policy fields and adjacency in
+ordinary history selection, before managed predicate narrowing. Regranting READ
+allows a fresh Source read; it does not erase uncancelled policy history from an
+older recorded operation. Current-only handler reads preserve their actual
+operation selection; retaining an equal snapshot does not promote it to current.
+See the [Source authorization consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/source_authorization.rs).
+
 The
 [public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
 shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and
@@ -6572,18 +6649,19 @@ contract. Their probe codecs retain their complete canonical meaning:
 impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     type SourceBinding = query::SourceBinding;
     type ProbeBinding = query::ProbeBinding;
-    type Entity = super::schema::Item;
+    type Entity = super::super::schema::Item;
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const MAINTENANCE: ApplicationManagedIndexMaintenance = super::super::PREFIX_MAINTENANCE;
     const REFINEMENT: Option<
         worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
-    > = super::PREFIX_REFINEMENT;
+    > = super::super::PREFIX_REFINEMENT;
     const STRUCTURE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure =
         worth_query_decl::facade::application_query::ApplicationManagedIndexSourceStructure::BinarySourceTree;
     const MEMBERSHIP:
         worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
-        super::PREFIX_MEMBERSHIP;
+        super::super::PREFIX_MEMBERSHIP;
 }
 ```
 
@@ -6897,7 +6975,7 @@ occurrence and checks its declared cardinality before provider maintenance:
 
 <!-- compiled: managed_geometry_source.rs -->
 ```rust
-fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
+pub(super) fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
 ) -> TypedApplicationQueryResultShape<Catalog, Q, Edge, Row, ResultBinding> {
     ApplicationQueryResultShapeBuilder::new(Edge::reference())
         .field(identity())
@@ -6973,6 +7051,43 @@ ordinary hops and guards. See [declared query closure](../workspaces/worth-query
 for reflexive selection, source currentness and per-step receipt observations.
 
 
+### Derived query root paths
+
+Use a declared named derived relation to select physical entity roots:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative application marker names; the consumer court compiles this shape.
+let path = ApplicationQueryRootPath::from(Event::reference())
+    .forward_derived(LiveRows::reference());
+```
+
+`reverse_derived` selects in the other direction. Compose ordinary query paths
+with physical hops, other derived steps and guards. Maintained Sources retain
+their existing guard and predicate restrictions. The installed path retains the
+Stored or Derived namespace, so a same-named stored relation cannot satisfy a
+derived step. This entrance requires physical entity endpoints and physical
+intermediate source domains. Derived closure steps are refused; a named recipe
+already defines its complete source meaning.
+
+For newest-first history, declare `LiveRows` with
+`ApplicationDerivedRelation::ordered_events(previous, introduces, retires)`.
+The same registered Native evaluator supplies ordinary query roots and maintained
+Source membership. A history edit can change a direct Source even when every
+rendered row stays identical: complete physical support and negative probes are
+part of that observation. Empty Sources retain their negative membership too.
+Watches and request-bearing Source expectations use those actual dependencies;
+a fresh observation remains the lawful input after a stale one is refused.
+
+Original pinned reads retain their selected history. New reads and currentness
+checks retain the original request controls and allocation custody, including
+cancellation and failed-acquisition work receipts. This query entrance does not
+extend operation-body path-input or component-read grants.
+
+The ordinary Decl/Host event-text [consumer court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/court.rs)
+exercises forward, inverse, composed, empty and changed-history Sources.
+
+
 ## Inspect original source and query evidence
 
 Use inspection for an audit view, a debugging explanation, or a comparison of
@@ -7038,3 +7153,29 @@ an immutable original. Close reports and the final original holder when done.
 Follow [Explain original query results and source operations](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md)
 for contract setup, capability admission, supported shapes, materialized values,
 loss outcomes and retry handling.
+
+
+## Read Bank accounts through the installed managed provider
+
+Bank exposes `runtime.query(queries::current_accounts()).as_principal(actor)`
+through the same ordinary query receiver and `BankReadControls` as its existing
+reads. Supply current controls and call `execute()`; result rows remain
+`VisibleAccount` ordered by AccountId. The [compiled receiver journey](../workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_reads/current_accounts/mod.rs)
+compares these rows with the independent ordinary `queries::accounts()` Source.
+
+The Parent declares current-only basis support and references the unchanged
+principal-specific v1 account-discovery Source. Both reads admit the actual
+principal and `DiscoverOwnAccounts`; the managed root supplies no READ grant.
+Personal ownership, authorized-user and business-owner paths retain their real
+Bank definitions. Grant/revoke and actual account creation update the affected
+scope through Native maintenance. Stable SourceSlot order permits checked linear
+cold construction; warm changes use logarithmic tree insertion/removal. Returning
+all accounts still visits every returned Source row and pays the existing
+ordering and source-meaning bookkeeping costs.
+
+Use `queries::accounts()` for its existing pinned-read contract. Applying a
+retained basis to `current_accounts()` refuses as `BasisUnsupported`, including
+an equal-head retained basis. The managed Parent preserves the original result
+limit and cancellation controls. Pending-payments, activity ranking and cursor
+receivers keep their existing contracts; their behavior is covered by their
+ordinary Bank courts and is not supplied by this all-accounts index.

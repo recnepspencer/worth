@@ -24,6 +24,17 @@ pub(crate) enum SourceProjectionBacking<'a> {
         bytes: Cell<u64>,
     },
 }
+/// Escaping derived backing retains its original admitted payer, not a request.
+/// This type grants no graph, audience or publication authority.
+pub(in crate::validation::candidate_source) enum SourceProjectionRetention {
+    Invariant {
+        _meter: crate::validation::CustomInvariantWorkMeter,
+    },
+    Selected {
+        _memory: Option<ExecutionMemoryReservation>,
+    },
+}
+
 /// Complete relation support is consumed only by its actual originating loan.
 pub struct PreparedManagedIndexRelationRead {
     body: PreparedBody,
@@ -40,6 +51,28 @@ enum PreparedBody {
     },
 }
 impl ManagedIndexSourceProjection<'_> {
+    pub(in crate::validation::candidate_source) fn owned_retention(
+        &self,
+        bytes: u64,
+    ) -> Result<SourceProjectionRetention, Denial> {
+        match &self.backing {
+            SourceProjectionBacking::Invariant { relations, .. } => {
+                let budget = relations.read_budget();
+                budget.claim_retained(bytes).map_err(Denial::Structural)?;
+                Ok(SourceProjectionRetention::Invariant {
+                    _meter: budget.retained_payer(),
+                })
+            }
+            SourceProjectionBacking::Selected { execution, .. } => {
+                self.checkpoint(0)?;
+                let memory = execution
+                    .reserve_retained_memory(bytes)
+                    .map_err(|cause| Denial::Request(cause.into()))?;
+                Ok(SourceProjectionRetention::Selected { _memory: memory })
+            }
+        }
+    }
+
     pub(crate) fn checkpoint(&self, units: u64) -> Result<(), Denial> {
         match &self.backing {
             SourceProjectionBacking::Invariant { relations, .. } => relations

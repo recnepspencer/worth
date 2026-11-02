@@ -1,6 +1,6 @@
 //! Immutable material from actual Native Source loans, never a retained read grant.
 use super::super::source_rows::{SourceImageRows, SourceImageView};
-use super::projection::{project, Entry};
+use super::projection::{project, Entry, ProjectionMembership};
 use crate::domain_computation::primary_graph::{
     application_query::{
         disclosure::WorthQueryApplicationQueryGovernance,
@@ -104,7 +104,14 @@ impl PersistentSourceRows {
         let mut dependencies = OccurrencePostings::default();
         for occurrence in occurrences {
             let entity = occurrence.entity();
-            let entry = project(execution, rows.program(), rows, occurrence, graph)?;
+            let entry = project(
+                execution,
+                rows.program(),
+                rows,
+                occurrence,
+                graph,
+                Some(ProjectionMembership::Forward(&support)),
+            )?;
             if entries.contains_key(&entity) {
                 return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
             }
@@ -130,7 +137,7 @@ impl PersistentSourceRows {
         scope: &ManagedIndexSourceScope<'_>,
         changed: &[(
             Option<ManagedIndexSourceOccurrence>,
-            Option<ManagedIndexSourceOccurrence>,
+            Option<worth_relational::facade::runtime::PreparedManagedIndexSourceOccurrence>,
         )],
         graph: &WorthQueryInstalledGraphReadContract,
     ) -> Result<Self, MaterialDenial> {
@@ -145,11 +152,11 @@ impl PersistentSourceRows {
         // index closes scalar/lifecycle entry reads. Neither substitutes for the
         // other. A routed retained entry missing from Native's real delta refuses.
         let mut changed_keys = BTreeSet::new();
-        for entity in changed
-            .iter()
-            .flat_map(|(a, b)| a.iter().chain(b))
-            .map(|row| row.entity())
-        {
+        for entity in changed.iter().flat_map(|(a, b)| {
+            a.iter()
+                .map(|row| row.entity())
+                .chain(b.iter().map(|row| row.entity()))
+        }) {
             scope
                 .read_budget()
                 .checkpoint(1)
@@ -185,7 +192,14 @@ impl PersistentSourceRows {
             }
             if let Some(proposed) = proposed {
                 let entity = proposed.entity();
-                let entry = project(execution, &self.program, &after, proposed.clone(), graph)?;
+                let entry = project(
+                    execution,
+                    &self.program,
+                    &after,
+                    proposed.occurrence().clone(),
+                    graph,
+                    Some(ProjectionMembership::Inverse(proposed)),
+                )?;
                 dependencies.insert_entry(entity, &entry.dependencies, execution)?;
                 entries
                     .insert_cloned_native_for_request(

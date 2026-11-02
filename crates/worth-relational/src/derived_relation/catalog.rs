@@ -73,7 +73,8 @@ impl RelationalSchemaRegistry {
                     | Node::Reverse { .. }
                     | Node::WithoutSelfEdges { .. }
                     | Node::Union { .. }
-                    | Node::Intersection { .. } => {}
+                    | Node::Intersection { .. }
+                    | Node::OrderedEvents { .. } => {}
                 }
             }
             let carriers = domains

@@ -1,10 +1,12 @@
-//! Closed linear geometry in Box2's exact fixture integer length/XY frame.
+//! Closed linear geometry in one exact typed integer unit/frame domain.
 //! This fixture predicate supplies no graph, topology, or publication authority.
+#[cfg(test)]
 use crate::Box2;
+use crate::{integer_orientation as orientation, BoxSpace, IntegerBox2, PlanarInteger};
 use std::cmp::Ordering;
 #[cfg(test)]
 mod tests;
-type Point = [i64; 2];
+type Point<C = i64> = [C; 2];
 
 /// Endpoint regions wider than a point do not specify a unique segment.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -18,10 +20,10 @@ impl std::fmt::Display for SegmentBoxDenial {
 }
 impl std::error::Error for SegmentBoxDenial {}
 /// Admits the fixture's genuine endpoint regions before interpreting a segment.
-pub fn endpoint_segment_intersects_box(
-    start: Box2,
-    end: Box2,
-    query: Box2,
+pub fn endpoint_segment_intersects_box<Space: BoxSpace>(
+    start: IntegerBox2<Space>,
+    end: IntegerBox2<Space>,
+    query: IntegerBox2<Space>,
 ) -> Result<bool, SegmentBoxDenial> {
     let start = start.coordinates();
     let end = end.coordinates();
@@ -34,9 +36,13 @@ pub fn endpoint_segment_intersects_box(
 /// Exact contact of a closed segment and closed box, including degeneracies.
 /// Points have the same declared unit/frame as the query box. All arithmetic
 /// has fixed width and bounded work; no tolerance or floating projection enters.
-pub fn segment_intersects_box(start: Point, end: Point, query: Box2) -> bool {
+pub fn segment_intersects_box<Space: BoxSpace>(
+    start: Point<Space::Coordinate>,
+    end: Point<Space::Coordinate>,
+    query: IntegerBox2<Space>,
+) -> bool {
     let bounds = query.coordinates();
-    let inside = |point: Point| {
+    let inside = |point: Point<Space::Coordinate>| {
         (0..2).all(|axis| bounds.lower[axis] <= point[axis] && point[axis] <= bounds.upper[axis])
     };
     if inside(start) || inside(end) {
@@ -47,7 +53,12 @@ pub fn segment_intersects_box(start: Point, end: Point, query: Box2) -> bool {
     let corners = [[left, bottom], [right, bottom], [right, top], [left, top]];
     (0..4).any(|edge| segments_intersect(start, end, corners[edge], corners[(edge + 1) % 4]))
 }
-fn segments_intersect(a: Point, b: Point, c: Point, d: Point) -> bool {
+fn segments_intersect<C: PlanarInteger + Ord>(
+    a: Point<C>,
+    b: Point<C>,
+    c: Point<C>,
+    d: Point<C>,
+) -> bool {
     let ab_c = orientation(a, b, c);
     let ab_d = orientation(a, b, d);
     let cd_a = orientation(c, d, a);
@@ -67,34 +78,6 @@ fn opposite(a: Ordering, b: Ordering) -> bool {
         (Ordering::Less, Ordering::Greater) | (Ordering::Greater, Ordering::Less)
     )
 }
-fn on_segment(a: Point, b: Point, point: Point) -> bool {
+fn on_segment<C: Copy + Ord>(a: Point<C>, b: Point<C>, point: Point<C>) -> bool {
     (0..2).all(|axis| a[axis].min(b[axis]) <= point[axis] && point[axis] <= a[axis].max(b[axis]))
-}
-fn orientation(a: Point, b: Point, c: Point) -> Ordering {
-    let delta = |p: Point| {
-        [
-            i128::from(p[0]) - i128::from(a[0]),
-            i128::from(p[1]) - i128::from(a[1]),
-        ]
-    };
-    let b = delta(b);
-    let c = delta(c);
-    let first = signed_product(b[0], c[1]);
-    let second = signed_product(b[1], c[0]);
-    match (first.0, second.0) {
-        (false, true) => Ordering::Greater,
-        (true, false) => Ordering::Less,
-        (false, false) => first.1.cmp(&second.1),
-        (true, true) => second.1.cmp(&first.1),
-    }
-}
-fn signed_product(a: i128, b: i128) -> (bool, u128) {
-    // Each difference of two i64 coordinates has magnitude <= u64::MAX.
-    // Their product fits u128. Its signed sum/difference need not fit i128,
-    // so orientation compares these magnitudes and never constructs that sum.
-    let magnitude = a.unsigned_abs() * b.unsigned_abs();
-    (
-        magnitude != 0 && (a.is_negative() != b.is_negative()),
-        magnitude,
-    )
 }

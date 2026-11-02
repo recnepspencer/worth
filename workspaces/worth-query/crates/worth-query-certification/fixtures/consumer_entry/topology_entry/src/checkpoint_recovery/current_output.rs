@@ -7,11 +7,13 @@ use worth_query_host::facade::application_installation::WorthQueryCheckpointCapt
 #[cfg(test)]
 mod serial {
     use super::*;
-    #[test]
-    fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change() {
-        let _guard = checkpoint_recovery_test_guard();
-        let provider_observation = crate::producer::ProviderContacts::default();
-        let application = support::observed::install(None, &provider_observation);
+    use worth_query_host::facade::runtime::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+    const EXPECTATIONS: usize = 8_193;
+
+    fn restore(contacts: &crate::producer::ProviderContacts, work: u64) -> support::Application {
+        let application = support::observed::install(None, contacts);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle(&request, &application));
@@ -26,8 +28,45 @@ mod serial {
             .expect("installed host call opens");
         drop(application);
 
-        provider_observation.reset();
-        let restored = support::observed::install(Some(checkpoint), &provider_observation);
+        contacts.reset();
+        let policy = ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(work)),
+        );
+        let limits = support::limits_with_policy(
+            support::DEFAULT_RETAINED_COMMITS,
+            16,
+            64,
+            support::invalidation(),
+            policy,
+        );
+        support::observed::install_with_limits(Some(checkpoint), limits, contacts)
+    }
+
+    fn verification() -> PlanarEdit {
+        PlanarEdit(PlanarMutation {
+            scope_key: "anchor-a".into(),
+            // Each expectation resolves the entity, consumes current_output,
+            // and reads the output field through the real decision reader.
+            operation: PlanarOperation::VerifyCurrentOutputs(
+                (0..EXPECTATIONS)
+                    .map(|_| PlanarCurrentOutputExpectation {
+                        producer_key: "anchor-a".into(),
+                        output_key: "anchor-a".into(),
+                    })
+                    .collect(),
+            ),
+        })
+    }
+
+    #[test]
+    fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change() {
+        let _guard = checkpoint_recovery_test_guard();
+        let provider_observation = crate::producer::ProviderContacts::default();
+        // facc9d1197 expanded one read to 8193 while leaving the old 8M host grant.
+        // Fund the complete repeated-read journey; its old grant is tested below.
+        let restored = restore(&provider_observation, 16_000_000);
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let verify = |command| {
@@ -39,19 +78,7 @@ mod serial {
                 .unwrap();
             request
                 .advanced()
-                .mutate(PlanarEdit(PlanarMutation {
-                    scope_key: "anchor-a".into(),
-                    // Every expectation resolves its source entity, consumes current_output,
-                    // and reads the output field through the real decision reader.
-                    operation: PlanarOperation::VerifyCurrentOutputs(
-                        (0..8_193)
-                            .map(|_| PlanarCurrentOutputExpectation {
-                                producer_key: "anchor-a".into(),
-                                output_key: "anchor-a".into(),
-                            })
-                            .collect(),
-                    ),
-                }))
+                .mutate(verification())
                 .expect_source(observed.observed_sources()[0].clone())
                 .idempotency(&command)
                 .execute_in_program(
@@ -129,5 +156,74 @@ mod serial {
             verify(904_u64).expect("fresh output verifies after ordinary producer demand"),
             WorthQueryApplicationMutationOutcome::Committed { .. }
         ));
+    }
+
+    #[test]
+    fn restored_current_output_original_request_grant_refuses_without_effects() {
+        use worth_query_host::facade::{
+            application_entry::WorthQueryApplicationRequestMutationDenial,
+            primary_graph::{
+                MutationHandlerExecutionDenial, RelationalExecutionDenialCause,
+                WorthQueryInvariantProjectionDenialKind, WorthQueryOperationProjectionDenialKind,
+            },
+        };
+        let _guard = checkpoint_recovery_test_guard();
+        let contacts = crate::producer::ProviderContacts::default();
+        let restored = restore(&contacts, 8_000_000);
+        let basis = || {
+            restored
+                .with_host_advancement(|phase| {
+                    restored
+                        .on_branch(restored.current_world())
+                        .select(&phase)
+                        .unwrap()
+                        .describe_basis()
+                })
+                .unwrap()
+        };
+        let before = basis();
+        let (scope, principal) = authenticate(&restored);
+        let request = restored.request(&principal, &scope);
+        let observed = request
+            .query(PlanarRead {
+                body_key: "anchor-a".into(),
+            })
+            .execute()
+            .unwrap();
+        let denial = request
+            .advanced()
+            .mutate(verification())
+            .expect_source(observed.observed_sources()[0].clone())
+            .idempotency(&905_u64)
+            .execute_in_program(
+                &restored,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect_err("the original finite grant stops the actual repeated reader");
+        let WorthQueryApplicationRequestMutationDenial::Handler(
+            MutationHandlerExecutionDenial::Projection(denial),
+        ) = denial
+        else {
+            panic!("actual projection refusal: {denial:?}")
+        };
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOperationProjectionDenialKind::InvariantAdmission(
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    RelationalExecutionDenialCause::WorkExhausted
+                )
+            )
+        );
+        let work = denial
+            .projection_work()
+            .expect("actual reader work before refusal");
+        assert!(work.field_reads() > 0 && work.field_reads() < EXPECTATIONS);
+        assert_eq!(work.output_lineage_role_lookups(), work.field_reads());
+        assert_eq!(basis(), before, "failed reads publish no native effects");
+        assert_eq!(
+            contacts.count(),
+            0,
+            "resource refusal never warms a producer"
+        );
     }
 }

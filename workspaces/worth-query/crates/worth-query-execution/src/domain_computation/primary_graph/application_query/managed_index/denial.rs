@@ -118,6 +118,65 @@ mod tests {
     };
 
     #[test]
+    fn source_verification_preserves_request_causes_and_intrinsic_mismatch() {
+        use crate::domain_computation::{
+            authorization::{
+                WorthQueryOperationAuthorizationDenialKind as Authorization,
+                WorthQueryOperationAuthorizationRefusalKind as Refusal,
+            },
+            primary_graph::{
+                invariant_projection::ConsumedOutputVerificationStop as Stop,
+                WorthQueryApplicationAttemptDenial as Attempt,
+            },
+        };
+        let authorization = Authorization::Refused(Refusal::CapabilityGrantMissing);
+        for (stop, kind, posture) in [
+            (
+                Stop::Execution(ExecutionCause::Cancelled),
+                Kind::Cancelled,
+                Posture::Retryable,
+            ),
+            (
+                Stop::Execution(ExecutionCause::DeadlineElapsed),
+                Kind::TimedOut,
+                Posture::Retryable,
+            ),
+            (
+                Stop::SourceQueryAuthorization(authorization),
+                Kind::of_request_authorization(authorization),
+                Posture::Retryable,
+            ),
+            (
+                Stop::WorkExhausted,
+                Kind::WorkBudgetExceeded,
+                Posture::Retryable,
+            ),
+            (
+                Stop::Unavailable,
+                Kind::ManagedIndexSourceDenied,
+                Posture::Terminal,
+            ),
+        ] {
+            let cause = Arc::new(WorthQueryManagedIndexDenial::new(
+                ReceiverCause::Provider(ProviderExecutionDenial::SourceVerification(
+                    Attempt::output_observation(stop),
+                )),
+                None,
+            ));
+            let projected = WorthQueryOutputDemandDenial::managed_source_query(
+                Arc::clone(&cause),
+                "managed Source",
+            );
+            assert_eq!(projected.kind(), kind);
+            assert_eq!(projected.recovery_posture(), posture);
+            assert_eq!(
+                projected.managed_source_query_denial().unwrap().cause(),
+                cause.cause()
+            );
+        }
+    }
+
+    #[test]
     fn current_control_keeps_its_original_kind_and_retryability_in_output_demand() {
         let original =
             WorthQueryOutputDemandDenial::new(Kind::CurrentControlBusy, "current control");

@@ -6,6 +6,8 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexAccessContr
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ManagedSourceDependencies
 {
+    pub(in crate::domain_computation::primary_graph::application_query) authorization:
+        Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
     pub(in crate::domain_computation::primary_graph::application_query) rows:
         worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
     pub(in crate::domain_computation::primary_graph::application_query) result_set:
@@ -38,11 +40,11 @@ impl ManagedSourceDependencies {
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn len(&self) -> usize {
         if self.maintained.is_some() {
-            return 1;
+            return 2;
         }
         self.rows
             .len()
-            .checked_add(1)
+            .checked_add(2)
             .expect("admitted completed-source descriptor count")
     }
 }
@@ -100,12 +102,25 @@ impl DeclaredManagedIndexSelection {
         if !self.coverage_is_present() || !other.coverage_is_present() {
             return Ok(false);
         }
+        if !self
+            .dependencies
+            .authorization
+            .same_truth(&other.dependencies.authorization, admit)?
+        {
+            return Ok(false);
+        }
         match (
             &self.dependencies.maintained,
             &other.dependencies.maintained,
         ) {
             (None, None) => {}
-            (Some(left), Some(right)) if left.same_truth(right, admit)? => {}
+            (Some(left), Some(right))
+                if left.same_truth(
+                    right,
+                    admit,
+                    &mut |bytes| execution.reserve_retained_memory(bytes).map_err(Into::into),
+                    &mut |cause| cause.into_native(),
+                )? => {}
             _ => return Ok(false),
         }
         if self.access.graph_obligations().identity() != other.access.graph_obligations().identity()
@@ -148,6 +163,7 @@ impl PartialEq for DeclaredManagedIndexSelection {
             && other.coverage_is_present()
             && self.access.graph_obligations().identity()
                 == other.access.graph_obligations().identity()
+            && self.dependencies.authorization == other.dependencies.authorization
             && self.dependencies.maintained == other.dependencies.maintained
             && self.dependencies.identity == other.dependencies.identity
             && self.dependencies.rows.len() == other.dependencies.rows.len()

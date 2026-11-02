@@ -5,17 +5,6 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_execution::ExecutionWorkCeiling;
 
 impl WorthQueryProductBranchOwnerCleanup {
-    pub(in crate::domain_computation) fn execution_request_in_advancement<'scope>(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'scope>,
-    ) -> Result<
-        worth_execution::ExecutionRequest<'scope, 'scope>,
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
-    > {
-        phase.check_live_for(&self.runtime)?;
-        phase.checked_execution_request_for(&self.runtime)
-    }
-
     pub fn retry_in_advancement(
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -24,7 +13,7 @@ impl WorthQueryProductBranchOwnerCleanup {
         WorthQueryProductBranchOwnerCleanupFailure,
     > {
         let mut retirements = OwnerCleanupRetirements::default();
-        let execution = match self.execution_request_in_advancement(phase) {
+        let execution = match self.execution_for(phase) {
             Ok(request) => request,
             Err(denial) => {
                 return Err(
@@ -33,6 +22,20 @@ impl WorthQueryProductBranchOwnerCleanup {
             }
         };
         self.retry_in_request_with_retirements(&execution, &mut retirements)
+    }
+
+    pub(in crate::domain_computation) fn execution_for<'scope>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'scope>,
+    ) -> Result<
+        worth_execution::ExecutionRequest<'scope, 'scope>,
+        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    > {
+        let execution = phase.checked_execution_request_for(&self.runtime)?;
+        execution
+            .check_live()
+            .map_err(execution_denial::advancement_checkpoint_stop)?;
+        Ok(execution)
     }
 
     pub(crate) fn retry_in_request_with_retirements(

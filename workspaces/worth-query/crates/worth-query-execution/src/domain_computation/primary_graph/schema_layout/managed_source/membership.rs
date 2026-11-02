@@ -5,6 +5,8 @@ pub(super) fn path(
     source: &ErasedApplicationQueryDefinition,
     entities: &BTreeMap<String, KindId>,
     relations: &BTreeMap<String, KindId>,
+    registry: &RelationalSchemaRegistry,
+    basis: (&SchemaId, SchemaVersionId),
 ) -> Result<Vec<Node>, Denial> {
     if !source.predicates().is_empty()
         || !source.parameters().is_empty()
@@ -30,10 +32,21 @@ pub(super) fn path(
                 return Err(unsupported(source.name()));
             }
             let leaf = nodes.len();
-            nodes.push(Node::Stored {
-                relation: required_kind(relations, step.relation())?,
-                from: required_kind(entities, step.from())?,
-                to: required_kind(entities, step.to())?,
+            nodes.push(match step.source_kind() {
+                worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Stored => Node::Stored {
+                    relation: required_kind(relations, step.relation())?,
+                    from: required_kind(entities, step.from())?,
+                    to: required_kind(entities, step.to())?,
+                },
+                worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived => {
+                    let identity = DerivedRelationIdentity { schema: basis.0.clone(), version: basis.1, name: step.relation().into() };
+                    let handle = registry.derived_relation(&identity).ok_or_else(|| unsupported(source.name()))?;
+                    if handle.parts().from != required_kind(entities, step.from())?.into()
+                        || handle.parts().to != required_kind(entities, step.to())?.into() {
+                        return Err(unsupported(source.name()));
+                    }
+                    Node::Derived(handle.parts().identity.clone())
+                }
             });
             let leaf = if step.direction() == RelationDirection::Reverse {
                 nodes.push(Node::Reverse { input: leaf });

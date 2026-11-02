@@ -1,5 +1,6 @@
 //! One actual Source schema with optional declared Struct-field projection profiles.
 use super::*;
+mod nested;
 use worth_foundational::facade::{
     aspects, AbsenceLaw, AspectBinding, AspectContract, AspectEquivalenceBasis,
     AspectEvolutionPolicy, AspectFieldLocator, AspectIdentity, AspectKey, AspectMaskContract,
@@ -56,6 +57,7 @@ pub(super) enum Profile {
     Membership,
     Fields,
     SchemaFieldsOnly,
+    NestedFields,
 }
 pub(super) fn profile(profile: Profile) -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let mut registry = RelationalSchemaRegistry::new();
@@ -119,7 +121,7 @@ pub(super) fn profile(profile: Profile) -> (RelationalSchemaRegistry, ManagedInd
         .unwrap();
     let mut fields = vec![];
     let mut routes = vec![];
-    if matches!(profile, Profile::Fields) {
+    if matches!(profile, Profile::Fields | Profile::NestedFields) {
         let reverse = DerivedRelationIdentity {
             name: "item-owner".into(),
             ..identity.clone()
@@ -153,6 +155,9 @@ pub(super) fn profile(profile: Profile) -> (RelationalSchemaRegistry, ManagedInd
             )
             .unwrap(),
         );
+    }
+    if matches!(profile, Profile::NestedFields) {
+        registry = nested::extend(registry, &identity, &mut routes);
     }
     let handle = registry.derived_relation(&identity).unwrap();
     let program = registry

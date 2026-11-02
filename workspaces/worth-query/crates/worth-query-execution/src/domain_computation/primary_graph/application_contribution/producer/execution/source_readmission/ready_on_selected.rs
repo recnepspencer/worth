@@ -126,6 +126,7 @@ where
         )
         .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?
     }
+    .with_selection_origin(shared.selected().selection_origin())
     .with_original_settled_producer(shared.selected().original_settled_producer().cloned());
     runtime
         .with_fresh_retained_query_permission(execution, installed, Some(validated_principal), external_principal, retained, control.as_ref().unwrap_or(shared).selected(), control.as_ref().map(|_| shared.selected()), controls, |permission| {

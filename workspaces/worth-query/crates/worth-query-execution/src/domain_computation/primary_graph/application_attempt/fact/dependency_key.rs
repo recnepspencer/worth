@@ -16,6 +16,14 @@ impl WorthQueryApplicationObservedFact {
     pub(in crate::domain_computation::primary_graph) fn dependency_locator_byte_bound(
         &self,
     ) -> Option<u64> {
+        if let Self::DerivedSource { observation } = self {
+            let key = observation.key();
+            return u64::try_from(key.relation().len())
+                .ok()?
+                .checked_add(key.identity().schema.0.len() as u64)?
+                .checked_add(key.identity().name.len() as u64)?
+                .checked_add(512);
+        }
         if let Self::StructuralWalk { observation } = self {
             // Decimal components of one initialized native ID fit within128bytes;
             // count the bound without an uncontrolled preliminary root scan.

@@ -3,8 +3,7 @@ use crate::history::{
     RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteDenial as Denial,
 };
 use crate::identity::data::EntityId;
-use crate::validation::candidate_source::ManagedIndexSourceProgram;
-use crate::validation::data::CustomInvariantRegistration;
+use crate::validation::candidate_source::{ManagedIndexSourceProgram, SourcePreparationGroup};
 use std::sync::Arc;
 
 #[derive(Debug, Default)]
@@ -12,10 +11,10 @@ pub(crate) struct SourceHistoryCatalog {
     programs: Vec<ManagedIndexSourceProgram>,
 }
 impl SourceHistoryCatalog {
-    pub(crate) fn compile(registrations: &[CustomInvariantRegistration]) -> Self {
+    pub(crate) fn compile(groups: &[SourcePreparationGroup]) -> Self {
         let mut programs = Vec::new();
-        for registration in registrations {
-            for program in registration.managed_sources.iter() {
+        for group in groups {
+            for program in group.programs() {
                 if !programs.contains(program) {
                     programs.push(program.clone());
                 }

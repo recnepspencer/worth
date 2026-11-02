@@ -67,20 +67,45 @@ pub(super) fn observe(
             fields,
             subject,
         } => work.charge_predicate(records, matches, fields, subject),
+        Observation::Derived {
+            reads,
+            units,
+            subject,
+        } => work.charge_native_source(
+            reads.adjacency_lists,
+            reads.relation_records,
+            reads.entity_records,
+            units,
+            subject,
+        ),
         Observation::Walk {
             reads,
             units,
             subject,
-        } => work.charge_walk(reads, units, subject),
+        } => work.charge_native_source(
+            reads.adjacency_lists,
+            reads.relation_records,
+            reads.entity_records,
+            units,
+            subject,
+        ),
         Observation::Step {
             path_index,
             step_index,
+            source_kind,
             traversal,
             direction,
             reads,
             subject,
         } => work.record_step(
-            execution, path_index, step_index, traversal, direction, reads, subject,
+            execution,
+            path_index,
+            step_index,
+            source_kind,
+            traversal,
+            direction,
+            reads,
+            subject,
         ),
     }
 }
@@ -104,6 +129,7 @@ pub(super) fn denial(error: Denial<Error>) -> Error {
             cause: SourceFactReadDenial::WorkLimitExceeded,
         }
         | Denial::FrontierLimit { subject } => work_limit_denial(&subject),
+        Denial::Derived { subject, kind } => derived_denial(kind, &subject),
         Denial::Walk { subject, kind } => match kind {
             PinnedStructuralWalkDenialKind::Read(cause) => relational_read_denial(cause, &subject),
             PinnedStructuralWalkDenialKind::WorkLimitExceeded
@@ -111,5 +137,50 @@ pub(super) fn denial(error: Denial<Error>) -> Error {
             _ => traversal_denial(&subject),
         },
         Denial::Traversal { subject } => traversal_denial(&subject),
+    }
+}
+
+fn derived_denial(
+    kind: worth_relational::facade::runtime::DerivedRelationReadDenial,
+    subject: &str,
+) -> Error {
+    use worth_relational::facade::{
+        runtime::{
+            CustomInvariantInterruption, DerivedRelationReadDenial as Native, StructuralReadError,
+            StructuralWalkDenialKind as Structural,
+        },
+        schema::DerivedRelationDenial as Definition,
+    };
+    match kind {
+        Native::Request(cause) => relational_read_denial(cause, subject),
+        Native::Definition(Definition::WorkBudgetExceeded)
+        | Native::Structural(Structural::Read(StructuralReadError::WorkBudgetExceeded)) => {
+            work_limit_denial(subject)
+        }
+        Native::Structural(Structural::Interrupted(CustomInvariantInterruption::Cancelled)) => {
+            read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::Cancelled,
+                subject,
+            )
+        }
+        Native::Structural(Structural::Interrupted(
+            CustomInvariantInterruption::DeadlineElapsed,
+        )) => read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded,
+            subject,
+        ),
+        Native::Structural(Structural::MemoryAdmission(cause)) => relational_read_denial(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::from(
+                worth_execution::WorkCeilingDenial::Admission(
+                    worth_execution::LeaseDenial::MemoryExhausted(cause),
+                ),
+            ),
+            subject,
+        ),
+        Native::Structural(Structural::MemoryBudgetExceeded) => read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded,
+            subject,
+        ),
+        other => traversal_denial(&format!("{subject}: {other:?}")),
     }
 }

@@ -29,6 +29,7 @@ fn footprint(endpoints: Vec<EntityId>, revision: u64) -> WorthQueryObservedSourc
                 aspects: Vec::new(),
                 adjacencies: vec![adjacency.clone()],
                 walks: None,
+                derived: None,
                 allocation: None,
             },
             None,

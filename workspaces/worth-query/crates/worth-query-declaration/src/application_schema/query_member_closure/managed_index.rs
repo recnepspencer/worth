@@ -51,7 +51,18 @@ pub(super) fn validate(members: &[ApplicationSchemaMember]) -> Result<(), Denial
         let definition = indexes
             .get(selection.parts().index.as_str())
             .ok_or_else(|| denied(&selection.parts().index, Cause::MissingSource))?;
-        validate_parent(definition, parent)
+        let source = queries
+            .get(
+                definition
+                    .parts()
+                    .source
+                    .binding
+                    .parts()
+                    .query_name
+                    .as_str(),
+            )
+            .expect("the complete Source roster was validated above");
+        validate_parent(definition, parent, source)
             .map_err(|cause| denied(&definition.parts().name, cause))?;
     }
     Ok(())
@@ -101,8 +112,7 @@ fn validate_source(
         return Err(Cause::ForeignSourceBinding);
     }
     let disclosure = source.disclosure();
-    if source.authorization() != &ApplicationQueryAuthorizationRequirement::Public
-        || disclosure.posture() != ApplicationQueryDisclosurePosture::Public
+    if disclosure.posture() != ApplicationQueryDisclosurePosture::Public
         || disclosure.capability_name().is_some()
         || disclosure.capability_type().is_some()
         || !disclosure.rules().is_empty()
@@ -126,7 +136,13 @@ fn validate_source(
 fn validate_parent(
     index: &ErasedApplicationManagedIndexDefinition,
     parent: &ErasedApplicationQueryDefinition,
+    source_query: &ErasedApplicationQueryDefinition,
 ) -> Result<(), Cause> {
+    if source_query.authorization() != &ApplicationQueryAuthorizationRequirement::Public
+        && parent.basis_support().pinned()
+    {
+        return Err(Cause::UnsupportedParentBasis);
+    }
     let parts = index.parts();
     let selection = parent.managed_index().expect("selected parent");
     let source = parts.source.binding.parts();

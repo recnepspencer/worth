@@ -16,6 +16,8 @@ use worth_relational::facade::schema::{
 
 mod expression;
 mod laws;
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct DerivedRelationLayout {

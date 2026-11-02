@@ -18,6 +18,9 @@ pub(super) fn capture<Q>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     rows: &[WorthQueryObservedSource<Q>],
     result_set: &WorthQueryObservedResultSet<Q>,
+    authorization: Arc<
+        crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization,
+    >,
     allocation: &Arc<SourceFactsAllocation>,
 ) -> Result<Arc<ManagedSourceDependencies>, SourceDenial> {
     let storage = MaterialCompletion::new(execution, allocation);
@@ -47,7 +50,7 @@ pub(super) fn capture<Q>(
             .seal()
             .map_err(|cause| control.refuse(Stop::Storage(cause)).into())
     })?;
-    let mut fact_count = 0usize;
+    let mut fact_count = 1usize;
     let mut field_count = 0usize;
     for source in rows.iter().chain(std::iter::once(result_set.source())) {
         storage.work(1)?;
@@ -76,6 +79,8 @@ pub(super) fn capture<Q>(
     let domain = b"worth-query:managed-source-dependencies:v1";
     storage.work(domain.len() as u64 + 8)?;
     digest.update(domain);
+    storage.work(32)?;
+    digest.update(authorization.identity());
     digest.update(u64::try_from(rows.len()).map_err(|_| worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)?.to_be_bytes());
     for source in rows.iter().chain(std::iter::once(result_set.source())) {
         storage.work(32)?;
@@ -84,6 +89,7 @@ pub(super) fn capture<Q>(
     storage.arc::<ManagedSourceDependencies>()?;
     Ok(Arc::new(ManagedSourceDependencies {
         rows: owners,
+        authorization,
         result_set: Some(Arc::clone(&result_set.source().source_meaning)),
         maintained: None,
         identity: digest.finalize().into(),
@@ -100,6 +106,7 @@ pub(super) fn capture_maintained(
     >,
     allocation: &Arc<SourceFactsAllocation>,
 ) -> Result<Arc<ManagedSourceDependencies>, SourceDenial> {
+    let authorization = Arc::clone(observation.authorization());
     let storage = MaterialCompletion::new(execution, allocation);
     let storage_stop = |cause| SourceDenial::Work(Stop::Storage(cause).into());
     let rows = worth_execution::ExecutionRequestArrayBuilder::allocate(*execution, 0)
@@ -108,7 +115,9 @@ pub(super) fn capture_maintained(
         .map_err(storage_stop)?;
     let mut digest = Sha256::new();
     storage.work(96)?;
-    digest.update(b"worth-query:maintained-source:v3");
+    digest.update(b"worth-query:maintained-source:v4");
+    storage.work(32)?;
+    digest.update(authorization.identity());
     digest.update(observation.key().obligation);
     let scope = observation.key().scope;
     digest.update(scope.partition_value().to_be_bytes());
@@ -127,10 +136,11 @@ pub(super) fn capture_maintained(
     storage.arc::<ManagedSourceDependencies>()?;
     Ok(Arc::new(ManagedSourceDependencies {
         rows,
+        authorization,
         result_set: None,
         maintained: Some(observation),
         identity: digest.finalize().into(),
-        fact_count: 1,
+        fact_count: 2,
         field_count: 0,
         _allocation: Arc::clone(allocation),
     }))

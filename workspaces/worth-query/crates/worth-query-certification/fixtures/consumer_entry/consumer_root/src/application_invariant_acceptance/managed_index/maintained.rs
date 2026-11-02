@@ -5,12 +5,14 @@ mod bounds;
 mod correction;
 #[cfg(test)]
 mod court;
+mod events;
 mod generated;
 mod geometry;
 mod handler;
 mod host;
 #[path = "mutation.rs"]
 mod mutation;
+mod nested;
 #[path = "prefix.rs"]
 mod prefix;
 mod protected;
@@ -19,6 +21,7 @@ mod query;
 mod refinement;
 mod rule;
 mod schema;
+mod source_authorization;
 
 const PREFIX_MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
     worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;
@@ -33,3 +36,7 @@ const PREFIX_REFINEMENT: Option<
         1,
     ),
 );
+
+const PREFIX_MAINTENANCE:
+    worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance =
+    worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance::WhenRequired;

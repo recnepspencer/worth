@@ -3,6 +3,9 @@ use super::*;
 use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
+mod population;
+mod public_work;
+use population::{contacts, intersecting, universe, EdgeValue, SharedChain};
 mod selection;
 mod spatial_rows;
 mod work_attribution;
@@ -23,8 +26,8 @@ fn invoice<T>(operation: impl FnOnce() -> T) -> (T, u64) {
 
 #[test]
 fn source_structure_warm_work_keeps_local_growth_on_real_small_chains() {
-    let small = journey(16, 0);
-    let large = journey(32, 0);
+    let small = journey(16, 0, SharedChain::MiddlePair);
+    let large = journey(32, 0, SharedChain::MiddlePair);
     eprintln!("Source structure local invoices16={small:?}32={large:?}");
     for (first, doubled) in [(small.0, large.0), (small.1, large.1)] {
         assert!(
@@ -36,8 +39,8 @@ fn source_structure_warm_work_keeps_local_growth_on_real_small_chains() {
 
 #[test]
 fn geometry_chain_growth_uses_real_source_and_original_sdk_invoice() {
-    let small = journey(1_000, 0);
-    let large = journey(2_000, 0);
+    let small = journey(1_000, 0, SharedChain::All);
+    let large = journey(2_000, 0, SharedChain::All);
     eprintln!("geometry costs1000={small:?} costs2000={large:?}");
     assert!(
         large.0 <= small.0 * 5 / 4,
@@ -47,14 +50,14 @@ fn geometry_chain_growth_uses_real_source_and_original_sdk_invoice() {
         large.1 <= small.1 * 5 / 4,
         "commit must follow height, not Source size"
     );
-    let remote = journey(2_000, 50_000);
+    let remote = journey(2_000, 50_000, SharedChain::All);
     eprintln!("geometry costs2000+50000={remote:?}");
     for (base, doubled, beside) in [(small.0, large.0, remote.0), (small.1, large.1, remote.1)] {
         assert!(
             beside <= doubled * 3 / 2,
             "unrelated geometry cannot dominate the whole invoice"
         );
-        // Fifty thousand leaves add fewer than six binary height steps. Allow
+        // Both sampled scopes grow together; 2000→52000 adds fewer than six binary height steps. Allow
         // eight times one step and a 20k granule for fixed-width paths whose
         // ordered-node split/grant charge need not be monotone at two samples.
         let one_step = doubled.saturating_sub(base).max(20_000);
@@ -71,14 +74,15 @@ fn fixed_geometry_edit_keeps_source_work_local_beside_independent_remote_populat
         // The same two edited occurrences, independent of the remote axis.
         // journey checks exact +8/+8 Source work and bounded query paths; the
         // whole original invoices remain visible for cost diagnosis.
-        let costs = journey(64, unrelated);
+        let costs = journey(64, unrelated, SharedChain::MiddlePair);
         eprintln!("fixed64 remote={unrelated} refusal/commit original SDK invoices={costs:?}");
     }
 }
 
-fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
+fn journey(vertices: u32, unrelated: u32, shared: SharedChain) -> (u64, u64) {
     let calls = Arc::new(provider::Calls::default());
     let configuration = Configuration::new(Arc::clone(&calls));
+    let public_calls = Arc::clone(&configuration.public_source);
     let rules = Arc::clone(&configuration.rules);
     let prefix_calls = Arc::new(prefix::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
@@ -92,7 +96,7 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
         &scope,
         Edit::Chain {
             directory: "A".into(),
-            shared_directory: None,
+            shared_directory: (shared == SharedChain::All).then(|| "B".into()),
             prefix: "chain".into(),
             vertices,
             origin: 1_000,
@@ -100,17 +104,19 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
         0x919900,
     );
     let middle = vertices / 2;
-    for (offset, edge) in [middle - 1, middle].into_iter().enumerate() {
-        commit(
-            &world,
-            &principal,
-            &scope,
-            Edit::Share {
-                directory: "B".into(),
-                edge: format!("chain-e-{edge}"),
-            },
-            0x919901 + offset as u64,
-        );
+    if shared == SharedChain::MiddlePair {
+        for (offset, edge) in [middle - 1, middle].into_iter().enumerate() {
+            commit(
+                &world,
+                &principal,
+                &scope,
+                Edit::Share {
+                    directory: "B".into(),
+                    edge: format!("chain-e-{edge}"),
+                },
+                0x919901 + offset as u64,
+            );
+        }
     }
     for (batch, start) in (0..unrelated)
         .step_by(REMOTE_BATCH_EDGES as usize)
@@ -154,7 +160,7 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
             .unwrap();
         assert_eq!(
             values(source.rows()),
-            universe(directory, vertices, unrelated, None)
+            universe(directory, vertices, unrelated, None, shared)
         );
     }
     let index = request
@@ -163,9 +169,9 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
         .unwrap();
     let next_x = 1_000 + i64::from(middle) * 2 + 1;
     let retained = request.query(find("A", next_x)).execute().unwrap();
-    let retained_values = intersecting(universe("A", vertices, unrelated, None), next_x);
+    let retained_values = intersecting(universe("A", vertices, unrelated, None, shared), next_x);
     assert_eq!(values(retained.rows()), retained_values);
-    let original_universe = universe("A", vertices, unrelated, None);
+    let original_universe = universe("A", vertices, unrelated, None, shared);
     for x in [50, 1_000, 1_002, next_x, 999_999, 2_000_000] {
         selection::verify(
             &calls,
@@ -181,13 +187,14 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
         .unwrap()
         .selected_commit()
         .clone();
+    let public_before = public_work::Snapshot::capture(&public_calls);
     let builds = calls.builds.load(Ordering::SeqCst);
     let updates = calls.updates.load(Ordering::SeqCst);
     let source_bounds = calls.source_bounds.load(Ordering::SeqCst);
     let summary_sources = calls.summary_sources.load(Ordering::SeqCst);
     rules.records.lock().unwrap().clear();
     assert!(!rules.capture_complete_source.load(Ordering::SeqCst));
-    let (refusal, refusal_work) = work_attribution::invoice(&calls, || {
+    let (refusal, refusal_work) = work_attribution::invoice([&calls, &public_calls], || {
         request
             .advanced()
             .mutate(Edit::Move {
@@ -220,18 +227,18 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
             .expect("unopened B actually refuses its four proposed contacts");
         assert_eq!(
             values(b.before.as_ref().unwrap()),
-            contacts("B", vertices, unrelated, None)
+            contacts("B", vertices, unrelated, None, shared)
         );
         assert_eq!(
             values(&b.after),
-            contacts("B", vertices, unrelated, Some(50))
+            contacts("B", vertices, unrelated, Some(50), shared)
         );
         assert!(records
             .iter()
             .all(|record| record.updates_before_callback == updates + 2));
     }
     rules.records.lock().unwrap().clear();
-    let ((), commit_work) = work_attribution::invoice(&calls, || {
+    let ((), commit_work) = work_attribution::invoice([&calls, &public_calls], || {
         commit(
             &world,
             &principal,
@@ -280,7 +287,7 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
     for directory in ["A", "B"] {
         assert_eq!(
             values(request.query(find(directory, 50)).execute().unwrap().rows()),
-            contacts(directory, vertices, unrelated, Some(next_x))
+            contacts(directory, vertices, unrelated, Some(next_x), shared)
         );
         let source = request
             .query(query::ReadSource {
@@ -290,14 +297,17 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
             .unwrap();
         assert_eq!(
             values(source.rows()),
-            universe(directory, vertices, unrelated, Some(next_x))
+            universe(directory, vertices, unrelated, Some(next_x), shared)
         );
     }
     assert_eq!(
         values(request.query(find("A", next_x)).execute().unwrap().rows()),
-        intersecting(universe("A", vertices, unrelated, Some(next_x)), next_x)
+        intersecting(
+            universe("A", vertices, unrelated, Some(next_x), shared),
+            next_x
+        )
     );
-    let changed_universe = universe("A", vertices, unrelated, Some(next_x));
+    let changed_universe = universe("A", vertices, unrelated, Some(next_x), shared);
     for x in [50, 1_000, 1_002, next_x, 999_999, 2_000_000] {
         selection::verify(
             &calls,
@@ -309,6 +319,7 @@ fn journey(vertices: u32, unrelated: u32) -> (u64, u64) {
         );
     }
     assert_eq!(calls.builds.load(Ordering::SeqCst), builds);
+    public_before.require_local(&public_calls);
     index.close();
     (refusal_work, commit_work)
 }
@@ -321,53 +332,4 @@ fn authenticate(world: &host::Host, scope: &WorthQueryRequestScope) -> Principal
         ),
     )
     .unwrap()
-}
-
-type EdgeValue = (String, Coordinates, Coordinates);
-fn universe(directory: &str, vertices: u32, unrelated: u32, moved: Option<i64>) -> Vec<EdgeValue> {
-    let point = |x| Coordinates::new(x, 0, x, 0);
-    let middle = vertices / 2;
-    let mut rows = expected(directory, 10, all(directory).probe);
-    for index in 0..vertices - 1 {
-        if directory == "B" && index != middle - 1 && index != middle {
-            continue;
-        }
-        let endpoint = |vertex| {
-            if vertex == middle {
-                moved.unwrap_or(1_000 + i64::from(vertex) * 2)
-            } else {
-                1_000 + i64::from(vertex) * 2
-            }
-        };
-        rows.push((
-            format!("chain-e-{index}"),
-            point(endpoint(index)),
-            point(endpoint(index + 1)),
-        ));
-    }
-    for index in 0..unrelated {
-        let batch = index / REMOTE_BATCH_EDGES;
-        let offset = index % REMOTE_BATCH_EDGES;
-        let start = 1_000_000 + i64::from(batch * REMOTE_BATCH_EDGES) * 4 + i64::from(offset) * 2;
-        rows.push((
-            format!("remote-{batch}-e-{offset}"),
-            point(start),
-            point(start + 2),
-        ));
-    }
-    rows.sort_by(|a, b| a.0.cmp(&b.0));
-    rows
-}
-fn contacts(directory: &str, vertices: u32, unrelated: u32, moved: Option<i64>) -> Vec<EdgeValue> {
-    intersecting(universe(directory, vertices, unrelated, moved), 50)
-}
-fn intersecting(rows: Vec<EdgeValue>, x: i64) -> Vec<EdgeValue> {
-    rows.into_iter()
-        .filter(|(_, a, b)| {
-            a.lower_x.min(b.lower_x) <= x
-                && x <= a.upper_x.max(b.upper_x)
-                && a.lower_y.min(b.lower_y) <= 0
-                && 0 <= a.upper_y.max(b.upper_y)
-        })
-        .collect()
 }

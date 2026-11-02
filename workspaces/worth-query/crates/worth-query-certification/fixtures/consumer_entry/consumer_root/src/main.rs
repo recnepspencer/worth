@@ -38,7 +38,7 @@ use worth_query_topology_entry::{
 worth_query_application! {
     pub ConsumerSchema {
         owner: "worth.query.certification.consumer",
-        version: (1, 1),
+        version: (2, 0),
         contributions: [TopologyContribution, ParameterContribution, ConsumerProgramDeployment],
     }
 }

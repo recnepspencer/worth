@@ -1,6 +1,9 @@
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::{
-    application_query::{ApplicationQueryCardinality, ApplicationQueryOrderingDirection},
+    application_query::{
+        ApplicationQueryCardinality, ApplicationQueryOrderingDirection,
+        ApplicationQueryRootPathSourceKind,
+    },
     authoring::QueryFamily,
 };
 use worth_query_installation::facade::{
@@ -179,6 +182,7 @@ fn planning_relation<'a>(
     let traversal = validated.query().traversal().get(index)?;
     Some(WorthQueryReadGraphRelationView {
         relation: traversal.relation_name().as_str(),
+        source_kind: ApplicationQueryRootPathSourceKind::Stored,
         complete_closure: false,
         aggregate_selection: false,
         direction: relation_direction(operators),

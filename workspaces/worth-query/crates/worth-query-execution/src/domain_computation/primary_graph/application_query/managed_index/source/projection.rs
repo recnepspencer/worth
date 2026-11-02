@@ -1,4 +1,6 @@
 //! Materialize the compiled Source shape through the current Native loan.
+mod acquisition;
+mod tree;
 use super::occurrences::MaterialDenial;
 use crate::domain_computation::primary_graph::{
     application_query::{
@@ -23,7 +25,8 @@ use worth_relational::facade::{
     runtime::{
         DerivedRelationReadDenial, ManagedIndexSourceField, ManagedIndexSourceOccurrence,
         ManagedIndexSourceProgram, ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceRows,
-        PreparedManagedIndexProjectionRead,
+        PreparedManagedIndexProjectionRead, PreparedManagedIndexRelationRead,
+        PreparedManagedIndexSourceOccurrence, PreparedManagedIndexSourceRowRead,
     },
     schema::DerivedRelationDenial,
     transactions::RelationalExecutionDenialCause as Storage,
@@ -34,6 +37,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     pub(super) row: Tree,
     pub(super) dependencies: BTreeSet<ViewDependency>,
     pub(super) content: std::sync::OnceLock<[u8; 32]>,
+    pub(super) comparison_depth: usize,
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl Entry {
@@ -58,12 +62,17 @@ struct Projector<'borrow, 'scope, 'authority> {
     dependencies: BTreeSet<ViewDependency>,
 }
 #[derive(Clone, Copy)]
-enum FieldSource<'a> {
-    Root(&'a ManagedIndexSourceOccurrence),
+enum FieldSource<'a, 'read, 'source> {
+    Root(&'a PreparedManagedIndexSourceRowRead<'read, 'source>),
     Endpoint(
         &'a PreparedManagedIndexProjectionRead,
         &'a ManagedIndexSourceProjectionOccurrence,
     ),
+}
+
+pub(super) enum ProjectionMembership<'a> {
+    Forward(&'a PreparedManagedIndexRelationRead),
+    Inverse(&'a PreparedManagedIndexSourceOccurrence),
 }
 
 pub(super) fn project(
@@ -72,7 +81,17 @@ pub(super) fn project(
     rows: &ManagedIndexSourceRows<'_>,
     occurrence: ManagedIndexSourceOccurrence,
     graph: &WorthQueryInstalledGraphReadContract,
+    support: Option<ProjectionMembership<'_>>,
 ) -> Result<Entry, MaterialDenial> {
+    let row_read = match support {
+        Some(ProjectionMembership::Forward(read)) => {
+            rows.prepare_row_from_read(read, &occurrence)?
+        }
+        Some(ProjectionMembership::Inverse(read)) => {
+            rows.prepare_row_from_occurrence(read, &occurrence)?
+        }
+        None => rows.prepare_row(&occurrence)?,
+    };
     let mut projector = Projector {
         execution,
         rows,
@@ -81,85 +100,84 @@ pub(super) fn project(
         dependencies: BTreeSet::new(),
     };
     let fields = projector.fields(
-        FieldSource::Root(&occurrence),
+        FieldSource::Root(&row_read),
         occurrence.entity(),
         "root",
         program.fields(),
     )?;
-    projector
-        .allocation
-        .claim_slice::<Relation>(execution, program.projection_routes().len())?;
-    let mut relations = Vec::new();
-    relations
-        .try_reserve_exact(program.projection_routes().len())
-        .map_err(|_| Storage::AllocationFailed)?;
-    for (index, route) in program.projection_routes().iter().enumerate() {
-        let relation = graph
-            .relations()
-            .iter()
-            .find(|relation| {
-                relation.slot_type() == route.name() && relation.parent_path() == "root"
-            })
-            .ok_or(DerivedRelationReadDenial::Definition(
-                DerivedRelationDenial::InvalidExpression,
-            ))?;
-        let read = rows.prepare_projection(&occurrence, index)?;
-        let support = rows.projection_support(&read)?;
-        for &(entity, _) in support.entity_dependencies() {
-            projector.dependency(ViewDependency::Entity(entity))?;
-        }
-        for adjacency in support.adjacency_dependencies() {
-            projector.dependency(ViewDependency::Adjacency(
-                adjacency.anchor,
-                adjacency.relation,
-                u8::from(!adjacency.outgoing),
-            ))?;
-        }
-        let occurrences = rows.projection_occurrences(&read)?;
-        validate_relation_cardinality(relation, occurrences.len()).map_err(|cause| {
-            let cause = crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionDenial::new(
-                crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionDenialKind::RelationCardinalityMismatch,
-                cause.into_subject(),
-            );
-            MaterialDenial::Native(super::failure::retain_failure(execution, cause))
-        })?;
+    let comparison_depth = if program
+        .projection_routes()
+        .iter()
+        .any(|route| route.parent_route().is_some())
+    {
+        program
+            .projection_routes()
+            .len()
+            .checked_add(1)
+            .ok_or(Storage::ChargedBytesOverflow)?
+    } else {
+        2
+    };
+    let row = if comparison_depth > 2 {
+        tree::project(
+            &mut projector,
+            program,
+            &occurrence,
+            fields,
+            comparison_depth,
+        )?
+    } else {
         projector
             .allocation
-            .claim_slice::<Row>(execution, occurrences.len())?;
-        let mut children = Vec::new();
-        children
-            .try_reserve_exact(occurrences.len())
+            .claim_slice::<Relation>(execution, program.projection_routes().len())?;
+        let mut relations = Vec::new();
+        relations
+            .try_reserve_exact(program.projection_routes().len())
             .map_err(|_| Storage::AllocationFailed)?;
-        for child in occurrences {
-            let fields = projector.fields(
-                FieldSource::Endpoint(&read, &child),
-                child.entity(),
-                relation.result_path(),
-                route.fields(),
-            )?;
-            let mut row = Row::new(
-                child.entity(),
-                Some(relation.result_path_identity()),
-                true,
-                fields,
-                Vec::new(),
-            );
-            assert!(
-                row.attach_incoming_relation(child.relation().relation_id),
-                "a new projected child has one genuine incoming occurrence"
-            );
-            children.push(row);
+        for (index, route) in program.projection_routes().iter().enumerate() {
+            let acquired = projector.acquire(program, &occurrence, index, "root", None)?;
+            let relation = acquired.relation;
+            let read = acquired.read;
+            let occurrences = acquired.occurrences;
+            projector
+                .allocation
+                .claim_slice::<Row>(execution, occurrences.len())?;
+            let mut children = Vec::new();
+            children
+                .try_reserve_exact(occurrences.len())
+                .map_err(|_| Storage::AllocationFailed)?;
+            for child in occurrences {
+                let fields = projector.fields(
+                    FieldSource::Endpoint(&read, &child),
+                    child.entity(),
+                    relation.result_path(),
+                    route.fields(),
+                )?;
+                let mut row = Row::new(
+                    child.entity(),
+                    Some(relation.result_path_identity()),
+                    true,
+                    fields,
+                    Vec::new(),
+                );
+                assert!(
+                    row.attach_incoming_relation(child.relation().relation_id),
+                    "a new projected child has one genuine incoming occurrence"
+                );
+                children.push(row);
+            }
+            relations.push(Relation::new(relation, Vec::new(), children));
         }
-        relations.push(Relation::new(relation, Vec::new(), children));
-    }
-    projector.allocation.claim_slice::<Row>(execution, 1)?;
-    let row = Row::new(occurrence.entity(), None, true, fields, relations);
+        projector.allocation.claim_slice::<Row>(execution, 1)?;
+        let row = Row::new(occurrence.entity(), None, true, fields, relations);
+        WorkingTree::new(vec![row]).into_disclosed(&WorthQueryApplicationQueryGovernance::Public)
+    };
     Ok(Entry {
         occurrence,
-        row: WorkingTree::new(vec![row])
-            .into_disclosed(&WorthQueryApplicationQueryGovernance::Public),
+        row,
         dependencies: projector.dependencies,
         content: std::sync::OnceLock::new(),
+        comparison_depth,
         _allocation: projector.allocation,
     })
 }
@@ -167,7 +185,7 @@ pub(super) fn project(
 impl Projector<'_, '_, '_> {
     fn fields(
         &mut self,
-        source: FieldSource<'_>,
+        source: FieldSource<'_, '_, '_>,
         entity: EntityId,
         path: &str,
         columns: &[ManagedIndexSourceField],
@@ -213,9 +231,7 @@ impl Projector<'_, '_, '_> {
                 }
             };
             let value = match source {
-                FieldSource::Root(occurrence) => {
-                    self.rows.with_field(occurrence, column, retain)??
-                }
+                FieldSource::Root(read) => read.with_field(column, retain)??,
                 FieldSource::Endpoint(read, occurrence) => self
                     .rows
                     .with_projected_field(read, occurrence, column, retain)??,
@@ -245,6 +261,6 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     occurrence: ManagedIndexSourceOccurrence,
     graph: &WorthQueryInstalledGraphReadContract,
 ) -> Result<(Tree, Arc<SourceFactsAllocation>), MaterialDenial> {
-    let entry = project(execution, program, rows, occurrence, graph)?;
+    let entry = project(execution, program, rows, occurrence, graph, None)?;
     Ok((entry.row, entry._allocation))
 }

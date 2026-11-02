@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use crate::application_schema::{
     ApplicationEncodedScalarValue, ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationRelationRef, DeclaredApplicationFieldValue, EqualityCapable, EqualityPredicate,
-    WritePosture,
+    ApplicationGraphMemberMeaning, ApplicationRelationRef, DeclaredApplicationFieldValue,
+    EqualityCapable, EqualityPredicate, WritePosture,
 };
 
 use super::ApplicationQueryRootPathGuard;
@@ -16,11 +16,18 @@ pub enum ApplicationQueryRootPathTraversal {
     Closure,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationQueryRootPathSourceKind {
+    Stored,
+    Derived,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryRootPathStep {
     relation: String,
-    from: String,
-    to: String,
+    from: ApplicationGraphMemberMeaning,
+    to: ApplicationGraphMemberMeaning,
+    source_kind: ApplicationQueryRootPathSourceKind,
     direction: RelationDirection,
     traversal: ApplicationQueryRootPathTraversal,
 }
@@ -35,11 +42,39 @@ impl ApplicationQueryRootPathStep {
     ) -> Self {
         Self {
             relation,
-            from,
-            to,
+            from: from.into(),
+            to: to.into(),
+            source_kind: ApplicationQueryRootPathSourceKind::Stored,
             direction,
             traversal,
         }
+    }
+
+    pub fn from_untrusted_source_fields(
+        relation: String,
+        from: ApplicationGraphMemberMeaning,
+        to: ApplicationGraphMemberMeaning,
+        source_kind: ApplicationQueryRootPathSourceKind,
+        direction: RelationDirection,
+        traversal: ApplicationQueryRootPathTraversal,
+    ) -> Self {
+        Self {
+            relation,
+            from,
+            to,
+            source_kind,
+            direction,
+            traversal,
+        }
+    }
+    pub const fn source_kind(&self) -> ApplicationQueryRootPathSourceKind {
+        self.source_kind
+    }
+    pub fn from_member(&self) -> &ApplicationGraphMemberMeaning {
+        &self.from
+    }
+    pub fn to_member(&self) -> &ApplicationGraphMemberMeaning {
+        &self.to
     }
 
     pub fn relation(&self) -> &str {
@@ -47,11 +82,11 @@ impl ApplicationQueryRootPathStep {
     }
 
     pub fn from(&self) -> &str {
-        &self.from
+        self.from.name()
     }
 
     pub fn to(&self) -> &str {
-        &self.to
+        self.to.name()
     }
 
     pub const fn direction(&self) -> RelationDirection {
@@ -64,15 +99,15 @@ impl ApplicationQueryRootPathStep {
 
     pub fn parent_entity(&self) -> &str {
         match self.direction {
-            RelationDirection::Forward => &self.from,
-            RelationDirection::Reverse => &self.to,
+            RelationDirection::Forward => self.from(),
+            RelationDirection::Reverse => self.to(),
         }
     }
 
     pub fn child_entity(&self) -> &str {
         match self.direction {
-            RelationDirection::Forward => &self.to,
-            RelationDirection::Reverse => &self.from,
+            RelationDirection::Forward => self.to(),
+            RelationDirection::Reverse => self.from(),
         }
     }
 }
@@ -147,8 +182,9 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
     ) -> ApplicationQueryRootPath<Schema, Start, Next> {
         self.steps.push(ApplicationQueryRootPathStep {
             relation: relation.name().to_owned(),
-            from: relation.from().to_owned(),
-            to: relation.to().to_owned(),
+            from: relation.from().into(),
+            to: relation.to().into(),
+            source_kind: ApplicationQueryRootPathSourceKind::Stored,
             direction: RelationDirection::Forward,
             traversal: ApplicationQueryRootPathTraversal::OneHop,
         });
@@ -167,8 +203,9 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
     ) -> ApplicationQueryRootPath<Schema, Start, Previous> {
         self.steps.push(ApplicationQueryRootPathStep {
             relation: relation.name().to_owned(),
-            from: relation.from().to_owned(),
-            to: relation.to().to_owned(),
+            from: relation.from().into(),
+            to: relation.to().into(),
+            source_kind: ApplicationQueryRootPathSourceKind::Stored,
             direction: RelationDirection::Reverse,
             traversal: ApplicationQueryRootPathTraversal::OneHop,
         });
@@ -250,3 +287,5 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
         }
     }
 }
+
+mod derived;

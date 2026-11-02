@@ -16,7 +16,11 @@ mod pattern;
 mod reduction;
 mod report;
 mod storage;
-pub use storage::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
+pub use storage::{
+    build_ordered_tree, build_sorted_ordered_tree, insert_ordered_tree, remove_ordered_tree,
+    ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionOrderedTreeBounds,
+    ExecutionOrderedTreeNode, ExecutionOrderedTreeStorage,
+};
 
 pub use authority::{
     CancellationSource, CancellationToken, ConstructionDenial, EquivalencePredicate,

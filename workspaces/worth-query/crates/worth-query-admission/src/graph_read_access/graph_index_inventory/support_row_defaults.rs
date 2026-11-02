@@ -39,7 +39,8 @@ pub(crate) fn support_posture_for_requirement(
     Option<String>,
 ) {
     match requirement_kind {
-        WorthQueryGraphReadAccessRequirementKind::AggregateSelection => (
+        WorthQueryGraphReadAccessRequirementKind::DerivedSource
+        | WorthQueryGraphReadAccessRequirementKind::AggregateSelection => (
             WorthQueryGraphIndexLifecycleOwner::LowerRuntime,
             WorthQueryGraphIndexLifecycleClass::LowerRuntimeOwned,
             WorthQueryGraphIndexPosture::LowerRuntimeOwned,
@@ -78,7 +79,8 @@ pub(crate) fn default_bases_for_requirement(
     WorthQueryGraphReadAccessComplexityContract,
 ) {
     match requirement_kind {
-        WorthQueryGraphReadAccessRequirementKind::AggregateSelection => (
+        WorthQueryGraphReadAccessRequirementKind::DerivedSource
+        | WorthQueryGraphReadAccessRequirementKind::AggregateSelection => (
             WorthQueryGraphReadAccessRebuildBasis::AuthoritativeRelationTruth,
             WorthQueryGraphReadAccessInvalidationBasis::AuthoritativeRelationDelta,
             WorthQueryGraphReadAccessComplexityContract::CompleteTraversalWorkset,

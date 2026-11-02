@@ -251,13 +251,15 @@ where
     let read = if query.read_graph().managed_index_selection().is_none() {
         // The ordinary current executor refreshes governed authorization. It is
         // a different supported admission purpose from selected read-only disclosure.
+        let selection_origin = selected.selection_origin();
         let (_, product, application_basis) = selected.into_parts();
         let controls = WorthQueryApplicationQueryControls::product_one_shot(
             product,
             application_basis,
             maximum_results,
             request,
-        );
+        )
+        .with_selection_origin(selection_origin);
         let plan = runtime
             .readmit_application_query_from_observed(execution, query, &access, retained, controls)
             .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
@@ -287,7 +289,8 @@ where
             maximum_results,
             request,
         )
-        .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
+        .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?
+        .with_selection_origin(shared.selected().selection_origin());
         let plan = runtime
             .readmit_application_query_from_observed(execution, query, &access, retained, controls)
             .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;

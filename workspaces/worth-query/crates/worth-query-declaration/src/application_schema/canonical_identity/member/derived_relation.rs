@@ -76,6 +76,16 @@ fn append_node(basis: &mut ApplicationSchemaCanonicalBasis, prefix: &str, node: 
             append_domain(basis, &format!("{prefix}.from"), &source.from);
             append_domain(basis, &format!("{prefix}.to"), &source.to);
         }
+        Node::OrderedEvents {
+            predecessor,
+            introduced,
+            retired,
+        } => {
+            basis.text(format!("{prefix}.kind"), "ordered-events");
+            basis.usize(format!("{prefix}.predecessor"), *predecessor);
+            basis.usize(format!("{prefix}.introduced"), *introduced);
+            basis.usize(format!("{prefix}.retired"), *retired);
+        }
         Node::Compose { left, right } => {
             basis.text(format!("{prefix}.kind"), "compose");
             basis.usize(format!("{prefix}.left"), *left);

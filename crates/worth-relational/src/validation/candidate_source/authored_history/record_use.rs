@@ -7,7 +7,7 @@ use crate::validation::candidate_source::{
 use crate::validation::custom_rule::CustomPreparationBudget;
 use worth_execution::ChargedBytes;
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct AuthoredSourceRecordUse {
     lifecycle: bool,
     fields: bool,

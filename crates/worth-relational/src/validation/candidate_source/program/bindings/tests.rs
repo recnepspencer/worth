@@ -55,3 +55,36 @@ fn managed_cache_binding_follows_actual_path_owner_across_independent_schema_ext
         "extending a registry preserves an existing path owner's live binding"
     );
 }
+
+#[test]
+fn public_source_registration_rejects_a_foreign_route_even_with_its_actual_membership_path() {
+    let (base, original) = managed_cache_schema();
+    let membership = original.0.path.clone();
+    let mut route = membership.parts().clone();
+    route.identity.name = "independent-projection-route".into();
+    let identity = route.identity.clone();
+    let source = base
+        .clone()
+        .register_derived_relations(vec![route.clone()])
+        .unwrap();
+    let receiving = base.register_derived_relations(vec![route]).unwrap();
+    assert!(receiving.admits_derived_relation(&membership));
+    drop(original);
+    let program = source
+        .bind_managed_index_source(
+            &membership,
+            vec![],
+            vec![ManagedIndexSourceProjectionRoute::new(
+                "endpoint".into(),
+                source.derived_relation(&identity).unwrap(),
+                vec![],
+            )
+            .unwrap()],
+        )
+        .unwrap();
+    assert_eq!(program.require_registry(&source), Ok(()));
+    assert_eq!(
+        program.require_registry(&receiving),
+        Err(Denial::ForeignDefinition)
+    );
+}

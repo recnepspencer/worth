@@ -24,6 +24,7 @@ fn chain(
                 acyclic(
                     (0..count).rev().map(|n| n * 1024),
                     count,
+                    count.saturating_sub(1) * 1024 + usize::from(count > 0),
                     &execution,
                     control,
                     |key| {
@@ -48,8 +49,8 @@ fn chain(
     );
     if result.is_ok() {
         assert!(
-            reads_by_node.iter().all(|reads| (1..=2).contains(reads)),
-            "every supplied numeric node is checked, with bounded actual parent callbacks"
+            reads_by_node.iter().all(|reads| *reads == 1),
+            "each actual parent is read exactly once"
         );
     }
     (result, reads, report.charged_work())
@@ -61,7 +62,7 @@ fn cold_parent_dfs_visits_sparse_chains_with_bounded_original_work() {
         let (result, reads, invoice) = chain(count, Some(16 * 1024 * 1024), None);
         result.unwrap();
         assert!(
-            reads <= 2 * count,
+            reads == count,
             "actual parent callbacks, count={count}, reads={reads}"
         );
         match count {
@@ -76,6 +77,67 @@ fn cold_parent_dfs_visits_sparse_chains_with_bounded_original_work() {
         work64 > 0 && work128 < 3 * work64,
         "separate actual SDK bookkeeping growth"
     );
+}
+
+#[test]
+fn cold_walk_tags_match_independent_exhaustive_functional_graph_cycles() {
+    use std::collections::BTreeSet;
+    for count in 0usize..=4 {
+        for mut encoding in 0..(count + 1).pow(count as u32) {
+            let parents: Vec<_> = (0..count)
+                .map(|_| {
+                    let digit = encoding % (count + 1);
+                    encoding /= count + 1;
+                    (digit < count).then_some(digit)
+                })
+                .collect();
+            let cyclic = (0..count).any(|seed| {
+                let mut seen = BTreeSet::new();
+                let mut next = Some(seed);
+                while let Some(node) = next {
+                    if !seen.insert(node) {
+                        return true;
+                    }
+                    next = parents[node];
+                }
+                false
+            });
+            let storage = SerialRequest::from_memory(
+                SerialMemoryBudget::new(Some(16 * 1024 * 1024)),
+                CancellationSource::new().token(),
+                None,
+            );
+            let execution = ExecutionRequest::serial(&storage);
+            let mut reads = vec![0; count];
+            let result = controlled(&execution, |control| {
+                acyclic(
+                    (0..count).chain((0..count).rev()),
+                    count,
+                    count,
+                    &execution,
+                    control,
+                    |node| {
+                        reads[node] += 1;
+                        Ok(parents[node])
+                    },
+                )
+                .map_err(Into::into)
+            });
+            if cyclic {
+                assert!(
+                    matches!(result, Err(Denial::Controlled(Stop::SourceStructureCycle))),
+                    "{parents:?}: {result:?}"
+                );
+            } else {
+                result.unwrap();
+                assert!(
+                    reads.iter().all(|reads| *reads == 1),
+                    "{parents:?}: {reads:?}"
+                );
+            }
+            assert_eq!(storage.memory().unwrap().charged_memory_bytes(), 0);
+        }
+    }
 }
 #[test]
 fn cold_parent_dfs_refuses_self_and_disconnected_cycles() {
@@ -92,6 +154,7 @@ fn cold_parent_dfs_refuses_self_and_disconnected_cycles() {
             acyclic(
                 0..parents.len(),
                 parents.len(),
+                parents.len(),
                 &execution,
                 control,
                 |key| Ok(parents[key]),
@@ -101,6 +164,26 @@ fn cold_parent_dfs_refuses_self_and_disconnected_cycles() {
         assert!(matches!(
             result,
             Err(Denial::Controlled(Stop::SourceStructureCycle))
+        ));
+        assert_eq!(storage.memory().unwrap().charged_memory_bytes(), 0);
+    }
+}
+
+#[test]
+fn cold_walk_refuses_coordinates_outside_its_actual_frontier() {
+    for (seed, parent) in [(2, None), (0, Some(2))] {
+        let storage = SerialRequest::from_memory(
+            SerialMemoryBudget::new(Some(16 * 1024 * 1024)),
+            CancellationSource::new().token(),
+            None,
+        );
+        let execution = ExecutionRequest::serial(&storage);
+        let result = controlled(&execution, |control| {
+            acyclic([seed], 1, 2, &execution, control, |_| Ok(parent)).map_err(Into::into)
+        });
+        assert!(matches!(
+            result,
+            Err(Denial::Controlled(Stop::SourceStructureIncomplete))
         ));
         assert_eq!(storage.memory().unwrap().charged_memory_bytes(), 0);
     }
@@ -121,14 +204,16 @@ fn cold_parent_dfs_releases_stopped_scratch_and_retries_with_fresh_request() {
     let (limited, partial_reads, _) = chain(128, Some(4096), None);
     eprintln!("cold DFS4KiB partial parent reads={partial_reads}, refusal={limited:?}");
     assert!(
-        partial_reads > 0 && partial_reads < 256,
-        "original memory stops actual partial DFS scratch, not root entry"
+        partial_reads == 0,
+        "the original memory must admit the complete bounded tag column before visiting parents"
     );
     assert!(
         matches!(
             limited,
-            Err(Denial::Controlled(Stop::Request(
-                WorkCeilingDenial::Admission(worth_execution::LeaseDenial::MemoryExhausted(_))
+            Err(Denial::Controlled(Stop::Storage(
+                worth_execution::ExecutionRequestArrayDenial::Request(
+                    WorkCeilingDenial::Admission(worth_execution::LeaseDenial::MemoryExhausted(_))
+                )
             )))
         ),
         "actual original-memory refusal: {limited:?}"

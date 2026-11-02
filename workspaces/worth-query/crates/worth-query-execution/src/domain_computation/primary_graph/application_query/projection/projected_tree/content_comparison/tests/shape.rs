@@ -110,3 +110,8 @@ fn complete_raw_shape_compares_fields_relations_negative_support_order_and_depth
         .same_one_hop_content(&tree(same_deeper), &mut |_| Ok::<_, ()>(()))
         .unwrap());
 }
+
+mod deep;
+
+mod encoding;
+mod lifetime;

@@ -6,6 +6,14 @@ pub struct ApplicationQueryBasisSupport {
 }
 
 impl ApplicationQueryBasisSupport {
+    pub const fn current_only() -> Self {
+        Self {
+            current: true,
+            pinned: false,
+            preview: false,
+        }
+    }
+
     pub const fn current_and_pinned() -> Self {
         Self {
             current: true,

@@ -6,13 +6,17 @@ pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: Enti
     match fact {
         // Complete Source currentness is compared at its owning Native record;
         // no narrower row membership is claimed by this locator.
-        WorthQueryApplicationObservedFact::ManagedIndexSource { .. } => false,
+        WorthQueryApplicationObservedFact::ManagedIndexSource { .. }
+        // Authorization support does not declare an operation entity read target.
+        | WorthQueryApplicationObservedFact::SourceReadAuthorization { .. } => false,
         WorthQueryApplicationObservedFact::ComponentSelection { observation } => {
             observation.touches_entity(candidate)
         }
         WorthQueryApplicationObservedFact::Aggregate { observation } => {
             observation.native().contains(candidate)
         }
+        WorthQueryApplicationObservedFact::DerivedSource { observation } => observation.native().data().entity_dependencies()
+            .binary_search_by_key(&candidate, |(entity,_)| *entity).is_ok(),
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => observation
             .native()
             .visits()

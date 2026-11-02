@@ -44,7 +44,7 @@ impl<Node> Clone for NodePages<Node> {
 }
 
 impl<Node: Copy> NodePages<Node> {
-    pub(super) fn from_scratch(
+    pub(in super::super) fn from_scratch(
         execution: &ExecutionRequest<'_, '_>,
         scratch: &[Cell<Option<Node>>],
         control: &WorthQueryManagedIndexControl<'_>,

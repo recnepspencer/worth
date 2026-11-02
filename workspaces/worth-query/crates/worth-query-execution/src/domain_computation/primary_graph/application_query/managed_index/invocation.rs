@@ -67,7 +67,8 @@ pub(super) fn controlled<R>(
             result.map_err(|cause| Stop::Request(WorkCeilingDenial::Stopped(cause)))
         };
         let poll = || context.borrow_mut().poll();
-        let control = Control::new(&checkpoint, &poll, &first);
+        let reserve = |bytes| execution.reserve_retained_memory(bytes).map_err(Stop::Request);
+        let control = Control::new(&checkpoint, &poll, &first, &reserve);
         let result = body(&control);
         // A callback cannot substitute success or a domain refusal for a stop
         // that it caught from an original request checkpoint or storage door.
@@ -177,4 +178,4 @@ pub(super) fn decoded_provider<R>(
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

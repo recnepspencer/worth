@@ -217,7 +217,7 @@ source = "src/certification/application_graph/relation_laws/logical/committed.rs
 name = "managed_prefix_index.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root"
 target = "src/main.rs"
-source = "src/application_invariant_acceptance/managed_index/prefix.rs"
+source = "src/application_invariant_acceptance/managed_index/prefix/definition.rs"
 
 [[compiled_sources]]
 name = "managed_box_index.rs"

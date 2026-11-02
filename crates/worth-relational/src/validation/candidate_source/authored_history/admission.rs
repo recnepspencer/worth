@@ -35,6 +35,16 @@ pub(super) fn map(cause: ExecutionOrderedMapDenial) -> Denial {
         },
     }
 }
+pub(super) fn array(cause: worth_execution::ExecutionRequestArrayDenial) -> Denial {
+    map(match cause {
+        worth_execution::ExecutionRequestArrayDenial::Request(cause) => {
+            ExecutionOrderedMapDenial::Request(cause)
+        }
+        worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => {
+            ExecutionOrderedMapDenial::Allocation(cause)
+        }
+    })
+}
 pub(super) fn header<T>(
     execution: ExecutionRequest<'_, '_>,
     variable: usize,

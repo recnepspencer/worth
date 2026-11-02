@@ -24,6 +24,8 @@ pub struct BankIdentityRuntimeWorkflowBinding {
     binding: InstalledBankPrincipalBinding,
     invariant_projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
     approval_authentication: BankApprovalAuthenticationOwner,
+    account_index_work:
+        std::sync::Arc<crate::application_definition::current_accounts::AccountIndexWork>,
     runtime: WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
 }
 
@@ -37,6 +39,9 @@ impl BankIdentityRuntimeWorkflowBinding {
         binding: InstalledBankPrincipalBinding,
         invariant_projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
         approval_authentication: BankApprovalAuthenticationOwner,
+        account_index_work: std::sync::Arc<
+            crate::application_definition::current_accounts::AccountIndexWork,
+        >,
     ) -> Self {
         Self {
             authentication: approval_authentication.signing_owner(),
@@ -44,6 +49,7 @@ impl BankIdentityRuntimeWorkflowBinding {
             binding,
             invariant_projection,
             approval_authentication,
+            account_index_work,
             runtime,
         }
     }
@@ -75,6 +81,7 @@ impl BankIdentityRuntimeWorkflowBinding {
             binding,
             invariant_projection,
             approval_authentication,
+            account_index_work,
             runtime,
         } = self;
         match runtime.retain_workflow_spec(workflow, authentication) {
@@ -83,6 +90,7 @@ impl BankIdentityRuntimeWorkflowBinding {
                 binding,
                 invariant_projection: std::sync::Arc::new(invariant_projection),
                 approval_authentication,
+                account_index_work,
             }),
             Err(refusal) => {
                 let (runtime, workflow, authentication, denial) = refusal.into_parts();
@@ -93,6 +101,7 @@ impl BankIdentityRuntimeWorkflowBinding {
                         binding,
                         invariant_projection,
                         approval_authentication,
+                        account_index_work,
                         runtime,
                     }),
                     denial,

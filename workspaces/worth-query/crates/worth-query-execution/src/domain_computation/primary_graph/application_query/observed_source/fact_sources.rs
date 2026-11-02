@@ -10,6 +10,11 @@ pub(super) struct FactSource<'a> {
     pub entities: &'a [EntityId],
     pub aspects: &'a [WorthQueryObservedFieldRevision],
     pub adjacencies: &'a [WorthQueryObservedAdjacencyRevision],
+    pub derived: Option<
+        &'a Arc<
+            crate::domain_computation::primary_graph::derived_source::DerivedSourceDependencies,
+        >,
+    >,
     pub walks: Option<&'a Arc<StructuralWalkDependencies>>,
     pub aggregate: Option<&'a Arc<AggregateObservation>>,
     pub components: Option<&'a Arc<ComponentSelection>>,
@@ -21,6 +26,7 @@ impl<'a> FactSource<'a> {
             aspects: &value.aspects,
             adjacencies: &value.adjacencies,
             walks: None,
+            derived: None,
             aggregate: None,
             components: None,
         }
@@ -31,6 +37,7 @@ impl<'a> FactSource<'a> {
             aspects: &value.aspects,
             adjacencies: &value.adjacencies,
             walks: value.walks.as_ref(),
+            derived: value.derived.as_ref(),
             aggregate: value.orbit.as_ref().map(|x| &x.aggregate),
             components: value.components.as_ref().map(|x| &x.body),
         }
@@ -41,6 +48,7 @@ impl<'a> FactSource<'a> {
             .checked_add(self.aspects.len())?
             .checked_add(self.adjacencies.len())?
             .checked_add(self.walks.map_or(0, |x| x.values().len()))?
+            .checked_add(self.derived.map_or(0, |x| x.values().len()))?
             .checked_add(usize::from(self.aggregate.is_some()))?
             .checked_add(usize::from(self.components.is_some()))
     }
@@ -113,6 +121,23 @@ impl WorthQueryObservedSourceFootprint {
             .dependencies
             .maintained
             .as_ref()
+    }
+    pub(in crate::domain_computation::primary_graph::application_query) fn source_authorization(
+        &self,
+    ) -> Option<
+        &Arc<
+            crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization,
+        >,
+    > {
+        Some(
+            &self
+                .root_selection
+                .as_ref()?
+                .managed_index
+                .as_ref()?
+                .dependencies
+                .authorization,
+        )
     }
     pub(super) fn validate_selections(
         &self,

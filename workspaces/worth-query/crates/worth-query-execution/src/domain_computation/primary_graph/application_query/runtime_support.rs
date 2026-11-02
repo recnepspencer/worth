@@ -18,6 +18,9 @@ fn runtime_supports(
     requirement: &WorthQueryGraphReadAccessRequirementRow,
 ) -> bool {
     match requirement.kind() {
+        WorthQueryGraphReadAccessRequirementKind::DerivedSource => requirement
+            .relation_name()
+            .is_some_and(|name| layout.derived_relation(name).is_some()),
         WorthQueryGraphReadAccessRequirementKind::AggregateSelection => {
             match requirement.relation_name() {
                 Some(name) => layout

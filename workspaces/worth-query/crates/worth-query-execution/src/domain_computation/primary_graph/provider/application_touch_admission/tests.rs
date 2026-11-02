@@ -63,7 +63,7 @@ fn whole_replacement_requires_grants_for_omitted_prior_fields() {
     });
 }
 #[test]
-fn whole_clear_requires_grants_for_every_removed_prior_field() {
+fn whole_clear_requires_explicit_aspect_removal_grant() {
     check(|execution| {
         let world = World::new(execution, false, &[("A", "sentinel"), ("B", "protected")]);
         let before = world
@@ -82,6 +82,25 @@ fn whole_clear_requires_grants_for_every_removed_prior_field() {
             world.admit(execution, &candidate, false),
             Err(TouchAdmissionFailure::Contract)
         ));
+        let fields = world
+            .schema
+            .installed_operation(fixture::FieldsOnly::reference())
+            .unwrap();
+        let contracts = fields.contracts();
+        assert!(
+            matches!(
+                admit_validated_application_touches(
+                    execution,
+                    &candidate,
+                    &world.layout,
+                    contracts.graph_reads(),
+                    contracts.touches(),
+                    contracts.read_touch_overlap(),
+                ),
+                Err(TouchAdmissionFailure::Contract)
+            ),
+            "all field writes cannot substitute for explicit parent removal"
+        );
         world
             .admit(execution, &candidate, true)
             .expect("complete actual removal grants");

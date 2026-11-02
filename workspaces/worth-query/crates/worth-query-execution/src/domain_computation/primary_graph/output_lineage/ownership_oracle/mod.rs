@@ -3,6 +3,11 @@ use crate::domain_computation::primary_graph;
 use crate::facade as runtime_api;
 use crate::facade::primary_graph::*;
 use fixture_values::PositiveLength;
+#[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/length_binding.rs"]
+mod length_binding;
+use length_binding::TopologyLengthBinding;
+#[path = "../../../../../../worth-query-certification/fixtures/consumer_values/src/integer_orientation.rs"]
+mod worth_query_consumer_values;
 use runtime_api::application_contribution::*;
 use worth_query_installation::{
     facade as runtime_domain, worth_query_conditional_node as conditional_node,

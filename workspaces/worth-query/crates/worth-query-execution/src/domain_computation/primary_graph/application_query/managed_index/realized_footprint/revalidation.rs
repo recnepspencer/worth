@@ -41,7 +41,7 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
     fn same_inputs(
         &self,
         other: &dyn RetainedManagedInfluence,
-        purpose: CapturedInfluenceComparison,
+        purpose: CapturedInfluenceComparison<'_, '_>,
         checkpoint: &mut dyn FnMut(u64) -> bool,
     ) -> bool {
         let Some(other) = other.as_any().downcast_ref::<Self>() else {
@@ -60,10 +60,11 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
             && self.parameters.parameters().bindings() == other.parameters.parameters().bindings()
             && self.audience.same_meaning(&other.audience, checkpoint)
             && match purpose {
-                CapturedInfluenceComparison::Content => self.candidates.same_captured(
+                CapturedInfluenceComparison::Content(scratch) => self.candidates.same_captured(
                     &other.candidates,
                     self.original.same_source(&other.original),
                     checkpoint,
+                    scratch,
                 ),
                 CapturedInfluenceComparison::SelectedMembership => self
                     .candidates

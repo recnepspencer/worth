@@ -387,3 +387,22 @@ are immutable owner-carried cells, and callers admit the roster count before
 traversal. No serialization/deep clone can recreate live issuance. Query's
 historical relevance consumer remains unfinished; existing recorded managed
 correction still requires every conservative candidate to cancel.
+
+
+## Borrow a prepared managed Source row
+
+`ManagedIndexSourceRows::prepare_row_from_read(&forward, &occurrence)` validates
+the actual current `acquire_all()` ticket, Source program/scope, view and complete
+full-generation row membership. Its opaque `PreparedManagedIndexSourceRowRead`
+borrows both that loan and ticket. Call `with_field(column, callback)` for each
+declared field; the actual audience, row kind and original request are still
+checked and values remain callback confined. A ticket from a foreign scope or a
+different committed/proposed view refuses as `ForeignObservation`.
+
+A retained occurrence has no current membership ticket. Use
+`prepare_row(&occurrence)` to acquire its actual current inverse membership once;
+a removed row refuses as `RecordUnavailable`. Existing `with_field` and
+`admit_occurrence` use this same inverse issuer. Neither preparation nor the
+borrowed token grants principal READ or Query authorization. Query's cold Source
+projection carries its actual forward ticket; warm retained coordinates acquire
+current inverse membership, with no coordinate-only fallback.

@@ -56,7 +56,7 @@ where
     S: ApplicationSchema + 'static,
     I: ApplicationManagedIndexBinding<S>,
 {
-    let (source, observation) = read_source::<S, I>(
+    let (source, observation, authorization) = read_source::<S, I>(
         execution,
         access,
         parent,
@@ -134,6 +134,7 @@ where
         Arc::clone(allocation),
         influence,
         *parameters.identity().bytes(),
+        authorization,
     ));
     let dependencies =
         super::source_dependencies::capture_maintained(execution, expectation, allocation)
@@ -168,6 +169,7 @@ fn read_source<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     (
         Arc<WorthQueryCompletedSourceRead>,
         Arc<ManagedIndexSourceObservation>,
+        Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
     ),
     Denial,
 > {
@@ -201,6 +203,8 @@ fn read_source<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
             {
                 return Err(Denial::ForeignAssociation);
             }
+            let binding = plan.query.binding_observation().cloned().ok_or(Denial::ForeignAssociation)?;
+            let source_identity = *plan.query.identity().as_bytes();
             let context = plan
                 .graph_work
                 .retain_query_source_context()
@@ -258,8 +262,11 @@ fn read_source<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
             let terminal = completion
                 .into_managed_source(context, execution, allocation, |units| storage.work(units))?
                 .ok_or(Denial::ForeignAssociation)?;
+            let authorization = crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization::complete(
+                execution, &terminal, binding, source_identity, plan.authorization, &application.authorization, allocation,
+            ).map_err(Denial::NativeAdmission)?.ok_or(Denial::ForeignAssociation)?;
             storage.arc::<WorthQueryCompletedSourceRead>()?;
-            Ok((Arc::new(terminal), observation))
+            Ok((Arc::new(terminal), observation, authorization))
         },
     )
 }

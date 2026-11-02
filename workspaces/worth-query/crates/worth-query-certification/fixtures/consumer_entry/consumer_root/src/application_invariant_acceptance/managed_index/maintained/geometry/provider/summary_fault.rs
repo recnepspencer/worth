@@ -1,11 +1,19 @@
 //! Deliberately correct changed leaves retain stale real ancestors for the court.
 use super::*;
-pub(super) fn replace_leaves(
-    after: &WorthQueryManagedIndexSourceRows<'_, Catalog, BoxIndex>,
+pub(super) fn replace_leaves<Index>(
+    after: &WorthQueryManagedIndexSourceRows<'_, Catalog, Index>,
     changes: &[WorthQueryManagedIndexSourceChange],
     nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
     calls: &Calls,
-) -> Result<(), Stop> {
+) -> Result<(), Stop>
+where
+    Index: ApplicationManagedIndexBinding<
+        Catalog,
+        SourceBinding = query::SourceBinding,
+        ProbeBinding = CoordinatesBinding,
+        Entity = Edge,
+    >,
+{
     for change in changes {
         let source = change.after().ok_or_else(storage::invalid)?;
         let id = nodes.before_source_node(source)?;

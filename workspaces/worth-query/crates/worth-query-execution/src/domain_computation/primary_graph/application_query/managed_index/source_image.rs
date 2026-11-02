@@ -42,6 +42,8 @@ pub(super) struct SourceImage<S: ApplicationSchema, I: ApplicationManagedIndexBi
     pub(super) _result_set: WorthQueryObservedResultSet<SourceQuery<S, I>>,
     pub(super) _affinity: WorthQueryApplicationQueryRequestAffinity,
     pub(super) terminal: Arc<WorthQueryCompletedSourceRead>,
+    pub(super) authorization:
+        Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
     pub(super) _allocation: Arc<SourceFactsAllocation>,
 }
 

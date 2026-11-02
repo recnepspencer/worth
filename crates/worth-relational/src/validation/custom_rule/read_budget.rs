@@ -98,6 +98,11 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
             .ok_or_else(|| self.refusal(StructuralReadError::WorkBudgetExceeded))
     }
 
+    /// Share only the payer already charged by this exact structural reader.
+    pub(crate) fn retained_payer(&self) -> CustomInvariantWorkMeter {
+        self.work.clone()
+    }
+
     pub(crate) fn check_scratch_peak(&self, bytes: u64) -> Result<(), StructuralWalkDenialKind> {
         self.checkpoint(0)?;
         crate::validation::data::CustomInvariantLeaseBudget::check_scratch_peak(self.work, bytes)

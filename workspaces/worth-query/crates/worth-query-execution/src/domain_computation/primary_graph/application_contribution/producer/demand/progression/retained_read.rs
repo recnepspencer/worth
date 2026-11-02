@@ -229,6 +229,7 @@ where
         )
         .map_err(resource_denial)?
     }
+    .with_selection_origin(shared.selected().selection_origin())
     .with_original_settled_producer(shared.selected().original_settled_producer().cloned());
     let source_reader =
         crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::new(

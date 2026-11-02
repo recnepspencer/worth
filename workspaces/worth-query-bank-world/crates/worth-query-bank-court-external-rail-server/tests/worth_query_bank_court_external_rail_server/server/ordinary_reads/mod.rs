@@ -9,3 +9,5 @@ pub(crate) mod estate;
 pub(crate) mod locality;
 
 pub(crate) mod pending_payments;
+
+pub(crate) mod current_accounts;

@@ -1,5 +1,5 @@
 use super::super::retained_projection::{storage::DisclosedRows, OriginalProjection};
-use super::WorthQueryApplicationProjectionNode;
+use super::{OwnedProjectionRows, WorthQueryApplicationProjectionNode};
 use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 use worth_relational::facade::identity::EntityId;
 
@@ -31,15 +31,25 @@ impl WorthQueryApplicationWorkingProjectionTree {
         mut self,
         governance: &WorthQueryApplicationQueryGovernance,
     ) -> WorthQueryApplicationDisclosedProjectionTree {
-        strip_undisclosed_nodes(&mut self.rows, governance);
+        if !matches!(governance, WorthQueryApplicationQueryGovernance::Public) {
+            strip_undisclosed_nodes(&mut self.rows, governance);
+        }
 
         WorthQueryApplicationDisclosedProjectionTree {
-            rows: DisclosedRows::Owned(self.rows),
+            rows: DisclosedRows::Owned(OwnedProjectionRows::ordinary(self.rows)),
         }
     }
 }
 
 impl WorthQueryApplicationDisclosedProjectionTree {
+    pub(in crate::domain_computation::primary_graph::application_query) fn from_managed(
+        rows: OwnedProjectionRows,
+    ) -> Self {
+        Self {
+            rows: DisclosedRows::Owned(rows),
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn raw_rows(
         &self,
     ) -> &[WorthQueryApplicationProjectionNode] {
@@ -76,7 +86,10 @@ impl WorthQueryApplicationDisclosedProjectionTree {
 
     pub(in crate::domain_computation::primary_graph::application_query) fn take(&mut self) -> Self {
         Self {
-            rows: std::mem::replace(&mut self.rows, DisclosedRows::Owned(Vec::new())),
+            rows: std::mem::replace(
+                &mut self.rows,
+                DisclosedRows::Owned(OwnedProjectionRows::default()),
+            ),
         }
     }
 
@@ -150,12 +163,6 @@ fn strip_undisclosed_nodes(
 
 impl worth_execution::ChargedBytes for WorthQueryApplicationDisclosedProjectionTree {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self { rows } = self;
-        let rows = rows.rows();
-        rows.iter().fold(
-            (rows.capacity() as u64)
-                .saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectionNode>() as u64),
-            |bytes, row| bytes.saturating_add(row.retained_bytes() as u64),
-        )
+        self.rows.payload_bytes() as u64
     }
 }

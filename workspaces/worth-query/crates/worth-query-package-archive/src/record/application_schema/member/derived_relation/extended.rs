@@ -9,7 +9,11 @@ pub(super) fn write(
     if definition.is_legacy_shape() {
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
-    output.u16(1)?;
+    output.u16(if uses_ordered_events(definition) {
+        2
+    } else {
+        1
+    })?;
     let parts = definition.parts();
     output.text(&parts.relation)?;
     write_member_domain(output, &parts.from)?;
@@ -23,13 +27,14 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<Member, Denial> {
     budget.require_nesting_depth(2)?;
-    if input.u16()? != 1 {
+    let version = input.u16()?;
+    if !matches!(version, 1 | 2) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let relation = input.text()?.to_owned();
     let from = decode_member_domain(input)?;
     let to = decode_member_domain(input)?;
-    let nodes = decode_sequence(input, budget, 10, |input, _| decode_node(input))?;
+    let nodes = decode_sequence(input, budget, 10, |input, _| decode_node(input, version))?;
     let laws = super::decode_laws(input, budget)?;
     let definition = ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
         WorthQueryPortableDerivedRelationParts {
@@ -40,7 +45,7 @@ pub(super) fn decode(
             laws,
         },
     );
-    if definition.is_legacy_shape() {
+    if definition.is_legacy_shape() || uses_ordered_events(&definition) != (version == 2) {
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
     let member = Member::DerivedRelation { definition };
@@ -100,10 +105,21 @@ fn write_node(output: &mut dyn BinaryEncodingSink, node: &Node) -> Result<(), De
             output.u64(*left as u64)?;
             output.u64(*right as u64)
         }
+        Node::OrderedEvents {
+            predecessor,
+            introduced,
+            retired,
+        } => {
+            output.u16(8)?;
+            for index in [predecessor, introduced, retired] {
+                output.u64(*index as u64)?;
+            }
+            Ok(())
+        }
         _ => super::write_node(output, node),
     }
 }
-fn decode_node(input: &mut BinaryInput<'_>) -> Result<Node, Denial> {
+fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<Node, Denial> {
     Ok(match input.u16()? {
         1 => Node::Source(ApplicationDerivedRelationSource {
             kind: match input.u16()? {
@@ -138,6 +154,20 @@ fn decode_node(input: &mut BinaryInput<'_>) -> Result<Node, Denial> {
             left: super::decode_index(input)?,
             right: super::decode_index(input)?,
         },
+        8 if version == 2 => Node::OrderedEvents {
+            predecessor: super::decode_index(input)?,
+            introduced: super::decode_index(input)?,
+            retired: super::decode_index(input)?,
+        },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
+}
+
+fn uses_ordered_events(definition: &ErasedApplicationDerivedRelationDefinition) -> bool {
+    definition
+        .parts()
+        .expression
+        .nodes
+        .iter()
+        .any(|node| matches!(node, Node::OrderedEvents { .. }))
 }

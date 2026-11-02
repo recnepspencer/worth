@@ -4,18 +4,24 @@ use provider::cost_stages::{Observer, Stage};
 use std::cell::RefCell;
 use worth_execution::RequestConsultObservationForTest;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum Audience {
+    RuleIndex,
+    PublicIndex,
+}
+const AUDIENCES: [Audience; 2] = [Audience::RuleIndex, Audience::PublicIndex];
 struct Trace {
     sdk: RequestConsultObservationForTest,
-    events: Vec<(Stage, usize)>,
+    events: Vec<(Audience, Stage, usize)>,
 }
 thread_local! { static TRACE: RefCell<Option<Trace>> = const { RefCell::new(None) }; }
 struct Guard<'a> {
-    calls: &'a provider::Calls,
-    previous: Option<Observer>,
+    calls: [&'a provider::Calls; 2],
+    previous: [Option<Observer>; 2],
 }
 impl<'a> Guard<'a> {
     fn arm(
-        calls: &'a provider::Calls,
+        calls: [&'a provider::Calls; 2],
         context: &worth_execution::MapKernelContext<'_, '_>,
     ) -> Self {
         TRACE.with(|slot| {
@@ -32,30 +38,38 @@ impl<'a> Guard<'a> {
         });
         Self {
             calls,
-            previous: calls.cost_stages.replace(Some(Arc::new(record))),
+            previous: std::array::from_fn(|index| {
+                let audience = AUDIENCES[index];
+                calls[index]
+                    .cost_stages
+                    .replace(Some(Arc::new(move |stage| record(audience, stage))))
+            }),
         }
     }
 }
 impl Drop for Guard<'_> {
     fn drop(&mut self) {
-        self.calls.cost_stages.replace(self.previous.take());
+        for (calls, previous) in self.calls.iter().zip(self.previous.iter_mut()) {
+            calls.cost_stages.replace(previous.take());
+        }
         // Drop the SDK guard outside our own RefCell borrow, including unwind.
         let removed = TRACE.with(|slot| slot.borrow_mut().take());
         drop(removed);
     }
 }
-fn record(stage: Stage) {
+fn record(audience: Audience, stage: Stage) {
     TRACE.with(|slot| {
         if let Some(trace) = slot.borrow_mut().as_mut() {
             if !trace.sdk.is_current_scope_observed_for_test() {
                 return;
             }
             let consult = trace.sdk.count_for_test();
-            trace.events.push((stage, consult));
+            trace.events.push((audience, stage, consult));
         }
     });
 }
-pub(super) fn invoice<T>(calls: &provider::Calls, operation: impl FnOnce() -> T) -> (T, u64) {
+pub(super) fn invoice<T>(calls: [&provider::Calls; 2], operation: impl FnOnce() -> T) -> (T, u64) {
+    let before = calls.map(super::public_work::Snapshot::capture);
     let original = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
@@ -77,7 +91,7 @@ pub(super) fn invoice<T>(calls: &provider::Calls, operation: impl FnOnce() -> T)
         // These actual success/domain-refusal journeys must close exactly.
         assert_eq!(prefixes.last().map(|(_, work)| *work), Some(invoice));
         assert!(prefixes.windows(2).all(|p| p[0].0 <= p[1].0));
-        let last_anchor = trace.events.last().expect("actual provider callbacks").1;
+        let last_anchor = trace.events.last().expect("actual provider callbacks").2;
         let callback_end = prefixes.partition_point(|(consult, _)| *consult <= last_anchor);
         assert!(
             prefixes[..callback_end]
@@ -90,18 +104,31 @@ pub(super) fn invoice<T>(calls: &provider::Calls, operation: impl FnOnce() -> T)
                 eprintln!("  uninterpreted settlement-tail required-prefix decrease: {pair:?}");
             }
         }
-        assert!(trace.events.windows(2).all(|p| p[0].1 <= p[1].1));
-        for stage in [Stage::UpdateBegin, Stage::UpdateEnd] {
-            assert_eq!(
-                trace.events.iter().filter(|(s, _)| *s == stage).count(),
-                2,
-                "both actual affected scopes have a complete provider update"
-            );
+        assert!(trace.events.windows(2).all(|p| p[0].2 <= p[1].2));
+        for audience in AUDIENCES {
+            for stage in [Stage::UpdateBegin, Stage::UpdateEnd] {
+                assert_eq!(
+                    trace
+                        .events
+                        .iter()
+                        .filter(|(a, s, _)| *a == audience && *s == stage)
+                        .count(),
+                    2,
+                    "both actual scopes have a complete {audience:?} update"
+                );
+            }
         }
         let bounded = bound_events(&trace.events, &prefixes);
         report_intervals(&bounded, invoice);
     });
     drop(guard);
+    for index in 0..2 {
+        eprintln!(
+            "actual {:?} provider delta {:?}",
+            AUDIENCES[index],
+            before[index].delta(calls[index])
+        );
+    }
     (result, invoice)
 }
 
@@ -110,12 +137,15 @@ struct Bounds {
     lower: u64,
     upper: u64,
 }
-fn bound_events(events: &[(Stage, usize)], prefixes: &[(usize, u64)]) -> Vec<(Stage, Bounds)> {
+fn bound_events(
+    events: &[(Audience, Stage, usize)],
+    prefixes: &[(usize, u64)],
+) -> Vec<(Audience, Stage, Bounds)> {
     let (mut cursor, mut current, mut previous) = (0, 0, None);
     let mut bounds = Bounds { lower: 0, upper: 0 };
     events
         .iter()
-        .map(|&(stage, consult)| {
+        .map(|&(audience, stage, consult)| {
             if previous != Some(consult) {
                 while cursor < prefixes.len() && prefixes[cursor].0 < consult {
                     current = prefixes[cursor].1;
@@ -132,25 +162,25 @@ fn bound_events(events: &[(Stage, usize)], prefixes: &[(usize, u64)]) -> Vec<(St
                 };
                 previous = Some(consult);
             }
-            (stage, bounds)
+            (audience, stage, bounds)
         })
         .collect()
 }
-fn report_intervals(events: &[(Stage, Bounds)], invoice: u64) {
+fn report_intervals(events: &[(Audience, Stage, Bounds)], invoice: u64) {
     let mut previous = Bounds { lower: 0, upper: 0 };
     let mut start = 0;
-    let mut summary_groups = 0;
+    let mut summary_groups = [0; 2];
     eprintln!(
         "root-qualified active-stack required-work intervals; separate accepted SDK invoice={invoice}; gaps include framework work"
     );
     while start < events.len() {
-        let stage = events[start].0;
+        let (audience, stage, _) = events[start];
         let mut end = start + 1;
-        while end < events.len() && events[end].0 == stage {
+        while end < events.len() && events[end].0 == audience && events[end].1 == stage {
             end += 1;
         }
-        let first = events[start].1;
-        let last = events[end - 1].1;
+        let first = events[start].2;
+        let last = events[end - 1].2;
         let gap = (
             first.lower.saturating_sub(previous.upper),
             first.upper.saturating_sub(previous.lower),
@@ -160,16 +190,18 @@ fn report_intervals(events: &[(Stage, Bounds)], invoice: u64) {
             last.upper.saturating_sub(first.lower),
         );
         eprintln!(
-            "  {stage:?} callbacks={} preceding unattributed gap={gap:?}, first-to-last={within:?}",
+            "  {audience:?} {stage:?} callbacks={} preceding unattributed gap={gap:?}, first-to-last={within:?}",
             end - start
         );
-        summary_groups += usize::from(stage == Stage::Summary);
+        summary_groups[usize::from(audience == Audience::PublicIndex)] +=
+            usize::from(stage == Stage::Summary);
         previous = last;
         start = end;
     }
     assert_eq!(
-        summary_groups, 2,
-        "actual summary qualification for both scopes"
+        summary_groups,
+        [2, 2],
+        "actual summary qualification for both scopes of both providers"
     );
     eprintln!(
         "  unattributed settlement tail: last required anchor={:?}, accepted invoice={invoice}",

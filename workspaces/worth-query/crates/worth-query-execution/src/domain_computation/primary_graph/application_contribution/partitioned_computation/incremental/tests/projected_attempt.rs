@@ -147,6 +147,7 @@ where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
     Owned: TestOwner<Tested>,
 {
+    let retained_prior = prior.as_ref().is_some_and(|prior| prior.retained.is_ok());
     let _placement =
         super::super::super::super::request_execution::FixturePlacement::enter(placement);
     let mut observed = None;
@@ -219,7 +220,7 @@ let charged = computed.charged_work();
                                     requested, admitted: 0, ancestor: 0,
                                 }
                             )) if requested > 0
-                        ));
+                        ), "unexpected fixture projection denial (retained prior: {retained_prior}): {denial:?}");
                     }
                     (
                         None,

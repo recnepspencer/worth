@@ -55,6 +55,27 @@ where
         .runtime
         .primary_graph()
         .ok_or(Denial::ForeignAssociation)?;
+    let terminal = &root.source.terminal;
+    if terminal.runtime() != parent.runtime_authority()
+        || terminal.principal() != parent.principal()
+        || Some(terminal.scope()) != parent.entity_access_context()
+        || terminal.binding() != parent.binding()
+        || terminal.binding() != association.binding_identity()
+        || terminal.obligation() != association.access_contract().source_obligation()
+        || !state
+            .adapter
+            .installed()
+            .source_read()
+            .query()
+            .binding_observation()
+            .is_some_and(|binding| root.source.authorization.matches_binding(binding))
+        || !root.source.authorization.validates_terminal(terminal)
+    {
+        return Err(Denial::ForeignAssociation);
+    }
+    graph.with_runtime(execution, |runtime| {
+        root.source.authorization.validate_current(runtime, execution, selected.application_basis().snapshot_handle())
+    }).map_err(|stop| Denial::SourceVerification(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::output_observation(stop)))?;
     let material = graph.with_runtime(execution, |runtime| {
         runtime.read_truth().public_managed_index_cache_payload(
             execution, selected.application_basis().snapshot_handle(), &root.cache,

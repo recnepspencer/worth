@@ -3,6 +3,8 @@ mod admission;
 mod ancestry;
 mod capture;
 mod cold;
+mod cold_columns;
+mod cold_postings;
 use super::nodes::pages::{NodePages, PageEdit};
 use crate::domain_computation::primary_graph::access_strategy::ordered_storage as maps;
 mod region;
@@ -74,17 +76,6 @@ impl SourceTree {
         self.parents
             .get(ordinal, control)
             .map(|parent| parent.copied())
-    }
-    fn empty(owner: WorthQueryGraphWorkSessionIdentity) -> Self {
-        Self {
-            root: None,
-            regions: NodePages::default(),
-            parents: NodePages::default(),
-            region_count: 0,
-            parent_count: 0,
-            sources: Map::default(),
-            owner,
-        }
     }
 }
 

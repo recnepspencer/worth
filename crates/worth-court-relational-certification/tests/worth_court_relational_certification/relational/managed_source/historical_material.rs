@@ -12,7 +12,7 @@ use worth_relational::facade::{
     },
 };
 
-fn create(
+pub(super) fn create(
     runtime: &RelationalRuntime,
     execution: ExecutionRequest<'_, '_>,
     kind: u32,
@@ -33,7 +33,7 @@ fn create(
     .created_entity(&created(kind, name))
     .unwrap()
 }
-fn observe(
+pub(super) fn observe(
     runtime: &RelationalRuntime,
     execution: ExecutionRequest<'_, '_>,
     program: &ManagedIndexSourceProgram,

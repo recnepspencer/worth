@@ -39,6 +39,24 @@ pub(super) fn leaf(
             observation.native().len(),
             observation.key().subject().len(),
         ),
+        Fact::DerivedSource { observation } => {
+            let data = observation.native().data();
+            let count = data
+                .endpoints()
+                .len()
+                .checked_add(data.entity_dependencies().len())
+                .and_then(|n| n.checked_add(data.physical_relations().len().checked_mul(2)?))
+                .and_then(|n| n.checked_add(data.adjacency_dependencies().len()))
+                .ok_or(StoreDenial::Representability)?;
+            let key = observation.key();
+            let names = key
+                .relation()
+                .len()
+                .checked_add(key.identity().schema.0.len())
+                .and_then(|n| n.checked_add(key.identity().name.len()))
+                .ok_or(StoreDenial::Representability)?;
+            (count, names)
+        }
         Fact::StructuralWalk { observation } => (
             observation
                 .key()

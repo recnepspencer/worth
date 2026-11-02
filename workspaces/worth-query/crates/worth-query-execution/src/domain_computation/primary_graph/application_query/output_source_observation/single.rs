@@ -80,6 +80,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     },
                 )?;
                 let closure = SourceQueryReadClosure::retain(
+                    execution,
                     application,
                     receipt,
                     completed.authorization,

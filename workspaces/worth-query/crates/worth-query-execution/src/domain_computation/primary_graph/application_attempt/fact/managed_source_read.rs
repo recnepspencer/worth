@@ -18,6 +18,7 @@ use worth_relational::facade::{
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct ManagedSourceReadKey {
     pub obligation: [u8; 32],
+    pub authorization: [u8; 32],
     pub scope: EntityId,
     pub influence: Option<ManagedInfluenceOrigin>,
 }
@@ -31,6 +32,7 @@ pub(in crate::domain_computation::primary_graph) struct ManagedInfluenceOrigin {
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct ManagedSourceRead {
     key: ManagedSourceReadKey,
+    authorization: Arc<super::SourceReadAuthorization>,
     native: Arc<ManagedIndexSourceObservation>,
     influence: Option<Arc<CapturedManagedInfluence>>,
     _allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
@@ -63,10 +65,12 @@ impl ManagedSourceRead {
         >,
         influence: Option<Arc<CapturedManagedInfluence>>,
         parameters: [u8; 32],
+        authorization: Arc<super::SourceReadAuthorization>,
     ) -> Self {
         Self {
             key: ManagedSourceReadKey {
                 obligation,
+                authorization: authorization.identity(),
                 scope,
                 influence: influence.as_ref().map(|capture| ManagedInfluenceOrigin {
                     parameters,
@@ -75,9 +79,15 @@ impl ManagedSourceRead {
                 }),
             },
             native,
+            authorization,
             influence,
             _allocation: allocation,
         }
+    }
+    pub(in crate::domain_computation::primary_graph) fn authorization(
+        &self,
+    ) -> &Arc<super::SourceReadAuthorization> {
+        &self.authorization
     }
     pub(in crate::domain_computation::primary_graph) fn key(&self) -> &ManagedSourceReadKey {
         &self.key
@@ -131,15 +141,17 @@ impl ManagedSourceRead {
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
+        reserve: &mut impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>,
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault) -> E,
     ) -> Result<bool, E> {
-        if self.key != other.key {
+        if self.key != other.key || !self.authorization.same_truth(&other.authorization, admit)? {
             return Ok(false);
         }
         Ok(match (&self.influence, &other.influence) {
             (None, None) => self.native.same_source(&other.native),
             (Some(left), Some(right)) if Arc::ptr_eq(left, right) => true,
             (Some(left), Some(right)) => {
-                return left.same_inputs(right, admit);
+                return left.same_inputs(right, admit, reserve, fault);
             }
             _ => false,
         })
@@ -149,6 +161,9 @@ impl ManagedSourceRead {
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
     ) -> Result<bool, E> {
+        if !self.authorization.same_truth(&other.authorization, admit)? {
+            return Ok(false);
+        }
         let (Some(left_origin), Some(right_origin), Some(left), Some(right)) = (
             self.key.influence,
             other.key.influence,
@@ -181,6 +196,9 @@ impl ManagedSourceRead {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
     ) -> Result<Option<CheckedManagedSource>, super::WorthQuerySourceCurrentnessFailure> {
+        self.authorization
+            .validate_current(runtime, execution, snapshot)
+            .map_err(super::WorthQuerySourceCurrentnessFailure::OutputObservation)?;
         if self.whole_source_is_current(runtime, execution, snapshot)? {
             return Ok(Some(CheckedManagedSource(CheckedSource::Whole(
                 Arc::clone(&self.native),
@@ -216,6 +234,7 @@ impl ManagedSourceRead {
 impl PartialEq for ManagedSourceRead {
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key
+            && self.authorization == other.authorization
             && self.native.same_source(&other.native)
             && match (&self.influence, &other.influence) {
                 (None, None) => true,

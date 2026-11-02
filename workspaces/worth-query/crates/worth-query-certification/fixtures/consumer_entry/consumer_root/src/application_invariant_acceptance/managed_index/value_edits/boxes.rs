@@ -276,3 +276,33 @@ fn keyed_box_relocation_reuses_live_cells_across_rank_changes_and_singletons() {
     assert_eq!(singleton.nodes.len(), 1);
     parity(&singleton, Some(after), &BTreeMap::from([(7, moved)]));
 }
+
+#[test]
+fn keyed_box_edits_preserve_order_and_exact_bounds_through_all_rotation_shapes() {
+    // Equal boxes isolate occurrence ordering. These four authored sequences
+    // force left, right, left-right and right-left balancing in the real tree.
+    for order in [[0, 1, 2, 3], [3, 2, 1, 0], [3, 2, 0, 1], [0, 3, 2, 1]] {
+        let raw = bounds([0, 0], [0, 0]);
+        let mut tree = Tree::default();
+        let mut root = None;
+        let mut values = BTreeMap::new();
+        for source in order {
+            root =
+                Some(insert_box_source(root, source, Box2::new(raw).unwrap(), &mut tree).unwrap());
+            values.insert(source, raw);
+            parity(&tree, root, &values);
+        }
+        let mut ordered = Vec::new();
+        let height = inspect_balance(&tree, root.unwrap(), &mut BTreeSet::new(), &mut ordered);
+        assert_eq!(
+            height, 3,
+            "four real leaves form a balanced two-level branch tree"
+        );
+        assert_eq!(ordered, vec![0, 1, 2, 3]);
+        for source in [1, 3, 0, 2] {
+            root = remove_box_source(root.unwrap(), source, &mut tree).unwrap();
+            values.remove(&source);
+            parity(&tree, root, &values);
+        }
+    }
+}

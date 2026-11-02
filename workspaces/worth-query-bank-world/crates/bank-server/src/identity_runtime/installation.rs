@@ -91,6 +91,9 @@ pub(super) fn prepare_installation(
             invariant_projection = Some(graph.retain_invariant_projection_authority());
             Ok(())
         };
+    let account_index_work = std::sync::Arc::new(
+        crate::application_definition::current_accounts::AccountIndexWork::default(),
+    );
     let runtime = match authorization_time {
         BankAuthorizationTimeInstallation::System => in_memory_rostered_program(
             program,
@@ -98,7 +101,7 @@ pub(super) fn prepare_installation(
                 .support(successor)
                 .support(successor_p2),
             declaration,
-            ((), (), ()),
+            (account_index_work.clone(), (), ()),
             ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
                 .expect("embedded application build identity"),
             limits,
@@ -111,7 +114,7 @@ pub(super) fn prepare_installation(
                     .support(successor)
                     .support(successor_p2),
                 declaration,
-                ((), (), ()),
+                (account_index_work.clone(), (), ()),
                 ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
                     .expect("embedded application build identity"),
                 limits,
@@ -140,6 +143,7 @@ pub(super) fn prepare_installation(
         binding,
         invariant_projection,
         approval_authentication,
+        account_index_work,
     ))
 }
 

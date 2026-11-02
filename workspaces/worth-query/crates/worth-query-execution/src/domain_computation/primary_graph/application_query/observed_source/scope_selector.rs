@@ -84,6 +84,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             model_root: self.model_root,
             source_meaning: Arc::clone(&self.source_meaning),
             invocation_managed_source: self.invocation_managed_source.clone(),
+            invocation_source_authorization: self.invocation_source_authorization.clone(),
             scope_selector: Arc::clone(&self.scope_selector),
 
             _marker: PhantomData,

@@ -2,7 +2,10 @@
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity as Admission;
 use crate::domain_computation::primary_graph::{
-    application_attempt::{ManagedSourceRead, ManagedSourceReadKey},
+    application_attempt::{
+        ManagedSourceRead, ManagedSourceReadKey, SourceReadAuthorization,
+        SourceReadAuthorizationKey,
+    },
     source_facts::SourceFactsAllocation,
 };
 use std::{collections::BTreeMap, sync::Arc};
@@ -15,12 +18,32 @@ struct Issued {
     contracts: Arc<Contracts>,
     source: SnapshotHandle,
 }
+struct IssuedAuthorization {
+    body: Arc<SourceReadAuthorization>,
+    admission: Admission,
+    contracts: Arc<Contracts>,
+    source: SnapshotHandle,
+}
 #[derive(Default)]
 pub(super) struct IssuedManagedSourceValues {
     values: BTreeMap<ManagedSourceReadKey, Issued>,
+    authorizations: BTreeMap<SourceReadAuthorizationKey, IssuedAuthorization>,
     allocation: Option<Arc<SourceFactsAllocation>>,
 }
 impl IssuedManagedSourceValues {
+    pub(in crate::domain_computation::primary_graph) fn authorization(
+        &self,
+        key: &SourceReadAuthorizationKey,
+        admission: Admission,
+        contracts: &Arc<Contracts>,
+        source: &SnapshotHandle,
+    ) -> Option<&Arc<SourceReadAuthorization>> {
+        let issued = self.authorizations.get(key)?;
+        (issued.admission == admission
+            && Arc::ptr_eq(&issued.contracts, contracts)
+            && issued.source == *source)
+            .then_some(&issued.body)
+    }
     pub(in crate::domain_computation::primary_graph) fn get(
         &self,
         key: &ManagedSourceReadKey,
@@ -53,14 +76,30 @@ impl DecisionReads {
         execution
             .consult()
             .map_err(|cause| Stop::Execution(cause.into()))?;
+        self.record_source_authorization(
+            body.authorization(),
+            admission,
+            Arc::clone(&contracts),
+            source,
+            execution,
+        )?;
         let values = &mut self.managed_sources;
         if let Some(prior) = values.values.get(body.key()) {
             if prior.admission != admission
                 || !Arc::ptr_eq(&prior.contracts, &contracts)
                 || prior.source != *source
-                || !prior.body.same_truth(body, &mut |work| {
-                    SourceFactsAllocation::work(execution, work).map_err(Stop::Execution)
-                })?
+                || !prior.body.same_truth(
+                    body,
+                    &mut |work| {
+                        SourceFactsAllocation::work(execution, work).map_err(Stop::Execution)
+                    },
+                    &mut |bytes| {
+                        execution
+                            .reserve_retained_memory(bytes)
+                            .map_err(|cause| Stop::Execution(cause.into()))
+                    },
+                    &mut |cause| Stop::Execution(cause.into_native()),
+                )?
             {
                 return Err(Stop::ManagedSourceChanged);
             }
@@ -87,6 +126,56 @@ impl DecisionReads {
         }
         self.record(
             WorthQueryApplicationFactKey::ManagedIndexSource(body.key().clone()),
+            DecisionReadOutcome::Observed,
+        );
+        Ok(())
+    }
+    fn record_source_authorization(
+        &mut self,
+        body: &Arc<SourceReadAuthorization>,
+        admission: Admission,
+        contracts: Arc<Contracts>,
+        source: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
+        use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+        let values = &mut self.managed_sources;
+        if let Some(prior) = values.authorizations.get(body.key()) {
+            if prior.admission != admission
+                || !Arc::ptr_eq(&prior.contracts, &contracts)
+                || prior.source != *source
+                || !prior.body.same_truth(body, &mut |work| {
+                    SourceFactsAllocation::work(execution, work).map_err(Stop::Execution)
+                })?
+            {
+                return Err(Stop::ManagedSourceChanged);
+            }
+        } else {
+            if values.allocation.is_none() {
+                values.allocation =
+                    Some(SourceFactsAllocation::open(execution).map_err(Stop::Execution)?);
+            }
+            values
+                .allocation
+                .as_ref()
+                .expect("opened original reader custody")
+                .claim_tree::<(SourceReadAuthorizationKey, IssuedAuthorization)>(
+                    execution,
+                    values.authorizations.len(),
+                )
+                .map_err(Stop::Execution)?;
+            values.authorizations.insert(
+                body.key().clone(),
+                IssuedAuthorization {
+                    body: Arc::clone(body),
+                    admission,
+                    contracts,
+                    source: source.clone(),
+                },
+            );
+        }
+        self.record(
+            WorthQueryApplicationFactKey::SourceReadAuthorization(body.key().clone()),
             DecisionReadOutcome::Observed,
         );
         Ok(())

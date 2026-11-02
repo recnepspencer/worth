@@ -58,6 +58,11 @@ pub enum WorthQueryManagedIndexRefusal {
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexDenialCause<'a> {
     CurrentControl(&'a crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
+    SourceVerification {
+        kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
+        authorization: Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
+        execution: Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
+    },
     Refused(WorthQueryManagedIndexRefusal),
     Execution(&'a worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Request(worth_execution::WorkCeilingDenial),
@@ -84,6 +89,11 @@ use WorthQueryManagedIndexRefusal as Refusal;
 
 pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
     match cause {
+        ProviderExecutionDenial::SourceVerification(cause) => Cause::SourceVerification {
+            kind: cause.kind(),
+            authorization: cause.request_authority().map(|denial| denial.kind()),
+            execution: cause.relational_execution_cause(),
+        },
         ProviderExecutionDenial::NativeSource(cause) => native_source(cause),
         ProviderExecutionDenial::NativeAdmission(cause) => Cause::NativeAdmission(cause),
         ProviderExecutionDenial::Product(cause) => Cause::Product(cause),
@@ -172,6 +182,7 @@ fn native_source(
 }
 fn source(cause: &SourceDenial) -> Cause<'_> {
     match cause {
+        SourceDenial::Admission(cause) => Cause::NativeAdmission(cause),
         SourceDenial::Native(cause) => native_source(cause),
         SourceDenial::Read(cause) => Cause::QueryRead(cause),
         SourceDenial::Work(cause) => Cause::Work(cause),

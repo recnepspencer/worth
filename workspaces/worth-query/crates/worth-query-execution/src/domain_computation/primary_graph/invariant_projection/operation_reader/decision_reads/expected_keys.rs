@@ -47,6 +47,22 @@ impl ExpectedFactKeys {
     > {
         self.components.get(key, admission, contracts, snapshot)
     }
+    pub(in crate::domain_computation::primary_graph) fn source_authorization(
+        &self,
+        key: &crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,
+        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        contracts: &Arc<
+            worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+        >,
+        source: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Option<
+        &Arc<
+            crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization,
+        >,
+    > {
+        self.managed_sources
+            .authorization(key, admission, contracts, source)
+    }
     pub(in crate::domain_computation::primary_graph) fn managed_source(
         &self,
         key: &crate::domain_computation::primary_graph::application_attempt::ManagedSourceReadKey,

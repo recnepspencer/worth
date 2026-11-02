@@ -203,6 +203,15 @@ impl WorthQueryManagedGraphWorkSession {
         }
     }
 
+    pub(in crate::domain_computation) fn mutation_lease_mut(
+        &mut self,
+    ) -> Option<&mut WorthQueryApplicationSnapshotLease> {
+        match &mut self.basis {
+            WorthQueryGraphWorkBasis::ProductRead { .. } => None,
+            WorthQueryGraphWorkBasis::Mutation(basis) => basis.lease.as_mut(),
+        }
+    }
+
     pub(in crate::domain_computation) fn mutation_lease(
         &self,
     ) -> Option<&WorthQueryApplicationSnapshotLease> {

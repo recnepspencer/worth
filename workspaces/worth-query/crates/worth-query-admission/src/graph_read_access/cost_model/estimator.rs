@@ -130,6 +130,7 @@ fn supported_contribution(
             memory.add_frontier_bytes(frontier_memory_bytes(row));
         }
         WorthQueryGraphReadAccessRequirementKind::VisitedSet
+        | WorthQueryGraphReadAccessRequirementKind::DerivedSource
         | WorthQueryGraphReadAccessRequirementKind::AggregateSelection => {
             memory.add_visited_bytes(set_memory_bytes(row));
         }
@@ -229,6 +230,7 @@ fn intermediate_set_pressure(row: &WorthQueryGraphReadAccessRequirementRow) -> u
         WorthQueryGraphReadAccessRequirementKind::TraversalWorkset
         | WorthQueryGraphReadAccessRequirementKind::VisitedSet
         | WorthQueryGraphReadAccessRequirementKind::DedupSet
+        | WorthQueryGraphReadAccessRequirementKind::DerivedSource
         | WorthQueryGraphReadAccessRequirementKind::AggregateSelection => {
             planning_extent_unit(row) * UNKNOWN_RELATION_TOUCH_UNIT
         }
@@ -279,6 +281,10 @@ fn has_unbounded_extent(row: &WorthQueryGraphReadAccessRequirementRow) -> bool {
     use crate::graph_read_access::WorthQueryGraphReadTraversalOperator as Operator;
     matches!(
         row.traversal_operator(),
-        Some(Operator::CompleteClosure | Operator::AggregateSelection)
+        Some(
+            Operator::CompleteClosure
+                | Operator::CompleteDerivedSource
+                | Operator::AggregateSelection
+        )
     )
 }

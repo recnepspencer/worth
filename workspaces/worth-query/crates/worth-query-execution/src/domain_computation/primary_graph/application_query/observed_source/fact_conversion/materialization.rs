@@ -15,6 +15,12 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
                 observation: std::sync::Arc::clone(observation),
             });
         }
+        if let Some(observation) = source.invocation_source_authorization()? {
+            control.poll(&source.query_identifier)?;
+            facts.push(Fact::SourceReadAuthorization {
+                observation: std::sync::Arc::clone(observation),
+            });
+        }
         let mut fields = self.fields.iter();
         for observed in source.source_meaning.footprint().fact_sources() {
             control.poll(&source.query_identifier)?;
@@ -25,6 +31,16 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
             }
             if let Some(observation) = observed.components {
                 facts.push(Fact::ComponentSelection {
+                    observation: std::sync::Arc::clone(observation),
+                });
+            }
+            for observation in observed
+                .derived
+                .into_iter()
+                .flat_map(|derived| derived.values())
+            {
+                control.poll(&source.query_identifier)?;
+                facts.push(Fact::DerivedSource {
                     observation: std::sync::Arc::clone(observation),
                 });
             }

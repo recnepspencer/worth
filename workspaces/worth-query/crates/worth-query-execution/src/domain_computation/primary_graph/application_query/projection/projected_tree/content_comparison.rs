@@ -30,7 +30,7 @@ impl WorthQueryApplicationDisclosedProjectionTree {
     }
 }
 
-fn same_relation<E>(
+fn same_relation_header<E>(
     left: &WorthQueryApplicationProjectedRelation,
     right: &WorthQueryApplicationProjectedRelation,
     admit: &mut impl FnMut(u64) -> Result<(), E>,
@@ -50,6 +50,17 @@ fn same_relation<E>(
         if left != right {
             return Ok(false);
         }
+    }
+    Ok(true)
+}
+
+fn same_relation<E>(
+    left: &WorthQueryApplicationProjectedRelation,
+    right: &WorthQueryApplicationProjectedRelation,
+    admit: &mut impl FnMut(u64) -> Result<(), E>,
+) -> Result<bool, E> {
+    if !same_relation_header(left, right, admit)? {
+        return Ok(false);
     }
     for (left, right) in left.rows.iter().zip(&right.rows) {
         admit(1)?;
@@ -130,3 +141,4 @@ fn admit_pair_width<E>(
 
 #[cfg(test)]
 mod tests;
+mod traversal;

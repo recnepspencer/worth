@@ -17,6 +17,7 @@ pub(super) use build::rebuild;
 pub(super) use select::select;
 
 pub(super) enum ProviderExecutionDenial {
+    SourceVerification(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial),
     Execution(RelationalExecutionDenialCause),
     Capacity(WorthQueryGraphWorkCapacityAdmissionStop<RelationalExecutionDenialCause>),
     Identity(WorthQueryManagedGraphWorkSessionStartDenial),

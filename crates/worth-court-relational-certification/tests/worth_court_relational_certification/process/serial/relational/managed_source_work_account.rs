@@ -13,6 +13,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 use worth_relational::facade::{identity::*, runtime::*, symbols::ClientKey, transactions::*};
 #[path = "managed_source_work_account/participant.rs"]
 mod participant;
+mod public_only;
 mod support_growth;
 
 const EXTRA: u64 = 65_536;
@@ -30,6 +31,8 @@ struct Scenario {
     refuse: bool,
     cancel_parent: bool,
     rule_limit: bool,
+    public_only: bool,
+    public_also: bool,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Terminal {
@@ -86,19 +89,26 @@ fn sample(mode: Mode, scenario: Scenario, ceiling: u64) -> Sample {
     let (registry, program) = registry();
     let court = Arc::new(owner::Court::default());
     let reached = Arc::new(AtomicUsize::new(0));
-    let rule = CustomInvariantRegistration::new(owner::Reader {
-        program: program.clone(),
-        court: court.clone(),
-        maximum_work: scenario.rule_limit.then(|| std::num::NonZeroU64::MIN),
-    })
-    .unwrap()
-    .with_managed_index_sources(vec![program])
-    .unwrap();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(registry)
-        .custom_invariant(rule)
-        .build()
+    let builder = RelationalRuntimeApi::builder().schema_registry(registry);
+    let builder = if scenario.public_also {
+        builder.managed_index_source(program.clone())
+    } else {
+        builder
+    };
+    let builder = if scenario.public_only {
+        builder.managed_index_source(program)
+    } else {
+        let rule = CustomInvariantRegistration::new(owner::Reader {
+            program: program.clone(),
+            court: court.clone(),
+            maximum_work: scenario.rule_limit.then(|| std::num::NonZeroU64::MIN),
+        })
+        .unwrap()
+        .with_managed_index_sources(vec![program])
         .unwrap();
+        builder.custom_invariant(rule)
+    };
+    let runtime = builder.build().unwrap();
     let registration = runtime
         .publication_companion_port()
         .begin_required_registration()

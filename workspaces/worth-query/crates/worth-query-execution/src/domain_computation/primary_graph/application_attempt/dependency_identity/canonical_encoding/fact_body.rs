@@ -6,6 +6,23 @@ pub(super) fn append_fact(
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::SourceReadAuthorization { observation } => {
+            kind(entries, prefix, "source-read-authorization-v1");
+            entity(entries, prefix, "principal", observation.key().principal);
+            entity(entries, prefix, "scope", observation.key().scope);
+            push(
+                entries,
+                format!("{prefix}.source"),
+                CanonicalBasisEntryKind::Value,
+                CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(observation.key().source)),
+            );
+            push(
+                entries,
+                format!("{prefix}.support"),
+                CanonicalBasisEntryKind::Value,
+                CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(observation.identity())),
+            );
+        }
         WorthQueryApplicationObservedFact::ManagedIndexSource { observation } => {
             kind(
                 entries,
@@ -68,6 +85,9 @@ pub(super) fn append_fact(
         }
         WorthQueryApplicationObservedFact::Aggregate { observation } => {
             aggregate::append_values(entries, prefix, observation)
+        }
+        WorthQueryApplicationObservedFact::DerivedSource { observation } => {
+            derived_source::append_values(entries, prefix, observation)
         }
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => {
             structural_walk::append_values(entries, prefix, observation)

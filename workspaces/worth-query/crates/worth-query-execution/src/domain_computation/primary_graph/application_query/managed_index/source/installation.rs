@@ -6,12 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind as Kind,
 };
 use std::{collections::HashMap, sync::Arc};
-use worth_query_declaration::facade::{
-    application_query::{
-        ApplicationInvariantManagedIndexSource, ApplicationManagedIndexColdSource as Cold,
-    },
-    application_schema::ApplicationSchema,
-};
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::runtime::ManagedIndexSourceProgram;
 
 #[derive(Default)]
@@ -31,7 +26,6 @@ impl ManagedSourceInstallation {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         providers: &ManagedIndexProviderCatalog<S>,
         layout: &WorthQueryPrimaryGraphLayout,
-        requirements: impl Iterator<Item = ApplicationInvariantManagedIndexSource>,
     ) -> Result<
         (
             Self,
@@ -40,23 +34,16 @@ impl ManagedSourceInstallation {
         Denial,
     > {
         let mut required = HashMap::new();
-        for requirement in requirements {
-            let program = layout.managed_source(requirement.index()).ok_or_else(|| {
-                Denial::new(Kind::UnsupportedInvariantSource, requirement.index())
-            })?;
+        for source in layout.required_managed_sources() {
             let provider = providers
-                .source_factory(requirement.definition())
+                .source_factory(&source.definition)
                 .ok_or_else(|| {
-                    Denial::new(Kind::MissingManagedIndexProvider, requirement.index())
+                    Denial::new(
+                        Kind::MissingManagedIndexProvider,
+                        &source.definition.parts().name,
+                    )
                 })?;
-            let entry = required
-                .entry(program.clone())
-                .or_insert((provider, Cold::AdmitRebuild));
-            // One shared preparation cannot broaden a refusing audience by
-            // borrowing the admission selected by another installed rule.
-            if requirement.cold() == Cold::Refuse {
-                entry.1 = Cold::Refuse;
-            }
+            required.insert(source.program.clone(), (provider, source.cold));
         }
         if required.is_empty() {
             return Ok((

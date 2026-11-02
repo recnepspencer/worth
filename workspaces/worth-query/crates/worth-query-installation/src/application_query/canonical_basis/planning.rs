@@ -96,10 +96,14 @@ fn append_relations(
             relation.depth,
             relation.complete_closure,
             relation.aggregate_selection,
+            relation.source_kind,
         )
     });
     for (index, relation) in relations.into_iter().enumerate() {
         let path = format!("relation[{index}]");
+        if relation.source_kind == worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived {
+            entries.push(text(format!("{path}.source-kind"), "derived"));
+        }
         if relation.aggregate_selection {
             entries.push(text(format!("{path}.aggregate-selection"), "whole-orbit"));
         }

@@ -18,8 +18,8 @@ impl ApplicationFieldMarkerIdentity<Catalog, Item, ItemFacts> for WrongField {
     const IDENTIFIER: &'static str =
         <ItemName as ApplicationFieldMarkerIdentity<Catalog, Item, ItemFacts>>::IDENTIFIER;
 }
-fn wrong() -> ApplicationQueryResultFieldRef<
-    query::SourceQuery,
+fn wrong<Q>() -> ApplicationQueryResultFieldRef<
+    Q,
     query::NameSlot,
     Catalog,
     Item,
@@ -35,9 +35,9 @@ fn wrong() -> ApplicationQueryResultFieldRef<
 fn invalid(_: WorthQueryManagedIndexTextReadDenial) -> Stop {
     Stop::Domain(PrefixIndexDenial::InvalidTopology)
 }
-pub(super) fn inspect(
+pub(super) fn inspect<I: PrefixSourceIndex>(
     calls: &Calls,
-    row: &WorthQueryManagedIndexSourceRow<'_, Catalog, PrefixIndex>,
+    row: &WorthQueryManagedIndexSourceRow<'_, Catalog, I>,
 ) -> Result<(), Stop> {
     if !calls.inspect_text.load(Ordering::SeqCst) {
         return Ok(());
@@ -58,7 +58,7 @@ pub(super) fn inspect(
     })
     .map_err(invalid)??;
     let wrong_output = ApplicationQueryResultFieldRef::<
-        query::SourceQuery,
+        <<I as ApplicationManagedIndexBinding<Catalog>>::SourceBinding as ApplicationQueryBinding<Catalog>>::Query,
         query::NameSlot,
         Catalog,
         Item,
@@ -84,12 +84,12 @@ pub(super) fn inspect(
     calls.text_reads.fetch_add(1, Ordering::SeqCst);
     if calls.wrong_text_binding.load(Ordering::SeqCst) {
         assert_eq!(
-            query::name::<query::SourceQuery>().slot_key(),
-            wrong().slot_key(),
+            query::name::<<<I as ApplicationManagedIndexBinding<Catalog>>::SourceBinding as ApplicationQueryBinding<Catalog>>::Query>().slot_key(),
+            wrong::<<<I as ApplicationManagedIndexBinding<Catalog>>::SourceBinding as ApplicationQueryBinding<Catalog>>::Query>().slot_key(),
             "nominal mismatch is not a different canonical key"
         );
         let error = row
-            .with_text(wrong(), |_| {
+            .with_text(wrong::<<<I as ApplicationManagedIndexBinding<Catalog>>::SourceBinding as ApplicationQueryBinding<Catalog>>::Query>(), |_| {
                 panic!("a warm cache cannot substitute another Rust binding")
             })
             .unwrap_err();

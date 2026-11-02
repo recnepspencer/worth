@@ -21,6 +21,10 @@ pub trait ApplicationManagedIndexBinding<Schema: ApplicationSchema>: Sized + 'st
     const MEMBERSHIP: super::ApplicationManagedIndexMembership =
         super::ApplicationManagedIndexMembership::Candidates;
 
+    /// Additional public maintenance; invariant requirements remain independent.
+    const MAINTENANCE: super::ApplicationManagedIndexMaintenance =
+        super::ApplicationManagedIndexMaintenance::WhenRequired;
+
     /// Optional exact row-local domain meaning, separately requested by consumers.
     const REFINEMENT: Option<super::ApplicationManagedIndexRefinement> = None;
 

@@ -17,6 +17,7 @@ pub(super) fn map_initial_schema_installation_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::InvariantInstallationReceiptMismatch
         }
         RelationalInitialSchemaInstallationDenialKind::SchemaRejected
+        | RelationalInitialSchemaInstallationDenialKind::ManagedIndexSourceRejected
         | RelationalInitialSchemaInstallationDenialKind::BranchTransitionRejected => {
             WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected
         }

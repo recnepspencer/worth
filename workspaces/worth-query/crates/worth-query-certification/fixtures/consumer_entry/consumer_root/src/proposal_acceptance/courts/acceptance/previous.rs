@@ -126,9 +126,18 @@ fn previous_head_cleanup_recovers_without_discarding_adoption_evidence_or_adopti
     assert_eq!(model.branch(), head);
     assert_eq!(model.read(&reviewer).unwrap().days, 3);
     drop(reader);
-    let Event::Completed(accepted) = model.accept(&storage, &reviewer, &loaded, 1004).unwrap()
-    else {
-        panic!("actual cleanup settles while adoption evidence remains owned")
+    let outcome = model.accept(&storage, &reviewer, &loaded, 1004).unwrap();
+    let Event::Completed(accepted) = outcome else {
+        let Some(View::RetiredPrevious(owner)) = model
+            .inspect_attempt(&storage, &reviewer, &loaded, 1004)
+            .unwrap()
+        else {
+            panic!("unexpected continuation after cleanup: {outcome:?}")
+        };
+        panic!(
+            "cleanup must settle with adoption evidence owned: {outcome:?}; {:?}",
+            owner.cleanup_denial()
+        )
     };
     assert!(accepted.performed.previous_close().is_none());
     assert_eq!(

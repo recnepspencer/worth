@@ -67,13 +67,8 @@ impl RelationalSchemaRegistry {
             .entity_kind()
             .ok_or(Denial::InvalidMemberDomain)?;
         projection_routes::validate_fields(self, row, &fields)?;
-        let mut names = std::collections::BTreeSet::new();
-        for route in &routes {
-            route.validate(self, row)?;
-            if !names.insert(route.name()) {
-                return Err(Denial::InvalidExpression);
-            }
-        }
+        projection_routes::validate_routes(self, row, &routes)?;
+        projection_routes::validate_route_names(&routes)?;
         path.entry.managed_source_binding.bind(path, fields, routes)
     }
 }
@@ -111,6 +106,20 @@ impl ManagedIndexSourceProgram {
 
     pub(crate) fn physical_sources(&self) -> impl Iterator<Item = &(KindId, KindId, KindId)> {
         self.paths().flat_map(|path| path.physical_sources())
+    }
+
+    pub(crate) fn require_registry(
+        &self,
+        registry: &RelationalSchemaRegistry,
+    ) -> Result<(), Denial> {
+        if self
+            .paths()
+            .any(|path| !registry.admits_derived_relation(path))
+        {
+            return Err(Denial::ForeignDefinition);
+        }
+        projection_routes::validate_fields(registry, self.row_kind(), self.fields())?;
+        projection_routes::validate_routes(registry, self.row_kind(), self.projection_routes())
     }
 
     pub(crate) fn require_access(

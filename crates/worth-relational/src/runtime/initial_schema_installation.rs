@@ -8,6 +8,8 @@ use std::sync::Arc;
 
 mod application_publication;
 mod inventory_digest;
+mod receipt;
+pub use receipt::RelationalInitialSchemaInstallationReceipt;
 mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
 pub use recovered_codec_transition::RecoveredCheckpointProgramActivationUpdate;
@@ -28,6 +30,7 @@ pub enum RelationalInitialSchemaInstallationDenialKind {
     RuntimeAlreadyCommitted,
     InitialInvariantsAlreadySealed,
     DuplicateCustomInvariant,
+    ManagedIndexSourceRejected,
     SchemaRejected,
     BranchTransitionRejected,
     RetentionCapacityExhausted,
@@ -71,35 +74,6 @@ impl std::fmt::Display for RelationalInitialSchemaInstallationDenial {
 }
 
 impl std::error::Error for RelationalInitialSchemaInstallationDenial {}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RelationalInitialSchemaInstallationReceipt {
-    runtime_instance_id: u64,
-    custom_invariant_generation: u64,
-    custom_invariant_inventory_digest: [u8; 32],
-    retained_entity_kind_count: usize,
-    retained_relation_kind_count: usize,
-    retained_schema_authority_digest: [u8; 32],
-}
-
-impl RelationalInitialSchemaInstallationReceipt {
-    pub const fn runtime_instance_id(&self) -> u64 {
-        self.runtime_instance_id
-    }
-    pub const fn custom_invariant_generation(&self) -> u64 {
-        self.custom_invariant_generation
-    }
-    pub const fn custom_invariant_inventory_digest(&self) -> &[u8; 32] {
-        &self.custom_invariant_inventory_digest
-    }
-    pub const fn retained_entity_kind_count(&self) -> usize {
-        self.retained_entity_kind_count
-    }
-
-    pub const fn retained_relation_kind_count(&self) -> usize {
-        self.retained_relation_kind_count
-    }
-}
 
 impl RelationalRuntime {
     pub(crate) fn initial_schema_authority_snapshot(
@@ -181,6 +155,11 @@ impl RelationalRuntime {
             && self.schema_contract_runtime.custom_invariant_generation
                 == expected.custom_invariant_generation
             && actual_digest == expected.custom_invariant_inventory_digest
+            && self
+                .schema_contract_runtime
+                .custom_invariant_registries
+                .source_inventory()
+                == expected.source_groups
             && entity_kind_count == expected.retained_entity_kind_count
             && relation_kind_count == expected.retained_relation_kind_count
             && schema_authority_digest == expected.retained_schema_authority_digest;
@@ -192,6 +171,7 @@ impl RelationalRuntime {
         }
         Ok(RelationalInitialSchemaInstallationReceipt {
             runtime_instance_id: self.runtime_instance_id(),
+            source_groups: expected.source_groups,
             custom_invariant_generation: expected.custom_invariant_generation,
             custom_invariant_inventory_digest: expected.custom_invariant_inventory_digest,
             retained_entity_kind_count: expected.retained_entity_kind_count,
@@ -220,6 +200,18 @@ impl RelationalInitialSchemaInstallation<'_> {
         self,
         additions: RelationalSchemaRegistry,
         custom_invariants: Vec<CustomInvariantRegistration>,
+    ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
+    {
+        self.install_with_managed_sources(additions, custom_invariants, Vec::new())
+    }
+
+    /// Install exact public Source programs alongside actual invariant rules.
+    /// Source access is derived from the receiving schema, never caller supplied.
+    pub fn install_with_managed_sources(
+        self,
+        additions: RelationalSchemaRegistry,
+        custom_invariants: Vec<CustomInvariantRegistration>,
+        managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
     {
         let configuration = self.runtime.configuration_binding();
@@ -274,14 +266,29 @@ impl RelationalInitialSchemaInstallation<'_> {
             .collect::<Vec<_>>();
         registrations.extend(custom_invariants);
         let inventory_digest = custom_invariant_inventory_digest(&registrations);
-        let registry = FrozenCustomInvariantRegistry::from_registrations(registrations).map_err(
-            |duplicate| {
+        let mut sources = installed
+            .schema_contract_runtime
+            .custom_invariant_registries
+            .explicit_source_programs();
+        sources.extend(managed_sources);
+        let sources =
+            crate::validation::candidate_source::SourcePreparationGroup::for_public_sources(
+                &merged, sources,
+            )
+            .map_err(|cause| {
+                RelationalInitialSchemaInstallationDenial::new(
+                    RelationalInitialSchemaInstallationDenialKind::ManagedIndexSourceRejected,
+                    format!("{cause:?}"),
+                )
+            })?;
+        let registry = FrozenCustomInvariantRegistry::from_registrations(registrations, sources)
+            .map_err(|duplicate| {
                 RelationalInitialSchemaInstallationDenial::new(
                     RelationalInitialSchemaInstallationDenialKind::DuplicateCustomInvariant,
                     duplicate.identity.rule_id.as_str(),
                 )
-            },
-        )?;
+            })?;
+        let source_groups = registry.source_inventory();
         let rebuilt =
             rebuilt_schema_contract_runtime(&installed, merged.clone(), registry, generation, true);
         // All fallible schema and invariant validation completes before the
@@ -307,6 +314,7 @@ impl RelationalInitialSchemaInstallation<'_> {
         self.runtime.reconfigure(|_| {});
         Ok(RelationalInitialSchemaInstallationReceipt {
             runtime_instance_id: self.runtime.runtime_instance_id(),
+            source_groups,
             custom_invariant_generation: generation,
             custom_invariant_inventory_digest: inventory_digest,
             retained_entity_kind_count,

@@ -128,6 +128,7 @@ pub(super) fn orbit_view(
     orbit: &worth_query_declaration::facade::application_query::ApplicationQueryOrbitMeaning,
 ) -> WorthQueryReadGraphRelationView<'_> {
     WorthQueryReadGraphRelationView {
+        source_kind: worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Stored,
         relation: orbit.relation(),
         direction: WorthQueryReadGraphRelationDirection::Forward,
         complete_closure: true,
@@ -141,6 +142,7 @@ pub(super) fn root_step_view(
     step: &WorthQueryInstalledRootPathStep,
 ) -> WorthQueryReadGraphRelationView<'_> {
     WorthQueryReadGraphRelationView {
+        source_kind: step.source_kind(),
         relation: step.relation(),
         aggregate_selection: false,
         complete_closure: step.traversal() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::Closure,
@@ -157,6 +159,7 @@ pub(super) fn result_relation_view(
     relation: &WorthQueryInstalledGraphRelation,
 ) -> WorthQueryReadGraphRelationView<'_> {
     WorthQueryReadGraphRelationView {
+        source_kind: worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Stored,
         relation: relation.relation(),
         complete_closure: false,
         aggregate_selection: false,

@@ -112,6 +112,25 @@ pub(super) fn expression(
                     },
                 )
             }
+            Node::OrderedEvents {
+                predecessor,
+                introduced,
+                retired,
+            } => {
+                for index in [*predecessor, *introduced, *retired] {
+                    prior(index)?;
+                    if !matches!(parts.nodes[index], Node::Stored { .. }) {
+                        return Err(Denial::InvalidExpression);
+                    }
+                }
+                let chain = prior(*predecessor)?;
+                let adds = prior(*introduced)?;
+                let removes = prior(*retired)?;
+                if chain.0 != chain.1 || chain.0 != adds.0 || adds != removes {
+                    return Err(Denial::DiscontinuousEndpoints);
+                }
+                adds
+            }
             Node::Union { left, right } | Node::Intersection { left, right } => {
                 let pair = prior(*left)?;
                 if pair != prior(*right)? {
@@ -136,6 +155,11 @@ pub(super) fn expression(
             | Node::Union { left, right }
             | Node::Intersection { left, right } => pending.extend([left, right]),
             Node::Reverse { input } | Node::WithoutSelfEdges { input } => pending.push(input),
+            Node::OrderedEvents {
+                predecessor,
+                introduced,
+                retired,
+            } => pending.extend([predecessor, introduced, retired]),
             Node::Stored { .. } | Node::Derived(_) | Node::CarrierLift { .. } => {}
         }
     }

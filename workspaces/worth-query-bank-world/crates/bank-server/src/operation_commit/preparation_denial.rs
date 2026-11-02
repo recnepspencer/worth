@@ -11,6 +11,7 @@ use application_attempt_kind::application_attempt_kind;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationAttemptDenialKind {
+    ManagedIndexSourceDenied,
     ValueDecode(worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial),
     ForeignPhase,
     StorageUnavailable,

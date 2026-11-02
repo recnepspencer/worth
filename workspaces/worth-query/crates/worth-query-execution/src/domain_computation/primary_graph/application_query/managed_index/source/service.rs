@@ -259,7 +259,7 @@ where
         let before = retained
             .downcast_ref::<ManagedSourceRoot<S, I>>()
             .ok_or(Denial::ForeignSource)?;
-        let changed = scope.changed_occurrences()?;
+        let changed = scope.prepare_changed_occurrences()?;
         if changed.is_empty() {
             return Ok(Arc::clone(retained));
         }

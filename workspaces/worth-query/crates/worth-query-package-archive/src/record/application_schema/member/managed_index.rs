@@ -1,4 +1,5 @@
-//! Member48: v1 Opaque; v2 structure; v3 membership; v4 row-local refinement.
+//! Member48: legacy v1-v4 meaning; v5 explicit public maintenance/refinement presence.
+mod maintenance;
 use super::*;
 use crate::record::application_schema::wire_vocabulary::{
     decode_optional, decode_type_identity, write_optional, write_type_identity,
@@ -47,6 +48,9 @@ pub(super) fn write(
             Membership::CheckedSummarySourceTree => 2,
         })?;
     }
+    if parts.semantic_version == 5 {
+        maintenance::write(output, definition.maintenance())?;
+    }
     query_binding_reference::write(output, &parts.source.binding)?;
     output.u16(match parts.source.scope {
         ApplicationManagedIndexSourceScope::SameAdmittedScope => 1,
@@ -77,6 +81,12 @@ pub(super) fn write(
                 .refinement()
                 .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
         )?;
+    } else if parts.semantic_version == 5 {
+        write_optional(
+            output,
+            definition.refinement(),
+            crate::record::managed_index_refinement::write,
+        )?;
     }
     Ok(())
 }
@@ -86,7 +96,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     let semantic_version = input.u16()?;
-    if !matches!(semantic_version, 1 | 2 | 3 | 4) {
+    if !matches!(semantic_version, 1..=5) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     budget.require_nesting_depth(2)?;
@@ -111,6 +121,11 @@ pub(super) fn decode(
             2 => Membership::CheckedSummarySourceTree,
             _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
         }
+    };
+    let maintenance = if semantic_version == 5 {
+        Some(maintenance::decode(input)?)
+    } else {
+        None
     };
     let binding = query_binding_reference::decode(input)?;
     let scope = match input.u16()? {
@@ -145,11 +160,17 @@ pub(super) fn decode(
         entity,
         probe,
     };
-    let definition = if semantic_version == 4 {
-        Definition::from_refinement_parts(
-            parts,
-            crate::record::managed_index_refinement::decode(input)?,
-        )
+    let refinement = if semantic_version == 4 {
+        Some(crate::record::managed_index_refinement::decode(input)?)
+    } else if semantic_version == 5 {
+        decode_optional(input, crate::record::managed_index_refinement::decode)?
+    } else {
+        None
+    };
+    let definition = if let Some(maintenance) = maintenance {
+        Definition::from_maintenance_parts(parts, maintenance, refinement)
+    } else if let Some(refinement) = refinement {
+        Definition::from_refinement_parts(parts, refinement)
     } else {
         Definition::from_untrusted_parts(parts)
     };

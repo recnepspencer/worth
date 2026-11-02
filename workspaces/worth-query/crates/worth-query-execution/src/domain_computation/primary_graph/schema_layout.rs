@@ -88,7 +88,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     component_sets: BTreeMap<String, ComponentSetLayout>,
     derived_relations: BTreeMap<String, derived_relation::DerivedRelationLayout>,
-    managed_sources: BTreeMap<String, worth_relational::facade::runtime::ManagedIndexSourceProgram>,
+    managed_sources: BTreeMap<String, managed_source::ManagedSource>,
     projected_domains: BTreeMap<String, projected_member_domain::ProjectedMemberDomainLayout>,
     application_entity_kinds: BTreeSet<KindId>,
     signing: signed_entities::SignedEntityLayout,

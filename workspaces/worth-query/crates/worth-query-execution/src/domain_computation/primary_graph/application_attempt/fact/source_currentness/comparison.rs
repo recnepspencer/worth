@@ -10,6 +10,10 @@ impl WorthQueryApplicationObservedFact {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, WorthQuerySourceCurrentnessFailure> {
         match self {
+            Self::SourceReadAuthorization { observation } => observation
+                .validate_current(runtime, execution, snapshot)
+                .map(|()| true)
+                .map_err(WorthQuerySourceCurrentnessFailure::OutputObservation),
             Self::ManagedIndexSource { observation } => {
                 observation.remains_equal(runtime, execution, snapshot)
             }
@@ -18,6 +22,9 @@ impl WorthQueryApplicationObservedFact {
             }
             Self::Aggregate { observation } => {
                 observation.remains_equal(runtime, execution, snapshot, None)
+            }
+            Self::DerivedSource { observation } => {
+                observation.remains_equal(runtime, execution, snapshot)
             }
             Self::StructuralWalk { observation } => {
                 observation.remains_equal(runtime, execution, snapshot)

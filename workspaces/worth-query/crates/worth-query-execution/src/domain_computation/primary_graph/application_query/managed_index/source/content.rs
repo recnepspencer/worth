@@ -17,10 +17,23 @@ impl Entry {
         let mut admit = |work| control.checkpoint(work);
         let overflow = || control.refuse(Stop::CapacityOverflow);
         let mut writer = ContentWriter::new(&mut admit, &overflow);
-        writer.bytes(b"worth:projected-source-entry:v1")?;
+        writer.bytes(if self.comparison_depth > 2 {
+            b"worth:projected-source-entry:v2"
+        } else {
+            b"worth:projected-source-entry:v1"
+        })?;
         writer.entity(self.occurrence.entity())?;
-        self.row
-            .append_one_hop_content(&mut writer, || control.refuse(Stop::IncompleteCoverage))?;
+        if self.comparison_depth > 2 {
+            self.row.append_tree_content(&mut writer, self.comparison_depth,
+                &mut |bytes| control.reserve_content_memory(bytes),
+                &mut |cause| control.refuse(match cause {
+                    crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault::CapacityOverflow => Stop::CapacityOverflow,
+                    cause => Stop::MaterialStorage(cause.into_native()),
+                }))?;
+        } else {
+            self.row
+                .append_one_hop_content(&mut writer, || control.refuse(Stop::IncompleteCoverage))?;
+        }
         writer.number(self.dependencies.len() as u64)?;
         for dependency in &self.dependencies {
             writer.entity(dependency.entity())?;
@@ -61,6 +74,9 @@ impl Entry {
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
+        reserve: &mut (impl FnMut(u64) -> Result<Option<worth_execution::ExecutionMemoryReservation>, E>
+                  + ?Sized),
+        fault: &mut impl FnMut(crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault) -> E,
     ) -> Result<bool, E> {
         admit(65)?;
         if self.occurrence != other.occurrence
@@ -76,7 +92,14 @@ impl Entry {
                 return Ok(false);
             }
         }
-        self.row.same_one_hop_content(&other.row, admit)
+        self.row.same_source_content(
+            &other.row,
+            self.comparison_depth,
+            other.comparison_depth,
+            admit,
+            reserve,
+            fault,
+        )
     }
 }
 

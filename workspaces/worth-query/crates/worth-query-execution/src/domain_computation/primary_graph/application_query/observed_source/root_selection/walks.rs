@@ -51,6 +51,16 @@ impl WorthQueryObservedRootSelection {
                 return Err(Denial::new(Kind::SourceContractMismatch, query.relation()));
             }
         }
+        for body in self.derived.iter().flat_map(|owned| owned.values()) {
+            let query = body.key();
+            poll(query.relation())?;
+            if !layout
+                .derived_relation(query.relation())
+                .is_some_and(|relation| relation.handle == *body.definition())
+            {
+                return Err(Denial::new(Kind::SourceContractMismatch, query.relation()));
+            }
+        }
         Ok(())
     }
 }

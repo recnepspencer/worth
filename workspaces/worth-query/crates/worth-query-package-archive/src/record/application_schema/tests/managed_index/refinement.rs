@@ -38,7 +38,7 @@ fn row_local_refinement_member_round_trip_preserves_meaning_and_legacy_absence()
     };
     assert_ne!(encode_member(&changed), bytes);
     assert_eq!(
-        try_decode_member(&[0, 48, 0, 5]).unwrap_err().kind(),
+        try_decode_member(&[0, 48, 0, 6]).unwrap_err().kind(),
         Kind::UnsupportedRecordVariant
     );
 }

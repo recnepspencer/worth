@@ -91,6 +91,8 @@ pub struct BankIdentityRuntime {
     invariant_projection:
         std::sync::Arc<WorthQueryApplicationInvariantProjectionAuthority<BankSchema>>,
     approval_authentication: BankApprovalAuthenticationOwner,
+    account_index_work:
+        std::sync::Arc<crate::application_definition::current_accounts::AccountIndexWork>,
 }
 
 impl BankIdentityRuntime {

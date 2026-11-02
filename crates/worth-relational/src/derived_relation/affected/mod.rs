@@ -1,6 +1,6 @@
 //! Canonical before/after pullback from actual physical and carrier changes.
 mod expression;
-mod lifecycle;
+pub(in crate::derived_relation) mod lifecycle;
 
 use super::evaluation::SourceRead;
 use super::{DerivedRelationData, DerivedRelationHandle, DerivedRelationReadDenial};

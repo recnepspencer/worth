@@ -1,4 +1,4 @@
-//! Law 2: registered runtime names inside cfg(test) module text, not constructors.
+//! Law 2: runtime names in test text, preserving actual qualified enum vocabulary.
 use crate::{
     config::*,
     inputs::Inputs,
@@ -9,6 +9,7 @@ use serde::{
     Serialize,
 };
 use std::collections::{BTreeMap, BTreeSet};
+mod vocabulary;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Finding {
@@ -142,6 +143,7 @@ pub fn observations(input: &Inputs) -> Vec<Finding> {
         .map(|r| string(r, "type").to_owned())
         .collect();
     let mut found = Vec::new();
+    let vocabulary = vocabulary::Vocabulary::read(input, &names);
     for (source, scopes) in scopes(input) {
         let Some((manifest, _)) = input
             .manifests
@@ -161,11 +163,11 @@ pub fn observations(input: &Inputs) -> Vec<Finding> {
         }
         let text = input.text(&source);
         for (module, start, end) in scopes {
-            let region = tokens(&text[start..end]);
-            let roots: BTreeSet<_> = region
+            let scope = tokens(&text[start..end]);
+            let roots: BTreeSet<_> = scope
                 .iter()
                 .enumerate()
-                .filter(|(at, t)| names.contains(t.text) && !execution_denial_variant(&region, *at))
+                .filter(|(at, t)| names.contains(t.text) && !vocabulary.variant(&scope, *at))
                 .map(|(_, t)| t.text.to_owned())
                 .collect();
             if !roots.is_empty() {
@@ -180,18 +182,6 @@ pub fn observations(input: &Inputs) -> Vec<Finding> {
     found.sort();
     found.dedup();
     found
-}
-fn execution_denial_variant(region: &[Token<'_>], at: usize) -> bool {
-    // These Query enums carry diagnostics, not Execution's work-hosting type.
-    // Only their exact qualified variants are excluded; runtime types still flag.
-    region[at].text == "ExecutionRequest"
-        && at >= 3
-        && matches!(
-            region[at - 3].text,
-            "WorthQueryApplicationOneShotDenialKind" | "WorthQueryApplicationHistoryDenial"
-        )
-        && region[at - 2].text == ":"
-        && region[at - 1].text == ":"
 }
 pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     let baseline = match serde_json::from_str::<Vec<serde_json::Value>>(
