@@ -117,7 +117,8 @@ impl WorthQueryHistoryOutputIntent {
         binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
     ) -> bool {
         &self.backing.model == model
-            && self.backing.binding == std::any::TypeId::of::<B>()
+            && self.backing.binding
+                == crate::equality_type_id::EqualityTypeId::of::<B>().into_external()
             && &self.backing.query == binding.query().identity()
     }
 
@@ -238,7 +239,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Ok(WorthQueryHistoryOutputIntent {
             backing: Arc::new(IntentBacking {
                 model: document.model.clone(),
-                binding: std::any::TypeId::of::<B>(),
+                binding: crate::equality_type_id::EqualityTypeId::of::<B>().into_external(),
                 query: binding.query().identity().clone(),
                 parameters: control.parameters,
                 scope,

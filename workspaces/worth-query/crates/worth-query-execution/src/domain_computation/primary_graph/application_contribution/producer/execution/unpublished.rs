@@ -173,15 +173,14 @@ impl ContinuationState {
             PublicationState::Performed { outcome, .. } => outcome.take_original_cleanup(),
             PublicationState::Closed | PublicationState::Closing => None,
         };
-        if let Some(recovery) = recovery {
-            if let Err(failure) =
+        if let Some(recovery) = recovery
+            && let Err(failure) =
                 runtime.close_product_publication_recovery_in_advancement(phase, recovery)
-            {
-                let denial = close_failure(&failure);
-                self.prior_cleanup = Some(failure);
-                self.state = PublicationState::Closing;
-                return Err(denial);
-            }
+        {
+            let denial = close_failure(&failure);
+            self.prior_cleanup = Some(failure);
+            self.state = PublicationState::Closing;
+            return Err(denial);
         }
         self.finish_close();
         Ok(())

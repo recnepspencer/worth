@@ -122,8 +122,9 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let profile = authority.profile();
         let original = authority.original();
         let source = result.into_admitted_disclosed().into_output_demand_source();
-        let matches = profile.program_type == std::any::TypeId::of::<P>()
-            && profile.root == std::any::TypeId::of::<R>()
+        let matches = profile.program_type
+            == crate::equality_type_id::EqualityTypeId::of::<P>().into_external()
+            && profile.root == crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
             && profile.program == *self.installed_program().revision()
             && original
                 .belongs_to_selected_occurrence(self.runtime(), original.product_observation())
@@ -145,7 +146,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .checked_execution_request_for(self.runtime().product_runtime())
             .map_err(|cause| {
                 Denial::Demand(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
                     "history root claim phase",
                 ))
             })?;

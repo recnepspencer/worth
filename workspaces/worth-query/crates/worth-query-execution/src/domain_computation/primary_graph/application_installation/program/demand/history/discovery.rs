@@ -35,8 +35,11 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         if !discovery.profile.same_custody(authority.profile())
             || !discovery.profile.matches_program(self)
             || !std::sync::Arc::ptr_eq(&discovery.original, authority.original())
-            || discovery.binding != std::any::TypeId::of::<DiscoveryBinding<S, C>>()
-            || discovery.connection != std::any::TypeId::of::<C>()
+            || discovery.binding
+                != crate::equality_type_id::EqualityTypeId::of::<DiscoveryBinding<S, C>>()
+                    .into_external()
+            || discovery.connection
+                != crate::equality_type_id::EqualityTypeId::of::<C>().into_external()
             || !std::sync::Arc::ptr_eq(&discovery.parent, &parent.settled.retained)
             || !parent.profile.same_custody(&discovery.profile)
             || !std::sync::Arc::ptr_eq(&discovery.original, &parent.original)

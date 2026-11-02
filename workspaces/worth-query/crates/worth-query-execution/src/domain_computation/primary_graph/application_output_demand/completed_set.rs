@@ -35,7 +35,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             |kind| WorthQueryOutputDemandDenial::new(kind, "completed output-set qualification");
         let execution = phase
             .checked_execution_request_for(&self.application().product_runtime)
-            .map_err(|cause| refused(Kind::ExecutionRequest(cause.into())))?;
+            .map_err(|cause| refused(Kind::ExecutionRequest(cause)))?;
         let memory = execution.reserve_retained_memory(retained_bytes).map_err(|cause| {
             refused(Kind::ExecutionRequest(
                 crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause),

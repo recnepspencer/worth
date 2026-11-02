@@ -161,13 +161,13 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
     let terminal = Arc::new(parts.terminal);
     storage
         .arc::<super::source_image::SourceMaterial>()
-        .map_err(&failure)?;
+        .map_err(failure)?;
     let material = Arc::new(super::source_image::SourceMaterial {
         tree,
         order,
         _allocation: Arc::clone(&parts.allocation),
     });
-    storage.arc::<SourceImage<S, I>>().map_err(&failure)?;
+    storage.arc::<SourceImage<S, I>>().map_err(failure)?;
     Ok(Arc::new(SourceImage {
         rebuild_loan,
         installed,

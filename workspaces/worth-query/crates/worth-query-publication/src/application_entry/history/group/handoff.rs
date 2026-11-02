@@ -51,10 +51,10 @@ where
         control
     }
     pub(super) fn pause_at(&self, point: WorthQueryHistoryGroupHandoffPointForTest) {
-        if let Some((selected, receiver)) = &self.handoff {
-            if *selected == point {
-                receiver.pause();
-            }
+        if let Some((selected, receiver)) = &self.handoff
+            && *selected == point
+        {
+            receiver.pause();
         }
     }
 }

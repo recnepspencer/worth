@@ -43,8 +43,9 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 "history output root/profile correspondence",
             ))
         };
-        if source.profile.root != std::any::TypeId::of::<R>()
-            || source.profile.program_type != std::any::TypeId::of::<P>()
+        if source.profile.root != crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
+            || source.profile.program_type
+                != crate::equality_type_id::EqualityTypeId::of::<P>().into_external()
             || source.profile.program != *self.owned_revision()
         {
             return Err(foreign());

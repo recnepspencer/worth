@@ -48,7 +48,7 @@ impl CompletedMetadataRead<'_, '_> {
         document: &WorthQueryDocumentHistory<'_, S, H>,
         value: T,
     ) -> Result<T, Denial> {
-        if self.history != std::any::TypeId::of::<H>() {
+        if self.history != crate::equality_type_id::EqualityTypeId::of::<H>().into_external() {
             return Err(Denial::InstalledBindingMismatch);
         }
         if self.source.model() != document.model {
@@ -211,7 +211,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         Ok(CompletedMetadataRead {
             source,
             phase,
-            history: std::any::TypeId::of::<H>(),
+            history: crate::equality_type_id::EqualityTypeId::of::<H>().into_external(),
             principal,
         })
     }

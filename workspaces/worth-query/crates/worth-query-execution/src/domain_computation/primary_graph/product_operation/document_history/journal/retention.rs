@@ -53,10 +53,9 @@ impl<S> HistoryJournal<'_, S> {
             .expect("oldest eligible source");
         if let Some(NodeBinding::Completed(node)) =
             self.nodes.get(&oldest).map(|node| &node.binding)
+            && let Some(parent) = node.step.parent()
         {
-            if let Some(parent) = node.step.parent() {
-                removed.released_child = self.children.remove(&(parent.ordinal, oldest));
-            }
+            removed.released_child = self.children.remove(&(parent.ordinal, oldest));
         }
         self.retained_completed -= 1;
         Some(removed)

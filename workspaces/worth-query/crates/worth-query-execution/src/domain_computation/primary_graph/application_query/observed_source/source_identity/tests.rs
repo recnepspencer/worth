@@ -14,14 +14,19 @@ fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
         .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     let ordinal = registry.state.lock().unwrap().next_ordinal;
+    let refusal = worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+        requested: 97,
+        admitted: 53,
+        ancestor: 11,
+    };
     let denied = registry.intern_compared(
         &[7; 32],
         &[8; 32],
         footprint(root, false),
         &selection,
-        &mut |_, _| Err::<bool, _>(String::from("owned comparison refusal")),
+        &mut |_, _| Err(refusal),
     );
-    assert_eq!(denied.err().as_deref(), Some("owned comparison refusal"));
+    assert_eq!(denied.err(), Some(refusal));
     {
         let state = registry.state.lock().unwrap();
         assert_eq!(state.next_ordinal, ordinal);

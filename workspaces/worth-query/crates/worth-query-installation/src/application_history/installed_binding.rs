@@ -129,7 +129,12 @@ impl<S: ApplicationSchema> WorthQueryInstalledApplicationSchema<S> {
             .document_history_catalog
             .get(H::IDENTITY)
             .ok_or_else(|| Denial::new(Kind::NotInstalled, H::IDENTITY))?;
-        if compiled.descriptor.binding_type() != TypeId::of::<H>()
+        #[expect(
+            clippy::disallowed_methods,
+            reason = "Rust type identity checks exact installed binding equality; it never orders history"
+        )]
+        let binding_type = TypeId::of::<H>();
+        if compiled.descriptor.binding_type() != binding_type
             || compiled.descriptor.history_type() != &H::PORTABLE_TYPE_IDENTITY
             || compiled.descriptor.group_resources() != H::GROUP_RESOURCES
             || compiled.descriptor.navigation_resources() != H::NAVIGATION_RESOURCES

@@ -56,7 +56,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let capability = schema
             .capability(
                 ApplicationCapabilityRef::<S, N::Capability>::from_declaration(),
-                reference.clone(),
+                reference,
             )
             .map_err(Denial::MetadataCapabilityInstallation)?;
         let capability = selected

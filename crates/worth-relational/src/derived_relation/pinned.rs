@@ -78,14 +78,14 @@ impl SourceRead for PinnedSource<'_, '_, '_, '_, '_, '_> {
             .bytes
             .checked_add(bytes as u64)
             .ok_or(Denial::Request(Cause::ChargedBytesOverflow))?;
-        if let Some(memory) = &mut self.memory {
-            if peak > memory.bytes() {
-                memory.resize(peak).map_err(|cause| {
-                    Denial::Request(crate::execution::denial::lease_denial(
-                        worth_execution::LeaseDenial::MemoryExhausted(cause),
-                    ))
-                })?;
-            }
+        if let Some(memory) = &mut self.memory
+            && peak > memory.bytes()
+        {
+            memory.resize(peak).map_err(|cause| {
+                Denial::Request(crate::execution::denial::lease_denial(
+                    worth_execution::LeaseDenial::MemoryExhausted(cause),
+                ))
+            })?;
         }
         Ok(())
     }

@@ -230,7 +230,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
         runtime,
         scope,
         request,
-        principal: principal,
+        principal,
         basis,
         target,
         session,

@@ -107,11 +107,11 @@ where
                 .map_err(Denial::Close)?;
         }
         self.read_cleanup = None;
-        if let Some((outcome, cleanup)) = self.managed_cleanup.take() {
-            if let Err(cleanup) = cleanup.retry_in_advancement(phase) {
-                self.managed_cleanup = Some((outcome, cleanup));
-                return Err(Denial::ManagedCleanup);
-            }
+        if let Some((outcome, cleanup)) = self.managed_cleanup.take()
+            && let Err(cleanup) = cleanup.retry_in_advancement(phase)
+        {
+            self.managed_cleanup = Some((outcome, cleanup));
+            return Err(Denial::ManagedCleanup);
         }
         if let (Some(tree), Some((branch, _))) = (&mut self.tree, &self.original) {
             tree.close_read_request(phase, application, *branch)

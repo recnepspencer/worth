@@ -137,14 +137,14 @@ where
             }
             self.execution.closing += 1;
         }
-        if let Some(recovery) = self.execution.recovery.take() {
-            if let Err(recovery) = recovery.release() {
-                self.execution.recovery = Some(recovery);
-                return Err((
-                    self,
-                    Denial::Member(WorthQueryHistoryEditDenial::ForkRecovery),
-                ));
-            }
+        if let Some(recovery) = self.execution.recovery.take()
+            && let Err(recovery) = recovery.release()
+        {
+            self.execution.recovery = Some(recovery);
+            return Err((
+                self,
+                Denial::Member(WorthQueryHistoryEditDenial::ForkRecovery),
+            ));
         }
         if let Some(candidate) = self.execution.candidate.take() {
             self.execution.cleanup = Some(super::super::edit::DiscardedCandidate::Live {
@@ -161,18 +161,17 @@ where
                 }
             }
         }
-        if let Some(aborting) = self.execution.aborting.take() {
-            if let Err((aborting, cause)) = self
+        if let Some(aborting) = self.execution.aborting.take()
+            && let Err((aborting, cause)) = self
                 .document
                 .owner
                 .cancel_history_group(&program_publication_access(), aborting)
-            {
-                self.execution.aborting = Some(aborting);
-                return Err((
-                    self,
-                    Denial::History(WorthQueryApplicationHistoryDenial::Document(cause)),
-                ));
-            }
+        {
+            self.execution.aborting = Some(aborting);
+            return Err((
+                self,
+                Denial::History(WorthQueryApplicationHistoryDenial::Document(cause)),
+            ));
         }
         self.execution.posture = WorthQueryHistoryGroupPosture::Aborted;
         Ok(self.document)

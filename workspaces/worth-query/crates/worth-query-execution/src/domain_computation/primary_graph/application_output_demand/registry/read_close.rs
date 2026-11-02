@@ -24,17 +24,17 @@ impl WorthQueryOutputDemandRegistry {
         {
             return Ok(None);
         }
-        if let DemandState::Output(output) = &mut record.state {
-            if matches!(
+        if let DemandState::Output(output) = &mut record.state
+            && matches!(
                 output.advancement(),
                 WorthQueryOutputAdvancement::Stopped { .. }
-            ) {
-                let claimed = output.claim_stopped_checkpoint_for_close();
-                record.finish();
-                return claimed
-                    .map(Some)
-                    .ok_or(WorthQueryOutputReadCloseDenial::NativePublicationRetained);
-            }
+            )
+        {
+            let claimed = output.claim_stopped_checkpoint_for_close();
+            record.finish();
+            return claimed
+                .map(Some)
+                .ok_or(WorthQueryOutputReadCloseDenial::NativePublicationRetained);
         }
         match progression::begin_record(&mut record, "") {
             WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint } => {

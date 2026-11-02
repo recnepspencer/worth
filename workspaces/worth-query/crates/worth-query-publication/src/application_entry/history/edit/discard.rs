@@ -199,12 +199,12 @@ where
         WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         (Self, WorthQueryHistoryEditDenial),
     > {
-        if let Some(recovery) = state.recovery.take() {
-            if let Err(next) = recovery.release() {
-                state.recovery = Some(next);
-                self.phase = Some(Phase::Forking(state));
-                return Err((self, WorthQueryHistoryEditDenial::ForkRecovery));
-            }
+        if let Some(recovery) = state.recovery.take()
+            && let Err(next) = recovery.release()
+        {
+            state.recovery = Some(next);
+            self.phase = Some(Phase::Forking(state));
+            return Err((self, WorthQueryHistoryEditDenial::ForkRecovery));
         }
         let operation = state.operation.take().unwrap();
         let current = WorthQueryApplicationRequest {

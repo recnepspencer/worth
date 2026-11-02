@@ -127,14 +127,14 @@ where
         let Some(Phase::Forking(state)) = self.phase.as_mut() else {
             unreachable!()
         };
-        if let Some(recovery) = state.recovery.take() {
-            if let Err(next) = recovery.release() {
-                state.recovery = Some(next);
-                return WorthQueryHistoryEditAdvance::Refused {
-                    edit: self,
-                    denial: WorthQueryHistoryEditDenial::ForkRecovery,
-                };
-            }
+        if let Some(recovery) = state.recovery.take()
+            && let Err(next) = recovery.release()
+        {
+            state.recovery = Some(next);
+            return WorthQueryHistoryEditAdvance::Refused {
+                edit: self,
+                denial: WorthQueryHistoryEditDenial::ForkRecovery,
+            };
         }
         let runtime = self.document.owner.application();
         let result = runtime.with_application_advancement(request.scope, |phase| {

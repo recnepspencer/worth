@@ -107,7 +107,7 @@ where
                     snapshot,
                     runtime.authorization.bridge(),
                 )
-                .map_err(|cause| InspectionAdmissionDenial::CurrentAuthorization(cause))?;
+                .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             if let Some(capability) = metadata.authorization_mut() {
                 capability
                     .validate_currentness_in(
@@ -131,18 +131,17 @@ where
     // additionally requires DiagnosticFields before retaining either original;
     // the separate diagnostic capability still owns payload comparison.
     for (facet, slot) in Facet::ALL.iter().zip(contract.metadata_slots()) {
-        if matches!(
+        if (matches!(
             facet,
             Facet::ObservationIdentity
                 | Facet::EvidenceLinks
                 | Facet::EvidenceCounts
                 | Facet::EvidenceAvailability
                 | Facet::Explanation
-        ) || diagnostic.is_some()
+        ) || diagnostic.is_some())
+            && !metadata.is_disclosed(slot)
         {
-            if !metadata.is_disclosed(slot) {
-                return Err(InspectionAdmissionDenial::FacetDenied);
-            }
+            return Err(InspectionAdmissionDenial::FacetDenied);
         }
     }
     require_request(execution, request)?;

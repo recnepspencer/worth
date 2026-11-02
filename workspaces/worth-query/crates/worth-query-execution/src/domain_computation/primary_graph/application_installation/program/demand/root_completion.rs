@@ -46,7 +46,7 @@ impl OriginalProgramRootCompletion {
         })?;
         // This compares custody of the Native result actually returned by this
         // admitted root, never a numeric address supplied as semantic identity.
-        if !std::ptr::eq(root, Arc::as_ptr(&actual)) {
+        if !std::ptr::eq(root, actual.as_ref()) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "history output root belongs to another original claim",

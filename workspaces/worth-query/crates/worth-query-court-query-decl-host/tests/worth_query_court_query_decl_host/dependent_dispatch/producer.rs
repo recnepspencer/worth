@@ -92,13 +92,15 @@ macro_rules! phase {
                             if custody.len() != 1 || custody[0].to().entity_id() != expected.entity_id() { return Ok(Err(Denial::WrongParent)); }
                         }
                         let mut children = Vec::new();
-                        for index in 0..if TIER < 2 { input.0.width } else { 0 } {
+                        if TIER < 2 {
+                        for index in 0..input.0.width {
                             let key = format!("{}.{}", input.0.key, index);
                             let child = reader.resolve_optional_entity(Key::reference(), key)?;
                             if let Some(child) = &child {
                                 if reader.field(child, ParentName::reference())?.as_deref() != Some(input.0.key.as_str()) { return Ok(Err(Denial::WrongParent)); }
                             }
                             children.push(child.as_ref().map(|child| reader.mutation_target(child)).transpose()?);
+                        }
                         }
                         Ok(Ok(Decision { source: reader.mutation_target(&source)?, children }))
                     })();

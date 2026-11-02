@@ -41,9 +41,9 @@ where
     ) -> Result<WorthQueryHistoryStep, WorthQueryHistoryGroupDenial> {
         use WorthQueryHistoryGroupDenial as Denial;
         self.validate_document(document, request)?;
-        if self.selected.is_some() {
+        if let Some(selected) = &self.selected {
             document.current_step(request).map_err(Denial::History)?;
-            return Ok(self.selected.as_ref().unwrap().clone());
+            return Ok(selected.clone());
         }
         if self.posture != WorthQueryHistoryGroupPosture::ReadyToComplete {
             return Err(Denial::NotReady);

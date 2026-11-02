@@ -297,10 +297,9 @@ where
         let reader =
             crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(
                 runtime, &shared, external_principal, request);
-        let read = reader.read_admitted_result::<SourceBinding<Schema, Binding>>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
-            .map_err(|stop| super::denial::selected_source_read_denied(Binding::IDENTITY, stop))?;
 
-        read
+        reader.read_admitted_result::<SourceBinding<Schema, Binding>>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+            .map_err(|stop| super::denial::selected_source_read_denied(Binding::IDENTITY, stop))?
     };
 
     super::super::demand::disclosure::validate_readmitted(

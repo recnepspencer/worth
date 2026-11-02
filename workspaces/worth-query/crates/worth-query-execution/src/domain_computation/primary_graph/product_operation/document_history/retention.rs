@@ -147,10 +147,10 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
             return Ok(Ok(WorthQueryHistoryReleaseOutcome::WaitingForNavigation));
         };
         let branch = slot.lock().branch();
-        if let Some(branch) = branch {
-            if let Err(cause) = before_close(branch) {
-                return Ok(Err(cause));
-            }
+        if let Some(branch) = branch
+            && let Err(cause) = before_close(branch)
+        {
+            return Ok(Err(cause));
         }
         let outcome = {
             let mut head = slot.lock();

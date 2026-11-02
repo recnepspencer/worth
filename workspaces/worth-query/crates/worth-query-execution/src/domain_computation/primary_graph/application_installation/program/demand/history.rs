@@ -54,10 +54,10 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let progress = authority
             .confirm_read(phase, runtime, request, progress)
             .map_err(Denial::Authority)?;
-        if let Ok(WorthQueryOutputDemandAdvance::Settled(retained)) = &progress {
-            if let Some(completion) = &admitted.original_root_completion {
-                completion.completed(retained);
-            }
+        if let Ok(WorthQueryOutputDemandAdvance::Settled(retained)) = &progress
+            && let Some(completion) = &admitted.original_root_completion
+        {
+            completion.completed(retained);
         }
         progress
             .map_err(|mut stop| {

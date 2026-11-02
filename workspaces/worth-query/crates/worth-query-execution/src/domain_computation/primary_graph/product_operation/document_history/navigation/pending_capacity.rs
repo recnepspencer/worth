@@ -75,7 +75,7 @@ impl PendingNavigationCapacity {
         &self,
         branch: WorthQueryProductBranch,
     ) -> bool {
-        self.sources().iter().any(|source| *source == Some(branch))
+        self.sources().contains(&Some(branch))
     }
 
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn has_unfinished(

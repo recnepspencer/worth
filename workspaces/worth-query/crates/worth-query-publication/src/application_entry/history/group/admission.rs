@@ -166,13 +166,13 @@ where
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), WorthQueryHistoryGroupDenial> {
-        if let Some(recovery) = self.recovery.take() {
-            if let Err(recovery) = recovery.release() {
-                self.recovery = Some(recovery);
-                return Err(WorthQueryHistoryGroupDenial::Member(
-                    WorthQueryHistoryEditDenial::ForkRecovery,
-                ));
-            }
+        if let Some(recovery) = self.recovery.take()
+            && let Err(recovery) = recovery.release()
+        {
+            self.recovery = Some(recovery);
+            return Err(WorthQueryHistoryGroupDenial::Member(
+                WorthQueryHistoryEditDenial::ForkRecovery,
+            ));
         }
         let runtime = document.owner.application();
         runtime.with_application_advancement(request.scope,|phase| {

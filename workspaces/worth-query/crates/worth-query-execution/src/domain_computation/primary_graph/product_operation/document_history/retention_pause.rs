@@ -38,10 +38,10 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         WorthQueryHistoryRetentionChangePauseForTest { guard }
     }
     pub(super) fn pause_retention(&self, point: RetentionChangePoint) {
-        if let Some((actual, receiver)) = &self.retention_pause {
-            if *actual == point {
-                receiver.pause();
-            }
+        if let Some((actual, receiver)) = &self.retention_pause
+            && *actual == point
+        {
+            receiver.pause();
         }
     }
 }

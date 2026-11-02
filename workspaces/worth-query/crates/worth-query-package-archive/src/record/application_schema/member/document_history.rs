@@ -80,7 +80,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1 | 2 | 3) {
+    if !matches!(version, 1..=3) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     budget.require_nesting_depth(2)?;

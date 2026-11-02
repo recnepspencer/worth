@@ -78,10 +78,10 @@ where
     Finish: FnOnce(Checkpoint) -> Result<(), WorthQueryOutputDemandDenial>,
 {
     fn drop(&mut self) {
-        if let Some(checkpoint) = self.checkpoint.take() {
-            if let Some(finish) = self.finish.take() {
-                let _ = finish(checkpoint);
-            }
+        if let Some(checkpoint) = self.checkpoint.take()
+            && let Some(finish) = self.finish.take()
+        {
+            let _ = finish(checkpoint);
         }
         // Fields retire after this restoration and outside all registry guards.
     }

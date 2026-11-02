@@ -127,11 +127,10 @@ where
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
-        if history.is_none() {
-            if let Some(root) = &self.root {
+        if history.is_none()
+            && let Some(root) = &self.root {
                 root.require_ordinary().map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
             }
-        }
         if self.complete {
             return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed);
         }

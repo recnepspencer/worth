@@ -141,8 +141,8 @@ where
             phase,
             preview,
             None,
-            self.capability.clone(),
-            self.operation.clone(),
+            self.capability,
+            self.operation,
             self.input.clone(),
             perform,
         )

@@ -15,11 +15,7 @@ pub(super) struct DocumentIncarnation {
 
 impl DocumentIncarnation {
     pub(super) fn mint(runtime: u64) -> Option<Self> {
-        let ordinal = NEXT_DOCUMENT
-            .try_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
-                next.checked_add(1)
-            })
-            .ok()?;
+        let ordinal = mint_document_ordinal(&NEXT_DOCUMENT)?;
         Some(Self { runtime, ordinal })
     }
 
@@ -27,6 +23,22 @@ impl DocumentIncarnation {
         WorthQueryHistoryNodeId {
             document: self,
             ordinal,
+        }
+    }
+}
+
+fn mint_document_ordinal(counter: &AtomicU64) -> Option<u64> {
+    let mut ordinal = counter.load(Ordering::Relaxed);
+    loop {
+        let successor = ordinal.checked_add(1)?;
+        match counter.compare_exchange_weak(
+            ordinal,
+            successor,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        ) {
+            Ok(_) => return Some(ordinal),
+            Err(current) => ordinal = current,
         }
     }
 }
@@ -60,5 +72,19 @@ impl WorthQueryHistoryStep {
     }
     pub fn endpoint(&self) -> &WorthQueryProductBranchReadIdentity {
         &self.endpoint
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn document_ordinal_exhaustion_preserves_the_terminal_counter() {
+        let counter = AtomicU64::new(u64::MAX - 1);
+        assert_eq!(mint_document_ordinal(&counter), Some(u64::MAX - 1));
+        assert_eq!(mint_document_ordinal(&counter), None);
+        assert_eq!(mint_document_ordinal(&counter), None);
+        assert_eq!(counter.load(Ordering::Relaxed), u64::MAX);
     }
 }

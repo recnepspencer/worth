@@ -12,18 +12,19 @@ where
     D: WorthQueryApplicationOutputDemand<S>,
 {
     pub(super) validate: source::RequiredSourceValidator<S, P>,
-    pub(super) fulfill: fn(
-        &AdvancementPhase<'_>,
-        &WorthQueryProgramApplicationRuntime<S, P>,
-        &WorthQueryApplicationProgramDemandHandle<S, P, D>,
-        &WorthQueryPreparedRequiredOutputSource,
-        &WorthQueryApplicationCommitReceipt,
-        &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<Query<S, D>>,
-    ) -> Result<
-        WorthQueryFulfilledRequiredRoot,
-        crate::application_entry::WorthQueryApplicationOutputDemandDenial,
-    >,
+    pub(super) fulfill: RequiredSourceFulfillment<S, P, D>,
 }
+type RequiredSourceFulfillment<S, P, D> = fn(
+    &AdvancementPhase<'_>,
+    &WorthQueryProgramApplicationRuntime<S, P>,
+    &WorthQueryApplicationProgramDemandHandle<S, P, D>,
+    &WorthQueryPreparedRequiredOutputSource,
+    &WorthQueryApplicationCommitReceipt,
+    &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<Query<S, D>>,
+) -> Result<
+    WorthQueryFulfilledRequiredRoot,
+    crate::application_entry::WorthQueryApplicationOutputDemandDenial,
+>;
 impl<S, P, D> RequiredSourceBinding<S, P, D>
 where
     S: ApplicationSchema + 'static,

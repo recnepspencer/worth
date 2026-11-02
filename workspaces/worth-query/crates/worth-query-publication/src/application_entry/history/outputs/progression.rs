@@ -172,20 +172,18 @@ where
             .map_err(Denial::Query)
             .and_then(|result| result)
             .map_err(WorthQueryHistoryNavigationAdvanceDenial::Outputs);
-        if navigation.posture() == WorthQueryHistoryNavigationPosture::Selected {
-            if let Some(key) = original_slot {
-                if let Ok(Some(slot)) = self.existing_slot(&key) {
-                    if let Ok(mut state) = slot.try_state() {
-                        // Actual selection survives failed cleanup. The document
-                        // retains every remainder for its disposal-only close.
-                        state.selected = true;
-                        let disposed = state.dispose(phase, &self.application).is_ok();
-                        drop(state);
-                        if disposed {
-                            let _ = self.remove_slot(&key, &slot);
-                        }
-                    }
-                }
+        if navigation.posture() == WorthQueryHistoryNavigationPosture::Selected
+            && let Some(key) = original_slot
+            && let Ok(Some(slot)) = self.existing_slot(&key)
+            && let Ok(mut state) = slot.try_state()
+        {
+            // Actual selection survives failed cleanup. The document
+            // retains every remainder for its disposal-only close.
+            state.selected = true;
+            let disposed = state.dispose(phase, &self.application).is_ok();
+            drop(state);
+            if disposed {
+                let _ = self.remove_slot(&key, &slot);
             }
         }
         result

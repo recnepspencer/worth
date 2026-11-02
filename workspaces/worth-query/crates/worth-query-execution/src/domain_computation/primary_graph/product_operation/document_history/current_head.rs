@@ -89,7 +89,7 @@ pub(super) fn confirm_in_execution_with_effect<S: ApplicationSchema, Value>(
     runtime
         .primary_provider
         .graph
-        .with_runtime(&execution, |native| {
+        .with_runtime(execution, |native| {
             confirm_in_native_with_effect(
                 runtime,
                 execution,

@@ -1,7 +1,6 @@
 //! Owner-local portable readmission uses real validated and installed contracts.
 use super::*;
 use crate::facade::*;
-use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
 use worth_query_declaration::facade::application_schema::*;
 struct Schema;
 worth_query_declaration::worth_query_entity!(Entity for Schema);

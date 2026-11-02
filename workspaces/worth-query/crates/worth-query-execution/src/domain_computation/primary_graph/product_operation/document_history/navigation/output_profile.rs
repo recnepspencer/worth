@@ -74,7 +74,7 @@ impl WorthQueryHistoryOutputProfile {
         &self,
         program: &WorthQueryProgramApplicationRuntime<S, P>,
     ) -> bool {
-        self.program_type == std::any::TypeId::of::<P>()
+        self.program_type == crate::equality_type_id::EqualityTypeId::of::<P>().into_external()
             && &self.program == program.owned_revision()
     }
 }
@@ -125,8 +125,8 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         phase
             .check_live_for(&application.product_runtime)
             .map_err(Denial::Stopped)?;
-        if std::any::TypeId::of::<<<Source<S,R> as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope>()
-            != std::any::TypeId::of::<ApplicationHistoryModel<S,H>>()
+        if crate::equality_type_id::EqualityTypeId::of::<<<Source<S,R> as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope>().into_external()
+            != crate::equality_type_id::EqualityTypeId::of::<ApplicationHistoryModel<S,H>>().into_external()
         {
             return Err(Denial::Document(super::super::WorthQueryDocumentHistoryDenial::ForeignModel));
         }
@@ -178,7 +178,9 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                     .and_then(|delivery| delivery.output())
                     .is_some_and(|output| {
                         !output.is_discovered()
-                            && output.root_type() == std::any::TypeId::of::<R>()
+                            && output.root_type()
+                                == crate::equality_type_id::EqualityTypeId::of::<R>()
+                                    .into_external()
                             && output.read().is_none_or(|read| read == &access)
                             && output.root_connection() == &connection
                             && output.root_connections() == connections
@@ -190,9 +192,9 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         Ok(WorthQueryHistoryOutputProfile {
             model: document.model.clone(),
             program: *owner.owned_revision(),
-            program_type: std::any::TypeId::of::<P>(),
-            root: std::any::TypeId::of::<R>(),
-            recipe: std::any::TypeId::of::<Recipe>(),
+            program_type: crate::equality_type_id::EqualityTypeId::of::<P>().into_external(),
+            root: crate::equality_type_id::EqualityTypeId::of::<R>().into_external(),
+            recipe: crate::equality_type_id::EqualityTypeId::of::<Recipe>().into_external(),
             delivery_index,
             source_intent,
         })

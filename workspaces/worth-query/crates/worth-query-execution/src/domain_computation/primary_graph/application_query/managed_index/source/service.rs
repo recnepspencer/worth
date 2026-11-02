@@ -115,7 +115,7 @@ where
         self.initialization.admits(proof)
     }
     fn binding_type(&self) -> std::any::TypeId {
-        std::any::TypeId::of::<(S, I)>()
+        crate::equality_type_id::EqualityTypeId::of::<(S, I)>().into_external()
     }
     fn prepare_initial(
         &self,
@@ -142,10 +142,8 @@ where
         {
             self.invalidate_predicates(execution, &scope)?;
         }
-        if proposed_exists {
-            if let Some(payload) = self.corresponding_root(execution, &scope)? {
-                return Ok(scope.seal(None, Some(payload)));
-            }
+        if proposed_exists && let Some(payload) = self.corresponding_root(execution, &scope)? {
+            return Ok(scope.seal(None, Some(payload)));
         }
         // Unavailable is an explicit Native physical posture, not an empty
         // membership result. All other before-view failures retain their cause.

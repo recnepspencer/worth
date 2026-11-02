@@ -136,15 +136,15 @@ impl<'r, S> HistoryJournal<'r, S> {
     }
 
     pub(super) fn protect_head(&mut self, node: u64) {
-        if let Some(slot) = self.nodes.get(&node).and_then(|node| node.head_slot) {
-            if let Some(head) = self.past_heads.get_mut(&slot) {
-                debug_assert!(
-                    !matches!(*head.custody.lock(), HistoryHeadCustody::Retired { .. }),
-                    "an unfinished original target keeps H live until selection"
-                );
-                head.queued = false;
-                self.releases.retain(|queued| *queued != slot);
-            }
+        if let Some(slot) = self.nodes.get(&node).and_then(|node| node.head_slot)
+            && let Some(head) = self.past_heads.get_mut(&slot)
+        {
+            debug_assert!(
+                !matches!(*head.custody.lock(), HistoryHeadCustody::Retired { .. }),
+                "an unfinished original target keeps H live until selection"
+            );
+            head.queued = false;
+            self.releases.retain(|queued| *queued != slot);
         }
     }
 

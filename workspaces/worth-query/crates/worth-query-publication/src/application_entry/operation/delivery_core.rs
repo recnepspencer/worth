@@ -93,14 +93,15 @@ where
                 WorthQueryOutputCurrentnessDenial::ForeignBranch,
             ));
         }
-        let owner = self
-            .runtime
-            .selected_program_owner(&selected)
-            .map_err(Denial::Program)?;
-        owner
-            .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
-            .map_err(Denial::Action)?;
-        drop(owner);
+        {
+            let owner = self
+                .runtime
+                .selected_program_owner(&selected)
+                .map_err(Denial::Program)?;
+            owner
+                .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
+                .map_err(Denial::Action)?;
+        }
         Ok(selected)
     }
 }

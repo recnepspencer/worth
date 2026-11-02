@@ -130,15 +130,15 @@ impl SourceRead for Source {
         let rows = records
             .into_iter()
             .enumerate()
-            .filter_map(|(ordinal, (kind, a, b))| {
-                (probe.relation == KindId(kind)
-                    && probe.anchor == if probe.outgoing { id(a) } else { id(b) })
-                .then(|| StructuralRelationRecord {
-                    relation_id: RelationId::new(PartitionId(0), ordinal as u64, 1),
-                    kind_id: KindId(kind),
-                    source: id(a),
-                    target: id(b),
-                })
+            .filter(|&(_, (kind, a, b))| {
+                probe.relation == KindId(kind)
+                    && probe.anchor == if probe.outgoing { id(a) } else { id(b) }
+            })
+            .map(|(ordinal, (kind, a, b))| StructuralRelationRecord {
+                relation_id: RelationId::new(PartitionId(0), ordinal as u64, 1),
+                kind_id: KindId(kind),
+                source: id(a),
+                target: id(b),
             })
             .collect();
         self.stopped = self.stop_after_read;
@@ -306,6 +306,10 @@ fn root_partition_and_named_storage_match_independent_full_key_operations() {
         }
     }
     let mut actual = MemoValues::default();
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "Key orders immutable declared identity, node, member and direction; its retained binding cache is excluded"
+    )]
     let mut reference = BTreeMap::new();
     let mut source = Source::default();
     let mut seed = 919u32;

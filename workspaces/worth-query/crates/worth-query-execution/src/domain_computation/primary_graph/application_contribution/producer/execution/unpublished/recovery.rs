@@ -169,13 +169,12 @@ impl ContinuationState {
             self.prior_cleanup = Some(failure);
             return Ok(None);
         }
-        if let Some(recovery) = outcome.take_original_cleanup() {
-            if let Err(failure) =
+        if let Some(recovery) = outcome.take_original_cleanup()
+            && let Err(failure) =
                 runtime.close_product_publication_recovery_in_advancement(phase, recovery)
-            {
-                self.prior_cleanup = Some(failure);
-                return Ok(None);
-            }
+        {
+            self.prior_cleanup = Some(failure);
+            return Ok(None);
         }
         let actual = carrier.take().ok_or_else(|| {
             denial(

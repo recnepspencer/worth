@@ -15,10 +15,45 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn admit_c
     subject: &str,
     mut check_authority: impl FnMut() -> Result<(), WorthQueryApplicationAttemptDenial>,
 ) -> Result<FactPayload, WorthQueryApplicationAttemptDenial> {
+    let (mut builder, control) = begin(count, policy, request, subject, &mut check_authority)?;
+    {
+        // Conversion follows admission; iterator custody ends before final checks.
+        let mut values = values.into_iter();
+        append(
+            &mut builder,
+            &mut values,
+            control,
+            subject,
+            &mut check_authority,
+        )?;
+    }
+    finish(builder, control, subject, &mut check_authority)
+}
+
+fn begin<'scope, 'authority>(
+    count: usize,
+    policy: ExecutionAllocationPolicy<'scope, 'authority>,
+    request: &'scope WorthQueryRequestScope,
+    subject: &str,
+    check_authority: &mut dyn FnMut() -> Result<(), WorthQueryApplicationAttemptDenial>,
+) -> Result<
+    (NativeFactPayloadBuilder, StorageControl<'scope, 'authority>),
+    WorthQueryApplicationAttemptDenial,
+> {
     check_authority()?;
     let control = StorageControl::new(policy, Some(request));
-    let mut builder = NativeFactPayloadBuilder::allocate_completed_read(count, control)
+    let builder = NativeFactPayloadBuilder::allocate_completed_read(count, control)
         .map_err(|cause| cause.into_attempt_denial(subject))?;
+    Ok((builder, control))
+}
+
+fn append(
+    builder: &mut NativeFactPayloadBuilder,
+    values: &mut dyn Iterator<Item = WorthQueryApplicationObservedFact>,
+    control: StorageControl<'_, '_>,
+    subject: &str,
+    check_authority: &mut dyn FnMut() -> Result<(), WorthQueryApplicationAttemptDenial>,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
     for value in values {
         check_authority()?;
         control
@@ -28,6 +63,15 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn admit_c
             WorthQueryApplicationAttemptDenial::allocation_denied(subject, cause)
         })?;
     }
+    Ok(())
+}
+
+fn finish(
+    builder: NativeFactPayloadBuilder,
+    control: StorageControl<'_, '_>,
+    subject: &str,
+    check_authority: &mut dyn FnMut() -> Result<(), WorthQueryApplicationAttemptDenial>,
+) -> Result<FactPayload, WorthQueryApplicationAttemptDenial> {
     check_authority()?;
     control
         .check_live()
@@ -36,3 +80,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn admit_c
         .seal()
         .map_err(|cause| WorthQueryApplicationAttemptDenial::allocation_denied(subject, cause))
 }
+
+#[cfg(test)]
+mod tests;

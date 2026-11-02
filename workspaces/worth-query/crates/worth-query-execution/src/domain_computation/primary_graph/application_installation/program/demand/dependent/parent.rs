@@ -36,16 +36,16 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             ));
         }
         let artifact = self.validate_derived_artifact_demand::<C, ConnectionDemand<S, C>>()?;
-        if let (Some(child), Some(parent_artifact)) = (artifact, parent.artifact) {
-            if !child.dependencies().iter().any(|dependency| {
+        if let (Some(child), Some(parent_artifact)) = (artifact, parent.artifact)
+            && !child.dependencies().iter().any(|dependency| {
                 dependency.identity() == parent_artifact.identity()
                     || dependency.identity() == parent_artifact.feature()
-            }) {
-                return Err(WorthQueryOutputDemandDenial::new(
-                    Kind::ForeignSettlement,
-                    "the dependent artifact does not consume its settled parent artifact",
-                ));
-            }
+            })
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                Kind::ForeignSettlement,
+                "the dependent artifact does not consume its settled parent artifact",
+            ));
         }
         Ok(artifact)
     }

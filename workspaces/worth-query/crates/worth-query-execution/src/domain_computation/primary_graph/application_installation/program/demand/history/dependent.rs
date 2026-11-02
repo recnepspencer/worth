@@ -61,9 +61,12 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let discovery = schema
             .installed_query_binding::<DiscoveryBinding<S, C>>()
             .map_err(|stop| Denial::Demand(installation_denial(stop.kind())))?;
-        let executed_binding = std::any::TypeId::of::<B>();
-        let output_binding = std::any::TypeId::of::<Source<S, ConnectionDemand<S, C>>>();
-        let discovery_binding = std::any::TypeId::of::<DiscoveryBinding<S, C>>();
+        let executed_binding = crate::equality_type_id::EqualityTypeId::of::<B>().into_external();
+        let output_binding =
+            crate::equality_type_id::EqualityTypeId::of::<Source<S, ConnectionDemand<S, C>>>()
+                .into_external();
+        let discovery_binding =
+            crate::equality_type_id::EqualityTypeId::of::<DiscoveryBinding<S, C>>().into_external();
         if !((executed_binding == output_binding
             && binding.query().identity() == output.query().identity())
             || (executed_binding == discovery_binding
@@ -84,7 +87,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             source: HistoryDependentSource {
                 authority,
                 parent: &parent.settled.retained,
-                connection: std::any::TypeId::of::<C>(),
+                connection: crate::equality_type_id::EqualityTypeId::of::<C>().into_external(),
                 source: basis,
                 minimum,
                 output_binding,
@@ -133,9 +136,13 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             || !parent.profile.same_custody(source.authority.profile())
             || !std::sync::Arc::ptr_eq(&parent.original, source.authority.original())
             || !std::sync::Arc::ptr_eq(source.parent, &parent.settled.retained)
-            || source.connection != std::any::TypeId::of::<C>()
+            || source.connection
+                != crate::equality_type_id::EqualityTypeId::of::<C>().into_external()
             || source.executed_binding != source.output_binding
-            || source.output_binding != std::any::TypeId::of::<Source<S, ConnectionDemand<S, C>>>()
+            || source.output_binding
+                != crate::equality_type_id::EqualityTypeId::of::<Source<S, ConnectionDemand<S, C>>>(
+                )
+                .into_external()
             || &source.query != installed.query().identity()
         {
             return Err(Denial::Demand(foreign_source()));

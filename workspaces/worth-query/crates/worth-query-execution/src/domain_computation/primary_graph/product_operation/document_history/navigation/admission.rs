@@ -155,7 +155,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 N::IDENTITY,
             )
             .map_err(WorthQueryHistoryNavigationDenial::Value)?
-            .bind_admission(&admission);
-        navigation.advance(phase, self, &admission, meaning, output_profile, outputs)
+            .bind_admission(admission);
+        navigation.advance(phase, self, admission, meaning, output_profile, outputs)
     }
 }

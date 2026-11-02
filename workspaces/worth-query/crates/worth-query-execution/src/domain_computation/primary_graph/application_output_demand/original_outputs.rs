@@ -115,7 +115,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .checked_execution_request_for(&runtime.product_runtime)
             .map_err(|cause| {
                 Denial::Output(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
                     "original output endpoint qualification",
                 ))
             })?;

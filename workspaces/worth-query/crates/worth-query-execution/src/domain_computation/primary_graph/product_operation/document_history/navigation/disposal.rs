@@ -41,11 +41,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
-        if let Some(prior) = self.prior_cleanup.take() {
-            if let Err(prior) = retry_release(self.application, phase, prior) {
-                self.prior_cleanup = Some(prior);
-                return Err(WorthQueryHistoryNavigationDenial::Cleanup);
-            }
+        if let Some(prior) = self.prior_cleanup.take()
+            && let Err(prior) = retry_release(self.application, phase, prior)
+        {
+            self.prior_cleanup = Some(prior);
+            return Err(WorthQueryHistoryNavigationDenial::Cleanup);
         }
         Ok(())
     }
@@ -134,25 +134,24 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
         let _execution = phase
             .checked_execution_request_for(&application.product_runtime)
             .map_err(Denial::Stopped)?;
-        if let Some(fork) = self.fork.take() {
-            if let Err(fork) = fork.release(phase) {
-                self.fork = Some(fork);
-                return Err(Denial::ForkRecovery);
-            }
+        if let Some(fork) = self.fork.take()
+            && let Err(fork) = fork.release(phase)
+        {
+            self.fork = Some(fork);
+            return Err(Denial::ForkRecovery);
         }
-        if let Some(prior) = self.prior.take() {
-            if let Err(prior) = retry_release(application, phase, prior) {
-                self.prior = Some(prior);
-                return Err(Denial::Cleanup);
-            }
+        if let Some(prior) = self.prior.take()
+            && let Err(prior) = retry_release(application, phase, prior)
+        {
+            self.prior = Some(prior);
+            return Err(Denial::Cleanup);
         }
-        if let Some(recovery) = self.recovery.take() {
-            if let Err(prior) =
+        if let Some(recovery) = self.recovery.take()
+            && let Err(prior) =
                 application.close_product_publication_recovery_in_advancement(phase, recovery)
-            {
-                self.prior = Some(prior);
-                return Err(Denial::Cleanup);
-            }
+        {
+            self.prior = Some(prior);
+            return Err(Denial::Cleanup);
         }
         if let Some(failure) = self.retired.take() {
             return match failure.into_cleanup().retry_in_advancement(phase) {
@@ -283,12 +282,11 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
         }
         progress.prepare_disposal();
         progress.finish_disposal(phase)?;
-        if let Some(slot) = progress.head_slot.take() {
-            if let Some(cell) = self.cell.upgrade() {
-                if let Some(mut selected) = cell.live() {
-                    selected.journal.cancel_head(slot);
-                }
-            }
+        if let Some(slot) = progress.head_slot.take()
+            && let Some(cell) = self.cell.upgrade()
+            && let Some(mut selected) = cell.live()
+        {
+            selected.journal.cancel_head(slot);
         }
         Ok(())
     }
