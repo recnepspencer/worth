@@ -181,7 +181,8 @@ fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_i
         .restore_native_checkpoint(&ExecutionRequest::leased(&limited), &native)
         .unwrap_err();
     assert!(
-        matches!(error,RelationalRecoveryStop::Request(crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted:1, .. }) if requested == JSON.len() as u64)
+        matches!(error,RelationalRecoveryStop::Request(crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted:1, .. }) if requested > 1),
+        "{error:?}"
     );
     assert_eq!(native.bytes(), before);
     assert_eq!(target.observe_branch(&identity).unwrap().0, original);

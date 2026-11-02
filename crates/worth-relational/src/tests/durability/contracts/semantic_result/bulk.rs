@@ -107,7 +107,6 @@ fn semantic_result_bulk_entities_and_relations_seal_and_readmit_original_binding
 
 #[test]
 fn semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal() {
-    use sha2::{Digest as _, Sha256};
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let (runtime, committed) = publication(execution, 8);
@@ -127,10 +126,7 @@ fn semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal() {
         .collect::<Vec<_>>();
     assert_eq!(offsets.len(), 1);
     bytes.splice(offsets[0]..offsets[0] + original.len(), replacement);
-    let length = (bytes.len() - 66) as u64;
-    bytes[58..66].copy_from_slice(&length.to_le_bytes());
-    let digest = Sha256::digest(&bytes[66..]);
-    bytes[26..58].copy_from_slice(&digest);
+    reseal_canonical_commit_frame(&mut bytes);
     assert!(Artifact::from_untrusted_bytes(bytes.clone()).is_ok());
     assert!(matches!(
         Artifact::readmit(&bytes, execution),

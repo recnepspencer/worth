@@ -169,8 +169,9 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
         )
         .unwrap_err();
     assert!(
-        matches!(denial, crate::durability::data::RelationalRecoveryStop::Durability(error)
-        if error.class == crate::durability::data::RecoveryFailureClass::SchemaMismatch && error.detail.contains("ordering"))
+        matches!(&denial, crate::durability::data::RelationalRecoveryStop::Durability(error)
+        if error.class == crate::durability::data::RecoveryFailureClass::SchemaMismatch && error.detail.contains("ordering")),
+        "{denial:?}"
     );
     assert_eq!(target.runtime_instance_id(), owner);
     assert_eq!(capture(execution, &target), before);

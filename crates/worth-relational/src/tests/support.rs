@@ -378,6 +378,7 @@ pub(super) fn assert_lineage_history_origin_invariants(
 
 #[path = "support/truth_comparison.rs"]
 mod truth_comparison;
+pub(crate) use truth_comparison::assert_durable_commit_meaning_eq;
 pub(super) use truth_comparison::assert_recovered_commit_truth_matches;
 pub(super) use truth_comparison::assert_stable_aspect_truth_bundle_eq;
 mod worker_completion;

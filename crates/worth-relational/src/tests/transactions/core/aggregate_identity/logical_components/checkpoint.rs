@@ -112,10 +112,12 @@ fn physical_membership_recipe_and_alternating_derived_catalog_restore_from_real_
             name
         );
     }
-    assert_eq!(
-        runtime.history().commit_envelopes_snapshot(),
-        recovered.history().commit_envelopes_snapshot()
-    );
+    let original = runtime.history().commit_envelopes_snapshot();
+    let restored = recovered.history().commit_envelopes_snapshot();
+    assert_eq!(original.len(), restored.len());
+    for (original, restored) in original.iter().zip(&restored) {
+        crate::tests::support::assert_durable_commit_meaning_eq(execution, original, restored);
+    }
 }
 
 #[test]

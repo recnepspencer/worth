@@ -191,7 +191,26 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
         .unwrap()
         .expect("recovered merge envelope");
 
-    assert!(recovered_merge.diagnostics_summary.entries.is_empty());
+    let source_artifact = attached_test_medium(&runtime)
+        .offered()
+        .into_iter()
+        .find(|artifact| artifact.commit_id() == merge.commit.commit.commit_id)
+        .unwrap();
+    let source =
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit(
+            source_artifact.as_bytes(),
+            execution,
+        )
+        .unwrap();
+    assert!(
+        source.envelope().diagnostics_summary.entries.is_empty(),
+        "the actual recovery source supplies no diagnostics"
+    );
+    crate::tests::support::assert_durable_commit_meaning_eq(
+        execution,
+        source.envelope(),
+        &recovered_merge,
+    );
     assert!(recovered_merge.merge_execution_authority.is_some());
     assert_eq!(
         recovered

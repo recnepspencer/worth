@@ -58,7 +58,6 @@ impl CustomInvariantRule for OnePlannedEntity {
 }
 #[test]
 fn semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request() {
-    use sha2::{Digest as _, Sha256};
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let observed = Arc::new(Mutex::new(Vec::new()));
@@ -133,10 +132,7 @@ fn semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_
         .collect::<Vec<_>>();
     assert_eq!(offsets.len(), 1);
     bytes.splice(offsets[0]..offsets[0] + encoded.len(), replacement);
-    let length = (bytes.len() - 66) as u64;
-    bytes[58..66].copy_from_slice(&length.to_le_bytes());
-    let digest = Sha256::digest(&bytes[66..]);
-    bytes[26..58].copy_from_slice(&digest);
+    reseal_canonical_commit_frame(&mut bytes);
     assert!(Artifact::from_untrusted_bytes(bytes.clone()).is_ok());
     assert!(matches!(Artifact::readmit(&bytes, execution), Err(crate::facade::durability::RelationalCanonicalCommitArtifactRefusal::PositionAdmission(crate::runtime::RelationalCanonicalPositionAdmissionDenial::SemanticResult(crate::transactions::data::RelationalCommitSemanticResultRefusal::ValidationMismatch)))));
     release_test_commit_snapshot(&runtime, &committed);

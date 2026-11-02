@@ -26,7 +26,6 @@ pub(crate) use runtime_attachment::{
     attached_durable_medium, attached_test_medium, bind_durable_medium, TestDurableMediumAttachment,
 };
 pub(crate) use scripted_publication::ScriptedPublication;
-pub(crate) use tamper::ARTIFACT_HEADER_COMMIT_ID_OFFSET;
 
 use crate::branch::RelationalBranchTransitionSequence;
 use crate::durability::branch_transition_artifact::{

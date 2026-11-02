@@ -119,6 +119,8 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
     struct Reference<'a> {
         position: crate::publication::patch::data::PatchStreamPosition,
         canonical: crate::history::data::AuthoritativeArtifactEnvelopeRef<'a>,
+        original_inputs:
+            Option<&'a crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
     }
     let position = runtime
         .history
@@ -127,6 +129,7 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
     let reference = rmp_serde::to_vec_named(&Reference {
         position: crate::publication::patch::data::PatchStreamPosition(position),
         canonical: crate::history::data::AuthoritativeArtifactEnvelopeRef::new(envelope),
+        original_inputs: envelope.recorded_original_inputs(),
     })
     .unwrap();
     let bill = (8 + 2 + 8 + 8 + 32 + 8 + reference.len()) as u64;
@@ -294,11 +297,11 @@ fn memory_frame_layout_preserves_scalar_tuple_observations() {
     );
     assert_eq!(
         std::mem::size_of::<EnvelopeBacking>(),
-        std::mem::size_of::<OldBacking>()
+        std::mem::size_of::<OldBacking>() + std::mem::size_of::<usize>()
     );
     assert_eq!(
         std::mem::size_of::<RelationalCommitEnvelopeResidency>(),
-        std::mem::size_of::<OldCell>()
+        std::mem::size_of::<OldCell>() + std::mem::size_of::<usize>()
     );
     release_test_commit_snapshot(&runtime, &result);
 }

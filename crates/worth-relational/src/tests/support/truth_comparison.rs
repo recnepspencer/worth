@@ -54,5 +54,26 @@ pub(crate) fn assert_recovered_commit_truth_matches(
     );
 
     assert_stable_aspect_truth_bundle_eq(&original_bundle, &recovered_bundle);
-    assert_eq!(original_envelope, recovered_envelope);
+    assert_durable_commit_meaning_eq(execution, &original_envelope, &recovered_envelope);
+}
+
+pub(crate) fn assert_durable_commit_meaning_eq(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    expected: &crate::history::data::CanonicalCommitEnvelope,
+    actual: &crate::history::data::CanonicalCommitEnvelope,
+) {
+    // The original artifact omits diagnostics/cache DATA (milestone-3 durable
+    // projection table). Compare every other field, not a receipt-only proxy.
+    assert_eq!(
+        expected.recorded_original_inputs(),
+        actual.recorded_original_inputs()
+    );
+    let mut expected = expected.copy_original_for_test(execution);
+    let mut actual = actual.copy_original_for_test(execution);
+    for envelope in [&mut expected, &mut actual] {
+        let body = envelope.body_mut_for_test();
+        body.diagnostics_summary.entries.clear();
+        body.derived_index_artifacts = Default::default();
+    }
+    assert_eq!(expected, actual);
 }

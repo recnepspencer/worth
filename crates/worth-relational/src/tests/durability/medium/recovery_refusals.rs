@@ -68,7 +68,7 @@ fn an_artifact_that_does_not_readmit_refuses_as_corrupt() {
     let runtime = runtime_with_commits(execution, &["a", "b"]);
 
     attached_test_medium(&runtime)
-        .flip_artifact_byte(PatchStreamPosition(2), ARTIFACT_HEADER_COMMIT_ID_OFFSET);
+        .corrupt_artifact_commit_header_with_intact_frame(PatchStreamPosition(2));
 
     assert_eq!(
         refusal_class(execution, &runtime),

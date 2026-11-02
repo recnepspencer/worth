@@ -189,7 +189,8 @@ fn caller_association_survives_cold_checkpoint_history_and_journal_tail() {
         .commit_artifact(first.commit_id())
         .unwrap()
         .envelope_residency();
-    assert!(cold.journal_placement().is_some());
+    assert!(cold.selected_directory().is_some());
+    assert!(cold.journal_placement().is_none());
     assert!(
         cold.positioned_if_resident().is_none(),
         "historical body begins cold"

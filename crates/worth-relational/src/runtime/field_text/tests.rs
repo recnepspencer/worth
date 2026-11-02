@@ -34,7 +34,15 @@ fn field_text_import_denial_preserves_source_table_and_head() {
     let denial = runtime
         .admit_field_text(&ExecutionRequest::leased(&limited), &basis, &source)
         .unwrap_err();
-    assert!(matches!(denial, Denial::Allocation(_)));
+    assert!(matches!(
+        denial,
+        Denial::Request(
+            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                admitted: 1,
+                ..
+            }
+        )
+    ));
     assert_eq!(source.bytes(), b"native-actor-json");
     assert_eq!(runtime.services.symbols.snapshot(), before);
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, head);
@@ -43,7 +51,8 @@ fn field_text_import_denial_preserves_source_table_and_head() {
 #[test]
 fn field_text_upgrade_replaces_system_keys_and_last_snapshot_retains_charge() {
     let parent = test_execution_lease();
-    let lease = parent.child(request(256)).unwrap();
+    const MEMORY: u64 = 4096;
+    let lease = parent.child(request(MEMORY)).unwrap();
     let execution = ExecutionRequest::leased(&lease);
     let runtime = runtime_with_test_schema();
     let (_, basis) = runtime
@@ -83,18 +92,18 @@ fn field_text_upgrade_replaces_system_keys_and_last_snapshot_retains_charge() {
     drop(admitted);
     drop(runtime);
     assert!(
-        lease.reserve_memory(256).is_err(),
+        lease.reserve_memory(MEMORY).is_err(),
         "actual snapshot still owns the reservation"
     );
     drop(snapshot);
     assert!(
-        lease.reserve_memory(256).is_ok(),
+        lease.reserve_memory(MEMORY).is_ok(),
         "last actual backing owner releases the charge"
     );
 }
 
 #[test]
-fn serial_import_is_explicit_system_custody_and_foreign_basis_refuses() {
+fn serial_import_retains_original_request_custody_and_foreign_basis_refuses() {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
@@ -110,7 +119,7 @@ fn serial_import_is_explicit_system_custody_and_foreign_basis_refuses() {
     let admitted = runtime
         .admit_field_text(&execution, &basis, &external("actor"))
         .unwrap();
-    assert_eq!(admitted.charged_payload_bytes(), None);
+    assert_eq!(admitted.charged_payload_bytes(), Some("actor".len() as u64));
     assert_eq!(admitted.as_str(), "actor");
     assert!(matches!(
         admitted.field_value_for(&foreign),
