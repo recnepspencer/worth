@@ -1,4 +1,5 @@
 //! Actual Home custody reaches the persisted no-pending admission boundary.
+use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 mod journal_absence;
 mod unresolved;
 
@@ -65,7 +66,9 @@ fn close(
 
 fn assert_contended(location: &std::path::Path, execution: &ExecutionRequest<'_, '_>) {
     match crate::durable_run::open(location, execution) {
-        Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refused)) => {
+        Err(OpenRefusal::BeforeReadmission(
+            worth_store_application::ApplicationHomeOpenRefusal::Physical(refused),
+        )) => {
             assert_eq!(
                 refused.kind(),
                 worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended

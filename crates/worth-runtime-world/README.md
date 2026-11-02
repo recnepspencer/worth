@@ -189,3 +189,20 @@ has no Query, Store or physical-runtime dependency. Query consumes it through
 `worth_runtime_world::facade` (from `worth-query-execution` and
 `worth-query-publication`) to publish application commits and report their
 product outcomes.
+
+## Attach a genuinely fresh Home
+
+Store's concrete Home composition has two distinct owner entries. Existing
+Homes use `readmit_world_home` with actual recovered Native authority.
+`admit_fresh_world_home` instead requires the same Native runtime's
+`FreshRelationalSourceAdmission`, validated before reading or constructing
+World. The real protected World source must have no selected checkpoint and
+all three journal heads must be empty. An empty source alone grants no right
+to take this route; Store selects it from private physical new-Home custody.
+
+The fresh entry shares the private execution/input/owner construction with
+recovery and performs no recovered-effect discovery or recorded-component
+reconciliation. Subsequent bootstrap selects the same live Native initial
+root through the existing owner operation. Stops and source/receipt mismatches
+retain their typed causes. This attachment contract does not establish
+physical Directory close or original Native/provider graph retirement.

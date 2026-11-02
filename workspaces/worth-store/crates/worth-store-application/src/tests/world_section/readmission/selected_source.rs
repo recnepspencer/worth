@@ -11,18 +11,7 @@ fn invalid_home2_with_real_ordinary_native(
     request: &ExecutionRequest<'_, '_>,
 ) -> (Vec<AnchoredRecordMemberLocator>, Vec<u8>) {
     let (builder, bridge, signal) = super::recipe(home);
-    let medium = home.context.world_slot.as_ref().unwrap().medium();
-    let world = builder
-        .readmit_world_home(
-            home.relational.runtime().owner_component_services(),
-            bridge,
-            medium,
-            crate::world_section::checkpoint::readmission_source(home, request).unwrap(),
-            request,
-            home.relational.runtime(),
-            home.relational.world_recovery_authority().unwrap(),
-        )
-        .unwrap();
+    let world = super::super::readmit_attached_world(home, builder, bridge, request).unwrap();
     let world_image = world
         .checkpoint_port()
         .unwrap()

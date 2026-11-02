@@ -1,7 +1,7 @@
 //! Actual Native/Bridge/Signal/World composition for filesystem Home courts.
 mod definition;
 mod publication;
-use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};
+use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_signal::facade::SignalRuntime;
 use worth_store_application::{
     admit_home, readmit_relational, readmit_world, recover_home, ApplicationHomeOpenRefusal,
@@ -13,11 +13,30 @@ pub struct WorldHomeFixture {
     _signal: SignalRuntime<(), (), (), (), ()>,
 }
 
-#[derive(Debug)]
 pub enum WorldHomeFixtureRefusal {
     Home(ApplicationHomeOpenRefusal),
+    Readmission(worth_store_application::RelationalHomeOpenRefused),
+    Admitted {
+        fixture: WorldHomeFixture,
+        cause: WorkCeilingDenial,
+    },
     World(worth_store_application::WorldHomeReadmissionRefused),
 }
+impl std::fmt::Debug for WorldHomeFixtureRefusal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Home(cause) => f.debug_tuple("Home").field(cause).finish(),
+            Self::Readmission(home) => f.debug_tuple("Readmission").field(home).finish(),
+            Self::World(home) => f.debug_tuple("World").field(home).finish(),
+            Self::Admitted { fixture, cause } => f
+                .debug_struct("Admitted")
+                .field("home", &fixture.home.home_identity())
+                .field("cause", cause)
+                .finish(),
+        }
+    }
+}
+
 impl WorldHomeFixture {
     pub fn begin_bootstrap_root(
         &self,
@@ -100,8 +119,8 @@ fn open_definition(
                 recover_home(request, execution).map_err(WorldHomeFixtureRefusal::Home)?;
             let admitted =
                 admit_home(recovered, execution).map_err(WorldHomeFixtureRefusal::Home)?;
-            let native =
-                readmit_relational(admitted, execution).map_err(WorldHomeFixtureRefusal::Home)?;
+            let native = readmit_relational(admitted, execution)
+                .map_err(WorldHomeFixtureRefusal::Readmission)?;
             let world = readmit_world(native, definition, execution)
                 .map_err(WorldHomeFixtureRefusal::World)?
                 .consume(|home| home);
@@ -113,10 +132,11 @@ fn open_definition(
     });
     match (scope, opened) {
         (Ok(()), Some(result)) => result,
-        (Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped)), Some(Err(cause))) => {
-            Err(cause)
+        (Err(_), Some(Err(refused))) => Err(refused),
+        (Err(cause), Some(Ok(fixture))) => {
+            Err(WorldHomeFixtureRefusal::Admitted { fixture, cause })
         }
-        (Err(cause), _) => Err(WorldHomeFixtureRefusal::Home(
+        (Err(cause), None) => Err(WorldHomeFixtureRefusal::Home(
             ApplicationHomeOpenRefusal::Execution(cause),
         )),
         (Ok(()), None) => unreachable!("completed actual Home composition"),

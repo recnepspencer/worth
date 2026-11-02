@@ -129,7 +129,7 @@ struct RecoveredRuntimeMaterial {
     recovered_roots: super::runtime_rebuild::RecoveredRootInventory,
 }
 
-fn admit_recovery_or_emit(
+pub(super) fn admit_recovery_or_emit(
     runtime: &RelationalRuntime,
     plan: RecoveryPlan,
 ) -> Result<admission::AdmittedRecoveryPlan, DurabilityError> {

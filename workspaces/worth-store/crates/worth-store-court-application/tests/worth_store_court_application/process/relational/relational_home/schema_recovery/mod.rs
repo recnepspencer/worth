@@ -5,6 +5,7 @@
 //! and leaves the home intact. Each branch still recovers under the schema
 //! boundary its own commits recorded. A registry with other kind contracts
 //! refuses before service.
+use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 
 #[allow(unused_imports)]
 use crate::schema_recovery::*;
@@ -111,8 +112,8 @@ fn a_registry_with_other_kind_contracts_refuses_before_service() {
     );
     assert!(
         matches!(
-            refused,
-            Err(
+            refused.as_ref().err().and_then(OpenRefusal::source_cause),
+            Some(
                 worth_store_application::ApplicationHomeOpenRefusal::Relational(
                     worth_store_relational::RelationalSectionReadmissionDenial::Native(_)
                 )
@@ -121,6 +122,9 @@ fn a_registry_with_other_kind_contracts_refuses_before_service() {
         "{:?}",
         refused.map(|_| ())
     );
+    // Explicit ordinary abandonment after observing the actual refused owner;
+    // this does not claim a successful close.
+    drop(refused);
     let home = open(&location, &execution).expect("the refusal left the home intact");
     assert_holds(&execution, &home, &script, &acknowledged);
     home.close(&execution);

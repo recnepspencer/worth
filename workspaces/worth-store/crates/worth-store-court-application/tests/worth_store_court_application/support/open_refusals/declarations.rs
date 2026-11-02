@@ -20,10 +20,10 @@ pub(crate) use {
     worth_store::physical_runtime::PhysicalRecordPlacementPolicy,
 };
 pub(crate) use {
-    worth_store_application::ApplicationHomeOpenRefusal,
     worth_store_application::ApplicationHomeRequest,
     worth_store_application::ReadmittedApplicationHome,
     worth_store_relational::RelationalStoreJournalRefusal,
+    worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused,
 };
 
 pub(crate) use crate::schema_transition;
@@ -100,10 +100,7 @@ pub(crate) fn flip_after(
     flipped
 }
 
-pub(crate) fn assert_refuses_before_service(
-    location: &Path,
-    case: &str,
-) -> ApplicationHomeOpenRefusal {
+pub(crate) fn assert_refuses_before_service(location: &Path, case: &str) -> HomeOpeningRefused {
     let request = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
     match open(location, &execution) {

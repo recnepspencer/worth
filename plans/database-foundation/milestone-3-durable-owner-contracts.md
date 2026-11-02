@@ -1,10 +1,40 @@
 # Shared durable owner contracts
 
 This design binds D2–D8, D10, D12 and D17 for the next home batch and eventual
-disjoint World work. Names describe intended ports, not implemented APIs,
-except the approved `DurablePublicationFate` and `DurablyCommitted`.
+disjoint World work. Owning facades define the implemented ports; each section
+keeps its qualification limits separate from committed successor work.
 
 ## Placement and trust
+
+Fresh Home admission preserves original Native source data instead of
+reconstructing it. Private Store physical `ProvenAbsent` custody selects the
+closed Native fresh door; `ExistingArtifacts` selects actual recovery even
+with empty coverage. Native's `FreshRelationalSourceAdmission` carries its
+actual runtime/root/schema identity and original birth/installation data.
+It is runtime-owned data, not a new generic legality marker or a conversion
+into `RecoveredRelationalRuntimeAuthority`.
+
+Section holds one mutually exclusive owned fresh or recovered payload and
+moves it intact through unshared construction, sharing, close refusal and
+resume. Distinct getters deny a wrong source kind before consuming Query.
+The direct Store opening convenience uses the same source-routing core and
+returns an owning attachment/readmission refusal. Oracle wrappers retain that
+actual Home custody, including a completed owner if an outer request scope
+stops after inner admission succeeded.
+
+Fresh Query validates its original same-runtime installation and registers
+indexes; fresh World validates that actual receipt and an empty protected
+World cut before construction. Existing World reconciliation still consumes
+genuine recovered Native authority. The no-pending-owner gate uses the real
+current physical journals on both routes, with the recovered codec check
+additionally retained. Bootstrap advancement does not invalidate an earlier
+source-admission fact merely by changing the initial live root.
+
+This contract supplies neither absent persisted original-input attribution
+on reopen nor actual Query/Native/provider graph retirement. The lifecycle
+plan's fresh-admission section governs its distinguishing proof and exact
+caller seals; selected Complete Home admission and physical D11 remain
+required successors.
 
 Foundational holds immutable identities, associations, families, retention and
 protocol meaning. Proof holds legality and progression. Store Application

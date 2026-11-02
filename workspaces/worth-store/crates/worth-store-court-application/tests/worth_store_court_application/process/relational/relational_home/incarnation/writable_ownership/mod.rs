@@ -1,6 +1,7 @@
 //! Independent competing processes and kill/reopen incarnation continuity.
 #[allow(unused_imports)]
 use crate::process::support::incarnation::*;
+use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 use {crate::durable_run::open, crate::incarnation::assert_contended};
 
 #[test]
@@ -107,7 +108,7 @@ fn competing_open_child() {
             );
             crate::killed_child::park();
         }
-        Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refusal)) if refusal.kind() == worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended => {
+        Err(OpenRefusal::BeforeReadmission(worth_store_application::ApplicationHomeOpenRefusal::Physical(refusal))) if refusal.kind() == worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended => {
             crate::killed_child::announce(&markers.join("result"), b"contended")
         }
         other => panic!("unexpected open outcome: {:?}", other.map(|_| ())),

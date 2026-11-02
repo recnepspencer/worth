@@ -7,9 +7,7 @@ use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysic
 /// One actual native runtime attached to its two ordered journals.
 /// This component carries no application, World or Query recovery proof.
 pub struct RelationalStoreSection {
-    pub(super) recovered:
-        Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
-    pub(super) recovery_outcome: Option<worth_relational::facade::durability::RecoveryOutcome>,
+    pub(super) source: Option<super::readmission::source::ReadmittedRelationalSource>,
     pub(super) runtime: Arc<RelationalRuntime>,
     pub(super) cold_source: Arc<crate::cold_source::StoreColdSource>,
     pub(super) serving: Arc<ServingPhysicalRuntime>,
@@ -49,7 +47,7 @@ impl RelationalStoreSection {
             cold_source,
             checkpoint_selection,
         )
-        .map(|attached| attached.share(None, None))
+        .map(|attached| attached.share(None))
     }
 
     pub fn runtime(&self) -> &RelationalRuntime {
@@ -67,7 +65,24 @@ impl RelationalStoreSection {
     pub fn world_recovery_authority(
         &self,
     ) -> Option<&worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {
-        self.recovered.as_ref()
+        match self.source.as_ref()? {
+            super::readmission::source::ReadmittedRelationalSource::Recovered {
+                authority, ..
+            } => Some(authority),
+            super::readmission::source::ReadmittedRelationalSource::Fresh(_) => None,
+        }
+    }
+
+    /// Borrow only the actual fresh receipt issued for this SAME runtime.
+    pub fn world_fresh_source_admission(
+        &self,
+    ) -> Option<&worth_relational::facade::durability::FreshRelationalSourceAdmission> {
+        match self.source.as_ref()? {
+            super::readmission::source::ReadmittedRelationalSource::Fresh(admission) => {
+                Some(admission)
+            }
+            super::readmission::source::ReadmittedRelationalSource::Recovered { .. } => None,
+        }
     }
 
     pub fn cold_storage_reads(&self) -> crate::RelationalStoreColdReadCounters {

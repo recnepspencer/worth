@@ -1,7 +1,8 @@
 //! Move the same concrete Home only after its persisted owner admission.
 use super::WorldReadmittedApplicationHome;
 use crate::open::readmission::transition::{
-    readmit_no_pending_owners, ApplicationHomeOwnerAdmissionDenial,
+    readmit_no_pending_owners, require_no_pending_home_journals,
+    ApplicationHomeOwnerAdmissionDenial,
 };
 use worth_execution::ExecutionRequest;
 
@@ -75,9 +76,19 @@ impl WorldReadmittedApplicationHome<(), (), (), (), ()> {
         self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<NoPendingApplicationHomeTransition, ApplicationHomeOwnerAdmissionRefused> {
-        let checked = match self.home.relational.world_recovery_authority() {
-            Some(recovered) => readmit_no_pending_owners(&self.home.context, recovered, request),
-            None => Err(ApplicationHomeOwnerAdmissionDenial::NativeRecoveryRequired),
+        let checked = if self
+            .home
+            .relational
+            .world_fresh_source_admission()
+            .is_some()
+        {
+            // The actual fresh source was admitted before World/bootstrap writes.
+            // Its initial-root proof cannot be revalidated after lawful advance.
+            require_no_pending_home_journals(&self.home.context, request)
+        } else if let Some(recovered) = self.home.relational.world_recovery_authority() {
+            readmit_no_pending_owners(&self.home.context, recovered, request)
+        } else {
+            Err(ApplicationHomeOwnerAdmissionDenial::NativeRecoveryRequired)
         };
         match checked {
             Ok(()) => Ok(NoPendingApplicationHomeTransition { home: self }),

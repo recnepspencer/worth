@@ -1,3 +1,6 @@
+pub(super) mod fresh_source;
+pub(super) mod source;
+
 use super::RelationalStoreSection;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::durability::{
@@ -17,6 +20,8 @@ pub(super) struct ReadmittedRuntime {
 #[derive(Debug)]
 pub enum RelationalSectionReadmissionDenial {
     InitialSchemaRuntimeMismatch,
+    FreshSourceAdmissionRequired,
+    RecoveredSourceAdmissionRequired,
     RuntimeSharedBeforeReadmission,
     MalformedSection,
     CompleteNativeRequired,
@@ -47,8 +52,10 @@ impl RelationalStoreSection {
             checkpoint,
             execution,
         )?;
-        self.recovered = Some(admitted.authority);
-        self.recovery_outcome = Some(admitted.outcome);
+        self.source = Some(source::ReadmittedRelationalSource::Recovered {
+            authority: admitted.authority,
+            outcome: admitted.outcome,
+        });
         Ok(())
     }
 
@@ -73,8 +80,10 @@ impl RelationalStoreSection {
             checkpoint,
             execution,
         )?;
-        self.recovered = Some(admitted.authority);
-        self.recovery_outcome = Some(admitted.outcome);
+        self.source = Some(source::ReadmittedRelationalSource::Recovered {
+            authority: admitted.authority,
+            outcome: admitted.outcome,
+        });
         Ok(admitted.selected_coverage)
     }
 }
@@ -158,6 +167,26 @@ fn recover_in_scope(
     let selected_coverage = checkpoint
         .as_ref()
         .map(|section| [section.covered().0, section.covered_transitions().0]);
+    let plan = prepare_source_plan(runtime, cold_source, checkpoint, execution)?;
+    let (outcome, authority) = runtime
+        .durability_recovery()
+        .recover_with_authority(execution, plan)
+        .map_err(Denial::Native)?;
+    Ok(ReadmittedRuntime {
+        outcome,
+        authority,
+        selected_coverage,
+    })
+}
+
+pub(super) fn prepare_source_plan(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    cold_source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
+    checkpoint: Option<RelationalDurableCheckpointSource>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<worth_relational::facade::durability::RecoveryPlan, RelationalSectionReadmissionDenial>
+{
+    use RelationalSectionReadmissionDenial as Denial;
     let original: std::sync::Arc<
         dyn worth_relational::facade::durability::RelationalDurableColdSource,
     > = cold_source.clone();
@@ -173,21 +202,12 @@ fn recover_in_scope(
         &protection,
     )
     .map_err(Denial::OwnedSource)?;
-    let plan = runtime
+    runtime
         .durability()
         .recovery_plan_from_source(
             execution,
             source,
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
-        .map_err(Denial::Native)?;
-    let (outcome, authority) = runtime
-        .durability_recovery()
-        .recover_with_authority(execution, plan)
-        .map_err(Denial::Native)?;
-    Ok(ReadmittedRuntime {
-        outcome,
-        authority,
-        selected_coverage,
-    })
+        .map_err(Denial::Native)
 }

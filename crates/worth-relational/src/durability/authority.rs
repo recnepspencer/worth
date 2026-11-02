@@ -24,7 +24,9 @@ pub use recovered_publication::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
 };
+mod fresh_source;
 mod recovery;
+pub use fresh_source::FreshRelationalSourceAdmission;
 pub use recorded_component_readmission::{
     RefusedRelationalRecordedComponent, RelationalRecordedComponentAdmissionCause,
 };

@@ -52,8 +52,7 @@ fn section(
     drop(committed);
     drop(basis);
     let section = crate::RelationalStoreSection {
-        recovered: None,
-        recovery_outcome: None,
+        source: None,
         runtime: Arc::new(producer),
         cold_source: source,
         serving,

@@ -63,29 +63,20 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
         mut self,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
         native: &mut RelationalRuntime,
-        recovered: &RecoveredRelationalRuntimeAuthority,
-        outcome: &RecoveryOutcome,
+        admission: &worth_relational::facade::durability::FreshRelationalSourceAdmission,
     ) -> Result<
         ReadmittedHomeNativeMeaning<Schema, Program>,
         QueryHomeNativeReadmissionRefused<Schema, Program>,
     > {
         let result = (|| {
-            phase.execution_request().consult().map_err(|cause| {
+            let execution = phase.execution_request();
+            execution.consult().map_err(|cause| {
                 super::super::super::bootstrap::request_denial(
                     super::super::super::application_contribution::advancement_denial(cause),
                 )
             })?;
-            if recovered.codec_transition_pending() {
-                return Err(WorthQueryPrimaryGraphInstallationDenial::new(
-                    WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                    "fresh Home cannot retain an unresolved codec transition",
-                ));
-            }
-            self.schema.receipt = native.readmit_recovered_initial_schema_installation(self.schema.receipt.clone())
-                .map_err(|cause| WorthQueryPrimaryGraphInstallationDenial::new(
-                    WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedRecoveredNativeAuthorityLayout,
-                    format!("Home recovered schema authority denied: {cause}"),
-                ))?;
+            native.validate_fresh_initial_schema_installation(&execution, admission, &self.schema.receipt)
+                .map_err(super::super::super::initial_schema_denial::map_initial_schema_installation_denial)?;
             register_primary_graph_indexes(
                 &mut self.schema.layout,
                 native,
@@ -105,7 +96,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                     &self.state.support.initial_revision, self.state.activation.clone()),
                 state: self.state,
                 schema: self.schema,
-                restore_work: outcome.checkpoint_restore_work,
+                restore_work: None,
             }),
             Err(cause) => Err(QueryHomeNativeReadmissionRefused {
                 _prepared: self,

@@ -4,7 +4,7 @@ pub(crate) use worth_store::physical_runtime::certification::MediaOperationRole;
 pub(crate) use {
     crate::durable_run::open, crate::incarnation::media, crate::workload, std::path::Path,
     worth_execution::ExecutionRequest,
-    worth_store_application::ApplicationHomeOpenRefusal as Refusal,
+    worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as Refusal,
 };
 pub(crate) use {crate::media_faults, crate::schema_transition};
 pub(crate) use {

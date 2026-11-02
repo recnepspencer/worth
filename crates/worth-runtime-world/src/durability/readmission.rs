@@ -56,6 +56,8 @@ pub enum WorldReadmissionDenial {
     BridgeBaseline(worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal),
     NativeRecorded(worth_relational::facade::branch::RelationalRecordedComponentRefusal),
     RootAdmission(crate::branch::RuntimeWorldBootstrapNoEffectCause),
+    FreshWorldSourceNotEmpty,
+    NativeFreshSource(worth_relational::facade::durability::RelationalRecoveryStop),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

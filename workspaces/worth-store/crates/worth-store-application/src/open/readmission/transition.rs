@@ -44,6 +44,16 @@ pub(crate) fn readmit_no_pending_owners(
     if recovered.codec_transition_pending() {
         return Err(Denial::NativeCodecTransitionPending);
     }
+    require_no_pending_home_journals(context, request)
+}
+
+pub(crate) fn require_no_pending_home_journals(
+    context: &HomeContext,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<(), ApplicationHomeOwnerAdmissionDenial> {
+    request
+        .consult()
+        .map_err(ApplicationHomeOwnerAdmissionDenial::Execution)?;
     for journal in HOME_JOURNALS {
         match journal.admission {
             HomeJournalAdmission::Native | HomeJournalAdmission::World => {}

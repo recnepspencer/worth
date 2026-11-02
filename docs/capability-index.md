@@ -1362,3 +1362,20 @@ owners retain their own request reservations; this does not qualify Complete,
 service-free bare reconstruction or whole-provider close. See [selected canonical
 history](../crates/worth-relational/README.md#canonical-checkpoint-members)
 and [Store selected replacement](../workspaces/worth-store/crates/worth-store-relational/README.md#replace-selected-canonical-backing-in-the-same-home-attempt).
+
+### Preserve original Native data when opening a new Home
+
+Directory Host opening uses Store's actual physical new/existing disposition.
+A genuinely new Home retains the original Native runtime and its installed
+schema data through first admission; the existing-Home route reconstructs
+Native from durable sources. An empty existing Home never becomes a fresh
+initialization opportunity. Query index registration and fresh World attachment
+consume the same original Native receipt. Source and preparation refusals keep
+the actual Home custody so cleanup or retry acts on that owner.
+
+Applications continue using the Host Home request. The restricted Native and
+World admission ports are platform composition surfaces. Public Host opening
+returns after genuine bootstrap publication, so its first manual checkpoint
+is post-bootstrap. This fresh-data contract does not qualify selected Complete
+Home reconstruction or physical Directory close. See [Native fresh admission](../crates/worth-relational/README.md#admit-the-original-fresh-home-source)
+and [World fresh attachment](../crates/worth-runtime-world/README.md#attach-a-genuinely-fresh-home).

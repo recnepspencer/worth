@@ -6,8 +6,7 @@ use worth_relational::facade::runtime::{
 use worth_store::physical_runtime::ServingPhysicalRuntime;
 
 pub struct ClosingRelationalSection {
-    recovered: Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
-    recovery_outcome: Option<worth_relational::facade::durability::RecoveryOutcome>,
+    pub(super) source: Option<super::readmission::source::ReadmittedRelationalSource>,
     runtime: PreparedRelationalRuntimeClose,
     cold_source: Arc<crate::cold_source::StoreColdSource>,
     serving: Arc<ServingPhysicalRuntime>,
@@ -25,8 +24,7 @@ impl RelationalStoreSection {
         self,
     ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
         let Self {
-            recovered,
-            recovery_outcome,
+            source,
             runtime,
             cold_source,
             serving,
@@ -37,8 +35,7 @@ impl RelationalStoreSection {
             Err(runtime) => {
                 return Err((
                     Self {
-                        recovered,
-                        recovery_outcome,
+                        source,
                         runtime,
                         cold_source,
                         serving,
@@ -54,25 +51,22 @@ impl RelationalStoreSection {
             serving,
             checkpoint_selection,
         };
-        match prepare_attached_close(attached, recovered, recovery_outcome) {
-            Ok(closing) => Ok(closing),
-            Err((attached, recovered, outcome, cause)) => {
-                Err((attached.share(recovered, outcome), cause))
+        match prepare_attached_close(attached) {
+            Ok(mut closing) => {
+                closing.source = source;
+                Ok(closing)
             }
+            Err((attached, cause)) => Err((attached.share(source), cause)),
         }
     }
 }
 
 pub(super) fn prepare_attached_close(
     attached: super::unshared::AttachedRelationalRuntime,
-    recovered: Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
-    recovery_outcome: Option<worth_relational::facade::durability::RecoveryOutcome>,
 ) -> Result<
     ClosingRelationalSection,
     (
         super::unshared::AttachedRelationalRuntime,
-        Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
-        Option<worth_relational::facade::durability::RecoveryOutcome>,
         RelationalSectionCloseDenial,
     ),
 > {
@@ -88,8 +82,7 @@ pub(super) fn prepare_attached_close(
             cold_source,
             serving,
             checkpoint_selection,
-            recovered,
-            recovery_outcome,
+            source: None,
         }),
         Err(refused) => {
             let cause = RelationalSectionCloseDenial::Native(refused.reason());
@@ -100,8 +93,6 @@ pub(super) fn prepare_attached_close(
                     serving,
                     checkpoint_selection,
                 },
-                recovered,
-                recovery_outcome,
                 cause,
             ))
         }
@@ -125,8 +116,7 @@ impl ClosingRelationalSection {
 
     pub fn resume(self) -> RelationalStoreSection {
         RelationalStoreSection {
-            recovered: self.recovered,
-            recovery_outcome: self.recovery_outcome,
+            source: self.source,
             runtime: Arc::new(self.runtime.resume()),
             cold_source: self.cold_source,
             serving: self.serving,

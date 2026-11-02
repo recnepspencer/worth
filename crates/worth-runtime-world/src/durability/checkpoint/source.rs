@@ -24,6 +24,15 @@ impl WorldCheckpointReadView {
         }
         Ok(Self { selected, heads })
     }
+    pub(crate) fn require_fresh_empty(
+        self,
+    ) -> Result<(), crate::durability::WorldReadmissionDenial> {
+        // Even an empty selected image belongs to recovery, never fresh admission.
+        if self.selected.is_some() || self.heads != [0; 3] {
+            return Err(crate::durability::WorldReadmissionDenial::FreshWorldSourceNotEmpty);
+        }
+        Ok(())
+    }
     pub(super) fn head(&self, journal: WorldDurableJournal) -> u64 {
         self.heads[match journal {
             WorldDurableJournal::Branches => 0,
@@ -71,3 +80,6 @@ pub trait WorldCheckpointReadSource: std::fmt::Debug + Send + Sync {
         subject: &WorldCheckpointSubject,
     ) -> Result<Option<WorldCheckpointSelection>, WorldDurableMediumDenial>;
 }
+
+#[cfg(test)]
+mod fresh_tests;

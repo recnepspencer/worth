@@ -115,6 +115,14 @@ fn empty_world_requires_its_actual_native_recovery_authority_before_construction
         None,
     );
     let execution = ExecutionRequest::serial(&policy);
+    // Actual existing empty media must keep the recovered admission route.
+    for directory in [&directory_a, &directory_b] {
+        let fresh = native_home(directory.path(), &execution);
+        assert!(matches!(
+            fresh.close(&execution),
+            crate::ApplicationHomeCloseOutcome::Closed { .. }
+        ));
+    }
     let home_a = native_home(directory_a.path(), &execution);
     let home_b = native_home(directory_b.path(), &execution);
     assert_ne!(home_a.home_identity(), home_b.home_identity());
@@ -213,17 +221,7 @@ fn composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt()
         .unwrap();
     let (builder, bridge, signal) = recipe(&home);
     let medium = home.context.world_slot.as_ref().unwrap().medium();
-    let world = builder
-        .readmit_world_home(
-            home.relational.runtime().owner_component_services(),
-            bridge,
-            medium.clone(),
-            crate::world_section::checkpoint::readmission_source(&home, &execution).unwrap(),
-            &execution,
-            home.relational.runtime(),
-            home.relational.world_recovery_authority().unwrap(),
-        )
-        .unwrap();
+    let world = super::readmit_attached_world(&home, builder, bridge, &execution).unwrap();
     let home = super::finish_attachment(home, world, None).consume(|home| home);
     let empty = home
         .checkpoint(&execution)
@@ -246,15 +244,23 @@ fn composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt()
     let operation = home.checkpoint_operation(limits).unwrap();
     assert!(operation.after_advancement(&execution).unwrap().is_none());
     let original = home.inspect_checkpoint(limits, &execution).unwrap();
-    home.relational()
-        .runtime()
-        .history_authority()
-        .fork_branch_from(
+    {
+        let fork = home.relational().runtime().fork_port();
+        let (_, basis) = fork
+            .observe_fork_source(
+                home.relational()
+                    .runtime()
+                    .main_branch_identity()
+                    .branch_id(),
+            )
+            .unwrap();
+        fork.fork_branch(
             &execution,
             worth_relational::facade::history::BranchId("automatic-checkpoint".into()),
-            &worth_relational::facade::history::BranchId("main".into()),
+            basis,
         )
         .unwrap();
+    }
     let due = home.inspect_checkpoint(limits, &execution).unwrap();
     assert!(due.due);
     assert_eq!(due.journals[1].head, original.journals[1].head + 1);
@@ -267,15 +273,23 @@ fn composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt()
         std::num::NonZeroU64::MIN,
     );
     let byte_operation = home.checkpoint_operation(byte_limits).unwrap();
-    home.relational()
-        .runtime()
-        .history_authority()
-        .fork_branch_from(
+    {
+        let fork = home.relational().runtime().fork_port();
+        let (_, basis) = fork
+            .observe_fork_source(
+                home.relational()
+                    .runtime()
+                    .main_branch_identity()
+                    .branch_id(),
+            )
+            .unwrap();
+        fork.fork_branch(
             &execution,
             worth_relational::facade::history::BranchId("automatic-checkpoint-bytes".into()),
-            &worth_relational::facade::history::BranchId("main".into()),
+            basis,
         )
         .unwrap();
+    }
     let byte_due = home.inspect_checkpoint(byte_limits, &execution).unwrap();
     assert!(byte_due.due);
     assert_eq!(byte_due.journals[1].head - byte_due.journals[1].covered, 1);
@@ -304,4 +318,65 @@ fn composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt()
     // The current preparation/selection slice does not certify provider graph
     // retirement or physical Closed. Dispose these real fixture owners explicitly.
     drop((home, signal, medium));
+}
+
+#[test]
+fn fresh_world_requires_its_actual_original_native_source_before_construction() {
+    let directory_a = tempfile::tempdir().unwrap();
+    let directory_b = tempfile::tempdir().unwrap();
+    let policy = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(Some(16 << 20)),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = ExecutionRequest::serial(&policy);
+    let home_a = native_home(directory_a.path(), &execution);
+    let home_b = native_home(directory_b.path(), &execution);
+    assert_ne!(
+        home_a.relational.runtime().runtime_instance_id(),
+        home_b.relational.runtime().runtime_instance_id()
+    );
+    let medium = home_a.context.world_slot.as_ref().unwrap().medium();
+    let (builder, bridge, signal) = recipe(&home_a);
+    let before = policy.memory().unwrap().charged_memory_bytes();
+    let refused = builder.admit_fresh_world_home(
+        home_a.relational.runtime().owner_component_services(),
+        bridge,
+        medium.clone(),
+        crate::world_section::checkpoint::readmission_source(&home_a, &execution).unwrap(),
+        &execution,
+        home_a.relational.runtime(),
+        home_b.relational.world_fresh_source_admission().unwrap(),
+    );
+    let error = match refused {
+        Err(WorldReadmissionDenial::NativeFreshSource(
+            worth_relational::facade::durability::RelationalRecoveryStop::Durability(error),
+        )) => error,
+        Err(other) => panic!("foreign original Native source refused at wrong boundary: {other:?}"),
+        Ok(_) => panic!("foreign original Native source was admitted"),
+    };
+    assert_eq!(
+        error.class,
+        worth_relational::facade::durability::RecoveryFailureClass::ReplayFailure
+    );
+    assert_eq!(
+        error.detail,
+        "fresh admission belongs to another Native runtime"
+    );
+    assert_eq!(before, policy.memory().unwrap().charged_memory_bytes());
+    assert!(Arc::ptr_eq(
+        &medium,
+        &home_a.context.world_slot.as_ref().unwrap().medium()
+    ));
+    drop(signal);
+    let (builder, bridge, signal) = recipe(&home_a);
+    let world = super::readmit_attached_world(&home_a, builder, bridge, &execution).unwrap();
+    let home_a = super::finish_attachment(home_a, world, None).consume(|home| home);
+    assert!(home_a
+        .world
+        .observation_port()
+        .observe_root_product_branch()
+        .is_err());
+    // Source admission does not qualify complete serving-graph retirement.
+    drop((home_a, home_b, signal, medium));
 }

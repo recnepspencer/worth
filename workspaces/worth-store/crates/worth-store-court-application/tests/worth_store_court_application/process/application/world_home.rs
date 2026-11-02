@@ -6,6 +6,7 @@ use worth_store_application::{
     ApplicationHomeClosePosture,
 };
 use worth_store_relational::RelationalSectionCloseDenial;
+use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 
 #[test]
 fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_external_reads_release()
@@ -83,7 +84,9 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     assert_eq!(sealed.incarnation(), incarnation);
     let _actual_world_report = sealed.world_close_report();
     match crate::durable_run::open(directory.path(), &execution) {
-        Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refused)) => {
+        Err(OpenRefusal::BeforeReadmission(
+            worth_store_application::ApplicationHomeOpenRefusal::Physical(refused),
+        )) => {
             assert_eq!(
                 refused.kind(),
                 worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended
@@ -111,7 +114,9 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     ));
     assert_eq!(recovery.location(), directory.path());
     match crate::durable_run::open(directory.path(), &execution) {
-        Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refused)) => {
+        Err(OpenRefusal::BeforeReadmission(
+            worth_store_application::ApplicationHomeOpenRefusal::Physical(refused),
+        )) => {
             assert_eq!(
                 refused.kind(),
                 worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended
@@ -197,7 +202,9 @@ fn abandoned_world_delivery_refuses_before_close_and_can_be_delivered_then_close
         RuntimeWorldOwnerLifecycleObservation::Open
     );
     match crate::durable_run::open(directory.path(), &execution) {
-        Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refused)) => assert_eq!(
+        Err(OpenRefusal::BeforeReadmission(
+            worth_store_application::ApplicationHomeOpenRefusal::Physical(refused),
+        )) => assert_eq!(
             refused.kind(),
             worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended,
         ),

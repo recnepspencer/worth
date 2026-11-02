@@ -98,6 +98,14 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
                 drop(query);
                 close_unshared(home.into_home(), request)
             }
+            NativeFinalizationInput {
+                query,
+                home,
+                cause: _,
+            } => {
+                drop(query);
+                close_unshared(home, request)
+            }
             ExistingNativeFinalization { query, home } => {
                 drop(query);
                 close_unshared(home, request)

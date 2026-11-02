@@ -31,12 +31,12 @@ where
         if let Some(pending) = home.home.checkpoint_observation() {
             return Err(Denial::CheckpointRecoveryRequired(pending));
         }
-        *home
-            .home
+        home.home
             .context
             .world_close_checkpoint
             .get_mut()
-            .unwrap_or_else(|error| error.into_inner()) = Some(result);
+            .unwrap_or_else(|error| error.into_inner())
+            .store(result);
     }
     // A settled failure does not veto otherwise lawful release. Actual
     // cancellation/deadline still returns this SAME stopped, owning World.

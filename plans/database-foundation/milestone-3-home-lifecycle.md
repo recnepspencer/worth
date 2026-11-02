@@ -1431,3 +1431,269 @@ owned. This preparation qualification does not establish physical `Closed` or
 D11. Complete Home source admission and mandatory Query/Host maintenance wiring
 must consume genuine owner evidence before the production reopen/close courts
 can close Phase 3.
+
+## Fresh Home source admission before first service
+
+This is a prerequisite of the existing Phase 3 checkpoint and lifecycle claim.
+It does not change the roadmap's joint Phases 3–4 landing or qualify Complete
+checkpoint reopen. The physical Store owner already distinguishes actual
+`ProvenAbsent` initialization from `ExistingArtifacts`; Native must consume that
+closed route without replacing the runtime whose original birth and initial
+installation it is required to retain.
+
+### Decisive adversarial proof
+
+The proof composes three real, distinguishing owner boundaries. Native's
+original-source court installs a genuinely unused schema constraint and checks
+the SAME runtime/root/schema pointers plus retained birth/install inputs before
+its first Complete capture. Store's actual filesystem Home court checkpoints
+at configured C0, then makes a real write and lawful forks to exercise the SAME
+manual/count/byte checkpoint engine and acknowledgements. The production Query
+Host court opens the actual authored schema with an unused physical relation,
+performs its genuine bootstrap/index registration, makes a manual Complete
+checkpoint, then advances real business state across the automatic threshold.
+Observe actual reads, selected generation/frontiers and settled cadence; an
+ordinary-capture substitute, dropped original data or missing callback must
+turn these courts red. Native's schema-image oracle checks the otherwise unused
+constraint independently of canonical bodies.
+
+The public Host opener necessarily commits program activation and principal
+seed before returning, so its checkpoint is post-bootstrap and must be named
+honestly. It exposes no pre-bootstrap Home checkpoint port to the initializer.
+Do not introduce a test-only opening callback, observer authority or extra
+production checkpoint merely to describe that public journey as C0. Native
+identity and Store C0 proofs establish the earlier boundary, and the real Host
+post-bootstrap Complete fold must still require that preserved original data.
+Physical close/reopen remains separately qualified, with existing close and
+recovery oracles unchanged.
+
+Contrast a real existing empty Home with neither selected checkpoint nor
+canonical/transition tail. Reopen it through physical `ExistingArtifacts`:
+the initializer must not run and generic recovery must still replace Native.
+Missing original producer data must retain its existing typed refusal; empty
+coverage is never evidence of newness. Keep the existing recovered-Empty
+missing-original negative control. A genuine foreign runtime receipt, foreign
+protected source, selected checkpoint or nonempty source presented at the
+fresh seam must refuse before fresh admission or World construction.
+
+Consult the original request before source work and again before publishing
+admission. Cancellation, deadline and allocation refusal retain the same
+actual unshared owner or already-admitted phase; they create no replacement
+request, allowance, runtime, initialization opportunity or fallback recovery.
+After source refusal, no World attachment or initializer effect is permitted.
+Receipt storage is fixed-size and borrows/shares the actual producer data;
+source validation follows the existing protected read protocol. It must not
+copy the history, schema registry or serving graph. Ordinary advancement gains
+no history traversal. Exact factory-caller enforcement must reject an outside
+fresh-source caller, alongside a valid real Store counterpart.
+
+### Product and authority decision
+
+`RecoveredRelationalRuntimeAuthority` keeps its current meaning: actual images
+reconstructed through an admitted recovery plan. Do not widen it, convert a
+fresh receipt into it, fabricate `RecoveryOutcome`, or change generic rebuild's
+discard of isolated construction birth.
+
+Native owns a distinct, non-serializable `FreshRelationalSourceAdmission`.
+Only the closed `admit_fresh_home_source` Native door constructs it, against
+the actual exclusively borrowed attached runtime and its actual protected
+source/medium. It verifies source binding, no selected image or durable tail,
+no unresolved/accepted durable operation, the original live initial root and
+the owner's retained birth/installation inputs. Source emptiness is a
+consistency condition, not the authority to choose this door. Store's private
+physical `ProvenAbsent` custody and the exact caller seal choose the door.
+An origin enum, scalar coverage, caller boolean or descriptive digest grants
+no such capability.
+
+The receipt carries the real runtime identity, initial axes and actual native
+schema/installation data needed to validate this admission. It may share the
+existing schema authority Arc and downgrade the actual live root, without
+allocating or retaining a second operational graph. The live initial component
+must remain the SAME root Arc, not another Empty root with equal descriptors.
+No recovered-root inventory is needed by the fresh World route: subsequent
+query-root selection observes that same live branch and uses the existing
+durable-bootstrap operation. Historical Empty reconstruction and general
+recovered original-data availability remain separate owner obligations.
+
+The receipt proves only admission of that exact original source/runtime. It
+does not authorize initialization, arbitrary recovery, World history,
+publication, Complete promotion, physical close or D11. Query's fresh
+finalizer validates its SAME-runtime initial installation against this receipt
+and the real retained inventory, then registers indexes by its existing
+initial-installation contract. It retains its original installation receipt;
+there was no checkpoint restore, so restore-work is absent directly.
+
+Store Section holds one private concrete sum of actual owned data:
+`ReadmittedRelationalSource::Fresh(FreshRelationalSourceAdmission)` or
+`Recovered { authority: RecoveredRelationalRuntimeAuthority,
+outcome: RecoveryOutcome }`. This is mutually exclusive source custody, not
+a strategy/mode, generic authority wrapper or a new phase. The unshared
+readmitted section always owns one variant; shared attached sections may
+have no admission yet. Replace independent recovered/outcome options with
+this coherent payload. Share, close, close refusal and resume move the SAME
+payload intact. The existing `worth-proof::RelationalReadmitted` phase stays.
+
+The Section fresh entry is `admit_fresh_home_from_source`, distinct from the
+Native issuer's name so name-based reach cannot authorize an earlier layer.
+Section getters are `home_fresh_query_finalization_parts` and
+`home_recovered_query_finalization_parts`; Application getters are
+`fresh_query_finalization_parts` and `recovered_query_finalization_parts`.
+These named getters return typed source-mismatch
+denials (`FreshSourceAdmissionRequired` or
+`RecoveredSourceAdmissionRequired`), never panic or unwrap an assumed payload.
+The Host's getter refusal owns both the unchanged prepared Query and actual
+unshared Home, before Query finalization has consumed either. It is distinct
+from an already-consumed Query finalization refusal.
+
+Both the exclusive Query opening recipe and direct Store convenience opening
+route through the private physical origin. Fresh custody enters the distinct
+Section/Native admission and then shares the same owner. Existing custody
+uses current source admission/recovery, including when all coverage is empty.
+The existing initializer opportunity is consumed at its present point, after
+Native admission; this work never moves the initializer earlier.
+
+The direct convenience `readmit_relational` reuses `attach_relational` and that
+same private Home source-routing core. Its result becomes an owning
+`RelationalHomeOpenRefused::{Attachment(RelationalAttachmentRefused),
+Readmission(RelationalHomeReadmissionRefused)}`. The attachment refusal already
+owns the real before-construction or failed-construction phase; no redundant
+before-attachment marker is needed. Testkit and oracle callers retain that
+actual refusal in their own concrete error result rather than extracting a
+cause and dropping the Home. This is a coherent caller cutover, with no second
+opening algorithm or legacy cause-only fallback.
+
+The common Home phase must not carry the close-only failure payload inline.
+The default-stack filesystem trial measured a 10,288-byte `HomeContext` and
+9,872-byte checkpoint denial, with large by-value phase/result frames. Both
+Store and Host fresh journeys overflowed before Native admission; a private
+stage diagnostic placed the Store failure inside `admit_home`, after physical
+recovery. This establishes the layout problem, while the unchanged-stack
+filesystem rerun must establish that the repair closes the observed failure.
+
+Use one concrete private close-checkpoint result backing, allocated once as a
+Box under the ORIGINAL opening request before descriptor effects. Quote its
+actual layout, including its intrinsic LAST reservation field, before allocation.
+Its result starts absent; the same backing moves through Home phases and
+recovery custody and is filled or replaced without another allocation admission.
+Do not allocate it lazily at close: the existing release-after-memory/work-
+exhaustion contract must remain true. This backing owns only its fixed storage;
+cached results retain their own child owners/admissions. It is not a generic
+Context wrapper, shared service, error ledger, new phase or replacement result.
+Preserve borrowed checkpoint-result observation and existing actual public
+Closed/refusal data. Any final move out releases the backing's reservation only
+when that physical Box is gone; it does not release still-owned child backing.
+
+Keep ordinary fresh phases small without raising thread stacks, changing build
+profiles or weakening a runtime oracle. Retain the diagnostic evidence and
+remove every temporary marker from the final source. Require the same Store
+and authored Host filesystem cases under unchanged defaults, plus affected
+checkpoint/close request and exhaustion controls, before qualifying this repair.
+
+World receives a distinct closed `admit_fresh_world_home` entry with the actual
+Native runtime and its fresh receipt. It validates that affinity before any
+World construction, reads the real protected World source and requires no
+selected checkpoint, branch, open, occurrence, disposition or other durable
+World record. It shares only the private execution/input/owner-construction
+algorithm with recovered admission. It never invokes recovered associated
+effect discovery or recorded-component reconciliation on the fresh route.
+Recovered World admission continues to require its real recovered authority.
+Neither path fabricates the other's result or falls back to the other.
+
+The existing no-pending-owner service gate also consumes this actual source
+distinction. Its fresh branch keeps the SAME physical transition-journal
+inspection and typed pending/unsupported/refused outcomes; its recovered
+branch additionally retains the recovered codec-transition check. The receipt
+describes initial source admission, so do not revalidate initial-root currentness
+after lawful bootstrap publication has advanced it. Neither receipt presence
+nor a source-kind flag substitutes for the actual current journal inspection.
+
+### Destination and implementation order
+
+The stable axis is source provenance at its owning runtime, with cross-owner
+sequencing in Store Application. Existing facades remain stable; the new
+receipt is exported only through Native's durability facade. Its operations
+and the Section/World fresh doors are closed by the existing named-factory
+caller mechanism, not exported through consumer declaration/Host facades.
+Root owns exact caller metadata changes and their negative enforcement proof.
+
+```text
+crates/worth-relational/src/
+  durability/authority.rs                         existing; export fresh receipt
+  durability/authority/fresh_source.rs            new; real Native source admission
+  runtime/initial_schema_installation/
+    fresh_admission.rs                           new; SAME installation validation
+  facade/durability.rs                           existing; explicit owner export
+crates/worth-runtime-world/src/lifecycle/builder/
+  home_readmission.rs                            existing; recovered entry
+  home_readmission/fresh_source.rs                new; empty protected World admission
+  home_readmission/construction.rs                new; private actual owner construction
+workspaces/worth-store/crates/worth-store-relational/src/section/
+  unshared.rs                                    existing; first-owner consuming routes
+  readmission.rs                                 existing; recovered source route
+  readmission/fresh_source.rs                     new; closed original-source adapter
+  readmission/source.rs                           new; mutually exclusive source DATA
+  close.rs                                       existing; move actual source payload
+workspaces/worth-store/crates/worth-store-application/src/
+  open/mod.rs                                    existing; direct origin routing
+  close/checkpoint_result.rs                     new; prepaid fixed cached-result storage
+  open/readmission/transition.rs                 existing; actual journal admission
+  relational_preparation/{unrecovered,unshared}.rs existing; origin/getters/owning denials
+  world_section/readmission.rs                   existing; exact owner-source dispatch
+  world_section/readmission/query.rs             existing; same Query composition route
+  world_section/readmission/transition.rs        existing; source-aware service gate
+workspaces/worth-query/crates/
+  worth-query-execution/src/domain_computation/primary_graph/
+    application_installation/home_preparation/native.rs
+                                                  existing; real fresh finalizer
+  worth-query-host/src/application_home/
+    opening/{fresh,existing}.rs                   existing; typed getter custody
+    refusal.rs                                   existing; exact pre-finalization denial
+    cleanup/opening.rs                           existing; consuming refusal cleanup
+tools/boundary-check/
+  src/seal_rules.rs                              existing; fresh factory names
+  src/seal_rules/factory_ownership.rs             new; owner/class taxonomy
+  config/certification-construction-callers.txt   existing; exact participating callers
+```
+
+The fresh Native owner has source admission and receipt validation children
+as that family grows; recovered source reconstruction stays beside it, not
+inside it. World fresh source admission owns its empty-source failure and
+recovered admission owns reconciliation; their private construction child
+contains only shared actual construction. Section source DATA is separate
+from I/O admission and close effects. No generic helpers bucket, registry,
+history-policy switch, trait-based authority tower or placeholder module is
+part of this destination. Complete Home source admission and actual serving
+graph retirement are committed successor responsibilities at their existing
+Native/Section source owners and consuming Query/Host close owners; neither
+requires reclassifying this fresh receipt or moving these facades.
+
+Implement in dependency order: (1) Native real original-source admission and
+same-installation validation, (2) Section data custody and private Store origin
+routing plus Query fresh finalization, (3) distinct World fresh entry and both
+real Store composition callers, (4) exact seals and genuine fresh/old-empty
+runtime evidence. These form one vertical slice and remain unqualified until
+the production callers compile together and the distinguishing courts pass.
+Each owner first records its finite boundary-derived edit plan. Preserve all
+current local work; integrate the already-qualified lower baseline before
+building the Upper composition. Do not remove `CompleteNativeRequired` at
+selected Home source admission as a shortcut to this proof.
+
+### Continuing documentation and acceptance
+
+Revise this lifecycle plan and the durable-owner contracts for platform
+contributors: distinguish original fresh admission from recovered source
+reconstruction, document the fixed DATA and explicit refusals, and keep the
+remaining reopen/retirement obligations visible. Revise `docs/capability-index.md`
+for application developers to describe actual Host behavior and its qualified
+limits; compare every capability statement with the real facade and runtime
+evidence. Revise Native and World owner README contracts if their admission
+APIs are documented there. Do not add a competing handoff or closeout guide.
+
+Run focused affected owner/production filesystem courts, source-affinity and
+factory-seal negatives, the existing recovered-Empty negative, and the changed
+manual/automatic checkpoint controls. Run pinned/configured owner compilation,
+formatting, scoped line caps, boundary/context checks and full affected metadata
+graphs under the existing build policy. Reuse unchanged closed evidence and
+record source hashes and actual results. Fresh admission does not close
+selected Complete Home reconstruction, original serving graph retirement,
+callback/provider release, D11, the joint landing oracle or the milestone.

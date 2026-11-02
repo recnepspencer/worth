@@ -692,3 +692,27 @@ and other untouched manifest heaps remain outside that funding claim. Fixed
 weak-retained control metadata keeps its existing ordinary allocation contract.
 This ordinary checkpoint path does not issue Complete, reconstruct every historical schema/root,
 or provide service-free reconstruction or a complete-checkpoint preparation port.
+
+## Admit the original fresh Home source
+
+The closed Store Home route uses
+`durability_recovery().admit_fresh_home_source(&request, source_plan)` only
+while private physical custody proves genuine newness. Native validates the
+actual protected empty source against its attached medium and retains the SAME
+runtime, initial root and original birth/installation schema data. The returned
+`FreshRelationalSourceAdmission` is fixed-size owner data with existing schema
+shares and a weak reference to that actual root; it retains no second runtime
+or operational root archive.
+
+Query validates its same-runtime initial installation against this receipt,
+then registers its indexes. World validates the receipt before attaching its
+fresh source. These are named, restricted owner integrations, not application
+construction APIs. A foreign source/runtime, moved initial root, incompatible
+installation or stopped original request refuses explicitly.
+
+`RecoveredRelationalRuntimeAuthority` continues to mean genuine source-driven
+runtime reconstruction. An existing empty Home still uses recovery, even with
+no selected checkpoint or journal tail. Fresh admission never creates recovered
+authority or restore-work evidence. It does not supply missing historical
+original inputs on reopen, admit a selected Complete Home source, or retire
+Native/provider service graphs.

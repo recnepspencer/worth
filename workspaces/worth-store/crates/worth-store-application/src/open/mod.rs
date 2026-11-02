@@ -61,6 +61,11 @@ pub fn admit_home(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<HomeAdmitted<AdmittedApplicationHome>, ApplicationHomeOpenRefusal> {
     recovered.consume(|recovered| {
+        // Release must not need a fresh allocation after checkpoint exhaustion.
+        // Admit the one actual cold result slot before descriptor effects.
+        let world_close_checkpoint =
+            crate::close::checkpoint_result::HomeCloseCheckpointResult::prepare(execution)
+                .map_err(ApplicationHomeOpenRefusal::Execution)?;
         let crate::ApplicationHomeRequest {
             location,
             relational,
@@ -93,7 +98,7 @@ pub fn admit_home(
                 ),
                 world_publications: world_slot.publications(),
                 world_close_report: None,
-                world_close_checkpoint: std::sync::Mutex::new(None),
+                world_close_checkpoint: std::sync::Mutex::new(world_close_checkpoint),
                 world_slot: Some(world_slot),
                 checkpoint,
                 location,
@@ -110,56 +115,11 @@ pub fn admit_home(
 pub fn readmit_relational(
     admitted: HomeAdmitted<AdmittedApplicationHome>,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<RelationalReadmitted<ReadmittedApplicationHome>, ApplicationHomeOpenRefusal> {
-    admitted.consume(|mut admitted| {
-        execution
-            .consult()
-            .map_err(ApplicationHomeOpenRefusal::Execution)?;
-        let manifest = admitted
-            .context
-            .selected_home_manifest(execution)
-            .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
-        #[cfg(not(feature = "certification-test-authority"))]
-        let relational = worth_store_relational::RelationalStoreSection::attach(
-            admitted.definition,
-            admitted.context.serving.clone(),
-            physical_admission::placement(),
-            admitted.context.checkpoint.selection_source(),
-        );
-        #[cfg(feature = "certification-test-authority")]
-        let relational = match admitted.read_observer {
-            Some(observer) => {
-                worth_store_relational::RelationalStoreSection::attach_with_read_observer_for_test(
-                    admitted.definition,
-                    admitted.context.serving.clone(),
-                    physical_admission::placement(),
-                    admitted.context.checkpoint.selection_source(),
-                    observer,
-                )
-            }
-            None => worth_store_relational::RelationalStoreSection::attach(
-                admitted.definition,
-                admitted.context.serving.clone(),
-                physical_admission::placement(),
-                admitted.context.checkpoint.selection_source(),
-            ),
-        };
-        let mut relational = relational.map_err(ApplicationHomeOpenRefusal::RuntimeConstruction)?;
-        let selected_coverage = relational
-            .readmit_home_from_read(
-                manifest.as_ref().map(|manifest| manifest.relational_read()),
-                execution,
-            )
-            .map_err(ApplicationHomeOpenRefusal::Relational)?;
-        admitted
-            .context
-            .checkpoint
-            .admit_selected_native_coverage(selected_coverage);
-        Ok(RelationalReadmitted::from_owner(
-            ReadmittedApplicationHome {
-                relational,
-                context: admitted.context,
-            },
-        ))
-    })
+) -> Result<RelationalReadmitted<ReadmittedApplicationHome>, crate::RelationalHomeOpenRefused> {
+    let attached = crate::relational_preparation::attach_relational(admitted, execution)
+        .map_err(crate::RelationalHomeOpenRefused::Attachment)?;
+    attached
+        .readmit_source_for_home(execution)
+        .map(|proof| proof.consume(|home| home.share()))
+        .map_err(crate::RelationalHomeOpenRefused::Readmission)
 }

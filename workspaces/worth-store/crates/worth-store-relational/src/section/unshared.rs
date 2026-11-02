@@ -3,7 +3,9 @@ use super::*;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
-    durability::{RecoveredRelationalRuntimeAuthority, RecoveryOutcome},
+    durability::{
+        FreshRelationalSourceAdmission, RecoveredRelationalRuntimeAuthority, RecoveryOutcome,
+    },
     runtime::{
         RelationalInitialSchemaInstallationReceipt, RelationalRuntime,
         RelationalRuntimeConstructionDenial, RelationalRuntimeDefinition,
@@ -25,8 +27,7 @@ pub struct UnrecoveredRelationalSection {
 }
 pub struct UnsharedReadmittedRelationalSection {
     attached: AttachedRelationalRuntime,
-    recovered: RecoveredRelationalRuntimeAuthority,
-    outcome: RecoveryOutcome,
+    source: super::readmission::source::ReadmittedRelationalSource,
 }
 
 impl AttachedRelationalRuntime {
@@ -53,16 +54,14 @@ impl AttachedRelationalRuntime {
     }
     pub(super) fn share(
         self,
-        recovered: Option<RecoveredRelationalRuntimeAuthority>,
-        recovery_outcome: Option<RecoveryOutcome>,
+        source: Option<super::readmission::source::ReadmittedRelationalSource>,
     ) -> RelationalStoreSection {
         RelationalStoreSection {
             runtime: Arc::new(self.runtime),
             cold_source: self.cold_source,
             serving: self.serving,
             checkpoint_selection: self.checkpoint_selection,
-            recovered,
-            recovery_outcome,
+            source,
         }
     }
 }
@@ -71,9 +70,9 @@ impl UnrecoveredRelationalSection {
     pub fn prepare_close(
         self,
     ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
-        match super::close::prepare_attached_close(self.attached, None, None) {
+        match super::close::prepare_attached_close(self.attached) {
             Ok(closing) => Ok(closing),
-            Err((attached, _, _, cause)) => Err((Self { attached }, cause)),
+            Err((attached, cause)) => Err((Self { attached }, cause)),
         }
     }
     pub fn attach_unrecovered_home(
@@ -103,6 +102,26 @@ impl UnrecoveredRelationalSection {
     }
     pub fn home_schema_installation_runtime(&mut self) -> &mut RelationalRuntime {
         &mut self.attached.runtime
+    }
+
+    /// Closed Store Home routing supplies its actual physical fresh custody.
+    /// Source shape is checked by Native; it never chooses this entry.
+    pub fn admit_fresh_home_from_source(
+        mut self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<UnsharedReadmittedRelationalSection, (Self, RelationalSectionReadmissionDenial)>
+    {
+        match super::readmission::fresh_source::admit(
+            &mut self.attached.runtime,
+            &self.attached.cold_source,
+            execution,
+        ) {
+            Ok(admission) => Ok(UnsharedReadmittedRelationalSection {
+                attached: self.attached,
+                source: super::readmission::source::ReadmittedRelationalSource::Fresh(admission),
+            }),
+            Err(cause) => Err((self, cause)),
+        }
     }
 
     pub fn readmit(
@@ -143,8 +162,10 @@ impl UnrecoveredRelationalSection {
         ) {
             Ok(admitted) => Ok(UnsharedReadmittedRelationalSection {
                 attached: self.attached,
-                recovered: admitted.authority,
-                outcome: admitted.outcome,
+                source: super::readmission::source::ReadmittedRelationalSource::Recovered {
+                    authority: admitted.authority,
+                    outcome: admitted.outcome,
+                },
             }),
             Err(cause) => Err((self, cause)),
         }
@@ -153,7 +174,7 @@ impl UnrecoveredRelationalSection {
     /// Admit the closed Home's actual selected read before the shared Native
     /// recovery core. A refusal preserves this SAME unshared Native owner.
     pub fn readmit_home_from_read(
-        mut self,
+        self,
         selected: Option<(
             worth_execution::ExecutionImmutableBytes,
             std::ops::Range<usize>,
@@ -171,6 +192,21 @@ impl UnrecoveredRelationalSection {
                 RelationalSectionReadmissionDenial::InitialSchemaRuntimeMismatch,
             ));
         }
+        self.readmit_home_from_read_without_schema(selected, execution)
+    }
+
+    pub fn readmit_home_from_read_without_schema(
+        mut self,
+        selected: Option<(
+            worth_execution::ExecutionImmutableBytes,
+            std::ops::Range<usize>,
+            &AnchoredRecordReadMembership,
+        )>,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (UnsharedReadmittedRelationalSection, Option<[u64; 2]>),
+        (Self, RelationalSectionReadmissionDenial),
+    > {
         let checkpoint = match super::readmission::prepare_home_source(
             &self.attached.cold_source,
             selected,
@@ -189,8 +225,10 @@ impl UnrecoveredRelationalSection {
             Ok(admitted) => Ok((
                 UnsharedReadmittedRelationalSection {
                     attached: self.attached,
-                    recovered: admitted.authority,
-                    outcome: admitted.outcome,
+                    source: super::readmission::source::ReadmittedRelationalSource::Recovered {
+                        authority: admitted.authority,
+                        outcome: admitted.outcome,
+                    },
                 },
                 admitted.selected_coverage,
             )),
@@ -202,33 +240,51 @@ impl UnsharedReadmittedRelationalSection {
     pub fn prepare_close(
         self,
     ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
-        match super::close::prepare_attached_close(
-            self.attached,
-            Some(self.recovered),
-            Some(self.outcome),
-        ) {
-            Ok(closing) => Ok(closing),
-            Err((attached, recovered, outcome, cause)) => Err((
-                Self {
-                    attached,
-                    recovered: recovered.expect("same actual recovered authority"),
-                    outcome: outcome.expect("same actual recovery outcome"),
-                },
-                cause,
-            )),
+        let Self { attached, source } = self;
+        match super::close::prepare_attached_close(attached) {
+            Ok(mut closing) => {
+                closing.source = Some(source);
+                Ok(closing)
+            }
+            Err((attached, cause)) => Err((Self { attached, source }, cause)),
         }
     }
-    pub fn home_query_finalization_parts(
+    pub fn home_fresh_query_finalization_parts(
         &mut self,
-    ) -> (
-        &mut RelationalRuntime,
-        &RecoveredRelationalRuntimeAuthority,
-        &RecoveryOutcome,
-    ) {
-        (&mut self.attached.runtime, &self.recovered, &self.outcome)
+    ) -> Result<
+        (&mut RelationalRuntime, &FreshRelationalSourceAdmission),
+        RelationalSectionReadmissionDenial,
+    > {
+        match &self.source {
+            super::readmission::source::ReadmittedRelationalSource::Fresh(admission) => {
+                Ok((&mut self.attached.runtime, admission))
+            }
+            super::readmission::source::ReadmittedRelationalSource::Recovered { .. } => {
+                Err(RelationalSectionReadmissionDenial::FreshSourceAdmissionRequired)
+            }
+        }
+    }
+    pub fn home_recovered_query_finalization_parts(
+        &mut self,
+    ) -> Result<
+        (
+            &mut RelationalRuntime,
+            &RecoveredRelationalRuntimeAuthority,
+            &RecoveryOutcome,
+        ),
+        RelationalSectionReadmissionDenial,
+    > {
+        match &self.source {
+            super::readmission::source::ReadmittedRelationalSource::Recovered {
+                authority,
+                outcome,
+            } => Ok((&mut self.attached.runtime, authority, outcome)),
+            super::readmission::source::ReadmittedRelationalSource::Fresh(_) => {
+                Err(RelationalSectionReadmissionDenial::RecoveredSourceAdmissionRequired)
+            }
+        }
     }
     pub fn share(self) -> RelationalStoreSection {
-        self.attached
-            .share(Some(self.recovered), Some(self.outcome))
+        self.attached.share(Some(self.source))
     }
 }

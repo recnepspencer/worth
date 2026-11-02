@@ -25,9 +25,17 @@ where
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
     let request = phase.execution_request();
-    let (native, authority, outcome) = home.query_finalization_parts();
-    let query = match query.finish_fresh_home_native_readmission(phase, native, authority, outcome)
-    {
+    let (native, admission) = match home.fresh_query_finalization_parts() {
+        Ok(parts) => parts,
+        Err(cause) => {
+            return Err(Refused::NativeFinalizationInput {
+                query,
+                home,
+                cause: ApplicationHomeOpenRefusal::Relational(cause),
+            })
+        }
+    };
+    let query = match query.finish_fresh_home_native_readmission(phase, native, admission) {
         Ok(query) => query,
         Err(query) => return Err(Refused::NativeFinalization { query, home }),
     };

@@ -5,6 +5,7 @@ use worth_proof::RelationalReadmitted;
 use worth_relational::facade::runtime::{
     RelationalInitialSchemaInstallationReceipt, RelationalRuntime,
 };
+use worth_store_relational::RelationalSectionReadmissionDenial as ReadmissionDenial;
 
 pub struct UnrecoveredApplicationHome {
     pub(super) relational: worth_store_relational::UnrecoveredRelationalSection,
@@ -28,30 +29,95 @@ impl UnrecoveredApplicationHome {
         RelationalReadmitted<UnsharedReadmittedApplicationHome>,
         RelationalHomeReadmissionRefused,
     > {
-        if let Err(cause) = request.consult() {
+        let manifest = match self.selected_source(request) {
+            Ok(manifest) => manifest,
+            Err(cause) => return Err(self.refused(cause)),
+        };
+        if expected.runtime_instance_id()
+            != self
+                .relational
+                .home_schema_installation_runtime()
+                .runtime_instance_id()
+        {
             return Err(RelationalHomeReadmissionRefused {
-                cause: crate::ApplicationHomeOpenRefusal::Execution(cause),
+                cause: crate::ApplicationHomeOpenRefusal::Relational(
+                    ReadmissionDenial::InitialSchemaRuntimeMismatch,
+                ),
                 home: Box::new(self),
             });
         }
-        let manifest = match self.context.selected_home_manifest(request) {
+        self.readmit_selected_source(manifest, request)
+    }
+
+    pub(crate) fn readmit_source_for_home(
+        mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        RelationalReadmitted<UnsharedReadmittedApplicationHome>,
+        RelationalHomeReadmissionRefused,
+    > {
+        let manifest = match self.selected_source(request) {
             Ok(manifest) => manifest,
-            Err(cause) => {
-                return Err(RelationalHomeReadmissionRefused {
-                    cause: crate::ApplicationHomeOpenRefusal::Checkpoint(cause),
-                    home: Box::new(self),
-                })
-            }
+            Err(cause) => return Err(self.refused(cause)),
         };
+        self.readmit_selected_source(manifest, request)
+    }
+
+    fn selected_source(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<crate::checkpoint::SelectedHomeManifest>, crate::ApplicationHomeOpenRefusal>
+    {
+        request
+            .consult()
+            .map_err(crate::ApplicationHomeOpenRefusal::Execution)?;
+        self.context
+            .selected_home_manifest(request)
+            .map_err(crate::ApplicationHomeOpenRefusal::Checkpoint)
+    }
+
+    fn refused(self, cause: crate::ApplicationHomeOpenRefusal) -> RelationalHomeReadmissionRefused {
+        RelationalHomeReadmissionRefused {
+            cause,
+            home: Box::new(self),
+        }
+    }
+
+    fn readmit_selected_source(
+        self,
+        manifest: Option<crate::checkpoint::SelectedHomeManifest>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        RelationalReadmitted<UnsharedReadmittedApplicationHome>,
+        RelationalHomeReadmissionRefused,
+    > {
         let Self {
             relational,
             context,
         } = self;
-        match relational.readmit_home_from_read(
-            manifest.as_ref().map(|manifest| manifest.relational_read()),
-            expected,
-            request,
-        ) {
+        use super::initialization::HomeInitializationOrigin;
+        use worth_store::physical_runtime::RecoveryStorePresence;
+        let admitted = match &context.initialization {
+            HomeInitializationOrigin::Available(RecoveryStorePresence::ProvenAbsent) => {
+                if manifest.is_some() {
+                    Err((relational, ReadmissionDenial::CompleteNativeRequired))
+                } else {
+                    relational
+                        .admit_fresh_home_from_source(request)
+                        .map(|relational| (relational, None))
+                }
+            }
+            HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => {
+                relational.readmit_home_from_read_without_schema(
+                    manifest.as_ref().map(|manifest| manifest.relational_read()),
+                    request,
+                )
+            }
+            HomeInitializationOrigin::ConsumedNewHome => {
+                Err((relational, ReadmissionDenial::MalformedSection))
+            }
+        };
+        match admitted {
             Ok((relational, selected_coverage)) => {
                 context
                     .checkpoint

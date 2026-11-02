@@ -1,4 +1,5 @@
 //! Refused close preserves serving custody or the actual physical close task.
+pub(crate) mod checkpoint_result;
 pub(crate) mod posture;
 mod start;
 

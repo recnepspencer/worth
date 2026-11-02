@@ -87,11 +87,6 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    let native_recovery = home.relational.world_recovery_authority().ok_or(
-        crate::ApplicationHomeOpenRefusal::World(
-            worth_runtime_world::facade::WorldReadmissionDenial::NativeReadmissionRequired,
-        ),
-    )?;
     let medium = home
         .context
         .world_slot
@@ -103,17 +98,32 @@ where
             worth_runtime_world::facade::WorldReadmissionDenial::Medium(cause),
         )
     })?;
-    builder
-        .readmit_world_home(
+    if let Some(admission) = home.relational.world_fresh_source_admission() {
+        builder.admit_fresh_world_home(
             home.relational.runtime().owner_component_services(),
             bridge,
             medium,
             source,
             request,
             home.relational.runtime(),
-            native_recovery,
+            admission,
         )
-        .map_err(crate::ApplicationHomeOpenRefusal::World)
+    } else if let Some(recovered) = home.relational.world_recovery_authority() {
+        builder.readmit_world_home(
+            home.relational.runtime().owner_component_services(),
+            bridge,
+            medium,
+            source,
+            request,
+            home.relational.runtime(),
+            recovered,
+        )
+    } else {
+        return Err(crate::ApplicationHomeOpenRefusal::World(
+            worth_runtime_world::facade::WorldReadmissionDenial::NativeReadmissionRequired,
+        ));
+    }
+    .map_err(crate::ApplicationHomeOpenRefusal::World)
 }
 fn finish_attachment<D, I, E, Ctx, T>(
     mut home: crate::ReadmittedApplicationHome,

@@ -78,9 +78,8 @@ pub(crate) struct HomeContext {
     pub(crate) world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
     // The cached failure may own a Send-only original physical write source.
     // Exclusive close accesses use get_mut; no gate is held across callbacks.
-    pub(crate) world_close_checkpoint: Mutex<
-        Option<Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial>>,
-    >,
+    pub(crate) world_close_checkpoint:
+        Mutex<crate::close::checkpoint_result::HomeCloseCheckpointResult>,
     pub(crate) world_slot: Option<crate::world_section::UnclaimedWorldSlot>,
     pub(crate) checkpoint: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     pub(crate) location: std::path::PathBuf,

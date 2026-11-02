@@ -23,7 +23,7 @@ enum NativeCloseCustody {
 pub struct ApplicationHomeRecoveryCustody {
     location: std::path::PathBuf,
     descriptor: crate::descriptor::HomeDescriptor,
-    checkpoint: Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial>,
+    checkpoint: super::checkpoint_result::HomeCloseCheckpointResult,
     physical: PhysicalCloseCustody,
     native: NativeCloseCustody,
     world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
@@ -44,10 +44,17 @@ impl ApplicationHomeRecoveryCustody {
         )
     }
     pub(crate) fn from_never_attached_home(context: crate::home_context::HomeContext) -> Self {
+        let mut checkpoint = context
+            .world_close_checkpoint
+            .into_inner()
+            .unwrap_or_else(|error| error.into_inner());
+        checkpoint.store(Err(
+            crate::ApplicationHomeCheckpointDenial::NativeSectionNeverAttached,
+        ));
         Self {
             location: context.location,
             descriptor: context.descriptor,
-            checkpoint: Err(crate::ApplicationHomeCheckpointDenial::NativeSectionNeverAttached),
+            checkpoint,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Released,
             world_close_report: None,
@@ -65,10 +72,15 @@ impl ApplicationHomeRecoveryCustody {
             crate::ApplicationHomeCheckpointDenial,
         >,
     ) -> Self {
+        let mut stored = context
+            .world_close_checkpoint
+            .into_inner()
+            .unwrap_or_else(|error| error.into_inner());
+        stored.store(checkpoint);
         Self {
             location: context.location,
             descriptor: context.descriptor,
-            checkpoint,
+            checkpoint: stored,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Prepared(native),
             world_close_report: context.world_close_report,
@@ -86,16 +98,17 @@ impl ApplicationHomeRecoveryCustody {
             context,
             relational,
         } = home;
+        let checkpoint = context
+            .world_close_checkpoint
+            .into_inner()
+            .unwrap_or_else(|error| error.into_inner());
+        // Preserve the seal's existing settled-result invariant before Native
+        // teardown; only this SAME prepaid backing moves into recovery custody.
+        let _ = checkpoint.result();
         Self {
             location: context.location,
             descriptor: context.descriptor,
-            checkpoint: context
-                .world_close_checkpoint
-                .into_inner()
-                .unwrap_or_else(|error| error.into_inner())
-                .expect(
-                    "actual World seal retained its settled checkpoint result before World Drop",
-                ),
+            checkpoint,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Serving(relational),
             world_close_report: context.world_close_report,
@@ -136,7 +149,7 @@ impl ApplicationHomeRecoveryCustody {
     pub fn checkpoint_result(
         &self,
     ) -> &Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
-        &self.checkpoint
+        self.checkpoint.result()
     }
     pub fn physical_close_observation(&self) -> Option<PhysicalStoreCloseObservation> {
         match &self.physical {
@@ -281,7 +294,7 @@ impl ApplicationHomeRecoveryCustody {
                         PhysicalStoreCloseOutcome::Closed { shutdown, .. } => {
                             return ApplicationHomeCloseOutcome::Closed {
                                 store: shutdown,
-                                checkpoint: self.checkpoint,
+                                checkpoint: self.checkpoint.into_result(),
                             }
                         }
                         outcome @ PhysicalStoreCloseOutcome::InspectionRequired { .. } => {
@@ -330,7 +343,7 @@ impl ApplicationHomeRecoveryCustody {
             crate::checkpoint::close_settlement::settle(serving, &self.checkpoint_owner, execution)
                 .map_err(super::checkpoint_settlement_denial)?
         {
-            self.checkpoint = checkpoint;
+            self.checkpoint.store(checkpoint);
         }
         Ok(())
     }

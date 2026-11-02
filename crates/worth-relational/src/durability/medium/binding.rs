@@ -84,6 +84,9 @@ impl RelationalDurableTransitionPublication {
 }
 
 impl RelationalDurableMediumBinding {
+    pub(crate) fn has_unresolved_publication(&self) -> bool {
+        self.unresolved.get().is_some()
+    }
     pub(crate) fn cold_source(&self) -> Arc<dyn super::RelationalDurableColdSource> {
         self.cold_source.clone()
     }

@@ -23,7 +23,7 @@ pub(crate) struct RuntimeWorldOwnerConstructionContract {
 }
 
 impl RuntimeWorldOwnerConstructionContract {
-    pub(crate) fn readmitted_home(
+    pub(crate) fn for_home(
         binding: &crate::durability::WorldDurableHomeBinding,
         frontiers: crate::durability::WorldIdentityFrontiers,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {

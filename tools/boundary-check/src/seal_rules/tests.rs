@@ -196,6 +196,41 @@ fn certification_factory_callers_are_class_and_file_exact() {
             "native-home-query-preparation",
         ),
         ("query_finalization_parts", "native-home-query-preparation"),
+        ("admit_fresh_home_source", "native-fresh-home-source"),
+        (
+            "validate_fresh_source_runtime",
+            "native-fresh-source-affinity",
+        ),
+        (
+            "validate_fresh_initial_schema_installation",
+            "native-fresh-initial-installation",
+        ),
+        ("admit_fresh_world_home", "world-fresh-home"),
+        (
+            "admit_fresh_home_from_source",
+            "native-fresh-home-readmission",
+        ),
+        ("world_fresh_source_admission", "native-world-fresh-source"),
+        (
+            "readmit_home_from_read_without_schema",
+            "native-unconfigured-home-readmission",
+        ),
+        (
+            "home_fresh_query_finalization_parts",
+            "native-home-source-finalization",
+        ),
+        (
+            "home_recovered_query_finalization_parts",
+            "native-home-source-finalization",
+        ),
+        (
+            "fresh_query_finalization_parts",
+            "application-home-fresh-finalization",
+        ),
+        (
+            "recovered_query_finalization_parts",
+            "application-home-recovered-finalization",
+        ),
         ("initialize_new_home", "native-home-query-preparation"),
         ("query_composition_parts", "native-home-query-preparation"),
         ("attach_unrecovered_home", "native-home-attachment"),

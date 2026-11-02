@@ -8,6 +8,10 @@ use worth_relational::facade::durability::{
 #[derive(Debug)]
 pub enum WorthQueryCheckpointCaptureDenial {
     ForeignPhase(super::super::WorthQueryForeignAdvancementPhase),
+    NativeOwnerUnavailable,
+    OriginalAuthorityUnavailable,
+    RetentionCapacityExhausted,
+    RetentionIdentityExhausted,
     /// Boxed: the native durability refusal is the largest cause, and every
     /// capture result would otherwise reserve its bytes inline.
     Durability(Box<DurabilityError>),
@@ -20,6 +24,18 @@ impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptu
     fn from(error: RelationalNativeCheckpointCaptureDenial) -> Self {
         match error {
             RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
+            RelationalNativeCheckpointCaptureDenial::OwnerUnavailable => {
+                Self::NativeOwnerUnavailable
+            }
+            RelationalNativeCheckpointCaptureDenial::OriginalAuthorityUnavailable => {
+                Self::OriginalAuthorityUnavailable
+            }
+            RelationalNativeCheckpointCaptureDenial::RetentionCapacityExhausted => {
+                Self::RetentionCapacityExhausted
+            }
+            RelationalNativeCheckpointCaptureDenial::RetentionIdentityExhausted => {
+                Self::RetentionIdentityExhausted
+            }
             RelationalNativeCheckpointCaptureDenial::Allocation(error) => Self::Allocation(error),
             RelationalNativeCheckpointCaptureDenial::Request(cause) => {
                 use super::super::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
@@ -51,6 +67,18 @@ impl From<ExecutionAllocationDenial> for WorthQueryCheckpointCaptureDenial {
 impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::NativeOwnerUnavailable => {
+                formatter.write_str("checkpoint Native owner unavailable")
+            }
+            Self::OriginalAuthorityUnavailable => {
+                formatter.write_str("checkpoint original authority unavailable")
+            }
+            Self::RetentionCapacityExhausted => {
+                formatter.write_str("checkpoint retention capacity exhausted")
+            }
+            Self::RetentionIdentityExhausted => {
+                formatter.write_str("checkpoint retention identity exhausted")
+            }
             Self::Execution(error) => write!(formatter, "checkpoint execution: {error:?}"),
             Self::ForeignPhase(error) => write!(formatter, "checkpoint phase: {error:?}"),
             Self::Durability(error) => write!(formatter, "checkpoint durability: {error:?}"),

@@ -69,3 +69,10 @@ impl RelationalHomeReadmissionRefused {
         *self.home
     }
 }
+
+/// Direct convenience opening preserves its most advanced actual Home owner.
+#[derive(Debug)]
+pub enum RelationalHomeOpenRefused {
+    Attachment(RelationalAttachmentRefused),
+    Readmission(RelationalHomeReadmissionRefused),
+}

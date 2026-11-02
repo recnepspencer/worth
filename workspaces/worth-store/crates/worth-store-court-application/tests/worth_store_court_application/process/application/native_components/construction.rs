@@ -11,6 +11,7 @@ use worth_relational::facade::commit_strategies::{
 use worth_relational::facade::runtime::{
     RelationalRuntimeApi, RelationalRuntimeConstructionDenial,
 };
+use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 
 use worth_store_application::{ApplicationHomeCloseOutcome, ApplicationHomeOpenRefusal};
 
@@ -50,19 +51,30 @@ fn duplicate_strategy_refuses_open_with_its_cause_and_releases_the_home() {
         worth_store_testkit_application_oracle::facade::home_opening::request(&location, builder),
         &execution,
     );
+    let refused = match refused {
+        Err(OpenRefusal::Readmission(
+            worth_store_application::RelationalHomeOpenRefused::Attachment(
+                worth_store_application::RelationalAttachmentRefused::Construction(home),
+            ),
+        )) => home,
+        other => panic!(
+            "duplicate strategy refused at wrong phase: {:?}",
+            other.map(|_| ())
+        ),
+    };
     assert!(matches!(
-        refused,
-        Err(ApplicationHomeOpenRefusal::RuntimeConstruction(
-            RelationalRuntimeConstructionDenial::CommitStrategy(
-                DuplicateCommitStrategyRegistration::Id {
-                    id: CommitStrategyId(41),
-                }
-            )
-        ))
+        refused.reason(),
+        RelationalRuntimeConstructionDenial::CommitStrategy(
+            DuplicateCommitStrategyRegistration::Id {
+                id: CommitStrategyId(41)
+            }
+        )
     ));
+    let (_, closed) = refused.close(&execution);
+    assert!(matches!(closed, ApplicationHomeCloseOutcome::Closed { .. }));
 
-    // A real production reopen independently proves the refusal released its
-    // Store custody rather than leaving the physical location locked.
+    // The actual construction refusal retained its Store custody until the
+    // explicit close above. A production reopen independently checks release.
     let home = worth_store_testkit_application_oracle::facade::home_opening::open(
         worth_store_testkit_application_oracle::facade::home_opening::request(
             &location,
@@ -115,10 +127,12 @@ fn cancelled_attachment_retains_admitted_home_until_explicit_never_attached_clos
         home_opening::request(directory.path(), RelationalRuntimeApi::builder()),
         &fresh,
     ) {
-        Err(ApplicationHomeOpenRefusal::Physical(refused)) => assert_eq!(
-            refused.kind(),
-            worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended,
-        ),
+        Err(OpenRefusal::BeforeReadmission(ApplicationHomeOpenRefusal::Physical(refused))) => {
+            assert_eq!(
+                refused.kind(),
+                worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended,
+            )
+        }
         _ => panic!("BeforeConstruction keeps the actual Home mutation lease"),
     }
     // Choosing close consumes the original definition; cancellation still

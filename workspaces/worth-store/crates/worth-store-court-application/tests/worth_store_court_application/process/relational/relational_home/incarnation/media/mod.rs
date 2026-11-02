@@ -2,6 +2,7 @@
 use crate::durable_run::open;
 #[allow(unused_imports)]
 use crate::incarnation::media::*;
+use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 
 #[test]
 fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_advance() {
@@ -52,27 +53,41 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
                         home.abort_for_test();
                         Some(3)
                     }
-                    Err(worth_store_application::ApplicationHomeOpenRefusal::Descriptor(
-                        Descriptor::Publication(
-                            Publication::Indeterminate(_) | Publication::CompletedWithoutRecord,
-                        ),
-                    )) => None,
-                    // These stages consume descriptor admission; even a later
-                    // native/manifest refusal retains the durable advance.
-                    Err(
-                        worth_store_application::ApplicationHomeOpenRefusal::Checkpoint(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::RuntimeConstruction(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::Relational(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::World(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::BridgeSource(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::Bridge(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::ConditionalBridge(_),
-                    ) => Some(3),
-                    Err(
-                        worth_store_application::ApplicationHomeOpenRefusal::Physical(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::Execution(_)
-                        | worth_store_application::ApplicationHomeOpenRefusal::Descriptor(_),
-                    ) => Some(2),
+                    Err(refused) => {
+                        let expected = match &refused {
+                            OpenRefusal::BeforeReadmission(
+                                worth_store_application::ApplicationHomeOpenRefusal::Descriptor(
+                                    Descriptor::Publication(
+                                        Publication::Indeterminate(_)
+                                        | Publication::CompletedWithoutRecord,
+                                    ),
+                                ),
+                            ) => None,
+                            OpenRefusal::BeforeReadmission(
+                                worth_store_application::ApplicationHomeOpenRefusal::Physical(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::Execution(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::Descriptor(_),
+                            ) => Some(2),
+                            // Later stages own the actual admitted descriptor advance.
+                            OpenRefusal::BeforeReadmission(
+                                worth_store_application::ApplicationHomeOpenRefusal::Checkpoint(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::RuntimeConstruction(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::Relational(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::World(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::BridgeSource(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::Bridge(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::ConditionalBridge(_),
+                            )
+                            | OpenRefusal::Readmission(_)
+                            | OpenRefusal::Admitted { .. }
+                            | OpenRefusal::UnrecoveredClose(_)
+                            | OpenRefusal::Close(_) => Some(3),
+                        };
+                        // Explicit ordinary abandonment after observing the exact
+                        // error stage; this does not claim a successful close.
+                        drop(refused);
+                        expected
+                    }
                 };
                 let reopened = open(&location, &execution)
                     .unwrap_or_else(|r| panic!("{role:?} {ordinal} {directive:?}: {r:?}"));

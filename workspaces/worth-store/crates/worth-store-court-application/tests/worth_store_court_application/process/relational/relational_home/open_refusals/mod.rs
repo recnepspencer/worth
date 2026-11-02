@@ -2,6 +2,7 @@
 //! something other than a Store, and a home whose checkpoint or journal is
 //! damaged all refuse before service, with a typed refusal, and none of them
 //! is treated as an empty home.
+use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 
 #[allow(unused_imports)]
 use crate::open_refusals::*;
@@ -48,11 +49,11 @@ fn a_home_opened_as_another_runtime_refuses_as_foreign() {
     assert!(
         matches!(
             refused,
-            Err(
+            Err(OpenRefusal::BeforeReadmission(
                 worth_store_application::ApplicationHomeOpenRefusal::Descriptor(
                     worth_store_application::ApplicationHomeDescriptorDenial::BindingMismatch
                 )
-            )
+            ))
         ),
         "{:?}",
         refused.map(|_| ())
@@ -74,7 +75,9 @@ fn a_location_holding_something_else_is_refused_not_initialized_over() {
     assert!(
         matches!(
             refused,
-            Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(_))
+            Err(OpenRefusal::BeforeReadmission(
+                worth_store_application::ApplicationHomeOpenRefusal::Physical(_)
+            ))
         ),
         "{:?}",
         refused.map(|_| ())
@@ -107,9 +110,11 @@ fn a_damaged_checkpoint_in_the_store_files_refuses_before_service() {
     let refusal = assert_refuses_before_service(&location, "damaged checkpoint");
     assert!(
         matches!(
-            refusal,
-            worth_store_application::ApplicationHomeOpenRefusal::Checkpoint(_)
-                | worth_store_application::ApplicationHomeOpenRefusal::Physical(_)
+            refusal.source_cause(),
+            Some(
+                worth_store_application::ApplicationHomeOpenRefusal::Checkpoint(_)
+                    | worth_store_application::ApplicationHomeOpenRefusal::Physical(_)
+            )
         ),
         "{refusal:?}"
     );
@@ -131,10 +136,12 @@ fn a_damaged_journal_entry_in_the_store_files_refuses_before_service() {
     let refusal = assert_refuses_before_service(&location, "damaged journal entry");
     assert!(
         matches!(
-            refusal,
-            worth_store_application::ApplicationHomeOpenRefusal::Relational(
-                worth_store_relational::RelationalSectionReadmissionDenial::Journal(_)
-            ) | worth_store_application::ApplicationHomeOpenRefusal::Physical(_)
+            refusal.source_cause(),
+            Some(
+                worth_store_application::ApplicationHomeOpenRefusal::Relational(
+                    worth_store_relational::RelationalSectionReadmissionDenial::Journal(_)
+                ) | worth_store_application::ApplicationHomeOpenRefusal::Physical(_)
+            )
         ),
         "{refusal:?}"
     );
@@ -177,9 +184,11 @@ fn a_checkpoint_record_store_accepts_but_relational_cannot_readmit_refuses() {
     let refusal = assert_refuses_before_service(&location, "unreadmittable checkpoint");
     assert!(
         matches!(
-            refusal,
-            worth_store_application::ApplicationHomeOpenRefusal::Relational(
-                worth_store_relational::RelationalSectionReadmissionDenial::Native(_)
+            refusal.source_cause(),
+            Some(
+                worth_store_application::ApplicationHomeOpenRefusal::Relational(
+                    worth_store_relational::RelationalSectionReadmissionDenial::Native(_)
+                )
             )
         ),
         "{refusal:?}"
@@ -210,13 +219,15 @@ fn a_journal_entry_store_accepts_but_relational_cannot_readmit_refuses() {
     let refusal = assert_refuses_before_service(&location, "unreadmittable journal entry");
     assert!(
         matches!(
-            refusal,
-            worth_store_application::ApplicationHomeOpenRefusal::Relational(
-                worth_store_relational::RelationalSectionReadmissionDenial::Journal(
-                    worth_store_relational::RelationalStoreJournalRefusal::ArtifactFrame {
-                        position: 6,
-                        ..
-                    }
+            refusal.source_cause(),
+            Some(
+                worth_store_application::ApplicationHomeOpenRefusal::Relational(
+                    worth_store_relational::RelationalSectionReadmissionDenial::Journal(
+                        worth_store_relational::RelationalStoreJournalRefusal::ArtifactFrame {
+                            position: 6,
+                            ..
+                        }
+                    )
                 )
             )
         ),

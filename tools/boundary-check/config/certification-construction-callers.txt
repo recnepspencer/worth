@@ -1,4 +1,18 @@
 # Closed callers recorded at the one-build inventory; owners are allowed by the rule.
+# Actual physical ProvenAbsent custody routes through these named original-source owners.
+native-fresh-home-source workspaces/worth-store/crates/worth-store-relational/src/section/readmission/fresh_source.rs
+native-fresh-source-affinity crates/worth-runtime-world/src/lifecycle/builder/home_readmission/fresh_source.rs
+native-fresh-initial-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/native.rs
+world-fresh-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+world-fresh-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
+native-fresh-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
+native-unconfigured-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
+native-home-source-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
+application-home-fresh-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
+application-home-recovered-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/transition.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
 # Only actual Host close may consume its uniquely prepared original Query after World seal.
 query-home-retirement workspaces/worth-query/crates/worth-query-host/src/application_home/close/retirement.rs
 # D1/D17: only the concrete Native-readmitted Home may consume its private World slot.

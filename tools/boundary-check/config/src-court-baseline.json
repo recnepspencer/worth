@@ -3079,5 +3079,6 @@
 {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/pinned_delete.rs","module":"file","roots":["ExecutionRequest","SerialRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/tests/partial_aspect_update.rs","module":"file","roots":["ExecutionRequest","SerialRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/durability/authority/checkpoint_complete/symbols/retained/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
-{"source":"crates/worth-relational/src/durability/canonical_commit_artifact/request_agreement.rs","module":"file","roots":["ExecutionRequest","MapKernelContext"]}
+{"source":"crates/worth-relational/src/durability/canonical_commit_artifact/request_agreement.rs","module":"file","roots":["ExecutionRequest","MapKernelContext"]},
+{"source":"crates/worth-relational/src/durability/authority/fresh_source/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","SerialRequest"]}
 ]

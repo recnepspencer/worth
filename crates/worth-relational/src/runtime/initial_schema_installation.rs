@@ -7,6 +7,7 @@ use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariant
 use std::sync::Arc;
 
 mod application_publication;
+mod fresh_admission;
 mod inventory_digest;
 mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
@@ -35,6 +36,8 @@ pub enum RelationalInitialSchemaInstallationDenialKind {
     RetentionOwnerUnavailable,
     RetentionRootSetTooLarge,
     RecoveredAuthorityMismatch,
+    FreshSourceMismatch,
+    Request(crate::execution::RelationalExecutionDenialCause),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

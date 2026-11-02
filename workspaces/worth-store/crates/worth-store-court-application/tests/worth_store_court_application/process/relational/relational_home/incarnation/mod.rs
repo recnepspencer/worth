@@ -2,6 +2,7 @@
 use crate::durable_run::open;
 #[allow(unused_imports)]
 use crate::incarnation::*;
+use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 
 #[test]
 fn contention_observer_child() {
@@ -11,7 +12,7 @@ fn contention_observer_child() {
     let request = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
     assert!(
-        matches!(open(std::path::Path::new(&location), &execution), Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refusal)) if refusal.kind() == worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended)
+        matches!(open(std::path::Path::new(&location), &execution), Err(OpenRefusal::BeforeReadmission(worth_store_application::ApplicationHomeOpenRefusal::Physical(refusal))) if refusal.kind() == worth_store_application::ApplicationHomePhysicalRefusalKind::MutationOwnerContended)
     );
 }
 
@@ -58,7 +59,7 @@ fn schema_eleven_refuses_before_any_media_effect() {
     let before: Vec<_> = files.iter().map(|f| std::fs::read(f).unwrap()).collect();
     let refused = open(&location, &execution);
     assert!(
-        matches!(&refused, Err(worth_store_application::ApplicationHomeOpenRefusal::Physical(refusal)) if refusal.kind() == worth_store_application::ApplicationHomePhysicalRefusalKind::UnsupportedRootSchema { observed: 11 } && refusal.recovery_effects() == Some(0)),
+        matches!(&refused, Err(OpenRefusal::BeforeReadmission(worth_store_application::ApplicationHomeOpenRefusal::Physical(refusal))) if refusal.kind() == worth_store_application::ApplicationHomePhysicalRefusalKind::UnsupportedRootSchema { observed: 11 } && refusal.recovery_effects() == Some(0)),
         "{:?}",
         refused.map(|_| ())
     );
@@ -109,11 +110,11 @@ fn retired_descriptor_versions_and_the_retired_anchor_refuse_without_advancing()
         home.close(&execution);
         assert!(matches!(
             open(&location, &execution),
-            Err(
+            Err(OpenRefusal::BeforeReadmission(
                 worth_store_application::ApplicationHomeOpenRefusal::Descriptor(
                     Descriptor::UnsupportedVersion { observed: 1 }
                 )
-            )
+            ))
         ));
     }
 }

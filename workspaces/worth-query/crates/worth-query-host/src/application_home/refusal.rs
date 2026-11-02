@@ -33,6 +33,11 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         query: PreparedHomeNativeMeaning<Schema, Program>,
         home: ApplicationHomeInitializationRefused,
     },
+    NativeFinalizationInput {
+        query: PreparedHomeNativeMeaning<Schema, Program>,
+        home: UnsharedReadmittedApplicationHome,
+        cause: ApplicationHomeOpenRefusal,
+    },
     ExistingNativeFinalization {
         query: QueryExistingHomeNativeReadmissionRefused<Schema, Program>,
         home: UnsharedReadmittedApplicationHome,
@@ -161,6 +166,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::QueryPublicationReadmissionRequired { home, .. } => {
                 format!("{:?}", home.reason())
             }
+            Self::NativeFinalizationInput { cause, .. } => format!("{cause:?}"),
             Self::ExistingNativeFinalization { query, .. } => query.reason().to_string(),
             Self::ExistingBridgeDefinition { cause, .. } => cause.to_string(),
             Self::ExistingWorldReadmission { home, .. } => format!("{:?}", home.reason()),

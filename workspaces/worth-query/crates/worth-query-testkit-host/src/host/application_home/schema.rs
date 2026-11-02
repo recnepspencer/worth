@@ -32,6 +32,8 @@ worth_query_field!(pub PrincipalIdentityField for HomeIdentitySchema, Principal,
 worth_query_field!(pub AccountNumber for HomeIdentitySchema, Account, AccountIdentity: String => StringApplicationValueBinding, read_only, equality);
 worth_query_principal_binding!(pub IdentityBinding in HomeIdentitySchema, mapping ExternalMapping { identity: ExternalIdentityField, status: MappingStatusField, target: MappingTarget => Principal, principal_identity: PrincipalIdentityField });
 worth_query_relation!(pub MappingTarget in HomeIdentitySchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
+// Deliberately never seeded: physical meaning must survive without record usage.
+worth_query_relation!(pub UnusedAccountPeer in HomeIdentitySchema, Account => Account; integrity = same_context_no_self_edges_unbounded_retain_dangling);
 
 pub(super) fn declare(
     schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<
@@ -61,6 +63,11 @@ pub(super) fn declare(
             MappingTarget::reference(),
             ExternalMapping::reference(),
             Principal::reference(),
+        )
+        .relation(
+            UnusedAccountPeer::reference(),
+            Account::reference(),
+            Account::reference(),
         )
         .principal_binding(IdentityBinding::reference())
 }

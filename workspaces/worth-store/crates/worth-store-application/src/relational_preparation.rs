@@ -13,7 +13,8 @@ pub use initialization::{
     ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
 };
 pub use refusal::{
-    RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeReadmissionRefused,
+    RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeOpenRefused,
+    RelationalHomeReadmissionRefused,
 };
 pub use unrecovered::UnrecoveredApplicationHome;
 pub use unshared::UnsharedReadmittedApplicationHome;

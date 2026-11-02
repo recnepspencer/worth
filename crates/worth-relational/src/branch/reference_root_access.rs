@@ -65,6 +65,29 @@ impl RelationalBranchReferenceCell {
     }
 }
 impl CheckpointComponentCellSource {
+    /// Fixed original-source DATA; registry ownership was released before this borrow.
+    pub(crate) fn fresh_empty_root(
+        &self,
+    ) -> Option<(
+        worth_foundational::FoundationalBranchReferenceGeneration,
+        super::RelationalBranchVersion,
+        Arc<super::super::RelationalBranchRoot>,
+    )> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        if !matches!(
+            state.observation.target(),
+            worth_foundational::FoundationalBranchTarget::Empty
+        ) || state.lifecycle != super::super::RelationalBranchLifecyclePosture::Live
+        {
+            return None;
+        }
+        Some((
+            state.observation.generation(),
+            state.truth_version,
+            Arc::clone(state.root.as_ref()?),
+        ))
+    }
+
     pub(crate) fn snapshot(
         &self,
         expected: &crate::branch::RelationalBranchCellCheckpoint,

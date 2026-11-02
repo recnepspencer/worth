@@ -5,10 +5,11 @@ pub(crate) use std::path::Path;
 
 pub(crate) use worth_execution::ExecutionRequest;
 pub(crate) use {
-    worth_store_application::ApplicationHomeOpenRefusal,
     worth_store_application::ApplicationHomeRequest,
     worth_store_application::ReadmittedApplicationHome,
 };
+
+pub(crate) use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused;
 
 pub(crate) use worth_relational::facade::schema::SchemaVersionId;
 pub(crate) use {
@@ -27,10 +28,23 @@ pub(crate) use {crate::workload, crate::workload::Script, crate::workload::Step}
 pub(crate) fn open(
     location: &Path,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<ReadmittedApplicationHome, ApplicationHomeOpenRefusal> {
+) -> Result<ReadmittedApplicationHome, HomeOpeningRefused> {
     match open_declaring(location, crate::schema_transition::SOURCE, execution) {
         Err(refusal) if recorded_schema(&refusal) == Some(crate::schema_transition::TARGET) => {
-            open_declaring(location, crate::schema_transition::TARGET, execution)
+            // The original refused Home still owns the physical lease. Settle
+            // that actual raw owner before requesting a differently declared one.
+            match refusal {
+                HomeOpeningRefused::Readmission(
+                    worth_store_application::RelationalHomeOpenRefused::Readmission(refused),
+                ) => match refused.into_home().close(execution) {
+                    Ok(worth_store_application::ApplicationHomeCloseOutcome::Closed { .. }) => {
+                        open_declaring(location, crate::schema_transition::TARGET, execution)
+                    }
+                    Ok(outcome) => Err(HomeOpeningRefused::Close(outcome)),
+                    Err(home) => Err(HomeOpeningRefused::UnrecoveredClose(home)),
+                },
+                other => Err(other),
+            }
         }
         opened => opened,
     }
@@ -38,12 +52,12 @@ pub(crate) fn open(
 
 /// The schema a refused open's recovered main head records, when the refusal
 /// is that the declared schema differs from it.
-pub(crate) fn recorded_schema(refusal: &ApplicationHomeOpenRefusal) -> Option<SchemaVersionId> {
-    let worth_store_application::ApplicationHomeOpenRefusal::Relational(
+pub(crate) fn recorded_schema(refusal: &HomeOpeningRefused) -> Option<SchemaVersionId> {
+    let Some(worth_store_application::ApplicationHomeOpenRefusal::Relational(
         worth_store_relational::RelationalSectionReadmissionDenial::Native(
             worth_relational::facade::durability::RelationalRecoveryStop::Durability(error),
         ),
-    ) = refusal
+    )) = refusal.source_cause()
     else {
         return None;
     };
@@ -77,7 +91,7 @@ pub(crate) fn open_declaring(
     location: &Path,
     schema: SchemaVersionId,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<ReadmittedApplicationHome, ApplicationHomeOpenRefusal> {
+) -> Result<ReadmittedApplicationHome, HomeOpeningRefused> {
     worth_store_testkit_application_oracle::facade::home_opening::open(
         worth_store_testkit_application_oracle::facade::home_opening::request(
             location,
