@@ -179,7 +179,7 @@ where
             allocation_policy,
         ) {
             Ok(prepared) => prepared.run(self, identities),
-            Err(report) => report,
+            Err(report) => report.into_uncompleted_report(),
         }
     }
 }
