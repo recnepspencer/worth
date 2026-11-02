@@ -90,8 +90,8 @@ fixture/production/flake category without evidence.
 | F | `application_invariant_acceptance::candidate_index::boxes::lifecycle::cancelled_cold_box_build_releases_partial_bvh_and_rebuilds_with_fresh_request` | 1 passed, 0 failed, in parent and isolated child | Fixed already. Existing exact allocated/deallocated-byte equality, original cancellation, Failed lifecycle and fresh successful rebuild all pass. |
 | F | `application_invariant_acceptance::managed_index::boxes::lifecycle::cancelled_cold_box_build_releases_partial_bvh_and_rebuilds_with_fresh_request` | 1 passed, 0 failed, in parent and isolated child | Fixed already; same unchanged release/rebuild court. |
 | F | `application_invariant_acceptance::managed_index::lifecycle::cancelled_cold_prefix_build_releases_partial_backing_and_rebuilds_with_fresh_request` | 1 passed, 0 failed, in parent and isolated child | Fixed already. Existing cancellation, partial backing release and fresh rebuild assertions pass. |
-| F | `proposal_acceptance::courts::acceptance::disposal::partial_attempt_disposal_retries_actual_retired_cleanup_until_its_reader_releases` | 0 passed, 1 failed; `NestedStopped` at `disposal.rs:117` after reader release | Cause attribution pending. A production application-cleanup request gap is supported by source: its retry opens a new serial request inside an existing advancement, while the product owner already supports the admitted phase. This run does not yet isolate that gap from a residual cleanup refusal. |
-| F | `proposal_acceptance::courts::acceptance::previous::previous_head_cleanup_recovers_without_discarding_adoption_evidence_or_adopting_again` | 0 passed, 1 failed; expected completion at `previous.rs:131` did not occur | Unresolved. The same request gap is present, but its causal contribution and any additional retention cause require the actual residual denial. Keep the genuine reader-release and retained adoption-evidence requirements. |
+| F | `proposal_acceptance::courts::acceptance::disposal::partial_attempt_disposal_retries_actual_retired_cleanup_until_its_reader_releases` | 0 passed, 1 failed; `NestedStopped` at `disposal.rs:117` after reader release | Production defect: application cleanup lacked the product owner's admitted-phase retry. Its standalone retry opened a different serial request inside advancement. The new receiver-owned original-phase door and caller correction make the unchanged reader-release/completion assertions pass; no retention bypass was needed. |
+| F | `proposal_acceptance::courts::acceptance::previous::previous_head_cleanup_recovers_without_discarding_adoption_evidence_or_adopting_again` | 0 passed, 1 failed; expected completion at `previous.rs:131` did not occur | Same production request gap, now causally verified. Original completion, retired-component count, kept adoption evidence and no-second-adoption assertions pass with the original admitted phase. No residual retention refusal remains. |
 | T | `checkpoint_recovery::current_output::serial::restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change` | 0 passed, 1 failed; `InvariantAdmission(ExecutionRequest(WorkExhausted))` at `current_output.rs:63` | Stale request funding introduced by `facc9d1197`: the legitimate projection-quota removal expanded this very court from one read to 8193 without changing its eight-million-unit host grant. No evidence establishes that expanded fixture ever passed at eight million; the issue's earlier green report covers the original eleven courts. Preserve 8193 reads and zero producer contacts, and retain the original grant as an explicit typed-refusal twin. This is not evidence of a later production read-cost regression. |
 
 ## Diagnostic reruns
@@ -148,7 +148,7 @@ filtered). Both post-sync runtime runs have zero ignored and zero measured.
 - Restored-output testing starts from a genuine checkpoint, requires zero
   producer contacts, and then changes the source to require a typed refusal.
 
-## Readings chosen
+## Readings I chose
 
 - Use the nested owning manifest for excluded external consumer packages;
   selecting them from the Query workspace would not execute their courts.
@@ -160,6 +160,11 @@ filtered). Both post-sync runtime runs have zero ignored and zero measured.
   equality assertion until evidence justifies a production or fixture repair.
 - Supply the documented fresh application build identity for courts that embed
   it. A missing build input is a command refusal and executes no court.
+- The application cleanup receiver needs the original phase, just as the
+  existing product cleanup receiver does. Source/facade documentation, branch
+  guidance, worked cleanup and known gaps show only a standalone application
+  retry. Add the missing receiver method at that owner and index it; do not
+  expose a runtime getter or create another cleanup service.
 
 ## Repair and verification status
 
@@ -207,6 +212,42 @@ passes five Rust files. Both branch and working diff checks exit zero with zero
 whitespace errors. The independent reviewer found no material code finding in
 this slice; it verified raw-parent custody and the enclosing pre-effect stop
 boundary, including unchanged live-caller retry and unpublished-owner posture.
+
+### Original-request cleanup repair
+
+Application cleanup now exposes `retry_in_advancement(&phase)`, using the
+existing product owner to admit exact runtime affinity and original request
+liveness before history or conditional cleanup. Both scoped consumer retry
+callers pass that phase. Refusals return the same cleanup; deferred retirement
+receipts retain their existing drop order. Successful cleanup is not turned
+into a new retry owner by a trailing poll. The standalone retry remains.
+No shape, proof type or new authority seam was added. The capability index and
+usage guide document the new receiver method.
+
+Each of these F binary commands reports one passed, zero failed, 217 filtered,
+zero ignored and zero measured, with the same nested manifest as reproduction:
+
+- `partial_attempt_disposal_retries_actual_retired_cleanup_until_its_reader_releases`
+- `previous_head_cleanup_recovers_without_discarding_adoption_evidence_or_adopting_again`
+- `registered_disposal_uses_owned_custody_after_storage_has_really_retired`
+
+The first two preserve every original business and custody assertion. The third
+uses a genuine retired cleanup from actual storage retirement. A different
+installed runtime's phase returns typed `ForeignAdvancementPhase`; cancellation
+inside the own callback returns typed `Interrupted(Cancelled)` from the receiver
+and outer handoff. Both return the original owner with unchanged pending work.
+After releasing the independent real reader, a fresh own phase retires exactly
+one component. The independent reviewer found no material source or test issue;
+it checked the early liveness boundary, failure custody and drop order.
+
+Cleanup footer checks run the exact initial commands below with selected E and
+F packages, separately with their owning manifests. Both formatting commands
+exit zero. E Clippy exits 101 with the unchanged 46-error/49-warning lib and
+37-error/48-warning lib-test reports (40 warning duplicates); no diagnostic
+location names either changed cleanup owner. F Clippy exits zero; its binary
+test target reports 121 warnings, 17 duplicates. Boundary and context checks
+both exit zero, with valid boundaries and no mismatch. The dirty line-cap guard
+passes six Rust files. Both diff checks exit zero with zero whitespace errors.
 
 ### Initial triage slice checks
 

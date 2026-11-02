@@ -48,8 +48,13 @@ pub(super) fn cleanup<'host>(
 ) {
     let mut owner = Some(owner);
     let mut result = None;
-    let advancement = host.with_application_advancement(caller.scope, |_| {
-        result = Some(owner.take().expect("original cleanup").retry());
+    let advancement = host.with_application_advancement(caller.scope, |phase| {
+        result = Some(
+            owner
+                .take()
+                .expect("original cleanup")
+                .retry_in_advancement(&phase),
+        );
     });
     match (result, advancement) {
         (Some(Ok(receipt)), handoff) => (
