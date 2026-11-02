@@ -14,3 +14,8 @@ pub(crate) mod record_history;
 pub(crate) mod recovery;
 #[path = "retention/mod.rs"]
 pub(crate) mod retention;
+
+#[path = "call_admission/mod.rs"]
+pub(crate) mod call_admission;
+#[path = "memory_original/mod.rs"]
+pub(crate) mod memory_original;
