@@ -11,12 +11,7 @@ impl RuntimeWorldClockSource for Clock {
         RuntimeWorldInstant::from_ticks(0)
     }
 }
-fn published() -> (
-    RealReferenceFixture,
-    Owner,
-    Arc<CommitResult>,
-    CompositeOwnerExecutionResults,
-) {
+fn published_delivery() -> (RealReferenceFixture, Owner, ConsumedCompositePublication) {
     let mut fixture = real_fixture(12, 12);
     let inputs = fixture.owner_inputs(
         RuntimeWorldBudgets::without_policy_limits(),
@@ -63,9 +58,20 @@ fn published() -> (
             RuntimeWorldPublicationOutcome::Performed(value) => value,
             other => panic!("real publication: {other:?}"),
         };
-    let facts = performed.component_results().evidence_image();
+    (fixture, owner, performed.consume())
+}
+fn published() -> (
+    RealReferenceFixture,
+    Owner,
+    Arc<CommitResult>,
+    CompositeOwnerExecutionResults,
+) {
+    let (fixture, owner, publication) = published_delivery();
+    let facts = publication.component_results().evidence_image();
     let result = facts.retain_relational_commit_result().unwrap();
-    drop(performed.consume());
+    drop(publication);
+    let policy = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&policy);
     let report = owner.lifecycle_port().close(&request, &owner).unwrap();
     assert!(report.retained_records().is_empty());
     (fixture, owner, result, facts)
@@ -210,4 +216,67 @@ fn result_cleanup_lost_observer_rejoins_same_cell_and_observes_complete_before_l
         ),
         (0, 1)
     );
+}
+
+#[test]
+fn prepaid_retirement_refuses_another_undelivered_publication_and_returns_both_original_owners() {
+    let (_first_fixture, _first_owner, mut first) = published_delivery();
+    let (second_fixture, _second_owner, second) = published_delivery();
+    let identity = second.commit().identity().clone();
+    let policy = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&policy);
+    let first_history = first
+        .take_history_protection()
+        .expect("actual first history handoff");
+    let prepaid = first.prepare_home_retirement(&request).unwrap();
+    let (same_prepaid, mut same_second, cause) = match prepaid.begin(second) {
+        Err(refusal) => refusal,
+        Ok(_) => panic!("vacant storage cannot retire another pending handoff"),
+    };
+    assert!(matches!(
+        cause,
+        ConsumedPublicationRetirementDenial::UndeliveredCustody
+    ));
+    assert_eq!(same_second.commit().identity(), &identity);
+    let second_history = same_second
+        .take_history_protection()
+        .expect("original history remains owed");
+    let mut task = same_prepaid
+        .begin(same_second)
+        .unwrap_or_else(|_| panic!("actual handoff completed"));
+    let cancel = worth_execution::CancellationSource::new();
+    let stopped = crate::test_execution_policy::serial_request().with_cancellation(cancel.token());
+    cancel.cancel();
+    assert!(matches!(
+        task.advance(
+            &ExecutionRequest::serial(&stopped),
+            second_fixture.relational_runtime()
+        ),
+        Err(ConsumedPublicationRetirementDenial::Execution(
+            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+        ))
+    ));
+    let mut task = task
+        .into_retired()
+        .err()
+        .expect("stopped work cannot claim retirement");
+    let mut complete = false;
+    for _ in 0..32 {
+        if task
+            .advance(&request, second_fixture.relational_runtime())
+            .unwrap()
+            == ConsumedPublicationRetirementProgress::Complete
+        {
+            complete = true;
+            break;
+        }
+    }
+    assert!(
+        complete,
+        "the same original task resumes after cancellation"
+    );
+    task.into_retired()
+        .unwrap_or_else(|_| panic!("World reported Complete"))
+        .reclaim();
+    drop((first_history, second_history));
 }

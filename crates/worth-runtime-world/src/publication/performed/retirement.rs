@@ -151,6 +151,3 @@ impl RetiredConsumedPublication {
         drop(self);
     }
 }
-
-#[cfg(test)]
-mod tests;
