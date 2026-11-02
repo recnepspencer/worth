@@ -130,6 +130,19 @@ pub struct WorldReadmittedPublication {
     pub(crate) _catalog: crate::history::CompositeHistoryCatalog,
 }
 impl WorldReadmittedPublication {
+    pub fn created_entity(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: worth_relational::facade::identity::EntityId,
+    ) -> Result<
+        Option<worth_relational::facade::durability::ReadmittedRelationalCreatedEntity<'_>>,
+        worth_relational::facade::durability::RelationalAssociatedEffectRefusal,
+    > {
+        self.record
+            .native
+            .effect()
+            .created_entity(execution, entity)
+    }
     pub fn before(&self) -> &ProductBranchReferenceSnapshot {
         &self.record.before
     }

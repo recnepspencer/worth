@@ -149,7 +149,7 @@ impl RelationalCommitSemanticResult {
 
 /// A read-only view of original semantic data obtained through Native source
 /// admission. It carries no live snapshot, timing or result seal.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RecoveredRelationalSemanticResult {
     pub(crate) semantic: std::sync::Arc<RelationalCommitSemanticResult>,
 }

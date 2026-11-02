@@ -7,7 +7,9 @@ use crate::history::RelationalCommitEnvelopeResidency;
 use crate::transactions::data::RecoveredRelationalSemanticResult;
 use std::sync::{Arc, Weak};
 
+mod created_row;
 mod readmission;
+pub use created_row::ReadmittedRelationalCreatedEntity;
 
 /// Exact discovered index and weak owner/source identities. The actual Native
 /// owner retains source custody; an observer cannot keep a closed Home serving.

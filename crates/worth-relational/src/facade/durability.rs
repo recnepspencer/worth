@@ -1,8 +1,8 @@
 pub use crate::durability::authority::{
     FreshRelationalSourceAdmission, ReadmittedRelationalAssociatedEffect,
-    RefusedRelationalRecordedComponent, RelationalAssociatedEffectRefusal,
-    RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
-    RelationalRecordedComponentAdmissionCause,
+    ReadmittedRelationalCreatedEntity, RefusedRelationalRecordedComponent,
+    RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSettlement,
+    RelationalAssociatedEffectSubject, RelationalRecordedComponentAdmissionCause,
 };
 pub use crate::durability::branch_transition_artifact::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactDigest,

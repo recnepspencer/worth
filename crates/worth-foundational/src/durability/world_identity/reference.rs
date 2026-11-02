@@ -58,24 +58,34 @@ mod tests {
 
     #[test]
     fn recorded_product_heads_refuse_mixed_home_owners() {
-        let owner = |namespace| DurableWorldOwnerIdentity::from_recorded(
-            HomeIdentity::from_observed_bytes([namespace; 16]).unwrap(),
-            WorldOwnerSlotIdentity::from_recorded(1),
-        );
+        let owner = |namespace| {
+            DurableWorldOwnerIdentity::from_recorded(
+                HomeIdentity::from_observed_bytes([namespace; 16]).unwrap(),
+                WorldOwnerSlotIdentity::from_recorded(1),
+            )
+        };
         let first = owner(1);
         let foreign = owner(2);
         let branch = DurableProductBranchIdentity::from_recorded(first, "main".to_owned()).unwrap();
         let generation = DurableProductReferenceGeneration::from_recorded(7);
         for (incarnation_owner, commit_owner) in [(foreign, first), (first, foreign)] {
-            assert_eq!(DurableProductBranchReference::from_recorded(
-                branch.clone(), DurableProductBranchIncarnation::from_recorded(incarnation_owner, 3),
-                generation, DurableCompositeCommitIdentity::from_recorded(commit_owner, 9),
-            ), Err(DurableProductReferenceOwnerMismatch));
+            assert_eq!(
+                DurableProductBranchReference::from_recorded(
+                    branch.clone(),
+                    DurableProductBranchIncarnation::from_recorded(incarnation_owner, 3),
+                    generation,
+                    DurableCompositeCommitIdentity::from_recorded(commit_owner, 9),
+                ),
+                Err(DurableProductReferenceOwnerMismatch)
+            );
         }
         let reference = DurableProductBranchReference::from_recorded(
-            branch.clone(), DurableProductBranchIncarnation::from_recorded(first, 3),
-            generation, DurableCompositeCommitIdentity::from_recorded(first, 9),
-        ).unwrap();
+            branch.clone(),
+            DurableProductBranchIncarnation::from_recorded(first, 3),
+            generation,
+            DurableCompositeCommitIdentity::from_recorded(first, 9),
+        )
+        .unwrap();
         assert_eq!(reference.branch(), &branch);
         assert_eq!(reference.generation().get(), 7);
         assert_eq!(reference.selected_commit().ordinal(), 9);
