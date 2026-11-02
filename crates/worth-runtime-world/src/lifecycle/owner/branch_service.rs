@@ -18,6 +18,7 @@ mod history;
 #[cfg(test)]
 mod install_control;
 mod observation;
+mod original_publication;
 mod retirement;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>

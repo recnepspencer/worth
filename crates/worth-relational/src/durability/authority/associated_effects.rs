@@ -76,6 +76,9 @@ impl ReadmittedRelationalAssociatedEffect {
     pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
         self.semantic.semantic()
     }
+    pub fn recovered_semantic_result(&self) -> &RecoveredRelationalSemanticResult {
+        &self.semantic
+    }
     pub fn settlement(&self) -> RelationalAssociatedEffectSettlement {
         self.settlement
     }

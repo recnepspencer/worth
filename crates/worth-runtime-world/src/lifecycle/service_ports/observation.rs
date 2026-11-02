@@ -8,6 +8,21 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    /// Read the original durable occurrence for this exact Native owner-admitted
+    /// effect. Reconstruction reads the selected World image and bounded tails;
+    /// it never executes a handler, publishes, or manufactures a live result.
+    pub fn readmitted_native_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .readmitted_native_publication(execution, effect)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
     /// Lookup coordinates are durable data; an old process-issued identity is
     /// not a current-owner capability and cannot cross this boundary.
     ///

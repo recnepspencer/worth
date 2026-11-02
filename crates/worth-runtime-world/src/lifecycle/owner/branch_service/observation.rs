@@ -14,6 +14,16 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn readmitted_native_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    > {
+        self.read_original_native_publication(execution, effect)
+    }
     fn readmitted_publication(
         &self,
         identity: &worth_foundational::facade::DurableCompositeCommitIdentity,

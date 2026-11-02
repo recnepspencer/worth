@@ -80,6 +80,13 @@ where
             RuntimeWorldCloseState::Closed => super::RuntimeWorldOwnerLifecycleObservation::Closed,
         }
     }
+
+    fn require_optional_memory_history(&self) -> Result<(), HistoryReclamationDenial> {
+        match &self.state.durable {
+            Some(_) => Err(HistoryReclamationDenial::AuthoritativeDurableHistory),
+            None => Ok(()),
+        }
+    }
 }
 
 impl<D, I, E, Ctx, T> super::ports::RuntimeWorldLifecycleService
@@ -105,6 +112,7 @@ where
     fn retire_changed_history(
         &self,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -119,6 +127,7 @@ where
         &self,
         keep: &crate::identity::CompositeCommitIdentity,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -137,6 +146,7 @@ where
         &self,
         from: &crate::identity::CompositeCommitIdentity,
     ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {

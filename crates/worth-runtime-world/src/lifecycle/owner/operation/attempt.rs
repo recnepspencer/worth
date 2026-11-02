@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 /// Explicit attempt-local operation posture. It keeps lifecycle state separate
 /// from identity, component ports, and the product registry.
@@ -28,12 +28,16 @@ pub(crate) struct RuntimeWorldOperationLedgerState {
 #[derive(Debug, Clone)]
 pub(crate) struct RuntimeWorldOperationLedger {
     pub(crate) state: Arc<Mutex<RuntimeWorldOperationLedgerState>>,
+    /// A borrowed pre-close cut excludes calls even on the borrowing thread.
+    /// Ordinary call admission shares this gate and only serializes metadata.
+    pub(crate) call_exclusion: Arc<RwLock<()>>,
 }
 
 impl RuntimeWorldOperationLedger {
     pub(in crate::lifecycle::owner) fn new() -> Self {
         Self {
             state: Arc::new(Mutex::new(RuntimeWorldOperationLedgerState::default())),
+            call_exclusion: Arc::new(RwLock::new(())),
         }
     }
 
