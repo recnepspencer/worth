@@ -255,3 +255,73 @@ fn single_external_lease_retirement_preserves_an_independent_observation_veto() 
         before.dropped_releases
     );
 }
+
+#[test]
+fn original_basis_retirement_preserves_independent_reads_and_retained_payload() {
+    use crate::branch::{
+        RelationalBranchBasisRetirementDenial as Denial,
+        RelationalBranchBasisRetirementProgress as Progress,
+    };
+    let stop = CancellationSource::new();
+    let live = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let stopped = SerialRequest::from_memory(SerialMemoryBudget::new(None), stop.token(), None);
+    stop.cancel();
+    let request = ExecutionRequest::serial(&live);
+    let runtime = runtime_with_test_schema();
+    let foreign = runtime_with_test_schema();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let independent = basis.clone();
+    let root = Arc::downgrade(&basis.inner.root);
+    let mut task = basis.into_retirement();
+    assert!(matches!(
+        task.advance(&request, &foreign),
+        Err(Denial::ForeignOwner)
+    ));
+    assert!(matches!(
+        task.advance(&ExecutionRequest::serial(&stopped), &runtime),
+        Err(Denial::Execution(_))
+    ));
+    assert_eq!(
+        task.advance(&request, &runtime).unwrap(),
+        Progress::Complete
+    );
+    let retired_share = task.into_retired().unwrap();
+    let refused = runtime.prepare_close().unwrap_err();
+    assert_eq!(
+        refused.reason(),
+        RelationalRuntimeCloseDenial::ReadCustodyRetained
+    );
+    let runtime = refused.into_runtime();
+    assert_eq!(independent.identity(), &runtime.main_branch_identity());
+    let mut last = independent.into_retirement();
+    let mut complete = false;
+    for _ in 0..8 {
+        if last.advance(&request, &runtime).unwrap() == Progress::Complete {
+            complete = true;
+            break;
+        }
+    }
+    assert!(
+        complete,
+        "the original Native basis must finish its actual lease retirement"
+    );
+    let retired_last = last.into_retired().unwrap();
+    runtime.prepare_close().unwrap().finish();
+    assert!(
+        root.upgrade().is_some(),
+        "the original root stays in retired payload custody"
+    );
+    drop(retired_share);
+    drop(retired_last);
+    assert!(
+        root.upgrade().is_none(),
+        "explicit reclaim destroys the same original allocation"
+    );
+    foreign.prepare_close().unwrap().finish();
+}

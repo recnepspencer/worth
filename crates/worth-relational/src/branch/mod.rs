@@ -1,3 +1,7 @@
+pub use basis::{
+    RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
+    RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
+};
 mod authority;
 mod basis;
 mod basis_admission_identity;

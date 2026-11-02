@@ -8,14 +8,22 @@ use worth_signal::facade::branch::AdmittedSignalBranchBasis;
 /// Runtime World identity issuer. It has no public equality or constructor.
 #[derive(Debug, Clone)]
 pub(crate) struct CompositeRuntimeWorldBasis {
-    relational: AdmittedRelationalBranchBasis,
+    relational: Option<AdmittedRelationalBranchBasis>,
     signal: AdmittedSignalBranchBasis,
     correspondence: AdmittedRuntimeWorldCorrespondenceBasis,
 }
 
 impl CompositeRuntimeWorldBasis {
+    pub(super) fn take_native_for_retirement(&mut self) -> AdmittedRelationalBranchBasis {
+        self.relational
+            .take()
+            .expect("original Native basis moves once")
+    }
+
     pub(crate) fn relational_basis(&self) -> &AdmittedRelationalBranchBasis {
-        &self.relational
+        self.relational
+            .as_ref()
+            .expect("only serving composite exposes Native basis")
     }
 
     pub(crate) fn signal_basis(&self) -> &AdmittedSignalBranchBasis {
@@ -32,7 +40,7 @@ impl CompositeRuntimeWorldBasis {
         correspondence: AdmittedRuntimeWorldCorrespondenceBasis,
     ) -> Self {
         Self {
-            relational,
+            relational: Some(relational),
             signal,
             correspondence,
         }

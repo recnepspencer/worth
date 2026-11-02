@@ -322,3 +322,49 @@ destructor panic. Post-seal retirement uses the existing Execution panic
 boundary's second-payload containment pattern, so that destructor cannot unwind
 the original Query owner. Original handler payload identity, drop count and
 unadvanced cursor assertions remain and the same request retries successfully.
+
+
+## Coordinator-authorized publication receipt retirement (2026-11-02 13:50)
+
+The coordinator grants Query product_world/receipt.rs, committed_publication.rs,
+and the missing World ConsumedCompositePublication owner port. This supersedes
+the pending ownership question above. The change is in-memory custody only:
+provider evidence indexes and original Native/durable rows remain; no
+provider/idempotency or Server path changes are authorized.
+
+Boundary review: the provider owns completed applications; their receipt Arc
+is shared by live callers. Arc::get_mut on that exact custody is the pre-seal
+external-reader fence. Unconsumed one-shot successor/client/output observations
+or fresh history delivery remain pending work and refuse without mutation.
+World owns its consumed delivery and canonical envelope. Its before/after and
+expected snapshots own shared commits; commits own composite bases; those own
+actual Native admitted basis shares. Native alone disarms their original
+retention and registry leases. Each owner consumes only its original local
+share; independent shares remain real Native close vetoes. Inert facts and
+original allocations survive until the retired Home's explicit reclaim.
+
+Implementation plan:
+1. Expose Native admitted-basis retirement by reusing original observation
+   retirement, with authentic-owner affinity, original request, retained inner
+   data and typed busy/stop outcomes. Add the exact facade entries.
+2. Add World snapshot/commit/composite-basis consuming steps and a prepaid
+   consumed-publication retirement frame. Keep original fact/identity/result
+   data, retire every Native share, refuse unsettled or undelivered custody.
+   These steps neither write artifacts nor replace facts with copied identities.
+3. Add Query receipt preflight and consuming advancement. Provider preflights
+   every original receipt before World seal, then retires the completed evidence
+   by an ordered cursor before source retirement. All original indexes stay in
+   the same nonserving provider. No durable row is removed or rewritten.
+4. Prove receipt-alias refusal resumes the same Home and mutation close releases
+   the real physical lease while retired allocations remain alive. Preserve the
+   six acceptance courts. Qualify deadline and checkpoint-failure controls on
+   the ordinary stack, and report exact P-A reopen refusals separately.
+5. Run affected focused/normal owner targets once as applicable, phase gates,
+   and a fresh independent adversarial review of the committed result.
+
+Requirement map additions: D11 receipt custody is traced to
+held_original_publication_receipt_refuses_close_and_same_home_resumes,
+ordinary_mutation_host_physically_closes_with_original_retired_allocations_alive,
+and existing expired/checkpoint-memory Host close controls. D17 original Native
+basis retirement is traced to original_basis_retirement_preserves_independent_reads_and_retained_payload.
+The tests must exercise actual owners, not copied receipt descriptions.

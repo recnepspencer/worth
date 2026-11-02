@@ -152,6 +152,15 @@ pub(crate) struct ProductBranchReferenceMovement {
 }
 
 impl ProductBranchReferenceMovement {
+    pub(crate) fn retirement_snapshots(
+        &mut self,
+    ) -> (
+        &mut ProductBranchReferenceSnapshot,
+        &mut ProductBranchReferenceSnapshot,
+    ) {
+        (&mut self.before, &mut self.after)
+    }
+
     pub(crate) fn before(&self) -> &ProductBranchReferenceSnapshot {
         &self.before
     }

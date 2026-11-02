@@ -2,6 +2,8 @@
 //! allocation; a caller's linear delivery claim never becomes its truth source.
 
 mod delivery;
+mod retirement;
+pub(crate) use retirement::PublicationFactsRetirement;
 mod readmission;
 pub(crate) use readmission::{PublicationEvidence, ReadmittedPublicationRecord};
 pub use readmission::{WorldReadmittedPublication, WorldReadmittedPublicationDenial};
