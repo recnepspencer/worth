@@ -41,6 +41,8 @@ fn native_format_predecessors_refuse_filesystem_home_before_incarnation_or_owner
             Predecessor::Transition => {
                 let runtime = home.relational.runtime();
                 runtime
+                    .owner_component_services()
+                    .lifecycle_port()
                     .archive_branch(&request, &runtime.main_branch_identity())
                     .unwrap();
             }
@@ -159,6 +161,7 @@ fn native_format_predecessors_refuse_filesystem_home_before_incarnation_or_owner
             )
             .unwrap()
             .is_none());
-        drop((selected, after, records, serving));
+        drop((selected, after, records));
+        drop(serving);
     }
 }

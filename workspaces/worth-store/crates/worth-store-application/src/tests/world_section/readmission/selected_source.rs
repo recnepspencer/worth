@@ -188,6 +188,7 @@ fn controlled_home_refusal_retains_original_selection_across_anchor_advance() {
     let mut home = home
         .readmit(&expected, &request)
         .unwrap()
+        .consume(|home| home.share())
         .consume(|home| home);
     assert_eq!(home.home_identity(), identity);
     assert_eq!(
@@ -264,7 +265,8 @@ fn ordinary_selected_native_refuses_before_incarnation_and_native_or_world_publi
         journals.map(|name| after.journal_head(&serving, name, &request).unwrap()),
         heads
     );
-    drop((selected, after, records, before, serving));
+    drop((selected, after, records, before));
+    drop(serving);
 }
 
 #[test]
