@@ -100,7 +100,7 @@ fn cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_hist
     };
     assert!(entries
         .values()
-        .any(|owners| owners.contains(&fixture.entity)));
+        .any(|owners| owners.iter().any(|owner| owner == &fixture.entity)));
     assert!(fixture.source.member_reads.lock().unwrap().contains(&head));
     assert!(!fixture
         .source
