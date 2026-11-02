@@ -297,9 +297,15 @@ const normalizedRegistry = publishRegistry.endsWith("/")
 const scopeRegistryLine = !normalizedScope || publishRegistry.includes("registry.npmjs.org")
   ? ""
   : `@${normalizedScope}:registry=${normalizedRegistry}\n`;
-const npmrc = `${scopeRegistryLine}//${authHost}/:_authToken=\${NODE_AUTH_TOKEN}
-`;
-await writeFile(npmrcPath, npmrc, "utf8");
+const tokenRegistryLine = process.env.NODE_AUTH_TOKEN
+  ? `//${authHost}/:_authToken=\${NODE_AUTH_TOKEN}\n`
+  : "";
+const npmrc = `${scopeRegistryLine}${tokenRegistryLine}`;
+if (npmrc) {
+  await writeFile(npmrcPath, npmrc, "utf8");
+} else {
+  await rm(npmrcPath, { force: true });
+}
 
 await copyFile(
   packageIndexDeclarationsPath,
