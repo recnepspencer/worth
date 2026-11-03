@@ -63,14 +63,14 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
             }
             if site == 6 {
                 let mut stopped = ready();
-                if let DemandState::Output(output) = &mut (*stopped {
+                if let DemandState::Output(output) = &mut stopped {
                     output.stop_for_test(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::Superseded,
                         "",
                     ));
                 }
-                (*state.records_for_test()).get_mut(&old).unwrap().state_mut_for_test()) = stopped;(*
-                (*state.records_for_test()).get_mut(&newest).unwrap().state_mut_for_test()) =
+                (*(*state.records_mut_for_test()).get_mut(&old).unwrap().state_mut_for_test()) = stopped;
+                (*(*state.records_mut_for_test()).get_mut(&newest).unwrap().state_mut_for_test()) =
                     DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::Superseded,
                         "",
