@@ -10,19 +10,16 @@ use worth_store::physical_runtime::{
 
 /// No serving-handoff result storage is retained by the physical recovery caller.
 #[inline(never)]
-pub(super) fn from_recovery_outcome(
-    root: &Path,
-    opening: PhysicalOpening,
+pub(super) fn handoff_from_recovery_outcome(
     outcome: worth_store_recovery_runtime::PhysicalRecoveryOutcome,
-) -> Result<ServingPhysicalRuntime, Refusal> {
-    let handoff = match outcome {
+) -> Result<RecoveredPhysicalServingHandoff, Refusal> {
+    match outcome {
         worth_store_recovery_runtime::PhysicalRecoveryOutcome::Recovered(handoff) => handoff
             .into_core()
             .into_serving_handoff()
-            .ok_or_else(|| Refusal::new(Stage::Recovery, "selected custody missing"))?,
-        other => return Err(super::recovery_refusal::classify(other)),
-    };
-    open(root, opening, handoff)
+            .ok_or_else(|| Refusal::new(Stage::Recovery, "selected custody missing")),
+        other => Err(super::recovery_refusal::classify(other)),
+    }
 }
 
 #[inline(never)]

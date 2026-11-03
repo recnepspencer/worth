@@ -88,11 +88,25 @@ impl RecoveredPhysicalServingHandoff {
         runtime: AdmittedPhysicalRuntime,
         admission: FilesystemMediaAdmission,
     ) -> RecoveredMediaAdmissionOutcome {
-        crate::physical_runtime::media_ownership::admit_recovered(runtime, admission, self.media)
-            .map_success(|media| RecoveredMediaOwnedPhysicalRuntime {
-                media,
-                custody: self.custody,
-            })
+        use worth_proof::TransitionOutcome;
+        let outcome = match crate::physical_runtime::media_ownership::admit_recovered(
+            runtime, admission, self.media,
+        )
+        .into_raw()
+        {
+            TransitionOutcome::Success(media) => {
+                TransitionOutcome::Success(RecoveredMediaOwnedPhysicalRuntime {
+                    media,
+                    custody: self.custody,
+                })
+            }
+            TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
+            TransitionOutcome::Deferred(deferred) => TransitionOutcome::Deferred(deferred),
+            TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),
+            TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
+            TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
+        };
+        outcome.into()
     }
 }
 

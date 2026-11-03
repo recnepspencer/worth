@@ -3178,3 +3178,24 @@ custody while releasing media. Remove into_serving_parts after its two-caller
 cutover. Fields remain confined to the private recovery_construction owner;
 there is no new public issuer, allocation, authority, limit or durable format.
 This is a narrow Store conversion merge seam, with public signatures preserved.
+
+### Source preparation returns before serving attachment
+
+The next focused default-stack observation confirms physical recovery and the
+core-to-serving conversion return. Media admission still retained the Application
+outcome-conversion receiver and two generic success-map receivers carrying the
+large custody by value. A private, non-inlined source preparer now returns either
+the SAME qualified absent media or the existing boxed-payload recovery outcome.
+Only then does finish initialize fresh media or convert the recovered handoff.
+The handoff converter returns before serving open and its unchanged yieldpoint.
+No extra box, allocation, qualification, presence check or recovery is added.
+
+Recovered serving admission uses an exhaustive match of the existing six raw
+transition outcomes. Success attaches the SAME custody to the admitted media;
+Denied, Deferred, Stale, RebindRequired and Failed retain their exact payloads.
+The existing ProofOutcome conversion wraps that result. This replaces the local
+closure carrying custody through generic mapping frames; it creates no issuer,
+authority, limit or alternate admission. On non-success the unused custody is
+dropped as before. These private Application phase boundaries and narrow Store
+admission changes preserve source classification and refusal stages. The direct
+default-stack acceptance control remains required evidence.
