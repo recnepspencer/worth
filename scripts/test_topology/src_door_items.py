@@ -94,7 +94,10 @@ def plan_items(files, index, surface):
         for reference in library_paths(path, text):
             module, rest = split_module(index, reference.segments)
             if not rest:
-                aliases = module_alias_uses(text + mounted_foreign_text(path, text), reference, module, index)
+                readers = text + mounted_foreign_text(path, text)
+                if public_import(text, reference):
+                    readers += descendant_text(path)  # globbing children read a `pub use`
+                aliases = module_alias_uses(readers, reference, module, index)
                 if reference.glob:
                     aliases = glob_uses(text, module, surface)
                 for name in aliases:
@@ -102,7 +105,8 @@ def plan_items(files, index, surface):
                     add_door(result, surface, {} if not reference.glob else published, module, name)
                 if reference.glob:
                     result.rewrites[path].append((reference, module, None, sorted(aliases)))
-                elif not aliases and is_import(text, reference) and 'worth-query-certification/' not in text:
+                elif not aliases and (is_import(text, reference) or public_import(text, reference)) \
+                        and 'worth-query-certification/' not in text:
                     # (A module mounting foreign fixture source keeps its imports: that source reads them.)
                     # An import of a library module nothing names through: an over-broad glob
                     # expansion. It has no door; the import goes.
@@ -151,6 +155,18 @@ def mounted_foreign_text(path, text):
         if target.is_file():
             result.append(target.read_text(encoding='utf-8'))
     return '\n'.join(result)
+
+
+def public_import(text, reference):
+    line_start = text.rfind('\n', 0, reference.start) + 1
+    return re.match(r'\s*pub(?:\([^)]*\))?\s+use\s+$', text[line_start:reference.start]) is not None
+
+
+def descendant_text(path):
+    """Text of the module files below `path`'s module (its `mod.rs` directory)."""
+    if path.name != 'mod.rs':
+        return ''
+    return '\n'.join(f.read_text(encoding='utf-8') for f in sorted(path.parent.rglob('*.rs')) if f != path)
 
 
 def is_import(text, reference):
