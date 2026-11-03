@@ -91,6 +91,7 @@ pub(super) fn admit(
     let peak_recovery_bytes = legacy_cost_peak
         .max(final_live_bytes)
         .max(execution.planning_construction_peak)
+        .max(context.selection.construction_peak_bytes())
         .max(backing_peak);
     let planning_counters = basis
         .planning_counters()

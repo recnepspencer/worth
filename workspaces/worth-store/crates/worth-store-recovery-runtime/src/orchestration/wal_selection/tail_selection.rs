@@ -7,9 +7,9 @@ use super::{
 use worth_store::physical_runtime::{PhysicalRecoveryCoordination, RecoveryWalAllocationDenial};
 use worth_store_recovery_physics::{
     admit_physical_wal_tail, select_physical_recovery_sources, PhysicalCheckpointBase,
-    PhysicalRecoveryResidue, PhysicalSourceSelectionDenial, SelectedCompactionProduct,
-    SelectedPhysicalPageFacts, SelectedPhysicalRoot, SelectedPhysicalWalTail,
-    SelectedPhysicalWalTailDenial,
+    PhysicalRecoveryResidue, PhysicalSourceSelection, PhysicalSourceSelectionDenial,
+    SelectedCompactionProduct, SelectedPhysicalPageFacts, SelectedPhysicalRoot,
+    SelectedPhysicalWalTail, SelectedPhysicalWalTailDenial,
 };
 
 #[derive(Debug)]
@@ -21,6 +21,11 @@ pub(crate) struct ResidentWalTail {
 pub(crate) enum WalTailSelectionDenial {
     Allocation(RecoveryWalAllocationDenial),
     Selection(SelectedPhysicalWalTailDenial),
+}
+
+pub(crate) enum ResidentSourceSelectionDenial {
+    Allocation(RecoveryWalAllocationDenial),
+    Selection(PhysicalSourceSelectionDenial),
 }
 
 impl ResidentWalTail {
@@ -44,11 +49,11 @@ impl ResidentWalTail {
         let count = input.candidates.len();
         let covered = input
             .allocation
-            .prepare_vector(owner, count)
+            .prepare_vector(owner, count, 0)
             .map_err(WalTailSelectionDenial::Allocation)?;
         let retained = input
             .allocation
-            .prepare_vector(owner, count)
+            .prepare_vector(owner, count, 0)
             .map_err(WalTailSelectionDenial::Allocation)?;
         let candidates = std::mem::take(&mut input.candidates);
         let tail = admit_physical_wal_tail(frontier, cutoff, candidates, covered, retained)
@@ -70,14 +75,31 @@ impl ResidentWalTail {
 
     pub(crate) fn select_sources(
         self,
+        owner: &PhysicalRecoveryCoordination,
+        input_header_bytes: usize,
         root: SelectedPhysicalRoot,
         page_facts: SelectedPhysicalPageFacts,
         retained_previous: Option<SelectedPhysicalPageFacts>,
         checkpoint: Option<PhysicalCheckpointBase>,
         compaction: Option<SelectedCompactionProduct>,
         residue: Vec<PhysicalRecoveryResidue>,
-    ) -> Result<ResidentSourceSelection, PhysicalSourceSelectionDenial> {
-        let Self { tail, allocation } = self;
+    ) -> Result<ResidentSourceSelection, ResidentSourceSelectionDenial> {
+        let construction_bytes = u64::try_from(input_header_bytes)
+            .ok()
+            .and_then(|bytes| {
+                bytes.checked_add(std::mem::size_of::<PhysicalSourceSelection>() as u64)
+            })
+            .ok_or(ResidentSourceSelectionDenial::Allocation(
+                RecoveryWalAllocationDenial::SizeOverflow,
+            ))?;
+        let Self {
+            tail,
+            mut allocation,
+        } = self;
+        let previously_retained = allocation.charged_bytes();
+        let backing = allocation
+            .prepare_vector::<PhysicalSourceSelection>(owner, 1, construction_bytes)
+            .map_err(ResidentSourceSelectionDenial::Allocation)?;
         let selection = select_physical_recovery_sources(
             root,
             page_facts,
@@ -86,10 +108,9 @@ impl ResidentWalTail {
             tail,
             compaction,
             residue,
-        )?;
-        Ok(ResidentSourceSelection {
-            selection,
-            allocation,
-        })
+        )
+        .map_err(ResidentSourceSelectionDenial::Selection)?;
+        ResidentSourceSelection::finish(backing, selection, allocation, previously_retained)
+            .map_err(ResidentSourceSelectionDenial::Allocation)
     }
 }

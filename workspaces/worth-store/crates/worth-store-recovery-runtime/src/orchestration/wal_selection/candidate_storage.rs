@@ -44,7 +44,7 @@ impl ResidentWalCandidates {
         count: usize,
     ) -> Result<Self, RecoveryWalAllocationDenial> {
         let mut allocation = WalSelectionAllocation::default();
-        let candidates = allocation.prepare_vector(owner, count)?;
+        let candidates = allocation.prepare_vector(owner, count, 0)?;
         Ok(Self {
             candidates,
             allocation,
@@ -145,7 +145,7 @@ impl ResidentWalCandidates {
     ) -> Result<Vec<PhysicalWalFrameFacts>, CandidateClassificationDenial> {
         let mut facts = self
             .allocation
-            .prepare_vector(owner, segment.frames().len())
+            .prepare_vector(owner, segment.frames().len(), 0)
             .map_err(CandidateClassificationDenial::Allocation)?;
         for frame in segment.frames() {
             facts.push(

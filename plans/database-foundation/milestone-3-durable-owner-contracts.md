@@ -2897,3 +2897,18 @@ planned receiver. Consumption moves the actual state onward; cancellation keeps
 the existing explicit coordination shutdown and refusal. Allocation failure is
 PlannedStateAllocation, and budget failure follows the existing typed planning
 cost-denial path. This changes no persisted format or recovery authority.
+
+The selected physical source keeps its existing ResidentSourceSelection owner
+and native WAL allocation custody. Its payload moves into one sealed vector
+slot. Before allocation, the original coordination recovery ceiling admits the
+existing reservation, exact requested slot bytes, the discovery owner's actual
+FinalSelectionInput header and one PhysicalSourceSelection construction temporary.
+Allocator capacity must remain exact. Filling the slot cannot allocate; subsequent
+settlement retains the original reservation plus actual slot capacity and releases
+only construction storage. The allocation owner preserves its peak after settlement;
+plan cost retains that independent construction floor and all previous floors.
+The receiver's own checked heap accounting includes actual slot capacity and the
+underlying selection's heaps, so the payload removed from inline parents stays
+counted. SourceSelection is the exact typed allocation boundary. Source facts,
+selection/refusal order, coordination custody and const borrowing remain unchanged.
+This is a named construction allowance, not a measurement of the complete stack.
