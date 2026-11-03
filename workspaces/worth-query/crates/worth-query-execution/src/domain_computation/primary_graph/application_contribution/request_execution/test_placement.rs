@@ -44,7 +44,7 @@ use crate::domain_computation::execution_observation::owned_control_scope;
 thread_local! {
     static PLACEMENT_OWNER: Cell<u64> = const { Cell::new(0) };
     static BUDGET_OWNER: Cell<u64> = const { Cell::new(0) };
-    static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
+    pub static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
     pub static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
         const { Cell::new(WorthQueryExecutionPlacementForTest::World) };
 }
