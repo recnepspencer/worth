@@ -263,7 +263,9 @@ class Rewriter:
             visibility = self.visibility(declaration.visibility, reader_crate)
             for segments, glob, alias in declaration.leaves:
                 lines.extend(self.use_lines(segments, glob, alias, names, reader_crate, words, visibility))
-            changes.append((declaration.start, declaration.end, '\n'.join(lines)))
+            line_start = text.rfind('\n', 0, declaration.start) + 1
+            indent = text[line_start:declaration.start] if not text[line_start:declaration.start].strip() else ''
+            changes.append((declaration.start, declaration.end, ('\n' + indent).join(lines)))
         self.pending_imports = set()
         self.generated = set()
         for occurrence in paths:
