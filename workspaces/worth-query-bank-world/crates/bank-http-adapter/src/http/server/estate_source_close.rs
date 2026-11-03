@@ -9,7 +9,29 @@ pub(super) async fn describe<A: super::authentication::BankHttpApplicationAuthen
     principal: &bank_server::BankAuthenticatedPrincipal,
     scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
 ) -> BankHttpMutationOutcome {
+    let runtime = application.runtime();
+    if let Err(cause) =
+        runtime.authorize_estate_recovery_disclosure(principal, record.action, scope)
+    {
+        return BankHttpMutationOutcome::Refused {
+            request_id: command.request_id.clone(),
+            custody_id: command.custody_id.clone(),
+            sequence: command.sequence,
+            denial: super::estate_denial::estate_denial(cause),
+            accepted_sequence: Some(command.sequence),
+        };
+    }
     let Some(receipt) = record.custody.live_receipt() else {
+        if !super::closed_mutation_custody::collection_may_release(record.released_cleanup.as_ref())
+        {
+            // The original released collection still owns dispatch/recovery.
+            // Describe the actual completion; no claim is minted from it.
+            return record.custody.describe(
+                &command.custody_id,
+                &command.request_id,
+                command.sequence,
+            );
+        }
         return super::estate_recorded_recovery::describe(
             application,
             record,
@@ -19,7 +41,6 @@ pub(super) async fn describe<A: super::authentication::BankHttpApplicationAuthen
         )
         .await;
     };
-    let runtime = application.runtime();
     let commit = super::recovery_executor::outcome::commit_description(receipt);
     let ready = |recovery, recovery_status| BankHttpMutationOutcome::RailRecoveryReady {
         request_id: command.request_id.clone(),
@@ -36,17 +57,6 @@ pub(super) async fn describe<A: super::authentication::BankHttpApplicationAuthen
         denial: super::mutation_refusal::denial(kind),
         accepted_sequence: Some(command.sequence),
     };
-    if let Err(cause) =
-        runtime.authorize_estate_recovery_disclosure(principal, record.action, scope)
-    {
-        return BankHttpMutationOutcome::Refused {
-            request_id: command.request_id.clone(),
-            custody_id: command.custody_id.clone(),
-            sequence: command.sequence,
-            denial: super::estate_denial::estate_denial(cause),
-            accepted_sequence: Some(command.sequence),
-        };
-    }
     let mut registry = record.registry.lock().await;
     registry.purge_expired(runtime);
     let replay = match record.action {

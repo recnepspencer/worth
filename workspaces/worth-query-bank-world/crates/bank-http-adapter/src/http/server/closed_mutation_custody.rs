@@ -29,10 +29,12 @@ pub(super) fn may_release(
     closed: &WorthQueryClosedOperation,
     collection: Option<&WorthQueryOperationCleanupReceipt>,
 ) -> bool {
-    discharged(closed.managed_cleanup_receipt())
-        && discharged(
-            collection.and_then(WorthQueryOperationCleanupReceipt::managed_cleanup_receipt),
-        )
+    discharged(closed.managed_cleanup_receipt()) && collection_may_release(collection)
+}
+pub(super) fn collection_may_release(
+    collection: Option<&WorthQueryOperationCleanupReceipt>,
+) -> bool {
+    discharged(collection.and_then(WorthQueryOperationCleanupReceipt::managed_cleanup_receipt))
 }
 enum ClosedMutationCustody {
     Source(ClosedMutationSource),
