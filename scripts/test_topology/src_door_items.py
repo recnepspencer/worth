@@ -101,7 +101,8 @@ def plan_items(files, index, surface):
                     add_door(result, surface, published, module, name)
                 if reference.glob:
                     result.rewrites[path].append((reference, module, None, sorted(aliases)))
-                elif not aliases and is_import(text, reference):
+                elif not aliases and is_import(text, reference) and 'worth-query-certification/' not in text:
+                    # (A module mounting foreign fixture source keeps its imports: that source reads them.)
                     # An import of a library module nothing names through: an over-broad glob
                     # expansion. It has no door; the import goes.
                     result.rewrites[path].append((reference, module, None, ('drop',)))
