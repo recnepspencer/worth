@@ -53,7 +53,7 @@ impl QueryReadBinding {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) enum QueryCoverageStop {
+pub enum QueryCoverageStop {
     Native(CompanionPreflightStop),
     Allocation(worth_execution::ExecutionAllocationDenial),
     Verification(super::SettlementVerificationStop),

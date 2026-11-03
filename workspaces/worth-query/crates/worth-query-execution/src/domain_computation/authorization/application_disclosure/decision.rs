@@ -40,7 +40,7 @@ pub(in crate::domain_computation) use field_admission::{
     WorthQueryApplicationInternalProjectionAdmission,
 };
 
-pub(in crate::domain_computation) struct WorthQueryPendingApplicationQueryGovernance {
+pub struct WorthQueryPendingApplicationQueryGovernance {
     capability_name: String,
     capability_type: String,
     disclosure_value: AspectValue,
