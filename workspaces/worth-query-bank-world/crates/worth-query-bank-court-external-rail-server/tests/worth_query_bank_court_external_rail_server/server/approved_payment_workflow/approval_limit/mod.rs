@@ -17,7 +17,7 @@ fn payment_over_the_approval_limit_is_rejected_before_approval() {
         payment: fixture.payment,
         approver: principal_id(APPROVER),
     };
-    let instance = journey::start_approved_payment_instance(&workflow, &authority);
+    let (_definition, instance) = journey::start_approved_payment_instance(&workflow, &authority);
     let (_, limit) = journey::reach_approval_limit(&workflow, &instance, &authority);
     assert_eq!(limit.operands().len(), 1);
     assert_eq!(

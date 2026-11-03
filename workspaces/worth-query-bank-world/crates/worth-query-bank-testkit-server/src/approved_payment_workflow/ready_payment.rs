@@ -60,7 +60,8 @@ impl ReadyPaymentWorld {
             .world
             .runtime
             .approved_business_payment(&principal, &scope);
-        let (instance, operation) = prepare_approved_payment_operation(&workflow, &authority);
+        let (_definition, instance, operation) =
+            prepare_approved_payment_operation(&workflow, &authority);
         Self {
             fixture,
             rail,

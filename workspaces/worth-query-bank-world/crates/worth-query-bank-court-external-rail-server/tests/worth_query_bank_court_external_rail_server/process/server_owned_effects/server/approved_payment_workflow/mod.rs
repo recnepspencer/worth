@@ -44,7 +44,8 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
         approver: principal_id(APPROVER),
     };
 
-    let (instance, operation) = journey::prepare_approved_payment_operation(&workflow, &authority);
+    let (_definition, instance, operation) =
+        journey::prepare_approved_payment_operation(&workflow, &authority);
     let performed = workflow
         .advanced()
         .execute_operation(

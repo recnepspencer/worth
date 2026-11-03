@@ -27,7 +27,7 @@ pub async fn assert_original_notice_replays(
     assert!(matches!(
         closed,
         BankUserNodeMutationOutcome::Forwarded {
-            response: BankHttpMutationOutcome::RailRecoveryReady { .. }
+            response: BankHttpMutationOutcome::RecordedRailRecoveryReady { .. }
         }
     ));
 }
@@ -40,8 +40,8 @@ pub async fn assert_completed_notice_refuses_journal_inverse(
     original_world: (u64, u64),
 ) {
     assert_eq!(
-        (source.world_owner, source.world_commit),
-        original_world,
+        serde_json::to_value((source.world_owner, source.world_commit)).unwrap(),
+        serde_json::to_value(original_world).unwrap(),
         "correction selects the actual authenticated external occurrence"
     );
     let contacts = inquire_dispatch_contact_count(rail, super::TIMEOUT)

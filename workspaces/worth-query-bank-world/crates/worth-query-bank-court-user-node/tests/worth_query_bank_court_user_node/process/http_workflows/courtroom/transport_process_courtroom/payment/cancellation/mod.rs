@@ -18,7 +18,7 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
             court.destination_account,
         )
     });
-    let (instance, operation) = tokio::task::block_in_place(|| {
+    let (_definition, instance, operation) = tokio::task::block_in_place(|| {
         let workflow = court
             .runtime
             .approved_business_payment(&court.approver, &scope);

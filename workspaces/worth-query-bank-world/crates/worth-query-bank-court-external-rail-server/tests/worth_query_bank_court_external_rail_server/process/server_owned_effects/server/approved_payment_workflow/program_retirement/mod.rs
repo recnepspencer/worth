@@ -60,7 +60,7 @@ fn p2_retirement_waits_for_the_exact_workflow_instance_to_finish() {
         approver: principal_id(APPROVER),
     };
     let workflow = runtime.approved_business_payment(&approver, &scope);
-    let instance = start_approved_payment_instance(&workflow, &authority);
+    let (_definition, instance) = start_approved_payment_instance(&workflow, &authority);
     let definition = match workflow
         .publish_definition(
             authority,
