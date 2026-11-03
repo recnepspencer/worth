@@ -15,14 +15,7 @@ pub fn entity(slot: u64) -> EntityId {
 pub fn footprint(endpoints: Vec<EntityId>, revision: u64) -> WorthQueryObservedSourceFootprint {
     let adjacency = WorthQueryObservedAdjacencyRevision::new_for_test(entity(1), KindId(7), worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing, Some(VersionId(revision)), 8, endpoints);
     WorthQueryObservedSourceFootprint::new_for_test(entity(1), true, vec![entity(1)], Vec::new(), Some(Arc::new(WorthQueryObservedRootSelection::new(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::SourceFacts {
-                entities: vec![entity(1)],
-                aspects: Vec::new(),
-                adjacencies: vec![adjacency.clone()],
-                walks: None,
-                derived: None,
-                allocation: None,
-            },
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::SourceFacts::new_for_test(vec![entity(1)], Vec::new(), vec![adjacency.clone()], None, None, None),
             None,
         ))), vec![adjacency])
 }
