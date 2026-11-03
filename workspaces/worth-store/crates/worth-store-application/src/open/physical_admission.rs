@@ -17,7 +17,7 @@ use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, MediaOwnedPhysicalRuntime,
     PhysicalRecordInitialization, PhysicalRecoveryProcessYieldpoint, PhysicalRuntimeAdmission,
-    PhysicalStore, RecoveredPhysicalServingHandoff, ServingPhysicalRuntime,
+    PhysicalStore, ServingPhysicalRuntime,
 };
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimits, PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome,
@@ -160,15 +160,29 @@ fn recover(
     opening: PhysicalOpening,
     held: worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
 ) -> Result<ServingPhysicalRuntime, Refusal> {
-    let handoff = recover_custody(root, opening.recovery_yieldpoint.clone(), held)?;
-    recovered_serving::open(root, opening, handoff)
+    let request = prepare_recovery_request(root, held)?;
+    let outcome = recover_physical(request, opening.recovery_yieldpoint.clone());
+    recovered_serving::from_recovery_outcome(root, opening, outcome)
 }
 
-fn recover_custody(
-    root: &Path,
+#[inline(never)]
+fn recover_physical(
+    request: PhysicalRecoveryOpenRequest,
     yieldpoint: Option<PhysicalRecoveryProcessYieldpoint>,
+) -> PhysicalRecoveryOutcome {
+    match yieldpoint {
+        None => WorthStoreRecovery::recover(request),
+        Some(yieldpoint) => {
+            WorthStoreRecovery::recover_with_process_yieldpoint(request, yieldpoint)
+        }
+    }
+}
+
+#[inline(never)]
+fn prepare_recovery_request(
+    root: &Path,
     media: worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
-) -> Result<RecoveredPhysicalServingHandoff, Refusal> {
+) -> Result<PhysicalRecoveryOpenRequest, Refusal> {
     let limits = PhysicalRecoveryLimits::admit(profile::recovery_limits())
         .map_err(|denial| Refusal::new(Stage::RecoveryAdmission, format!("{denial:?}")))?;
     let configuration = profile::recovery_configuration();
@@ -180,26 +194,13 @@ fn recover_custody(
     )
     .map_err(recovery_admission_refusal)?;
     let backend = authority.qualified_backend_profile().clone();
-    let request = PhysicalRecoveryOpenRequest::declare(
+    Ok(PhysicalRecoveryOpenRequest::declare(
         root.to_owned(),
         configuration,
         backend,
         limits,
         authority,
-    );
-    let outcome = match yieldpoint {
-        None => WorthStoreRecovery::recover(request),
-        Some(yieldpoint) => {
-            WorthStoreRecovery::recover_with_process_yieldpoint(request, yieldpoint)
-        }
-    };
-    match outcome {
-        PhysicalRecoveryOutcome::Recovered(handoff) => handoff
-            .into_core()
-            .into_serving_handoff()
-            .ok_or_else(|| Refusal::new(Stage::Recovery, "selected custody missing")),
-        other => Err(recovery_refusal::classify(other)),
-    }
+    ))
 }
 
 /// The name of a transition outcome that did not succeed, for refusal

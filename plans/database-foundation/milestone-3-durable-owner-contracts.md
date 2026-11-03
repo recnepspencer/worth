@@ -3135,3 +3135,28 @@ Requirements: D17 original storage/construction admission maps to
 expectation_slot_refuses_full_plan_conversion_before_allocating and
 expectation_slot_counts_actual_capacity_and_plan_conversion_overlap; retained
 handoff census remains covered by the genuine release-recovery serving court.
+
+
+### Application recovery returns before constructing serving-handoff values
+
+Compiler constants in the owned storage quota evidence distinguish the actual
+remaining aggregates: planning custody30152, final custody21880, namespace
+state60744, final namespace state52472, base image plan17784, expectation payload
+13600, recovered core65576 and serving handoff60056 bytes in that profile.
+These are sizeof values, not runtime frame bounds. The expectation conversion
+removed part of the inline footprint; it did not alone qualify default-stack
+reopen.
+
+Application's recover now obtains its existing PhysicalRecoveryOpenRequest from
+a returning non-inlined preparer. That preparer keeps the exact original limits,
+configuration, held-media authority, backend profile and admission-refusal mapping.
+A separate non-inlined dispatcher returns PhysicalRecoveryOutcome. Deep physical
+recovery therefore has no caller reserving an eventual serving-handoff value.
+Only after physical recovery returns does recovered_serving::from_recovery_outcome
+perform the unchanged core-to-serving conversion and classify typed refusals;
+it calls existing serving open internally and returns ServingPhysicalRuntime.
+No serving-handoff value returns to recover. The actual ServingHandoff yieldpoint
+remains after conversion inside serving open. Media ownership, source order,
+limits, effect evidence and stage attribution stay unchanged, without new
+allocation, authority or larger limits. This narrow physical_admission change is
+a default-stack merge seam; it does not change Query close or source retirement.
