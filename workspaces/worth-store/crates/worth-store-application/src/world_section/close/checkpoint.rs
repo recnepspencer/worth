@@ -2,11 +2,6 @@
 use crate::{ApplicationHomeCloseDenial as Denial, WorldReadmittedApplicationHome};
 use worth_execution::ExecutionRequest;
 
-// Close's original request keeps continuation capacity beside optional capture.
-// Native/Query retirement frames are prepaid separately; this finite headroom
-// funds their execution-scope metadata after capture reports a memory refusal.
-const CLOSE_CONTINUATION_MEMORY_BYTES: u64 = 64 * 1024;
-
 pub(super) fn settle_before_world_drop<D, I, E, Ctx, T>(
     home: &mut WorldReadmittedApplicationHome<D, I, E, Ctx, T>,
     request: &ExecutionRequest<'_, '_>,
@@ -26,9 +21,6 @@ where
         .unwrap_or_else(|error| error.into_inner())
         .is_none();
     if needs_checkpoint {
-        let continuation = request
-            .reserve_retained_memory(CLOSE_CONTINUATION_MEMORY_BYTES)
-            .map_err(Denial::Execution)?;
         let prior = crate::checkpoint::close_settlement::settle(
             &home.home.context.serving,
             &home.home.context.checkpoint,
@@ -45,9 +37,6 @@ where
             .get_mut()
             .unwrap_or_else(|error| error.into_inner())
             .store(result);
-        // Optional checkpoint work cannot consume this part of the SAME grant.
-        // Return it before the remaining closed-owner phases enter their scopes.
-        drop(continuation);
     }
     // A settled failure does not veto otherwise lawful release. Actual
     // cancellation/deadline still returns this SAME stopped, owning World.

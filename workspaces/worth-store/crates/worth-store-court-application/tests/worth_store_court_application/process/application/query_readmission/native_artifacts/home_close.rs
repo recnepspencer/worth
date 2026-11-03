@@ -148,18 +148,22 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
     );
     // A real acknowledged journal tail makes capture larger than the fixed
     // retirement cursor. No checkpoint or handler result is fabricated.
-    for ordinal in 0..32 {
+    for ordinal in 0..64 {
         assert!(matches!(
             operations::set_key(home.runtime(), 0xd110 + ordinal, 8),
             WorthQueryApplicationMutationOutcome::Committed { result: 8, .. }
         ));
     }
     assert_eq!(balance(home.runtime()), 8);
-    let bounded = serial(Some(256 * 1024), None);
+    // The original 256 KiB grant stopped during mandatory retirement backing
+    // admission (10,128 required versus 6,016 remaining), before checkpoint
+    // failure could be tested. Fund that real D17 backing and retain a larger
+    // authentic journal tail so optional capture must still refuse.
+    let bounded = serial(Some(512 * 1024), None);
     let closed = home
         .close(&ExecutionRequest::serial(&bounded))
         .unwrap_or_else(|refused| {
-            panic!("a failed checkpoint is reported without withholding close: {refused:?}")
+            panic!("a failed checkpoint is reported without withholding close ({} original bytes retained): {refused:?}", bounded.memory().unwrap().charged_memory_bytes())
         });
     match closed.outcome() {
         ApplicationHomeCloseOutcome::Closed {

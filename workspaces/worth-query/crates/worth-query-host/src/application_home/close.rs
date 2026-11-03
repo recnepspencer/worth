@@ -85,6 +85,16 @@ impl<Schema, Program> std::fmt::Debug for WorthQueryApplicationHomeCloseRefused<
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut output = f.debug_struct("WorthQueryApplicationHomeCloseRefused");
         output.field("reason", &self.detail());
+        let phase = match &self.custody {
+            CloseCustody::MemoryLifecycleRequired(_) => "memory-lifecycle",
+            CloseCustody::WorldAdmission { .. } => "world-admission",
+            CloseCustody::QueryAdmission { .. } => "query-admission",
+            CloseCustody::World { .. } => "world-close",
+            CloseCustody::QueryRetirement { .. } => "query-retirement",
+            CloseCustody::MaintenanceRetirement { .. } => "maintenance-retirement",
+            CloseCustody::QueryReleased { .. } => "physical-close",
+        };
+        output.field("phase", &phase);
         if let CloseCustody::QueryReleased {
             posture: ApplicationHomeClosePosture::RecoveryRequired(custody),
             ..
