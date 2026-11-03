@@ -99,4 +99,5 @@ pub mod shared_support_worth_native_runtime;
 pub mod test_process;
 
 /// Genuine Query application mutation fixture for Server courts.
-pub mod application_mutation;
+mod application_mutation;
+pub mod facade;

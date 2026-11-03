@@ -155,14 +155,13 @@ impl RelationalBridgeObservationRetirement {
             return Progress::Refused(Denial::RegistrationMismatch);
         }
         let commit = binding.commit_id;
-        if let Some(commit) = commit {
-            if !index
+        if let Some(commit) = commit
+            && !index
                 .by_commit
                 .get(&commit)
                 .is_some_and(|members| members.contains(&snapshot))
-            {
-                return Progress::Refused(Denial::CommitIndexMismatch);
-            }
+        {
+            return Progress::Refused(Denial::CommitIndexMismatch);
         }
         if let Err(cause) = request.consult() {
             return Progress::Stopped(cause);

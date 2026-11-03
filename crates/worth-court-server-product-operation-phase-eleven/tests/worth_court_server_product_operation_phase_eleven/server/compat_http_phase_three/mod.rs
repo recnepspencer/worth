@@ -200,7 +200,7 @@ fn compat_http_mutation_preconditions_deny_before_any_write_attempt() {
 #[test]
 fn compat_http_idempotency_resolves_identical_retries_and_denies_conflicts() {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
-    use worth_testkit_server::application_mutation as application;
+    use worth_testkit_server::facade::application_mutation as application;
     let attempted_writes = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let home = application::open(
         attempted_writes.clone(),
@@ -251,7 +251,7 @@ fn compat_http_idempotency_resolves_identical_retries_and_denies_conflicts() {
 #[test]
 fn compat_http_idempotency_scope_isolated_by_workspace_target() {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
-    use worth_testkit_server::application_mutation as application;
+    use worth_testkit_server::facade::application_mutation as application;
     let attempted_writes = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let home = application::open(
         attempted_writes.clone(),

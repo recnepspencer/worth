@@ -13,12 +13,10 @@ fn open(
     contacts: Arc<AtomicUsize>,
 ) -> HostHome {
     let request = fixture::request(path.to_path_buf(), build(), initialized, contacts);
-    let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
-    })
-    .unwrap()
-    .unwrap_or_else(|refused| panic!("actual Host admission: {refused:?}"));
-    home
+
+    with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
+        .unwrap()
+        .unwrap_or_else(|refused| panic!("actual Host admission: {refused:?}"))
 }
 fn serial(bytes: Option<u64>, deadline: Option<std::time::Instant>) -> SerialRequest {
     SerialRequest::from_memory(
