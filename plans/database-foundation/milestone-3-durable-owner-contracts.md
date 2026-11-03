@@ -3160,3 +3160,21 @@ remains after conversion inside serving open. Media ownership, source order,
 limits, effect evidence and stage attribution stay unchanged, without new
 allocation, authority or larger limits. This narrow physical_admission change is
 a default-stack merge seam; it does not change Query close or source retirement.
+
+
+### Core-to-serving conversion has one final owner construction
+
+The focused default-stack observation after9347d324ab shows physical recovery,
+fresh reopen and cleanup returned. The remaining call depth enters the recovered
+core's into_serving_parts beneath its delegating into_serving_handoff and the
+Application terminal outcome receiver. Eliminate that intermediate optional
+(media,custody) tuple and optional custody value. The existing public consuming
+into_serving_handoff performs the SAME core deconstruction, explicit reopen Drop,
+four valid custody combinations, fingerprint checks and invalid-combination None,
+constructing the final handoff directly. Custody is initialized before media so
+missing fingerprints cannot move media into a partial handoff earlier than before.
+The certification release helper consumes this SAME handoff and returns its
+custody while releasing media. Remove into_serving_parts after its two-caller
+cutover. Fields remain confined to the private recovery_construction owner;
+there is no new public issuer, allocation, authority, limit or durable format.
+This is a narrow Store conversion merge seam, with public signatures preserved.

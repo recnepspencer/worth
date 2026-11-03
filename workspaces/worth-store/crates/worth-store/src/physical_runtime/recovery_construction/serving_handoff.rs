@@ -7,8 +7,8 @@ use crate::physical_runtime::{
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 
 pub struct RecoveredPhysicalServingHandoff {
-    media: AdmittedRecoveryFilesystemMedia,
-    custody: RecoveredPhysicalCheckpointCustody,
+    pub(super) media: AdmittedRecoveryFilesystemMedia,
+    pub(super) custody: RecoveredPhysicalCheckpointCustody,
 }
 
 /// A qualified serving media owner still carrying the selected recovery custody.
@@ -27,11 +27,58 @@ pub type RecoveredMediaAdmissionOutcome = worth_proof::ProofOutcome<
 >;
 
 impl RecoveredPhysicalRuntimeCore {
-    /// A move-only handoff that cannot release the lease while retaining
-    /// ordinary authority to open Serving against its selected custody.
+    /// Move the continuously held media owner and its one-shot selected custody
+    /// together. Neither can be reconstructed from checkpoint bytes.
     pub fn into_serving_handoff(self) -> Option<RecoveredPhysicalServingHandoff> {
-        let (media, custody) = self.into_serving_parts()?;
-        Some(RecoveredPhysicalServingHandoff { media, custody })
+        let Self {
+            residency,
+            checkpoint_ownership,
+            store,
+            recovery_allocation,
+            root,
+            media,
+            reopen,
+            head_v2_custody,
+            no_release_custody,
+            pending_wal_release_custody,
+            effective_release_heads,
+            historical_release_custody,
+            tier_custody,
+            selected_wal,
+            selected_controls,
+            ..
+        } = self;
+        drop(reopen);
+        // Ownership agrees with custody by construction: the generation-zero
+        // custody is minted only under this coordination's absence witness,
+        // and every other custody requires the selected checkpoint.
+        match (head_v2_custody, no_release_custody, pending_wal_release_custody, historical_release_custody, tier_custody, effective_release_heads) {
+            (None, Some(no_release), None, None, tier, None) => Some(RecoveredPhysicalServingHandoff {
+                custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_no_release(
+                    residency, checkpoint_ownership, store, recovery_allocation, root, no_release, tier, selected_wal?, selected_controls?,
+                ),
+                media,
+            }),
+            (None, None, Some(pending), None, tier, Some(effective)) => Some(RecoveredPhysicalServingHandoff {
+                custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_pending_wal_release(
+                    residency, checkpoint_ownership, store, recovery_allocation, root, pending, effective, tier, selected_wal?, selected_controls?,
+                ),
+                media,
+            }),
+            (None, None, None, Some(historical), tier, Some(effective)) => Some(RecoveredPhysicalServingHandoff {
+                custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_ordered_historical_release(
+                    residency, checkpoint_ownership, store, recovery_allocation, root, historical, effective, tier, selected_wal?, selected_controls?,
+                ),
+                media,
+            }),
+            (Some(head_v2), None, None, None, tier, None) => Some(RecoveredPhysicalServingHandoff {
+                custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_head_v2(
+                    residency, checkpoint_ownership, store, recovery_allocation, root, head_v2, tier, selected_wal?, selected_controls?,
+                ),
+                media,
+            }),
+            _ => None,
+        }
     }
 }
 
