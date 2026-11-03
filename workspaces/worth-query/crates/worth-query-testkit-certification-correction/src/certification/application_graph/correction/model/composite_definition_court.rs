@@ -117,12 +117,20 @@ pub fn exercise(application: &host::Host) {
         WorthQueryApplicationCorrectionPreparation::Settled(other) => {
             panic!("exact replay must return the original combined receipt: {other:?}")
         }
-        _ => panic!("exact replay must settle against the original combined publication"),
+        WorthQueryApplicationCorrectionPreparation::Prepared(_)
+        | WorthQueryApplicationCorrectionPreparation::PublicationPending
+        | WorthQueryApplicationCorrectionPreparation::ProductUnpublished(_) => {
+            panic!("exact replay must settle against the original combined publication")
+        }
     };
     super::recorded_receipt::assert_agrees(&replayed, &receipt);
     assert_eq!(
         replayed.aftermath_causality().unwrap().source(),
-        receipt.aftermath_causality().unwrap().recorded_source()
+        &receipt
+            .aftermath_causality()
+            .unwrap()
+            .recorded_source()
+            .coordinates()
     );
     assert_eq!(super::required_output_courts::head(application), corrected);
     deliver(application, &mut receipt);
