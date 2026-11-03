@@ -1,3 +1,5 @@
+mod construction_peak;
+
 use {
     crate::phase_four_planning::only_artifact,
     crate::phase_four_planning::ordinary_recovery_declaration,

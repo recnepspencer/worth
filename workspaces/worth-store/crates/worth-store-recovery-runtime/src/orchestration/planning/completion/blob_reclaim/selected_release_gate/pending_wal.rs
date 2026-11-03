@@ -44,7 +44,7 @@ pub(super) fn admit(
     };
     let projection = &basis.redo.projections()[projection_index];
     let Some(member) = member_fate::witness(&context, basis, projection) else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+        return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), None));
     };
     let remaining_bytes = remaining_observation(&context, basis);
     let mut discovery = context
@@ -111,7 +111,7 @@ pub(super) fn admit(
         Err(failure) => {
             let limit = resident_basis::limit_failure(&context, &resident)
                 .or_else(|| failure.limit(&context.limits, &basis.observed_pages.manifest_budget));
-            return Err(context.redo_block(basis.planning_counters(), limit));
+            return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), limit));
         }
     };
     let directory_replacement = match directory_replacement {
@@ -136,7 +136,7 @@ pub(super) fn admit(
         head_replay,
         directory_replacement,
     ) else {
-        return Err(context.redo_block(basis.planning_counters(), None));
+        return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), None));
     };
     claim::admit(
         context,
