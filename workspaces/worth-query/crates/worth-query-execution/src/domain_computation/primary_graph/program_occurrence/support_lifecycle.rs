@@ -37,7 +37,7 @@ struct SupportLifecycleState {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportLifecycle {
+pub struct WorthQueryProgramSupportLifecycle {
     state: Arc<Mutex<SupportLifecycleState>>,
 }
 

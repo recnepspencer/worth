@@ -42,7 +42,7 @@ struct WorthQueryApplicationAttemptCore {
 /// this value. It is minted only after the exact provider plan is checked
 /// against the already-admitted operation, pinned snapshot, graph-work session,
 /// and Relational branch.
-pub(in crate::domain_computation) struct WorthQueryApplicationAttemptAffinity {
+pub struct WorthQueryApplicationAttemptAffinity {
     basis: WorthQueryApplicationAttemptCore,
     provider_session: WorthQueryProviderSessionTerminalBinding,
     product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,

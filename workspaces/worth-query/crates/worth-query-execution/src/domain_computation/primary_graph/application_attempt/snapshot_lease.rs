@@ -7,14 +7,14 @@ use crate::domain_computation::primary_graph::product_operation::SharedSelectedP
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotLeaseDenial {
+pub enum WorthQueryApplicationSnapshotLeaseDenial {
     ForeignRuntime,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     SnapshotIdentityExhausted,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotRelease {
+pub enum WorthQueryApplicationSnapshotRelease {
     NativeSnapshotReleased,
     SharedBasisRelease(WorthQueryApplicationBasisReleaseOutcome),
 }

@@ -303,7 +303,7 @@ impl ComputationFactAttribution {
 
 /// A fact's exact position in the completed original payload, and its readers.
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct SealedComputationFact {
+pub struct SealedComputationFact {
     pub ordinal: usize,
     pub readers: ComputationFactReaders,
 }

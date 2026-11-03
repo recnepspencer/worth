@@ -28,7 +28,7 @@ pub struct RetainedOutputCurrentnessRead {
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// The facts and the witness are everything this output depends on.
     pub(in crate::domain_computation::primary_graph) consumed_nothing: bool,
-    pub(in crate::domain_computation::primary_graph) verification_requirement:
+    pub verification_requirement:
         Option<super::invalidation::FullVerificationReason>,
 }
 

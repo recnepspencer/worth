@@ -39,19 +39,19 @@ pub(in crate::domain_computation::primary_graph) struct StoppedCurrentSettlement
 }
 
 impl<'selected> PreparedCurrentSettlementRegistration<'selected> {
-    pub(in crate::domain_computation::primary_graph) fn identity(
+    pub fn identity(
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {
         &self.identity
     }
 
-    pub(in crate::domain_computation::primary_graph) fn selected_source(
+    pub fn selected_source(
         &self,
     ) -> &'selected PositionedRelationalSnapshot {
         self.selected
     }
 
-    pub(in crate::domain_computation::primary_graph) fn install(
+    pub fn install(
         self,
     ) -> Result<CurrentSettlementRegistrationCleanup, StoppedCurrentSettlementRegistration<'selected>>
     {

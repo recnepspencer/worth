@@ -43,7 +43,7 @@ impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Sc
 }
 
 impl InspectionTerminal<'_> {
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn complete(
+    pub fn complete(
         self,
         execution: &ExecutionRequest<'_, '_>,
         release: WorthQueryApplicationBasisReleaseReceipt,

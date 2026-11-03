@@ -3,8 +3,8 @@ use super::super::admission::rich::PreparedRichMaterialization;
 use super::*;
 use worth_runtime_bridge::facade::BridgeIdentityEvidence;
 pub(in super::super) struct FundedRichInspectionReport {
-    pub(in super::super) reference: FundedInspectionReport,
-    pub(in super::super) body: PreparedRichMaterialization,
+    pub reference: FundedInspectionReport,
+    pub body: PreparedRichMaterialization,
     pub(in super::super) identity: BridgeIdentityEvidence,
     pub(in super::super) retained_bytes: u64,
     pub(in super::super) connection_identity: Option<BridgeIdentityEvidence>,

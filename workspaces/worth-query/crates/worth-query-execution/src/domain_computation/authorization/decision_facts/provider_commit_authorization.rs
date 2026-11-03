@@ -96,7 +96,7 @@ impl WorthQueryProviderCommitAuthorization {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryRegisteredCommitAuthorization {
+pub struct WorthQueryRegisteredCommitAuthorization {
     authorization: WorthQueryProviderCommitAuthorization,
 }
 

@@ -44,7 +44,7 @@ use tree_materialization::materialize_result_tree;
 use tree_materialization::{OrderedCollectionWindow, ResultTreeCollectionSelection};
 use worth_relational::facade::indexes::{DerivedIndexGenerationId, RelatedEntityOrderingBoundary};
 
-pub(super) struct RawOneShotRows {
+pub struct RawOneShotRows {
     pub(super) material_source: Option<
         std::sync::Arc<
             crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
@@ -71,11 +71,11 @@ pub(super) struct RawOneShotRows {
     pub(super) actual_work: usize,
 }
 
-pub(super) struct RawNonLiveKernelOutcome {
+pub struct RawNonLiveKernelOutcome {
     pub raw: RawOneShotRows,
 }
 
-pub(super) struct RawLiveKernelOutcome {
+pub struct RawLiveKernelOutcome {
     pub(super) raw: RawOneShotRows,
 }
 

@@ -83,7 +83,7 @@ pub(in crate::domain_computation::primary_graph) struct CleanQueryFacts<'selecte
 impl SourceInvalidationOwner {
     /// Original facts were compared at this exact query image before entry.
     /// Unsupported projection or a historical capture retains full verification.
-    pub(in crate::domain_computation::primary_graph) fn retain_query_fact_coverage(
+    pub fn retain_query_fact_coverage(
         self: &Arc<Self>,
         basis: PositionedRelationalSnapshot,
         facts: &[WorthQueryApplicationObservedFact],
@@ -137,7 +137,7 @@ impl SourceInvalidationOwner {
     /// Lookup only the selected image and its exact opaque read binding. Every
     /// intervening publication maintained that binding through the ONE index;
     /// no original-basis retention or touch-history replay is needed.
-    pub(in crate::domain_computation::primary_graph) fn query_facts_clean_at<'selected>(
+    pub fn query_facts_clean_at<'selected>(
         &self,
         coverage: &'selected QueryFactCoverage,
         selected: &'selected PositionedRelationalSnapshot,

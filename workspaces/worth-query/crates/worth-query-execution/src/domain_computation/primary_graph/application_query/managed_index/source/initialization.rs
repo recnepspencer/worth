@@ -9,7 +9,7 @@ use worth_proof::{
 };
 use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
-pub(in crate::domain_computation::primary_graph) struct SourceInitializationIssuer {
+pub struct SourceInitializationIssuer {
     issuer: Issuer,
     _allocation: Arc<SourceFactsAllocation>,
 }

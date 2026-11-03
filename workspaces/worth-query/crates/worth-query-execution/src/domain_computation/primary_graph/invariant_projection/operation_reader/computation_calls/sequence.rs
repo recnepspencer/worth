@@ -35,7 +35,7 @@ pub mod tree;
 use tree::{build, leaf, patch, summary, visit};
 mod editing;
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct CallSummary {
+pub struct CallSummary {
     pub accounting: Option<ComputationCallAccounting>,
     pub declared: Option<u64>,
 }

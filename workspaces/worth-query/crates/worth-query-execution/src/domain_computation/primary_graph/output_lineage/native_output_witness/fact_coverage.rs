@@ -4,7 +4,7 @@ use super::*;
 impl SealedNativeOutputWitness {
     /// Reading a consumed entity's installed content does not make it an
     /// independent consumer fact. Its consumed edge still requires currentness.
-    pub(in crate::domain_computation::primary_graph) fn covers_content_fact(
+    pub fn covers_content_fact(
         &self,
         fact: &Fact,
     ) -> Result<bool, CompanionPreflightStop> {

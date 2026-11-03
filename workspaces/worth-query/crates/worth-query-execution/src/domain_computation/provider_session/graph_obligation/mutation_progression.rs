@@ -33,7 +33,7 @@ pub struct WorthQueryMutationRunBinding {
 
 /// Cleanup owner after the exact live provider session has been associated
 /// with the admitted mutation run.
-pub(in crate::domain_computation) struct WorthQueryProviderSessionBoundMutationRun {
+pub struct WorthQueryProviderSessionBoundMutationRun {
     run: WorthQueryMutationRunBinding,
     provider_session: super::super::WorthQueryProviderSessionTerminalBinding,
 }

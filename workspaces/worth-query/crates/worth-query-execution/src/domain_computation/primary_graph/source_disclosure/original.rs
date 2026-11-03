@@ -9,7 +9,7 @@ impl OriginalSourceDisclosure {
     pub(super) fn captured(parameters: CapturedApplicationQueryParameters) -> Self {
         Self(parameters)
     }
-    pub(in crate::domain_computation) fn query(
+    pub fn query(
         &self,
     ) -> &worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity {
         self.0.query()

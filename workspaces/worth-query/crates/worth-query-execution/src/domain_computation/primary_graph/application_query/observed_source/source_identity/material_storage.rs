@@ -79,7 +79,7 @@ impl ManagedInternerStorage<'_, '_, '_> {
 }
 
 #[derive(Default)]
-pub(super) struct CoordinateMeanings {
+pub struct CoordinateMeanings {
     pub(super) entries: Vec<Weak<WorthQueryObservedSourceMeaning>>,
     // The payload drops before its dedicated original funding. No batch read
     // allocation is retained by an unrelated Source coordinate.

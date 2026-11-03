@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use std::{collections::BTreeSet, sync::Arc};
 
-pub(in crate::domain_computation::primary_graph) struct ExpectedFactKeys {
+pub struct ExpectedFactKeys {
     walks: super::structural_walks::IssuedWalkValues,
     aggregates: super::aggregates::IssuedAggregateValues,
     components: super::components::IssuedComponentValues,

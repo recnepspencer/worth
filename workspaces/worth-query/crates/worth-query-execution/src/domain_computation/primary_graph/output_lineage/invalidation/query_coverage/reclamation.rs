@@ -12,7 +12,7 @@ pub(super) enum QueryReadBacking {
     },
 }
 impl QueryReadBacking {
-    pub(super) fn keys(&self) -> &OrdMap<Arc<FactPostingKey>, OrdSet<usize>> {
+    pub fn keys(&self) -> &OrdMap<Arc<FactPostingKey>, OrdSet<usize>> {
         match self {
             Self::Live(projection) => &projection.keys,
             Self::Released { keys, .. } => keys,

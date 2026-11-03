@@ -37,7 +37,7 @@ impl SourceFacts {
         }
     }
 }
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) enum SourceFactValues
+pub enum SourceFactValues
 {
     Admitted(std::vec::IntoIter<WorthQueryApplicationObservedFact>),
     Projected(

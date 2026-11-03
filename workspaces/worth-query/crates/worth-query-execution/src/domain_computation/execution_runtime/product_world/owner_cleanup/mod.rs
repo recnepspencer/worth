@@ -67,7 +67,7 @@ pub enum WorthQueryProductBranchOwnerCleanupDenial {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryProductBranchOwnerCleanupCapacityExhausted;
+pub struct WorthQueryProductBranchOwnerCleanupCapacityExhausted;
 
 #[derive(Debug)]
 pub struct WorthQueryProductBranchOwnerCleanupReceipt {

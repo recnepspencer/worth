@@ -83,7 +83,7 @@ pub struct WorthQueryInstalledEntityResolutionContext {
     layout: Arc<WorthQueryPrimaryGraphLayout>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryEntityResolutionTruth<'truth> {
+pub struct WorthQueryEntityResolutionTruth<'truth> {
     installed: &'truth WorthQueryInstalledEntityResolutionContext,
     relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,

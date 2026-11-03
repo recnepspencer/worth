@@ -86,7 +86,7 @@ impl RegistryState {
 }
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegistry {
+pub struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
     native_runtime: Option<u64>,
     sources: super::super::managed_index::ManagedSourceInstallation,

@@ -3,7 +3,7 @@
 use super::{OutputPartitionIndex, ProductCoordinate, SemanticSource};
 
 impl OutputPartitionIndex {
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn latest(
+    pub fn latest(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,

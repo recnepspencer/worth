@@ -17,13 +17,13 @@ use worth_query_declaration::facade::application_schema::ApplicationEntityMarker
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OutputRoleUse {
-    pub(in crate::domain_computation::primary_graph) name: String,
-    pub(in crate::domain_computation::primary_graph) posture: ApplicationMutationOutputPosture,
-    pub(in crate::domain_computation::primary_graph) cardinality:
+    pub name: String,
+    pub posture: ApplicationMutationOutputPosture,
+    pub cardinality:
         ApplicationMutationOutputRoleCardinality,
-    pub(in crate::domain_computation::primary_graph) entity_name: &'static str,
-    pub(in crate::domain_computation::primary_graph) entity_type: TypeId,
-    pub(in crate::domain_computation::primary_graph) contract_type: TypeId,
+    pub entity_name: &'static str,
+    pub entity_type: TypeId,
+    pub contract_type: TypeId,
 }
 
 impl OutputRoleUse {

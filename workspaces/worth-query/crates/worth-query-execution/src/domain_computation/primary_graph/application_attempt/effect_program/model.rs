@@ -21,11 +21,11 @@ pub(in crate::domain_computation::primary_graph) use emission::{
 /// `create_entity`, then write fields or link relations through it. A handle
 /// from another effect program is refused.
 pub struct WorthQueryApplicationEffectEntity<Schema, Entity> {
-    pub(super) reference: EntityReference,
-    pub(super) entity: String,
-    pub(super) created_effect: Option<usize>,
-    pub(super) program: Arc<()>,
-    pub(super) _marker: PhantomData<fn() -> (Schema, Entity)>,
+    pub reference: EntityReference,
+    pub entity: String,
+    pub created_effect: Option<usize>,
+    pub program: Arc<()>,
+    pub _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
 /// Only the creating effect program can initialize this new relation's payload.

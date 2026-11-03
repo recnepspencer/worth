@@ -55,7 +55,7 @@ impl OutputPartitionIndex {
             .is_some_and(|generations| generations.contains_key(&coordinate.generation))
     }
 
-    pub(super) fn insert_vacancy(
+    pub fn insert_vacancy(
         &mut self,
         source: SemanticSource,
         coordinate: ProductCoordinate,
@@ -106,7 +106,7 @@ impl OutputPartitionIndex {
         }
     }
 
-    pub(super) fn insert(
+    pub fn insert(
         &mut self,
         source: SemanticSource,
         occurrence: ProductBranchIncarnation,

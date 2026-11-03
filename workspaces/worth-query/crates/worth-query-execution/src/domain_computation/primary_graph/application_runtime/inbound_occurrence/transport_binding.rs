@@ -28,7 +28,7 @@ impl WorthQueryInstalledTransportCompletionBinding {
         &self.contract
     }
 
-    pub(in crate::domain_computation) fn runtime(&self) -> WorthQueryRuntimeAuthorityIdentity {
+    pub fn runtime(&self) -> WorthQueryRuntimeAuthorityIdentity {
         self.runtime
     }
 }

@@ -62,7 +62,7 @@ pub(in crate::domain_computation::primary_graph) struct FullVerificationImage<'s
 }
 
 impl SourceInvalidationOwner {
-    pub(in crate::domain_computation::primary_graph) fn capture_full_verification<'selected>(
+    pub fn capture_full_verification<'selected>(
         &'selected self,
         runtime: &'selected RelationalRuntime,
         snapshot: &'selected SnapshotHandle,

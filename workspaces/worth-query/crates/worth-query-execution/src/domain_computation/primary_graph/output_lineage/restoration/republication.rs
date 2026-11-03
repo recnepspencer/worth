@@ -44,13 +44,13 @@ pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
 
 /// A recorded republication and what its mark row registers.
 pub(in crate::domain_computation::primary_graph) struct RepublishedRecord {
-    pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
+    pub identity: Arc<RecordedSettlementIdentity>,
     /// The suspended record this row continues.
-    pub(in crate::domain_computation::primary_graph) predecessor: Arc<RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) facts: super::super::RetainedSourceFacts,
-    pub(in crate::domain_computation::primary_graph) consumed_outputs:
+    pub predecessor: Arc<RecordedSettlementIdentity>,
+    pub facts: super::super::RetainedSourceFacts,
+    pub consumed_outputs:
         Arc<[ConsumedOutputEvidence]>,
-    pub(in crate::domain_computation::primary_graph) witness:
+    pub witness:
         Arc<OnceLock<SealedNativeOutputWitness>>,
 }
 

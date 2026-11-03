@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicat
 impl OutputPartitionIndex {
     /// A vacant unpublished generation is skipped; every searched level and
     /// visited generation is charged before the corresponding read.
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn latest_admitted(
+    pub fn latest_admitted(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &SemanticSource,

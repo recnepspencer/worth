@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::Arc;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) struct PreparedComputationFacts
+pub struct PreparedComputationFacts
 {
     index: Arc<ComputationFactIndex>,
     metadata: Arc<

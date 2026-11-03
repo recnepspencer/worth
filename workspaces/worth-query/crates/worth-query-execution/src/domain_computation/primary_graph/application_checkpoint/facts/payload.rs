@@ -131,7 +131,7 @@ impl FactPayload {
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.length
     }
-    pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.length == 0
     }
     pub fn get(&self, ordinal: usize) -> Option<&Fact> {

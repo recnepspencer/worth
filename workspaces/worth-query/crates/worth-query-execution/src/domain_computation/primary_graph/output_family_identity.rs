@@ -9,7 +9,7 @@ impl OutputFamilyIdentity {
         Self(Cow::Borrowed(identity))
     }
 
-    pub(super) fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         &self.0
     }
 }

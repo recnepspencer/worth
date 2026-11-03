@@ -9,7 +9,7 @@ pub struct WorthQueryReadmissionEvidence {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(super) struct WorthQueryReadmissionProgress {
+pub struct WorthQueryReadmissionProgress {
     query: WorthQueryReadmissionCounters,
     bridge: Option<BridgeExecutionBasisReadmissionCounters>,
 }

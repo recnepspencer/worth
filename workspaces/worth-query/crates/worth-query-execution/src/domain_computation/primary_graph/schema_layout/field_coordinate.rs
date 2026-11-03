@@ -18,10 +18,10 @@ pub struct InstalledFieldCoordinate<'a> {
     native: &'a WorthQueryInstalledApplicationAspectContract,
 }
 impl InstalledFieldCoordinate<'_> {
-    pub(in crate::domain_computation::primary_graph) fn field(&self) -> &FieldKey {
+    pub fn field(&self) -> &FieldKey {
         &self.field.locator.field_path().fields()[0]
     }
-    pub(in crate::domain_computation::primary_graph) fn native(
+    pub fn native(
         &self,
     ) -> &WorthQueryInstalledApplicationAspectContract {
         self.native

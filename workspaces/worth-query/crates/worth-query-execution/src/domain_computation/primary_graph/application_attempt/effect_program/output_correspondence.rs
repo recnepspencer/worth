@@ -158,7 +158,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         self.storage.binding(role).map(|binding| binding.entity)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn active_entity_for_role(
+    pub fn active_entity_for_role(
         &self,
         role: &str,
     ) -> Option<EntityId> {

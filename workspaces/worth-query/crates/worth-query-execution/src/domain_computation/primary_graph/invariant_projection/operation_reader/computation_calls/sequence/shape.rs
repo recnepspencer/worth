@@ -1,7 +1,7 @@
 //! Persistent canonical order; ranks are views, never stored suffix positions.
 use super::*;
 use worth_execution::ExecutionOrderedMap;
-pub(in crate::domain_computation::primary_graph) struct CallShape {
+pub struct CallShape {
     pub(super) order: ExecutionOrderedMap<ComputationRead, ()>,
     pub(super) prefix: usize,
     pub(super) _memory: Option<QueryMemoryReservation>,
@@ -106,7 +106,7 @@ impl CallShape {
 }
 /// Issued only by the sequence's checked edits. It describes correspondence;
 /// the native prior and successful completed run must independently bind it.
-pub(in crate::domain_computation::primary_graph) struct CallShapeTransition {
+pub struct CallShapeTransition {
     pub(super) prior: Arc<CallShape>,
     pub(super) target: Arc<CallShape>,
     pub(super) inserted: ExecutionOrderedMap<ComputationRead, ()>,

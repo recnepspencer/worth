@@ -30,8 +30,8 @@ use retirement::RetirementMetadata;
 struct RoleProbe {
     role: String,
     entity_name: String,
-    kind: KindId,
-    posture: WorthQueryApplicationOutputPosture,
+    pub kind: KindId,
+    pub posture: WorthQueryApplicationOutputPosture,
     retirement: Option<RetirementMetadata>,
     entity: Option<EntityId>,
     first_aspect: usize,
@@ -59,7 +59,7 @@ pub struct PreparedNativeOutputWitness {
 /// change conservatively requests ordinary producer execution, even for ABA.
 #[derive(Debug)]
 pub struct SealedNativeOutputWitness {
-    roles: Vec<RoleProbe>,
+    pub roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
 }
 
@@ -73,13 +73,13 @@ pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputFact
 }
 
 impl PreparedNativeOutputFacts<'_> {
-    pub(in crate::domain_computation::primary_graph) fn count(&self) -> usize {
+    pub fn count(&self) -> usize {
         self.count
     }
 
     /// The caller has already reserved the complete flat Vec and Arc. No
     /// additional allocation is possible except the admitted aspect clones.
-    pub(in crate::domain_computation::primary_graph) fn append_into(self, facts: &mut Vec<Fact>) {
+    pub fn append_into(self, facts: &mut Vec<Fact>) {
         assert!(facts.capacity().saturating_sub(facts.len()) >= self.count);
         for role in &self.witness.roles {
             let entity_id = role.entity.expect("prepared witness role is filled");

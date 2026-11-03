@@ -154,10 +154,10 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
 #[derive(Clone, Debug)]
 pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
     pub entity_id: EntityId,
-    kind: KindId,
+    pub kind: KindId,
     pub entity: Arc<str>,
     pub authority_identity: u64,
-    _marker: PhantomData<fn() -> (Schema, Entity)>,
+    pub _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
 /// An exact projected entity admitted for the later application effect phase.

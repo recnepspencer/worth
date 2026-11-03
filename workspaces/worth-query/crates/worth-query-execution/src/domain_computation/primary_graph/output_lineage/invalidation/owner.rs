@@ -13,7 +13,7 @@ pub struct SourceInvalidationOwner {
     pub resources: WorthQueryInvalidationResources,
     pub(in crate::domain_computation::primary_graph) managed_views:
         Arc<crate::domain_computation::primary_graph::application_query::derived_view::ManagedDerivedViewRegistry>,
-    pub(super) branches: Mutex<BranchCells>,
+    pub branches: Mutex<BranchCells>,
     pub(super) released: Mutex<Vec<Arc<super::super::RecordedSettlementIdentity>>>,
 }
 pub(super) struct BranchCells {

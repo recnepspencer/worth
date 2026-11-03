@@ -20,7 +20,7 @@ impl WorthQueryObservedScopeSelector {
     pub(in crate::domain_computation::primary_graph) fn value(&self) -> &AspectValue {
         &self.value
     }
-    pub(in crate::domain_computation) fn subject(&self) -> EntityId {
+    pub fn subject(&self) -> EntityId {
         self.subject
     }
 }

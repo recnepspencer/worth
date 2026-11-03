@@ -285,7 +285,7 @@ pub fn redispatch_preparation(
 }
 
 impl InstalledTransportPendingReason {
-    pub(in crate::domain_computation::primary_graph) const fn dispatch_preparation_denial(
+    pub const fn dispatch_preparation_denial(
         self,
     ) -> WorthQueryExternalDispatchPreparationDenial {
         use InstalledTransportPendingReason as Pending;

@@ -1,7 +1,7 @@
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage as DenialStage;
 
-pub(super) struct WorthQueryAdmittedProviderSession<'run> {
+pub struct WorthQueryAdmittedProviderSession<'run> {
     pub staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
     mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
@@ -14,11 +14,11 @@ pub(super) struct WorthQueryProviderSessionAdmissionFailure {
 
 pub struct WorthQueryRegisteredProviderSession<'run> {
     pub registered: super::WorthQueryRegisteredProviderAttempt<'run>,
-    mutation_run:
+    pub mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
 
-pub(super) struct WorthQueryProviderSessionRegistrationFailure {
+pub struct WorthQueryProviderSessionRegistrationFailure {
     outcome: WorthQueryProviderProgressionOutcome,
     mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,

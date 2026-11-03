@@ -47,7 +47,7 @@ pub struct RecordedOutputMutable {
     stable_fact_spans: Option<super::input_cutoff::stable_publication::StableFactSpans>,
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
-    pub(super) computation: super::retained_computation::RecordedComputation,
+    pub computation: super::retained_computation::RecordedComputation,
 }
 
 impl RecordedOutputMutable {
@@ -80,7 +80,7 @@ impl RecordedOutputMutable {
         self.set_stable_fact_spans(spans);
         self
     }
-    pub(super) fn set_stable_fact_spans(
+    pub fn set_stable_fact_spans(
         &mut self,
         spans: super::input_cutoff::stable_publication::StableFactSpans,
     ) {

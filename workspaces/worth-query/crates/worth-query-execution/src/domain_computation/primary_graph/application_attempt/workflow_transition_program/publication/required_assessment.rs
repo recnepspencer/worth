@@ -2,17 +2,17 @@
 /// be computed for, at the program revision the instance runs.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RequiredWorkflowAssessment {
-    pub(super) instance: worth_relational::facade::identity::EntityId,
-    pub(super) node_path: String,
-    pub(super) transition_identity: String,
-    pub(super) occurrence: u64,
-    pub(super) query: String,
-    pub(super) parameter_type: String,
-    pub(super) result_type: String,
-    pub(super) binding: String,
+    pub instance: worth_relational::facade::identity::EntityId,
+    pub node_path: String,
+    pub transition_identity: String,
+    pub occurrence: u64,
+    pub query: String,
+    pub parameter_type: String,
+    pub result_type: String,
+    pub binding: String,
     pub proposal_identity: String,
     pub coverage_identity: String,
-    pub(super) program_revision: String,
+    pub program_revision: String,
 }
 
 impl RequiredWorkflowAssessment {

@@ -46,7 +46,7 @@ impl WorkflowAdmittedActor {
     }
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation) struct WorkflowActorFields {
+pub struct WorkflowActorFields {
     pub(in crate::domain_computation) partition: AspectFieldLocator,
     pub(in crate::domain_computation) slot: AspectFieldLocator,
     pub(in crate::domain_computation) generation: AspectFieldLocator,

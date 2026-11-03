@@ -103,7 +103,7 @@ impl PreparedVerifiedCurrent {
 impl SourceInvalidationOwner {
     /// This checks the live image only. Historical Clean does not authorize an
     /// edit to downstream pending marks at the selected current source.
-    pub(in crate::domain_computation::primary_graph) fn prepare_verified_current(
+    pub fn prepare_verified_current(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,

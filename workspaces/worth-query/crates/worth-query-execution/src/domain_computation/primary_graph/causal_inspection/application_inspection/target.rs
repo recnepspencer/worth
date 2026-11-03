@@ -163,7 +163,7 @@ impl WorthQueryApplicationInspectionTarget {
         }
     }
 
-    pub(in crate::domain_computation) fn contract(
+    pub fn contract(
         &self,
     ) -> &WorthQueryInstalledApplicationInspectionContract {
         &self.contract
@@ -205,7 +205,7 @@ impl WorthQueryApplicationInspectionTarget {
         }
     }
 
-    pub(super) fn original(&self) -> Option<&WorthQueryApplicationQueryObservation> {
+    pub fn original(&self) -> Option<&WorthQueryApplicationQueryObservation> {
         match &self.original {
             InspectionOriginal::Query { original, .. } => Some(original),
             InspectionOriginal::Source(_) => None,

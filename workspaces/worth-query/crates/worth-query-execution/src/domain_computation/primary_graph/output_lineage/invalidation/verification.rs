@@ -67,7 +67,7 @@ pub(in crate::domain_computation::primary_graph) struct VerifiedDirtySettlement 
 }
 
 impl SourceInvalidationOwner {
-    pub(in crate::domain_computation::primary_graph) fn reverify_dirty(
+    pub fn reverify_dirty(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
@@ -151,7 +151,7 @@ impl SourceInvalidationOwner {
 
     /// Historical states remain immutable. A concurrent native delivery or
     /// registration invalidates the sealed image and leaves dirty marks intact.
-    pub(in crate::domain_computation::primary_graph) fn clear_verified_dirty(
+    pub fn clear_verified_dirty(
         &self,
         verified: VerifiedDirtySettlement,
     ) -> Result<(), SettlementVerificationStop> {

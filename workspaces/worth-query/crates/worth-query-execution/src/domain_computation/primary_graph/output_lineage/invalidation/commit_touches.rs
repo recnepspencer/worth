@@ -74,7 +74,7 @@ pub(in crate::domain_computation::primary_graph) struct TouchedCommits {
 impl SourceInvalidationOwner {
     /// Latest delivered position across branches. Positions are globally
     /// ordered, so a cursor taken here precedes every later commit anywhere.
-    pub(in crate::domain_computation::primary_graph) fn latest_position(
+    pub fn latest_position(
         &self,
     ) -> Option<PatchStreamPosition> {
         let cells = self
@@ -94,7 +94,7 @@ impl SourceInvalidationOwner {
     /// Commits on `branch` after `cursor`, up to the selected `ceiling`, that
     /// touch the interest. Irrelevant commits advance the cursor silently; at
     /// most `limit` relevant commits are returned per call.
-    pub(in crate::domain_computation::primary_graph) fn touched_commits_after(
+    pub fn touched_commits_after(
         &self,
         branch: &BranchId,
         cursor: Option<PatchStreamPosition>,

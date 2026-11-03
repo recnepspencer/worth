@@ -30,12 +30,12 @@ pub(in crate::domain_computation) use registered::{
 };
 
 pub struct WorthQueryProgressedApplicationCommit {
-    outcome: WorthQueryProviderProgressionOutcome,
-    workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
-    lease: WorthQueryApplicationSnapshotLease,
-    running: crate::domain_computation::WorthQueryRunningDirectRun,
-    cleanup: WorthQueryApplicationMutationCleanupOwner,
-    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    pub outcome: WorthQueryProviderProgressionOutcome,
+    pub workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
+    pub lease: WorthQueryApplicationSnapshotLease,
+    pub running: crate::domain_computation::WorthQueryRunningDirectRun,
+    pub cleanup: WorthQueryApplicationMutationCleanupOwner,
+    pub request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 }
 
 struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
@@ -63,8 +63,8 @@ struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
 }
 
 pub struct WorthQueryProviderProgressionCompletion {
-    outcome: WorthQueryProviderProgressionOutcome,
-    cleanup: WorthQueryApplicationMutationCleanupOwner,
+    pub outcome: WorthQueryProviderProgressionOutcome,
+    pub cleanup: WorthQueryApplicationMutationCleanupOwner,
 }
 
 impl WorthQueryProviderProgressionCompletion {
@@ -94,24 +94,24 @@ pub struct WorthQueryApplicationCommitProgressionAuthority<
     Input,
     Scope,
 > {
-    application:
+    pub application:
         &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
         >,
-    provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
-    admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+    pub provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+    pub admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
         Input,
         Scope,
     >,
-    authorization:
+    pub authorization:
         crate::domain_computation::authorization::WorthQueryRegisteredCommitAuthorization,
-    idempotency: WorthQueryApplicationIdempotencyBinding,
-    coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
-    product: &'a crate::basis::WorthQueryProductBranchLease,
-    history: Option<HistoryProducerInvocation<'a>>,
-    aftermath_causality: Option<
+    pub idempotency: WorthQueryApplicationIdempotencyBinding,
+    pub coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
+    pub product: &'a crate::basis::WorthQueryProductBranchLease,
+    pub history: Option<HistoryProducerInvocation<'a>>,
+    pub aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
 }

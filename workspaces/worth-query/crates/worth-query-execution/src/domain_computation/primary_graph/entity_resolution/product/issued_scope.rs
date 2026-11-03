@@ -14,7 +14,7 @@ pub(in crate::domain_computation) struct WorthQueryIssuedSelectedScope<
 }
 
 impl<Schema, Scope> WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope> {
-    pub(in crate::domain_computation) fn scope(
+    pub fn scope(
         &self,
     ) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
         &self.scope

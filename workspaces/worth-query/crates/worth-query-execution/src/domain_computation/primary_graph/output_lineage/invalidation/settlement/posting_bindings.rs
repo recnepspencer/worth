@@ -16,7 +16,7 @@ pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) s
         OrdSet<Arc<RecordedSettlementIdentity>>,
 }
 impl PostingBindings {
-    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn settlements(
+    pub fn settlements(
         &self,
     ) -> Option<&SettlementPostingBindings> {
         match self {

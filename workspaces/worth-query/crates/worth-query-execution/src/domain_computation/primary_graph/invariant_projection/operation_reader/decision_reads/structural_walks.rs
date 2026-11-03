@@ -17,7 +17,7 @@ struct Issued {
     contracts: Arc<Contracts>,
     cookie: u64,
 }
-pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) enum WalkRecordDenial
+pub enum WalkRecordDenial
 {
     Execution(Cause),
     Conflict,

@@ -45,7 +45,7 @@ where
     handler: Arc<dyn OperationHandler<Schema, Binding>>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRegistry<Schema> {
+pub struct PendingMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
     computations: HashMap<TypeId, InstalledManagedComputationOwner>,
     // Locates a typed setup owner; seal still verifies that owner's actual binding.

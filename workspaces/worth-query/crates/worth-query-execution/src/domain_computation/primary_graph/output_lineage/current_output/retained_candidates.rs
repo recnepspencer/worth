@@ -9,14 +9,14 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedOutputCandidate {
     pub(in crate::domain_computation::primary_graph) producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
-    pub(in crate::domain_computation::primary_graph) correspondence:
+    pub correspondence:
         Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>,
-    pub(in crate::domain_computation::primary_graph) source_identity:
+    pub source_identity:
         Option<RecordedSourceIdentity>,
-    pub(in crate::domain_computation::primary_graph) observed_source_facts: Option<super::super::ComparableSourceFacts>,
+    pub observed_source_facts: Option<super::super::ComparableSourceFacts>,
     /// The performed output's sealed witness: its origin's for a stable
     /// alias. A restored row has none until a full verification builds it.
-    pub(in crate::domain_computation::primary_graph) native_output_witness:
+    pub native_output_witness:
         Option<Arc<OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>>,
     /// Why the row's settlement is verified in full, when it is: the row was
     /// restored, or the owner could not register it. A commit that could not

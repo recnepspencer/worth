@@ -11,7 +11,7 @@ use super::{
 };
 use crate::domain_computation::managed_run::WorthQueryManagedLowerExecutionBasis;
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCauseQueue<Payload> {
+pub struct WorthQueryLiveCauseQueue<Payload> {
     subscription: WorthQueryLiveSubscription,
     cursor: u64,
     active_batch: Option<WorthQueryActiveLiveBatch>,

@@ -30,7 +30,7 @@ impl OutputBindingInventory {
             assert_eq!(old, binding);
         }
     }
-    pub(super) fn identity(&self, binding: TypeId) -> Option<OutputBindingIdentity> {
+    pub fn identity(&self, binding: TypeId) -> Option<OutputBindingIdentity> {
         self.by_type.get(&binding).cloned()
     }
     pub(super) fn binding_type(&self, identity: &OutputBindingIdentity) -> Option<TypeId> {

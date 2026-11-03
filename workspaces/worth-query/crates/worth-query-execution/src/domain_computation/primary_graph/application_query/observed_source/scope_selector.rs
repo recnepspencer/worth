@@ -38,7 +38,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.parameters.binding_observation()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retained_scope_selector(
+    pub fn retained_scope_selector(
         &self,
     ) -> &WorthQueryObservedScopeSelector {
         &self.scope_selector

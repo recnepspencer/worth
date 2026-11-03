@@ -101,7 +101,7 @@ impl RetainedInputCutoffCandidate {
         self.originating_recorded()?.native_output_witness_cell()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn settlement_identity(
+    pub fn settlement_identity(
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {
         &self.recorded().settlement_identity

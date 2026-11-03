@@ -86,7 +86,7 @@ impl From<CompanionPreflightStop> for SettlementRegistrationStop {
 }
 
 impl SourceInvalidationOwner {
-    pub(super) fn cell_for_read(
+    pub fn cell_for_read(
         &self,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<Option<CompanionBranchCell<BranchMarkRoot>>, CompanionPreflightStop> {
@@ -133,7 +133,7 @@ impl SourceInvalidationOwner {
         Ok(copy_currentness(aligned.currentness(identity)))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn consumed_output_currentness(
+    pub fn consumed_output_currentness(
         &self,
         selected: &PositionedRelationalSnapshot,
         identity: &RecordedSettlementIdentity,
@@ -191,7 +191,7 @@ impl SourceInvalidationOwner {
     /// All fact/index construction and native image custody precede the
     /// consuming installation. A prepared registration binds the exact cell
     /// image, so a racing source publication cannot be overwritten.
-    pub(in crate::domain_computation::primary_graph) fn prepare_settlement(
+    pub fn prepare_settlement(
         &self,
         registration: SettlementRegistration,
     ) -> Result<PreparedSettlementRegistration, SettlementRegistrationStop> {

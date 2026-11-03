@@ -34,22 +34,22 @@ pub struct WorthQueryRunningApplicationCommit<
     Input,
     Scope,
 > {
-    admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+    pub admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
         Input,
         Scope,
     >,
     pub lease: WorthQueryApplicationSnapshotLease,
-    provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
-    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
-    workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
-    authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
-    idempotency: WorthQueryApplicationIdempotencyBinding,
+    pub provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
+    pub outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+    pub workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
+    pub authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
+    pub idempotency: WorthQueryApplicationIdempotencyBinding,
     pub running: crate::domain_computation::WorthQueryRunningDirectRun,
     pub mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
-    attempt_basis: WorthQueryApplicationAttemptBasis,
-    aftermath_causality: Option<
+    pub attempt_basis: WorthQueryApplicationAttemptBasis,
+    pub aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
 }

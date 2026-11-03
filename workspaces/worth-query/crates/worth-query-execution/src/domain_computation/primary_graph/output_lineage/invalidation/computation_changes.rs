@@ -91,7 +91,7 @@ impl ComputationChanges {
     }
 }
 impl SourceInvalidationOwner {
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn computation_changes(
+    pub fn computation_changes(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
