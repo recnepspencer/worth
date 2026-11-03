@@ -13,7 +13,6 @@ pub(crate) struct PreparedCheckpointDirectoryRetirement {
 }
 pub(crate) struct CheckpointDirectoryRetirement {
     payload: Box<DirectoryRetirementPayload>,
-    _memory: Option<ExecutionMemoryReservation>,
 }
 struct DirectoryRetirementPayload {
     _source_schemas: std::sync::OnceLock<
@@ -27,6 +26,9 @@ struct DirectoryRetirementPayload {
     member: Option<RelationalDurableMemberRetirement>,
     read: SelectedCheckpointReadRetirement,
     retired_member: Option<RetiredRelationalDurableMemberCustody>,
+    // Keep the original funding inside its prepaid payload. The edge carries
+    // one pointer, and every retained field drops before its reservation.
+    _memory: Option<ExecutionMemoryReservation>,
 }
 impl PreparedCheckpointDirectoryRetirement {
     pub(crate) fn prepare(request: &ExecutionRequest<'_, '_>) -> Result<Self, Ack> {
@@ -61,10 +63,10 @@ impl RelationalCheckpointDirectory {
             member: Some(_basis.into_retirement()),
             read: canonical_read.into_retirement(),
             retired_member: None,
+            _memory: retirement.memory,
         };
         CheckpointDirectoryRetirement {
             payload: Box::write(retirement.storage, payload),
-            _memory: retirement.memory,
         }
     }
 }
