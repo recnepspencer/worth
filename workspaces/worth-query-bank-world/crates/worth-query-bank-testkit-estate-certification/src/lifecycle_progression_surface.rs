@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Certification returns the original typed Bank recovery custody without allocating on refusal"
+)]
 pub use bank_domain::{estate::EstateAction, proposals::BankIdempotencyKey};
 pub use bank_estate_certification::{
     exercise_estate_lifecycle, EstateLifecycleInputs, EstateLifecyclePrincipals,
