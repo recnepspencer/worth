@@ -126,6 +126,8 @@ def struct_shape(text):
     fields = {}
     if k < len(stream) and stream[k].value in ('{', '('):
         body = text[stream[k].end:stream[matching[k]].start]
+        # Comments may hold commas; they are not fields.
+        body = re.sub(r'//[^\n]*', '', re.sub(r'(?s)/\*.*?\*/', '', body))
         for index, part in enumerate(split_top(body)):
             part = re.sub(r'(?s)^\s*(?:#\s*\[[^\]]*\]\s*|///[^\n]*\n\s*)*', '', part).strip()
             part = re.sub(r'^pub(?:\s*\([^)]*\))?\s+', '', part)
