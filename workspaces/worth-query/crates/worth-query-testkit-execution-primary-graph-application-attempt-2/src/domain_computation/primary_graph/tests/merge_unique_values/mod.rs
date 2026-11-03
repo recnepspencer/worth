@@ -52,7 +52,7 @@ impl MergeWorld {
         let field = |aspect: &str, name: &str| {
             (*handle
                 .layout_for_test())
-                .field("Account", aspect, name)
+                .field_for_test("Account", aspect, name)
                 .expect("the schema declares the field")
                 .clone()
         };

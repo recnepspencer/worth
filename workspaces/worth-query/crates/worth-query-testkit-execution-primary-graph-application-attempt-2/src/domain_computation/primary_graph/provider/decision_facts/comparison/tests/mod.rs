@@ -72,7 +72,7 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
         };
         assert_eq!(generic.counters(), scoped.counters());
         for fact in table.values_for_test() {
-            assert!(scoped.contains_locator_for_test(&fact.locator_identity()));
+            assert!(scoped.contains_locator_for_test(&fact.locator_identity_for_test()));
         }
         assert!(!scoped.contains_locator_for_test("unregistered-same-count-substitution"));
         let mut wrong_keys = requests.clone();

@@ -37,7 +37,7 @@ fn fixture_requeue_admitted_work(
             .as_ref()
             .cloned()
             .expect("admitted required record retains its token");
-        member.set_required(true);
+        member.set_required_for_test(true);
     }
 
 fn fixture_admitted_work_membership(

@@ -238,3 +238,10 @@ impl DemandRecord {
         &mut self.successor_of
     }
 }
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn required_keys_mut_for_test(&mut self) -> &mut std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>> {
+        &mut self.required_keys
+    }
+}

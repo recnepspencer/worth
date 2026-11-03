@@ -264,3 +264,5 @@ fn retained_observation(
 fn binding_failure(detail: &'static str) -> BindingFailure {
     BindingFailure::new(BindingKind::ProviderRejected, detail)
 }
+
+mod court_doors_for_test;

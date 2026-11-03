@@ -91,10 +91,10 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
                                 return worth_query_execution::test_read_stops::cancelled_at_consult_for_test(
                                     2,
                                     source,
-                                    || fact.remains_equal_in(reader, runtime, &snapshot),
+                                    || fact.remains_equal_in_for_test(reader, runtime, &snapshot),
                                 );
                             }
-                            fact.remains_equal_in(reader, runtime, &snapshot)
+                            fact.remains_equal_in_for_test(reader, runtime, &snapshot)
                         })
                         .map_err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::decision_facts::fact_read_set_failure)?;
                     admission.observe_current_version(if current {

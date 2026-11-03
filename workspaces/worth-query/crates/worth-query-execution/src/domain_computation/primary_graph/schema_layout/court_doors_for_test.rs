@@ -29,3 +29,11 @@ impl WorthQueryPrimaryRelationLayout {
         &self.kind
     }
 }
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn field_for_test(
+        &self, entity: &str, aspect: &str, field: &str) -> Option<&WorthQueryPrimaryFieldLayout> {
+        Self::field(self, entity, aspect, field)
+    }
+}

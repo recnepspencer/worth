@@ -128,6 +128,6 @@ pub fn custody_wait(superseded: bool, token: bool) {
     assert!((*state
         .records_for_test())
         .values_for_test()
-        .all(|row| row.source_commits.is_empty()));
+        .all(|row| (*row.source_commits_for_test()).is_empty()));
     assert!(!state.pending_custody_prune_for_test());
 }

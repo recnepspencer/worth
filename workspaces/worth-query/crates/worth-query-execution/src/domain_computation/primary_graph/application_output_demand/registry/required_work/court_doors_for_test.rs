@@ -7,3 +7,10 @@ impl RequiredWorkMembership {
         Self::new(key, queue)
     }
 }
+
+impl RequiredWorkMembership {
+    #[doc(hidden)]
+    pub fn set_required_for_test(self: &Arc<Self>, required: bool) {
+        Self::set_required(self, required)
+    }
+}
