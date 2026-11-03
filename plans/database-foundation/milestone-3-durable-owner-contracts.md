@@ -2984,3 +2984,18 @@ and closed-stage cancellation consume that same payload. Earlier cancellation or
 staging failure drops only the unused empty successor backing. There is no late
 allocation fallback and no optional phase owner. Filesystem default-stack courts
 remain the qualification for the resulting call chain.
+
+
+Staging input itself now occupies a third checked slot under that same original
+allowance. Empty input backing is distinct from executable RecoveryStagingInput.
+A non-inlined conversion receiver consumes planned custody, explicitly drops the
+unused redo plan, seals the exact actual input payload, and returns before staging
+execution starts. Execution borrows this state and has only a narrow mutable
+integrity-trace accessor. Completion extracts once after both interruption checks;
+blocking extracts once into the existing owning outcome. No copied view, Deref,
+alias, optional owner, authority clone, or post-effect allocation is introduced.
+Aggregate preflight and actual-capacity accounting include all three backings.
+The admitted movement peak is the maximum of final planned construction plus its
+original extractions, planned extraction plus input construction/movement, and
+input extraction plus staged construction/movement. Thus unused redo need not
+remain live alongside later settlement storage to avoid stack copies.

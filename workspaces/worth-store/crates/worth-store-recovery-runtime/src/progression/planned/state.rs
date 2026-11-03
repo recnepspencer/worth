@@ -44,12 +44,12 @@ mod tests {
         let payload = std::mem::size_of::<PlannedRecoveryState>() as u64;
         for extraction in [0, payload] {
             let staged = std::mem::size_of::<crate::progression::StagedRecoveryState>() as u64;
-            let movement = (payload + extraction).max(
-                payload
-                    + std::mem::size_of::<crate::orchestration::RecoveryStagingInput>() as u64
-                    + 2 * staged,
-            );
-            let required = 17 + payload + staged + movement;
+            let input =
+                std::mem::size_of::<crate::orchestration::RecoveryStagingInputState>() as u64;
+            let movement = (payload + extraction)
+                .max(payload + 2 * input)
+                .max(input + 2 * staged);
+            let required = 17 + payload + staged + input + movement;
             let mut allowance = PlanningResidentAllowance::new(17, required - 1).unwrap();
             assert!(matches!(
                 PlannedStateBacking::prepare(&mut allowance, extraction),
@@ -69,14 +69,16 @@ mod tests {
             let planned_backing = PlanningResidentAllowance::vector_bytes(&backing.values).unwrap();
             let staged_backing = backing.staged.backing_bytes().unwrap();
             let staged = std::mem::size_of::<crate::progression::StagedRecoveryState>() as u64;
-            let movement = (payload + extraction).max(
-                payload
-                    + std::mem::size_of::<crate::orchestration::RecoveryStagingInput>() as u64
-                    + 2 * staged,
-            );
-            let actual = planned_backing + staged_backing;
+            let input =
+                std::mem::size_of::<crate::orchestration::RecoveryStagingInputState>() as u64;
+            let movement = (payload + extraction)
+                .max(payload + 2 * input)
+                .max(input + 2 * staged);
+            let input_backing = backing.input.backing_bytes().unwrap();
+            let actual = planned_backing + staged_backing + input_backing;
             assert!(planned_backing >= payload);
             assert!(staged_backing >= staged);
+            assert!(input_backing >= input);
             assert_eq!(allowance.used(), 17 + actual);
             assert_eq!(allowance.peak(), 17 + actual + movement);
             assert!(backing.values.is_empty());
@@ -92,6 +94,7 @@ mod tests {
 pub(crate) struct PlannedStateBacking {
     values: Vec<PlannedRecoveryState>,
     staged: crate::progression::StagedStateBacking,
+    input: crate::orchestration::RecoveryStagingInputBacking,
 }
 
 impl PlannedStateBacking {
@@ -105,12 +108,23 @@ impl PlannedStateBacking {
         >(1)?;
         let overflow = || super::PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX };
         let scratch = construction_scratch(extraction_bytes).ok_or_else(overflow)?;
-        let backing = payload.checked_add(staged).ok_or_else(overflow)?;
+        let input_bytes = super::PlanningResidentAllowance::slot_bytes::<
+            crate::orchestration::RecoveryStagingInputState,
+        >(1)?;
+        let backing = payload
+            .checked_add(staged)
+            .and_then(|bytes| bytes.checked_add(input_bytes))
+            .ok_or_else(overflow)?;
         allowance.transient(backing.checked_add(scratch).ok_or_else(overflow)?)?;
         let values = allowance.reserve::<PlannedRecoveryState>(1)?;
         let staged = crate::progression::StagedStateBacking::prepare(allowance)?;
+        let input = crate::orchestration::RecoveryStagingInputBacking::prepare(allowance)?;
         allowance.transient(scratch)?;
-        Ok(Self { values, staged })
+        Ok(Self {
+            values,
+            staged,
+            input,
+        })
     }
 
     pub(super) fn finish(mut self, state: PlannedRecoveryState) -> super::PlannedPhysicalRecovery {
@@ -131,24 +145,27 @@ impl PlannedStateBacking {
 
     pub(super) fn into_staging_parts(
         mut self,
-    ) -> (PlannedRecoveryState, crate::progression::StagedStateBacking) {
+    ) -> (
+        PlannedRecoveryState,
+        crate::orchestration::RecoveryStagingInputBacking,
+        crate::progression::StagedStateBacking,
+    ) {
         let state = self
             .values
             .pop()
             .expect("planned receiver contains its admitted state");
-        (state, self.staged)
+        (state, self.input, self.staged)
     }
 }
 
 fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
     let planned = std::mem::size_of::<PlannedRecoveryState>() as u64;
     let staged = std::mem::size_of::<crate::progression::StagedRecoveryState>() as u64;
-    let staging_input = std::mem::size_of::<crate::orchestration::RecoveryStagingInput>() as u64;
+    let input = std::mem::size_of::<crate::orchestration::RecoveryStagingInputState>() as u64;
     Some(
-        planned.checked_add(extraction_bytes)?.max(
-            planned
-                .checked_add(staging_input)?
-                .checked_add(staged.checked_mul(2)?)?,
-        ),
+        planned
+            .checked_add(extraction_bytes)?
+            .max(planned.checked_add(input.checked_mul(2)?)?)
+            .max(input.checked_add(staged.checked_mul(2)?)?),
     )
 }

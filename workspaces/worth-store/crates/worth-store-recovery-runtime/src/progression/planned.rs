@@ -21,6 +21,7 @@ use state::PlannedRecoveryState;
 pub(crate) use state::PlannedStateBacking;
 
 mod cancellation;
+mod staging_input;
 pub use cancellation::PhysicalRecoveryStagingCancellation;
 
 impl PlannedPhysicalRecovery {
@@ -201,47 +202,8 @@ impl PlannedPhysicalRecovery {
         self,
         cancellation: crate::orchestration::RecoveryStagingCancellation,
     ) -> Result<super::StagedPhysicalRecovery, PhysicalRecoveryOutcome> {
-        let (planned, staged_backing) = self.state.into_staging_parts();
-        let PlannedRecoveryState {
-            authority,
-            coordination,
-            selection,
-            custody,
-            verified_selected_tier_custody,
-            discovery_counters,
-            freshness,
-            fates,
-            redo: _,
-            plan_cost: _,
-            planning_counters,
-            root_protocol_counters,
-            staging,
-            publication,
-            quiescence,
-            root_protocol_denials,
-            integrity_trace,
-            integrity,
-        } = planned;
-        crate::orchestration::stage_recovery(crate::orchestration::RecoveryStagingInput {
-            staged_backing,
-            authority,
-            coordination,
-            selection,
-            custody,
-            verified_selected_tier_custody,
-            discovery_counters,
-            root_protocol_denials,
-            integrity,
-            freshness,
-            fates,
-            planning_counters,
-            root_protocol_counters,
-            staging,
-            publication,
-            quiescence,
-            cancellation,
-            integrity_trace,
-        })
+        let input = staging_input::prepare(self.state, cancellation);
+        crate::orchestration::stage_recovery(input)
     }
 }
 mod basis;
