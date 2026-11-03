@@ -39,7 +39,6 @@ fn project_outcome(outcome: PhysicalRecoveryOutcome) -> ProcessRecoveryObservati
         },
         PhysicalRecoveryOutcome::Refused(refusal) => ProcessRecoveryObservation {
             observed_store_identity: None,
-            posture: ProcessRecoveryPosture::Refused(project_refusal_cause(refusal.kind)),
             recovery_effects: refusal.recovery_effects(),
             discovery: None,
             root_protocol: project_root_protocol_counters(refusal.root_protocol_counters()),
@@ -47,6 +46,7 @@ fn project_outcome(outcome: PhysicalRecoveryOutcome) -> ProcessRecoveryObservati
             ingress: project_ingress(refusal.integrity_observations()),
             wal: project_wal(refusal.wal_integrity_observations().wal()),
             integrity_counters: project_counters(refusal.integrity_counters()),
+            posture: ProcessRecoveryPosture::Refused(project_refusal_cause(refusal.kind)),
         },
         PhysicalRecoveryOutcome::Blocked(block) => {
             let evidence = block.evidence();

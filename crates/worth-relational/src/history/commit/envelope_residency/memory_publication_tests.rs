@@ -317,6 +317,21 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
         .unwrap()
         .envelope_residency();
     let (entry, source) = cell.journal_placement().unwrap();
+    // Descriptive OLD-layout value only, outside funding/no-copy claims.
+    // Its exact historical Arc<Entry> type remains independent of the new owner.
+    let old = OldBacking::Journal {
+        entry: Arc::new(entry.as_ref().clone()),
+        source: source.clone(),
+        unsettled: None,
+    };
+    if let OldBacking::Journal {
+        entry,
+        source,
+        unsettled,
+    } = old
+    {
+        drop((entry, source, unsettled));
+    }
     assert!(entry.same_owner(&cell.journal_placement().unwrap().0));
     assert!(cell.resident_payload_bytes().is_none());
     assert_eq!(cell.payload_storage_bytes(), 0);
