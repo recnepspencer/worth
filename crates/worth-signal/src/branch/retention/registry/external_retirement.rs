@@ -1,4 +1,4 @@
-﻿//! Retain original ledger keys while explicitly retiring their live obligation.
+//! Retain original ledger keys while explicitly retiring their live obligation.
 use super::*;
 use crate::branch::SignalBranchRetentionRetirementDenial as Denial;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
@@ -56,65 +56,16 @@ impl SignalBranchRetentionBinding {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::branch::SignalBranchRetentionRetirementProgress;
-    use crate::facade::{SignalGraph, SignalRuntime};
-    use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
-    #[test]
-    fn original_signal_lease_survives_busy_and_stop_then_retires_once_without_drop_release() {
-        let mut runtime: SignalRuntime<(), (), (), (), ()> =
-            SignalRuntime::builder(SignalGraph::new())
-                .with_kernel_defaults()
-                .build();
-        let basis = runtime
-            .observe_signal_branch_basis(runtime.current_branch())
-            .unwrap();
-        let identity = basis
-            .observation()
-            .target()
-            .as_basis()
-            .unwrap()
-            .graph_instance_id()
-            .parse()
-            .unwrap();
-        let registry = SignalBranchRetentionRegistry::new(identity);
-        let lease = registry.acquire_external(&basis).unwrap();
-        let before = registry.terminal_counts();
-        let mut original = lease.into_retirement();
-        let live = SerialRequest::from_memory(
-            SerialMemoryBudget::new(None),
-            CancellationSource::new().token(),
-            None,
-        );
-        let request = ExecutionRequest::serial(&live);
-        let guard = registry.ledger.state.lock().unwrap();
-        assert_eq!(original.advance(&request), Err(Denial::Busy));
-        assert_eq!(registry.terminal_counts(), before);
+impl SignalBranchRetentionBinding {
+    pub(crate) fn assert_busy_retirement_preserves_ledger(
+        &self,
+        original: &mut crate::branch::SignalBranchRetentionRetirement,
+        request: &ExecutionRequest<'_, '_>,
+    ) {
+        let guard = self.ledger.state.lock().unwrap();
+        let before = self.terminal_counts();
+        assert_eq!(original.advance(request), Err(Denial::Busy));
+        assert_eq!(self.terminal_counts(), before);
         drop(guard);
-        let cancellation = CancellationSource::new();
-        cancellation.cancel();
-        let stopped =
-            SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
-        assert!(matches!(
-            original.advance(&ExecutionRequest::serial(&stopped)),
-            Err(Denial::Execution(_))
-        ));
-        assert_eq!(registry.test_observation().external_lease_count, 1);
-        assert_eq!(registry.terminal_counts(), before);
-        assert_eq!(
-            original.advance(&request),
-            Ok(SignalBranchRetentionRetirementProgress::Complete)
-        );
-        assert_eq!(registry.test_observation().external_lease_count, 0);
-        let after = registry.terminal_counts();
-        assert_eq!(
-            original.advance(&ExecutionRequest::serial(&stopped)),
-            Ok(SignalBranchRetentionRetirementProgress::Complete)
-        );
-        assert_eq!(registry.terminal_counts(), after);
-        original.into_retired().unwrap().reclaim();
-        assert_eq!(registry.terminal_counts(), after);
     }
 }
-

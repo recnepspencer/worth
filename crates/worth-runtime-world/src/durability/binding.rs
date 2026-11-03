@@ -65,15 +65,26 @@ pub(crate) struct WorldDurableMediumBinding {
         Mutex<super::checkpoint::WorldCheckpointAcknowledgement>,
     pub(in crate::durability) checkpoint_origin:
         Mutex<super::checkpoint::WorldCheckpointOriginState>,
+    _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorldDurableMediumBinding {
-    pub(crate) fn new(medium: Arc<dyn RuntimeWorldDurableMedium>) -> Arc<Self> {
-        Arc::new(Self {
+    pub(crate) fn new(
+        medium: Arc<dyn RuntimeWorldDurableMedium>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, WorldDurableMediumDenial> {
+        let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .expect("fixed World binding layout");
+        let funding = request
+            .reserve_retained_memory(layout.pad_to_align().size() as u64)
+            .map_err(WorldDurableMediumDenial::Request)?;
+        Ok(Arc::new(Self {
             medium,
             gates: Mutex::new(PublicationGates::default()),
             checkpoint_acknowledgement: Mutex::new(Default::default()),
             checkpoint_origin: Mutex::new(Default::default()),
-        })
+            _funding: funding,
+        }))
     }
     pub(crate) fn binding(&self) -> &WorldDurableHomeBinding {
         self.medium.binding()

@@ -67,3 +67,36 @@ impl RetiredSignalBranchRetention {
         drop(self);
     }
 }
+
+#[cfg(test)]
+impl SignalBranchRetentionRetirement {
+    pub(crate) fn assert_busy_stop_and_exact_explicit_retirement(
+        mut self,
+        request: &ExecutionRequest<'_, '_>,
+        stopped: &ExecutionRequest<'_, '_>,
+    ) {
+        let binding = self.original.binding.clone();
+        let before = binding.terminal_counts();
+        binding.assert_busy_retirement_preserves_ledger(&mut self, request);
+        assert!(matches!(
+            self.advance(stopped),
+            Err(SignalBranchRetentionRetirementDenial::Execution(_))
+        ));
+        assert!(self.original.retains_live_obligation());
+        assert_eq!(binding.terminal_counts(), before);
+        assert_eq!(
+            self.advance(request),
+            Ok(SignalBranchRetentionRetirementProgress::Complete)
+        );
+        let after = binding.terminal_counts();
+        assert_eq!(after.explicit_releases(), before.explicit_releases() + 1);
+        assert_eq!(after.dropped_releases(), before.dropped_releases());
+        assert_eq!(
+            self.advance(stopped),
+            Ok(SignalBranchRetentionRetirementProgress::Complete)
+        );
+        assert_eq!(binding.terminal_counts(), after);
+        self.into_retired().unwrap().reclaim();
+        assert_eq!(binding.terminal_counts(), after);
+    }
+}

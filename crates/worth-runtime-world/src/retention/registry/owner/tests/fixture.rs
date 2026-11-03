@@ -267,3 +267,35 @@ pub(super) fn ordinary_commit(
     )
     .expect("explicit ordinary commit from same admitted basis")
 }
+
+// Thin unit entries use this already owned construction root and borrow its
+// genuine handles into the exact retention owner's private assertions.
+#[test]
+fn checkpoint_origin_keeps_exact_component_leases_after_history_claims_retire() {
+    let fixture = real_fixture(2, 2);
+    let serial = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&serial);
+    fixture
+        .owner
+        .assert_checkpoint_origin_keeps_exact_component_leases_after_history_claims_retire(
+            &fixture.basis,
+            &fixture.relational_runtime,
+            &request,
+        );
+}
+#[test]
+fn checkpoint_origin_preserves_original_claims_across_busy_and_cancelled_retirement() {
+    let fixture = real_fixture(4, 4);
+    let serial = crate::test_execution_policy::serial_request();
+    let cancellation = worth_execution::CancellationSource::new();
+    cancellation.cancel();
+    let stopped = serial.clone().with_cancellation(cancellation.token());
+    fixture
+        .owner
+        .assert_checkpoint_origin_preserves_original_claims_across_busy_and_cancelled_retirement(
+            &fixture.basis,
+            &fixture.relational_runtime,
+            &worth_execution::ExecutionRequest::serial(&serial),
+            &worth_execution::ExecutionRequest::serial(&stopped),
+        );
+}
