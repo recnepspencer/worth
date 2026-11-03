@@ -37,13 +37,13 @@ impl<'authority> QueryRequestExecution<'authority> {
     }
 }
 impl<'authority> WaveRequestExecution<'authority> {
-    pub(in crate::domain_computation::primary_graph) fn request(
+    pub fn request(
         &self,
     ) -> &QueryRequestExecution<'_> {
         &self.execution
     }
 
-    pub(in crate::domain_computation::primary_graph) fn member(
+    pub fn member(
         &self,
     ) -> MemberRequestExecution<'authority> {
         MemberRequestExecution {
@@ -52,7 +52,7 @@ impl<'authority> WaveRequestExecution<'authority> {
     }
 }
 impl MemberRequestExecution<'_> {
-    pub(in crate::domain_computation::primary_graph) fn request(
+    pub fn request(
         &self,
     ) -> &QueryRequestExecution<'_> {
         &self.execution

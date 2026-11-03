@@ -14,7 +14,7 @@ impl<Ready> RequiredFrontier<Ready> {
     }
 }
 impl<Ready> QueuedMember<'_, Ready> {
-    pub(in super::super) fn refused(self, credit: Option<ReinspectionCredit>) -> bool {
+    pub fn refused(self, credit: Option<ReinspectionCredit>) -> bool {
         let Some(_credit) = credit else {
             self.member.state = MemberState::Pending;
             return false;

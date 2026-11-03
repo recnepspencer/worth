@@ -20,7 +20,7 @@ pub struct TreeAttempt<T, E> {
 }
 
 impl<T, E> TreeAttempt<EditDisposition<T>, Denial<E>> {
-    pub(super) fn resolve(
+    pub fn resolve(
         self,
         rebuild: impl FnOnce() -> TreeAttempt<T, Denial<E>>,
     ) -> ReportedTree<T, E> {

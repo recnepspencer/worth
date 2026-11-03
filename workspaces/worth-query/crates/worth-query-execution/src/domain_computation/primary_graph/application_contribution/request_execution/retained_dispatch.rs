@@ -46,7 +46,7 @@ impl QueryDispatch<'_> {
         )
     }
 
-    pub(in super::super) fn reduce_retained<T, R, E, Kernel, Diagnostic, Combine>(
+    pub fn reduce_retained<T, R, E, Kernel, Diagnostic, Combine>(
         &self,
         ceiling: Option<u64>,
         map: &ExecutionMap<T, (), worth_execution::NativePayload>,

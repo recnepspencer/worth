@@ -43,7 +43,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         self.lock_operation().operation_anchor()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn lock_operation(
+    pub fn lock_operation(
         &self,
     ) -> MutexGuard<'_, Box<dyn WorthQueryInstalledConditionalOperation<Schema>>> {
         self.operation

@@ -10,7 +10,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     performed: &'record mut bool,
 }
 impl PublishedMember<'_> {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn performed(
+    pub fn performed(
         self,
     ) {
         *self.performed = true;

@@ -67,7 +67,7 @@ impl WorkflowActorFields {
         ])
         .map_err(|_| invalid())
     }
-    pub(in crate::domain_computation) fn observe(
+    pub fn observe(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

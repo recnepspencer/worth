@@ -60,12 +60,12 @@ where
 }
 
 pub struct DeclaredConditionalBinding {
-    pub(super) owner: String,
-    pub(super) contract: WorthQueryApplicationConditionalPackageContract,
-    pub(super) required_producers: Vec<String>,
-    pub(super) binding_type: TypeId,
+    pub owner: String,
+    pub contract: WorthQueryApplicationConditionalPackageContract,
+    pub required_producers: Vec<String>,
+    pub binding_type: TypeId,
     pub(super) operation_type: TypeId,
-    pub(super) installed_type: TypeId,
+    pub installed_type: TypeId,
 }
 
 struct InstalledConditionalBinding {

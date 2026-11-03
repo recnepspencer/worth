@@ -2,7 +2,7 @@
 use super::*;
 use worth_execution::ExecutionOrderedMap;
 impl ComputationCallSequence {
-    pub(in crate::domain_computation::primary_graph) fn patched<'a>(
+    pub fn patched<'a>(
         self: &Arc<Self>,
         changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, Option<u64>)>,
         execution: &QueryRequestExecution<'_>,

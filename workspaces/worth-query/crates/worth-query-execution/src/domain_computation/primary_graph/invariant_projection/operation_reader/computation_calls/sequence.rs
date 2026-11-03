@@ -104,7 +104,7 @@ impl ComputationCallSequence {
     pub fn shape(&self) -> &Arc<CallShape> {
         &self.shape
     }
-    pub(in crate::domain_computation::primary_graph) fn prefix(&self) -> usize {
+    pub fn prefix(&self) -> usize {
         self.shape.prefix
     }
     pub fn bytes(&self) -> Option<u64> {

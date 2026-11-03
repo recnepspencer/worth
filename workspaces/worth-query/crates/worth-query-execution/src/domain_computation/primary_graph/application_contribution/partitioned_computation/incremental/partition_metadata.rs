@@ -20,12 +20,12 @@ impl<Key> PartitionMetadata<Key> {
         }
         Ok(result)
     }
-    pub(super) fn fork(&self) -> Self {
+    pub fn fork(&self) -> Self {
         Self {
             entries: self.entries.clone(),
         }
     }
-    pub(super) fn put(
+    pub fn put(
         &mut self,
         id: PartitionIdentity,
         value: RetainedPartition<Key>,
@@ -40,13 +40,13 @@ impl<Key> PartitionMetadata<Key> {
     ) -> Result<(), ExecutionOrderedMapDenial> {
         self.entries.remove_in(&id, policy).map(|_| ())
     }
-    pub(super) fn get(&self, id: &PartitionIdentity) -> Option<&RetainedPartition<Key>> {
+    pub fn get(&self, id: &PartitionIdentity) -> Option<&RetainedPartition<Key>> {
         self.entries.get(id)
     }
-    pub(super) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.entries.len()
     }
-    pub(super) fn iter(
+    pub fn iter(
         &self,
     ) -> impl Iterator<Item = (&PartitionIdentity, &RetainedPartition<Key>)> {
         self.entries.iter()
@@ -54,7 +54,7 @@ impl<Key> PartitionMetadata<Key> {
     pub fn values(&self) -> impl Iterator<Item = &RetainedPartition<Key>> {
         self.entries.values()
     }
-    pub(super) fn keys(&self) -> impl Iterator<Item = &PartitionIdentity> {
+    pub fn keys(&self) -> impl Iterator<Item = &PartitionIdentity> {
         self.entries.keys()
     }
     pub fn bytes(&self) -> Option<u64> {

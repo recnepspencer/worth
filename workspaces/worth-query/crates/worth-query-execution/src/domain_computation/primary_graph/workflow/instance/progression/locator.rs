@@ -20,7 +20,7 @@ impl WorkflowTransitionLocator {
         self.entity
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn settlement(
+    pub const fn settlement(
         self,
     ) -> SettledWorkflowTransition {
         self.settlement

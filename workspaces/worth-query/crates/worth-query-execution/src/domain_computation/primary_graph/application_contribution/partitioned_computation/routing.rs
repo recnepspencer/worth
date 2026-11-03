@@ -117,7 +117,7 @@ impl ComputationPartitionRouting {
     }
 
     /// The partition `item` routes to, when it is routed.
-    pub(super) fn partition_of(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
+    pub fn partition_of(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
         self.partitioner.route(item)
     }
 
@@ -127,12 +127,12 @@ impl ComputationPartitionRouting {
     }
 
     /// Every partition in ascending identity order.
-    pub(super) fn partitions(&self) -> impl ExactSizeIterator<Item = PartitionIdentity> + '_ {
+    pub fn partitions(&self) -> impl ExactSizeIterator<Item = PartitionIdentity> + '_ {
         self.partitioner.partitions()
     }
 
     /// A partition's items in ascending item identity order.
-    pub(super) fn members(
+    pub fn members(
         &self,
         partition: PartitionIdentity,
     ) -> impl Iterator<Item = PartitionItemId> + '_ {

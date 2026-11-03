@@ -177,8 +177,8 @@ impl RetainedBasis {
 /// it on the call's behalf.
 #[derive(Clone)]
 pub(super) struct RetainedCall {
-    pub(super) charge: ComputationCallCharge,
-    pub(super) declared_units: Option<u64>,
+    pub charge: ComputationCallCharge,
+    pub declared_units: Option<u64>,
 }
 
 impl worth_execution::ChargedBytes for RetainedCall {
@@ -196,8 +196,8 @@ impl<Key> Clone for RetainedPartition<Key> {
 }
 /// One partition of a run.
 pub struct RetainedPartition<Key> {
-    pub(super) key: Arc<Key>,
-    pub(super) gather: ComputationCallCharge,
+    pub key: Arc<Key>,
+    pub gather: ComputationCallCharge,
 }
 
 /// The typed state: everything a later run of the same owner needs to skip
@@ -216,7 +216,7 @@ pub struct RetainedPartitions<Key, Item, Reduced> {
     /// from.
     pub routing: Arc<ComputationPartitionRouting>,
     pub partitions: super::partition_metadata::PartitionMetadata<Key>,
-    pub(super) native_run: worth_execution::ExecutionRetainedRun<Reduced>,
+    pub native_run: worth_execution::ExecutionRetainedRun<Reduced>,
     pub tree: NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
 }
 

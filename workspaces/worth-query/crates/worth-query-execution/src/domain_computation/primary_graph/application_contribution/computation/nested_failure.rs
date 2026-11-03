@@ -25,7 +25,7 @@ impl<'context> NestedFailureTransport<'context> {
 
     /// Run and classify one nested call before any subsequent call can start.
     /// A request-owned cause yields no value and remains latched.
-    pub(in crate::domain_computation::primary_graph) fn call<T, E>(
+    pub fn call<T, E>(
         &mut self,
         run: impl FnOnce() -> Result<T, E>,
     ) -> Result<T, MemberComputeFailure<E>> {
