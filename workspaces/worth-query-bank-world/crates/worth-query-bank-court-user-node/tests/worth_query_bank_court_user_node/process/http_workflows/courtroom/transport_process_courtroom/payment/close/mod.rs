@@ -1,5 +1,9 @@
 pub(crate) use worth_query_bank_testkit_courtroom::facade::transport_process_courtroom::payment::close::*;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "This process court owns the Tokio executor for its real transport and shutdown boundary."
+)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p worth-query-bank-court-user-node --test worth_query_bank_court_user_node process::http_workflows::courtroom::transport_process_courtroom::payment::close::close_before_payment_callback_preserves_unresolved_dispatch -- --ignored --exact"]
 async fn close_before_payment_callback_preserves_unresolved_dispatch() {

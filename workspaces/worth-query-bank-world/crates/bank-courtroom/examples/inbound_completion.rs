@@ -221,7 +221,7 @@ async fn exercise_completion(
     // owner still admits an exact read; its recorded meaning remains unchanged.
     let original_outbox = tokio::task::block_in_place(|| {
         runtime.with_application_advancement(&support::request_scope(), |phase| {
-            runtime.observe_committed_dispatch_outbox(&phase, &receipt)
+            runtime.observe_committed_dispatch_outbox(&phase, receipt)
         })
     })
     .map_err(|cause| format!("Bank request refused: {cause:?}"))?

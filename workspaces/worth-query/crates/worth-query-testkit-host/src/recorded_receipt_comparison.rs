@@ -66,7 +66,7 @@ pub fn assert_original(
 /// Recovered data identifies the exact original transition; it cannot perform it.
 pub fn assert_transition(
     recorded: &WorthQueryRecoveredApplicationCommitReceipt,
-    original: &worth_query_host::facade::primary_graph::PerformedWorkflowTransition,
+    original: &worth_query_host::facade::application_entry::PerformedWorkflowTransition,
 ) {
     assert_original(recorded, original.receipt());
     assert!(

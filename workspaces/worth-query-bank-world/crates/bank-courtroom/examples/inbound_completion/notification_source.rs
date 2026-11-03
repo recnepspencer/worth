@@ -5,8 +5,8 @@ use bank_domain::{
     schema::{BankSchema, NotifyEstateDeath},
 };
 use bank_server::{
-    BankApplication, BankAuthenticatedPrincipal, BankCommitReceipt, BankIdentityRuntime,
-    BankMutationControls, DeathNotificationAction,
+    BankApplication, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls,
+    DeathNotificationAction,
 };
 use worth_query_host::facade::{
     application_entry::*, declaration::application_program::ApplicationSourceCompletion,

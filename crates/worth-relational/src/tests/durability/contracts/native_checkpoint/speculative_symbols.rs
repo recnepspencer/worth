@@ -80,12 +80,16 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
         before.record_identity.append_frontiers.clone(),
         after.record_identity.pending_reservations.clone(),
     );
-    let changed_directory = std::sync::Arc::get_mut(after.canonical_directory.as_mut().unwrap())
+    let mut original_directory = after.canonical_directory.take().unwrap().into_original();
+    let changed_directory = std::sync::Arc::get_mut(&mut original_directory)
         .expect("decoded checkpoint owns its original directory uniquely");
     let mut changed_manifest = changed_directory.manifest.ordinary_owned_draft();
     changed_manifest.record_identity = after.record_identity.clone();
     changed_manifest.symbol_identity_frontier = after.symbol_identity_frontier;
     changed_directory.manifest = changed_manifest.seal_ordinary();
+    after.canonical_directory = Some(crate::durability::data::NativeCheckpointDirectoryEdge::new(
+        original_directory,
+    ));
     assert_eq!(before, after);
 
     let committed = create_entity_outcome(execution, &runtime, "published-after-abandonment");
