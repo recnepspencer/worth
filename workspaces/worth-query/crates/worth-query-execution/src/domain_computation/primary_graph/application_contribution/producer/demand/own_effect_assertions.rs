@@ -23,7 +23,7 @@ where
     FamilySourceQuery<Schema, Family>: 'static,
     WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
 {
-    pub(in crate::domain_computation::primary_graph) fn assert_born_stale_absence_for_test(
+    pub fn assert_born_stale_absence_for_test(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -102,7 +102,7 @@ where
             self.assert_required_admission(runtime, phase, execution, principal, scope, source);
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn assert_preserve_successor_for_test(
+    pub fn assert_preserve_successor_for_test(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         root: worth_relational::facade::identity::EntityId,
@@ -125,7 +125,7 @@ where
         );
         assert!(self.settled);
     }
-    pub(in crate::domain_computation::primary_graph) fn assert_changed_successor_for_test(
+    pub fn assert_changed_successor_for_test(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
