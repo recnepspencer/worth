@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from rust_source import replace_spans, tokens
 from src_occurrences import scan, visibility_markers
 from src_paths import resolve
+from src_glob_words import inherited_words
 
 LIBRARY = 'worth_query_execution'
 COURT_KEEP = ('use', 'macro_rules')
@@ -277,6 +278,8 @@ class Rewriter:
         own = {i.name for i in items_of(text) if i.keyword not in ('impl', 'use')} | {c.names[-1] for c in record.node.children}
         words = {t.value for k, t in enumerate(stream)
                  if t.kind == 'ident' and not (k and stream[k - 1].value == '.')} - own
+        # Children that glob this module read its imports: expanded globs bind their names too.
+        words |= inherited_words(self.model, names, self.__dict__.setdefault('_inherited', {})) - own
         self.heads = self.model.heads(names)
         uses, paths = scan(text, set(self.heads))
         changes = []
