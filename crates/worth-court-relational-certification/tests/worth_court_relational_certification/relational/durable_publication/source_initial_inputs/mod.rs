@@ -9,9 +9,12 @@ use worth_testkit_relational::{
     initial_input_source::*,
 };
 mod cold_indexes;
+mod index_decode_stops;
 mod initial_tail;
 mod plan_retry;
 mod publication_fates;
+mod selected_source;
+mod selected_subject;
 mod wire;
 fn initial(artifact: &RelationalCompleteSourceArtifact) -> serde_json::Value {
     let raw = artifact.as_bytes();

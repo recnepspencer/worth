@@ -6,56 +6,6 @@ use crate::durability::canonical_commit_artifact::{
 };
 use crate::durability::checkpoint_history::inventory::CanonicalCheckpointMember;
 use crate::durability::data::RelationalNativeCheckpoint;
-use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailable};
-
-#[test]
-fn selected_original_export_binds_its_indexed_subject_and_preserves_proven_damage() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let (runtime, source, position, foreign) = crossed_runtime(execution);
-    let receipt = runtime
-        .history()
-        .immutable_commit_receipt_at_patch_stream_position(position)
-        .unwrap();
-    let frontier = runtime.history().latest_patch_stream_position();
-    let offered = attached_test_medium(&runtime).offered().len();
-    let export = || {
-        runtime
-            .durability()
-            .canonical_commit_artifacts(execution)
-            .next()
-            .unwrap()
-    };
-    let failure = RelationalStorageUnavailable {
-        subject: RelationalStorageSubject::Envelope(position),
-        cause: Cause::IntegrityMismatch,
-    };
-    assert_eq!(
-        export().unwrap_err(),
-        ExportDenied::StorageUnavailable(failure)
-    );
-    assert!(source
-        .canonical_member_reads
-        .lock()
-        .unwrap()
-        .contains(&foreign));
-    let reads = source.canonical_member_reads.lock().unwrap().len();
-    assert_eq!(
-        runtime
-            .history()
-            .demand_commit_envelope(execution, receipt.commit_id)
-            .unwrap_err(),
-        crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure)
-    );
-    assert_eq!(
-        export().unwrap_err(),
-        ExportDenied::StorageUnavailable(failure)
-    );
-    assert_eq!(source.canonical_member_reads.lock().unwrap().len(), reads);
-    assert!(source.journal_reads.lock().unwrap().is_empty());
-    assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
-    assert_eq!(attached_test_medium(&runtime).offered().len(), offered);
-}
 
 fn crossed_runtime(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

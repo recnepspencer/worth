@@ -97,29 +97,3 @@ fn original_full_and_delta_index_tuples_preserve_all_entry_families_and_funding(
         assert_eq!(budget.charged_memory_bytes(), baseline);
     }
 }
-#[test]
-fn original_index_decode_refuses_cancelled_and_exhausted_invoking_requests_without_retaining_data()
-{
-    let full = DerivedIndexArtifacts::new(generations());
-    let payload =
-        rmp_serde::to_vec_named(&(full, None::<DerivedIndexCheckpointArtifacts>, 0_u16)).unwrap();
-    let cancellation = CancellationSource::new();
-    let host =
-        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
-    cancellation.cancel();
-    assert!(matches!(
-        decode(&payload, &ExecutionRequest::serial(&host)),
-        Err(Stop::Request(
-            crate::execution::RelationalExecutionDenialCause::Cancelled
-        ))
-    ));
-    let budget = SerialMemoryBudget::new(Some(1));
-    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    assert!(matches!(
-        decode(&payload, &ExecutionRequest::serial(&host)),
-        Err(Stop::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-        ))
-    ));
-    assert_eq!(budget.charged_memory_bytes(), 0);
-}
