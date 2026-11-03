@@ -71,10 +71,31 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
             authority.clone(),
             &key("approved-payment:operation:perform"),
         )
-        .expect("the lost response retry reaches retained operation custody")
-        .into_performed()
-        .expect("the lost response retry recovers the performed payment operation");
-    assert!(!replayed.newly_committed());
+        .expect("the lost response retry reads the original payment");
+    let bank_server::BankApprovedPaymentApplyOutcome::RecoveredCommitted(replayed) = replayed
+    else {
+        panic!("retry is recorded meaning, never a new performed owner");
+    };
+    let original = performed.correction_source().coordinates();
+    assert_eq!(replayed.commit_reference(), original.relational());
+    let head = replayed.new_product_head().memory().unwrap();
+    assert_eq!(head.selected_commit(), original.world_commit());
+    match original.world_owner() {
+        worth_foundational::facade::WorldOwnerCoordinate::MemoryOnly { observation } => {
+            assert_eq!(head.owner(), observation)
+        }
+        worth_foundational::facade::WorldOwnerCoordinate::Home { .. } => {
+            panic!("the court owns a memory World")
+        }
+    }
+    assert_eq!(
+        replayed.emitted_effect_count(),
+        performed.emitted_effect_count()
+    );
+    assert_eq!(
+        replayed.dispatch_outbox().is_some(),
+        performed.co_committed_dispatch_outbox()
+    );
     let attempts = settlement_rail.attempts();
     assert_eq!(attempts.len(), 1);
     assert_eq!(settlement_rail.admission_count(), 1);
@@ -84,14 +105,13 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
         LedgerStatus::Completed
     );
     drop(replayed);
-    drop(performed);
-    // Acceptance and recovery reconstruct custody from the owner after the
-    // original effect response and its retry receipt have both been lost.
+    // Advanced recovery borrows the genuine original; retry data grants no authority.
     let unresolved = workflow
         .advanced()
         .accept_native_effect(
             instance.clone(),
             &operation,
+            &performed,
             authority.clone(),
             authority.clone(),
             &key("approved-payment:operation:perform"),
@@ -123,6 +143,7 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
         .advanced()
         .prepare_native_effect_recovery(
             &still_required,
+            &performed,
             authority.clone(),
             &key("approved-payment:operation:foreign-recovery"),
         )
@@ -138,6 +159,7 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
         .advanced()
         .prepare_native_effect_recovery(
             &still_required,
+            &performed,
             authority.clone(),
             &key("approved-payment:operation:perform"),
         )
@@ -153,6 +175,7 @@ fn native_lost_reply_payment_recovers_owner_custody_and_real_rail_effect() {
         .accept_native_recovered_effect(
             instance.clone(),
             &still_required,
+            &performed,
             authority.clone(),
             authority.clone(),
             &key("approved-payment:operation:perform"),

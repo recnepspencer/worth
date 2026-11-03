@@ -173,3 +173,5 @@ fn owning_bank_payment_retains_original_outbox_handle_through_fresh_refusal() {
         )
         .unwrap_or_else(|_| panic!("close actual effect cleanup, not workflow settlement"));
 }
+
+mod recorded_owner_close;

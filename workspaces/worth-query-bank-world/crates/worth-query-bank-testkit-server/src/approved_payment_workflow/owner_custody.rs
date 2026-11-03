@@ -60,7 +60,11 @@ pub fn assert_in_owner_custody(
 
 /// A completed rail response alone cannot settle the workflow without the
 /// authenticated inbound terminal.
-pub fn owner_remains_pending(ready: &ReadyPaymentWorld, command_key: &str) {
+pub fn owner_remains_pending(
+    ready: &ReadyPaymentWorld,
+    performed: &bank_server::BankApprovedPaymentPerformedOperation,
+    command_key: &str,
+) {
     let workflow = ready
         .fixture
         .world
@@ -71,6 +75,7 @@ pub fn owner_remains_pending(ready: &ReadyPaymentWorld, command_key: &str) {
         .accept_native_effect(
             ready.instance.clone(),
             &ready.operation,
+            performed,
             ready.authority.clone(),
             ready.authority.clone(),
             &key("approved-payment:operation:perform"),

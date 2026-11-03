@@ -88,6 +88,10 @@ impl BankApprovedPaymentApplyOutcome {
 }
 
 impl BankApprovedPaymentPerformedOperation {
+    pub(crate) const fn native_receipt(&self) -> &WorthQueryApplicationCommitReceipt {
+        &self.receipt
+    }
+
     /// Locates this actual performed occurrence for a freshly admitted correction request.
     pub fn correction_source(
         &self,

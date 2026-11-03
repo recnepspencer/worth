@@ -29,9 +29,25 @@ pub fn shared_component_sibling_cannot_claim_another_product_commit() {
         panic!("the same product occurrence must retain idempotent recovery: {same_product:?}")
     };
     assert_eq!(recovered.commit_reference(), original.commit_reference());
-    assert_eq!(Some(recovered.outcome_identity()), original.outcome_identity());
-    assert_eq!(recovered.exact_output_settlement(), original.recorded_output_settlement());
-    assert_eq!(recovered.new_product_head().memory().unwrap().selected_commit(), original.committed_product_publication().composite_commit().ordinal());
+    assert_eq!(
+        Some(recovered.outcome_identity()),
+        original.outcome_identity()
+    );
+    assert_eq!(
+        recovered.exact_output_settlement(),
+        original.recorded_output_settlement()
+    );
+    assert_eq!(
+        recovered
+            .new_product_head()
+            .memory()
+            .unwrap()
+            .selected_commit(),
+        original
+            .committed_product_publication()
+            .composite_commit()
+            .ordinal()
+    );
 
     let committed_source = world
         .application

@@ -4219,8 +4219,10 @@ scheduler, and no timer or callback advances an instance: **the caller pumps
 progress**, one request per step. An external effect completes through an
 authenticated inbound occurrence (`inbound_occurrences().receive(..)` on the
 installed runtime), which completes the effect's owner. After a caller accepts
-the owner's receipt (`accept_operation_from_owner`), an `AwaitInbound` node
-observes that owner result on the next advance. Callback bytes never resume
+the actual original owner's receipt (`accept_operation_from_owner` requires
+that live receipt alongside the freshly admitted bound request), an `AwaitInbound`
+node observes that owner result on the next advance. Recorded retry data cannot
+supply live recovery authority. Callback bytes never resume
 an instance. See
 [Workflows: Caller-pumped progression](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#caller-pumped-progression)
 and [Waiting for an inbound completion](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#waiting-for-an-inbound-completion).
