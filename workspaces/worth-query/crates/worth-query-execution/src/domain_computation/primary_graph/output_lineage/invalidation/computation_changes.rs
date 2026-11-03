@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph) struct ComputationChanges {
 impl ComputationChanges {
     /// A publication can readmit after computation. Only the native owner can
     /// establish that its genuine before-image still names this captured source.
-    pub(in crate::domain_computation::primary_graph) fn matches_publication_source(
+    pub fn matches_publication_source(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,

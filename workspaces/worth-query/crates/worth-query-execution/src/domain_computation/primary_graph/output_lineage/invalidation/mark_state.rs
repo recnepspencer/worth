@@ -84,9 +84,9 @@ pub(super) struct SettlementMarks {
     pub(super) computation_frontier: Option<OrdSet<usize>>,
     pub(super) work_membership: Option<Arc<RequiredWorkMembership>>,
 
-    pub(super) posting_projection: Arc<super::settlement::PostingProjection>,
+    pub posting_projection: Arc<super::settlement::PostingProjection>,
     pub(super) consumed_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
-    pub(super) facts: super::super::RetainedSourceFacts,
+    pub facts: super::super::RetainedSourceFacts,
     pub(super) output_facts: Option<super::output_facts::RegisteredOutputFacts>,
     pub(super) output_coverage: OutputFactCoverage,
     pub(super) read_basis: Arc<PositionedRelationalSnapshot>,

@@ -79,7 +79,7 @@ impl PostconditionCarry {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn matches_publication_source(
+    pub fn matches_publication_source(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -112,7 +112,7 @@ impl PostconditionCarry {
     }
     /// Both passes visit only candidate touches and their matching local postings.
     /// The original image owns the projection; no independent reverse index exists.
-    pub(in crate::domain_computation::primary_graph) fn select(
+    pub fn select(
         &self,
         touches: &RelationalDescriptiveTouchGraph,
         count: usize,
