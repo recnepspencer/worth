@@ -3,6 +3,7 @@
 
 Usage:
     python scripts/test_topology/src_court_doors.py items [--root .] [--report DIR]
+    python scripts/test_topology/src_court_doors.py interface CHECK.json [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py members CHECK.json [--root .] [--report DIR]
 
 `items` re-exports every library item the courts and testkits name, once, from
@@ -90,6 +91,23 @@ def items(root, report):
     return len(doors)
 
 
+def interface(root, check, report):
+    """Types a door item's signature exposes (E0446) become `pub` too, with no door of their own."""
+    from src_compiler_edges import widenings
+    tree = read_tree(root / LIB)
+    index = {node.names: node for node in tree.walk()}
+    items, _methods, _fields = widenings(check, root, tree)
+    wanted = {}
+    for key in items:
+        *module, name = key.split('::')
+        wanted.setdefault(tuple(module), {})[name] = (tuple(module), name)
+    for source, changes in visibility_edits(wanted, index).items():
+        text = Path(source).read_text(encoding='utf-8')
+        Path(source).write_text(replace_spans(text, changes), encoding='utf-8', newline='\n')
+    write_report(report, 'interface', {'interface_items': sorted(items)})
+    return len(items)
+
+
 def write_report(report, name, data):
     if report is None:
         return
@@ -104,7 +122,7 @@ def write_report(report, name, data):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('step', choices=('items', 'members'))
+    parser.add_argument('step', choices=('items', 'interface', 'members'))
     parser.add_argument('check', nargs='?', type=Path)
     parser.add_argument('--root', type=Path, default=Path.cwd())
     parser.add_argument('--report', type=Path)
@@ -112,6 +130,8 @@ def main(argv=None):
     root = args.root.resolve()
     if args.step == 'items':
         print(f'{items(root, args.report)} item doors')
+    elif args.step == 'interface':
+        print(f'{interface(root, args.check, args.report)} interface items')
     else:
         from src_door_members import members
         print(json.dumps(members(root, args.check, args.report, write_report), sort_keys=True))
