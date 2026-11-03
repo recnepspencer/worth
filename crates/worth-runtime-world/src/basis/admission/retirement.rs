@@ -5,6 +5,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::branch::RelationalBranchBasisRetirementDenial;
 use worth_relational::facade::runtime::RelationalRuntime;
 
+#[derive(Debug)]
 pub(crate) struct CompositeBasisRetirement {
     shared: Option<Arc<AdmittedCompositeRuntimeWorldBasisInner>>,
     original: Option<AdmittedCompositeRuntimeWorldBasisInner>,

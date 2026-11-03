@@ -18,6 +18,7 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     pub(super) root: Arc<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
+    pub(super) transferred_to_home_retirement: bool,
 }
 impl RuntimeWorldOwner<(), (), (), (), ()> {
     pub fn builder() -> RuntimeWorldOwnerBuilder<
@@ -199,6 +200,7 @@ where
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
         Ok(Self {
             root: Arc::new(RuntimeWorldOwnerRoot::new(inputs)?),
+            transferred_to_home_retirement: false,
         })
     }
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
@@ -270,6 +272,8 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     fn drop(&mut self) {
-        self.root.release_public_owner();
+        if !self.transferred_to_home_retirement {
+            self.root.release_public_owner();
+        }
     }
 }

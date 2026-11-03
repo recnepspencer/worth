@@ -120,7 +120,7 @@ impl CompositeHistoryCatalog {
                 next = Some((current, distance));
                 break;
             };
-            commits.push(Arc::clone(&entry.commit));
+            commits.push(entry.shared_commit());
             generations.push(distance);
             next = effective_parent(&state, entry.commit())
                 .map(|(parent, step)| (parent, distance.saturating_add(step)));

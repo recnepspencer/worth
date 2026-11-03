@@ -50,3 +50,7 @@ pub use catalog::{HistoryCatalogCounters, HistoryMetadataLedger};
 pub(crate) use commit::CompositeCommitRetirement;
 
 pub(crate) use publication::PublicationFactsRetirement;
+
+pub(crate) use catalog::HistoryHomeRetirement;
+
+pub(crate) use publication::ReadmittedPublicationRetirement;

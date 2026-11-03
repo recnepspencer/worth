@@ -154,7 +154,7 @@ impl CompositeHistoryCatalog {
                 Some((entry, envelope)) if envelope.facts().is_some() => {
                     lock_index(&state.reachability).increment_direct_protection(identity)?;
                     rows.push(RuntimeWorldPublicationRow {
-                        commit: Arc::clone(&entry.commit),
+                        commit: entry.shared_commit(),
                         envelope: Arc::clone(envelope),
                         _protection: CompositeHistoryProtectionObligation::new(
                             Arc::clone(&state.reachability),
@@ -227,4 +227,10 @@ fn validate_frontier(
         return Err(CompositeHistoryCatalogDenial::InspectionFrontierChanged);
     }
     Ok(())
+}
+
+impl RuntimeWorldPublicationFrontier {
+    pub(crate) fn belongs_to(&self, owner: RuntimeWorldOwnerIdentity) -> bool {
+        self.owner == owner
+    }
 }

@@ -1,4 +1,10 @@
+mod home_owner;
+mod home_owner_progress;
 use crate::history::HistoryReclamationDenial;
+pub use home_owner::{
+    RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
+    RuntimeWorldHomeRetirementProgress,
+};
 mod admission;
 #[path = "close/drain.rs"]
 mod drain;

@@ -63,11 +63,11 @@ where
     observe(state, request)?;
     let frontier = state.history.close_frontier(request)?;
     // Original-request funding and task allocation happen outside owner gates.
-    let task = CloseProgress::prepare_task(request, &state.recovery)?;
+    let task = CloseProgress::prepare_task(request, &state.recovery, &state.history)?;
     let gates = gates::borrow(state, request)?;
     task.try_lock()
         .map_err(|_| Denial::Busy)?
-        .validate_recovered(&state.recovery, request)?;
+        .validate_recovered(&state.recovery, &state.history, request)?;
     state.history.try_validate_close_frontier(&frontier)?;
     request.check_live().map_err(Denial::Stopped)?;
     Ok(RuntimeWorldPreCloseAdmission { gates, task })

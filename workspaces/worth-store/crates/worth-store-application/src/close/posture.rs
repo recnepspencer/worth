@@ -8,6 +8,8 @@ use worth_store::physical_runtime::{
     PhysicalStoreCloseTask, PhysicalStoreCloseTaskPoll, ServingPhysicalRuntime,
 };
 mod native_retirement;
+mod world_retirement;
+use world_retirement::WorldOwnerCloseCustody;
 mod physical_retirement;
 
 enum PhysicalCloseCustody {
@@ -29,6 +31,7 @@ pub struct ApplicationHomeRecoveryCustody {
     checkpoint: super::checkpoint_result::HomeCloseCheckpointResult,
     physical: PhysicalCloseCustody,
     native: NativeCloseCustody,
+    world_owner: WorldOwnerCloseCustody,
     world_origin_retirement: Option<worth_runtime_world::facade::WorldCheckpointOriginRetirement>,
     world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
     world_composition: Option<crate::world_section::HomeBridgeCloseCustody>,
@@ -61,6 +64,7 @@ impl ApplicationHomeRecoveryCustody {
             checkpoint,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::NeverAttached,
+            world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
             world_origin_retirement: context.world_origin_retirement,
             world_close_report: None,
             world_composition: None,
@@ -88,6 +92,7 @@ impl ApplicationHomeRecoveryCustody {
             checkpoint: stored,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Prepared(native),
+            world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
             world_origin_retirement: context.world_origin_retirement,
             world_close_report: context.world_close_report,
             world_composition: None,
@@ -117,6 +122,7 @@ impl ApplicationHomeRecoveryCustody {
             checkpoint,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Serving(relational),
+            world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
             world_origin_retirement: context.world_origin_retirement,
             world_close_report: context.world_close_report,
             world_composition: world_composition
@@ -248,6 +254,9 @@ impl ApplicationHomeRecoveryCustody {
                     return self.refused(cause);
                 }
             }
+        }
+        if let Err(cause) = self.advance_world_owner_close(execution) {
+            return self.refused(cause);
         }
         self = match self.advance_native_close(execution) {
             Ok(home) => home,

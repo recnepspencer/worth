@@ -86,6 +86,12 @@ impl WorldDurableMediumBinding {
             _funding: funding,
         }))
     }
+    pub(crate) fn retire_medium_for_home(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorldDurableMediumDenial> {
+        self.medium.retire_for_home(request)
+    }
     pub(crate) fn binding(&self) -> &WorldDurableHomeBinding {
         self.medium.binding()
     }

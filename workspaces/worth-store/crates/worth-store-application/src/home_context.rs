@@ -72,6 +72,8 @@ pub(crate) struct HomeContext {
     pub(crate) world_publications: Arc<crate::world_section::WorldPublications>,
     pub(crate) world_origin_retirement:
         Option<worth_runtime_world::facade::WorldCheckpointOriginRetirement>,
+    pub(crate) world_owner_retirement:
+        Option<worth_runtime_world::facade::RuntimeWorldHomeRetirement>,
     pub(crate) world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
     // The cached failure may own a Send-only original physical write source.
     // Exclusive close accesses use get_mut; no gate is held across callbacks.

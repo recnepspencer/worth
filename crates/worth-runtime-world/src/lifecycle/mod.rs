@@ -54,3 +54,8 @@ mod read_observation;
 pub use read_observation::{
     world_branch_reads_on_this_thread_for_test, RuntimeWorldReadObservation,
 };
+
+pub use close::{
+    RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
+    RuntimeWorldHomeRetirementProgress,
+};

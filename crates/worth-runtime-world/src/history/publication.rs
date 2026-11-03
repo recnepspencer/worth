@@ -262,3 +262,5 @@ impl StagedPublicationRecord {
         self.envelope.revision.advance();
     }
 }
+
+pub(crate) use readmission::ReadmittedPublicationRetirement;

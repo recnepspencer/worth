@@ -155,3 +155,8 @@ pub use crate::publication::{
     ConsumedPublicationRetirementProgress, PreparedConsumedPublicationRetirement,
     RetiredConsumedPublication,
 };
+
+pub use crate::lifecycle::{
+    RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
+    RuntimeWorldHomeRetirementProgress,
+};

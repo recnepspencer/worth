@@ -100,6 +100,15 @@ pub(crate) struct RuntimeWorldCloseReleaseCounts {
 }
 
 impl RuntimeWorldCloseReport {
+    pub(in crate::lifecycle) fn matches_original_task(
+        &self,
+        task: &std::sync::Arc<std::sync::Mutex<super::drain::CloseProgress>>,
+    ) -> bool {
+        self._retired_close
+            .as_ref()
+            .is_some_and(|original| std::sync::Arc::ptr_eq(original, task))
+    }
+
     pub(super) fn retain_close_task(
         &mut self,
         task: std::sync::Arc<std::sync::Mutex<super::drain::CloseProgress>>,

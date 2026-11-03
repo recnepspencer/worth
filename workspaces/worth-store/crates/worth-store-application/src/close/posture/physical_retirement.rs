@@ -67,6 +67,7 @@ impl ApplicationHomeRecoveryCustody {
                                         )
                                     })
                                 }),
+                                _world_owner: self.world_owner.into_retired(),
                                 _world_origin: self.world_origin_retirement,
                                 _world_report: self.world_close_report,
                                 _checkpoint: self.checkpoint_owner,

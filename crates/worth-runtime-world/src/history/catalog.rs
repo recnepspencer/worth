@@ -1,3 +1,5 @@
+mod home_retirement;
+pub(crate) use home_retirement::HistoryHomeRetirement;
 mod admission;
 mod ancestry;
 mod close_admission;
@@ -168,7 +170,7 @@ impl CompositeHistoryCatalog {
             .entries
             .get(identity)
             .and_then(|slot| slot.get())
-            .map(|entry| Arc::clone(&entry.commit))
+            .map(|entry| entry.shared_commit())
     }
 
     #[cfg(test)]

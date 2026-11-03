@@ -77,14 +77,20 @@ impl UnclaimedWorldSlot {
         serving: Arc<ServingPhysicalRuntime>,
         descriptor: &crate::descriptor::HomeDescriptor,
         checkpoint: &Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
-    ) -> Self {
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, worth_execution::WorkCeilingDenial> {
+        let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+            .extend(std::alloc::Layout::new::<super::ApplicationWorldMedium>())
+            .expect("fixed original World medium layout");
+        let funding = request.reserve_retained_memory(layout.pad_to_align().size() as u64)?;
         let owner = DurableWorldOwnerIdentity::from_recorded(
             descriptor.identity,
             WorldOwnerSlotIdentity::from_recorded(0),
         );
-        Self {
+        Ok(Self {
             medium: Arc::new(super::ApplicationWorldMedium {
-                serving,
+                serving: std::sync::Mutex::new(Some(serving)),
+                _funding: funding,
                 binding: WorldDurableHomeBinding::from_admitted_adapter(
                     owner,
                     descriptor.incarnation,
@@ -94,7 +100,7 @@ impl UnclaimedWorldSlot {
                 publications: Arc::new(super::WorldPublications::default()),
                 checkpoint: Arc::downgrade(checkpoint),
             }),
-        }
+        })
     }
     pub(crate) fn publications(&self) -> Arc<super::WorldPublications> {
         self.medium.publications.clone()

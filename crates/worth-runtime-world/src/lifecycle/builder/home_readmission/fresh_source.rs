@@ -43,6 +43,7 @@ where
             .map_err(WorldReadmissionDenial::Medium)?;
         let root = self.construct_home_root(relational, bridge, binding, Default::default())?;
         Ok(RuntimeWorldOwner {
+            transferred_to_home_retirement: false,
             root: Arc::new(root),
         })
     }

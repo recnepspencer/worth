@@ -1,5 +1,5 @@
 //! World closes through the same Home close/recovery lifecycle. Its actual
-//! close report travels into that custody after owner Drop releases its pins.
+//! close report and actual owner travel into deferred retirement custody.
 use super::WorldReadmittedApplicationHome;
 use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::RuntimeWorldOwnerLifecycleObservation;
@@ -16,7 +16,7 @@ pub enum WorldHomeClosePosture {
     RecoveryRequired(RuntimeWorldOwnerLifecycleObservation),
 }
 
-/// World has actually closed and dropped. Native teardown is deliberately
+/// World has sealed and moved into its actual retirement. Native teardown is
 /// delayed until the Host releases its Query/source/Bridge observations.
 pub struct WorldSealedApplicationHome {
     home: crate::ReadmittedApplicationHome,
@@ -236,16 +236,31 @@ where
             }
         }
         let Self {
-            home,
+            mut home,
             world,
             world_cleanup,
             composition,
         } = self;
-        drop(world_cleanup);
-        // Weak service ports and descriptive reports do not own this World.
-        // Caller observations keep their own actual Native read custody, which
-        // the unchanged Native close admission may still truthfully refuse.
-        drop(world);
+        let cleanup = world_cleanup.expect("same complete original result cleanup");
+        let report = home
+            .context
+            .world_close_report
+            .as_ref()
+            .expect("actual closed World report");
+        match world.into_home_retirement(report, cleanup) {
+            Ok(original) => home.context.world_owner_retirement = Some(original),
+            Err((world, cleanup, cause)) => {
+                return Err(WorldHomeCloseRefused {
+                    home: Self {
+                        home,
+                        world,
+                        world_cleanup: Some(cleanup),
+                        composition,
+                    },
+                    reason: crate::ApplicationHomeCloseDenial::WorldOwnerRetirement(cause),
+                })
+            }
+        }
         Ok(WorldSealedApplicationHome { home, composition })
     }
 }

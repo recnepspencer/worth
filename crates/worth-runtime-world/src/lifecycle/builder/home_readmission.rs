@@ -103,6 +103,7 @@ where
             request,
         )?;
         Ok(RuntimeWorldOwner {
+            transferred_to_home_retirement: false,
             root: Arc::new(root),
         })
     }

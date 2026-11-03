@@ -139,3 +139,117 @@ fn recovered_receipt_copy_observes_the_original_work_stop_before_allocating() {
     ));
     assert_eq!(policy.memory().unwrap().charged_memory_bytes(), 0);
 }
+
+#[test]
+fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_retires_without_drop()
+{
+    let (fixture, root) = owner();
+    let serial = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationToken::new(),
+        None,
+    );
+    let request = ExecutionRequest::serial(&serial);
+    assert!(matches!(
+        root.bootstrap_root(fixture.bootstrap_intent()),
+        crate::branch::RuntimeWorldBootstrapOutcome::Performed(_)
+    ));
+    let world = crate::lifecycle::RuntimeWorldOwner {
+        transferred_to_home_retirement: false,
+        root: Arc::new(root),
+    };
+    let weak = Arc::downgrade(&world.root);
+    let report = world.root.close(&request).unwrap();
+    let mut cleanup = world.result_snapshot_cleanup_after_close(&request).unwrap();
+    loop {
+        match cleanup
+            .advance(&request, fixture.relational_runtime())
+            .unwrap()
+        {
+            crate::lifecycle::RuntimeWorldResultSnapshotCleanupProgress::Advanced => {}
+            crate::lifecycle::RuntimeWorldResultSnapshotCleanupProgress::Complete(_) => break,
+        }
+    }
+    let counters = world.root.state.retention.cost_snapshot();
+    assert!(
+        world
+            .root
+            .state
+            .retention
+            .active_component_obligation_count()
+            >= 4,
+        "the real root head and history still share their original owner leases"
+    );
+    let task = world
+        .root
+        .state
+        .close
+        .lock()
+        .unwrap()
+        .retirement_task()
+        .unwrap();
+    let native = fixture.relational_runtime().branch_basis_cost_counters();
+    let mut original = world
+        .into_home_retirement(&report, cleanup)
+        .unwrap_or_else(|_| panic!("same actual closed owner"));
+    let guard = task.lock().unwrap();
+    assert!(matches!(
+        original.advance(&request, fixture.relational_runtime()),
+        Err(crate::lifecycle::RuntimeWorldHomeRetirementDenial::Close(
+            Denial::Busy
+        ))
+    ));
+    drop(guard);
+    assert_eq!(
+        weak.upgrade().unwrap().state.retention.cost_snapshot(),
+        counters
+    );
+    assert_eq!(
+        fixture.relational_runtime().branch_basis_cost_counters(),
+        native
+    );
+    let cancellation = worth_execution::CancellationSource::new();
+    cancellation.cancel();
+    let stopped = serial.clone().with_cancellation(cancellation.token());
+    assert!(original
+        .advance(
+            &ExecutionRequest::serial(&stopped),
+            fixture.relational_runtime()
+        )
+        .is_err());
+    assert_eq!(
+        weak.upgrade().unwrap().state.retention.cost_snapshot(),
+        counters
+    );
+    loop {
+        match original
+            .advance(&request, fixture.relational_runtime())
+            .unwrap()
+        {
+            crate::lifecycle::RuntimeWorldHomeRetirementProgress::Advanced => {}
+            crate::lifecycle::RuntimeWorldHomeRetirementProgress::Complete => break,
+        }
+    }
+    let retired = original.into_retired().unwrap();
+    let root = weak
+        .upgrade()
+        .expect("same actual World allocation stays alive");
+    assert_eq!(root.state.retention.active_component_obligation_count(), 0);
+    assert_eq!(
+        root.state.retention.cost_snapshot().owner_drop_releases(),
+        counters.owner_drop_releases()
+    );
+    assert_eq!(
+        fixture
+            .relational_runtime()
+            .branch_basis_cost_counters()
+            .external_retention_drop_releases,
+        native.external_retention_drop_releases
+    );
+    drop(root);
+    retired.reclaim();
+    assert!(
+        weak.upgrade().is_none(),
+        "actual World destruction belongs to explicit unbudgeted reclaim"
+    );
+}

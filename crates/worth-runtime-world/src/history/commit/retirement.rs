@@ -6,6 +6,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     branch::RelationalBranchBasisRetirementDenial, runtime::RelationalRuntime,
 };
+#[derive(Debug)]
 pub(crate) struct CompositeCommitRetirement {
     shared: Option<Arc<CompositeRuntimeWorldCommit>>,
     original: Option<CompositeRuntimeWorldCommit>,

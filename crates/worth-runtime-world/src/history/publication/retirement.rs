@@ -6,6 +6,7 @@ use worth_relational::facade::{
     branch::RelationalBranchBasisRetirementDenial, runtime::RelationalRuntime,
 };
 
+#[derive(Debug)]
 pub(crate) struct PublicationFactsRetirement {
     shared: Option<Arc<CanonicalPublicationEnvelope>>,
     original: Option<CanonicalPublicationEnvelope>,

@@ -100,6 +100,7 @@ fn reused_children() -> (
 fn close_retains_extracted_head_and_cursor_across_busy_stop_and_retry() {
     let (_fixture, owner, child) = reused_children();
     let public_owner = crate::lifecycle::RuntimeWorldOwner {
+        transferred_to_home_retirement: false,
         root: std::sync::Arc::new(owner),
     };
     let owner = &public_owner.root;

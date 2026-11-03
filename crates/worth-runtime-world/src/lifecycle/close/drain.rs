@@ -5,6 +5,7 @@ use worth_execution::ExecutionRequest;
 
 #[derive(Debug, Default)]
 pub(in crate::lifecycle) struct CloseProgress {
+    pub(super) home: super::home_owner_progress::HomeOwnerRetirementProgress,
     pub(super) pending_recovered: Option<super::recovered::RecoveredCloseRetirement>,
     pub(super) retired_recovered: Vec<super::recovered::RecoveredCloseRetirement>,
     pub(super) recovered_position: usize,
@@ -21,6 +22,7 @@ impl CloseProgress {
     pub(super) fn prepare_task(
         request: &ExecutionRequest<'_, '_>,
         recovery: &crate::recovery::RecoveryCatalog,
+        history: &crate::history::CompositeHistoryCatalog,
     ) -> Result<std::sync::Arc<std::sync::Mutex<Self>>, Denial> {
         let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
             .extend(std::alloc::Layout::new::<std::sync::Mutex<Self>>())
@@ -32,6 +34,9 @@ impl CloseProgress {
         let (retired_recovered, retired_recovered_funding) =
             super::recovered::prepare(request, recovered.len())?;
         Ok(std::sync::Arc::new(std::sync::Mutex::new(Self {
+            home: super::home_owner_progress::HomeOwnerRetirementProgress::prepare(
+                request, history,
+            )?,
             pending_recovered: None,
             retired_recovered,
             recovered_position: 0,
@@ -48,8 +53,10 @@ impl CloseProgress {
     pub(super) fn validate_recovered(
         &self,
         recovery: &crate::recovery::RecoveryCatalog,
+        history: &crate::history::CompositeHistoryCatalog,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
+        self.home.validate(history)?;
         recovery.validate_close_reports(&self.recovered, request)
     }
 }
