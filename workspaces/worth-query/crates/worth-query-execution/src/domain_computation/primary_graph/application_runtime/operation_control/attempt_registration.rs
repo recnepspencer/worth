@@ -20,7 +20,7 @@ pub use source_publication::{
 };
 
 #[derive(Clone, Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptOperationControl
+pub struct WorthQueryApplicationAttemptOperationControl
 {
     pub caller_pass:
         Arc<caller_pass::CallerPassControl>,

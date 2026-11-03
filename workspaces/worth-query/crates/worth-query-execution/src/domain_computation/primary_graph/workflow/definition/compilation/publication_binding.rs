@@ -28,7 +28,7 @@ pub struct WorkflowDefinitionPublicationRevisions {
 }
 
 #[derive(Clone)]
-pub(super) struct WorkflowDefinitionPublicationBinding {
+pub struct WorkflowDefinitionPublicationBinding {
     pub(super) lineage: EntityId,
     pub(super) definition: EntityId,
     pub(super) start_node: EntityId,

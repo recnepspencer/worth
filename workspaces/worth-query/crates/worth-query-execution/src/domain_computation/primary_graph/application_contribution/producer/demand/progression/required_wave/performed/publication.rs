@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 
 /// Only a newly committed effect lends this member's publication seal.
 /// A replay never constructs this capability.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PublishedMember<
+pub struct PublishedMember<
     'record,
 > {
     performed: &'record mut bool,
