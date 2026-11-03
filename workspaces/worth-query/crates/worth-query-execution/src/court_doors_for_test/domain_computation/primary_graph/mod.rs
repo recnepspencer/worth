@@ -81,3 +81,5 @@ pub mod structural_walk;
 pub mod value_decode;
 #[path = "workflow/mod.rs"]
 pub mod workflow;
+// Certification fixture source the oracle mounts names this through its `primary_graph` alias.
+pub use crate::facade::primary_graph::WorthQueryApplicationEntityKey;
