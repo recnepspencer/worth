@@ -2,7 +2,6 @@
 use crate::durability::WorldDurableMediumBinding;
 use crate::inspection::RuntimeWorldRetentionKey;
 use crate::retention::HistoryRetentionObligation;
-use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 mod occurrences;
 use occurrences::CheckpointOccurrences;
 pub(crate) use occurrences::PreparedCheckpointOccurrence;
@@ -10,14 +9,16 @@ pub(crate) use occurrences::PreparedCheckpointOccurrence;
 /// This holder's obligation was released; other holders may still retain the basis.
 #[derive(Debug)]
 pub struct WorldCheckpointOriginRetirement {
-    keys: [RuntimeWorldRetentionKey; 2],
-    occurrences: CheckpointOccurrences,
+    original: WorldCheckpointOrigin,
 }
 impl WorldCheckpointOriginRetirement {
     /// Exact registry entries now eligible for the owning close's reclamation.
     /// Other live obligations may still retain either entry.
     pub fn retention_keys(&self) -> impl Iterator<Item = &RuntimeWorldRetentionKey> {
-        self.keys.iter().chain(self.occurrences.retired_keys())
+        self.original
+            .keys
+            .iter()
+            .chain(self.original.occurrences.retired_keys())
     }
 }
 
@@ -41,7 +42,10 @@ pub(crate) enum WorldCheckpointOriginState {
 
 #[derive(Debug)]
 pub(crate) struct WorldCheckpointOrigin {
-    basis: AdmittedRelationalBranchBasis,
+    basis: crate::basis::NativeBasisRetirement,
+    retired_components: Option<crate::retention::component_obligation::RetiringHistoryComponents>,
+    keys: [RuntimeWorldRetentionKey; 2],
+    complete: bool,
     pins: HistoryRetentionObligation,
     occurrences: CheckpointOccurrences,
 }
@@ -55,22 +59,61 @@ impl WorldCheckpointOrigin {
             "the recipe retains its exact component pair"
         );
         Self {
-            basis: basis.relational_basis().clone(),
+            basis: crate::basis::NativeBasisRetirement::new(basis.relational_basis().clone()),
+            retired_components: None,
+            keys: pins.retention_keys(),
+            complete: false,
             pins,
             occurrences: CheckpointOccurrences::default(),
         }
     }
-    pub(crate) fn retire(self) -> WorldCheckpointOriginRetirement {
-        let Self {
-            basis,
-            pins,
-            mut occurrences,
-        } = self;
-        occurrences.retire();
-        let keys = pins.retention_keys();
-        drop(pins);
-        drop(basis);
-        WorldCheckpointOriginRetirement { keys, occurrences }
+    pub(crate) fn into_retired(self) -> Result<WorldCheckpointOriginRetirement, Self> {
+        if self.complete {
+            Ok(WorldCheckpointOriginRetirement { original: self })
+        } else {
+            Err(self)
+        }
+    }
+
+    pub(crate) fn advance_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<bool, crate::lifecycle::RuntimeWorldCloseDenial> {
+        use crate::lifecycle::RuntimeWorldCloseDenial as Denial;
+        use worth_relational::facade::branch::RelationalBranchBasisRetirementDenial as NativeDenial;
+        if self.complete {
+            return Ok(true);
+        }
+        request.consult().map_err(Denial::Execution)?;
+        if self.retired_components.is_none() {
+            self.retired_components = Some(
+                self.pins
+                    .try_begin_close_retirement()
+                    .map_err(|()| Denial::Busy)?,
+            );
+        }
+        if !self
+            .basis
+            .advance(request, native)
+            .map_err(|cause| match cause {
+                NativeDenial::Busy => Denial::Busy,
+                NativeDenial::Execution(cause) => Denial::Execution(cause),
+                NativeDenial::ForeignOwner => Denial::CloseProgressInvariant,
+            })?
+        {
+            return Ok(false);
+        }
+        if !self
+            .retired_components
+            .as_mut()
+            .expect("original component phases")
+            .advance(request)?
+        {
+            return Ok(false);
+        }
+        self.complete = self.occurrences.advance_retirement(request, native)?;
+        Ok(self.complete)
     }
 }
 
@@ -105,21 +148,34 @@ impl WorldDurableMediumBinding {
         }
     }
 
-    pub(crate) fn take_checkpoint_origin(
+    pub(crate) fn retire_checkpoint_origin(
         &self,
-    ) -> Result<WorldCheckpointOrigin, WorldCheckpointOriginRetirementDenial> {
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial> {
         use WorldCheckpointOriginRetirementDenial as Denial;
         let mut state = self
             .checkpoint_origin
             .try_lock()
             .map_err(|_| Denial::Busy)?;
-        match std::mem::replace(&mut *state, WorldCheckpointOriginState::Retired) {
-            WorldCheckpointOriginState::Held(origin) => Ok(origin),
-            WorldCheckpointOriginState::Uninstalled => {
-                *state = WorldCheckpointOriginState::Uninstalled;
-                Err(Denial::NotInstalled)
-            }
-            WorldCheckpointOriginState::Retired => Err(Denial::AlreadyRetired),
-        }
+        let origin = match &mut *state {
+            WorldCheckpointOriginState::Held(origin) => origin,
+            WorldCheckpointOriginState::Uninstalled => return Err(Denial::NotInstalled),
+            WorldCheckpointOriginState::Retired => return Err(Denial::AlreadyRetired),
+        };
+        while !origin
+            .advance_retirement(request, native)
+            .map_err(Denial::RecoveredCustody)?
+        {}
+        let WorldCheckpointOriginState::Held(original) =
+            std::mem::replace(&mut *state, WorldCheckpointOriginState::Retired)
+        else {
+            unreachable!("same completed origin")
+        };
+        original.into_retired().map_err(|_| {
+            Denial::RecoveredCustody(
+                crate::lifecycle::RuntimeWorldCloseDenial::CloseProgressInvariant,
+            )
+        })
     }
 }

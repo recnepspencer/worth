@@ -69,3 +69,8 @@ pub use crate::branch::{
     SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
     SignalOwnerOperationPauseForTest,
 };
+
+pub use crate::branch::{
+    RetiredSignalBranchRetention, SignalBranchRetentionRetirement,
+    SignalBranchRetentionRetirementDenial, SignalBranchRetentionRetirementProgress,
+};

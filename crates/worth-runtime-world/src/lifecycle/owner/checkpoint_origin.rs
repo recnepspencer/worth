@@ -33,8 +33,7 @@ where
             binding,
         )
         .map_err(Denial::RecoveredCustody)?;
-        let origin = binding.take_checkpoint_origin()?;
-        Ok(origin.retire())
+        binding.retire_checkpoint_origin(request, native)
     }
 }
 

@@ -8,6 +8,7 @@ use worth_relational::facade::{
     },
     runtime::RelationalRuntime,
 };
+#[derive(Debug)]
 pub(crate) enum NativeBasisRetirement {
     Retiring(Option<RelationalBranchBasisRetirement>),
     Retired {

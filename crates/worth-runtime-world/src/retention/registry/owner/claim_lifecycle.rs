@@ -56,6 +56,14 @@ where
         Ok(())
     }
 
+    fn try_take_history_pair_for_close(
+        &self,
+        relational: &ComponentBasisPinClaim,
+        signal: &ComponentBasisPinClaim,
+    ) -> Result<crate::retention::component_obligation::RetiringHistoryComponents, ()> {
+        self.try_take_checkpoint_pair(relational, signal)
+    }
+
     fn fork_history_pair(
         &self,
         relational: &ComponentBasisPinClaim,
