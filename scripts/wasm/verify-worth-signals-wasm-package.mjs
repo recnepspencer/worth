@@ -60,6 +60,13 @@ async function runTypeSmoke(tempDir, packageName) {
   const tscJsPath = path.join(tempDir, "node_modules", "typescript", "bin", "tsc");
   const source = buildTypeSmokeSource(packageName);
   await writeFile(smokeTypePath, source, "utf8");
+  const observationTypePath = path.join(tempDir, "observation-target-smoke.ts");
+  const observationSource = await readFile(new URL(
+    "../../crates/worth-signal-wasm/package/observation-target-types-smoke.ts",
+    import.meta.url,
+  ), "utf8");
+  await writeFile(observationTypePath,
+    observationSource.replace('from "./index.js"', `from "${packageName}"`), "utf8");
   const args = [
     tscJsPath,
     "--noEmit",
@@ -71,6 +78,7 @@ async function runTypeSmoke(tempDir, packageName) {
     "--lib", "ESNext,DOM,ESNext.Disposable",
     "--jsx", "react-jsx",
     smokeTypePath,
+    observationTypePath,
   ];
   await execFileAsync(process.execPath, args, { cwd: tempDir });
 }

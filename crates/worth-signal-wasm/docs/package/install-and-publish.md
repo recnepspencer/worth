@@ -59,6 +59,10 @@ Package contract note:
   ordinary reads still require a live handle. This release also adds coordinated
   `form.setFields(...)` updates and preserves `PATCH` methods in request and
   reconciliation proofs.
+- **1.6.2:** observation declarations accept branded signal handles with
+  arbitrary value types, including `form.summarySignal()` metadata. Direct
+  handles and their public `.id` work with `effect`, `watch`, and `read`.
+  This declaration correction preserves the 1.6.1 runtime.
 
 ## Stable Entry Points
 
