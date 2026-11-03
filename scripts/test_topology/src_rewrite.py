@@ -209,6 +209,9 @@ class Rewriter:
 
     def resolve_path(self, segments, names, reader_crate, context='use'):
         resolved = resolve(segments, names, self.model.index)
+        heads = getattr(self, 'heads', {})
+        if resolved is None and segments and segments[0] in heads:
+            resolved = resolve(('crate',) + heads[segments[0]] + tuple(segments[1:]), names, self.model.index)
         if resolved is None:
             return None
         module, rest = resolved
@@ -274,8 +277,8 @@ class Rewriter:
         own = {i.name for i in items_of(text) if i.keyword not in ('impl', 'use')} | {c.names[-1] for c in record.node.children}
         words = {t.value for k, t in enumerate(stream)
                  if t.kind == 'ident' and not (k and stream[k - 1].value == '.')} - own
-        children = {c.names[-1] for c in self.model.index[names].children} if names in self.model.index else set()
-        uses, paths = scan(text, children)
+        self.heads = self.model.heads(names)
+        uses, paths = scan(text, set(self.heads))
         changes = []
         for declaration in uses:
             lines = []

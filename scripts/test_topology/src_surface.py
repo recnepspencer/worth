@@ -144,6 +144,10 @@ class Surface:
                     resolved = self.target(segments, module)
                     if resolved is None or resolved[1]:
                         continue
+                    if resolved[0] + (item,) in self.index:
+                        # A glob also brings the target's child modules into scope.
+                        result = ((resolved[0] + (item,), None), False)
+                        break
                     found, inner = self.origin(resolved[0], item, seen)
                     if found is not None:
                         result = (found, inner)

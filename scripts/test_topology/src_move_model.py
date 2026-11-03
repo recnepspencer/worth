@@ -121,16 +121,38 @@ class MoveModel:
                 result.append((target, origin or (target.module, target.item)))
         return result
 
+    def alias_module(self, names, head):
+        """The module an imported name (`use a::b as graph;`, or via a glob) denotes, if any."""
+        if names not in self.index:
+            return None
+        origin, _gated = self.everything.origin(names, head)
+        if origin is not None and origin[0] != '<external>' and origin[1] is None:
+            return origin[0]
+        return None
+
+    def heads(self, names):
+        """Unrooted path heads that denote modules: child modules and imported module aliases."""
+        if names not in self.index:
+            return {}
+        result = {c.names[-1]: c.names for c in self.index[names].children}
+        for name in self.visible(names):
+            if name not in result:
+                module = self.alias_module(names, name)
+                if module is not None:
+                    result[name] = module
+        return result
+
     def child_paths(self, node):
-        """Unrooted `child::item` paths through the module's own child modules."""
+        """Unrooted paths through child modules or imported module aliases (`graph::x::Item`)."""
         from src_occurrences import scan
-        children = {c.names[-1] for c in self.index[node.names].children} if node.names in self.index else set()
-        if not children:
+        heads = self.heads(node.names)
+        if not heads:
             return []
         result = []
-        for occurrence in scan(node.own_text(), children)[1]:
-            if occurrence.segments[0] in children:
-                resolved = resolve(occurrence.segments, node.names, self.index)
+        for occurrence in scan(node.own_text(), set(heads))[1]:
+            head = occurrence.segments[0]
+            if head in heads:
+                resolved = resolve(('crate',) + heads[head] + occurrence.segments[1:], node.names, self.index)
                 if resolved is not None:
                     module, rest = resolved
                     result.append(Reference(module, rest[0] if rest else None))

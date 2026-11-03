@@ -221,7 +221,7 @@ def public(text):
     if re.match(r'(?:fn|struct|enum|const|static|type|trait|union)\b', text[head:]):
         text = text[:head] + 'pub ' + text[head:]
     if re.match(r'thread_local\s*!', text[head:]):
-        text = re.sub(r'(?m)^(\s*)static\s', r'\1pub static ', text)
+        text = re.sub(r'(?<!pub )\bstatic\s+(?=[A-Za-z_])', 'pub static ', text)
     if re.match(r'impl\b', text[head:]) and not re.search(r'\bfor\b', text[head:text.find('{')]):
         text = re.sub(r'(?m)^(\s+(?:#\s*\[[^\]]*\]\s*)*)(?=(?:const\s+|async\s+|unsafe\s+)*fn\s)', r'\1pub ', text)
     return text

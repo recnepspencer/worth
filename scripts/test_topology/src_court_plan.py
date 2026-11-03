@@ -62,6 +62,8 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
             for names in sorted((n for n in kinds if model.records[n].foreign or foreign_includes(model.records[n])),
                                 key=len):
                 # A mounted foreign source lives with its parent's part: it resolves `super::` there.
+                if names[:-1] not in kinds:
+                    continue
                 parent = kinds.get(names[:-1])
                 kinds[names] = 'testkit' if parent in ('testkit', 'split') else 'local'
             testkits = place_testkits(model, kinds, products, frontier_of_products, ceiling - SCAFFOLD_RESERVE)
@@ -210,7 +212,7 @@ def extracted_readers(model, classes):
         if family in moving:
             continue
         for node in record.node.walk():
-            for reference in references(ExpandedView(node), model.index):
+            for reference in references(ExpandedView(node), model.index) + model.child_paths(ExpandedView(node)):
                 if reference.item is None:
                     target = model.records.get(reference.module)
                     if target is not None and not target.extracted and family not in moving:
