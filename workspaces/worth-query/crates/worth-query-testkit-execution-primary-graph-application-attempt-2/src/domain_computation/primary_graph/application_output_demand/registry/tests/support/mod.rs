@@ -145,11 +145,11 @@ pub fn retain_owned_key(state: &mut DemandRegistryState, key: &WorthQueryOutputD
         return;
     }
     let queue = (*state
-        .required_work_queue_for_test())
+        .required_work_queue_mut_for_test())
         .get_or_insert_with(|| Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkQueue::new()));
     let member = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership::new_for_test(
         Arc::new(key.clone()),
         queue,
     ));(*
-    (*state.records_for_test()).get_mut(key).unwrap().work_membership_mut_for_test()) = Some(member);
+    (*state.records_mut_for_test()).get_mut(key).unwrap().work_membership_mut_for_test()) = Some(member);
 }

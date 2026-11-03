@@ -107,7 +107,7 @@ pub fn custody_wait(superseded: bool, token: bool) {
             usize::from(!token),
         );
         (*active.source_commits_for_test()).push(commit.clone());
-        (*state.records_for_test()).insert(selected.clone(), active);
+        (*state.records_for_test()).insert_for_test(selected.clone(), active);
     }
     registry.complete_prepared_source_for_test(&receipt);
     (*registry.state_for_test()).lock().unwrap().drain_completed_custody_for_test();
@@ -119,7 +119,7 @@ pub fn custody_wait(superseded: bool, token: bool) {
     if token {
         registry.release_prepared_token_for_test(&commit);
     } else {
-        let notifications = Arc::clone(&(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&selected].wake);
+        let notifications = Arc::clone(&(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&selected].wake_for_test()));
         drop(interest(&registry, selected.clone(), notifications));
     }
     (*registry.state_for_test()).lock().unwrap().drain_completed_custody_for_test();
@@ -127,7 +127,7 @@ pub fn custody_wait(superseded: bool, token: bool) {
     assert!(state.source_custody.is_empty());
     assert!((*state
         .records_for_test())
-        .values()
+        .values_for_test()
         .all(|row| row.source_commits.is_empty()));
     assert!(!state.pending_custody_prune_for_test());
 }

@@ -161,3 +161,80 @@ impl DemandRecord {
         &mut self.work_membership
     }
 }
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn performed_obligations_for_test(&self) -> &Vec<PerformedOutputObligation> {
+        &self.performed_obligations
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn performed_source_for_test(&self) -> &Option<WorthQueryPerformedOutputDemandSource> {
+        &self.performed_source
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn readmission_source_for_test(&self) -> &Option<Arc<source_readmission::RequiredOutputReadmission>> {
+        &self.readmission_source
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn required_stop_for_test(&self) -> &Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind> {
+        &self.required_stop
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn successor_of_for_test(&self) -> &Option<succession::Succession> {
+        &self.successor_of
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn performed_obligations_mut_for_test(&mut self) -> &mut Vec<PerformedOutputObligation> {
+        &mut self.performed_obligations
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn performed_source_mut_for_test(&mut self) -> &mut Option<WorthQueryPerformedOutputDemandSource> {
+        &mut self.performed_source
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn readmission_source_mut_for_test(&mut self) -> &mut Option<Arc<source_readmission::RequiredOutputReadmission>> {
+        &mut self.readmission_source
+    }
+}
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn required_work_queue_mut_for_test(&mut self) -> &mut Option<Arc<required_work::RequiredWorkQueue>> {
+        &mut self.required_work_queue
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn source_commits_mut_for_test(&mut self) -> &mut Vec<worth_runtime_world::facade::CompositeCommitIdentity> {
+        &mut self.source_commits
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn successor_of_mut_for_test(&mut self) -> &mut Option<succession::Succession> {
+        &mut self.successor_of
+    }
+}

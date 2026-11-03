@@ -35,12 +35,12 @@ impl BridgeDeferralWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDem
                 WorthQueryOutputDemandAdvanceAdmission::Failed(_)
             ));
             let state = (*fixture.registry.state_for_test()).lock().unwrap();
-            assert!(matches!(
-                (*state.records_for_test())[&(*fixture.interest.key_for_test())].state,
+            assert!(matches!((*
+                (*state.records_for_test())[&(*fixture.interest.key_for_test())].state_for_test()),
                 DemandState::Failed(_)
             ));
-            assert!((*state.records_for_test())[&(*fixture.interest.key_for_test())]
-                .performed_obligations
+            assert!((*(*state.records_for_test())[&(*fixture.interest.key_for_test())]
+                .performed_obligations_for_test())
                 .is_empty());
 
             return;
@@ -53,10 +53,10 @@ impl BridgeDeferralWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDem
         {
             let state = (*fixture.registry.state_for_test()).lock().unwrap();
             let row = &(*state.records_for_test())[&(*fixture.interest.key_for_test())];
-            assert!(matches!(row.state, DemandState::Admitted));
-            assert_eq!(row.performed_obligations.len(), 1);
-            assert_eq!(row.prerequisites.len(), 1);
-            assert!(row.performed_source.is_some());
+            assert!(matches!((*row.state_for_test()), DemandState::Admitted));
+            assert_eq!((*row.performed_obligations_for_test()).len(), 1);
+            assert_eq!((*row.prerequisites_for_test()).len(), 1);
+            assert!((*row.performed_source_for_test()).is_some());
         }
         let WorthQueryOutputDemandAdvanceAdmission::Schedule(source) =
             fixture.registry.begin_for_test(&fixture.interest)

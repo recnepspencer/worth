@@ -23,3 +23,5 @@ impl Drop for RecordMutation<'_> {
         self.0.closed_cleanup.publish_owner_state(self.0);
     }
 }
+
+mod court_doors_for_test;

@@ -22,3 +22,25 @@ impl ApplicationFactTable {
         Self::len(self)
     }
 }
+
+impl ApplicationFactTable {
+    #[doc(hidden)]
+    pub fn get_for_test(&self, key: &str) -> Option<Decision> {
+        Self::get(self, key)
+    }
+}
+
+impl ApplicationFactTable {
+    #[doc(hidden)]
+    pub fn requests_for_test(
+        &self) -> impl Iterator<Item = crate::domain_computation::WorthQueryDecisionFactRequest> + '_ {
+        Self::requests(self)
+    }
+}
+
+impl ApplicationFactTable {
+    #[doc(hidden)]
+    pub fn values_for_test(&self) -> impl Iterator<Item = Decision> + '_ {
+        Self::values(self)
+    }
+}

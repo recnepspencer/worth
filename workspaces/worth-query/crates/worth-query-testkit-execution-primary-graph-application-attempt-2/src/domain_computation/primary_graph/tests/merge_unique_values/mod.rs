@@ -50,8 +50,8 @@ impl MergeWorld {
             .expect("the fixture publishes its graph")
             .integration_handle_for_test();
         let field = |aspect: &str, name: &str| {
-            handle
-                .layout
+            (*handle
+                .layout_for_test())
                 .field("Account", aspect, name)
                 .expect("the schema declares the field")
                 .clone()

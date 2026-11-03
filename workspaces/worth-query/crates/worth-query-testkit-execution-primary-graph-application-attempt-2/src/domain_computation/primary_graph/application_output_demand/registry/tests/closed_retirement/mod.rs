@@ -43,7 +43,7 @@ pub fn claim_on_superseded(
     let wake = Arc::clone(&(*dependent_record.wake_for_test()));
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        (*state.records_for_test()).insert(
+        (*state.records_for_test()).insert_for_test(
             old.clone(),
             DemandRecord {
                 framework_required_count: 1,
@@ -59,9 +59,9 @@ pub fn claim_on_superseded(
         );
         (*state
             .records_for_test())
-            .insert(newest.clone(), record(occurrence(), newest_state, 1));
+            .insert_for_test(newest.clone(), record(occurrence(), newest_state, 1));
         (*state.required_keys_for_test()).insert(Arc::new(newest.clone()));
-        (*state.records_for_test()).insert(dependent.clone(), dependent_record);
+        (*state.records_for_test()).insert_for_test(dependent.clone(), dependent_record);
         retain_owned_key(&mut state, &dependent);
     }
     let interest = interest(&registry, dependent, wake);

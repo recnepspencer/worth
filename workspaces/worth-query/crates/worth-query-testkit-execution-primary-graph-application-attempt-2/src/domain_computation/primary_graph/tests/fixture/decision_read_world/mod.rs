@@ -96,7 +96,7 @@ pub fn installed_decision_read_world() -> DecisionReadWorld {
             )
             .unwrap();
         (*bootstrap
-            .managed_indexes_for_test())
+            .managed_indexes_mut_for_test())
             .register_for_test::<worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::decision_read_world::queries::DecisionIndex, _>(
                 &schema,
                 worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::decision_read_world::schema::MEMBERS,

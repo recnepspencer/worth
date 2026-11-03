@@ -26,9 +26,9 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
             .unwrap()
             .shared_observed_facts_for_test(authority.session_for_test())
             .unwrap();
-        let requests: Vec<_> = facts.requests().collect();
+        let requests: Vec<_> = facts.requests_for_test().collect();
         let fact = facts
-            .get("application-principal-currentness")
+            .get_for_test("application-principal-currentness")
             .expect("the real admission captures its principal");
         assert!(matches!(
             fact,
@@ -80,7 +80,7 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
              cancellation: Option<&worth_execution::CancellationSource>| {
                 authority.compare_decision_read_set_with_for_test(capture(), |evidence, admission| {
                     let fact = facts
-                        .get(evidence.locator().identity())
+                        .get_for_test(evidence.locator().identity())
                         .expect("captured fact is registered");
                     let current = (*self
                         .graph_for_test())

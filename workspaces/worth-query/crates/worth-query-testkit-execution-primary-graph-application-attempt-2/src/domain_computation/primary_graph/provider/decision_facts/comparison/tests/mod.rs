@@ -39,7 +39,7 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
             .unwrap()
             .shared_observed_facts_for_test(authority.session_for_test())
             .unwrap();
-        let requests: Vec<_> = table.requests().collect();
+        let requests: Vec<_> = table.requests_for_test().collect();
         crate::domain_computation::primary_graph::provider::decision_facts::comparison::tests::funding::assert_full_capture_funding(self, execution, authority, request, &table);
         let count = || {
             (*self.graph_for_test()).with_runtime(execution, |runtime| {
@@ -71,7 +71,7 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
             panic!("scoped comparison must agree with generic comparison");
         };
         assert_eq!(generic.counters(), scoped.counters());
-        for fact in table.values() {
+        for fact in table.values_for_test() {
             assert!(scoped.contains_locator_for_test(&fact.locator_identity()));
         }
         assert!(!scoped.contains_locator_for_test("unregistered-same-count-substitution"));

@@ -8,3 +8,10 @@ impl DemandRecords {
         Self::insert(self, key, row)
     }
 }
+
+impl DemandRecords {
+    #[doc(hidden)]
+    pub fn values_for_test(&self) -> impl DoubleEndedIterator<Item = &DemandRecord> {
+        Self::values(self)
+    }
+}
