@@ -77,6 +77,22 @@ def mark_kept_impls(model):
                     (trait_origin is None or not in_moved(model, trait_origin[0])):
                 record.kept.add(index)
                 work.append((names, index))
+    # Production cfg(test) code that reaches moved items keeps them in the library (recorders, doors).
+    for names, node in model.index.items():
+        if names in model.records or any(names[:len(f)] == f for f in model.families):
+            continue
+        for reference in references(_Text(names, node.own_text()), model.index):
+            if reference.item is None:
+                continue
+            origin = model.everything.origin(reference.module, reference.item)[0] or (reference.module, reference.item)
+            target = model.records.get(origin[0])
+            if target is None or target.extracted or target.foreign:
+                continue
+            for index, other in enumerate(target.items):
+                if other.name == origin[1] and not other.test and other.keyword in ITEM_KEYWORDS \
+                        and index not in target.kept:
+                    target.kept.add(index)
+                    work.append((origin[0], index))
     while work:
         names, index = work.pop()
         record = model.records[names]

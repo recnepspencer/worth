@@ -40,17 +40,26 @@ def public_paths(surface):
 
 
 def leading_inner_attributes(text):
-    stream = tokens(text)
-    end, i = 0, 0
-    while i + 2 < len(stream) and stream[i].value == '#' and stream[i + 1].value == '!':
-        depth, j = 0, i + 2
-        while j < len(stream):
-            depth += {'[': 1, ']': -1}.get(stream[j].value, 0)
-            if depth == 0:
-                break
-            j += 1
-        end, i = stream[j].end, j + 1
-    return text[:end], end
+    """Leading `//!` doc lines, `/*! */` blocks and `#![...]` attributes, which must stay first."""
+    import re
+    position = 0
+    while True:
+        match = re.match(r'\s*(?://![^\n]*\n?|/\*!.*?\*/)', text[position:], re.S)
+        if match:
+            position += match.end()
+            continue
+        stream = tokens(text[position:])
+        if len(stream) > 2 and stream[0].value == '#' and stream[1].value == '!':
+            depth, j = 0, 2
+            while j < len(stream):
+                depth += {'[': 1, ']': -1}.get(stream[j].value, 0)
+                if depth == 0:
+                    break
+                j += 1
+            position += stream[j].end
+            continue
+        break
+    return text[:position], position
 
 
 def part_text(record, part, disposition):
@@ -76,6 +85,43 @@ def part_text(record, part, disposition):
     return ''.join(pieces) + '\n'
 
 
+def item_macros(model, module):
+    """Whether a module invokes item macros, which can generate names no scan sees."""
+    from src_scope import scope_items
+    node = model.index.get(module)
+    if node is None:
+        return False
+    own = node.own_text()
+    return any(keyword not in ('use', 'fn', 'struct', 'enum', 'const', 'static', 'type', 'trait', 'union', 'impl',
+                               'mod', 'macro_rules', 'extern') and '!' in own[start:end][:80]
+               for _a, _v, keyword, _n, start, end in scope_items(own))
+
+
+def without_duplicate_imports(text, generated):
+    """Drop generated imports whose name another import already binds, and exact duplicates."""
+    uses, _paths = scan(text)
+    bound = {}
+    for declaration in uses:
+        line = text[declaration.start:declaration.end]
+        for segments, glob, alias in declaration.leaves:
+            if segments and not glob:
+                bound.setdefault(alias or segments[-1], []).append(line)
+    seen, out = set(), []
+    for line in text.split('\n'):
+        stripped = line.strip()
+        if stripped.startswith(('use ', 'pub use ', 'pub(crate) use ')) and stripped.endswith(';'):
+            if stripped in seen:
+                continue
+            seen.add(stripped)
+            if stripped in generated:
+                name = stripped.rstrip(';').split(' as ')[-1].rsplit('::', 1)[-1]
+                if len(bound.get(name, [])) > 1:
+                    bound[name].remove(stripped)
+                    continue
+        out.append(line)
+    return '\n'.join(out)
+
+
 def record_without_kept(record, text):
     from src_move_model import items_of
     import copy
@@ -91,6 +137,7 @@ class Rewriter:
         self.public = public_paths(model.production)
         self.ledger = Ledger()
         self.pending_imports = set()
+        self.generated = set()
 
     def owner_part(self, names):
         """(crate, module path) that holds a moving scope's non-test items."""
@@ -217,6 +264,7 @@ class Rewriter:
                 lines.extend(self.use_lines(segments, glob, alias, names, reader_crate, words, visibility))
             changes.append((declaration.start, declaration.end, '\n'.join(lines)))
         self.pending_imports = set()
+        self.generated = set()
         for occurrence in paths:
             replacement = self.resolve_path(occurrence.segments, names, reader_crate, 'expr')
             if replacement is not None:
@@ -227,11 +275,13 @@ class Rewriter:
                      if segments and not glob}
             fresh = sorted(line for line in self.pending_imports if line.rsplit(' ', 1)[-1].rstrip(';') not in bound)
             if fresh:
+                self.generated |= set(fresh)
                 inner, end = leading_inner_attributes(text)
                 text = inner + '\n' + '\n'.join(fresh) + '\n' + text[end:]
         if disposition == 'split' or record.extracted:
             text = self.with_bare_imports(text, record, reader_crate)
         text = self.with_door_imports(text, record, reader_crate)
+        text = without_duplicate_imports(text, self.generated)
         changes = [(start, end, self.visibility('pub(' + inner + ')', reader_crate))
                    for start, end, inner in visibility_markers(text) if inner.startswith('in ')
                    or '-testkit-' in reader_crate]
@@ -252,6 +302,7 @@ class Rewriter:
                 lines.append(f'use {prefix}::' + '::'.join(path + (door.trait,)) + ';')
         if not lines:
             return text
+        self.generated |= set(lines)
         inner, end = leading_inner_attributes(text)
         return inner + '\n' + '\n'.join(sorted(set(lines))) + '\n' + text[end:]
 
@@ -273,6 +324,7 @@ class Rewriter:
             lines.append('use ' + path + ('' if path.rsplit('::', 1)[-1] == name else f' as {name}') + ';')
         if not lines:
             return text
+        self.generated |= set(lines)
         inner, end = leading_inner_attributes(text)
         return inner + '\n' + '\n'.join(lines) + '\n' + text[end:]
 
@@ -290,7 +342,12 @@ class Rewriter:
             return [prefix + 'use ' + '::'.join(segments) + ('::*' if glob else '') + (f' as {alias}' if alias else '') + ';']
         module, rest = resolved
         if glob and not rest:
-            lines = []
+            canonical = self.module_path(module, reader_crate)
+            if module in self.model.records and not self.model.records[module].extracted:
+                # A glob of moved code stays a glob of its canonical module: macro-generated
+                # fixture names resolve exactly as before.
+                return [prefix + 'use ' + canonical + '::*;']
+            lines = [prefix + 'use ' + canonical + '::*;'] if item_macros(self.model, module) else []
             for n in sorted(self.model.visible(module) & words):
                 path = self.resolve_path(segments + (n,), names, reader_crate)
                 lines.append(prefix + 'use ' + path + ('' if path.rsplit('::', 1)[-1] == n else f' as {n}') + ';')

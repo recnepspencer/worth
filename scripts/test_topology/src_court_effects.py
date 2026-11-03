@@ -140,8 +140,11 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
     moved_sources = set(relocated)
     moved_inline = {(relative(model.index[f[:-1]].source.resolve(), root), f[-1]) for f in model.moving}
     config_writes(root, effects, files, moved_sources, moved_inline, relocated, model, p)
-    staying_text = '\n'.join(n.own_text() for names, f in sorted(model.families.items())
-                             if names not in model.moving for n in f.node.walk())
+    # Dev-dependencies stay while any remaining library source (gated code included) names them.
+    staying_text = '\n'.join([n.own_text() for names, f in sorted(model.families.items())
+                              if names not in model.moving for n in f.node.walk()]
+                             + [node.own_text() for names, node in sorted(model.index.items())
+                                if not model.production.in_family(names)])
     trim_dev_dependencies(root, effects, staying_text, library_table)
     before = multiset_of_texts(
         [(model.records[n].node.own_text(), relative(model.records[n].node.source.resolve(), root))

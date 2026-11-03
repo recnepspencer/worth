@@ -180,7 +180,7 @@ def called_methods(model):
 
 
 def extracted_readers(model, classes):
-    """Staying families whose resolved references reach an extracted or orphaned item.
+    """Staying families whose resolved references reach moved, extracted or orphaned items.
 
     Resolution, not identifier matching: a common name (`map`) must not drag families along.
     """
@@ -188,6 +188,11 @@ def extracted_readers(model, classes):
     from src_paths import references
     removed = {(module, name) for group in (classes.extracted, classes.orphaned)
                for module, items in group.items() for name, _spans in items}
+
+    def moved_away(origin):
+        record = model.records.get(origin[0])
+        return origin in removed or (record is not None and not record.extracted
+                                     and origin[1] not in record.kept_names)
     moving = set(model.moving)
     result = set()
     for family, record in model.families.items():
@@ -198,7 +203,7 @@ def extracted_readers(model, classes):
                 if reference.item is None:
                     continue
                 origin, _gated = model.everything.origin(reference.module, reference.item)
-                if (origin or (reference.module, reference.item)) in removed:
+                if moved_away(origin or (reference.module, reference.item)):
                     result.add(family)
     return result
 
