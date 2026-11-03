@@ -54,11 +54,12 @@ def widen(text, start, end):
 def production_edits(model, families, widen_modules, widen_items, hooks, widen_imports=()):
     """{source path: [(start, end, replacement)]} over original file text."""
     edits = defaultdict(list)
+    from src_kept_impls import kept_module_text
     for family in families:
         node = model.index[family]
         parent = parent_of(model, family)
         start, end = absolute(parent, node.declaration.start, node.declaration.end)
-        edits[file_of(parent)].append((start, end, ''))
+        edits[file_of(parent)].append((start, end, kept_module_text(model, family)))
     for module in sorted(widen_modules):
         node = model.index[module]
         parent = parent_of(model, module)
@@ -146,7 +147,7 @@ def ungate_recorders(text, names):
 
 def apply_edits(text, changes, source=''):
     unique = sorted(set(changes))
-    removals = [(a, b) for a, b, replacement in unique if replacement == '' and b > a]
+    removals = [(a, b) for a, b, replacement in unique if b > a and (replacement == '' or 'mod ' in replacement)]
     # An edit inside a removed span is moot: the whole span leaves production.
     unique = [(a, b, x) for a, b, x in unique
               if not any(ra <= a and b <= rb and (ra, rb) != (a, b) for ra, rb in removals)]

@@ -276,10 +276,15 @@ def test_family_methods(model):
     for names, node in model.index.items():
         own = node.own_text()
         family = next((f for f in model.families if names[:len(f)] == f), None)
+        record = model.records.get(names)
+        kept = set(record.kept_impls) if record is not None else set()
         for _attributes, _vis, keyword, _name, start, end in scope_items(own):
             if keyword != 'impl' or trait_impl(own[start:end]):
                 continue
             methods = {m for m, *_ in impl_methods(own[start:end])}
+            if (start, end) in kept:
+                production |= methods
+                continue
             if family is None:
                 production |= methods
             elif has_tests(model, family):

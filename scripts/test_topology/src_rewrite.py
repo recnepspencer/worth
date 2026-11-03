@@ -56,6 +56,10 @@ def leading_inner_attributes(text):
 def part_text(record, part, disposition):
     """The source of one part of a module scope; a split keeps tests and imports in the court."""
     text = record.node.own_text()
+    if record.kept_impls:
+        # Library impls stay compiled in the library; the moved part omits them.
+        text = replace_spans(text, [(start, end, '') for start, end in record.kept_impls])
+        record = record_without_kept(record, text)
     if disposition != 'split':
         return text
     inner, start = leading_inner_attributes(text)
@@ -69,6 +73,14 @@ def part_text(record, part, disposition):
         if (part == 'court' and court) or (part == 'testkit' and testkit):
             pieces.append('\n' + text[item.start:item.end])
     return ''.join(pieces) + '\n'
+
+
+def record_without_kept(record, text):
+    from src_move_model import items_of
+    import copy
+    clone = copy.copy(record)
+    clone.items = items_of(text)
+    return clone
 
 
 class Rewriter:

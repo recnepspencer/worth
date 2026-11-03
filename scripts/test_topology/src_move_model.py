@@ -41,6 +41,8 @@ class ModuleRecord:
     extracted: set = field(default_factory=set)
     extracted_spans: list = field(default_factory=list)
     includes: list = field(default_factory=list)
+    kept_impls: list = field(default_factory=list)
+    foreign: bool = False
 
 
 def moving_families(rows, forced=(), excluded=()):

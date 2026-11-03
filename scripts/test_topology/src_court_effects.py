@@ -164,6 +164,8 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
             'forced_families': p['forced'],
             'unresolved': sorted('::'.join(m) + '::' + str(n) for m, n in ledger.unresolved),
             'allocator_moved_from': sorted(allocators),
+            'kept_library_impls': sorted('::'.join(n) + ' :: ' + model.records[n].node.own_text()[a:b].split('{', 1)[0].strip()
+                                         for n in model.records for a, b in model.records[n].kept_impls),
             'renamed_modules': sorted(f'{k} -> {v}' for k, v in p['renames'].items()),
             'categories': [{'module': '::'.join(n), 'category': c['category'], 'evidence': c['evidence']}
                            for n, c in sorted(p['categories'].items()) if c['category']]}
@@ -187,7 +189,8 @@ def residual_sweep(model, classes, edits, dev_aliases=()):
         skip[parent.source].append((parent.offset + record.node.declaration.start,
                                     parent.offset + record.node.declaration.end))
     for source, changes in edits.items():
-        skip[source].extend((a, b) for a, b, replacement in changes if replacement == '' and b > a)
+        # Removed or replaced spans (moved module declarations) are not swept.
+        skip[source].extend((a, b) for a, b, replacement in changes if b > a and (replacement == '' or 'mod ' in replacement))
     result = defaultdict(list)
     sources = {node.source for names, node in model.index.items() if not model.production.in_family(names)}
     for source in sorted(sources, key=str):

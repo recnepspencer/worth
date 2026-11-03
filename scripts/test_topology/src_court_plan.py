@@ -106,6 +106,7 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
                 'placement': dict(placement), 'parts': parts, 'ledger': rewriter.ledger,
                 'kit_products': kit_products}
 
+    prepare(model, library_root)
     forced, excluded = set(), set()
     dev = dev_only_aliases(Path(lib).resolve().parent.parent / 'Cargo.toml')
     for _attempt in range(6):
@@ -122,6 +123,7 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
         forced |= new
         excluded |= anchored
         model = MoveModel(lib, repository, baseline, admissions, sorted(forced), sorted(excluded))
+        prepare(model, library_root)
         foreign = {n for n, r in model.records.items() if not r.node.source.resolve().is_relative_to(library_root)}
     for module, items in sorted(classes.extracted.items()):
         add_extracted(model, module, items)
@@ -133,6 +135,14 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
                    'called': called, 'forced': sorted(forced), 'referenced': referenced,
                    'anchored': sorted(excluded), 'dev_aliases': sorted(dev)})
     return result
+
+
+def prepare(model, library_root):
+    """Mark foreign-mounted scopes and the library impls that must stay in the library."""
+    from src_kept_impls import mark_kept_impls
+    for record in model.records.values():
+        record.foreign = not record.node.source.resolve().is_relative_to(library_root)
+    mark_kept_impls(model)
 
 
 def included_record(record, target):
