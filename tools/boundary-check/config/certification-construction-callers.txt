@@ -175,3 +175,6 @@ native-durable-initial-installation crates/worth-court-relational-certification/
 native-home-complete-checkpoint crates/worth-testkit-relational/src/initial_input_source.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs
 native-fresh-home-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/publication_fates.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
+native-home-original-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/selected_subject.rs
