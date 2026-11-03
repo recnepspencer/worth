@@ -11,7 +11,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDen
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandSettlement;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::producer_identity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputSettlementProvenanceDenial as Reason;
 
@@ -143,7 +142,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             }
             OriginalSettledProducerSource::Restored { checkpoint } => {
                 let mut checkpoint = checkpoint.clone();
-                (*checkpoint.idempotency_key_for_test())[0] ^= 1;
+                (*checkpoint.idempotency_key_mut_for_test())[0] ^= 1;
                 sources.push((
                     "restored checkpoint",
                     OriginalSettledProducerSource::Restored { checkpoint },

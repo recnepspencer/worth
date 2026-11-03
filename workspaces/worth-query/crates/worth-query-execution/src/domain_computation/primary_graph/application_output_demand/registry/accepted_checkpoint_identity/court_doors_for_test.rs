@@ -7,3 +7,10 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
         &self.idempotency_key
     }
 }
+
+impl WorthQueryAcceptedOutputCheckpointIdentity {
+    #[doc(hidden)]
+    pub fn idempotency_key_mut_for_test(&mut self) -> &mut [u8; 32] {
+        &mut self.idempotency_key
+    }
+}
