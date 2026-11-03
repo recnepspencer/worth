@@ -46,10 +46,10 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
             )
         ))
     );
-    let native_quote = denied
+    let initial_capture_quote = denied
         .requested_payload_bytes()
         .expect("checked real native payload quote");
-    assert!(native_quote > 0);
+    assert!(initial_capture_quote > 0);
     assert_eq!(
         calls, 1,
         "capture refusal follows actual authoring and acknowledgment"
@@ -81,20 +81,20 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
             })
             .unwrap()
     };
-    let native_only = child(native_quote);
+    let frame_only = child(0);
     let pending = checkpoint_capture::with_bootstrap_advancement_from_request(
         ExecutionRequest::leased(&original),
         |phase| {
             pending.repair_to_checkpoint(
                 &phase,
                 application_installation::WorthQueryCheckpointCapturePolicy::Execution(
-                    &native_only,
+                    &frame_only,
                 ),
             )
         },
     )
     .unwrap()
-    .expect_err("the final frame is admitted while native backing remains live");
+    .expect_err("the final frame cannot allocate from its zero child while Native uses the original request");
     let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
         panic!("exact final-frame allocation cause must survive: {pending:?}");
     };
@@ -115,11 +115,10 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let frame_quote = denied
         .requested_payload_bytes()
         .expect("checked real final-frame payload quote");
-    assert!(frame_quote > native_quote);
-    let released = native_only.reserve_memory(native_quote).unwrap();
-    drop(released);
-    drop(native_only);
-    let repair = child(native_quote.checked_add(frame_quote).unwrap());
+    assert!(frame_quote > 0);
+    assert_eq!(frame_only.charged_memory_bytes(), 0);
+    drop(frame_only);
+    let repair = child(frame_quote);
     let checkpoint = checkpoint_capture::with_bootstrap_advancement_from_request(
         ExecutionRequest::leased(&original),
         |phase| {
@@ -133,6 +132,8 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     .expect("a fresh funded request captures the same acknowledged successor");
     assert_eq!(checkpoint.bytes().len() as u64, frame_quote);
     assert_eq!(checkpoint.charged_payload_bytes(), Some(frame_quote));
+    assert_eq!(repair.charged_memory_bytes(), frame_quote);
     assert_target_record(checkpoint, 127);
+    assert_eq!(repair.charged_memory_bytes(), 0);
     assert_eq!(calls, 1, "repair cannot rerun authoring");
 }

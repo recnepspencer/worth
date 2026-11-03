@@ -2852,11 +2852,14 @@ replays. The existing public refusal now exposes its exact Root denial and World
 denial types through the Host audience facade, without a new dependency.
 
 The final-frame capture fixture uses its existing funded original bootstrap
-request for Native metadata/consolidation. A child of that SAME lease grants
-only the independently observed Native backing quote, then Native-plus-frame
-quotes for successful repair. Thus the intended child allocation boundary still
-has zero room while original owner work remains funded. The zero-root admission,
-exact refusal, backing refund and single callback assertions are unchanged.
+request for Native metadata/consolidation and Complete output, as required by
+D17 and the accepted original-input design f8c881ba9a. That decision retires the
+fixture's old claim that Native output and the Query frame share the capture
+policy child's allowance: Complete output is funded by the original execution
+request. A zero child of that SAME original lease therefore isolates the final
+Query frame refusal. Repair grants that child exactly the observed frame quote,
+requires the retained charge to equal that quote and its refund after consumption,
+and retains the zero-root admission, exact refusal and single callback assertions.
 
 Strict original-artifact validation also exposed a scalar preflight omission:
 the normal decoder already accepts INLINE_BYTES (tag24), while its allocation
