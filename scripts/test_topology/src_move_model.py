@@ -42,6 +42,8 @@ class ModuleRecord:
     extracted_spans: list = field(default_factory=list)
     includes: list = field(default_factory=list)
     kept_impls: list = field(default_factory=list)
+    kept: set = field(default_factory=set)
+    kept_names: set = field(default_factory=set)
     foreign: bool = False
 
 

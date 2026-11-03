@@ -99,7 +99,7 @@ class Rewriter:
     def moved(self, module, name):
         """Whether (module, name) now lives in a generated crate."""
         record = self.model.records.get(module)
-        if record is None:
+        if record is None or name in record.kept_names:
             return False
         return name in record.extracted if record.extracted else True
 
@@ -107,6 +107,13 @@ class Rewriter:
         module, name = origin
         if module == '<external>':
             return name
+        record = self.model.records.get(module)
+        if record is not None and name in record.kept_names:
+            # A kept library test door: reached at its library path, inside `pub` kept modules.
+            outermost = next(i for i in range(1, len(module) + 1)
+                             if module[:i] in self.model.records or i == len(module))
+            self.widen_chain(module[:outermost - 1])
+            return '::'.join((LIBRARY,) + module + (name,))
         if self.moved(module, name):
             crate, path = self.owner_part(module)
             if crate != reader_crate and '-court-' in crate and '-court-' in reader_crate:
