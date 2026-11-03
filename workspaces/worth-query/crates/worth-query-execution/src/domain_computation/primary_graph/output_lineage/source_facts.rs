@@ -106,3 +106,5 @@ impl FactSequence for ComparableSourceFacts {
         self.facts().iter()
     }
 }
+
+mod court_doors_for_test;

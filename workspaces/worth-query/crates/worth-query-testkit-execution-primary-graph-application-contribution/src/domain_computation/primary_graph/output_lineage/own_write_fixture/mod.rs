@@ -255,7 +255,7 @@ pub fn commit_own_write(
             .expect("performed cell has only lineage custody")
             .get_mut()
             .unwrap();
-        let count = recorded.observed_source_facts_for_test().unwrap().len();
+        let count = recorded.observed_source_facts_for_test().unwrap().len_for_test();
         let boundary = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
         let context = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new_for_test(
             worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(

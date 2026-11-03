@@ -308,7 +308,7 @@ pub fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
         let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact else {
             panic!("the status is a field's fact: {fact:?}");
         };
-        (*state.facts_for_test()).replace_fact_for_test(
+        (*state.facts_mut_for_test()).replace_fact_for_test(
             &key,
             WorthQueryApplicationObservedFact::SourceEntity { entity_id },
         );

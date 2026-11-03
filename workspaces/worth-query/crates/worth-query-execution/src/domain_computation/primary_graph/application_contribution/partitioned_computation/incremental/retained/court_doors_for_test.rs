@@ -14,3 +14,10 @@ impl RetainedComputation {
         &self.facts
     }
 }
+
+impl RetainedComputation {
+    #[doc(hidden)]
+    pub fn facts_mut_for_test(&mut self) -> &mut SealedComputationFacts {
+        &mut self.facts
+    }
+}
