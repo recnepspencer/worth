@@ -53,51 +53,37 @@ def method_door(header, name):
 
 def call_parts(rest):
     """(turbofish, (receiver, argument names)) for a signature tail `<G>(params) -> R`."""
-    stream = tokens(rest)
-    matching = pairs(stream)
+    from src_door_sites import Source, split_top as split_parts
+    source = Source(rest)
     k, turbofish = 0, ''
-    if stream and stream[0].value == '<':
+    if source.value(0) == '<':
         depth, j = 0, 0
         while True:
-            depth += {'<': 1, '>': -1}.get(stream[j].value, 0)
+            value = source.value(j)
+            if value == '<':
+                depth += 1
+            elif value == '>' and not (source.value(j - 1) == '-' and source.adjacent(j - 1, j)):
+                depth -= 1
             if depth == 0:
                 break
             j += 1
-        generics = rest[stream[0].start:stream[j].end]
-        if re.search(r'\bimpl\b', rest[:rest.find(')') + 1]) is None:
+        generics = source.span_text(0, j)
+        params_text = source.span_text(j + 1, source.close[j + 1]) if source.value(j + 1) == '(' else ''
+        if 'impl' not in {t.value for t in tokens(params_text)}:
             names = [n for n in generic_arguments(generics)[1:-1].split(', ') if n and not n.startswith("'")]
             turbofish = '::<' + ', '.join(names) + '>' if names else ''
         k = j + 1
-    open_index = k
-    close_index = matching[open_index]
-    inner = without_patterns(rest[stream[open_index].start:stream[close_index].end])[1:-1]
     receiver, arguments = None, []
-    for param in split_top(inner):
-        param = param.strip()
-        if not param:
-            continue
-        head = param.split(':')[0].strip()
-        if head in ('self', '&self', '&mut self', 'mut self') or re.match(r"&\s*'\w+\s+(mut\s+)?self$", head):
+    for index, (a, b) in enumerate(split_parts(source, k)):
+        colon = next((m for m in range(a, b + 1) if source.value(m) == ':' and source.value(m + 1) != ':'
+                      and source.value(m - 1) != ':'), None)
+        head = source.span_text(a, colon - 1) if colon is not None else source.span_text(a, b)
+        if re.fullmatch(r"(?:&\s*(?:'\w+\s+)?)?(?:mut\s+)?self", head.strip()):
             receiver = 'self'
-        else:
-            arguments.append(re.sub(r'^mut\s+', '', head))
-    return turbofish, (receiver, arguments)
-
-
-def split_top(text):
-    parts, depth, current = [], 0, ''
-    for index, ch in enumerate(text):
-        if ch == '>' and index and text[index - 1] == '-':
-            current += ch  # the arrow of a return type, not a closing bracket
             continue
-        depth += {'(': 1, '[': 1, '<': 1, '{': 1, ')': -1, ']': -1, '>': -1, '}': -1}.get(ch, 0)
-        if ch == ',' and depth == 0:
-            parts.append(current)
-            current = ''
-        else:
-            current += ch
-    parts.append(current)
-    return parts
+        name = re.sub(r'^mut\s+', '', head.strip())
+        arguments.append(name if re.fullmatch(r'[A-Za-z_]\w*', name) else f'_arg{index}')
+    return turbofish, (receiver, arguments)
 
 
 def struct_shape(text):
@@ -125,19 +111,21 @@ def struct_shape(text):
         where = text[stream[i].start:stream[k].start].strip()
     fields = {}
     if k < len(stream) and stream[k].value in ('{', '('):
-        body = text[stream[k].end:stream[matching[k]].start]
-        # Comments may hold commas; they are not fields.
-        body = re.sub(r'//[^\n]*', '', re.sub(r'(?s)/\*.*?\*/', '', body))
-        for index, part in enumerate(split_top(body)):
-            part = re.sub(r'(?s)^\s*(?:#\s*\[[^\]]*\]\s*|///[^\n]*\n\s*)*', '', part).strip()
-            part = re.sub(r'^pub(?:\s*\([^)]*\))?\s+', '', part)
-            if not part:
+        from src_door_sites import Source, split_top as split_parts
+        source = Source(text)
+        for index, (a, b) in enumerate(split_parts(source, k)):
+            while source.value(a) == '#' and source.value(a + 1) == '[':
+                a = source.close[a + 1] + 1  # attributes (doc comments are already gone)
+            if source.value(a) == 'pub':
+                a += 1
+                if source.value(a) == '(':
+                    a = source.close[a] + 1
+            if a > b:
                 continue
             if stream[k].value == '{':
-                field, _colon, ty = part.partition(':')
-                fields[field.strip()] = ty.strip()
+                fields[source.value(a)] = source.span_text(a + 2, b)
             else:
-                fields[str(index)] = part
+                fields[str(index)] = source.span_text(a, b)
     if tail := re.search(r'\bwhere\b(.*)$', text[stream[matching[k]].end:] if k < len(stream) and stream[k].value == '(' else ''):
         where = 'where' + tail.group(1).rstrip(';').rstrip()
     return {'name': name, 'generics': generics, 'where': where, 'fields': fields}

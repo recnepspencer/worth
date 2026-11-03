@@ -1,14 +1,17 @@
 """Member doors: sealed inherent `<name>_for_test` doors for private methods and fields.
 
 From `cargo check` diagnostics over the courts and testkits:
-- E0624 (private method or associated function) gets `pub fn <m>_for_test` delegating with
-  the same signature, in the `court_doors_for_test` child of the method's module;
-- E0616 (private field) gets `pub fn <f>_for_test(&self) -> &T`, and `<f>_mut_for_test`
-  where the court assigns to the field or borrows it mutably (E0596 on a later round);
-- E0451 / E0423 (struct literal over private fields) gets `pub fn new_for_test(..) -> Self`.
-The call sites in the moved code are rewritten at the diagnostic spans; fields read as
-`(*expr.f_for_test())` so the place keeps its type. Anything the scan cannot place exactly is
-reported, not guessed.
+- E0624 (private method or associated function): `pub fn <m>_for_test` delegating with the
+  same signature, in the `court_doors_for_test` child of the method's module (a method already
+  named `*_for_test` is only made `pub`);
+- E0616 (private field): `<f>_for_test(&self) -> &T`, read at the site as `(*expr.f_for_test())`,
+  or `<f>_mut_for_test` where the site assigns or borrows mutably (E0596/E0594 later switch a
+  read site), or `<f>_into_for_test(self)` where the site moves the field out (E0507);
+- E0451 / E0423 (struct literal over private fields): `new_for_test(..)` in the first literal's
+  field order; a functional update sets its fields through mutable doors instead.
+All site analysis is on `rust_source` tokens (src_door_sites). `dry_run` writes nothing and
+reports what it would do; every changed file is validated first (tokenizer balance for sites,
+rustfmt for door files), and nothing is written if any validation fails.
 """
 from collections import defaultdict
 import json
@@ -16,19 +19,17 @@ from pathlib import Path
 import re
 
 from module_tree import read_tree
-from rust_source import pairs, replace_spans, tokens
-from src_door_constructors import constructed_struct, literal_rewrite
-from src_door_members_text import (constructor_door, door_file_path, field_door, method_door,
-                                   mount_edit, struct_shape)
+from src_door_members_text import constructor_door, field_door, method_door, struct_shape
+from src_door_sites import (Source, assigned_after, borrowed_mut, enclosing_brace, field_sites,
+                            is_pattern, literal_parts, path_before)
 from src_door_traits import header_parts
-from src_emit_production import own_offset
-from src_scope import scope_items
+from src_door_writes import Plan, apply_plan, open_declarations, owning_field_door, owning_impl, struct_declaration
 
 LIB = 'workspaces/worth-query/crates/worth-query-execution/src/lib.rs'
 WORKSPACE = 'workspaces/worth-query'
 AUTHORITY = re.compile(r'Authority|authority|\bmint\b')
-KEYWORDS = {'mut', 'ref', 'move', 'return', 'in', 'if', 'else', 'match', 'let', 'as', 'box', 'break', 'yield'}
 FIELD = re.compile(r'field `(\w+)` of struct `(?:[\w:]*::)?(\w+)')
+NAMED = re.compile(r'of struct `(?:[\w:]*::)?(\w+)')
 
 
 def diagnostics(check):
@@ -41,344 +42,169 @@ def diagnostics(check):
             yield message['message']
 
 
-def owning_impl(index, path, offset):
-    """(module node, impl text) of the impl block in `path` that contains byte `offset`."""
-    best = None
-    for names, node in index.items():
-        if node.source is None or Path(node.source).resolve() != path:
-            continue
-        own = node.own_text()
-        for _a, _v, keyword, _n, start, end in scope_items(own):
-            s = own_offset(node, start) + node.offset
-            if keyword == 'impl' and s <= offset < s + (end - start):
-                if best is None or len(names) > len(best[0].names):
-                    best = (node, own[start:end])
-    return best
-
-
-def owning_field_door(index, field):
-    """(module node, struct shape) whose door file already reads `field`, when unique."""
-    found = []
-    for names, node in index.items():
-        if names and names[-1] == 'court_doors_for_test' and f'pub fn {field}_for_test(&self)' in node.text:
-            parent = index[names[:-1]]
-            for _a, _v, keyword, item, start, end in scope_items(parent.own_text()):
-                if keyword == 'struct':
-                    shape = struct_shape(parent.own_text()[start:end])
-                    if shape and field in shape['fields'] and f'impl{shape["generics"]} {shape["name"]}' in node.text:
-                        found.append((parent, shape))
-    return found[0] if len(found) == 1 else None
-
-
-def struct_declaration(index, name):
-    found = []
-    for names, node in index.items():
-        own = node.own_text()
-        for _a, _v, keyword, item, start, end in scope_items(own):
-            if keyword == 'struct' and item == name:
-                found.append((node, own[start:end]))
-    return found[0] if len(found) == 1 else None
-
-
-def members(root, check, report, write_report):
+def members(root, check, report, write_report, dry_run=False):
     tree = read_tree(root / LIB)
     index = {node.names: node for node in tree.walk()}
-    doors = defaultdict(dict)        # module names -> {door key: text}
-    sites = defaultdict(set)         # court file -> {(start, end, replacement)}
-    authority, unplaced, opened = set(), [], set()
-    counts = defaultdict(int)
+    plan = Plan(index)
     for diagnostic in diagnostics(check):
         code = (diagnostic.get('code') or {}).get('code')
         primary = next((s for s in diagnostic['spans'] if s['is_primary']), None)
-        if primary is None or code not in ('E0624', 'E0616', 'E0596', 'E0594', 'E0507', 'E0451', 'E0423'):
+        handler = HANDLERS.get(code)
+        if primary is None or handler is None:
             continue
         site = (root / WORKSPACE / primary['file_name']).resolve()
-        if code == 'E0507':
-            found = moved_sites(diagnostic, site)
-            owner = owning_field_door(index, found[0]) if found else None
-            if owner is None:
-                unplaced.append(diagnostic['message'])
-                continue
-            node, shape = owner
-            doors[node.names][('field_into', found[0], shape['name'])] = field_door(shape, found[0], 'into')
-            sites[site].add(found[1])
-            continue
-        if code in ('E0596', 'E0594'):
-            found = mutable_sites(diagnostic, site, None)
-            owner = owning_field_door(index, found[0]) if found else None
-            if owner is None:
-                unplaced.append(diagnostic['message'])
-                continue
-            node, shape = owner
-            doors[node.names][('field_mut', found[0], shape['name'])] = field_door(shape, found[0], True)
-            sites[site].add(found[1])
-            continue
-        if code in ('E0451', 'E0423'):
-            struct = constructed_struct(diagnostic)
-            found = struct_declaration(index, struct) if struct else None
-            shape = struct_shape(found[1]) if found else None
-            change = literal_rewrite(site.read_bytes(), primary['byte_start'], code, shape)
-            if change is None:
-                unplaced.append(diagnostic['message'])
-                continue
-            key = ('new', 'new', struct)
-            if key not in doors[found[0].names]:
-                doors[found[0].names][key] = constructor_door(shape, change[3])
-            sites[site].add(change[:3])
-            if AUTHORITY.search(struct):
-                authority.add('::'.join(found[0].names) + f'::{struct}::new')
-            continue
-        if code == 'E0624':
-            declared = [s for c in diagnostic['children'] for s in c['spans']] + \
-                [s for s in diagnostic['spans'] if not s['is_primary']]
-            declared = [s for s in declared if 'worth-query-execution/src' in s['file_name']]
-            if not declared:
-                unplaced.append(diagnostic['message'])
-                continue
-            span = declared[0]
-            owner = owning_impl(index, (root / WORKSPACE / span['file_name']).resolve(), span['byte_start'])
-            name = re.search(r'`(\w+)`', diagnostic['message']).group(1)
-            if name.endswith('_for_test'):
-                # Already a sealed test door by name: it only needs to be `pub`.
-                opened.add(((root / WORKSPACE / span['file_name']).resolve(), span['byte_start']))
-                if AUTHORITY.search(name):
-                    authority.add(span['file_name'].split('/src/', 1)[-1] + f'::{name}')
-                continue
-            if owner is None:
-                unplaced.append(diagnostic['message'])
-                continue
-            node, impl_text = owner
-            text = method_door(header_parts(impl_text), name)
-            if text is None:
-                unplaced.append(diagnostic['message'])
-                continue
-            doors[node.names][('method', name, header_parts(impl_text)[2])] = text
-            sites[site].add((primary['byte_start'], primary['byte_end'], name + '_for_test'))
-            if AUTHORITY.search(header_parts(impl_text)[2] + ' ' + name):
-                authority.add('::'.join(node.names) + f'::{header_parts(impl_text)[2]}::{name}')
-        else:
-            match = FIELD.search(diagnostic['message'])
-            if match is None:
-                unplaced.append(diagnostic['message'])
-                continue
-            field, struct = match.group(1), match.group(2)
-            found = struct_declaration(index, struct)
-            if found is None:
-                unplaced.append(diagnostic['message'])
-                continue
-            node, struct_text = found
-            shape = struct_shape(struct_text)
-            if shape is None or field not in shape['fields']:
-                unplaced.append(diagnostic['message'])
-                continue
-            mutable = writes(site, primary['byte_end']) or borrowed_mut(site, primary['byte_start'])
-            doors[node.names][('field', field, struct)] = field_door(shape, field, False)
-            if mutable:
-                doors[node.names][('field_mut', field, struct)] = field_door(shape, field, True)
-            sites[site].add((primary['byte_start'], primary['byte_end'], (field, mutable)))
-            if AUTHORITY.search(struct):
-                authority.add('::'.join(node.names) + f'::{struct}.{field}')
-    counts.update(write_doors(index, doors))
-    counts['opened'] = open_declarations(opened)
-    counts['call_sites'] = rewrite_sites(sites)
-    data = {'constructor_doors': sorted('::'.join(m) + f'::{k[2]}::new' for m, d in doors.items() for k in d if k[0] == 'new'),
-            'method_doors': sorted('::'.join(m) + f'::{k[2]}::{k[1]}' for m, d in doors.items() for k in d if k[0] == 'method'),
-            'field_doors': sorted('::'.join(m) + f'::{k[2]}.{k[1]}' + (' (mut)' if k[0] == 'field_mut' else '')
-                                  for m, d in doors.items() for k in d if k[0] in ('field', 'field_mut')),
-            'field_into_doors': sorted('::'.join(m) + f'::{k[2]}.{k[1]}' for m, d in doors.items() for k in d
-                                       if k[0] == 'field_into'),
-            'authority_doors': sorted(authority), 'unplaced': sorted(set(unplaced))}
+        if 'worth-query-execution/src' in str(site):
+            continue  # the library's own errors are not door sites
+        source = plan.source(site)
+        span = (source.char_offset(primary['byte_start']), source.char_offset(primary['byte_end']))
+        if not handler(plan, root, diagnostic, site, source, span):
+            plan.unplaced.add(diagnostic['message'])
+    problems = apply_plan(plan, dry_run)
+    data = plan.summary()
+    data['validation_problems'] = problems
     write_report(report, 'members', data)
-    return {k: len(v) for k, v in data.items()}
+    return {k: len(v) if isinstance(v, (list, set)) else v for k, v in data.items()}
 
 
-def open_declarations(opened):
-    """Make `*_for_test` methods (already sealed doors by name) `pub` at their declaration."""
-    by_file = defaultdict(set)
-    for path, at in opened:
-        by_file[path].add(at)
-    for path, starts in by_file.items():
-        data = path.read_bytes()
-        for at in sorted(starts, reverse=True):
-            head = re.match(rb'pub(?:\s*\([^)]*\))?\s+', data[at:])
-            if head:
-                data = data[:at] + b'pub ' + data[at + head.end():]
-            elif data[at:].startswith((b'fn ', b'const fn', b'async fn', b'unsafe fn')):
-                data = data[:at] + b'pub ' + data[at:]
-        path.write_bytes(data)
-    return len(opened)
+def method(plan, root, diagnostic, site, source, span):
+    declared = [s for c in diagnostic['children'] for s in c['spans']] + \
+        [s for s in diagnostic['spans'] if not s['is_primary']]
+    declared = [s for s in declared if 'worth-query-execution/src' in s['file_name']]
+    name = re.search(r'`(\w+)`', diagnostic['message']).group(1)
+    if not declared:
+        return False
+    path = (root / WORKSPACE / declared[0]['file_name']).resolve()
+    offset = plan.source(path).char_offset(declared[0]['byte_start'])
+    if name.endswith('_for_test'):
+        plan.opened.add((path, offset))
+        if AUTHORITY.search(name):
+            plan.authority.add(f'{path.name}::{name}')
+        return True
+    owner = owning_impl(plan.index, path, offset)
+    if owner is None:
+        return False
+    node, impl_text = owner
+    header = header_parts(impl_text)
+    text = method_door(header, name)
+    if text is None:
+        return False
+    plan.door(node.names, ('method', name, header[2]), text)
+    plan.change(site, (span[0], span[1], name + '_for_test'))
+    if AUTHORITY.search(header[2] + ' ' + name):
+        plan.authority.add('::'.join(node.names) + f'::{header[2]}::{name}')
+    return True
 
 
-def borrowed_mut(path, field_start):
-    """Whether the field access starting its name at `field_start` is under `&mut`."""
-    data = path.read_bytes()
-    begin = expression_start(data, field_start)
-    return data[:begin].rstrip().endswith(b'&mut')
+def field(plan, root, diagnostic, site, source, span):
+    match = FIELD.search(diagnostic['message'])
+    found = struct_declaration(plan.index, match.group(2)) if match else None
+    shape = struct_shape(found[1]) if found else None
+    if shape is None or match.group(1) not in shape['fields']:
+        return False
+    name = match.group(1)
+    located = field_sites(source, span[0])
+    if located is None:
+        return False
+    insert, token_span, field_index, first = located
+    mutable = assigned_after(source, field_index) or borrowed_mut(source, first)
+    kind = 'field_mut' if mutable else 'field'
+    plan.door(found[0].names, (kind, name, shape['name']), field_door(shape, name, mutable))
+    plan.change(site, (insert, insert, '(*'))
+    plan.change(site, (token_span[0], token_span[1], f'{name}{"_mut" if mutable else ""}_for_test())'))
+    if AUTHORITY.search(shape['name']):
+        plan.authority.add('::'.join(found[0].names) + f'::{shape["name"]}.{name}')
+    return True
 
 
-def mutable_sites(diagnostic, site, doors_by_field):
-    """E0596/E0594 over `(*expr.f_for_test())`: switch to `f_mut_for_test`, add its door."""
-    primary = next(s for s in diagnostic['spans'] if s['is_primary'])
-    data = site.read_bytes()[primary['byte_start']:primary['byte_end']]
-    match = re.search(rb'\.(\w+?)(?<!_mut)_for_test\(\)\)', data)
-    if match is None:
-        return None
-    field = match.group(1).decode()
-    at = primary['byte_start'] + match.start(1)
-    return field, (at, at + len(field) + len('_for_test'), field + '_mut_for_test')
+def read_door_in(source, span):
+    """(token index, field) of the first `f_for_test()` read door inside a span."""
+    for k, token in enumerate(source.stream):
+        if span[0] <= token.start < span[1] and token.kind == 'ident' and token.value.endswith('_for_test') \
+                and not token.value.endswith(('_mut_for_test', '_into_for_test')) \
+                and source.value(k - 1) == '.' and source.value(k + 1) == '(' and source.value(k + 2) == ')':
+            return k, token.value[:-len('_for_test')]
+    return None
 
 
-def moved_sites(diagnostic, site):
-    """E0507 over `(*expr.f_for_test())`: the court moves the field out; use `f_into_for_test`."""
-    primary = next(s for s in diagnostic['spans'] if s['is_primary'])
-    data = site.read_bytes()
-    span = data[primary['byte_start']:primary['byte_end']]
-    match = re.fullmatch(rb'\(\*(.*)\.(\w+)_for_test\(\)\)', span, re.S)
-    if match is None:
-        return None
-    field = match.group(2).decode()
-    replacement = match.group(1).decode() + f'.{field}_into_for_test()'
-    return field, (primary['byte_start'], primary['byte_end'], replacement)
+def mutable_read(plan, root, diagnostic, site, source, span):
+    found = read_door_in(source, span)
+    owner = owning_field_door(plan.index, found[1]) if found else None
+    if owner is None:
+        return False
+    node, shape = owner
+    token = source.stream[found[0]]
+    plan.door(node.names, ('field_mut', found[1], shape['name']), field_door(shape, found[1], True))
+    plan.change(site, (token.start, token.end, found[1] + '_mut_for_test'))
+    return True
 
 
-def writes(path, end):
-    """Whether the field access ending at byte `end` is assigned to (`=`, `+=`, ...)."""
-    rest = path.read_bytes()[end:end + 8].decode('utf-8', 'ignore').lstrip()
-    return bool(re.match(r'(?:[+\-*/%|&^]|<<|>>)?=(?!=)', rest))
+def moved_read(plan, root, diagnostic, site, source, span):
+    first, last = source.index(span[0]), None
+    for k, token in enumerate(source.stream):
+        if token.end == span[1]:
+            last = k
+    if first is None or last is None or source.value(first) != '(' or source.value(first + 1) != '*' \
+            or source.close.get(first) != last:
+        return False
+    door = last - 3
+    if source.value(door - 1) != '.' or not source.value(door).endswith('_for_test'):
+        return False
+    name = source.value(door)[:-len('_for_test')]
+    owner = owning_field_door(plan.index, name)
+    if owner is None:
+        return False
+    node, shape = owner
+    plan.door(node.names, ('field_into', name, shape['name']), field_door(shape, name, 'into'))
+    expression = source.span_text(first + 2, door - 2)
+    plan.change(site, (span[0], span[1], f'{expression}.{name}_into_for_test()'))
+    return True
 
 
-def write_doors(index, doors):
-    counts = defaultdict(int)
-    for names, entries in sorted(doors.items()):
-        node = index[names]
-        path = door_file_path(node, index)
-        existing = path.read_text(encoding='utf-8') if path.exists() else '//! Sealed test doors over this module\'s private members.\nuse super::*;\n'
-        # A door already present (under any formatting) is not written again; doors are named
-        # per self type, so the type is part of the key.
-        present = door_keys(existing)
-        added = []
-        for key, text in sorted(entries.items()):
-            names = door_keys(text)
-            if text not in existing and not names <= present:
-                added.append(text)
-                present |= names
-        for key in entries:
-            counts[key[0]] += 1
-        if added:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(existing.rstrip('\n') + '\n\n' + '\n\n'.join(added) + '\n', encoding='utf-8', newline='\n')
-        edit = mount_edit(node)
-        if edit is not None:
-            source, change = edit
-            text = Path(source).read_text(encoding='utf-8')
-            Path(source).write_text(replace_spans(text, [change]), encoding='utf-8', newline='\n')
-    return counts
+def constructed(plan, root, diagnostic, site, source, span):
+    match = NAMED.search(diagnostic['message'])
+    name = match.group(1) if match else None
+    for child in diagnostic['children']:
+        named = re.search(r'struct named `(\w+)`', child['message'])
+        name = name or (named.group(1) if named else None)
+    found = struct_declaration(plan.index, name) if name else None
+    shape = struct_shape(found[1]) if found else None
+    if shape is None:
+        return False
+    code = (diagnostic.get('code') or {}).get('code')
+    at = source.index(span[0])
+    if code == 'E0423':
+        end = at
+        while source.value(end + 1) == ':' and source.value(end + 2) == ':':
+            end += 3
+        if source.value(end + 1) != '(':
+            return False
+        token = source.stream[end]
+        plan.door(found[0].names, ('new', 'new', shape['name']), constructor_door(shape, tuple(shape['fields'])))
+        plan.change(site, (token.end, token.end, '::new_for_test'))
+        return True
+    brace = enclosing_brace(source, at)
+    path = path_before(source, brace) if brace is not None else None
+    parts = literal_parts(source, brace) if path else None
+    if parts is None or is_pattern(source, path[0], brace):
+        return False
+    fields, base = parts
+    values = [(f, v if v is not None else f) for f, v in fields]
+    end = source.stream[source.close[brace]].end
+    begin = source.stream[path[0]].start
+    if base is None:
+        if {f for f, _ in values} != set(shape['fields']):
+            return False
+        plan.door(found[0].names, ('new', 'new', shape['name']), constructor_door(shape, tuple(f for f, _ in values)))
+        plan.change(site, (begin, end, f'{path[1]}::new_for_test({", ".join(v for _, v in values)})'))
+        return True
+    # A functional update: the field values first (in written order), then the base, then sets.
+    lets = ''.join(f'let __{f} = {v}; ' for f, v in values)
+    sets = ''.join(f'*__base.{f}_mut_for_test() = __{f}; ' for f, _ in values)
+    for f, _ in values:
+        plan.door(found[0].names, ('field_mut', f, shape['name']), field_door(shape, f, True))
+    plan.change(site, (begin, end, f'{{ {lets}let mut __base = {base}; {sets}__base }}'))
+    return True
 
 
-def door_keys(text):
-    """{(self type, door name)} of the `impl` blocks in door text."""
-    keys = set()
-    for block in re.finditer(r'impl(?:<[^{]*?>)?\s+([\w:]+)[^{]*\{(.*?)\n\}', text, re.S):
-        for name in re.findall(r'\bpub fn (\w+_for_test)\b', block.group(2)):
-            keys.add((block.group(1), name))
-    return keys
-
-
-def rewrite_sites(sites):
-    count = 0
-    for path, changes in sorted(sites.items()):
-        text = path.read_bytes().decode('utf-8')
-        data = text.encode('utf-8')
-        spans = []
-        # One field access is reported per target; keep one rewrite per span (mutable wins).
-        fields = {}
-        for start, end, replacement in changes:
-            if not isinstance(replacement, str):
-                field, mutable = replacement
-                previous = fields.get((start, end))
-                fields[(start, end)] = (field, mutable or (previous is not None and previous[1]))
-        changes = {c for c in changes if isinstance(c[2], str)} | {(s, e, r) for (s, e), r in fields.items()}
-        for start, end, replacement in sorted(changes, key=lambda c: (c[0], c[1])):
-            if isinstance(replacement, str):
-                spans.append((start, end, replacement))
-                continue
-            field, mutable = replacement
-            begin = expression_start(data, start)
-            door = f'{field}_mut_for_test' if mutable else f'{field}_for_test'
-            spans.append((begin, begin, '(*'))
-            spans.append((start, end, door + '())'))
-        # A change inside another change's span waits for the next round (its offsets move).
-        spans = [c for c in spans if not any(o[0] <= c[0] and c[1] <= o[1] and o[1] > o[0] and o != c
-                                             for o in spans)]
-        out = data
-        for start, end, replacement in sorted(spans, key=lambda s: (s[0], s[1]), reverse=True):
-            out = out[:start] + replacement.encode('utf-8') + out[end:]
-            count += 1
-        path.write_bytes(out)
-    return count
-
-
-def skip_back(text, i):
-    """Index of the last code character at or before `i`, past whitespace and line comments."""
-    while i >= 0:
-        if text[i].isspace():
-            if text[i] == '\n':
-                line_start = text.rfind('\n', 0, i) + 1
-                comment = text.find('//', line_start, i)
-                if comment >= 0:
-                    i = comment - 1
-                    continue
-            i -= 1
-            continue
-        return i
-    return i
-
-
-def expression_start(data, field_start):
-    """Byte where the postfix expression before `.field` begins (identifiers, calls, indexes)."""
-    text = data[:field_start].decode('utf-8')
-    i = len(text) - 1
-    while i >= 0 and text[i].isspace():
-        i -= 1
-    assert text[i] == '.', 'a field access follows a dot'
-    i -= 1
-    # Calls and indexes continue a postfix chain; a closing brace ends a block, never a chain.
-    closing = {')': '(', ']': '['}
-    while i >= 0:
-        i = skip_back(text, i)
-        if i < 0:
-            break
-        c = text[i]
-        if c in closing:
-            depth, j = 0, i
-            while j >= 0:
-                if text[j] in closing:
-                    depth += 1
-                elif text[j] in closing.values():
-                    depth -= 1
-                    if depth == 0:
-                        break
-                j -= 1
-            i = j - 1
-            continue  # a call or index group: its callee comes next
-        elif c.isalnum() or c == '_':
-            j = i
-            while j >= 0 and (text[j].isalnum() or text[j] == '_'):
-                j -= 1
-            if text[j + 1:i + 1] in KEYWORDS:
-                break
-            i = j
-        elif c == '?':
-            i -= 1
-            continue
-        else:
-            break
-        k = skip_back(text, i)
-        if k >= 1 and text[k] == ':' and text[k - 1] == ':':
-            i = k - 2
-            continue
-        if k >= 0 and text[k] == '.' and not (k >= 1 and text[k - 1] == '.'):
-            i = k - 1
-            continue
-        break
-    return len(text[:i + 1].encode('utf-8'))
+HANDLERS = {'E0624': method, 'E0616': field, 'E0596': mutable_read, 'E0594': mutable_read,
+            'E0507': moved_read, 'E0451': constructed, 'E0423': constructed}

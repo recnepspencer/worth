@@ -4,7 +4,7 @@
 Usage:
     python scripts/test_topology/src_court_doors.py items [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py interface CHECK.json [--root .] [--report DIR]
-    python scripts/test_topology/src_court_doors.py members CHECK.json [--root .] [--report DIR]
+    python scripts/test_topology/src_court_doors.py members CHECK.json [--dry-run] [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py bodies [--base REV] [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py callers [--root .]
 
@@ -48,6 +48,11 @@ def rewritten(text, rewrites):
             changes.append((line_start, line_end, ''))
             continue
         if reference.through_door:
+            # A door path the plan now routes elsewhere (the facade, or another crate's own path).
+            door = f'{head}::{DOOR}::' + '::'.join(module + ((name,) if name else ()))
+            if target is not None and target[0] in ('public', 'external') and text.startswith(door, reference.start):
+                new = head + '::' + '::'.join(target[1]) if target[0] == 'public' else target[1]
+                changes.append((reference.start, reference.start + len(door), new))
             continue
         if reference.glob:
             line_start = text.rfind('\n', 0, reference.start) + 1
@@ -123,6 +128,9 @@ def write_report(report, name, data):
                                                          encoding='utf-8', newline='\n')
     lines = [f'# Court doors: {name}', '']
     for key, values in sorted(data.items()):
+        if not isinstance(values, (list, tuple, set)):
+            lines += [f'- {key}: {values}', '']
+            continue
         lines += [f'## {key} ({len(values)})', ''] + [f'- `{v}`' for v in values] + ['']
     (report / f'src-court-doors-{name}.md').write_text('\n'.join(lines), encoding='utf-8', newline='\n')
 
@@ -131,6 +139,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('step', choices=('items', 'interface', 'members', 'bodies', 'callers'))
     parser.add_argument('--base', default='038ff2869d')
+    parser.add_argument('--dry-run', action='store_true', help='members: write nothing, report and validate')
     parser.add_argument('check', nargs='?', type=Path)
     parser.add_argument('--root', type=Path, default=Path.cwd())
     parser.add_argument('--report', type=Path)
@@ -152,7 +161,9 @@ def main(argv=None):
         print(f'{interface(root, args.check, args.report)} interface items')
     else:
         from src_door_members import members
-        print(json.dumps(members(root, args.check, args.report, write_report), sort_keys=True))
+        result = members(root, args.check, args.report, write_report, args.dry_run)
+        print(json.dumps(result, sort_keys=True))
+        return 1 if result.get('validation_problems') else 0
     return 0
 
 

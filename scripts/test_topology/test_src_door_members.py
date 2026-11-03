@@ -1,7 +1,7 @@
 """Behaviour proofs for the sealed member doors and their call-site rewrites."""
 import unittest
 
-from src_door_members import expression_start, writes
+from src_door_sites import Source, assigned_after, borrowed_mut, field_sites
 from src_door_members_text import call_parts, constructor_door, field_door, method_door, struct_shape
 
 
@@ -36,37 +36,45 @@ class MemberDoorTests(unittest.TestCase):
         self.assertIn('pub fn new_for_test(field0: u64, field1: String) -> Self', tuple)
 
     def test_field_reads_wrap_the_whole_postfix_expression(self):
-        text = b'let x = &world.inner(1)[0].field;'
-        self.assertEqual(text[expression_start(text, text.index(b'field')):text.index(b'field')],
-                         b'world.inner(1)[0].')
-        text = b'f(a, crate::m::X::get().field)'
-        self.assertEqual(text[expression_start(text, text.index(b'field')):], b'crate::m::X::get().field)')
+        cases = [
+            ('let x = &world.inner(1)[0].field;', 'world.inner(1)[0].'),
+            ('f(a, crate::m::X::get().field)', 'crate::m::X::get().'),
+            ('std::mem::take(&mut state.records.get_mut(&k).unwrap().prerequisites)', 'state.records.get_mut(&k).unwrap().'),
+            ('// before retirement.\n    state\n        .records', 'state\n        .'),
+            ('if x { y(1) }\n    state.records.get_mut(&k).unwrap().state', 'state.records.get_mut(&k).unwrap().'),
+            ('let s = "a.b"; (a + b).field', '(a + b).'),
+        ]
+        for text, prefix in cases:
+            at = text.rindex(prefix.split('.')[0]) if False else None
+            field_at = len(text) - len(text.split('.')[-1])
+            source = Source(text)
+            located = field_sites(source, field_at)
+            self.assertIsNotNone(located, text)
+            self.assertEqual(text[located[0]:field_at], prefix, text)
 
-    def test_keywords_end_the_postfix_expression(self):
-        text = b'std::mem::take(&mut state.records.get_mut(&k).unwrap().prerequisites)'
-        at = text.index(b'prerequisites')
-        self.assertEqual(text[expression_start(text, at):at], b'state.records.get_mut(&k).unwrap().')
+    def test_assignment_and_mutable_borrow(self):
+        for text, expected in (('a.f = 1;', True), ('a.g == 2;', False), ('a.h += 3;', True),
+                               ('a.k[0] ^= 1;', True), ('a.m <<= 1;', True)):
+            source = Source(text)
+            field = source.index(2)
+            self.assertEqual(assigned_after(source, field), expected, text)
+        source = Source('take(&mut a.b)')
+        self.assertTrue(borrowed_mut(source, source.index(10)))
 
-    def test_line_comments_do_not_join_the_expression(self):
-        text = b'// before retirement.\n    state\n        .records'
-        at = text.index(b'records')
-        self.assertEqual(text[expression_start(text, at):at], b'state\n        .')
 
-    def test_a_block_before_the_chain_is_not_part_of_it(self):
-        text = b'if x { y(1) }\n    state.records.get_mut(&k).unwrap().state'
-        at = text.rindex(b'state')
-        self.assertEqual(text[expression_start(text, at):at], b'state.records.get_mut(&k).unwrap().')
-
-    def test_assignment_needs_the_mutable_door(self):
-        import tempfile
-        from pathlib import Path
-        with tempfile.TemporaryDirectory() as d:
-            p = Path(d) / 'f.rs'
-            p.write_text('a.f = 1; a.g == 2; a.h += 3;')
-            self.assertTrue(writes(p, 3))
-            self.assertFalse(writes(p, 12))
-            self.assertTrue(writes(p, 22))
-
+class LiteralSiteTests(unittest.TestCase):
+    def test_literals_patterns_and_functional_updates(self):
+        from src_door_sites import enclosing_brace, is_pattern, literal_parts, path_before
+        text = 'let r = m::T { a: f(1, 2), b, ..base(x) };'
+        source = Source(text)
+        brace = enclosing_brace(source, source.index(text.index('a:')))
+        first, path = path_before(source, brace)
+        self.assertEqual(path, 'm::T')
+        self.assertEqual(literal_parts(source, brace), ([('a', 'f(1, 2)'), ('b', None)], 'base(x)'))
+        self.assertFalse(is_pattern(source, first, brace))
+        pattern = Source('let T { a, b } = v;')
+        brace = enclosing_brace(pattern, pattern.index(8))
+        self.assertTrue(is_pattern(pattern, path_before(pattern, brace)[0], brace))
 
 
 class DoorBodyTests(unittest.TestCase):

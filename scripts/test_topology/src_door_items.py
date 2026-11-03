@@ -121,11 +121,15 @@ def add_door(result, surface, published, module, name):
     if origin is not None and origin[0] == '<external>':
         # A library module's import of another crate's item: name the item where it lives.
         return ('external', origin[1])
-    if origin is None:
-        # Declared by an item macro the scan cannot expand: re-export the name where it is.
-        result.unresolved.append((module, name))
+    if origin is None or origin[1] != name:
+        # Declared by an item macro the scan cannot expand, or reached through a re-export the
+        # resolution cannot follow exactly: re-export the name where the court named it.
+        if origin is None:
+            result.unresolved.append((module, name))
         origin = (module, name)
-    if origin in published:
+    if origin in published and published[origin][-1] == name:
+        # Only a facade path that names this very item; a mismatch means the resolution of a
+        # braced re-export went astray, and the door is the safe path.
         return ('public', published[origin])
     result.doors[module][name] = origin
     return ('door', module + (name,))
