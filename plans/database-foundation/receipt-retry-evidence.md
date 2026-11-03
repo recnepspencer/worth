@@ -354,7 +354,7 @@ These are composed results from the named normal lanes and exact failed/affected
 | Foundation / Native / root Server | `receipt-root-owner-normal/run.log` | 2427/123, 31 ignored inventory. Foundation115/0, root Server12/0; every failure is Native and individually indexed. |
 | Server ordinary/public matrix | `installed-runtime-server-receipt-normal-and-process/run.log`, `separated-intent-server-receipt-matrix/run.log` | 97/4 then three exact positive matrix cases pass; actual killed-process reopen remains RootLinkage. |
 | Store exact original occurrence source court | `world-original-source-courts.log` | 2/1; enabled Complete Home reopen case remains CompleteNativeRequired. No Store oracle/scenario suite ran. |
-| Constructor/type fences | `query-original-constructor-fences.log`, `query-workflow-original-owner-type-fences.log` | Four passing original-data constructor tests and four passing workflow-owner rustdocs; positive and compile-fail cases. |
+| Constructor/type fences | `query-original-constructor-fences.log`, `query-workflow-original-owner-type-fences.log` | Four passing original-data constructor tests and eight passing workflow-owner rustdocs (four positive and four compile-fail); positive and compile-fail cases. |
 | Compiler unit attribution | `compiler-units-tests.log`, `compiler-fingerprint-real-artifacts.log` | 22 Python tests pass; real artifact capture disambiguates both sha2 units by dependency fingerprint identity. |
 
 ## Failure causes, corrections and responsibility
