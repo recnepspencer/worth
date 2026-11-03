@@ -13,7 +13,7 @@ struct Armed {
 thread_local! { static ARMED: RefCell<Option<Armed>> = const { RefCell::new(None) }; }
 pub struct PinControlGuardForTest(Option<Armed>);
 impl PinControlGuardForTest {
-    pub(in crate::domain_computation) fn unavailable_snapshot(
+    pub fn unavailable_snapshot(
         skip: usize,
         snapshot: SnapshotHandle,
     ) -> Self {

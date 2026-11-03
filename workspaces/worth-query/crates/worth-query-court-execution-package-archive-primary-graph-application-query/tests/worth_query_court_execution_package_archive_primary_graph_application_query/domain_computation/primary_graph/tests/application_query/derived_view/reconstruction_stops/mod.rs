@@ -156,10 +156,10 @@ pub fn check(case: usize) {
                 )
                 .unwrap();
             let stimulus = if case == 1 {
-                Some(worth_query_execution::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::cancellation(cancellation))
+                Some(worth_query_execution::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::cancellation(cancellation))
             } else if case == 0 {
                 // First side pins normally; second side is the one-predicate query.
-                Some(worth_query_execution::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::unavailable_snapshot(1, unavailable))
+                Some(worth_query_execution::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::unavailable_snapshot(1, unavailable))
             } else {
                 None
             };
