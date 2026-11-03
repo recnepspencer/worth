@@ -314,3 +314,50 @@ def method_widenings(node, offset, body, called, impl_methods):
             if change:
                 result.append(absolute(node, change[0], change[1]) + (change[2],))
     return result
+
+
+def compiler_widenings(model, items, methods, fields):
+    """Edits that make compiler-evidenced declarations `pub`: items, inherent methods, struct fields."""
+    from src_hooks import impl_methods, trait_impl
+    edits = defaultdict(list)
+    for key in items:
+        *module, name = key.split('::')
+        node = model.index.get(tuple(module))
+        if node is None:
+            continue
+        own = node.own_text()
+        for _a, _v, keyword, item, start, end in scope_items(own):
+            if item == name and keyword in ITEM_KEYWORDS + ('mod',):
+                offset = own_offset(node, start)
+                change = widen(node.text, offset, offset + (end - start))
+                if change:
+                    edits[file_of(node)].append(absolute(node, change[0], change[1]) + (change[2],))
+    wanted_methods = {}
+    for key in methods:
+        *module, name = key.split('::')
+        wanted_methods.setdefault(tuple(module), set()).add(name)
+    wanted_fields = {}
+    for key in fields:
+        struct, field = key.split('::')
+        wanted_fields.setdefault(struct, set()).add(field)
+    for names, node in model.index.items():
+        if model.production.in_family(names):
+            continue
+        own = node.own_text()
+        for _a, _v, keyword, item, start, end in scope_items(own):
+            offset = own_offset(node, start)
+            body = node.text[offset:offset + (end - start)]
+            if keyword == 'impl' and names in wanted_methods and not trait_impl(body):
+                for method, ms, me, _gated in impl_methods(body):
+                    if method in wanted_methods[names]:
+                        change = widen(node.text, offset + ms, offset + me)
+                        if change:
+                            edits[file_of(node)].append(absolute(node, change[0], change[1]) + (change[2],))
+            if keyword == 'struct' and item in wanted_fields:
+                for field in wanted_fields[item]:
+                    match = re.search(r'(?m)^(\s*)(pub\s*\([^)]*\)\s+)?' + field + r'\s*:', body)
+                    if match and not (match.group(2) or '').startswith('pub '):
+                        start_field = offset + match.start() + len(match.group(1))
+                        end_field = start_field + len(match.group(2) or '')
+                        edits[file_of(node)].append(absolute(node, start_field, end_field) + ('pub ',))
+    return edits

@@ -16,6 +16,15 @@
       "domain_computation::provider_session::graph_obligation::inspection_terminal::court"
     ]
   },
+  "compiler_widen_fields": [],
+  "compiler_widen_items": [
+    "domain_computation::primary_graph::application_checkpoint::facts::payload::iteration::FactIter",
+    "domain_computation::primary_graph::application_output_demand::registry::record_map::MutRows",
+    "domain_computation::primary_graph::application_output_demand::registry::record_map::ObservedRows",
+    "domain_computation::primary_graph::application_output_demand::registry::record_map::mutation::RecordMutation",
+    "domain_computation::primary_graph::workflow::schema::layout::WorkflowLayoutFields"
+  ],
+  "compiler_widen_methods": [],
   "renames": {
     "domain_computation::primary_graph::tests::inbound_admission::fixture::cost": "scoped_dispatch"
   }

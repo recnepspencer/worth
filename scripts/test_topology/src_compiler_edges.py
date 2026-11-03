@@ -32,6 +32,50 @@ def module_of_file(tree, path):
     return best
 
 
+DECLARED = re.compile(r'\b(?:struct|enum|union|trait|type|fn|const|static|mod)\s+(\w+)')
+FIELD = re.compile(r'field `(\w+)` of (?:struct|union|variant) `(?:[\w:]*::)?(\w+)')
+PRIVATE_FIELDS = re.compile(r'fields? (`\w+`(?:, `\w+`)*(?: and `\w+`)?) of (?:struct|variant) `(?:[\w:]*::)?(\w+)')
+
+
+def widenings(check_json, root, tree):
+    """Declarations the moved code needs public, from E0446/E0603/E0624/E0616/E0451 evidence."""
+    items, methods, fields = set(), set(), set()
+    workspace = root / 'workspaces/worth-query'
+    library = (root / LIB).resolve().parent
+    for line in Path(check_json).read_text(encoding='utf-8').splitlines():
+        try:
+            message = json.loads(line)
+        except ValueError:
+            continue
+        if message.get('reason') != 'compiler-message' or message['message']['level'] != 'error':
+            continue
+        diagnostic = message['message']
+        code = (diagnostic.get('code') or {}).get('code')
+        spans = diagnostic['spans'] + [s for c in diagnostic['children'] for s in c['spans']]
+        if code in ('E0446', 'E0603', 'E0624'):
+            for span in spans:
+                if span['is_primary'] or not span['text']:
+                    continue
+                path = (workspace / span['file_name']).resolve()
+                if not path.is_relative_to(library):
+                    continue
+                declared = DECLARED.search(span['text'][0]['text'])
+                module = module_of_file(tree, path)
+                if declared and module is not None:
+                    text = span['text'][0]['text']
+                    # An indented fn declaration is a method inside an impl block.
+                    is_method = code == 'E0624' or (text[:1].isspace() and declared.group(0).startswith('fn'))
+                    (methods if is_method else items).add('::'.join(module + (declared.group(1),)))
+        elif code in ('E0616', 'E0451'):
+            match = FIELD.search(diagnostic['message'])
+            if match:
+                fields.add((match.group(2), match.group(1)))
+            for group in PRIVATE_FIELDS.findall(diagnostic['message']):
+                for name in re.findall(r'`(\w+)`', group[0]):
+                    fields.add((group[1], name))
+    return sorted(items), sorted(methods), sorted(f'{s}::{f}' for s, f in fields)
+
+
 def harvest(check_json, root):
     tree, found = families(root / LIB)
     family_nodes = [(f.names, node) for f in found for node in f.node.walk()]
@@ -70,11 +114,17 @@ def main(argv=None):
     args = parser.parse_args(argv)
     overrides = json.loads(args.overrides.read_text(encoding='utf-8'))
     merged = {k: set(v) for k, v in overrides.get('compiler_method_edges', {}).items()}
-    for caller, definers in harvest(args.check, args.root.resolve()).items():
+    root = args.root.resolve()
+    for caller, definers in harvest(args.check, root).items():
         merged.setdefault(caller, set()).update(definers)
     overrides['compiler_method_edges'] = {k: sorted(v) for k, v in sorted(merged.items())}
+    items, methods, fields = widenings(args.check, root, read_tree(root / LIB))
+    for key, found in (('compiler_widen_items', items), ('compiler_widen_methods', methods),
+                       ('compiler_widen_fields', fields)):
+        overrides[key] = sorted(set(overrides.get(key, [])) | set(found))
     args.overrides.write_text(json.dumps(overrides, indent=2, sort_keys=True) + '\n', encoding='utf-8', newline='\n')
-    print(json.dumps(overrides['compiler_method_edges'], indent=1))
+    print(json.dumps({k: overrides.get(k) for k in ('compiler_method_edges', 'compiler_widen_items',
+                                                    'compiler_widen_methods', 'compiler_widen_fields')}, indent=1))
     return 0
 
 

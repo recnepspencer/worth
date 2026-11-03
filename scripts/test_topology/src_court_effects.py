@@ -10,7 +10,7 @@ from src_emit_config import (control_callers, library_test_doors, shrink_admissi
                              splits_toml)
 from src_emit_crates import (LIBRARY_DIR, crate_sources, library_dependencies, manifest, module_files,
                              referenced_testkits)
-from src_emit_production import apply_edits, hook_edits, production_edits, residual_gates
+from src_emit_production import apply_edits, compiler_widenings, hook_edits, production_edits, residual_gates
 from src_families import file_text
 from src_multiset import multiset_of_texts
 
@@ -126,6 +126,10 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
     classes = p['hooks']
     for source, changes in hook_edits(model, classes, p['referenced'], p['called']).items():
         edits[source].extend(changes)
+    for source, changes in compiler_widenings(model, overrides.get('compiler_widen_items', []),
+                                              overrides.get('compiler_widen_methods', []),
+                                              overrides.get('compiler_widen_fields', [])).items():
+        edits[source].extend(changes)
     for source, changes in residual_sweep(model, classes, edits, p['dev_aliases']).items():
         edits[source].extend(changes)
     for source, changes in sorted(edits.items(), key=lambda kv: str(kv[0])):
@@ -169,6 +173,8 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
             'kept_library_impls': sorted('::'.join(n) + ' :: ' + model.records[n].node.own_text()[a:b].split('{', 1)[0].strip()
                                          for n in model.records for a, b in model.records[n].kept_impls),
             'renamed_modules': sorted(f'{k} -> {v}' for k, v in p['renames'].items()),
+            'compiler_widenings': sorted(overrides.get('compiler_widen_items', []) + overrides.get('compiler_widen_methods', [])
+                                         + ['field ' + f for f in overrides.get('compiler_widen_fields', [])]),
             'categories': [{'module': '::'.join(n), 'category': c['category'], 'evidence': c['evidence']}
                            for n, c in sorted(p['categories'].items()) if c['category']]}
 
