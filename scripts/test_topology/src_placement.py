@@ -45,6 +45,13 @@ def support_graph(model, kinds):
             owner = door_owner.get(stream[i + 1].value) if stream[i].value in ('.', ':') else None
             if owner is not None and owner != names:
                 edges[names].add(owner)
+    # Mounted foreign source reads its parent and siblings through `super::`: one crate holds them.
+    from src_court_plan import foreign_includes
+    for names in support:
+        record = model.records[names]
+        if (record.foreign or foreign_includes(record)) and names[:-1] in members:
+            edges[names].add(names[:-1])
+            edges[names[:-1]].add(names)
     return support, edges
 
 
