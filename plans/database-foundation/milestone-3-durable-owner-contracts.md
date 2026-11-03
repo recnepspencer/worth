@@ -2053,6 +2053,21 @@ Exact commands and final counts belong in target/lane-evidence logs.
 | D17 selected original frame binds its indexed subject and retains proven damage | `selected_original_export_binds_its_indexed_subject_and_preserves_proven_damage` |
 | D17 invoking request stop precedes retained damage | `strict_original_capture_keeps_work_stop_precedence_over_retained_damage` |
 | D12 deferred image recapture and actual rebuilt live-tail generations | `cold_complete_recapture_preserves_original_index_generations_and_live_tail` |
+| D17 original Full/Delta family decoding and retained funding | `original_full_and_delta_index_tuples_preserve_all_entry_families_and_funding` |
+| D17 invoking cancellation and exhausted-memory refusal without retained data | `original_index_decode_refuses_cancelled_and_exhausted_invoking_requests_without_retaining_data` |
+| D17 exact original frame widths and missing-attribution seal | `prepared_memory_frame_preserves_position_widths_and_seals_absent_input_attribution` |
+| D12 cold Head refresh without omitted History, D17 pre-I/O budget gate | `cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history` |
+| D12 World origin retains its exact coupled component obligations | `checkpoint_origin_keeps_exact_component_leases_after_history_claims_retire` |
+| D17 explicit World origin retirement requires Closed and actual Home binding | `checkpoint_origin_retirement_requires_closed_world_and_an_actual_home_binding` |
+| D12 existing inline scalar wire grammar and exact allocation preflight | `inline_payload_preflight_quotes_owned_bytes_and_refuses_malformed_bodies` |
+| D17 scalar length authority refuses before visiting an oversized body | `inline_payload_preflight_refuses_oversized_length_before_visiting_payload` |
+| D17 original recovery limit refuses combined state construction before allocation | `planned_backing_refuses_combined_construction_before_allocating` |
+| D17 actual capacity and construction peak survive backing release | `planned_backing_peak_keeps_actual_capacity_and_construction_overlap` |
+| D17 original request and exact final-frame child funding, retained repair custody | `checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair` |
+| Phase 3 default-stack changed-build existing-source readmission | `changed_host_build_keeps_initializer_closed_and_reaches_native_readmission` |
+| Phase 3 default-stack writer exclusion and killed-owner takeover | `competing_host_processes_admit_exactly_one_writer_until_process_death` |
+| Phase 3 selected completion/activation refusals keep the owning Home | `selected_completion_and_activation_failures_keep_owned_home_without_initializing` |
+| Phase 3 same-directory reopen preserves old keys and suppresses initialization | `same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key` |
 
 These are implementation obligations, not a pass ledger. Real Host reopen,
 process-kill/tail, ACK and bounded-tail executions remain required above; their exact
