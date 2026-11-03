@@ -1,0 +1,12 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.prerequisites (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.records (mut)"
+ ],
+ "method_doors": [],
+ "unplaced": [
+  "cannot assign to data in a `&` reference"
+ ]
+}

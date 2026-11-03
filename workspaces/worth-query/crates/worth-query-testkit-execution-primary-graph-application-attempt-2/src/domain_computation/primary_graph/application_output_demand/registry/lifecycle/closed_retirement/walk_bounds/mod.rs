@@ -38,25 +38,25 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                 0,
             );
             (*prior.framework_required_count_mut_for_test()) = 1;
-            (*state.records_for_test()).insert_for_test(old.clone(), prior);
+            (*state.records_mut_for_test()).insert_for_test(old.clone(), prior);
             let ready = || {
                 DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Ready(completion.clone()),
                 ))
             };
             (*state
-                .records_for_test())
+                .records_mut_for_test())
                 .insert_for_test(newest.clone(), record(occurrence(), ready(), 0));
             let mut row = record(occurrence(), ready(), 0);
-            (*row.prerequisites_for_test()).push(Arc::new(old.clone()));
+            (*row.prerequisites_mut_for_test()).push(Arc::new(old.clone()));
 
-            (*state.records_for_test()).insert_for_test(dependent.clone(), row);
+            (*state.records_mut_for_test()).insert_for_test(dependent.clone(), row);
             for selected in [&old, &newest] {
                 let member = state.prepare_required_member_for_test(selected).unwrap();
                 state.install_required_member_for_test(member);
             }
             for generation in 1..=neighbors {
-                (*state.records_for_test()).insert_for_test(
+                (*state.records_mut_for_test()).insert_for_test(
                     key("larger-other", generation, 3),
                     record(occurrence(), DemandState::Admitted, 0),
                 );
@@ -91,7 +91,7 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                         .get_mut(&newest)
                         .unwrap()
                         .framework_required_count_mut_for_test()) = 1;(*
-                    (*state.records_mut_for_test()).get_mut(&dependent).unwrap().prerequisites_for_test())[0] =
+                    (*state.records_mut_for_test()).get_mut(&dependent).unwrap().prerequisites_mut_for_test())[0] =
                         Arc::new(newest.clone());
                     state.retire_row_for_test(&old, &mut Vec::new());
                 }
