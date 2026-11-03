@@ -10,15 +10,6 @@ impl WorthQueryApplicationCommitReceipt {
 
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
-    pub fn exact_output_settlement_for_test(&self) -> &Option<std::sync::Arc<
-        crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
-    >> {
-        &self.exact_output_settlement
-    }
-}
-
-impl WorthQueryApplicationCommitReceipt {
-    #[doc(hidden)]
     pub fn provider_runtime_instance_id_for_test(&self) -> &u64 {
         &self.provider_runtime_instance_id
     }
