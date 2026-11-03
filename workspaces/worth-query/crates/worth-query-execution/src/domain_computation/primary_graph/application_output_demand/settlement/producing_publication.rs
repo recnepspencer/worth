@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
 
 /// Descriptive original evidence only: no receipt authority, Ready cell or reader.
 /// No link to another publication is retained.
-pub(in crate::domain_computation::primary_graph) struct OriginalProducingPublication {
+pub struct OriginalProducingPublication {
     pub changes: WorthQueryApplicationCommittedChanges,
     pub(in crate::domain_computation::primary_graph) inputs: FactPayload,
     pub correspondence:

@@ -18,7 +18,7 @@ pub enum WorthQueryOutstandingInFlightDenial {
 
 /// Move-only claim that keeps the original dispatch's finite capacity charge
 /// while a physical send or its Completed recovery custody may still act.
-pub(in crate::domain_computation::primary_graph) struct OutstandingDispatchInFlightLease {
+pub struct OutstandingDispatchInFlightLease {
     owner: OutstandingDispatchOwner,
     basis_retention: Arc<Mutex<super::super::session_commit::WorthQueryReceiptBasisRetentionStore>>,
     correlation: ExternalEffectCorrelationIdentity,

@@ -11,7 +11,7 @@ use worth_relational::facade::history::CommitId;
 const RETAINED_RECEIPT_BASIS_LIMIT: usize = 64;
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedApplicationCommitBasis {
+pub struct WorthQueryRetainedApplicationCommitBasis {
     lease: Arc<RelationalBranchRetentionLease>,
 }
 

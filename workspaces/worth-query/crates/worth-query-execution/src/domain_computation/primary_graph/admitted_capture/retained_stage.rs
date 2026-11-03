@@ -7,7 +7,7 @@ pub enum RetainedStorageDenial {
 }
 
 /// Borrowed stage view; existing retained backing cannot be surrendered by it.
-pub(in crate::domain_computation) struct RetainedCaptureMemory<'a> {
+pub struct RetainedCaptureMemory<'a> {
     reservation: &'a mut ExecutionMemoryReservation,
     base: u64,
 }

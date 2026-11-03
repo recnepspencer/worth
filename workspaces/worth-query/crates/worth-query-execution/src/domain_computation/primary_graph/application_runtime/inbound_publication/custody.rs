@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportCustodyDenial {
+pub enum InstalledTransportCustodyDenial {
     AlreadyRetained,
 }
 

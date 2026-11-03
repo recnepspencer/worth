@@ -43,7 +43,7 @@ impl MessageKey {
 
 /// Immutable accepted evidence retained by Query even if every caller drops
 /// its observer. Publication may borrow this but cannot change its meaning.
-pub(in crate::domain_computation) struct WorthQueryAcceptedInboundOccurrence {
+pub struct WorthQueryAcceptedInboundOccurrence {
     operation: String,
     claims: WorthQueryInboundOccurrenceClaims,
     owner: WorthQueryCommittedDispatchOutboxObservation,

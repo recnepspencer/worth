@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxO
 
 /// Runtime-sealed operation and verifier audience for one installed outbox.
 /// An external dispatch result cannot supply either field.
-pub(in crate::domain_computation) struct WorthQueryInstalledTransportCompletionBinding {
+pub struct WorthQueryInstalledTransportCompletionBinding {
     operation: String,
     audience: String,
     contract: InstalledInboundOccurrenceContract,
