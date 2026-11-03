@@ -189,3 +189,5 @@ impl WorthQueryRecoveryHandleBinding {
         self.expires_at_unix_ms
     }
 }
+
+mod court_doors_for_test;

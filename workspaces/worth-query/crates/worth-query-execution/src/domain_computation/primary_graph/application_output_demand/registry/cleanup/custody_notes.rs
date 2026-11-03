@@ -195,3 +195,5 @@ impl Drop for CustodyNote<'_> {
         }
     }
 }
+
+mod court_doors_for_test;

@@ -375,3 +375,5 @@ impl<Schema> Drop for WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
         }
     }
 }
+
+mod court_doors_for_test;

@@ -199,5 +199,5 @@ pub fn direct_attempt(binding: &str, limit: u64) -> WorthQueryDirectExecutionRes
     let runtime = runtime();
     let authority = direct_authority(&runtime, &resources);
     let reserved = reserve_execution_resource_plan(resources).unwrap();
-    WorthQueryDirectExecutionResourceAttempt::start(reserved, &authority)
+    WorthQueryDirectExecutionResourceAttempt::start_for_test(reserved, &authority)
 }

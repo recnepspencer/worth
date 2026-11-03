@@ -45,8 +45,8 @@ fn absent_parent_write_requires_each_actual_target_observation() {
     );
     assert_eq!(
         cause.locator(),
-        runtime
-            .primary_provider
+        (*runtime
+            .primary_provider_for_test())
             .graph
             .layout
             .field_locator("Body", "SourceNotes", "SourceContent")
@@ -146,8 +146,8 @@ pub fn source_values<Schema: BirthSchema>(
                     &request,
                 )
                 .unwrap();
-            runtime
-                .mutation_projection
+            (*runtime
+                .mutation_projection_for_test())
                 .project_admitted_operation(
                     &phase,
                     &admitted,

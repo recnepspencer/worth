@@ -18,7 +18,7 @@ pub fn inspect<Query>(
     runtime: &Application,
     original: &WorthQueryObservedSource<Query>,
 ) {
-    let supplier = original.original_settled_producer().unwrap();
+    let supplier = original.original_settled_producer_for_test().unwrap();
     let OriginalSettledProducerSource::Committed {
         changes,
         inputs: Some(inputs),
@@ -30,7 +30,7 @@ pub fn inspect<Query>(
     let captured = CapturedFields {
         original,
         inputs,
-        layout: &runtime.primary_provider.graph.layout,
+        layout: &(*runtime.primary_provider_for_test()).graph.layout,
         contracts: runtime.installed_schema().native_contracts(),
         producer_version: changes.commit_reference().version_id,
     };
@@ -49,7 +49,7 @@ pub struct CapturedFields<'a, Query> {
 impl<Query> CapturedFields<'_, Query> {
     pub fn inspect_handlers(&self, context: &mut MapKernelContext<'_, '_>) {
         let mut count = 0;
-        for fact in self.inputs.iter() {
+        for fact in self.inputs.iter_for_test() {
             let Fact::Field {
                 entity_id,
                 kind,
@@ -67,7 +67,7 @@ impl<Query> CapturedFields<'_, Query> {
             assert_eq!(locator.aspect().authority(), LocatorAuthority::Planned);
             let resolved = self
                 .layout
-                .resolve_field_coordinate(self.contracts, owner, locator, |work| {
+                .resolve_field_coordinate_for_test(self.contracts, owner, locator, |work| {
                     checkpoint(context, work)
                 })
                 .unwrap()
@@ -84,7 +84,7 @@ impl<Query> CapturedFields<'_, Query> {
     pub fn inspect_source_revisions(&self, context: &mut MapKernelContext<'_, '_>) {
         let mut joined = 0;
         let mut different_fields = 0;
-        for fact in self.inputs.iter() {
+        for fact in self.inputs.iter_for_test() {
             let Fact::SourceFieldRevision {
                 entity_id,
                 locator,
@@ -106,7 +106,7 @@ impl<Query> CapturedFields<'_, Query> {
             let [key] = locator.field_path().fields() else {
                 panic!("fixture's actual source field")
             };
-            for row in self.original.original_row_footprints() {
+            for row in self.original.original_row_footprints_for_test() {
                 for observed in &row.aspects {
                     if observed.entity != *entity_id
                         || observed.aspect != *locator.aspect().aspect_key()
@@ -145,17 +145,17 @@ impl<Query> CapturedFields<'_, Query> {
     ) -> InstalledFieldCoordinate<'a> {
         let source = self
             .layout
-            .resolve_field_coordinate(self.contracts, &observed.entity_name, original, |work| {
+            .resolve_field_coordinate_for_test(self.contracts, &(*observed.entity_name_for_test()), original, |work| {
                 checkpoint(context, work)
             })
             .unwrap()
             .unwrap();
         let planned = self
             .layout
-            .field_locator(
-                &observed.entity_name,
-                observed.aspect.as_str(),
-                observed.field.as_str(),
+            .field_locator_for_test(
+                &(*observed.entity_name_for_test()),
+                (*observed.aspect_for_test()).as_str(),
+                (*observed.field_for_test()).as_str(),
             )
             .unwrap();
         assert_ne!(
@@ -164,14 +164,14 @@ impl<Query> CapturedFields<'_, Query> {
         );
         let installed = self
             .layout
-            .resolve_field_coordinate(self.contracts, &observed.entity_name, planned, |work| {
+            .resolve_field_coordinate_for_test(self.contracts, &(*observed.entity_name_for_test()), planned, |work| {
                 checkpoint(context, work)
             })
             .unwrap()
             .unwrap();
         assert!(source.same_field(&installed));
-        assert_eq!(source.contract_revision(), observed.contract_revision);
-        self.refuse_other_authorities(context, &observed.entity_name, original);
+        assert_eq!(source.contract_revision(), (*observed.contract_revision_for_test()));
+        self.refuse_other_authorities(context, &(*observed.entity_name_for_test()), original);
         source
     }
 
@@ -183,7 +183,7 @@ impl<Query> CapturedFields<'_, Query> {
         source: InstalledFieldCoordinate<'_>,
     ) -> usize {
         let mut different = 0;
-        for handler in self.inputs.iter() {
+        for handler in self.inputs.iter_for_test() {
             let Fact::Field {
                 entity_id,
                 kind,
@@ -193,12 +193,12 @@ impl<Query> CapturedFields<'_, Query> {
             else {
                 continue;
             };
-            if *entity_id != observed.entity {
+            if *entity_id != (*observed.entity_for_test()) {
                 continue;
             }
             let field = self
                 .layout
-                .resolve_field_coordinate(self.contracts, &observed.entity_name, locator, |work| {
+                .resolve_field_coordinate_for_test(self.contracts, &(*observed.entity_name_for_test()), locator, |work| {
                     checkpoint(context, work)
                 })
                 .unwrap()
@@ -208,7 +208,7 @@ impl<Query> CapturedFields<'_, Query> {
                 || locator.aspect().aspect_key() != original.aspect().aspect_key()
             {
                 assert!(
-                    !source.same_field(&field),
+                    !source.same_field_for_test(&field),
                     "a real read of another field is insufficient"
                 );
                 different += 1;
@@ -237,7 +237,7 @@ impl<Query> CapturedFields<'_, Query> {
             );
             assert!(self
                 .layout
-                .resolve_field_coordinate(self.contracts, owner, &hostile, |work| checkpoint(
+                .resolve_field_coordinate_for_test(self.contracts, owner, &hostile, |work| checkpoint(
                     context, work
                 ),)
                 .unwrap()
@@ -258,7 +258,7 @@ impl<Query> CapturedFields<'_, Query> {
         );
         assert!(
             self.layout
-                .resolve_field_coordinate(self.contracts, owner, &nested, |work| checkpoint(
+                .resolve_field_coordinate_for_test(self.contracts, owner, &nested, |work| checkpoint(
                     context, work
                 ))
                 .unwrap()

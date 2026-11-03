@@ -10,3 +10,13 @@ impl WorthQueryExecutionInstallationAuthority {
         Self::prepare_primary_graph_with_relational_runtime::<Schema>(self, phase, runtime, installed_schema, relational_runtime, product_world_resources)
     }
 }
+
+impl WorthQueryExecutionInstallationAuthority {
+    #[doc(hidden)]
+    pub fn prepare_primary_graph_with_relational_runtime_and_invariants_for_test<Schema>(
+        &self, phase: &super::super::super::WorthQueryBootstrapAdvancementPhase<'_>, runtime: &WorthQueryExecutionRuntime, installed_schema: &WorthQueryInstalledApplicationSchema<Schema>, relational_runtime: RelationalRuntime, product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources, invariant_factories: WorthQueryApplicationInvariantFactories<Schema>) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Schema: ApplicationSchema, {
+        Self::prepare_primary_graph_with_relational_runtime_and_invariants::<Schema>(self, phase, runtime, installed_schema, relational_runtime, product_world_resources, invariant_factories)
+    }
+}

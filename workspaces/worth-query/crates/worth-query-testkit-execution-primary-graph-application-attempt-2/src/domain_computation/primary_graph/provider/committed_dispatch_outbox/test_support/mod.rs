@@ -30,7 +30,7 @@ pub fn commit_observe_and_admit_fixture(
     let relational_runtime_instance_id = observation.relational_runtime_instance_id();
     let admitted = world
         .application
-        .admit_external_dispatch_attempt(observation)
+        .admit_external_dispatch_attempt_for_test(observation)
         .expect("the owning runtime admits its World-bound observation");
     (admitted, commit, record_ref, relational_runtime_instance_id)
 }
@@ -65,11 +65,11 @@ pub fn commit_observe_and_admit_twice_fixture(
     (
         world
             .application
-            .admit_external_dispatch_attempt(first)
+            .admit_external_dispatch_attempt_for_test(first)
             .expect("first physical attempt is admitted"),
         world
             .application
-            .admit_external_dispatch_attempt(second)
+            .admit_external_dispatch_attempt_for_test(second)
             .expect("second physical attempt is admitted"),
     )
 }
@@ -105,11 +105,11 @@ pub fn commit_distinct_records_and_admit_fixture() -> (
     let second_ref = second.record_ref().clone();
     let first = world
         .application
-        .admit_external_dispatch_attempt(first)
+        .admit_external_dispatch_attempt_for_test(first)
         .expect("the first World publication admits dispatch");
     let second = world
         .application
-        .admit_external_dispatch_attempt(second)
+        .admit_external_dispatch_attempt_for_test(second)
         .expect("the second World publication admits dispatch");
     (first, second, first_ref, second_ref)
 }

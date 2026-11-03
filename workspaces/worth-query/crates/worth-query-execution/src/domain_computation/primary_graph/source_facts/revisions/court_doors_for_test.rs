@@ -7,3 +7,38 @@ impl WorthQueryObservedAdjacencyRevision {
         Self { anchor, relation_kind, direction, native_revision, comparison_work_limit, endpoints }
     }
 }
+
+impl WorthQueryObservedFieldRevision {
+    #[doc(hidden)]
+    pub fn aspect_for_test(&self) -> &AspectKey {
+        &self.aspect
+    }
+}
+
+impl WorthQueryObservedFieldRevision {
+    #[doc(hidden)]
+    pub fn contract_revision_for_test(&self) -> &AspectContractRevision {
+        &self.contract_revision
+    }
+}
+
+impl WorthQueryObservedFieldRevision {
+    #[doc(hidden)]
+    pub fn entity_for_test(&self) -> &EntityId {
+        &self.entity
+    }
+}
+
+impl WorthQueryObservedFieldRevision {
+    #[doc(hidden)]
+    pub fn entity_name_for_test(&self) -> &String {
+        &self.entity_name
+    }
+}
+
+impl WorthQueryObservedFieldRevision {
+    #[doc(hidden)]
+    pub fn field_for_test(&self) -> &FieldKey {
+        &self.field
+    }
+}

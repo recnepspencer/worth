@@ -95,8 +95,8 @@ pub fn installed_decision_read_world() -> DecisionReadWorld {
                 WorthQueryPrincipalMappingStatus::Enabled,
             )
             .unwrap();
-        bootstrap
-            .managed_indexes
+        (*bootstrap
+            .managed_indexes_for_test())
             .register::<worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::decision_read_world::queries::DecisionIndex, _>(
                 &schema,
                 worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::decision_read_world::schema::MEMBERS,
@@ -148,7 +148,7 @@ impl DecisionReadWorld {
             .unwrap();
         self.application
             .with_host_advancement(|phase| {
-                let host = phase.test_host_request();
+                let host = phase.test_host_request_for_test();
                 let (principal, scope) = self.party(&host, request);
                 self.selected(&host)
                     .authorize_operation(
@@ -172,7 +172,7 @@ impl DecisionReadWorld {
         WorthQueryAuthenticatedPrincipal<DecisionReadSchema, Principal, u64>,
         WorthQueryApplicationEntityIdentity<DecisionReadSchema, Principal>,
     ) {
-        let phase = host.phase_for_application(&self.application);
+        let phase = host.phase_for_application_for_test(&self.application);
         let principal = self
             .selected(host)
             .resolve_authenticated_principal(
@@ -201,12 +201,12 @@ impl DecisionReadWorld {
         host: &TestHostRequest<'_>,
     ) -> WorthQuerySelectedProductOperation<'_, DecisionReadSchema> {
         let execution = host
-            .execution_request_for(self.application.product_runtime())
+            .execution_request_for_for_test(self.application.product_runtime())
             .expect("the fixture lends its installed phase");
         self.application
-            .select_product_branch(
+            .select_product_branch_for_test(
                 &execution,
-                self.application.product_runtime().default_branch(),
+                self.application.product_runtime().default_branch_for_test(),
             )
             .expect("the fixture product branch remains admitted")
     }

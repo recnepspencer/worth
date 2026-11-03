@@ -276,3 +276,5 @@ fn release_custody(custody: SnapshotCustody) -> WorthQueryApplicationSnapshotRel
         },
     }
 }
+
+mod court_doors_for_test;

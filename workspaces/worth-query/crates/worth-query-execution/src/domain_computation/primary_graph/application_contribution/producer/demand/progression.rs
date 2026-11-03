@@ -342,3 +342,5 @@ pub fn denial(
 }
 
 mod caller_pass_observation;
+
+mod court_doors_for_test;

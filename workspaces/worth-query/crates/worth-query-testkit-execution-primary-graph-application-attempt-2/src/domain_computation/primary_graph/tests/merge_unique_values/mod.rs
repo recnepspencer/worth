@@ -43,9 +43,9 @@ pub struct MergeWorld {
 impl MergeWorld {
     pub fn new() -> Self {
         let world = installed_world(&[("merge-unique", WorthQueryPrincipalMappingStatus::Enabled)]);
-        let handle = world
+        let handle = (*world
             .application
-            .runtime
+            .runtime_for_test())
             .primary_graph()
             .expect("the fixture publishes its graph")
             .integration_handle();
@@ -77,7 +77,7 @@ impl MergeWorld {
     }
 
     pub fn unique(&self, index: Option<DerivedIndexId>) -> WorthQueryUniqueFieldFixture {
-        WorthQueryUniqueFieldFixture::new(self.kind, self.label.clone(), index)
+        WorthQueryUniqueFieldFixture::new_for_test(self.kind, self.label.clone(), index)
     }
 
     pub fn fork(&self) {

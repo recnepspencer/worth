@@ -87,7 +87,7 @@ pub fn yielded_workflow_fixture(
         .expect("retained workflow artifact must register before production freezes")
     });
     let active = {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running.begin_stage_graph_execution(
             &installed_fixture_phase,
             stage_identity,
@@ -101,7 +101,7 @@ pub fn yielded_workflow_fixture(
     .expect("workflow provider should begin");
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = active.fixture_phase(execution);
+            let installed_fixture_phase = active.fixture_phase_for_test(execution);
             active.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

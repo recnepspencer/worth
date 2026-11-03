@@ -20,11 +20,11 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
     ) {
         let _listener =
             worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-        let (facts, _) = self
-            .attempts
+        let (facts, _) = (*self
+            .attempts_for_test())
             .lock()
             .unwrap()
-            .shared_observed_facts(authority.session())
+            .shared_observed_facts(authority.session_for_test())
             .unwrap();
         let requests: Vec<_> = facts.requests().collect();
         let fact = facts
@@ -34,7 +34,7 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
             fact,
             WorthQueryPrimaryGraphApplicationDecisionFact::Principal(_)
         ));
-        let snapshot = self.graph.with_runtime_mut(execution, |runtime| {
+        let snapshot = (*self.graph_for_test()).with_runtime_mut(execution, |runtime| {
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .unwrap();
@@ -78,12 +78,12 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
         let compare =
             |reader: &worth_execution::ExecutionRequest<'_, '_>,
              cancellation: Option<&worth_execution::CancellationSource>| {
-                authority.compare_decision_read_set_with(capture(), |evidence, admission| {
+                authority.compare_decision_read_set_with_for_test(capture(), |evidence, admission| {
                     let fact = facts
                         .get(evidence.locator().identity())
                         .expect("captured fact is registered");
-                    let current = self
-                        .graph
+                    let current = (*self
+                        .graph_for_test())
                         .with_runtime(reader, |runtime| {
                             if evidence.locator().identity() == "application-principal-currentness"
                                 && let Some(source) = cancellation.cloned()
@@ -144,12 +144,12 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
             None,
         );
         let reader = worth_execution::ExecutionRequest::serial(&host);
-        let direct = self.graph.with_runtime(&reader, |runtime| {
+        let direct = (*self.graph_for_test()).with_runtime(&reader, |runtime| {
             worth_query_execution::test_read_stops::cancelled_at_consult_for_test(2, source, || {
-                dependency.remains_current_in(&reader, runtime, &snapshot)
+                dependency.remains_current_in_for_test(&reader, runtime, &snapshot)
             })
         });
         assert_eq!(direct, Err(worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled))));
-        self.graph.release_query_snapshot(&snapshot);
+        (*self.graph_for_test()).release_query_snapshot(&snapshot);
     }
 }

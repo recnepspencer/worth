@@ -32,7 +32,7 @@ fn fixture_requeue_admitted_work(
         &self,
         interest: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest,
     ) {
-        let member = self.state.lock().unwrap().records[&interest.key]
+        let member = (*self.state_for_test()).lock().unwrap().records[&(*interest.key_for_test())]
             .work_membership
             .as_ref()
             .cloned()
@@ -58,8 +58,8 @@ fn fixture_scope_work_membership(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest,
         Arc<RequiredWorkMembership>,
     ) {
-        let output = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey::new("registry-output-family", "native-work-member".to_owned(), worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new("registry-fixture", worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new(
+        let output = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey::new_for_test("registry-output-family", "native-work-member".to_owned(), worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new("registry-fixture", worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new_for_test(
                 [1; 32], [2; 32], root, occurrence, 1, [0; 32]));
         self.fixture_work_membership_at(occurrence, root, output)
     }
@@ -73,9 +73,9 @@ fn fixture_work_membership_at(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest,
         Arc<RequiredWorkMembership>,
     ) {
-        let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root);
+        let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root);
         let interest = self
-            .admit(
+            .admit_for_test(
                 output.clone(),
                 None,
                 scope,
@@ -86,7 +86,7 @@ fn fixture_work_membership_at(
             )
             .expect("real required-interest admission creates its work token")
             .0;
-        let member = self.state.lock().unwrap().records[&output]
+        let member = (*self.state_for_test()).lock().unwrap().records[&output]
             .work_membership
             .as_ref()
             .cloned()

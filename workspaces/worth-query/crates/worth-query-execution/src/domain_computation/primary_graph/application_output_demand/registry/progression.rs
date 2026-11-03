@@ -283,3 +283,5 @@ pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDeni
 pub(super) fn execution_failure_reschedules(denial: &WorthQueryOutputDemandDenial) -> bool {
     !super::required_stop::fails_row(denial)
 }
+
+mod court_doors_for_test;

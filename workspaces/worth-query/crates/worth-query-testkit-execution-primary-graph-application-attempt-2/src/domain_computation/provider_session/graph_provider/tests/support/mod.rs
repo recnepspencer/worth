@@ -44,10 +44,10 @@ impl StreamedReceiptForTest for WorthQueryGraphProviderCall {
         material: WorthQueryGraphReadMaterial,
         work_report: WorthQueryProviderWorkReport,
     ) -> Result<WorthQueryGraphProviderReceipt, WorthQueryGraphProviderFailure> {
-        let mut stream = WorthQueryGraphReadStreamAccumulator::new(self);
-        stream.admit_chunk(material);
-        let stream: WorthQueryExecutionGraphReadStreamEvidence = stream.finish(self);
-        self.streamed(provider_receipt, stream, work_report)
+        let mut stream = WorthQueryGraphReadStreamAccumulator::new_for_test(self);
+        stream.admit_chunk_for_test(material);
+        let stream: WorthQueryExecutionGraphReadStreamEvidence = stream.finish_for_test(self);
+        self.streamed_for_test(provider_receipt, stream, work_report)
     }
 }
 
@@ -81,7 +81,7 @@ pub fn call_spec(
     kind: WorthQueryGraphProviderCallKind,
 ) -> WorthQueryGraphProviderCallRequest {
     WorthQueryGraphProviderCallRequest::direct(kind, scope)
-        .with_managed_execution_snapshot("snapshot")
+        .with_managed_execution_snapshot_for_test("snapshot")
 }
 
 pub fn material(label: &str) -> WorthQueryGraphReadMaterial {
@@ -166,7 +166,7 @@ pub fn attempt_with_access(
     let authority = direct_authority_with_graph(&runtime, &resources, &graph, access);
     let reserved =
         worth_query_admission::integration::reserve_execution_resource_plan(resources).unwrap();
-    let attempt = WorthQueryDirectExecutionResourceAttempt::start(reserved, &authority);
+    let attempt = WorthQueryDirectExecutionResourceAttempt::start_for_test(reserved, &authority);
     GraphAttempt {
         attempt,
         graph,

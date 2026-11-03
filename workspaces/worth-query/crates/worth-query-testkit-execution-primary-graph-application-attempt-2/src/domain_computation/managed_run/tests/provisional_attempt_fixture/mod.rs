@@ -335,7 +335,7 @@ pub fn effect_step(action: WorthQueryProvisionalEffectAction) -> WorthQueryProvi
 
 pub fn cleanup(running: WorthQueryRunningDirectRun) {
     running
-        .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+        .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed)
         .cleanup()
         .expect("provisional fixture cleanup should complete");
 }

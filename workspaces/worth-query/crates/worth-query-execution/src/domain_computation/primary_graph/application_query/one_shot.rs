@@ -250,3 +250,5 @@ pub fn map_authorized_read_denial(
     };
     denial(kind, query, subject)
 }
+
+mod court_doors_for_test;

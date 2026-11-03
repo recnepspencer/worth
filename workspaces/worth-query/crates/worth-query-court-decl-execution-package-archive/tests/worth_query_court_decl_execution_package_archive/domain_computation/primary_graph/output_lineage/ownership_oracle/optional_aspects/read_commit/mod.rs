@@ -54,8 +54,8 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                     &request,
                 )
                 .unwrap();
-            let (_, snapshot, _) = runtime
-                .mutation_projection
+            let (_, snapshot, _) = (*runtime
+                .mutation_projection_for_test())
                 .project_admitted_operation(
                     &phase,
                     &admitted,
@@ -116,7 +116,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                 )
                 .unwrap();
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
                 .unwrap();
             // This is the real installed conditional-program entry, which checks the
             // current occurrence/program and registered operation before fact comparison.

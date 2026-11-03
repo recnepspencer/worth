@@ -128,7 +128,7 @@ impl WorthQueryStaleDecisionReadSet {
         self.counters
     }
 
-    pub(crate) fn stale_fact_identities_for_test(&self) -> &[Arc<str>] {
+    pub fn stale_fact_identities_for_test(&self) -> &[Arc<str>] {
         &self.stale_evidence_identities
     }
 }
@@ -337,3 +337,5 @@ fn check_request(
         None => Ok(()),
     }
 }
+
+mod court_doors_for_test;

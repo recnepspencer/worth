@@ -77,3 +77,59 @@ impl DemandRecord {
         &mut self.claim_batch
     }
 }
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn framework_required_count_for_test(&self) -> &usize {
+        &self.framework_required_count
+    }
+}
+
+impl BoundOutputSource {
+    #[doc(hidden)]
+    pub fn identity_for_test(&self) -> &SourceEpoch {
+        &self.identity
+    }
+}
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn required_work_queue_for_test(&self) -> &Option<Arc<required_work::RequiredWorkQueue>> {
+        &self.required_work_queue
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn source_commits_for_test(&self) -> &Vec<worth_runtime_world::facade::CompositeCommitIdentity> {
+        &self.source_commits
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn source_scope_for_test(&self) -> &Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding> {
+        &self.source_scope
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn wake_for_test(&self) -> &Arc<DemandWake> {
+        &self.wake
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn framework_required_count_mut_for_test(&mut self) -> &mut usize {
+        &mut self.framework_required_count
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn source_scope_mut_for_test(&mut self) -> &mut Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding> {
+        &mut self.source_scope
+    }
+}

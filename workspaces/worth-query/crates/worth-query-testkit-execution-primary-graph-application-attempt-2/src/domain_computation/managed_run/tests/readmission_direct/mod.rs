@@ -42,7 +42,7 @@ pub fn yielded_direct_for_binding(
         resource_request,
     );
     let active = {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running.begin_graph_execution(
             &installed_fixture_phase,
             &graph,
@@ -55,7 +55,7 @@ pub fn yielded_direct_for_binding(
     .expect("yield provider should begin");
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = active.fixture_phase(execution);
+            let installed_fixture_phase = active.fixture_phase_for_test(execution);
             active.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -129,7 +129,7 @@ pub fn yielded_direct_with_plan_observation<T>(
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("managed graph run should admit through lower owners")
         .start();
-    let installed_running_phase = execution.phase_for_direct(&running);
+    let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
     let bridge = lower.bridge;
     let active = running
@@ -167,7 +167,7 @@ pub fn yielded_direct_with_provider(
         provider,
         resource_request,
     );
-    let installed_running_phase = execution.phase_for_direct(&running);
+    let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
     let active = running
         .begin_graph_execution(

@@ -14,11 +14,11 @@ pub fn refuse_mixed_and_created_subset(
 ) {
     let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     runtime.with_application_advancement(&scope, |phase| {
-        let execution = phase.execution_request_for(&runtime.product_runtime).unwrap();
-        let (_, product, _application_basis) = runtime.on_branch(runtime.current_world()).select(&phase).unwrap().into_parts();
-        let graph = &runtime.primary_provider.graph;
+        let execution = phase.execution_request_for_for_test(&(*runtime.product_runtime_for_test())).unwrap();
+        let (_, product, _application_basis) = runtime.on_branch(runtime.current_world()).select(&phase).unwrap().into_parts_for_test();
+        let graph = &(*runtime.primary_provider_for_test()).graph;
         let publisher = graph.application_publication.as_ref().expect("actual installed publication owner");
-        let roles: Vec<_> = settled.output_correspondence.native_witness_roles().map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
+        let roles: Vec<_> = settled.output_correspondence.native_witness_roles_for_test().map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
             role: role.to_owned(), entity_name: name.to_owned(), kind: graph.layout.entity_kind(name).unwrap(),
             posture: match posture {
                 WorthQueryApplicationOutputPosture::Create => RequiredOutputRolePosture::Create,
@@ -31,9 +31,9 @@ pub fn refuse_mixed_and_created_subset(
         let EntityReference::Existing(anchor) = anchor.target else { unreachable!() };
         let lineage = graph.output_lineage.lock().unwrap();
         let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource {
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
+            runtime_authority: (*runtime.runtime_for_test()).authority_identity().as_u64(),
             schema: runtime.installed_schema().binding_identity(),
-            scope: WorthQueryOperationScopeEntityBinding::from_entity(anchor),
+            scope: WorthQueryOperationScopeEntityBinding::from_entity_for_test(anchor),
             output_binding: lineage.binding_identity(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<RegionOutputBinding<OwnerSchema>>()).unwrap(),
         };
         let coordinate = product.observation();

@@ -18,13 +18,13 @@ pub fn check(search: usize) {
         let mut state = DemandRegistryState::default();
         let selected = key("own", 1, 1);
         for generation in 1..=3 {
-            state.records.insert(
+            (*state.records_for_test()).insert(
                 key("own", generation, 1),
                 record(occurrence(), DemandState::Admitted, 0),
             );
         }
         for generation in 1..=neighbors {
-            state.records.insert(
+            (*state.records_for_test()).insert(
                 key("larger-other", generation, 2),
                 record(occurrence(), DemandState::Admitted, 0),
             );
@@ -32,12 +32,12 @@ pub fn check(search: usize) {
         add_custody(&mut state, &receipts[..entries], neighbors);
         let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         match search {
-            0 => assert_eq!(occurrence_rows(&state.records, &selected).count(), 3),
+            0 => assert_eq!(occurrence_rows(&(*state.records_for_test()), &selected).count(), 3),
             1 => assert_eq!(
-                newest_of_occurrence(&state.records, &selected),
+                newest_of_occurrence(&(*state.records_for_test()), &selected),
                 Some(key("own", 3, 1))
             ),
-            2 => assert!(!awaited_by_stale_owner(&state.records, &selected)),
+            2 => assert!(!awaited_by_stale_owner(&(*state.records_for_test()), &selected)),
             _ => panic!("unknown occurrence search"),
         }
         contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
@@ -93,15 +93,15 @@ pub fn add_custody_with_completion(
         );
         for generation in 1..=rows {
             let mut row = record(
-                receipt.product_branch().occurrence(),
+                receipt.product_branch().occurrence_for_test(),
                 DemandState::Admitted,
                 1,
             );
-            row.source_commits.push(commit.clone());
-            row.source_scope = Some(scope);
-            state.records.insert(
+            (*row.source_commits_for_test()).push(commit.clone());
+            (*row.source_scope_mut_for_test()) = Some(scope);
+            (*state.records_for_test()).insert(
                 key(
-                    &selected.producer,
+                    &(*selected.producer_for_test()),
                     generation,
                     u8::try_from(i).unwrap() + 100,
                 ),
@@ -111,7 +111,7 @@ pub fn add_custody_with_completion(
         state.source_custody.insert(
             commit.clone(),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody {
-                occurrence: receipt.product_branch().occurrence(),
+                occurrence: receipt.product_branch().occurrence_for_test(),
                 root_kind: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(
                     worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(),
                 ),
@@ -119,9 +119,9 @@ pub fn add_custody_with_completion(
                 discovery: None,
                 bound_sources: Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
                     scope,
-                    identity: selected.source.clone(),
+                    identity: (*selected.source_for_test()).clone(),
                 }]),
-                consumed_sources: vec![selected.source],
+                consumed_sources: vec![(*selected.source_for_test())],
                 retired_sources: Vec::new(),
                 retired: None,
                 token_count: 0,
@@ -130,7 +130,7 @@ pub fn add_custody_with_completion(
             },
         );
         if completed {
-            state.note_custody(&commit);
+            state.note_custody_for_test(&commit);
         }
     }
 }

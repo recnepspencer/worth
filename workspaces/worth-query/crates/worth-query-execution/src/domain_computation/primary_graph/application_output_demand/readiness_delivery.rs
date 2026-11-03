@@ -120,3 +120,5 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
         self.semantic_observation_reads
     }
 }
+
+mod court_doors_for_test;

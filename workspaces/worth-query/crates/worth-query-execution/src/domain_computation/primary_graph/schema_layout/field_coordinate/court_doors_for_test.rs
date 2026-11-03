@@ -1,0 +1,17 @@
+//! Sealed test doors over this module's private members.
+use super::*;
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn resolve_field_coordinate_for_test<'a>(
+        &'a self, contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog, entity: &str, descriptor: &AspectFieldLocator, admit: impl FnMut(u64) -> Result<(), MapKernelStop>) -> Result<Option<InstalledFieldCoordinate<'a>>, MapKernelStop> {
+        Self::resolve_field_coordinate(self, contracts, entity, descriptor, admit)
+    }
+}
+
+impl InstalledFieldCoordinate<'_> {
+    #[doc(hidden)]
+    pub fn same_field_for_test(&self, other: &Self) -> bool {
+        Self::same_field(self, other)
+    }
+}

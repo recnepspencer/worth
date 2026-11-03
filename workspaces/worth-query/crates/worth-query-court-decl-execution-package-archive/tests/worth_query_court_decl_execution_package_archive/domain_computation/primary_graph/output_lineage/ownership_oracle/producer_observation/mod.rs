@@ -30,13 +30,13 @@ fn real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_rea
     let native = original
         .readiness_delivery()
         .unwrap()
-        .causal_observation()
+        .causal_observation_for_test()
         .unwrap()
         .clone();
     let exact = original
         .application_commit_receipt()
         .unwrap()
-        .exact_output_settlement()
+        .exact_output_settlement_for_test()
         .unwrap()
         .clone();
     crate::domain_computation::primary_graph::output_lineage::ownership_oracle::birth::admit_genuine_all_create(&runtime);
@@ -50,7 +50,7 @@ fn real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_rea
     assert!(later
         .readiness_delivery()
         .unwrap()
-        .causal_observation()
+        .causal_observation_for_test()
         .unwrap()
         .same_observation(&native));
     let weak = Arc::downgrade(&read);
@@ -97,14 +97,14 @@ pub fn observe(
     runtime
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
                 .unwrap();
             let current = runtime
                 .on_branch(runtime.current_world())
                 .select(&phase)
                 .unwrap();
             assert!(
-                current.original_settled_producer().is_none(),
+                current.original_settled_producer_for_test().is_none(),
                 "fresh changed/head selection carries no settlement seed"
             );
             let principal_binding = runtime
@@ -134,7 +134,7 @@ pub fn observe(
                 .select_application_read_observation(&phase, read)
                 .unwrap();
             let alias = retained
-                .retain_selection(&execution)
+                .retain_selection_for_test(&execution)
                 .unwrap()
                 .retain_application_read();
             let mut retained = runtime
@@ -190,7 +190,7 @@ pub fn observe(
             };
             let source = result.result_set_observation().source();
             let seed = source
-                .original_settled_producer()
+                .original_settled_producer_for_test()
                 .expect("the actual retained read carries its original supplier");
             assert_eq!(seed.read().selected_commit(), read.selected_commit());
             let OriginalSettledProducerSource::Committed {
@@ -231,7 +231,7 @@ pub fn observe(
                 result.observed_sources()[0]
                     .clone()
                     .retyped::<()>()
-                    .original_settled_producer()
+                    .original_settled_producer_for_test()
                     .unwrap()
             ));
             let source_identity = source.idempotency_identity();
@@ -275,7 +275,7 @@ pub fn observe(
             assert!(plain
                 .result_set_observation()
                 .source()
-                .original_settled_producer()
+                .original_settled_producer_for_test()
                 .is_none());
             observation
         })

@@ -21,7 +21,7 @@ impl AcknowledgementBasisCurrentProofForTest for CurrentProof<()> {
                 .application
                 .with_host_advancement(|phase| {
                     let execution = phase
-                        .execution_request_for(&world.application.product_runtime)
+                        .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                         .unwrap();
                     let runtime = &world.application;
 
@@ -31,8 +31,8 @@ impl AcknowledgementBasisCurrentProofForTest for CurrentProof<()> {
                         runtime.current_world(),
                     )
                     .unwrap();
-                    let basis = CurrentBasis::of(selected.selected().product().observation());
-                    test(PerformedMembers::start().current(
+                    let basis = CurrentBasis::of(selected.selected().product().observation_for_test());
+                    test(PerformedMembers::start().current_for_test(
                         (),
                         basis.clone(),
                         member.certify_current_basis(basis),

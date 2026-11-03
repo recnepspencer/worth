@@ -269,3 +269,5 @@ fn currentness_basis(
 > {
     Ok(relational.read_truth().positioned_snapshot(snapshot).ok())
 }
+
+mod court_doors_for_test;

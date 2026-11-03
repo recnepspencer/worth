@@ -30,18 +30,18 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
                 .unwrap();
             let (_, product, _basis) = runtime
                 .on_branch(runtime.current_world())
                 .select(&phase)
                 .unwrap()
-                .into_parts();
-            let graph = &runtime.primary_provider.graph;
+                .into_parts_for_test();
+            let graph = &(*runtime.primary_provider_for_test()).graph;
             let publisher = graph.application_publication.as_ref().unwrap();
             let roles: Vec<_> = settled
                 .output_correspondence
-                .native_witness_roles()
+                .native_witness_roles_for_test()
                 .map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
                     role: role.to_owned(),
                     entity_name: name.to_owned(),
@@ -72,18 +72,18 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id();
+                .entity_id_for_test();
             let recorded = settled.application_commit_receipt()
-                .and_then(|receipt| receipt.exact_output_settlement());
+                .and_then(|receipt| receipt.exact_output_settlement_for_test());
             let retained = recorded.is_none().then(||
                 runtime.select_output_demand_settlement(&execution, settled).unwrap());
             let lineage = graph.output_lineage.lock().unwrap();
             let keeping = roles.iter().all(|role| role.posture == RequiredOutputRolePosture::Preserve);
             let binding = if keeping { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<Binding<Schema, true>>() } else { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<Binding<Schema, false>>() };
             let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource {
-                runtime_authority: runtime.runtime.authority_identity().as_u64(),
+                runtime_authority: (*runtime.runtime_for_test()).authority_identity().as_u64(),
                 schema: runtime.installed_schema().binding_identity(),
-                scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(source_entity),
+                scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(source_entity),
                 output_binding: lineage.binding_identity(binding).unwrap(),
             };
 
@@ -93,7 +93,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                     identity.address()
                 }
                 None => {
-                    let coordinate = retained.as_ref().unwrap().product().observation();
+                    let coordinate = retained.as_ref().unwrap().product().observation_for_test();
                     (coordinate.lifecycle_incarnation(), coordinate.reference_generation().get(), 0)
                 }
             };
@@ -105,7 +105,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
             assert_eq!(row.settlement_identity.source(), &source);
             assert_eq!(row.settlement_identity.address(), (occurrence, generation, slot));
             assert!(row.correspondence.native_witness_roles()
-                .eq(settled.output_correspondence.native_witness_roles()), "exact recorded correspondence");
+                .eq(settled.output_correspondence.native_witness_roles_for_test()), "exact recorded correspondence");
             let locator = row.native_prior_checkpoint.as_ref();
             assert!(row.native_output_witness.get().is_some(), "performed publication retains actual warm native custody");
             let locator = locator.expect(
@@ -173,7 +173,7 @@ pub fn edit_source_to<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
                 .unwrap();
             let source = runtime
                 .on_branch(runtime.current_world())
@@ -187,8 +187,8 @@ pub fn edit_source_to<Schema: BirthSchema>(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let locator = runtime
-                .primary_provider
+            let locator = (*runtime
+                .primary_provider_for_test())
                 .graph
                 .layout
                 .field_locator("Body", "PlanarPosition", "PositionY")
@@ -197,7 +197,7 @@ pub fn edit_source_to<Schema: BirthSchema>(
             let batch =
                 WorkerIntentBatch::new("actual-optional-source-edit").push(MutationIntent::Entity(
                     EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                        entity_id: source.entity_id(),
+                        entity_id: source.entity_id_for_test(),
                         fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
                             locator,
                             U64ApplicationValueBinding::encode(&value).unwrap(),

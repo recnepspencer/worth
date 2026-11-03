@@ -56,3 +56,11 @@ impl WorthQueryApplicationCommitReceipt {
         Self::retained_preimage(self)
     }
 }
+
+impl WorthQueryApplicationCommitReceipt {
+    #[doc(hidden)]
+    pub fn retain_output_correspondence_for_test(
+        &self) -> std::sync::Arc<WorthQueryApplicationOutputCorrespondence> {
+        Self::retain_output_correspondence(self)
+    }
+}

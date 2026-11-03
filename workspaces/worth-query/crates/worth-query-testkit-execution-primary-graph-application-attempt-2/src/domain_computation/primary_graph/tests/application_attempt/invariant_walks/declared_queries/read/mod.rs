@@ -43,13 +43,13 @@ where
     let (actor, subject, installed) = world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let admitted_execution = custody.borrowed_request_for_test();
             let selected = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &admitted_execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap();
             let external =
@@ -89,12 +89,12 @@ where
     let plan = world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let selected = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap();
             selected
@@ -115,7 +115,7 @@ where
         .run(ceiling, |_| {
             world
                 .application
-                .execute_application_query_one_shot_with_request(execution, plan)
+                .execute_application_query_one_shot_with_request_for_test(execution, plan)
         })
         .unwrap()
 }

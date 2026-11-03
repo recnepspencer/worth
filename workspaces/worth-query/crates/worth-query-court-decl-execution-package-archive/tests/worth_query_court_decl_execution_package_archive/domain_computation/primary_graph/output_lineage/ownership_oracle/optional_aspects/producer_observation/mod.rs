@@ -41,7 +41,7 @@ fn genuine_input_cutoff_retains_stable_supplier_without_native_execution() {
     assert!(stable
         .readiness_delivery()
         .unwrap()
-        .causal_observation()
+        .causal_observation_for_test()
         .is_none());
     runtime
         .with_host_advancement(|phase| {
@@ -49,19 +49,19 @@ fn genuine_input_cutoff_retains_stable_supplier_without_native_execution() {
             let selected = runtime
                 .select_application_read_observation(&phase, &read)
                 .unwrap();
-            let seed = selected.original_settled_producer().unwrap();
+            let seed = selected.original_settled_producer_for_test().unwrap();
             let OriginalSettledProducerSource::StableReused { settlement } = seed.source() else {
                 panic!("a genuine input cutoff retains only its stable lineage supplier")
             };
             assert!(Arc::ptr_eq(
                 settlement,
-                stable.stable.as_ref().unwrap().exact_settlement()
+                stable.stable.as_ref().unwrap().exact_settlement_for_test()
             ));
             assert_eq!(seed.read().selected_commit(), read.selected_commit());
             assert!(seed
                 .correspondence()
                 .native_witness_roles()
-                .eq(stable.output_correspondence.native_witness_roles()));
+                .eq(stable.output_correspondence.native_witness_roles_for_test()));
         })
         .unwrap();
     drop((initial, performed));

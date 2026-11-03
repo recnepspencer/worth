@@ -274,3 +274,5 @@ pub(super) fn held_by_row(record: &DemandRecord) -> bool {
         || record.performed_source.is_some()
         || record.held_successor.is_some()
 }
+
+mod court_doors_for_test;

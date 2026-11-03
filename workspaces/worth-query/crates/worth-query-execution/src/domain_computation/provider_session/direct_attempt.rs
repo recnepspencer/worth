@@ -51,7 +51,7 @@ impl WorthQueryDirectExecutionResourceAttempt {
         &self.provider_session
     }
 
-    pub(crate) fn provider_session_for_test(&self) -> &WorthQueryExecutionProviderSession {
+    pub fn provider_session_for_test(&self) -> &WorthQueryExecutionProviderSession {
         &self.provider_session
     }
 
@@ -99,3 +99,5 @@ impl WorthQueryDirectExecutionAttemptReleaseReceipt {
         &self.capacity
     }
 }
+
+mod court_doors_for_test;

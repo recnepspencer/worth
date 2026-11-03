@@ -129,3 +129,5 @@ fn checked(
         )
     })
 }
+
+mod court_doors_for_test;

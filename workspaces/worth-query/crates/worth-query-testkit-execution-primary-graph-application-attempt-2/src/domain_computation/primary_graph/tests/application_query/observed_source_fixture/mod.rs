@@ -10,7 +10,7 @@ pub fn observed_account_source(
     world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let principal = selected
                 .resolve_authenticated_principal(
                     &phase,

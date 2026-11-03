@@ -231,3 +231,5 @@ pub(super) fn relinquish_record(record: &mut DemandRecord) {
 fn empty_work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
 }
+
+mod court_doors_for_test;

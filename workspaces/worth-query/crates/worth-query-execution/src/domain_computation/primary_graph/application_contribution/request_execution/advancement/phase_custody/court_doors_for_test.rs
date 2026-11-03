@@ -15,3 +15,11 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         Self::test_host_request(self)
     }
 }
+
+impl<'scope> WorthQueryAdvancementPhase<'scope> {
+    #[doc(hidden)]
+    pub fn execution_request_for_for_test(
+        &self, runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
+        Self::execution_request_for(self, runtime)
+    }
+}

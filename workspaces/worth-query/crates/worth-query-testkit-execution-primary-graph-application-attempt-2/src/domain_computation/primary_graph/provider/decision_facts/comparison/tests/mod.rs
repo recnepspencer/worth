@@ -32,17 +32,17 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
         foreign: &WorthQueryPrimaryGraphProvider,
     ) {
         let control =
-            StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, Some(request));
-        let (table, _) = self
-            .attempts
+            StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, Some(request));
+        let (table, _) = (*self
+            .attempts_for_test())
             .lock()
             .unwrap()
-            .shared_observed_facts(authority.session())
+            .shared_observed_facts(authority.session_for_test())
             .unwrap();
         let requests: Vec<_> = table.requests().collect();
         crate::domain_computation::primary_graph::provider::decision_facts::comparison::tests::funding::assert_full_capture_funding(self, execution, authority, request, &table);
         let count = || {
-            self.graph.with_runtime(execution, |runtime| {
+            (*self.graph_for_test()).with_runtime(execution, |runtime| {
                 runtime.retention().active_snapshot_count()
             })
         };
@@ -59,10 +59,10 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
             panic!("real unmodified facts must compare fresh");
         };
         let scoped = self
-            .compare_application_read_set(
+            .compare_application_read_set_for_test(
                 execution,
                 authority,
-                self.capture_application_read_set(execution, authority, control)
+                self.capture_application_read_set_for_test(execution, authority, control)
                     .unwrap(),
                 control,
             )
@@ -72,9 +72,9 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
         };
         assert_eq!(generic.counters(), scoped.counters());
         for fact in table.values() {
-            assert!(scoped.contains_locator(&fact.locator_identity()));
+            assert!(scoped.contains_locator_for_test(&fact.locator_identity()));
         }
-        assert!(!scoped.contains_locator("unregistered-same-count-substitution"));
+        assert!(!scoped.contains_locator_for_test("unregistered-same-count-substitution"));
         let mut wrong_keys = requests.clone();
         let family = wrong_keys[0].family_identity().to_owned();
         wrong_keys[0] = worth_query_execution::facade::domain_computation::WorthQueryDecisionFactRequest::new(
@@ -94,7 +94,7 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
             WorthQueryDecisionReadSetDenialKind::ProviderRejected
         );
         let recomparison = self
-            .recompare_application_read_set(execution, authority, scoped, control)
+            .recompare_application_read_set_for_test(execution, authority, scoped, control)
             .unwrap();
         assert!(matches!(
             recomparison,
@@ -107,14 +107,14 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
             "normal comparison releases its sole observer"
         );
         let foreign_count = || {
-            foreign.graph.with_runtime(execution, |runtime| {
+            (*foreign.graph_for_test()).with_runtime(execution, |runtime| {
                 runtime.retention().active_snapshot_count()
             })
         };
         let foreign_baseline = foreign_count();
         assert_eq!(
             foreign
-                .compare_application_read_set(execution, authority, capture(), control)
+                .compare_application_read_set_for_test(execution, authority, capture(), control)
                 .err()
                 .unwrap()
                 .kind(),
@@ -126,18 +126,18 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
             "foreign registration must be rejected before observer admission"
         );
         let receipt = capture();
-        let mut comparison = PrimaryDecisionReadSetComparison::acquire(
+        let mut comparison = PrimaryDecisionReadSetComparison::acquire_for_test(
             execution,
             self,
-            authority.session(),
+            authority.session_for_test(),
             control,
         )
         .unwrap();
         assert_eq!(count(), baseline + 1);
         cancellation.cancel();
         let denied = authority
-            .compare_decision_read_set_with(receipt, |evidence, admission| {
-                comparison.compare(execution, authority.session(), evidence, admission, control)
+            .compare_decision_read_set_with_for_test(receipt, |evidence, admission| {
+                comparison.compare_for_test(execution, authority.session_for_test(), evidence, admission, control)
             })
             .err()
             .unwrap();
@@ -154,10 +154,10 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
             "interruption releases the exact comparison observer"
         );
         assert_eq!(
-            PrimaryDecisionReadSetComparison::acquire(
+            PrimaryDecisionReadSetComparison::acquire_for_test(
                 execution,
                 self,
-                authority.session(),
+                authority.session_for_test(),
                 control
             )
             .err()

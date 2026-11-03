@@ -87,3 +87,5 @@ impl WorthQueryPrincipalCurrentnessDependency {
             .map_err(super::super::denial::principal_currentness)
     }
 }
+
+mod court_doors_for_test;

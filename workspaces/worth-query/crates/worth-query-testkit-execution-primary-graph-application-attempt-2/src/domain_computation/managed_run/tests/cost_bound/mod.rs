@@ -100,7 +100,7 @@ pub fn direct_readmission_work(
     let readmitted = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
         };
         match fixture_phase_result {
@@ -138,7 +138,7 @@ pub fn workflow_readmission_work(
     let readmitted = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
         };
         match fixture_phase_result {
@@ -176,7 +176,7 @@ pub fn denied_readmission_work(
     let denial = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(&installed_fixture_phase, &foreign, &bridge)
         };
         match fixture_phase_result {
@@ -294,7 +294,7 @@ pub fn assert_rejection_work_is_constant_with_unrelated_authority(
         resource_request,
     );
     let rejection =
-        match foreign.admit_direct_run(&operation, attempt, lower.bridge, lower.relational) {
+        match foreign.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
             Ok(_) => panic!("foreign runtime admitted another runtime's run"),
             Err(rejection) => rejection,
         };

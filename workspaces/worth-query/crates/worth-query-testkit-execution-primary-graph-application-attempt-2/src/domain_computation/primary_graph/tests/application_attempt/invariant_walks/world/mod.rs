@@ -125,7 +125,7 @@ pub fn install_world(
                 worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::probe::resolve(resolver, probe)
             })
             .unwrap();
-        let mut bootstrap = authority.prepare_primary_graph_with_relational_runtime_and_invariants(
+        let mut bootstrap = authority.prepare_primary_graph_with_relational_runtime_and_invariants_for_test(
             &phase.bootstrap_for_test(), &runtime, &schema,
             worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
             worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(), factories,
@@ -170,8 +170,8 @@ impl World {
         self.application
             .with_host_advancement(|phase| {
                 let execution = phase.borrowed_request_for_test();
-                self.application
-                    .primary_provider
+                (*self.application
+                    .primary_provider_for_test())
                     .graph
                     .with_runtime(&execution, |runtime| {
                         crate::published_checkpoint::capture(runtime, &execution)
@@ -183,7 +183,7 @@ impl World {
     pub fn edges(&self) -> Vec<(u64, u64)> {
         self.application
             .with_host_advancement(|phase| {
-                let host = phase.test_host_request();
+                let host = phase.test_host_request_for_test();
                 let execution = host
                     .execution_request_for(self.application.product_runtime())
                     .unwrap();

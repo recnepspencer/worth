@@ -23,17 +23,17 @@ impl Fixture {
         let change_identity = Arc::as_ptr(&change).cast::<()>();
         let observation = receipt
             .committed_product_publication()
-            .take_output_demand_observation()
+            .take_output_demand_observation_for_test()
             .unwrap();
         let registry = WorthQueryOutputDemandRegistry::default();
         let scope = receipt.principal_scope().scope();
         let admit = |name, slot, predecessor| {
             registry
-                .admit(
+                .admit_for_test(
                     key(name, 1, slot),
                     None,
                     scope,
-                    receipt.product_branch().occurrence(),
+                    receipt.product_branch().occurrence_for_test(),
                     DemandAdmissionKind::Ordinary,
                     None,
                     predecessor,
@@ -46,7 +46,7 @@ impl Fixture {
         let dependent = admit("retained-dependent", 3, None);
         let mut ready_identity = std::ptr::null();
         {
-            let mut state = registry.state.lock().unwrap();
+            let mut state = (*registry.state_for_test()).lock().unwrap();
             // These are published dependency claims, as in caller_chain's
             // registry fixtures; their physical Vec backings are accounted.
             for (reader, input) in [(&interest, &upstream), (&dependent, &interest)] {
@@ -64,15 +64,15 @@ impl Fixture {
             } else {
                 vec![&upstream]
             } {
-                let ready = PreparedReadyBacking::new().complete(WorthQueryCompletedOutputDemand {
+                let ready = PreparedReadyBacking::new_for_test().complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-                    readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+                    readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
                 });
                 if input.key == interest.key {
                     ready_identity = std::ptr::from_ref(&*ready).cast::<()>();
                 }
                 state.records.get_mut(&input.key).unwrap().state = DemandState::Output(
-                    WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Ready(ready)),
+                    WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Ready(ready)),
                 );
             }
         }
@@ -83,19 +83,19 @@ impl Fixture {
                 Some(OutputRefreshPredecessor::Committed(&receipt)),
             );
         } else {
-            registry
-                .state
+            (*registry
+                .state_for_test())
                 .lock()
                 .unwrap()
                 .records
                 .get_mut(&interest.key)
                 .unwrap()
-                .successor_of = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new(
+                .successor_of = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new_for_test(
                 *receipt.idempotency_binding().key_identity(),
             ));
         }
         {
-            let mut state = registry.state.lock().unwrap();
+            let mut state = (*registry.state_for_test()).lock().unwrap();
             let mut row = state.records.get_mut(&interest.key).unwrap();
             row.performed_source = Some(WorthQueryPerformedOutputDemandSource {
                 receipt: receipt.clone(),
@@ -124,11 +124,11 @@ impl Fixture {
 
     pub fn next_interest(&self, reopened: bool) -> WorthQueryOutputDemandInterest {
         self.registry
-            .admit(
-                self.interest.key.clone(),
+            .admit_for_test(
+                (*self.interest.key_for_test()).clone(),
                 None,
                 self.receipt.principal_scope().scope(),
-                self.receipt.product_branch().occurrence(),
+                self.receipt.product_branch().occurrence_for_test(),
                 DemandAdmissionKind::Ordinary,
                 None,
                 reopened.then_some(OutputRefreshPredecessor::Committed(&self.receipt)),

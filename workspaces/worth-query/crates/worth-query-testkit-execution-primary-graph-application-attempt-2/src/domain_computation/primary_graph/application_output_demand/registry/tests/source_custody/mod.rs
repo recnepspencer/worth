@@ -27,18 +27,18 @@ pub fn real_scope_and_occurrence() -> (
             true,
         );
     world.application.with_host_advancement(|phase| {
-        let custody = phase.test_host_request();
+        let custody = phase.test_host_request_for_test();
         let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
         let account =
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(
                 &custody,
                 &world, "open", &request,
             );
-        let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(account.entity_id());
+        let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(account.entity_id_for_test());
         let product = world
             .application
             .product_runtime()
-            .admit_product_branch(world.application.product_runtime().default_branch())
+            .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
             .expect("the fixture product occurrence is live");
         (scope, product.observation().lifecycle_incarnation())
     }).expect("the fixture source read owns its host call")
@@ -55,33 +55,33 @@ pub fn custody_wait(superseded: bool, token: bool) {
     let sources = vec![
         BoundOutputSource {
             scope,
-            identity: selected.source.clone(),
+            identity: (*selected.source_for_test()).clone(),
         },
         BoundOutputSource {
             scope,
-            identity: key("producer", 5, 2).source,
+            identity: (*key("producer", 5, 2).source_for_test()),
         },
     ];
     {
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         state.source_custody.insert(
             commit.clone(),
             SourceCustody {
-                occurrence: receipt.product_branch().occurrence(),
+                occurrence: receipt.product_branch().occurrence_for_test(),
                 root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
                 source: None,
                 discovery: None,
                 consumed_sources: sources
                     .iter()
-                    .map(|source| source.identity.clone())
+                    .map(|source| (*source.identity_for_test()).clone())
                     .collect(),
                 retired_sources: if superseded {
                     sources
                         .iter()
                         .map(|source| {
                             (
-                                source.identity.clone(),
-                                WorthQueryOutputDemandDenial::new(
+                                (*source.identity_for_test()).clone(),
+                                WorthQueryOutputDemandDenial::new_for_test(
                                     WorthQueryOutputDemandDenialKind::Superseded,
                                     "newer source",
                                 ),
@@ -99,31 +99,31 @@ pub fn custody_wait(superseded: bool, token: bool) {
             },
         );
         let mut active = record(
-            receipt.product_branch().occurrence(),
-            DemandState::Failed(WorthQueryOutputDemandDenial::new(
+            receipt.product_branch().occurrence_for_test(),
+            DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                 WorthQueryOutputDemandDenialKind::NoEffect,
                 "terminal source",
             )),
             usize::from(!token),
         );
-        active.source_commits.push(commit.clone());
+        (*active.source_commits_for_test()).push(commit.clone());
         state.records.insert(selected.clone(), active);
     }
-    registry.complete_prepared_source(&receipt);
-    registry.state.lock().unwrap().drain_completed_custody();
+    registry.complete_prepared_source_for_test(&receipt);
+    (*registry.state_for_test()).lock().unwrap().drain_completed_custody();
     {
-        let state = registry.state.lock().unwrap();
+        let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!(state.source_custody.len(), 1);
         assert!(state.source_custody[&commit].cleanup.queued);
     }
     if token {
-        registry.release_prepared_token(&commit);
+        registry.release_prepared_token_for_test(&commit);
     } else {
-        let notifications = Arc::clone(&registry.state.lock().unwrap().records[&selected].wake);
+        let notifications = Arc::clone(&(*registry.state_for_test()).lock().unwrap().records[&selected].wake);
         drop(interest(&registry, selected.clone(), notifications));
     }
-    registry.state.lock().unwrap().drain_completed_custody();
-    let state = registry.state.lock().unwrap();
+    (*registry.state_for_test()).lock().unwrap().drain_completed_custody();
+    let state = (*registry.state_for_test()).lock().unwrap();
     assert!(state.source_custody.is_empty());
     assert!(state
         .records

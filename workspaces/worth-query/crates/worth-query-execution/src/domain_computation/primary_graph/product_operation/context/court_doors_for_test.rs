@@ -23,3 +23,31 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         Self::into_parts(self)
     }
 }
+
+impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    #[doc(hidden)]
+    pub fn application_basis_for_test(
+        &self) -> &super::super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease {
+        Self::application_basis(self)
+    }
+}
+
+impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    #[doc(hidden)]
+    pub fn original_settled_producer_for_test(
+        &self) -> Option<
+        &std::sync::Arc<
+            super::super::super::application_output_demand::OriginalSettledProducerObservation,
+        >,
+    > {
+        Self::original_settled_producer(self)
+    }
+}
+
+impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    #[doc(hidden)]
+    pub fn retain_selection_for_test(
+        &self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
+        Self::retain_selection(self, execution)
+    }
+}

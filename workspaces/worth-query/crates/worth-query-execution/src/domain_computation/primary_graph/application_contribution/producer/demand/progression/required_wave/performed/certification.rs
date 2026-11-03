@@ -214,3 +214,5 @@ pub(in super::super) struct FrozenCaller<'a, Schema: ApplicationSchema> {
     pub installed: &'a InstalledProducerProvider<Schema>,
     pub contacts: usize,
 }
+
+mod court_doors_for_test;

@@ -263,3 +263,5 @@ impl WorthQueryOutputProgress {
         self.checkpoint = Some(checkpoint);
     }
 }
+
+mod court_doors_for_test;

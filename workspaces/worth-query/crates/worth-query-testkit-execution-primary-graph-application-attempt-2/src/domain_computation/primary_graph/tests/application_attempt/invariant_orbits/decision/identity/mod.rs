@@ -42,9 +42,9 @@ pub struct Read {
 pub fn read(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) -> Read {
     let selected = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
     let completed = world
@@ -69,7 +69,7 @@ pub fn read(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) -> Re
         .unwrap();
     let (body, snapshot, _) = completed.into_parts();
     let (lease, _, _, _) =
-        snapshot.into_lease_and_realized_scope(selected.product().retained_clone());
+        snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone());
     Read { body, lease }
 }
 impl Read {
@@ -78,8 +78,8 @@ impl Read {
         old: &AggregateObservation,
         execution: &ExecutionRequest<'_, '_>,
     ) -> bool {
-        self.lease.handle().with_runtime(execution, |runtime| {
-            old.remains_equal(runtime, execution, self.lease.snapshot(), None)
+        self.lease.handle_for_test().with_runtime(execution, |runtime| {
+            old.remains_equal_for_test(runtime, execution, self.lease.snapshot_for_test(), None)
                 .unwrap()
         })
     }

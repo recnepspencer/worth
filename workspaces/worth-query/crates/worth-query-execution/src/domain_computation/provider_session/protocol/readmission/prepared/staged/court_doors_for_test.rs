@@ -28,3 +28,10 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
         Self::provisional_provider(self)
     }
 }
+
+impl WorthQuerySessionReadAuthority<'_> {
+    #[doc(hidden)]
+    pub fn session_for_test(&self) -> WorthQueryProviderSessionView<'_> {
+        Self::session(self)
+    }
+}

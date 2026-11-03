@@ -21,7 +21,7 @@ pub fn swap_successors<const O: bool>(
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
@@ -35,9 +35,9 @@ pub fn swap_successors<const O: bool>(
             );
             let selected = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap();
             let entities = pairs.map(|(from, to)| {
@@ -141,9 +141,9 @@ where
 {
     let selected = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
     let external = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authentication::authenticate_external(

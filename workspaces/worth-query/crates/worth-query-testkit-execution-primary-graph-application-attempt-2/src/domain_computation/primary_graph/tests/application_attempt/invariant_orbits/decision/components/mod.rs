@@ -36,7 +36,7 @@ pub fn read_selection(
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
@@ -89,9 +89,9 @@ pub fn read_selection(
             // A real independently issued selected lease, not a reconstructed snapshot.
             let selected = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap();
             let projection = world
@@ -100,7 +100,7 @@ pub fn read_selection(
                 .unwrap();
             let (_, snapshot, _) = projection.into_parts();
             let (lease, _, _, _) =
-                snapshot.into_lease_and_realized_scope(selected.product().retained_clone());
+                snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone());
             Read { body, lease }
         })
         .unwrap()

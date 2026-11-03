@@ -168,7 +168,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
         .with_application_advancement(&scope, |phase| {
             use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
                 .unwrap();
             let admit = || {
                 runtime
@@ -184,7 +184,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
             let disclosure = source(runtime, &phase, &external, &scope);
             *interruption.lock().unwrap() = Some(cancellation);
             let stop = runtime
-                .advance_program_output_demand(
+                .advance_program_output_demand_for_test(
                     &execution,
                     &phase,
                     &mut cancelled,
@@ -221,10 +221,10 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
     runtime
         .with_application_advancement(&fresh, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
                 .unwrap();
             let advanced = runtime
-                .advance_program_output_demand(
+                .advance_program_output_demand_for_test(
                     &execution,
                     &phase,
                     &mut survivor,

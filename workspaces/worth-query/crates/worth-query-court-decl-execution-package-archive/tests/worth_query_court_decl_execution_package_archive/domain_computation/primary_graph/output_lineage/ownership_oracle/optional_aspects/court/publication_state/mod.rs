@@ -22,12 +22,12 @@ pub fn observe<Schema: BirthSchema>(
         .iter()
         .all(|role| role.posture == RequiredOutputRolePosture::Preserve);
     let primary = if keeping {
-        settled.output_correspondence.entity_for_binding_role::<Binding<Schema, true>>(
+        settled.output_correspondence.entity_for_binding_role_for_test::<Binding<Schema, true>>(
             <<Preserve<Schema> as WorthQueryApplicationProducerBinding<Schema>>::OutputRole
                 as WorthQueryApplicationOutputRole>::NAME,
         )
     } else {
-        settled.output_correspondence.entity_for_binding_role::<Binding<Schema, false>>(
+        settled.output_correspondence.entity_for_binding_role_for_test::<Binding<Schema, false>>(
             <<Initial<Schema> as WorthQueryApplicationProducerBinding<Schema>>::OutputRole
                 as WorthQueryApplicationOutputRole>::NAME,
         )
@@ -54,13 +54,13 @@ pub fn observe_roles<Schema: BirthSchema>(
         id
     };
     let execution = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
         .unwrap();
     let selected = runtime
         .on_branch(runtime.current_world())
         .select(phase)
         .unwrap();
-    let graph = &runtime.primary_provider.graph;
+    let graph = &(*runtime.primary_provider_for_test()).graph;
     let field = Value::reference::<Schema>();
     let locator = graph
         .layout
@@ -83,7 +83,7 @@ pub fn observe_roles<Schema: BirthSchema>(
     graph.with_runtime(&execution, |native| {
         let view = native
             .read_truth()
-            .project_snapshot(selected.application_basis().snapshot_handle())
+            .project_snapshot(selected.application_basis_for_test().snapshot_handle())
             .unwrap();
         let value = view
             .entity_record_with_projection_scope(

@@ -8,14 +8,14 @@ pub fn observe_performed_receipt<Schema: BirthSchema>(
 ) -> (Vec<EntityId>, RelationId) {
     let roles: Vec<_> = receipt
         .output_correspondence()
-        .native_witness_roles()
+        .native_witness_roles_for_test()
         .map(|(role, actual, name, entity)| {
             assert_eq!(actual, posture);
             RequiredOutputRoleTarget {
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
-                kind: runtime
-                    .primary_provider
+                kind: (*runtime
+                    .primary_provider_for_test())
                     .graph
                     .layout
                     .entity_kind(name)
@@ -33,14 +33,14 @@ pub fn observe_performed_receipt<Schema: BirthSchema>(
         .collect();
     assert_eq!(roles.len(), 4);
     assert!(
-        receipt.exact_output_settlement().is_some(),
+        receipt.exact_output_settlement_for_test().is_some(),
         "the receipt is the exact recorded original"
     );
     let primary = if posture == WorthQueryApplicationOutputPosture::Create {
-        receipt.output_correspondence().entity_for_binding_role::<Binding<Schema, false>>(
+        receipt.output_correspondence().entity_for_binding_role_for_test::<Binding<Schema, false>>(
             <<Initial<Schema> as WorthQueryApplicationProducerBinding<Schema>>::OutputRole as WorthQueryApplicationOutputRole>::NAME)
     } else {
-        receipt.output_correspondence().entity_for_binding_role::<Binding<Schema, true>>(
+        receipt.output_correspondence().entity_for_binding_role_for_test::<Binding<Schema, true>>(
             <<Preserve<Schema> as WorthQueryApplicationProducerBinding<Schema>>::OutputRole as WorthQueryApplicationOutputRole>::NAME)
     }.unwrap();
     let incidence = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::publication_state::observe_roles(runtime, phase, primary, &roles);

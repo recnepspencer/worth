@@ -32,7 +32,7 @@ pub fn prepare(
     world
         .application
         .with_application_advancement(request, |phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();

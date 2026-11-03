@@ -29,9 +29,9 @@ where
         Some(branch) => world.application.on_branch(branch).select(phase).unwrap(),
         None => world
             .application
-            .select_product_branch(
+            .select_product_branch_for_test(
                 execution,
-                world.application.product_runtime().default_branch(),
+                world.application.product_runtime().default_branch_for_test(),
             )
             .unwrap(),
     };

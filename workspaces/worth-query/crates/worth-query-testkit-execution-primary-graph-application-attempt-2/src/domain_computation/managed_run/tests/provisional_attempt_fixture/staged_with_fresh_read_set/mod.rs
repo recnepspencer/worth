@@ -11,7 +11,7 @@ pub fn staged_with_fresh_read_set<'run>(
     WorthQueryFreshDecisionReadSet,
 ) {
     let staged = {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running
             .admit_provider_execution_plan(graph)
             .unwrap()

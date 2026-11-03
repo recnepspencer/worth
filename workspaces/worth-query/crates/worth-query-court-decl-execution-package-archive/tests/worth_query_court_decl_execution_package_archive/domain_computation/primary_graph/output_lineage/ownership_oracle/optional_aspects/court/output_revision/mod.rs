@@ -52,7 +52,7 @@ pub fn preserved<Schema: BirthSchema>(
     let selected = runtime
         .select_application_read_observation(phase, &read)
         .unwrap();
-    let supplier = selected.original_settled_producer().unwrap();
+    let supplier = selected.original_settled_producer_for_test().unwrap();
     let OriginalSettledProducerSource::Committed {
         changes,
         original_publication,
@@ -62,7 +62,7 @@ pub fn preserved<Schema: BirthSchema>(
         panic!("the executed Preserve retains its real committed supplier")
     };
     assert!(
-        changes.shares_original(receipt.committed_changes()),
+        changes.shares_original_for_test(receipt.committed_changes()),
         "retention must not substitute the field creator for the current supplier"
     );
     assert_ne!(changes.commit_reference().version_id, revision.version());
@@ -70,12 +70,12 @@ pub fn preserved<Schema: BirthSchema>(
         .as_ref()
         .expect("the original own-publication continuation retains its actual producing evidence");
     assert_eq!(
-        producing.changes.commit_reference().version_id,
+        (*producing.changes_for_test()).commit_reference().version_id,
         original.1.version()
     );
-    assert!(!producing.changes.shares_original(changes));
-    assert!(producing
-        .correspondence
+    assert!(!(*producing.changes_for_test()).shares_original(changes));
+    assert!((*producing
+        .correspondence_for_test())
         .native_witness_roles()
         .any(|(_, _, _, output)| output == original.0));
     drop(selected);
@@ -91,20 +91,20 @@ pub fn observe<Schema: BirthSchema>(
     let field = Value::reference::<Schema>();
     let mut roles = receipt
         .output_correspondence()
-        .native_witness_roles()
+        .native_witness_roles_for_test()
         .filter(|(_, _, entity, _)| *entity == field.entity());
     let (_, _, _, entity) = roles.next().unwrap();
     assert!(
         roles.next().is_none(),
         "one actual output of this installed kind"
     );
-    let graph = &runtime.primary_provider.graph;
+    let graph = &(*runtime.primary_provider_for_test()).graph;
     let locator = graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())
         .unwrap();
     let execution = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
         .unwrap();
     assert_eq!(locator.aspect().authority(), LocatorAuthority::Planned);
     let (effect, native_locator) = run_retained_stage(&execution, &mut None, |context, _| {
@@ -121,7 +121,7 @@ pub fn observe<Schema: BirthSchema>(
             .unwrap();
         let effect = receipt
             .committed_changes()
-            .field_effect(context, entity, coordinate)
+            .field_effect_for_test(context, entity, coordinate)
             .map_err(worth_execution::MapKernelFailure::<()>::Stop)?;
         let native_locator = AspectFieldLocator::new(
             LocatorAuthority::Authoritative,
@@ -138,13 +138,13 @@ pub fn observe<Schema: BirthSchema>(
     assert!(
         receipt
             .committed_product_publication()
-            .is_selected_at(selected.product().observation()),
+            .is_selected_at_for_test(selected.product().observation_for_test()),
         "observe at the actual publication, never a later substituted head"
     );
     let revision = graph.with_runtime(&execution, |native| {
         native
             .read_truth()
-            .project_snapshot(selected.application_basis().snapshot_handle())
+            .project_snapshot(selected.application_basis_for_test().snapshot_handle())
             .unwrap()
             .entity_field_revision(&execution, entity, &native_locator)
             .unwrap()

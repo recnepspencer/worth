@@ -22,7 +22,7 @@ pub fn assert_absent_required_content_is_readable(
             WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
         let operation = runtime.installed_schema().installed_operation(Produce::reference()).unwrap();
         let admitted = selected.authorize_operation(&phase, &principal, &source, &operation, Default::default(), &request).unwrap();
-        let (_, snapshot, _) = runtime.mutation_projection.project_admitted_operation(&phase, &admitted, |reader, root| {
+        let (_, snapshot, _) = (*runtime.mutation_projection_for_test()).project_admitted_operation(&phase, &admitted, |reader, root| {
             assert_eq!(reader.decision_field(root, SourceContent::reference()).unwrap(), None);
             let called = std::cell::Cell::new(false);
             assert_eq!(reader.decision_field_with_predecode_admission(root, SourceContent::reference(), |_, _| {
@@ -36,14 +36,14 @@ pub fn assert_absent_required_content_is_readable(
         assert!(reads.decision_facts().iter().any(|fact| matches!(fact,
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. })),
             "Required content can be sealed as whole-aspect absence only under the installed Optional law");
-        let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
+        let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation, None);
-        let original = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::copy_funded(
+        let original = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::copy_funded_for_test(
             &reads.decision_facts(), control).unwrap();
-        let captured = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::copy_performed_field_reads(
+        let captured = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::copy_performed_field_reads_for_test(
             &original, control).unwrap();
         drop(original);
-        assert!(captured.iter().any(|fact| matches!(fact,
+        assert!(captured.iter_for_test().any(|fact| matches!(fact,
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. })),
             "genuine completed whole-aspect absence survives field-only custody capture");
     }).unwrap();

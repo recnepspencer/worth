@@ -77,7 +77,7 @@ pub fn commit<Schema: BirthSchema>(
                 .unwrap()
                 .into_admitted_disclosed()
                 .into_output_demand_source()
-                .into_single_source()
+                .into_single_source_for_test()
                 .unwrap();
             let input = Input {
                 scope_key: key.to_owned(),
@@ -201,7 +201,7 @@ pub fn required_read_refuses(
                 .unwrap()
                 .into_admitted_disclosed()
                 .into_output_demand_source()
-                .into_single_source()
+                .into_single_source_for_test()
                 .unwrap();
             let input = KeepInput {
                 scope_key: crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
@@ -219,7 +219,7 @@ pub fn required_read_refuses(
             pending
                 .consume_into(runtime, &phase, &mut admission)
                 .unwrap();
-            let projected = runtime.mutation_projection.project_admitted_operation(
+            let projected = (*runtime.mutation_projection_for_test()).project_admitted_operation(
                 &phase,
                 &admission,
                 |reader, _| {

@@ -93,7 +93,7 @@ pub fn execute_source_bound(
                 .unwrap()
                 .into_admitted_disclosed()
                 .into_output_demand_source()
-                .into_single_source()
+                .into_single_source_for_test()
                 .unwrap();
             source
                 .bind_application_source_expectation::<OrdinaryBinding<Schema>, _>(

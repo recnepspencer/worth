@@ -190,3 +190,5 @@ fn replaced_ready(record: &DemandRecord) -> bool {
             && (!matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })
                 || super::refreshed_rejoin::superseded(record)))
 }
+
+mod court_doors_for_test;

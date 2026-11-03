@@ -24,7 +24,7 @@ pub fn family_declarations() -> [[(TypeId, &'static str); 2]; 2] {
 }
 pub fn initial() -> WorthQueryOutputDemandKey {
     let mut key = crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::key("initial", 7, 1);
-    key.applicability = WorthQueryProducerApplicability::new(
+    (*key.applicability_mut_for_test()) = WorthQueryProducerApplicability::new(
         "registry-fixture",
         WorthQueryProducerLifecyclePosture::Initial,
     );

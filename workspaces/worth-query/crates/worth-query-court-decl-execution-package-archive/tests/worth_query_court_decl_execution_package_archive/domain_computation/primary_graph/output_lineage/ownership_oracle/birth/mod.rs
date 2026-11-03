@@ -19,14 +19,14 @@ pub fn admit_genuine_all_create(runtime: &Application) {
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
                 .unwrap();
             let (_, product, _application_basis) = runtime
                 .on_branch(runtime.current_world())
                 .select(&phase)
                 .unwrap()
-                .into_parts();
-            let graph = &runtime.primary_provider.graph;
+                .into_parts_for_test();
+            let graph = &(*runtime.primary_provider_for_test()).graph;
             let publisher = graph.application_publication.as_ref().unwrap();
             let target = CreatedEntityRef {
                 partition_id: PartitionId::main(),
@@ -53,7 +53,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
             let meaning = RequiredOutputPublicationMeaning {
                 implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
                 family: producer.to_owned(),
-                source_scope: anchor.entity_id(),
+                source_scope: anchor.entity_id_for_test(),
                 source_partition: [42; 32],
                 source_epoch: [43; 32],
             };

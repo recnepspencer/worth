@@ -331,3 +331,5 @@ fn denial(
 ) -> WorthQueryManagedRunDenial {
     WorthQueryManagedRunDenial::new(kind, detail, counters.clone())
 }
+
+mod court_doors_for_test;

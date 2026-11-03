@@ -299,3 +299,5 @@ fn resident_bytes(facts: &[Fact], backing: Option<u64>) -> Option<u64> {
         bytes.checked_add(fact.additional_charged_bytes())
     })
 }
+
+mod court_doors_for_test;

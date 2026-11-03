@@ -50,3 +50,17 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         Self::installed_program_support(self)
     }
 }
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn bridge_for_test(&self) -> &super::super::managed_bridge::WorthQueryInstalledApplicationBridge {
+        &self.bridge
+    }
+}
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn mutation_projection_for_test(&self) -> &super::super::WorthQueryApplicationInvariantProjectionAuthority<Schema> {
+        &self.mutation_projection
+    }
+}

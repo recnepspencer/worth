@@ -23,3 +23,11 @@ impl<'scope> TestHostRequest<'scope> {
         Self::test_host_request(self)
     }
 }
+
+impl<'scope> TestHostRequest<'scope> {
+    #[doc(hidden)]
+    pub fn phase_for_direct_for_test(
+        &self, run: &crate::domain_computation::WorthQueryRunningDirectRun) -> WorthQueryAdvancementPhase<'scope> {
+        Self::phase_for_direct(self, run)
+    }
+}

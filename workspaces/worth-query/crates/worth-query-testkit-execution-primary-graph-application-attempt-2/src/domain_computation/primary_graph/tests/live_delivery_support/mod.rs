@@ -43,7 +43,7 @@ pub fn commit_live_activity_with_identity(
 ) -> WorthQueryApplicationCommitReceipt {
     commit_live_activity_on_product(
         world,
-        world.application.product_runtime().default_branch(),
+        world.application.product_runtime().default_branch_for_test(),
         principal,
         request,
         label,
@@ -64,14 +64,14 @@ pub fn commit_live_activity_on_product(
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let phase_custody = phase.test_host_request();
+            let phase_custody = phase.test_host_request_for_test();
             let request_execution = phase
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .expect("the fixture lends its installed phase");
             let execution = &request_execution;
             let account = world
                 .application
-                .select_product_branch(execution, product)
+                .select_product_branch_for_test(execution, product)
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase_custody.phase_for_application(&world.application),
@@ -95,7 +95,7 @@ pub fn commit_live_activity_on_product(
         .expect("the live fixture opens its preparation call");
     match world.application.compare_and_commit_application(
         program,
-        WorthQueryApplicationIdempotencyBinding::new([idempotency_key; 32], [request_digest; 32]),
+        WorthQueryApplicationIdempotencyBinding::new_for_test([idempotency_key; 32], [request_digest; 32]),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     ) {
         WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
@@ -125,10 +125,10 @@ pub fn live_activity_program(
         .unwrap();
     let admission = world
         .application
-        .select_product_branch(execution, product)
+        .select_product_branch_for_test(execution, product)
         .expect("the selected live product remains admitted")
         .authorize_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             principal,
             account,
             &operation,
@@ -139,7 +139,7 @@ pub fn live_activity_program(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &admission,
             |reader, projected| {
                 reader
@@ -156,7 +156,7 @@ pub fn live_activity_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -164,7 +164,7 @@ pub fn live_activity_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

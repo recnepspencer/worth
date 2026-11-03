@@ -83,16 +83,16 @@ pub fn commit_with_observation(
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
             let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+                authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
             let account = resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 current_status,
                 &request,
             );
 
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 &principal,
                 &account,

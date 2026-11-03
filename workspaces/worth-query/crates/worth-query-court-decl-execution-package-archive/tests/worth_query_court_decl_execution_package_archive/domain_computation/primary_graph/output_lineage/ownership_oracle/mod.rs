@@ -138,9 +138,9 @@ pub fn with_genuine_native_observation<T>(
     let observation = settled
         .readiness_delivery()
         .unwrap()
-        .causal_observation()
+        .causal_observation_for_test()
         .unwrap();
-    let owner = runtime.bridge.conditional();
+    let owner = (*runtime.bridge_for_test()).conditional();
     inspect(&owner, observation)
 }
 

@@ -323,3 +323,5 @@ impl super::DemandRegistryState {
 }
 
 mod proof_fixture;
+
+mod court_doors_for_test;

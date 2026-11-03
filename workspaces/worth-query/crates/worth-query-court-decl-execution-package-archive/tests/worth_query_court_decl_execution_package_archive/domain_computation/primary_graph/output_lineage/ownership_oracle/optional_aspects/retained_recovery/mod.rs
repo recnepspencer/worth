@@ -20,7 +20,7 @@ pub fn materialize_source_in_phase<Schema: BirthSchema>(
 ) {
     let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let execution = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
         .unwrap();
     let source = runtime
         .on_branch(runtime.current_world())
@@ -57,7 +57,7 @@ pub fn materialize_source_in_phase<Schema: BirthSchema>(
     let batch =
         WorkerIntentBatch::new("materialize-optional-source-aspect").push(MutationIntent::Entity(
             EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
-                entity_id: source.entity_id(),
+                entity_id: source.entity_id_for_test(),
                 aspect_patch: patch,
             }),
         ));
@@ -105,13 +105,13 @@ fn tracked_aspect_absence_survives_query_checkpoint_then_invalidates_on_other_fi
     restored.with_host_advancement(|phase| {
         let read = retained.retained_read();
         let selected = restored.select_application_read_observation(&phase, &read).unwrap();
-        let seed = selected.original_settled_producer().unwrap();
+        let seed = selected.original_settled_producer_for_test().unwrap();
         let worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerSource::Restored { checkpoint } = seed.source() else {
             panic!("actual checkpoint restoration cannot manufacture a Native conditional observer")
         };
         let source = retained.restored_source.as_ref().unwrap();
-        assert_eq!(checkpoint.scope, source.source_scope);
-        assert_eq!(checkpoint.source_partition, source.checkpoint.source_partition);
+        assert_eq!((*checkpoint.scope_for_test()), (*source.source_scope_for_test()));
+        assert_eq!((*checkpoint.source_partition_for_test()), (*source.checkpoint_for_test()).source_partition);
         assert_eq!(seed.read().selected_commit(), read.selected_commit());
     }).unwrap();
     materialize_source(&restored);
@@ -173,8 +173,8 @@ fn restored_projection_reads_the_checkpoint_without_authoring_initial_state() {
                 )
                 .unwrap();
             let retained_selector = completed.into_parts().0;
-            let runtime_selector = restored
-                .mutation_projection
+            let runtime_selector = (*restored
+                .mutation_projection_for_test())
                 .project(
                     &phase,
                     |reader| {

@@ -12,15 +12,15 @@ pub fn assert_full_capture_funding(
 ) {
     // The actual registered fixture selected SystemAllocation. Its complete
     // original-fact path must retain the quote independently of that policy.
-    assert!(table.closed_prefix().is_none());
-    let bytes = table.full_capture_bytes().unwrap();
+    assert!(table.closed_prefix_for_test().is_none());
+    let bytes = table.full_capture_bytes_for_test().unwrap();
     assert!(bytes > 0);
     let tight = crate::test_request_policy::memory_child(*execution, bytes - 1);
     let refused = provider
-        .capture_application_read_set(
+        .capture_application_read_set_for_test(
             execution,
             authority,
-            StorageControl::new(ExecutionAllocationPolicy::Execution(&tight), Some(request)),
+            StorageControl::new_for_test(ExecutionAllocationPolicy::Execution(&tight), Some(request)),
         )
         .err()
         .expect("original-fact capture must admit its full copy quote first");
@@ -36,13 +36,13 @@ pub fn assert_full_capture_funding(
 
     let funded = crate::test_request_policy::memory_child(*execution, 64 << 20);
     let receipt = provider
-        .capture_application_read_set(
+        .capture_application_read_set_for_test(
             execution,
             authority,
-            StorageControl::new(ExecutionAllocationPolicy::Execution(&funded), Some(request)),
+            StorageControl::new_for_test(ExecutionAllocationPolicy::Execution(&funded), Some(request)),
         )
         .unwrap();
-    assert_eq!(receipt.fact_count(), table.len());
+    assert_eq!(receipt.fact_count(), table.len_for_test());
     assert!(funded.charged_memory_bytes() >= bytes);
     drop(receipt);
     assert_eq!(funded.charged_memory_bytes(), 0);

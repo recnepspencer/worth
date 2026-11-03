@@ -81,7 +81,7 @@ pub fn demand_expected<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
                 .unwrap();
             let branch = runtime.current_world();
             let principal_binding = runtime
@@ -98,7 +98,7 @@ pub fn demand_expected<Schema: BirthSchema>(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let root = entity.entity_id();
+            let root = entity.entity_id_for_test();
             let read_source = || {
                 let selected = runtime.on_branch(branch).select(&phase).unwrap();
                 let principal = selected.resolve_authenticated_principal(
@@ -136,7 +136,7 @@ pub fn demand_expected<Schema: BirthSchema>(
                 )
             }?;
             let disclosure = read_source();
-            let mut advanced = runtime.advance_program_output_demand(
+            let mut advanced = runtime.advance_program_output_demand_for_test(
                 &execution,
                 &phase,
                 &mut demand,
@@ -149,7 +149,7 @@ pub fn demand_expected<Schema: BirthSchema>(
             let mut original_output_revision = None;
             if matches!(expected, Expected::Materialized | Expected::RequiredAdmission) {
                 assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed), "the original born-stale publication progressed without settling current");
-                let locator = runtime.primary_provider.graph.layout.field_locator("Body", "SourceNotes", "SourceSelection").unwrap();
+                let locator = (*runtime.primary_provider_for_test()).graph.layout.field_locator("Body", "SourceNotes", "SourceSelection").unwrap();
                 demand.assert_born_stale_absence_for_test(runtime, &phase, &execution, root, locator, |receipt| {
                     original_roster = Some(crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::own_effect::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Create));
                     if matches!(expected, Expected::Materialized) {
@@ -159,7 +159,7 @@ pub fn demand_expected<Schema: BirthSchema>(
                 if matches!(expected, Expected::RequiredAdmission) { return Ok(None); }
                 // This is a new authenticated current disclosure on the SAME demand,
                 // only after the exact original born-stale transition was proven.
-                advanced = runtime.advance_program_output_demand(
+                advanced = runtime.advance_program_output_demand_for_test(
                     &execution, &phase, &mut demand, &external, &scope, branch, read_source(),
                 )?;
                 if Schema::RENEW_OUTPUT {
@@ -174,7 +174,7 @@ pub fn demand_expected<Schema: BirthSchema>(
                         assert_eq!(&p2_roster, original_roster.as_ref().unwrap());
                         original_output_revision = Some(p2);
                     });
-                    advanced = runtime.advance_program_output_demand(
+                    advanced = runtime.advance_program_output_demand_for_test(
                         &execution, &phase, &mut demand, &external, &scope, branch, read_source(),
                     )?;
                 }

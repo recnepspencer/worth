@@ -216,3 +216,5 @@ impl WorthQueryOutputDemandInterest {
             .is_some_and(|order| order != std::cmp::Ordering::Less)
     }
 }
+
+mod court_doors_for_test;

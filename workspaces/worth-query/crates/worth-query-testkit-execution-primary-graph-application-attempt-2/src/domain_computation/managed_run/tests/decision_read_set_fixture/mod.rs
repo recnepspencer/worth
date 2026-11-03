@@ -8,7 +8,7 @@ pub fn staged<'run>(
 ) -> worth_query_execution::facade::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>
 {
     {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running
             .admit_provider_execution_plan(graph)
             .unwrap()
@@ -22,7 +22,7 @@ pub fn staged<'run>(
 
 pub fn cleanup(running: WorthQueryRunningDirectRun) {
     running
-        .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+        .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed)
         .cleanup()
         .expect("decision-read fixture cleanup should complete");
 }

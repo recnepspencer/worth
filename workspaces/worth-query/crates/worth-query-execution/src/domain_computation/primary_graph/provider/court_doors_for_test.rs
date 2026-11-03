@@ -14,3 +14,10 @@ impl WorthQueryPrimaryGraphProvider {
         &self.receipt_basis_retention
     }
 }
+
+impl WorthQueryPrimaryGraphProvider {
+    #[doc(hidden)]
+    pub fn attempts_for_test(&self) -> &Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>> {
+        &self.attempts
+    }
+}

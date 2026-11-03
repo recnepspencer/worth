@@ -220,3 +220,5 @@ fn request(fact: &Decision) -> crate::domain_computation::WorthQueryDecisionFact
         .expect("completed native or freshly authorized structural locator");
     WorthQueryDecisionFactRequest::new(family, locator).expect("installed native decision family")
 }
+
+mod court_doors_for_test;

@@ -11,7 +11,7 @@ pub fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
         let product = world
             .application
             .product_runtime()
-            .admit_product_branch(world.application.product_runtime().default_branch())
+            .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
             .expect("the fixture's default product occurrence is live");
         product.observation().lifecycle_incarnation()
     })
@@ -47,11 +47,11 @@ pub fn key_with_query_identity(
     identity[..8].copy_from_slice(&semantic_identity.to_be_bytes());
     let query = [query_identity; 32];
     let root = root(root_slot);
-    WorthQueryOutputDemandKey::new(
+    WorthQueryOutputDemandKey::new_for_test(
         "registry-output-family",
         producer.to_owned(),
         worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new("registry-fixture", worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new_for_test(
             query,
             [query_identity.wrapping_add(1); 32],
             root,
@@ -141,15 +141,15 @@ pub fn interest_with_requirement(
 
 /// Retain the owned key exactly as prepare_new_record does, without activating work.
 pub fn retain_owned_key(state: &mut DemandRegistryState, key: &WorthQueryOutputDemandKey) {
-    if state.records[key].work_membership.is_some() {
+    if (*state.records_for_test())[key].work_membership.is_some() {
         return;
     }
-    let queue = state
-        .required_work_queue
+    let queue = (*state
+        .required_work_queue_for_test())
         .get_or_insert_with(|| Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkQueue::new()));
-    let member = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership::new(
+    let member = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership::new_for_test(
         Arc::new(key.clone()),
         queue,
     ));
-    state.records.get_mut(key).unwrap().work_membership = Some(member);
+    (*state.records_for_test()).get_mut(key).unwrap().work_membership = Some(member);
 }

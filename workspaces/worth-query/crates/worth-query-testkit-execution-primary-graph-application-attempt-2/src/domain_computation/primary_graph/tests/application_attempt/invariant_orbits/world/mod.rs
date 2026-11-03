@@ -116,7 +116,7 @@ pub fn install_with_visibility<const O: bool>(
             })
             .unwrap();
         let mut bootstrap = authority
-            .prepare_primary_graph_with_relational_runtime_and_invariants(
+            .prepare_primary_graph_with_relational_runtime_and_invariants_for_test(
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,
@@ -209,7 +209,7 @@ impl<const O: bool> World<O> {
     pub fn edges(&self) -> Vec<(u64, u64)> {
         self.application
             .with_host_advancement(|phase| {
-                let host = phase.test_host_request();
+                let host = phase.test_host_request_for_test();
                 let execution = host
                     .execution_request_for(self.application.product_runtime())
                     .unwrap();
