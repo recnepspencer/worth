@@ -146,6 +146,6 @@ where
         handle: &WorthQueryRecoveryHandle,
     ) -> Result<WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandleDenial> {
         handle.ensure_live()?;
-        evaluate_expiry(handle, &self.authorization_clock)
+        evaluate_expiry(handle, &self.runtime.authorization_clock)
     }
 }

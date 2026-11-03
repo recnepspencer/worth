@@ -147,20 +147,12 @@ impl InstalledOutputComparison {
             )? {
                 Err(cause) => ProducerOutputEvaluationState::Ineligible(cause),
                 Ok(observed) => {
-                    let attempt = attempts
-                        .fetch_update(
-                            std::sync::atomic::Ordering::Relaxed,
-                            std::sync::atomic::Ordering::Relaxed,
-                            |current| current.checked_add(2),
+                    let attempt = next_comparison_attempt(attempts).ok_or_else(|| {
+                        WorthQueryOutputDemandDenial::new(
+                            WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                            "output comparison attempt exhausted",
                         )
-                        .ok()
-                        .and_then(|baseline| baseline.checked_add(1))
-                        .ok_or_else(|| {
-                            WorthQueryOutputDemandDenial::new(
-                                WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                                "output comparison attempt exhausted",
-                            )
-                        })?;
+                    })?;
                     let signal = bridge
                         .admit_exact_conditional_signal_basis(&self.lowering, truth.signal_basis())
                         .map_err(|cause| {
@@ -211,6 +203,18 @@ impl InstalledOutputComparison {
         })
     }
 }
+fn next_comparison_attempt(attempts: &std::sync::atomic::AtomicU64) -> Option<u64> {
+    use std::sync::atomic::Ordering::Relaxed;
+    let mut current = attempts.load(Relaxed);
+    loop {
+        let next = current.checked_add(2)?;
+        match attempts.compare_exchange_weak(current, next, Relaxed, Relaxed) {
+            Ok(baseline) => return baseline.checked_add(1),
+            Err(observed) => current = observed,
+        }
+    }
+}
+
 pub(super) fn consult(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
@@ -220,4 +224,26 @@ pub(super) fn consult(
             "producer output evaluation",
         )
     })
+}
+
+#[cfg(test)]
+mod attempt_tests {
+    use super::next_comparison_attempt;
+    use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
+
+    #[test]
+    fn comparison_attempts_refuse_exhaustion_without_reusing_or_wrapping() {
+        let attempts = AtomicU64::new(0);
+        assert_eq!(next_comparison_attempt(&attempts), Some(1));
+        assert_eq!(next_comparison_attempt(&attempts), Some(3));
+        for exhausted in [u64::MAX - 1, u64::MAX] {
+            attempts.store(exhausted, Relaxed);
+            assert_eq!(next_comparison_attempt(&attempts), None);
+            assert_eq!(attempts.load(Relaxed), exhausted);
+        }
+        attempts.store(u64::MAX - 2, Relaxed);
+        assert_eq!(next_comparison_attempt(&attempts), Some(u64::MAX - 1));
+        assert_eq!(attempts.load(Relaxed), u64::MAX);
+        assert_eq!(next_comparison_attempt(&attempts), None);
+    }
 }

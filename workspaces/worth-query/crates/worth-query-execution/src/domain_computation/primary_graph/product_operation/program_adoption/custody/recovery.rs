@@ -158,16 +158,17 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
     {
-        let _execution =
-            match phase.checked_execution_request_for(&self.application().product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    return Err(failure(
-                        WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause),
-                        recovery,
-                    ))
-                }
-            };
+        let _execution = match phase
+            .checked_execution_request_for(&self.application().runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return Err(failure(
+                    WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause),
+                    recovery,
+                ))
+            }
+        };
         use super::super::authorization::{AdoptionEffect, AdoptionEffectOutcome};
         let target = *recovery.target();
         match self.with_program_adoption(
@@ -237,7 +238,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let mut retained = Some(recovery);
         self.with_application_advancement(request, |phase| {
-            let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(_) => {
                     return Err((
@@ -252,6 +253,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             let recovery = retained.take().expect("one admitted recovery");
 
             let product = match self
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(branch.occurrence())
             {

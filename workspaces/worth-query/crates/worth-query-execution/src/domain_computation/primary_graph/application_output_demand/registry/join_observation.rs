@@ -142,11 +142,12 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn pause_stable_join_for_test(&self, root: Root) -> StableJoinPauseForTest {
-        self.output_demands.arm_join_pause(root)
+        self.runtime.output_demands.arm_join_pause(root)
     }
     #[doc(hidden)]
     pub fn registry_row_keys_for_test(&self) -> Vec<(String, Root, u64, [u8; 32])> {
-        self.output_demands
+        self.runtime
+            .output_demands
             .state
             .lock()
             .unwrap()
@@ -164,7 +165,8 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn registry_successor_claims_for_test(&self) -> usize {
-        self.output_demands
+        self.runtime
+            .output_demands
             .state
             .lock()
             .unwrap()
@@ -180,7 +182,8 @@ impl<Schema>
 {
     #[doc(hidden)]
     pub fn stable_ready_sources_for_test(&self) -> Vec<(Root, Commit, [u8; 32])> {
-        self.output_demands
+        self.runtime
+            .output_demands
             .state
             .lock()
             .unwrap()

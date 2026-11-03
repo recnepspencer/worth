@@ -67,7 +67,7 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
                     .clone()
             })
             .expect("the fixture read owns its installed host call");
-        let graph = world.application.primary_provider.graph.clone();
+        let graph = world.application.runtime.primary_provider.graph.clone();
         let kind = graph
             .layout
             .entity_kind(Account::reference().name())

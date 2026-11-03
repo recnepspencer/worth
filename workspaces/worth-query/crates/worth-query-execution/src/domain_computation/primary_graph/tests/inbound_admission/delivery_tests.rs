@@ -16,6 +16,7 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
     let outbox = dispatch.dispatch_outbox().unwrap();
     let owner = &world
         .application
+        .runtime
         .primary_provider
         .graph
         .source_owner

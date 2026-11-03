@@ -38,6 +38,8 @@ impl WorthQueryPrimaryGraphProvider {
             )),
             fault_port,
             world_history: std::sync::OnceLock::new(),
+            #[cfg(test)]
+            teardown_sentinel: Default::default(),
         });
         let anchor = Arc::new(
             crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install_invariant_capable::<

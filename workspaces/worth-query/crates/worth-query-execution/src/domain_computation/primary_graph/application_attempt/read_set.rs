@@ -190,7 +190,8 @@ where
             ));
         }
         admission
-            .validate_current_authority()
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .and_then(|()| admission.validate_current_authority())
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
@@ -276,7 +277,7 @@ where
         >,
         WorthQueryApplicationAttemptDenial,
     > {
-        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
@@ -322,6 +323,9 @@ where
                 admission.operation(),
             ));
         }
+        admission
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         if !projection.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),

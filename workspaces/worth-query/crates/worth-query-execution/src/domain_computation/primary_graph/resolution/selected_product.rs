@@ -42,7 +42,7 @@ where
         PrincipalIdentity: 'static,
     {
         let execution = phase
-            .execution_request_for(&self.application().product_runtime)
+            .execution_request_for(&self.application().runtime.product_runtime)
             .map_err(|_| {
                 resolution_denial(
                     WorthQueryPrincipalResolutionDenialKind::Refused(
@@ -89,7 +89,7 @@ where
         PrincipalIdentity: 'static,
     {
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
-        let runtime = &self.application().runtime;
+        let runtime = self.application().runtime.execution();
         runtime
             .installed_packages()
             .validate_principal_binding(installed_binding)
@@ -153,7 +153,7 @@ where
         scope: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
         let execution = phase
-            .execution_request_for(&self.application().product_runtime)
+            .execution_request_for(&self.application().runtime.product_runtime)
             .map_err(|_| {
                 resolution_denial(
                     WorthQueryPrincipalResolutionDenialKind::Refused(
@@ -175,7 +175,7 @@ where
         scope: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
         admit_resolution_request(scope, principal.binding(), principal.is_expired())?;
-        let runtime = &self.application().runtime;
+        let runtime = self.application().runtime.execution();
         if principal.runtime_authority() != runtime.authority_identity() {
             return Err(resolution_denial(
                 WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime),

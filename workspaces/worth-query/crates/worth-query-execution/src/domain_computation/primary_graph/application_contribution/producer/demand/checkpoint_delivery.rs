@@ -155,6 +155,7 @@ where
             -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         if self
+            .runtime
             .primary_provider
             .take_delayed_output_readiness_delivery()
         {
@@ -181,6 +182,7 @@ where
             (prepared.lowering, prepared.ordinal)
         } else {
             let route = self
+                .runtime
                 .output_readiness_routes
                 .get(producer_identity)
                 .expect("installation requires one readiness route for every output producer");
@@ -293,7 +295,7 @@ where
         returned: &mut Option<Checkpoint>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
-        match self.output_demands.finish_checkpoint_owned(
+        match self.runtime.output_demands.finish_checkpoint_owned(
             interest,
             claim,
             checkpoint,

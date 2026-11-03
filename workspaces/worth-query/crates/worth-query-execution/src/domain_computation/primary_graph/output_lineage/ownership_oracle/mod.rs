@@ -89,7 +89,7 @@ pub(in crate::domain_computation::primary_graph) fn with_genuine_native_observat
         .unwrap()
         .causal_observation()
         .unwrap();
-    let owner = runtime.bridge.conditional();
+    let owner = runtime.runtime.bridge.conditional();
     inspect(&owner, observation)
 }
 mod commit_interruption;

@@ -13,7 +13,7 @@ use super::WorthQueryApplicationObservedFact;
 mod denials_tests;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum IndexedSelectionReobserveDenial {
+pub enum IndexedSelectionReobserveDenial {
     UnexpectedFact,
     Lookup(BoundedEntityFieldLookupDenialKind),
     Overflow,

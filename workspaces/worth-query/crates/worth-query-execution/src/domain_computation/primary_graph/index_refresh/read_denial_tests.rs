@@ -14,7 +14,7 @@ fn patch_read_failure_preserves_storage_cause_and_observed_committed_context() {
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
         );
-    let graph = &world.application.primary_provider.graph;
+    let graph = &world.application.runtime.primary_provider.graph;
     let (commit, position) = graph.with_runtime(execution, |runtime| {
         (
             runtime

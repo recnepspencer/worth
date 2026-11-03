@@ -178,7 +178,7 @@ where
     let mut source_comparisons = crate::domain_computation::primary_graph::source_read_equivalence::SourceReadEquivalence::default();
     let meanings = source_meanings::SourceMeanings {
         execution,
-        registry: &application.source_meanings,
+        registry: application.runtime.source_meanings(),
         query: plan.query.identity().as_bytes(),
         parameters: parameter_binding_identity.bytes(),
         selection: basis_identity.selection(),

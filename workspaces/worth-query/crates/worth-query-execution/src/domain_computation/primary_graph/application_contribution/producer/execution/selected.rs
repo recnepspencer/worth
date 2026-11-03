@@ -137,7 +137,7 @@ where
     {
         use super::required_cue::RequiredCueProgress;
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -188,7 +188,7 @@ where
                 refresh_permission.map_err(ProducerExecutionStop::ExecutionStopped)?;
 
                 let claim = runtime
-                    .output_demands
+                    .runtime.output_demands
                     .claim_required_ready_refresh(selected)
                     .map_err(ProducerExecutionStop::ExecutionStopped)?
                     // A later wave must select the Ready row after this claim moved.

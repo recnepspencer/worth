@@ -1,0 +1,749 @@
+{
+  "scope": "Slice 3 seven certification corrections; no Slice 4",
+  "environment": {
+    "WORTH_IMPLEMENTATION_BUILD_ID": "11111111-1111-1111-1111-111111111111",
+    "CARGO_TARGET_DIR": "C:/worth-build-cache/target-cut-pub-mono",
+    "PYTHONUTF8": "1"
+  },
+  "evidence_scope": "Integrated correction source. Full suite precedes only cfg(test) history access-owner relocation; that harness is separately checked and mutated. Intermediate commits are reviewed, not separately rebuilt.",
+  "runs": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 0,
+      "run": "slice3-correction1-fixed",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "owner",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "transaction_custody"
+      ],
+      "exit": 0,
+      "run": "slice3-correction1-fixed",
+      "test_results": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2241 filtered out; finished in 2.50s"
+      ],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "fmt-check",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--check"
+      ],
+      "exit": 1,
+      "run": "slice3-correction1-fixed",
+      "test_results": [],
+      "compiler_error_codes": [],
+      "failure_output": "       subject: &str,\nDiff in \\\\?\\C:\\forge_workspace\\worth-cut-pub-mono\\workspaces\\worth-query\\crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\application_query\\observed_source\\prepared_expectation\\admission.rs:15:\n     ) -> Result<(), WorthQuerySourceExpectationDenial> {\n         let (core, tag) = admission.reentry_parts();\n-        self.runtime.validate_source_admission(core, tag, &self.installed_schema.binding_identity(), subject)\n+        self.runtime.validate_source_admission(\n+            core,\n+            tag,\n+            &self.installed_schema.binding_identity(),\n+            subject,\n+        )\n     }\n }\n \nDiff in \\\\?\\C:\\forge_workspace\\worth-cut-pub-mono\\workspaces\\worth-query\\crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\application_query\\observed_source\\prepared_expectation\\admission.rs:26:\n         binding: &ApplicationSchemaBindingIdentity,\n         subject: &str,\n     ) -> Result<(), WorthQuerySourceExpectationDenial> {\n-        core.validate_installed_entry_with_tag(tag, self.authority_identity(), binding, &self.installed_operations)\n-            .and_then(|()| core.validate_current_authority())\n-            .map_err(|denial| WorthQuerySourceExpectationDenial::new(\n-                WorthQuerySourceExpectationDenialKind::AdmissionAuthorization(denial.kind()), subject,\n-            ))\n+        core.validate_installed_entry_with_tag(\n+            tag,\n+            self.authority_identity(),\n+            binding,\n+            &self.installed_operations,\n+        )\n+        .and_then(|()| core.validate_current_authority())\n+        .map_err(|denial| {\n+            WorthQuerySourceExpectationDenial::new(\n+                WorthQuerySourceExpectationDenialKind::AdmissionAuthorization(denial.kind()),\n+                subject,\n+            )\n+        })\n     }\n }\n \nDiff in \\\\?\\C:\\forge_workspace\\worth-cut-pub-mono\\workspaces\\worth-query\\crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\application_query\\observed_source\\prepared_expectation.rs:1:\n-mod affinity;\n mod admission;\n+mod affinity;\n mod pending;\n pub(super) use affinity::parameter_denial;\n pub use pending::WorthQueryPendingSourceExpectation;\n"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 0,
+      "run": "slice3-correction1",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "owner",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "transaction_custody"
+      ],
+      "exit": 101,
+      "run": "slice3-correction1",
+      "test_results": [],
+      "compiler_error_codes": [
+        "E0308"
+      ],
+      "failure_output": "query\\crates\\worth-query-execution)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u64>::fetch_update`: renamed to `try_update` for consistency\n   --> crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\application_contribution\\producer\\output_evaluation.rs:151:26\n    |\n151 |                         .fetch_update(\n    |                          ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n151 -                         .fetch_update(\n151 +                         .try_update(\n    |\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n  --> crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\application_query\\managed_index\\nodes\\lineage.rs:42:14\n   |\n42 |             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {\n   |              ^^^^^^^^^^^^\n   |\nhelp: replace the use of the deprecated method\n   |\n42 -             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {\n42 +             .try_update(Ordering::Relaxed, Ordering::Relaxed, |next| {\n   |\n\nerror[E0308]: mismatched types\n  --> crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\tests\\application_attempt\\transaction_custody.rs:64:24\n   |\n64 |             .on_branch(target.application.product_runtime().default_branch())\n   |              --------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `WorthQueryProductBranch`, found `&ProductBranchIdentity`\n   |              |\n   |              arguments to this method are incorrect\n   |\nnote: method defined here\n  --> crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\product_operation\\context.rs:95:12\n   |\n95 |     pub fn on_branch(&self, branch: WorthQueryProductBranch) -> WorthQueryProductEntry<'_, Schema> {\n   |            ^^^^^^^^^        -------------------------------\n\nFor more information about this error, try `rustc --explain E0308`.\nwarning: `worth-query-execution` (lib test) generated 2 warnings\nerror: could not compile `worth-query-execution` (lib test) due to 1 previous error; 2 warnings emitted\n"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-entry-fixed",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "owner",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "foreign_installed_seal"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-entry-fixed",
+      "test_results": [
+        "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 2244 filtered out; finished in 0.82s"
+      ],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "fmt-check",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--check"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-entry-fixed",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--all-targets",
+        "--message-format=json"
+      ],
+      "exit": 101,
+      "run": "slice3-corrections-entry-fixed",
+      "test_results": [],
+      "compiler_error_codes": [],
+      "failure_output": "ght_start\":1,\"text\":\"            &phase,&world,&principal,&account,&request,\\\"closed\\\");\"}]},{\"byte_end\":2154,\"byte_start\":2147,\"column_end\":16,\"column_start\":9,\"expansion\":null,\"file_name\":\"crates\\\\worth-query-execution\\\\src\\\\domain_computation\\\\primary_graph\\\\tests\\\\..\\\\..\\\\authorization\\\\operation_admission\\\\erased_core_forgery_tests\\\\recovery_entries.rs\",\"is_primary\":true,\"label\":null,\"line_end\":44,\"line_start\":44,\"suggested_replacement\":\"crate::domain_computation::primary_graph::tests::application_attempt::admitted_program(\\n            &phase,&world,&principal,&account,&request,\\\"closed\\\")\",\"suggestion_applicability\":\"MachineApplicable\",\"text\":[{\"highlight_end\":16,\"highlight_start\":9,\"text\":\"        program\"}]}]}],\"level\":\"error\",\"message\":\"returning the result of a `let` binding from a block\",\"spans\":[{\"byte_end\":2138,\"byte_start\":1973,\"column_end\":66,\"column_start\":9,\"expansion\":null,\"file_name\":\"crates\\\\worth-query-execution\\\\src\\\\domain_computation\\\\primary_graph\\\\tests\\\\..\\\\..\\\\authorization\\\\operation_admission\\\\erased_core_forgery_tests\\\\recovery_entries.rs\",\"is_primary\":false,\"label\":\"unnecessary `let` binding\",\"line_end\":43,\"line_start\":42,\"suggested_replacement\":null,\"suggestion_applicability\":null,\"text\":[{\"highlight_end\":108,\"highlight_start\":9,\"text\":\"        let program=crate::domain_computation::primary_graph::tests::application_attempt::admitted_program(\"},{\"highlight_end\":66,\"highlight_start\":1,\"text\":\"            &phase,&world,&principal,&account,&request,\\\"closed\\\");\"}]},{\"byte_end\":2154,\"byte_start\":2147,\"column_end\":16,\"column_start\":9,\"expansion\":null,\"file_name\":\"crates\\\\worth-query-execution\\\\src\\\\domain_computation\\\\primary_graph\\\\tests\\\\..\\\\..\\\\authorization\\\\operation_admission\\\\erased_core_forgery_tests\\\\recovery_entries.rs\",\"is_primary\":true,\"label\":null,\"line_end\":44,\"line_start\":44,\"suggested_replacement\":null,\"suggestion_applicability\":null,\"text\":[{\"highlight_end\":16,\"highlight_start\":9,\"text\":\"        program\"}]}],\"code\":{\"code\":\"clippy::let_and_return\",\"explanation\":null}}}\nerror: could not compile `worth-query-execution` (lib test) due to 2 previous errors; 42 warnings emitted\n{\"reason\":\"build-finished\",\"success\":false}\n"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-entry",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "owner",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "foreign_installed_seal"
+      ],
+      "exit": 101,
+      "run": "slice3-corrections-entry",
+      "test_results": [
+        "test result: FAILED. 13 passed; 1 failed; 0 ignored; 0 measured; 2244 filtered out; finished in 0.83s"
+      ],
+      "compiler_error_codes": [],
+      "failure_output": "n_attempt::erased_core_forgery::recovery_entries::foreign_installed_seal_is_stale_at_managed_recovery_before_work ... FAILED\ntest domain_computation::primary_graph::tests::application_attempt::erased_core_forgery::recovery_entries::foreign_installed_seal_is_stale_at_redispatch_before_work ... ok\ntest domain_computation::primary_graph::product_operation::document_history::constraint::installed_entry_tests::foreign_installed_seal_is_stale_at_history_constraint_before_work ... ok\ntest domain_computation::primary_graph::tests::application_attempt::erased_core_forgery::workflow_entry::foreign_installed_seal_is_stale_at_workflow_definition_before_work ... ok\ntest domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::installed_seal::foreign_installed_seal_is_stale_at_elevation_request_readmission_before_work ... ok\n\nfailures:\n\n---- domain_computation::primary_graph::tests::application_attempt::erased_core_forgery::recovery_entries::foreign_installed_seal_is_stale_at_managed_recovery_before_work stdout ----\n\nthread 'domain_computation::primary_graph::tests::application_attempt::erased_core_forgery::recovery_entries::foreign_installed_seal_is_stale_at_managed_recovery_before_work' (65504) panicked at crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\tests\\..\\..\\authorization\\operation_admission\\erased_core_forgery_tests\\recovery_entries.rs:58:9:\na held real owner observation failure must retain exact World recovery: Indeterminate(WorthQueryApplicationUnresolvedCommitEvidence { recovery: CommitRecoveryRequired, denial_kind: Ok(ActiveSnapshotCapacityExhausted { maximum_active_snapshots: 0 }), stage: Commit, detail: \"injected post-commit snapshot admission failure\", cleanup_failure: None })\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    domain_computation::primary_graph::tests::application_attempt::erased_core_forgery::recovery_entries::foreign_installed_seal_is_stale_at_managed_recovery_before_work\n\ntest result: FAILED. 13 passed; 1 failed; 0 ignored; 0 measured; 2244 filtered out; finished in 0.83s\n\nerror: test failed, to rerun pass `-p worth-query-execution --lib`\n"
+    },
+    {
+      "name": "installation",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-installation",
+        "--lib"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-final",
+      "test_results": [
+        "test result: ok. 371 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.02s"
+      ],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "execution",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-final",
+      "test_results": [
+        "test result: ok. 2257 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 666.49s"
+      ],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "forgery",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "erased_core_forgery",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-final",
+      "test_results": [
+        "test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 2234 filtered out; finished in 6.79s"
+      ],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "decl-host",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-court-decl-host",
+        "--test",
+        "worth_query_court_decl_host"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-final",
+      "test_results": [
+        "test result: ok. 325 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 24.43s"
+      ],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "query-decl-host",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-court-query-decl-host",
+        "--test",
+        "worth_query_court_query_decl_host"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-final",
+      "test_results": [
+        "test result: ok. 340 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 134.37s"
+      ],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "fmt-check",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--check"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-final",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--all-targets",
+        "--message-format=json"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-final",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "boundary",
+      "command": [
+        "cargo",
+        "run",
+        "--manifest-path",
+        "tools/boundary-check/Cargo.toml",
+        "--",
+        "--root",
+        "."
+      ],
+      "exit": 1,
+      "run": "slice3-corrections-final",
+      "test_results": [],
+      "compiler_error_codes": [],
+      "failure_output": "    Finished `dev` profile [unoptimized] target(s) in 0.75s\n     Running `C:/worth-build-cache/target-cut-pub-mono\\debug\\boundary-check.exe --root .`\nBC2001_BAND_DEPENDENCY_VIOLATION workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/constraint/installed_entry_tests.rs: forbidden identifier program_publication_access: Milestone 9.17.4: only worth-query-publication and the exact registered native ownership courts may issue execution's program-output progression access\nbelongs: tools/boundary-check/config/road1.toml [rule_contracts]\nerror: process didn't exit successfully: `C:/worth-build-cache/target-cut-pub-mono\\debug\\boundary-check.exe --root .` (exit code: 1)\n"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "history",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "foreign_installed_seal_is_stale_at_history_constraint_before_work",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2257 filtered out; finished in 2.11s"
+      ],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "fmt-check",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--check"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--all-targets",
+        "--message-format=json"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "boundary",
+      "command": [
+        "cargo",
+        "run",
+        "--manifest-path",
+        "tools/boundary-check/Cargo.toml",
+        "--",
+        "--root",
+        "."
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [],
+      "compiler_error_codes": [],
+      "output": "    Finished `dev` profile [unoptimized] target(s) in 2.47s\n     Running `C:/worth-build-cache/target-cut-pub-mono\\debug\\boundary-check.exe --root .`\nboundary-check: repository boundaries are valid\n"
+    },
+    {
+      "name": "context",
+      "command": [
+        "cargo",
+        "run",
+        "--manifest-path",
+        "tools/agent-context/Cargo.toml",
+        "--",
+        "check"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [],
+      "compiler_error_codes": [],
+      "output": "    Finished `dev` profile [optimized + debuginfo] target(s) in 1.05s\n     Running `C:/worth-build-cache/target-cut-pub-mono\\debug\\agent-context.exe check`\n"
+    },
+    {
+      "name": "caps",
+      "command": [
+        "C:/Program Files/Git/usr/bin/bash.exe",
+        "scripts/ci/check_workspace_rust_line_caps.sh",
+        "dirty"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [],
+      "compiler_error_codes": [],
+      "output": "/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/prepared_expectation/pending.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime_core.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/mod.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/constraint.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/installation.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/advancement_custody.rs', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_elevation/request_transition.rs', LF will be replaced by CRLF the next time Git touches it\n[workspace-rust-line-caps] PASS: checked 56 Rust files\n"
+    },
+    {
+      "name": "whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "range-whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "origin/master...HEAD"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-history-final",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 1,
+      "run": "slice3-corrections-preflight",
+      "test_results": [],
+      "compiler_error_codes": [],
+      "failure_output": "Error writing files: failed to resolve mod `cancellation`: \\\\?\\C:\\forge_workspace\\worth-cut-pub-mono\\workspaces\\worth-query\\crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\tests\\application_attempt\\cancellation.rs does not exist\n"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-preflight2",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--all-targets",
+        "--message-format=json"
+      ],
+      "exit": 101,
+      "run": "slice3-corrections-preflight2",
+      "test_results": [],
+      "compiler_error_codes": [
+        "E0599",
+        "E0599",
+        "E0596",
+        "E0596",
+        "E0596"
+      ],
+      "failure_output": "ighlight_start\":1,\"text\":\"            .execution()\"}]}],\"code\":{\"code\":\"E0596\",\"explanation\":\"This error occurs because you tried to mutably borrow a non-mutable variable.\\n\\nErroneous code example:\\n\\n```compile_fail,E0596\\nlet x = 1;\\nlet y = &mut x; // error: cannot borrow mutably\\n```\\n\\nIn here, `x` isn't mutable, so when we try to mutably borrow it in `y`, it\\nfails. To fix this error, you need to make `x` mutable:\\n\\n```\\nlet mut x = 1;\\nlet y = &mut x; // ok!\\n```\\n\"}}}\n{\"reason\":\"compiler-message\",\"package_id\":\"path+file:///C:/forge_workspace/worth-cut-pub-mono/workspaces/worth-query/crates/worth-query-execution#0.1.0\",\"manifest_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\Cargo.toml\",\"target\":{\"kind\":[\"lib\"],\"crate_types\":[\"lib\"],\"name\":\"worth_query_execution\",\"src_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\src\\\\lib.rs\",\"edition\":\"2024\",\"doc\":true,\"doctest\":true,\"test\":true},\"message\":{\"rendered\":\"Some errors have detailed explanations: E0596, E0599.\\n\",\"$message_type\":\"diagnostic\",\"children\":[],\"level\":\"failure-note\",\"message\":\"Some errors have detailed explanations: E0596, E0599.\",\"spans\":[],\"code\":null}}\n{\"reason\":\"compiler-message\",\"package_id\":\"path+file:///C:/forge_workspace/worth-cut-pub-mono/workspaces/worth-query/crates/worth-query-execution#0.1.0\",\"manifest_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\Cargo.toml\",\"target\":{\"kind\":[\"lib\"],\"crate_types\":[\"lib\"],\"name\":\"worth_query_execution\",\"src_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\src\\\\lib.rs\",\"edition\":\"2024\",\"doc\":true,\"doctest\":true,\"test\":true},\"message\":{\"rendered\":\"For more information about an error, try `rustc --explain E0596`.\\n\",\"$message_type\":\"diagnostic\",\"children\":[],\"level\":\"failure-note\",\"message\":\"For more information about an error, try `rustc --explain E0596`.\",\"spans\":[],\"code\":null}}\nerror: could not compile `worth-query-execution` (lib test) due to 5 previous errors; 3 warnings emitted\n{\"reason\":\"build-finished\",\"success\":false}\n"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-preflight3",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--all-targets",
+        "--message-format=json"
+      ],
+      "exit": 101,
+      "run": "slice3-corrections-preflight3",
+      "test_results": [],
+      "compiler_error_codes": [
+        "E0432",
+        "E0432",
+        "E0432",
+        "E0603",
+        "E0308",
+        "E0716"
+      ],
+      "failure_output": " as the borrow is assigned directly\\ninto a variable, the temporary will not be dropped until the end of the\\nenclosing block. Similar rules apply when temporaries are stored into aggregate\\nstructures like a tuple or struct:\\n\\n```\\n// Here, two temporaries are created, but\\n// as they are stored directly into `value`,\\n// they are not dropped until the end of the\\n// enclosing block.\\nfn foo() -> i32 { 22 }\\nlet value = (&foo(), &foo());\\n```\\n\"}}}\n{\"reason\":\"compiler-message\",\"package_id\":\"path+file:///C:/forge_workspace/worth-cut-pub-mono/workspaces/worth-query/crates/worth-query-execution#0.1.0\",\"manifest_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\Cargo.toml\",\"target\":{\"kind\":[\"lib\"],\"crate_types\":[\"lib\"],\"name\":\"worth_query_execution\",\"src_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\src\\\\lib.rs\",\"edition\":\"2024\",\"doc\":true,\"doctest\":true,\"test\":true},\"message\":{\"rendered\":\"Some errors have detailed explanations: E0308, E0432, E0603, E0716.\\n\",\"$message_type\":\"diagnostic\",\"children\":[],\"level\":\"failure-note\",\"message\":\"Some errors have detailed explanations: E0308, E0432, E0603, E0716.\",\"spans\":[],\"code\":null}}\n{\"reason\":\"compiler-message\",\"package_id\":\"path+file:///C:/forge_workspace/worth-cut-pub-mono/workspaces/worth-query/crates/worth-query-execution#0.1.0\",\"manifest_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\Cargo.toml\",\"target\":{\"kind\":[\"lib\"],\"crate_types\":[\"lib\"],\"name\":\"worth_query_execution\",\"src_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\src\\\\lib.rs\",\"edition\":\"2024\",\"doc\":true,\"doctest\":true,\"test\":true},\"message\":{\"rendered\":\"For more information about an error, try `rustc --explain E0308`.\\n\",\"$message_type\":\"diagnostic\",\"children\":[],\"level\":\"failure-note\",\"message\":\"For more information about an error, try `rustc --explain E0308`.\",\"spans\":[],\"code\":null}}\nerror: could not compile `worth-query-execution` (lib test) due to 6 previous errors; 2 warnings emitted\n{\"reason\":\"build-finished\",\"success\":false}\n"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution"
+      ],
+      "exit": 0,
+      "run": "slice3-corrections-preflight4",
+      "test_results": [],
+      "compiler_error_codes": []
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--all-targets",
+        "--message-format=json"
+      ],
+      "exit": 101,
+      "run": "slice3-corrections-preflight4",
+      "test_results": [],
+      "compiler_error_codes": [
+        "E0308",
+        "E0716"
+      ],
+      "failure_output": "still borrowing `foo()`, but as the borrow is assigned directly\\ninto a variable, the temporary will not be dropped until the end of the\\nenclosing block. Similar rules apply when temporaries are stored into aggregate\\nstructures like a tuple or struct:\\n\\n```\\n// Here, two temporaries are created, but\\n// as they are stored directly into `value`,\\n// they are not dropped until the end of the\\n// enclosing block.\\nfn foo() -> i32 { 22 }\\nlet value = (&foo(), &foo());\\n```\\n\"}}}\n{\"reason\":\"compiler-message\",\"package_id\":\"path+file:///C:/forge_workspace/worth-cut-pub-mono/workspaces/worth-query/crates/worth-query-execution#0.1.0\",\"manifest_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\Cargo.toml\",\"target\":{\"kind\":[\"lib\"],\"crate_types\":[\"lib\"],\"name\":\"worth_query_execution\",\"src_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\src\\\\lib.rs\",\"edition\":\"2024\",\"doc\":true,\"doctest\":true,\"test\":true},\"message\":{\"rendered\":\"Some errors have detailed explanations: E0308, E0716.\\n\",\"$message_type\":\"diagnostic\",\"children\":[],\"level\":\"failure-note\",\"message\":\"Some errors have detailed explanations: E0308, E0716.\",\"spans\":[],\"code\":null}}\n{\"reason\":\"compiler-message\",\"package_id\":\"path+file:///C:/forge_workspace/worth-cut-pub-mono/workspaces/worth-query/crates/worth-query-execution#0.1.0\",\"manifest_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\Cargo.toml\",\"target\":{\"kind\":[\"lib\"],\"crate_types\":[\"lib\"],\"name\":\"worth_query_execution\",\"src_path\":\"C:\\\\forge_workspace\\\\worth-cut-pub-mono\\\\workspaces\\\\worth-query\\\\crates\\\\worth-query-execution\\\\src\\\\lib.rs\",\"edition\":\"2024\",\"doc\":true,\"doctest\":true,\"test\":true},\"message\":{\"rendered\":\"For more information about an error, try `rustc --explain E0308`.\\n\",\"$message_type\":\"diagnostic\",\"children\":[],\"level\":\"failure-note\",\"message\":\"For more information about an error, try `rustc --explain E0308`.\",\"spans\":[],\"code\":null}}\nerror: could not compile `worth-query-execution` (lib test) due to 2 previous errors; 2 warnings emitted\n{\"reason\":\"build-finished\",\"success\":false}\n"
+    },
+    {
+      "run": "slice3-corrections-custody",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "custody"
+      ],
+      "exit": 0,
+      "test_results": [
+        "test result: ok. 93 passed; 0 failed; 0 ignored; 0 measured; 2165 filtered out; finished in 8.01s"
+      ]
+    },
+    {
+      "run": "slice3-corrections-teardown",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-execution",
+        "--lib",
+        "provider_is_destroyed_before_the_installed_handler"
+      ],
+      "exit": 0,
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2257 filtered out; finished in 0.46s"
+      ]
+    }
+  ],
+  "warning_gate": {
+    "warning_diagnostics": {
+      "worth-relational": 7,
+      "worth-query-execution": 87
+    },
+    "execution_before": 87,
+    "execution_after": 87,
+    "distinct_before": 38,
+    "distinct_after": 38,
+    "new_distinct": 0,
+    "removed_distinct": 0,
+    "touched_warning_count": 0,
+    "touched_warnings": []
+  },
+  "explicit_formatter": {
+    "command": [
+      "rustfmt",
+      "--check",
+      "--edition",
+      "2024",
+      "--config",
+      "skip_children=true",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_progression/authority.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/erased_core_forgery_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/erased_core_forgery_tests/commit_entries.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/erased_core_forgery_tests/recovery_entries.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/erased_core_forgery_tests/workflow_entry.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/effect_program.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/effect_program/forgery.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/elevation_request_program.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/external_dispatch.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/selected_product.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/independent_axis_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/registration_conflict_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/comparison_scope_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/interrupted_registration_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/overlay_conflict_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/principal_comparison_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission/finish.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission/finish/prepared_permission.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/admission_preparation/tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/affinity.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/tests/support.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/denial.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/prepared_expectation.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/prepared_expectation/admission.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/prepared_expectation/pending.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/one_shot/outcome.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/conditional_cleanup.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/installation/assembly.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/teardown.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime_core.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry/teardown_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/mod.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/source_admission.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/constraint.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/constraint/installed_entry_tests.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/transaction.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/installation.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product/admitted/native.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/advancement_custody.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/advancement_custody/cancellation.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/recovery_custody.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/recovery_custody/issuance.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/transaction_custody.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/unwind_custody.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_elevation/request_transition.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_elevation/request_transition/installed_seal.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/product_managed_admission_affinity.rs",
+      "workspaces/worth-query/crates/worth-query-execution/src/publication_boundary.rs"
+    ],
+    "files": 56,
+    "exit": 0
+  },
+  "reviewer_advisory": {
+    "command": [
+      "python",
+      "scripts/quality/scrutinize_rust_functions.py",
+      "--dirty",
+      "."
+    ],
+    "environment": {
+      "PYTHONUTF8": "1"
+    },
+    "exit": 0,
+    "files": 56,
+    "advisory_candidates": 45,
+    "scan_errors": 0
+  },
+  "mutation_evidence": "mono-runtime-core-corrections-mutations.json",
+  "measurement_evidence": "mono-runtime-core-corrections-measurement.json"
+}

@@ -46,6 +46,7 @@ fn absent_parent_write_requires_each_actual_target_observation() {
     assert_eq!(
         cause.locator(),
         runtime
+            .runtime
             .primary_provider
             .graph
             .layout

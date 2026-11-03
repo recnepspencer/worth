@@ -19,12 +19,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request: &'runtime WorthQueryRequestScope,
     ) -> impl FnOnce() -> ConsumedCompositePublication + 'runtime {
         let selected = self
+            .runtime
             .product_runtime
             .admit_product_occurrence(branch.occurrence())
             .expect("the contender starts from a genuinely admitted product");
         let binding = selected.publication_binding();
         let control = binding.request_control(request);
-        let publication = self.product_runtime.owner.publication_port();
+        let publication = self.runtime.product_runtime.owner.publication_port();
         let prepared = publication
             .prepare_with_signal(
                 selected.observation().clone(),
@@ -36,7 +37,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         move || {
             self.with_application_advancement(request, |phase| {
                 let execution = phase
-                    .execution_request_for(&self.product_runtime)
+                    .execution_request_for(&self.runtime.product_runtime)
                     .expect("the contender uses this runtime's request execution");
                 let outcome = publication.execute_with_signal(
                     execution,

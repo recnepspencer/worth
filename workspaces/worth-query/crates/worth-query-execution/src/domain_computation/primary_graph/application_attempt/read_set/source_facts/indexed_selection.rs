@@ -178,6 +178,7 @@ fn currentness(
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
+        .runtime
         .primary_provider
         .graph
         .with_runtime(execution, |runtime| {

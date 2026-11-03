@@ -254,6 +254,7 @@ impl ContinuationTestContext {
         self.world
             .application
             .runtime
+            .execution_mut()
             .commit_successor_installation(successor)
             .unwrap();
     }

@@ -58,7 +58,10 @@ impl<Schema: ApplicationSchema + 'static> AwaitedDelivery<'_, Schema> {
 
         match result {
             Ok(Some(ready)) => {
-                runtime.output_demands.clear_required_stop(self.key());
+                runtime
+                    .runtime
+                    .output_demands
+                    .clear_required_stop(self.key());
                 self.entries.rotate_left(1);
                 Ok(Some(DeliveredAwaited::from_delivery(ready)))
             }

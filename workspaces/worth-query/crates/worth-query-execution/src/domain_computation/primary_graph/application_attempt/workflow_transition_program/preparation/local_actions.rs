@@ -40,7 +40,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             ));
         }
         let execution = phase
-            .execution_request_for(&selected.application().product_runtime)
+            .execution_request_for(&selected.application().runtime.product_runtime)
             .map_err(|_| mismatch("foreign workflow action preparation phase"))?;
         selected.prepare_local_workflow_transition(
             &execution,

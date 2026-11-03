@@ -12,7 +12,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         };
         #[cfg(test)]
         own_effect_observation::record(Stage::OwnPublicationContinuation);
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .application_attempt_operation_control
             .caller_pass
             .run_interleaving();

@@ -60,6 +60,7 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0

@@ -47,10 +47,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::UnsupportedContextRefresh);
         }
         let execution = phase
-            .checked_execution_request_for(&self.product_runtime)
+            .checked_execution_request_for(&self.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let record = document.model.record();
         let proof = self
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |native| {

@@ -114,7 +114,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                     source,
                     source_read.scope.entity_kind(),
                     source_admission,
-                    &self.runtime.primary_provider.graph.layout,
+                    &self.runtime.runtime.primary_provider.graph.layout,
                     self.runtime.installed_schema().native_contracts(),
                 )?;
             }
@@ -130,6 +130,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             ) || body.artifact.request().requests_producer_evidence()
             {
                 self.runtime
+                    .runtime
                     .primary_provider
                     .inspection_materialization_prepared();
             }

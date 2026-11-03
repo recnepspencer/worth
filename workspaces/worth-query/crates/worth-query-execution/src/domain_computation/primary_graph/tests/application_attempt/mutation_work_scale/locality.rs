@@ -92,7 +92,7 @@ fn run_locality(count: usize) -> LocalityRun {
             .with_host_advancement(|phase| {
                 grow_unrelated_accounts(
                     &phase
-                        .execution_request_for(&world.application.product_runtime)
+                        .execution_request_for(&world.application.runtime.product_runtime)
                         .unwrap(),
                     &world,
                     count,

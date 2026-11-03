@@ -73,6 +73,7 @@ fn checkpoint(world: &world::World) -> Vec<u8> {
             let execution = phase.borrowed_request_for_test();
             world
                 .application
+                .runtime
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |runtime| {

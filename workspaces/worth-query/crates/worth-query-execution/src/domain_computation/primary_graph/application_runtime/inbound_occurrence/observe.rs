@@ -44,6 +44,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             correlation_token,
         ));
         let terminal = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -73,6 +74,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             });
         }
         let completed = self
+            .runtime
             .primary_provider
             .lookup_completed_inbound(&correlation)
             .ok()??;

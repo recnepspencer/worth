@@ -16,6 +16,7 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
         .expect("the fixture read owns its installed host call");
     let _live = world
         .application
+        .runtime
         .primary_provider
         .observe_application_commit_causality(selected.product());
     let request = live_scope();
@@ -58,6 +59,7 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     assert_eq!(receipt.emitted_effect_count(), 1);
     let emissions = world
         .application
+        .runtime
         .primary_provider
         .committed_application_emissions(receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
@@ -145,6 +147,7 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         1

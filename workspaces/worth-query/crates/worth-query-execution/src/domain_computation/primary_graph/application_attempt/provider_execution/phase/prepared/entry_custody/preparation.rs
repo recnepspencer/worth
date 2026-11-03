@@ -7,27 +7,39 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    phase: &WorthQueryAdvancementPhase<'_>,
-
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    request: WorthQueryApplicationCommitPreparationRequest<Schema, Operation, Input, Scope>,
+    request: WorthQueryApplicationCommitPreparationRequest<
+        '_,
+        '_,
+        '_,
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
 ) -> WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    if let Err(cause) = phase.execution_request_for(&application.product_runtime) {
-        return terminal(
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
-                .into_commit_outcome(),
-        );
-    }
     let WorthQueryApplicationCommitPreparationRequest {
-        program,
+        entry,
         idempotency,
         elevation_currentness,
         aftermath_causality,
     } = request;
+    let (core, _) = entry.program.read_set.admission.reentry_parts();
+    if let Err(outcome) = entry
+        .application
+        .runtime
+        .validate_commit_lapse_in_advancement(entry.phase, core)
+    {
+        return terminal(outcome);
+    }
+    let CurrentCommitProgram {
+        application,
+        program,
+        phase,
+    } = entry;
     let WorthQueryApplicationEffectProgram {
         read_set,
         mut effects,
@@ -135,7 +147,7 @@ where
             signed_creation,
             &mut effects,
             phase
-                .execution_for(&application.product_runtime)
+                .execution_for(&application.runtime.product_runtime)
                 .expect("phase readmitted for this runtime"),
             &lease,
             &idempotency,
@@ -145,7 +157,7 @@ where
     }
     let lifecycle = match crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::expand(
         &admission, &lease, &mut effects, read_set.facts,
-        phase.execution_for(&application.product_runtime).expect("phase readmitted for this runtime"),
+        phase.execution_for(&application.runtime.product_runtime).expect("phase readmitted for this runtime"),
         *idempotency.key_identity(),
     ) { Ok(lifecycle) => lifecycle, Err(outcome) => return terminal(outcome) };
     let effect_routes = if read_set.effect_routes.matches_body(&lifecycle.facts) {
@@ -160,7 +172,7 @@ where
                 WorthQueryApplicationCommitDenial::signing_lifecycle_attempt(cause.into_attempt_denial(admission.operation())))),
         }
     };
-    content_attachments = match super::domain_value_write::admit(
+    content_attachments = match super::super::domain_value_write::admit(
         execution,
         application.installed_schema.value_bindings(),
         &lease.layout,

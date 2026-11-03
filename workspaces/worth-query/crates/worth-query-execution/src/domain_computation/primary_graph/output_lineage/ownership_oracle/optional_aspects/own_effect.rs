@@ -122,6 +122,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
         journey::demand(&clearing, true).expect("clearing an absent Optional field is lawful");
     let receipt = cleared.application_commit_receipt().unwrap();
     let completed = clearing
+        .runtime
         .primary_provider
         .observe_completed_application(receipt.commit_reference())
         .unwrap();
@@ -134,6 +135,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
         "a clear that leaves the aspect absent did not move the read"
     );
     let aspect = clearing
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -156,12 +158,12 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
     let request = primary_graph::tests::fixture::live_scope();
     clearing
         .with_application_advancement(&request, |phase| {
-            let execution = phase.execution_request_for(&clearing.product_runtime).unwrap();
+            let execution = phase.execution_request_for(&clearing.runtime.product_runtime).unwrap();
             let selected = clearing.on_branch(clearing.current_world()).select(&phase).unwrap();
-            let field = clearing.primary_provider.graph.layout
+            let field = clearing.runtime.primary_provider.graph.layout
                 .field_locator("Body", "SourceNotes", "SourceSelection").unwrap()
                 .field_path().fields()[0].clone();
-            clearing.primary_provider.graph.with_runtime(&execution, |native| {
+            clearing.runtime.primary_provider.graph.with_runtime(&execution, |native| {
                 let view = native.read_truth()
                     .project_snapshot(selected.application_basis().snapshot_handle()).unwrap();
                 assert_eq!(view.read_entity_aspect_version(&execution, entity, aspect).unwrap(), Some(revision),

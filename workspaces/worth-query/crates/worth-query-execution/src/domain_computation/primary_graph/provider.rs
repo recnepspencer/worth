@@ -7,11 +7,12 @@ pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
 };
 mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::FactlessCurrentness;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::OwnEffectOnReads;
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationReason;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationFailure;
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
+pub use application_attempt_state::{
+    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
+};
 mod application_attempt_work;
 mod application_decision_fact;
 mod application_touch_admission;
@@ -129,6 +130,8 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
     pub(in crate::domain_computation::primary_graph) publication_fault_control: Arc<publication_fault_control::PublicationFaultControl>,
     world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
+    #[cfg(test)]
+    pub(super) teardown_sentinel: Mutex<Option<Box<dyn std::any::Any + Send + Sync>>>,
 }
 
 pub use branch_commit_coordination::WorthQueryApplicationBranchCommitContentionForTest;

@@ -26,6 +26,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .expect("the fixture read owns its installed host call");
     let _live = world
         .application
+        .runtime
         .primary_provider
         .observe_application_commit_causality(selected.product());
     let request = live_scope();
@@ -41,18 +42,18 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
-    let published_snapshot_baseline =
-        world
-            .application
-            .primary_provider
-            .graph
-            .with_runtime(request_execution, |runtime| {
-                runtime
-                    .storage_access()
-                    .storage_stats(request_execution)
-                    .unwrap()
-                    .published_snapshot_handle_count
-            });
+    let published_snapshot_baseline = world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .with_runtime(request_execution, |runtime| {
+            runtime
+                .storage_access()
+                .storage_stats(request_execution)
+                .unwrap()
+                .published_snapshot_handle_count
+        });
     let first = world
         .application
         .with_host_advancement(|phase| {
@@ -99,6 +100,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     assert!(
         !world
             .application
+            .runtime
             .primary_provider
             .has_pending_application_publication_for_test(),
         "automatic recovery must clear the retained publication state"
@@ -116,6 +118,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     assert_eq!(first_receipt.emitted_effect_count(), 1);
     let emissions = world
         .application
+        .runtime
         .primary_provider
         .committed_application_emissions(first_receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
@@ -125,11 +128,13 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     );
     assert!(world
         .application
+        .runtime
         .primary_provider
         .retained_application_commit_basis(first_receipt.commit_reference())
         .is_some());
     let bridge_head = world
         .application
+        .runtime
         .primary_provider
         .graph
         .relational_bridge_source()
@@ -147,6 +152,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .graph
             .with_runtime(request_execution, |runtime| {

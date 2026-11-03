@@ -54,15 +54,15 @@ where
         WorthQueryProductConditionalPublicationDenial,
     > {
         let identity = product.branch_identity();
-        let gate = self.product_runtime.activations.gate(identity)?;
+        let gate = self.runtime.product_runtime.activations.gate(identity)?;
         gate.publish(|| {
-            let publication = self.product_runtime.owner.publication_port();
+            let publication = self.runtime.product_runtime.owner.publication_port();
             let prepared_world = match prepare_conditional_publication(&publication, product.observation().clone(), CompositePublicationIntent::with_signal(None), cancellation, None) {
                 Ok(prepared) => prepared,
                 Err(PublicationDenial::Stopped(stop)) => return Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))),
                 Err(PublicationDenial::Refused(denial)) => return Err(WorthQueryProductConditionalPublicationDenial::WorldPreparation(denial)),
             };
-            let bridge = self.bridge.conditional();
+            let bridge = self.runtime.bridge.conditional();
             let predecessor = bridge
                 .admit_exact_conditional_signal_basis(
                     predecessor,
@@ -79,7 +79,7 @@ where
                     )
                 }
             };
-            match publish_conditional_definition(&publication, phase.execution_request_for(&self.product_runtime).map_err(|cause| WorthQueryProductConditionalPublicationDenial::ExecutionRequest(cause.into()))?, prepared_world, prepared_bridge, &bridge, cancellation) {
+            match publish_conditional_definition(&publication, phase.execution_request_for(&self.runtime.product_runtime).map_err(|cause| WorthQueryProductConditionalPublicationDenial::ExecutionRequest(cause.into()))?, prepared_world, prepared_bridge, &bridge, cancellation) {
                 Ok(PublicationOutcome::Performed((publication, lowering))) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering }),
                 Ok(PublicationOutcome::ProductUnpublished(effects)) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects)),
                 Err(PublicationDenial::Stopped(stop)) => Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))),

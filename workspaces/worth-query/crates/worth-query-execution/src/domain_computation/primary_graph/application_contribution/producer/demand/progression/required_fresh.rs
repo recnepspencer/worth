@@ -54,7 +54,7 @@ where
         WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
 {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -83,7 +83,8 @@ where
         // join must observe the same predecessor ownership on every exit.
         let outcome = transfer
             .and_then(|readiness| {
-                self.output_demands
+                self.runtime
+                    .output_demands
                     .finish_replaced_interest(
                         slot.claim().interest(),
                         successor

@@ -158,6 +158,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     effects,
                     binding.recovery(),
                     self.application()
+                        .runtime
                         .primary_provider
                         .unpublished_idempotency_disposition(),
                     support_custody,

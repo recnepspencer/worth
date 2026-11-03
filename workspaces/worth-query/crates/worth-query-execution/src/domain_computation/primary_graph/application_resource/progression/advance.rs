@@ -138,9 +138,10 @@ where
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
+        .runtime
         .product_runtime
         .advance_owned_async_source_clock(
-            &runtime.bridge.conditional(),
+            &runtime.runtime.bridge.conditional(),
             &installed.storage.nodes[index].declaration,
             selected,
             reading.nanoseconds,
@@ -182,6 +183,7 @@ where
     };
     if owner.wake_cleanup_pending() {
         runtime
+            .runtime
             .bridge
             .conditional()
             .finish_managed_owned_async_wake_cleanup(owner)
@@ -189,6 +191,7 @@ where
     }
     if occurrence.timeout.is_none() && occurrence.retry.is_none() {
         let timeout = runtime
+            .runtime
             .bridge
             .conditional()
             .advance_managed_owned_async_request_to_timeout(owner, reading.nanoseconds)
@@ -210,6 +213,7 @@ where
             .as_ref()
             .ok_or(ResourceCause::Unavailable)?;
         let scheduled = runtime
+            .runtime
             .bridge
             .conditional()
             .schedule_managed_owned_async_retry(owner, timeout)
@@ -218,6 +222,7 @@ where
     }
     let before = owner.request_handle();
     let result = runtime
+        .runtime
         .bridge
         .conditional()
         .advance_managed_owned_async_retry(
@@ -261,8 +266,13 @@ where
     };
     let before = owner.request_handle();
     let result = runtime
+        .runtime
         .product_runtime
-        .revalidate_custodied_owned_async_request(&runtime.bridge.conditional(), owner, selected);
+        .revalidate_custodied_owned_async_request(
+            &runtime.runtime.bridge.conditional(),
+            owner,
+            selected,
+        );
     if owner.request_handle() != before {
         occurrence.retry = None;
         occurrence.timeout = None;

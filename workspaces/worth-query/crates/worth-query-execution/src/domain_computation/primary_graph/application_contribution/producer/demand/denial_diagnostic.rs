@@ -5,7 +5,7 @@ impl WorthQueryOutputDemandDenial {
     /// Names the receiving boundary without replacing original kind or custody.
     pub(in crate::domain_computation::primary_graph) fn with_subject(
         mut self,
-        subject: &'static str,
+        subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
         self.subject = subject.into();
         self

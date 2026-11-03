@@ -53,13 +53,13 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     let key = WorthQueryOutputDemandKey::new("terminal-delivery-family", "terminal-delivery".into(),
         crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability::new("terminal-delivery", crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
         crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch::new([1;32], [2;32], root, occurrence, 1, [3;32]));
-    let registry = &world.application.output_demands;
+    let registry = &world.application.runtime.output_demands;
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root);
     let request = fixture::live_scope();
     // Build a genuine lowering, with no dependencies. The foreign root is
     // refused before this lowering or its compute can be used.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        world.application.bridge.ordinary().clone(),
+        world.application.runtime.bridge.ordinary().clone(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )
     .unwrap();

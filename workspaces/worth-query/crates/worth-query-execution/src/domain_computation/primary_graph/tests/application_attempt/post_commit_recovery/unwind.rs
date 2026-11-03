@@ -9,6 +9,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         .expect("the fixture read owns its installed host call");
     let _live = world
         .application
+        .runtime
         .primary_provider
         .observe_application_commit_causality(selected.product());
     let request = live_scope();
@@ -73,6 +74,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .pending_application_publication_count_for_test(),
         0,
@@ -106,6 +108,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .pending_application_publication_count_for_test(),
         0,
@@ -113,6 +116,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     );
     let emissions = world
         .application
+        .runtime
         .primary_provider
         .committed_application_emissions(recovered.committed_product_publication());
     assert_eq!(emissions.len(), 1);

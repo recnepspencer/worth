@@ -52,6 +52,7 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
         .unwrap();
     let in_flight = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()

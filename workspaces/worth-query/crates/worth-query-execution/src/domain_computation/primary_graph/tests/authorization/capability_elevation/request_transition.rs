@@ -352,5 +352,7 @@ fn string(value: &str) -> AspectValue {
     AspectValue::String(InternedString::from(value))
 }
 
+#[path = "request_transition/installed_seal.rs"]
+mod installed_seal;
 #[path = "request_transition/ordinary_progression_refusal.rs"]
 mod ordinary_progression_refusal;

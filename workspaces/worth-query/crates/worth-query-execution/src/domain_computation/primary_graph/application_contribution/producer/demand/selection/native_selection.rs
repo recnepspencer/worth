@@ -105,6 +105,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
         let mut lineage = self
+            .runtime
             .primary_provider
             .graph
             .output_lineage
@@ -221,7 +222,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                         .native_output_witness
                         .as_ref()
                         .and_then(|witness| witness.get());
-                    let owner = &self.primary_provider.graph.source_owner.invalidation_owner;
+                    let owner = &self.runtime.primary_provider.graph.source_owner.invalidation_owner;
                     let proven = live
                         && match candidate.source_identity {
                             Some(RecordedSourceIdentity::Checkpoint(_)) => true,
@@ -306,7 +307,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
                             Family::IDENTITY, delivery.identity.clone(), delivery.applicability, epoch,
                         );
-                        if self.output_demands.has_committed_ready(
+                        if self.runtime.output_demands.has_committed_ready(
                             &key,
                             scope,
                             observation.lifecycle_incarnation(),
@@ -328,7 +329,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
                             Family::IDENTITY, selected.identity.clone(), selected.applicability, epoch,
                         );
-                        if let Some(_ready) = self.output_demands.committed_required_ready(
+                        if let Some(_ready) = self.runtime.output_demands.committed_required_ready(
                             &key,
                             scope,
                             observation.lifecycle_incarnation(),

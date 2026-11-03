@@ -74,6 +74,7 @@ fn foreign_product_is_denied_by_owner_affinity_before_local_coordination() {
     assert!(matches!(
         local
             .application
+            .runtime
             .product_runtime
             .admit_product_branch(selection.branch_identity()),
         Err(

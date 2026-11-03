@@ -98,7 +98,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 installed,
                 instance,
                 request_kind,
-                &self.application().authorization_clock,
+                &self.application().runtime.authorization_clock,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }

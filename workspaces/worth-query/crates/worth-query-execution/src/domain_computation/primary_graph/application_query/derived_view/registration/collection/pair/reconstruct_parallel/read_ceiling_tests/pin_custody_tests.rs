@@ -155,7 +155,7 @@ fn check(case: usize) {
                 );
                 return;
             }
-            let graph = &world.application.primary_provider.graph;
+            let graph = &world.application.runtime.primary_provider.graph;
             let label = AccountLabel::reference();
             let locator = graph
                 .layout

@@ -45,6 +45,7 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
             });
             let captured = world
                 .application
+                .runtime
                 .primary_provider
                 .capture_correction_witness(execution, receipt);
             if saturate {
@@ -99,6 +100,7 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
     );
     let witness = world
         .application
+        .runtime
         .primary_provider
         .capture_correction_witness(ExecutionRequest::serial(&retry), receipt)
         .unwrap()

@@ -27,56 +27,8 @@ impl<Query> WorthQueryPendingSourceExpectation<Query> {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        if self.admission_identity != admission.admission_identity()
-            || !admission
-                .graph_work()
-                .mutation_product()
-                .is_some_and(|product| {
-                    self.selected_product
-                        .matches_observation(product.observation())
-                })
-        {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                WorthQuerySourceExpectationDenialKind::ForeignOperation,
-                "pending source expectation",
-            ));
-        }
-        let graph = runtime.runtime.primary_graph().ok_or_else(|| {
-            WorthQuerySourceExpectationDenial::new(
-                WorthQuerySourceExpectationDenialKind::ForeignApplication,
-                self.expected_query_identifier,
-            )
-        })?;
-        let query_identity = runtime
-            .installed_schema
-            .installed_query_identity_by_name(self.expected_query_identifier)
-            .ok_or_else(|| {
-                WorthQuerySourceExpectationDenial::new(
-                    WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
-                    self.expected_query_identifier,
-                )
-            })?;
-        self.source.validate_affinity(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
-            admission.graph_work_branch(),
-            admission.scope_entity_id(),
-            &self.selected_product,
-            self.expected_query_identifier,
-            query_identity,
-        )?;
-        // The pending owner carries only source custody across resolution. Borrow
-        // this advancement now, after idempotency selected fresh execution.
-        let control = SourceFactExpansionControl::for_phase(
-            runtime,
-            phase,
-            Some(admission.publication_request()),
-            self.expected_query_identifier,
-        )?;
-        let facts =
-            self.source
-                .validated_facts(&graph.layout, self.expected_query_identifier, control)?;
-        admission.bind_source_facts(facts, self.source.retain_expression_binding());
-        Ok(())
+        runtime
+            .readmit_mutable_source_admission(admission, self.expected_query_identifier)?
+            .consume_pending(self, phase)
     }
 }

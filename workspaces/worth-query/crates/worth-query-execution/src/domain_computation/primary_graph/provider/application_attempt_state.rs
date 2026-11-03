@@ -24,9 +24,10 @@ pub(in crate::domain_computation) use registered_reads::RegisteredPrimaryRead;
 mod staged;
 use commit_completion::WorthQueryPreparedProviderApplicationAttempt;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::commit_prepared_application;
+pub(in crate::domain_computation::primary_graph) use commit_preparation::RebaseVerificationFailure;
 pub(crate) use commit_preparation::WorthQueryRetainedPreImageSeal;
+pub use commit_preparation::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use commit_preparation::{
-    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
     WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
     WorthQueryPrimaryGraphCommittedApplication,
 };
@@ -76,7 +77,15 @@ enum WorthQueryApplicationAttemptEntry {
         identity: u64,
     },
 }
-pub(super) struct WorthQueryRetiredApplicationAttempt(WorthQueryApplicationAttemptEntry);
+/// Keeps the real attempt alive until the caller leaves the attempt-store gate.
+pub(super) struct WorthQueryRetiredApplicationAttempt {
+    entry_custody: Option<WorthQueryApplicationAttemptEntry>,
+}
+impl Drop for WorthQueryRetiredApplicationAttempt {
+    fn drop(&mut self) {
+        drop(self.entry_custody.take());
+    }
+}
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptReservation {
     key: WorthQueryApplicationAttemptLookupKey,
@@ -287,7 +296,9 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .then(|| {
                 self.attempts
                     .remove(&key)
-                    .map(WorthQueryRetiredApplicationAttempt)
+                    .map(|entry| WorthQueryRetiredApplicationAttempt {
+                        entry_custody: Some(entry),
+                    })
             })
             .flatten()
     }

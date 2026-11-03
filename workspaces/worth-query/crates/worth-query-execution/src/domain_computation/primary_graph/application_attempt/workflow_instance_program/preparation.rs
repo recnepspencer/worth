@@ -89,7 +89,7 @@ where
                 installed,
                 published,
                 start_key_identity,
-                &self.application().authorization_clock,
+                &self.application().runtime.authorization_clock,
             )
             .map_err(WorkflowInstancePreparationDenial::Attempt)
     }
@@ -129,7 +129,7 @@ where
                 target,
                 resume_at,
                 start_key_identity,
-                &self.application().authorization_clock,
+                &self.application().runtime.authorization_clock,
             )
             .map_err(WorkflowInstancePreparationDenial::Attempt)
     }

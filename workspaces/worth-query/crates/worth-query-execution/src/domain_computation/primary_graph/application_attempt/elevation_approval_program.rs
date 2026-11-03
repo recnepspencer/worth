@@ -76,10 +76,11 @@ impl<Schema, Operation, Input, Scope>
 impl<Schema, Operation, Input, Scope>
     WorthQueryElevationApprovalProgram<Schema, Operation, Input, Scope>
 {
-    pub(in crate::domain_computation::primary_graph) fn request_scope(
+    #[inline]
+    pub(in crate::domain_computation::primary_graph) fn application_program(
         &self,
-    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
-        self.program.request_scope()
+    ) -> &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+        &self.program
     }
 
     pub(super) fn into_inner(

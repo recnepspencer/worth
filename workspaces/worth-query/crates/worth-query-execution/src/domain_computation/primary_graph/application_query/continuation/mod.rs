@@ -84,7 +84,7 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        let request = match phase.execution_request_for(&self.product_runtime) {
+        let request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorthQueryApplicationContinuationDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };

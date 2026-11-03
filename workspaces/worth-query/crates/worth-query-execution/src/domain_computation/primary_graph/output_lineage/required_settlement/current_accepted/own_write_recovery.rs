@@ -16,7 +16,7 @@ fn accepted_current_cannot_bypass_original_own_write_evidence() {
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let retained_product = world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request();    world.selected_product(phase_custody, ) }).expect("the fixture read owns its installed host call");
-    let retained_snapshot = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
+    let retained_snapshot = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.runtime.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap()
     }) }).expect("the fixture read owns its installed host call");
@@ -31,7 +31,7 @@ fn accepted_current_cannot_bypass_original_own_write_evidence() {
     });
     let candidate = AcceptedCurrentCandidate { selected, ready };
     let (_, product, _) = retained_product.into_parts();
-    world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
+    world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.runtime.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let snapshot = retained_snapshot;
         let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
         assert!(candidate

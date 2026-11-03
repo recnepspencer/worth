@@ -61,7 +61,7 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
-                &world.application.primary_provider.graph.layout,
+                &world.application.runtime.primary_provider.graph.layout,
                 &plan,
                 None,
             ) {
@@ -135,7 +135,7 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
-                &world.application.primary_provider.graph.layout,
+                &world.application.runtime.primary_provider.graph.layout,
                 &plan,
                 None,
             ) {

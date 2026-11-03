@@ -79,7 +79,7 @@ fn sealed_absent_parent_initialization_stales_before_any_native_effect() {
             let (program, _) = candidate.into_parts();
             retained_recovery::materialize_source_in_phase(&runtime, &phase);
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let outcome = runtime.compare_and_commit_application_for_program_output_producer(
                 &execution,

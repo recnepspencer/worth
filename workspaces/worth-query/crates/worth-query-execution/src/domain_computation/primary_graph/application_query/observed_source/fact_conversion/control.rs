@@ -68,7 +68,7 @@ impl<'request, 'authority> SourceFactExpansionControl<'request, 'authority> {
         subject: &str,
     ) -> Result<Self, WorthQuerySourceExpectationDenial> {
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|_| {
                 WorthQuerySourceExpectationDenial::new(
                     WorthQuerySourceExpectationDenialKind::ForeignOperation,

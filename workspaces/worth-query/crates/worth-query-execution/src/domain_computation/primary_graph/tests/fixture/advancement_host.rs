@@ -7,6 +7,7 @@ impl AdvancementHost {
     ) -> worth_runtime_world::facade::RuntimeWorldExecutionPlacement<'_> {
         self.0
             .application
+            .runtime
             .product_runtime
             .owner
             .execution_placement()

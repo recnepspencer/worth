@@ -139,6 +139,7 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
     let mut held = Vec::new();
     while let Ok(reservation) = world
         .application
+        .runtime
         .product_runtime
         .reserve_owner_cleanup_for_creation()
     {
@@ -198,6 +199,7 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
         .expect("the fixture read owns its installed host call");
     world
         .application
+        .runtime
         .product_runtime
         .replace_owner_cleanup_after_install_hook(Some(Box::new(|| {
             panic!("injected unwind after retirement cleanup installation")
@@ -213,6 +215,7 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
     assert!(unwind.is_err());
     world
         .application
+        .runtime
         .product_runtime
         .replace_owner_cleanup_after_install_hook(None);
     world
@@ -258,6 +261,7 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
         .expect("the fixture read owns its installed host call");
     world
         .application
+        .runtime
         .product_runtime
         .replace_owner_cleanup_after_component_progress_hook(Some(Box::new(|| {
             panic!("injected unwind after one owner retirement")
@@ -285,6 +289,7 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
     ));
     world
         .application
+        .runtime
         .product_runtime
         .replace_owner_cleanup_after_component_progress_hook(None);
 

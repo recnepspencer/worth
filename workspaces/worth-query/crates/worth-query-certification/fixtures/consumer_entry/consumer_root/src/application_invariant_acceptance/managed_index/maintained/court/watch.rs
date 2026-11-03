@@ -1,6 +1,7 @@
 //! Real public empty entrants, unchanged-candidate refinement and exact close.
 use super::super::authoring::Edit;
 use super::*;
+mod coordinates;
 mod race;
 mod recovery;
 mod refusal;

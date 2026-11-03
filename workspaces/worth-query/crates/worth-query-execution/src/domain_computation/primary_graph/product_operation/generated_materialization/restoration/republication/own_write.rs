@@ -79,7 +79,7 @@ fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -143,7 +143,7 @@ fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -171,7 +171,7 @@ fn suspend_restore_and_read() {
                     .unwrap()
                     .execute(
                         phase
-                            .execution_request_for(&application.product_runtime)
+                            .execution_request_for(&application.runtime.product_runtime)
                             .expect("publication uses its runtime phase"),
                     )
             })
@@ -200,7 +200,7 @@ fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -234,7 +234,7 @@ fn suspend_restore_and_read() {
                     .unwrap()
                     .execute(
                         phase
-                            .execution_request_for(&application.product_runtime)
+                            .execution_request_for(&application.runtime.product_runtime)
                             .expect("publication uses its runtime phase"),
                     )
             })
@@ -253,7 +253,7 @@ fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -286,7 +286,7 @@ fn suspend_restore_and_read() {
                     .into_parts();
                 let observation = product.observation();
                 let execution = phase
-                    .execution_request_for(&application.product_runtime)
+                    .execution_request_for(&application.runtime.product_runtime)
                     .unwrap();
                 let family = handle
                     .output_lineage

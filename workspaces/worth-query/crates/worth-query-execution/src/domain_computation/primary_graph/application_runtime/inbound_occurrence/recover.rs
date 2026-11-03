@@ -83,12 +83,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             correlation_token,
         ));
         let accepted = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .accepted_by_correlation(&correlation)
             .ok_or(Denial::UnknownCorrelation)?;
         let claim = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|p| p.into_inner())
@@ -119,9 +121,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<Posture, Denial> {
         let mut retirements = OwnerCleanupRetirements::default();
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         let state = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|p| p.into_inner())
@@ -131,7 +134,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 _ => Denial::PublicationInProgress,
             })?;
         let mut guard = RecoveryGuard {
-            custody: &self.inbound_custody,
+            custody: &self.runtime.inbound_custody,
             accepted: Arc::clone(&accepted),
             state: Some(state),
         };
@@ -140,6 +143,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .committed_product_publication()
             .product_incarnation();
         let lane = self
+            .runtime
             .primary_provider
             .application_branch_commit_lane_for_occurrence(incarnation);
         let _coordination = lane.enter();
@@ -167,7 +171,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             RecoveryStep::StaleReleased => {
                 guard.state.take();
-                self.primary_provider
+                self.runtime
+                    .primary_provider
                     .clear_inbound_completion_publication_pending(
                         accepted.owner().record().correlation(),
                     );
@@ -279,7 +284,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .owner()
             .committed_product_publication()
             .product_incarnation();
-        let lease = match self.product_runtime.admit_product_occurrence(incarnation) {
+        let lease = match self
+            .runtime
+            .product_runtime
+            .admit_product_occurrence(incarnation)
+        {
             Ok(lease) => lease,
             Err(_) => {
                 return RecoveryStep::Retain(
@@ -350,7 +359,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 let next = WorthQueryProductUnpublishedApplication::new(
                     effects,
                     world_recovery,
-                    self.primary_provider.unpublished_idempotency_disposition(),
+                    self.runtime
+                        .primary_provider
+                        .unpublished_idempotency_disposition(),
                 )
                 .into_recovery();
                 self.finish_inbound_handoff(&publication_execution, recovery, next, retirements)

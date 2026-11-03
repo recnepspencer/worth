@@ -40,6 +40,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
             };
             let impact = target
                 .application()
+                .runtime
                 .primary_provider
                 .graph
                 .with_runtime_mut(&execution, |runtime| {

@@ -119,7 +119,7 @@ impl WorthQueryApplicationPreviewSession {
         Program: ApplicationProgramDefinition<Schema>,
     {
         let execution = phase
-            .execution_request_for(&runtime.runtime().product_runtime)
+            .execution_request_for(&runtime.runtime().runtime.product_runtime)
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
         if runtime.runtime().runtime.authority_identity().as_u64() != self.runtime_authority {
             return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
@@ -194,7 +194,7 @@ where
     ) -> Result<WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewReadmissionDenial>
     {
         let phase_request = phase
-            .execution_request_for(&self.runtime().product_runtime)
+            .execution_request_for(&self.runtime().runtime.product_runtime)
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
         let execution = &phase_request;
         let selected = self
@@ -239,6 +239,7 @@ where
         );
         let handle = self
             .runtime()
+            .runtime
             .bridge
             .ordinary()
             .speculate(BridgeSpeculativeSessionRequest::new(

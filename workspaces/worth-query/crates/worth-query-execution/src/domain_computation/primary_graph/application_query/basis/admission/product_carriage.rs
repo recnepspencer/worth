@@ -22,6 +22,7 @@ fn primary_product_selection_composes_one_exact_application_snapshot() {
     assert_eq!(observer.observe().acquisitions(), before.acquisitions() + 1);
     assert!(world
         .application
+        .runtime
         .primary_provider
         .graph
         .with_runtime(execution, |runtime| runtime

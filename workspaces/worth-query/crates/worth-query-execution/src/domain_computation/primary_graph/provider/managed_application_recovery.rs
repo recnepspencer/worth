@@ -91,6 +91,16 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if !admission.belongs_to(
+            self.runtime.authority_identity(),
+            &self.installed_schema.binding_identity(),
+        ) {
+            return Err(WorthQueryManagedApplicationRecoveryDenial::ForeignAdmission);
+        }
+        admission
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .and_then(|()| admission.validate_current_authority())
+            .map_err(WorthQueryManagedApplicationRecoveryDenial::Authorization)?;
         self.with_application_advancement(admission.publication_request(), |phase| {
             self.recover_admitted_unpublished_application_in_advancement(
                 &phase,
@@ -184,7 +194,7 @@ where
 {
         use WorthQueryManagedApplicationRecoveryDenial as Denial;
         let request = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         {
             if !admission.belongs_to(
@@ -194,7 +204,8 @@ where
                 return Err(Denial::ForeignAdmission);
             }
             admission
-                .validate_current_authority()
+                .validate_installed_operation(&self.runtime.installed_operations)
+                .and_then(|()| admission.validate_current_authority())
                 .map_err(Denial::Authorization)?;
             let product = admission
                 .graph_work()
@@ -207,13 +218,15 @@ where
                 .bind_preconditions(admission.mutation_preconditions().identity())
                 .bind_governed_input(admission.governed_input_identity())
                 .bind_governed_proposal(admission.governed_proposal_identity());
-            let command_lane = self.primary_provider.correction_commit_lane(&bound);
+            let command_lane = self.runtime.primary_provider.correction_commit_lane(&bound);
             let command_coordination = command_lane.as_ref().map(|lane| lane.enter());
             let lane = self
+                .runtime
                 .primary_provider
                 .application_branch_commit_lane(product.observation());
             let coordination = lane.enter();
             let mut guard = self
+                .runtime
                 .primary_provider
                 .begin_managed_unpublished_recovery(recovery.record_handle(), product.recovery())
                 .map_err(Denial::from)?;
@@ -248,6 +261,7 @@ where
             }
             let unpublished = recovery.inspect().map_err(Denial::World)?;
             let lease = self
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(product.observation().lifecycle_incarnation())
                 .map_err(|_| Denial::ProductUnavailable)?;
@@ -307,7 +321,7 @@ where
                         }
                     };
                     let publication_failure =
-                        publish_recovered(&request, &self.primary_provider, session).err();
+                        publish_recovered(&request, &self.runtime.primary_provider, session).err();
                     guard.finish();
                     let (prior_cleanup_failure, pending_cleanup) = match delivery {
                         RecoveredPublicationDelivery::Ordinary => (

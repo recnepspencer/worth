@@ -19,7 +19,7 @@ where
         invocation: &ProducerInvocationAuthority<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -41,6 +41,7 @@ where
             .as_ref()
             .expect("installed successor retains its real Interest");
         let prepared = runtime
+            .runtime
             .output_demands
             .prepare_selected_checkpoint_finish(interest)?;
         let Some((finish, claim, checkpoint)) = prepared.claim()? else {

@@ -50,7 +50,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         phase: &WorthQueryAdvancementPhase<'_>,
         recovery: Recovery,
     ) -> Result<Recovery, Failure> {
-        let execution = match phase.checked_execution_request_for(&self.product_runtime) {
+        let execution = match phase.checked_execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(denial) => return Err(recovery_failure(recovery, Denial::Execution(denial))),
         };

@@ -26,6 +26,7 @@ fn transport_publication_obeys_shared_operation_capacity() {
         .unwrap();
     let in_flight = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()

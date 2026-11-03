@@ -168,6 +168,7 @@ impl LiveContext {
     fn close_source(&self) {
         self.world
             .application
+            .runtime
             .primary_provider
             .live_delivery
             .close();
@@ -190,6 +191,7 @@ impl LiveContext {
         assert_eq!(
             self.world
                 .application
+                .runtime
                 .primary_provider
                 .active_application_commit_causality_partitions(),
             0

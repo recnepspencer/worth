@@ -112,6 +112,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     };
     let facts = world
         .application
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -216,6 +217,7 @@ fn selection(
         .select_product_branch(execution, application.product_runtime().default_branch())
         .unwrap();
     application
+        .runtime
         .primary_provider
         .graph
         .with_runtime(execution, |runtime| {

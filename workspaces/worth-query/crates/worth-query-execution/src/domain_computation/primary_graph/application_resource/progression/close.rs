@@ -23,6 +23,7 @@ where
             return Err(ResourceCause::Unavailable);
         };
         runtime
+            .runtime
             .bridge
             .conditional()
             .release_process_local_completion_denial(owner, admission)
@@ -33,6 +34,7 @@ where
             return Err(ResourceCause::Unavailable);
         };
         let drained = runtime
+            .runtime
             .bridge
             .conditional()
             .dequeue_managed_owned_async_queue(owner, 1)
@@ -96,6 +98,7 @@ where
     };
     if owner.wake_cleanup_pending() {
         runtime
+            .runtime
             .bridge
             .conditional()
             .finish_managed_owned_async_wake_cleanup(owner)
@@ -105,6 +108,7 @@ where
         && !completion.timeout_cleanup_complete()
     {
         runtime
+            .runtime
             .bridge
             .conditional()
             .finish_owned_async_completion_timeout_cleanup(completion)
@@ -112,6 +116,7 @@ where
     }
     if owner.has_pending_retry() {
         runtime
+            .runtime
             .bridge
             .conditional()
             .abort_process_local_owned_async_retry(owner)
@@ -120,6 +125,7 @@ where
     occurrence.retry = None;
     if completion.is_none() {
         runtime
+            .runtime
             .bridge
             .conditional()
             .cancel_managed_owned_async_request(owner)
@@ -135,6 +141,7 @@ where
         unreachable!()
     };
     match runtime
+        .runtime
         .bridge
         .conditional()
         .release_process_local_managed_request(owner, completion)

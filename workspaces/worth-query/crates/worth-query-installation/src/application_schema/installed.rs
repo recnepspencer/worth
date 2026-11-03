@@ -4,6 +4,8 @@ use std::sync::Arc;
 mod codec_correspondence;
 mod construction;
 mod inbound;
+mod view;
+pub use view::InstalledSchemaView;
 
 use super::contribution::WorthQueryInstalledApplicationContributionCatalog;
 use super::invariant::{
@@ -48,6 +50,7 @@ use worth_query_declaration::facade::application_schema::{
 /// Opaque proof that one typed schema declaration belongs to an exact
 /// installed package, runtime, and generation.
 pub struct WorthQueryInstalledApplicationSchema<Schema> {
+    pub(crate) operation_catalog: Arc<crate::application_operation::InstalledOperationCatalog>,
     pub(crate) package_authority: WorthQueryInstalledPackageAuthority,
     pub(crate) schema_name: String,
     pub(crate) schema_identity: CanonicalDigestId,

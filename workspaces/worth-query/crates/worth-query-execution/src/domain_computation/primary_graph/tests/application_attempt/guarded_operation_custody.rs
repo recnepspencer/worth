@@ -193,6 +193,7 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
         .with_host_advancement(|phase| {
             world
                 .application
+                .runtime
                 .primary_provider
                 .reserve_application_publication_recovery(
                     world

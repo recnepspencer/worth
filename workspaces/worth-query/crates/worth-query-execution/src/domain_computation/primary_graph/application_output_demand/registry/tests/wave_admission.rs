@@ -21,7 +21,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
                 .unwrap()
                 .with_runtime(
                     &phase
-                        .execution_request_for(&world.application.product_runtime)
+                        .execution_request_for(&world.application.runtime.product_runtime)
                         .unwrap(),
                     |runtime| {
                         let basis = runtime

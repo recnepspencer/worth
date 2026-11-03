@@ -172,7 +172,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             let selected = world.selected_product(&phase.test_host_request());
             let serial_retained = dependencies.assert_storage_custody_for_test(
                 phase
-                    .checked_execution_request_for(&world.application.product_runtime)
+                    .checked_execution_request_for(&world.application.runtime.product_runtime)
                     .unwrap(),
             );
             selected

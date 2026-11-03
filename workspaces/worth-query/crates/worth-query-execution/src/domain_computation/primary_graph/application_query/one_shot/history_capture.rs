@@ -65,7 +65,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         SubjectResult<Schema, History>:
             WorthQueryApplicationProjection<Schema, SubjectQuery<Schema, History>>,
     {
-        let request = phase.execution_request_for(&self.product_runtime).map_err(|_| {
+        let request = phase.execution_request_for(&self.runtime.product_runtime).map_err(|_| {
             Denial::Read(super::authorization_denial(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
                     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(

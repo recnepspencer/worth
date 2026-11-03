@@ -56,10 +56,11 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 let phase = &active_phase;
                 let prepared = prepare_application_commit(
                     &phase.borrowed_request_for_test(),
-                    phase,
-                    &world.application,
                     WorthQueryApplicationCommitPreparationRequest::new(
-                        program,
+                        world
+                            .application
+                            .validate_commit_program_in_advancement(phase, program)
+                            .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
                         idempotency(187, 188),
                         None,
                         None,
@@ -86,7 +87,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 let admitted_session = admit_provider_session(
                     phase,
                     &mut running,
-                    &world.application.primary_graph_authority,
+                    world.application.runtime.primary_graph_authority(),
                     attempt_basis.retained_product(),
                     mutation_run,
                 )
@@ -100,7 +101,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                         provider_attempt,
                         attempt_basis,
                         WorthQueryProviderAttemptRegistrationContext::new(
-                            &world.application.primary_provider,
+                            &world.application.runtime.primary_provider,
                             &admission,
                             retained_idempotency,
                             outcome_identity,

@@ -59,6 +59,7 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
         .with_host_advancement(|phase| {
             world
                 .application
+                .runtime
                 .primary_provider
                 .reserve_application_publication_recovery(
                     world

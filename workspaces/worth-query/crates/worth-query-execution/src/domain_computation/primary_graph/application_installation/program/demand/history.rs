@@ -33,7 +33,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         authority
             .confirm_read(phase, runtime, request, ())
             .map_err(Denial::Authority)?;
-        let execution = phase.execution_request_for(&runtime.product_runtime).map_err(|cause| {
+        let execution = phase.execution_request_for(&runtime.runtime.product_runtime).map_err(|cause| {
             Denial::Demand(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
                 "history output advancement phase",

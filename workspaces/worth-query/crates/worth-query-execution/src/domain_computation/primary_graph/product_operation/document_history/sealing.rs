@@ -87,7 +87,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         _access: &WorthQueryProgramPublicationAccess,
     ) -> Result<(), Denial> {
         let execution = phase
-            .checked_execution_request_for(&self.application().product_runtime)
+            .checked_execution_request_for(&self.application().runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         execution.check_live().map_err(|stop| {
             Denial::Stopped(

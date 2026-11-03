@@ -21,7 +21,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence,
         >,
     > {
-        self.inbound_custody
+        self.runtime
+            .inbound_custody
             .lock()
             .unwrap()
             .accepted_by_correlation(correlation)
@@ -37,7 +38,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         crate::domain_computation::application_aftermath::WorthQueryInboundPublicationClaim,
         bool,
     ) {
-        let mut custody = self.inbound_custody.lock().unwrap();
+        let mut custody = self.runtime.inbound_custody.lock().unwrap();
         (
             custody.claim_retryable_publication(accepted),
             custody.mark_publication_retryable(accepted),
@@ -56,6 +57,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .installed_inbound_verifier(handle)
             .ok_or(Denial::ForeignVerifier)?;
         let sample = self
+            .runtime
             .authorization_clock
             .sample(ApplicationCapabilityValidityTimeline::UnixEpochSeconds)
             .map_err(|_| Denial::TimeUnavailable)?;
@@ -67,6 +69,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .get()
             .min(usize::try_from(limits.maximum_cleanup_work.get()).unwrap_or(usize::MAX));
         let correlations = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -76,6 +79,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
                 .map_err(|_| Denial::TerminalCleanupUnavailable)?;
         }
         let compact = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -86,6 +90,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             );
         for (correlation, original, completion) in &compact {
             let terminal = self
+                .runtime
                 .primary_provider
                 .lookup_completed_inbound(correlation)
                 .map_err(|_| Denial::TerminalCleanupUnavailable)?
@@ -98,6 +103,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             }
         }
         let mut custody = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());

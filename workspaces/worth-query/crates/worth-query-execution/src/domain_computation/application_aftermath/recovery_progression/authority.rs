@@ -148,7 +148,14 @@ where
         let owner = self.runtime.authority_identity();
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
-        deny_if_expired(handle, &self.authorization_clock)?;
+        deny_if_expired(handle, &self.runtime.authorization_clock)?;
+        admission
+            .validate_installed_entry(
+                owner,
+                &self.installed_schema.binding_identity(),
+                self.runtime.installed_operations(),
+            )
+            .map_err(admission_authorization_denial)?;
         super::binding_axis::check_binding_axes(handle.binding(), admission)?;
         Ok(WorthQueryRecoveryEffectAuthority::mint(
             self.runtime.authority_identity(),
@@ -168,7 +175,14 @@ where
         disclosure.ensure_for_runtime(owner)?;
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
-        deny_if_expired(handle, &self.authorization_clock)?;
+        deny_if_expired(handle, &self.runtime.authorization_clock)?;
+        admission
+            .validate_installed_entry(
+                owner,
+                &self.installed_schema.binding_identity(),
+                self.runtime.installed_operations(),
+            )
+            .map_err(admission_authorization_denial)?;
         super::binding_axis::check_binding_axes(handle.binding(), admission)?;
         Ok(WorthQueryRecoveryInspectAuthority::mint(
             self.runtime.authority_identity(),
@@ -212,4 +226,12 @@ pub(super) fn ensure_same_runtime(
         ));
     }
     Ok(())
+}
+
+fn admission_authorization_denial(
+    denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+) -> WorthQueryRecoveryHandleDenial {
+    WorthQueryRecoveryHandleDenial::new(WorthQueryRecoveryHandleDenialKind::AdmissionAuthorization(
+        denial.kind(),
+    ))
 }

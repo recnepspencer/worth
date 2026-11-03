@@ -16,6 +16,7 @@ fn installed_outbox_layout_preserves_every_frozen_physical_field_name() {
     let world = installed_authorization_world(true);
     let layout = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout

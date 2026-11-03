@@ -21,6 +21,7 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
 ) {
     let layout = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -58,11 +59,13 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
     drop(performed.consume());
     world
         .application
+        .runtime
         .primary_provider
         .graph
         .with_runtime_mut(execution, |runtime| {
             world
                 .application
+                .runtime
                 .primary_provider
                 .graph
                 .ensure_primary_indexes_for_basis(execution, runtime, &basis)

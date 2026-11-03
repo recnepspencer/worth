@@ -41,6 +41,7 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
     let record = receipt.dispatch_outbox().expect("co-committed dispatch");
     let terminal = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(record.correlation())
         .expect("complete derived index")
@@ -81,6 +82,7 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .lookup_completed_inbound(record.correlation())
             .unwrap()
@@ -151,7 +153,7 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         )
         .unwrap();
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); assert!(matches!(
-        world.application.primary_provider.prepare_installed_transport_completion_candidate(&host_custody.borrowed_request_for_test(),
+        world.application.runtime.primary_provider.prepare_installed_transport_completion_candidate(&host_custody.borrowed_request_for_test(),
             lease.relational_basis(), &other_owner, &completed, &other_binding,
         ),
         Err(crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial::DispatchOwnerMismatch)
@@ -162,6 +164,7 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
             .unwrap();
     let in_flight = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&first_owner)
         .unwrap()
@@ -189,6 +192,7 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
 
     let terminal = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(first_owner.record().correlation())
         .unwrap()
@@ -222,12 +226,14 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .unwrap();
     let first_lease = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
         .unwrap();
     let second_lease = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
@@ -270,6 +276,7 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
 
     let winner = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(owner.record().correlation())
         .unwrap()
@@ -278,7 +285,7 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
     assert_eq!(
         world
             .application
-            .primary_provider
+            .runtime.primary_provider
             .begin_external_dispatch_in_flight(&owner)
             .err(),
         Some(crate::domain_computation::primary_graph::provider::WorthQueryOutstandingInFlightDenial::TerminalReached),
@@ -311,6 +318,7 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .has_retained_installed_transport_completion(owner.record().correlation()));
     let after = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(owner.record().correlation())
         .unwrap()

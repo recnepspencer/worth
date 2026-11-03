@@ -6,7 +6,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &world.application.runtime.primary_provider;
     let record = record_for(5);
     provider
         .graph
@@ -90,7 +90,7 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &world.application.runtime.primary_provider;
     let first = record_for(61);
     let second = record_for(62);
     let (first_binding, second_binding, commit, runtime_id) =

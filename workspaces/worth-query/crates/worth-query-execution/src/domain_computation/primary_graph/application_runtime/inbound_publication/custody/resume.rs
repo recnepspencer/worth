@@ -25,6 +25,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let work = {
             let mut custody = self
+                .runtime
                 .transport_completion_custody
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -54,7 +55,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     {
                         Ok(()) => {
                             entry.state = RetainedCompletion::Ready(evidence);
-                            self.primary_provider
+                            self.runtime
+                                .primary_provider
                                 .clear_inbound_completion_publication_pending(correlation);
                             return Resume::Pending(Pending::RecoveryStaleProduct);
                         }
@@ -77,6 +79,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 let outcome = self
                     .publish_installed_transport_completion(execution, phase, evidence, request);
                 let mut custody = self
+                    .runtime
                     .transport_completion_custody
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -120,6 +123,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     &mut retirements,
                 );
                 let mut custody = self
+                    .runtime
                     .transport_completion_custody
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -137,7 +141,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     }
                     RecoveryProgress::StaleReleased => {
                         entry.state = RetainedCompletion::Ready(evidence);
-                        self.primary_provider
+                        self.runtime
+                            .primary_provider
                             .clear_inbound_completion_publication_pending(correlation);
                         return Resume::Pending(Pending::RecoveryStaleProduct);
                     }
@@ -150,6 +155,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Work::Seal => {}
         }
         let mut custody = self
+            .runtime
             .transport_completion_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -172,6 +178,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let identity = performed.publication().publication().commit().identity();
         let protection = match self
+            .runtime
             .product_runtime
             .owner
             .inspection_port()
@@ -181,6 +188,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(_) => return Resume::Pending(Pending::TerminalProtectionUnavailable),
         };
         if self
+            .runtime
             .primary_provider
             .release_installed_transport_dispatch_provenance(performed, protection)
             .is_err()

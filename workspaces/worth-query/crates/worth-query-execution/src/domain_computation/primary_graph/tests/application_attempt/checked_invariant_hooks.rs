@@ -108,6 +108,7 @@ fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparati
         contacts: std::array::from_fn(|index| after[index] - before[index]),
         publications: world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
     }

@@ -93,7 +93,7 @@ where
         Source::Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&self.backing.runtime.product_runtime) {
+            match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok((
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -151,7 +151,7 @@ where
         Source::Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&self.backing.runtime.product_runtime) {
+            match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok((
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

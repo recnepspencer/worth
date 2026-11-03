@@ -106,7 +106,7 @@ fn reject_occupied_registration(
     let admitted_session = admit_provider_session(
         execution,
         &mut running,
-        &world.application.primary_graph_authority,
+        world.application.runtime.primary_graph_authority(),
         attempt_basis.retained_product(),
         unbound_run,
     )
@@ -117,12 +117,14 @@ fn reject_occupied_registration(
         .expect("the real terminal session must bind its captured attempt basis");
     let reservation = world
         .application
+        .runtime
         .primary_provider
         .reserve_application_attempt(&reserved_affinity)
         .expect("the rightful reservation must occupy the actual attempt store");
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .application_attempt_resource_count(),
         2,
@@ -134,7 +136,7 @@ fn reject_occupied_registration(
         provider_attempt,
         attempt_basis,
         WorthQueryProviderAttemptRegistrationContext::new(
-            &world.application.primary_provider,
+            &world.application.runtime.primary_provider,
             &admission,
             idempotency,
             outcome_identity,
@@ -155,6 +157,7 @@ fn reject_occupied_registration(
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .application_attempt_resource_count(),
         1,
@@ -203,7 +206,7 @@ fn while_peer_is_registered(
     let admitted = admit_provider_session(
         execution,
         &mut running,
-        &world.application.primary_graph_authority,
+        world.application.runtime.primary_graph_authority(),
         product.retained_clone(),
         mutation_run,
     )
@@ -214,7 +217,7 @@ fn while_peer_is_registered(
             provider_attempt,
             attempt_basis,
             WorthQueryProviderAttemptRegistrationContext::new(
-                &world.application.primary_provider,
+                &world.application.runtime.primary_provider,
                 &admission,
                 idempotency,
                 outcome_identity,
@@ -229,6 +232,7 @@ fn while_peer_is_registered(
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .application_attempt_resource_count(),
         1,
@@ -239,6 +243,7 @@ fn while_peer_is_registered(
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .application_attempt_resource_count(),
         1,
@@ -247,12 +252,13 @@ fn while_peer_is_registered(
 
     let commit_lane = world
         .application
+        .runtime
         .primary_provider
         .application_branch_commit_lane(product.observation());
     let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         application: &world.application,
-        provider: &world.application.primary_provider,
+        provider: &world.application.runtime.primary_provider,
         admission: &admission,
         authorization,
         idempotency,
@@ -299,9 +305,15 @@ fn start(
 > {
     let prepared = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        phase,
-        &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new(
+            world
+                .application
+                .validate_commit_program_in_advancement(phase, program)
+                .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
+            idempotency,
+            None,
+            None,
+        ),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("registration fixture must reach ordinary prepared posture")

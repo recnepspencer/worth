@@ -87,7 +87,7 @@ impl WorthQueryLiveDeliverySource {
             .slot
             .take()
             .expect("active reservation owns a batch slot");
-        slot.0
+        slot.batch
             .set(WorthQueryLiveCommitBatch {
                 sequence,
                 publication,

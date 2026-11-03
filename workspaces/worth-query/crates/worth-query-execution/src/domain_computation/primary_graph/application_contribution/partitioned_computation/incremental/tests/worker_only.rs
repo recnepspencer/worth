@@ -100,7 +100,7 @@ fn native_attempt<Owned: TestOwner>(
             let phase_custody = phase.test_host_request();
             let admission = projected_attempt::admit(world, &request, &phase);
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for(&world.application.runtime.product_runtime)
                 .unwrap();
             assert!(!execution.has_accounting());
             let allocation = execution.allocation_policy().unwrap();
@@ -277,6 +277,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     let field = AccountLabel::reference();
     let locator = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -289,7 +290,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         .application
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for(&world.application.runtime.product_runtime)
                 .unwrap();
             assert!(!execution.has_accounting());
             let execution = execution.execution_request().unwrap();

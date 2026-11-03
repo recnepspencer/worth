@@ -5,7 +5,8 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_relational::facade::identity::EntityId;
 
-pub(super) trait InspectionSourceScope {
+pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) trait InspectionSourceScope
+{
     fn entity_id(&self) -> EntityId;
     fn entity_kind(&self) -> worth_relational::facade::identity::KindId;
     fn validate_currentness(

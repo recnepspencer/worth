@@ -33,6 +33,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     ));
     let layout = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout

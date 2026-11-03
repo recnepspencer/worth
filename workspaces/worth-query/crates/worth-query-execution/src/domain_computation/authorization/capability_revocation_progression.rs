@@ -110,7 +110,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>
             + ApplicationCapabilityRevocationRequest<Schema, Capability>,
     {
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
@@ -160,6 +160,7 @@ where
             .capability_revocation_target()
             .map_err(|denial| rejected(denial.subject()))?;
         let installed = self
+            .runtime
             .authorization
             .capability_plan(capability)
             .ok_or_else(|| rejected(capability.contract().name()))?;

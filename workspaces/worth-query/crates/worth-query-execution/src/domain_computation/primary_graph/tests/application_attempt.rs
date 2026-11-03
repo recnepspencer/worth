@@ -2,6 +2,10 @@
 mod advancement_custody;
 #[path = "application_attempt/product_races.rs"]
 mod product_races;
+#[path = "application_attempt/recovery_custody.rs"]
+mod recovery_custody;
+#[path = "application_attempt/transaction_custody.rs"]
+mod transaction_custody;
 
 use std::time::Duration;
 

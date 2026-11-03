@@ -42,7 +42,7 @@ fn returned_findings_retain_native_request_memory_until_the_result_drops() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for(&world.application.runtime.product_runtime)
                 .unwrap();
             let available = match execution.reserve(1_u64 << 60) {
                 Err(Resource::MemoryLimit { admitted, .. }) => admitted,

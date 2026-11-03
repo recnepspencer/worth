@@ -61,7 +61,8 @@ pub(super) fn admit_selected_permission_basis_with_native_access<Schema>(
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
-    if product.observation().owner_identity() != application.product_runtime.owner.owner_identity()
+    if product.observation().owner_identity()
+        != application.runtime.product_runtime.owner.owner_identity()
     {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
@@ -102,7 +103,8 @@ pub(super) fn admit_retained<Schema: worth_query_installation::facade::Applicati
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: WorthQueryProductObservationLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
-    if product.observation().owner_identity() != application.product_runtime.owner.owner_identity()
+    if product.observation().owner_identity()
+        != application.runtime.product_runtime.owner.owner_identity()
     {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,

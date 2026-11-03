@@ -60,6 +60,7 @@ impl AuthorizationWorld {
         identity: &str,
     ) {
         self.application
+            .runtime
             .primary_provider
             .graph
             .output_lineage

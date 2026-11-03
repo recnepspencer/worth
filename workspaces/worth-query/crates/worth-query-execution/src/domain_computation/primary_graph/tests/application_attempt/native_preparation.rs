@@ -80,6 +80,7 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0
@@ -123,6 +124,7 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         1

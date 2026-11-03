@@ -16,7 +16,7 @@ pub(super) fn materialize_source_in_phase<Schema: BirthSchema>(
 ) {
     let scope = primary_graph::tests::fixture::live_scope();
     let execution = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for(&runtime.runtime.product_runtime)
         .unwrap();
     let source = runtime
         .on_branch(runtime.current_world())
@@ -87,6 +87,17 @@ fn tracked_aspect_absence_survives_query_checkpoint_then_invalidates_on_other_fi
     )
     .unwrap();
     assert_eq!(court::readmit(&restored, &retained, true), ids);
+    restored
+        .with_host_advancement(|phase| {
+            let selected = restored
+                .on_branch(restored.current_world())
+                .select(&phase)
+                .unwrap();
+            retained.assert_original_provenance(None, None, |settled| {
+                selected.require_current_output_settlements(&phase, [settled])
+            });
+        })
+        .unwrap();
     restored.with_host_advancement(|phase| {
         let read = retained.retained_read();
         let selected = restored.select_application_read_observation(&phase, &read).unwrap();

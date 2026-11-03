@@ -23,7 +23,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
             .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
@@ -56,7 +56,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .ok_or(ReceiverCause::Refused(Refusal::UnsupportedMode))?;
             let registry = graph.managed_derived_views();
             let observation = context.selected.product().observation().clone();
-            let source = &self.primary_provider.live_delivery;
+            let source = &self.runtime.primary_provider.live_delivery;
             let subscription = source
                 .open_predicate(&execution, &observation)
                 .map_err(live_denial)?;

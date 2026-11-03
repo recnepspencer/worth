@@ -92,7 +92,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let guard_matches = product
             .current_security_guard()
             .is_none_or(|guard| guard == expected);
-        if expected.owner_identity() != self.product_runtime.owner.owner_identity()
+        if expected.owner_identity() != self.runtime.product_runtime.owner.owner_identity()
             || !guard_matches
         {
             return Ok(None);
@@ -114,6 +114,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Ok(None);
         };
         let current = self
+            .runtime
             .product_runtime
             .owner
             .observation_port()

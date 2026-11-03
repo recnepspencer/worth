@@ -128,7 +128,7 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         let endpoint = endpoint.retained_product_lease();
         drop(selected);
         phase
-            .check_live_for(&self.application.product_runtime)
+            .check_live_for(&self.application.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let NavigationPhase::AwaitingOutputs {
             candidate,

@@ -35,6 +35,7 @@ impl LocalWorkflowSettlementPublication {
         let key = self.progress_update.key();
         let committed_revision = receipt.commit_reference().version_id;
         let _ = application
+            .runtime
             .primary_provider
             .graph
             .with_workflow_instance_progress_mut(key, |retention| {

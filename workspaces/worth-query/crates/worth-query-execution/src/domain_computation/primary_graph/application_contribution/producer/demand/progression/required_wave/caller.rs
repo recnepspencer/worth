@@ -54,6 +54,7 @@ where
     // only Dirty/Pending marks can extend the dependency closure.
 
     let candidate = runtime
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -75,6 +76,7 @@ where
     };
 
     let posture = runtime
+        .runtime
         .primary_provider
         .graph
         .source_owner
@@ -93,7 +95,7 @@ where
         // that changed refreshes on this wave first, whether or not anything
         // else demands it.
         let snapshot = wave.shared.selected().application_basis().snapshot_handle();
-        let graph = &runtime.primary_provider.graph;
+        let graph = &runtime.runtime.primary_provider.graph;
         let pending = graph.with_runtime(execution, |relational| {
             candidate.pending_consumed_output(
                 execution,
@@ -180,7 +182,7 @@ where
         &mut frame_custody,
         performed,
     );
-    frame_custody.hold_unfinished(&runtime.output_demands);
+    frame_custody.hold_unfinished(&runtime.runtime.output_demands);
     queue.conclude(result)
 }
 
@@ -221,7 +223,7 @@ where
     match demand
         .required_continuations
         .promote_caller_successor::<Family>(
-            &runtime.output_demands,
+            &runtime.runtime.output_demands,
             anchor_ready,
             selected,
             continues_caller,
@@ -250,6 +252,7 @@ where
         .as_ref()
         .expect("Current caller retains its Interest");
     runtime
+        .runtime
         .output_demands
         .finish_settlement_admitted(interest, selected)?;
     drop(demand.required_continuations.take_all());

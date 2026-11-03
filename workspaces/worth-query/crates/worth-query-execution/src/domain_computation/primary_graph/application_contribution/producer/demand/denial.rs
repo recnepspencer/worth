@@ -1,3 +1,5 @@
+mod settlement_provenance;
+pub use settlement_provenance::WorthQueryOutputSettlementProvenanceDenial;
 pub(super) mod cleanup_custody;
 mod diagnostic_copy;
 mod history_source;

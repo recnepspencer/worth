@@ -22,16 +22,23 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         maximum_changed_records: NonZeroUsize,
         maximum_ancestry_commits: NonZeroUsize,
     ) -> Result<bool, Denial> {
-        let (cursor, generation) = self.primary_provider.inbound_reconstruction_cursor();
-        let inspection = self.product_runtime.owner.inspection_port();
+        let (cursor, generation) = self
+            .runtime
+            .primary_provider
+            .inbound_reconstruction_cursor();
+        let inspection = self.runtime.product_runtime.owner.inspection_port();
         let page = inspection
             .performed_publication_page(cursor.as_ref(), maximum_world_slots)
             .map_err(|_| {
-                self.primary_provider.abandon_inbound_reconstruction();
+                self.runtime
+                    .primary_provider
+                    .abandon_inbound_reconstruction();
                 Denial::IndexUnavailable
             })?;
         if page.pending() {
-            self.primary_provider.abandon_inbound_reconstruction();
+            self.runtime
+                .primary_provider
+                .abandon_inbound_reconstruction();
             return Err(Denial::IndexUnavailable);
         }
         let mut entries = Vec::new();
@@ -45,7 +52,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
                 Ok(Some(entry)) => entries.push(entry),
                 Ok(None) => {}
                 Err(denial) => {
-                    self.primary_provider.abandon_inbound_reconstruction();
+                    self.runtime
+                        .primary_provider
+                        .abandon_inbound_reconstruction();
                     return Err(denial);
                 }
             }
@@ -55,15 +64,19 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
                 .publication_frontier_is_current(page.frontier())
                 .map_err(|_| Denial::IndexUnavailable)?
         {
-            self.primary_provider.abandon_inbound_reconstruction();
+            self.runtime
+                .primary_provider
+                .abandon_inbound_reconstruction();
             return Err(Denial::IndexUnavailable);
         }
-        self.primary_provider.advance_inbound_reconstruction(
-            generation,
-            page.frontier(),
-            page.next_after().cloned(),
-            entries,
-        )
+        self.runtime
+            .primary_provider
+            .advance_inbound_reconstruction(
+                generation,
+                page.frontier(),
+                page.next_after().cloned(),
+                entries,
+            )
     }
 
     fn rebuild_one_terminal(
@@ -77,6 +90,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             return Ok(None);
         };
         let row = self
+            .runtime
             .primary_provider
             .completion_row_from_commit_patch(execution, relational, maximum_changed_records)
             .map_err(|denial| match denial {
@@ -102,6 +116,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             return Err(Denial::WorldPairMismatch);
         }
         let history = self
+            .runtime
             .product_runtime
             .owner
             .inspection_port()
@@ -157,7 +172,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         maximum_ancestry_commits_per_completion: NonZeroUsize,
     ) -> Result<bool, WorthQueryInboundIndexRepairDenial> {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| WorthQueryInboundIndexRepairDenial::ForeignPhase)?;
         let installed = self
             .installed_inbound_verifier(handle)

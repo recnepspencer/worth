@@ -277,6 +277,7 @@ where
     application.installed_producers = producers;
     application.installed_conditionals = installed_conditionals;
     application
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -285,6 +286,7 @@ where
         .bind_implementation_build(build_identity);
     if let Some(support) = admitted_program_support {
         application
+            .runtime
             .product_runtime
             .activations
             .require_program_coordination();
@@ -296,7 +298,7 @@ where
         );
     }
     if let Some(checkpoint) = decoded_checkpoint {
-        application.recovered_outputs =
+        application.runtime.recovered_outputs =
             super::super::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
                 checkpoint,
                 &execution,

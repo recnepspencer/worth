@@ -86,7 +86,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let request = control.controls.request_scope();
         self.validate_history_output_control(phase, authority, binding, &control)?;
         let access = WorthQueryApplicationQueryAccessContext::new(control.principal, control.scope);
-        let execution = phase.checked_execution_request_for(&self.product_runtime)
+        let execution = phase.checked_execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| ReadDenial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let producer = retained.original_settled_producer().cloned();
         let (_, product, basis) = retained.into_parts();

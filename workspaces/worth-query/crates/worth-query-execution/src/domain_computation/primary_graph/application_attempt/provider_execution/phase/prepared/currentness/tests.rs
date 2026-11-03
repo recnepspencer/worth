@@ -54,7 +54,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
         .take_output_demand_observation()
         .unwrap();
     let retained_receipt = receipt.clone();
-    let registry = &world.application.output_demands;
+    let registry = &world.application.runtime.output_demands;
     let preparation = registry.begin_source_preparation(occurrence);
     let kind = PreparedOutputRootKind::Required(TypeId::of::<()>());
     let commit = registry
