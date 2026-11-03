@@ -17,6 +17,12 @@ class MemberDoorTests(unittest.TestCase):
     def test_closure_arrows_do_not_close_brackets(self):
         self.assertEqual(call_parts('(&self, f: impl FnMut(u8) -> Result<u8, E>, b: X) -> R'), ('', ('self', ['f', 'b'])))
 
+    def test_method_attributes_do_not_hide_the_method(self):
+        body = '\n    #[doc(hidden)]\n    #[expect(clippy::x, reason = "y")]\n    pub(crate) fn of<T: ?Sized + \'static>() -> Self { todo!() }\n'
+        door = method_door(('', '', 'Id', '', body), 'of')
+        self.assertIn("pub fn of_for_test<T: ?Sized + 'static>() -> Self", door)
+        self.assertIn('Self::of::<T>()', door)
+
     def test_impl_trait_arguments_infer_their_generics(self):
         self.assertEqual(call_parts('<F>(f: impl Fn(u8)) -> u8'), ('', (None, ['f'])))
 

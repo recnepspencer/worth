@@ -31,6 +31,8 @@ def method_door(header, name):
         if method != name:
             continue
         signature = signature.rstrip(';').strip()
+        # Attributes on the method (`#[doc(hidden)]`, `#[expect(..)]`) stay with the method.
+        signature = re.sub(r'^(?:#\s*\[(?:[^\[\]]|\[[^\]]*\])*\]\s*)+', '', signature)
         match = re.match(r'((?:(?:const|async|unsafe)\s+)*)fn\s+' + name + r'\b', signature)
         if match is None:
             return None
