@@ -187,6 +187,10 @@ fn prepared_cells_and_rotations_preserve_original_owners_and_grants() {
 #[derive(Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct CopyWithoutClone(u64);
 impl Clone for CopyWithoutClone {
+    #[expect(
+        clippy::non_canonical_clone_impl,
+        reason = "This adversarial key panics on Clone to prove the owner uses Copy"
+    )]
     fn clone(&self) -> Self {
         panic!("Copy-only map owners must never invoke custom Clone")
     }

@@ -53,7 +53,7 @@ fn application_allocation_bounds_follow_selected_output_and_cloned_string_length
         ScalarAspectType::String,
     );
     let mut spare = String::with_capacity(4096);
-    spare.push_str("x");
+    spare.push('x');
     let TransitionOutcome::Success(value) = validate_aspect_value(
         &contract,
         ContractValidationInput::Scalar(AspectValue::String(InternedString::Raw(spare))),

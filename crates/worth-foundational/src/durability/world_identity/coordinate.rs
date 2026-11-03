@@ -53,6 +53,24 @@ impl<'de> serde::Deserialize<'de> for WorldOwnerCoordinate {
     }
 }
 
+impl WorldOwnerCoordinate {
+    pub const fn home_owner(self) -> Option<DurableWorldOwnerIdentity> {
+        match self {
+            Self::Home { owner } => Some(owner),
+            Self::MemoryOnly { .. } => None,
+        }
+    }
+
+    /// The enclosing Home supplies its namespace. Memory-only rows retain
+    /// their original process observation and never qualify durability.
+    pub const fn row_owner_number(self) -> u64 {
+        match self {
+            Self::Home { owner } => owner.slot().get(),
+            Self::MemoryOnly { observation } => observation,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -85,23 +103,5 @@ mod tests {
         encoded["version"] = serde_json::to_value(1).unwrap();
         encoded["owner"]["home"] = serde_json::to_value([0_u8; 16]).unwrap();
         assert!(serde_json::from_value::<WorldOwnerCoordinate>(encoded).is_err());
-    }
-}
-
-impl WorldOwnerCoordinate {
-    pub const fn home_owner(self) -> Option<DurableWorldOwnerIdentity> {
-        match self {
-            Self::Home { owner } => Some(owner),
-            Self::MemoryOnly { .. } => None,
-        }
-    }
-
-    /// The enclosing Home supplies its namespace. Memory-only rows retain
-    /// their original process observation and never qualify durability.
-    pub const fn row_owner_number(self) -> u64 {
-        match self {
-            Self::Home { owner } => owner.slot().get(),
-            Self::MemoryOnly { observation } => observation,
-        }
     }
 }
