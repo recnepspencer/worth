@@ -56,10 +56,11 @@ pub fn assert_dispatch_scenario(
 ) {
     let world = dispatch_world(scenario);
     world.transport.under(script, frame_timeout);
-    let receipt = world.commit_notification(41);
+    let closed = world.commit_notification(41);
+    let receipt = closed.live_receipt().expect("actual original completion");
     assert!(receipt.co_committed_dispatch_outbox());
     assert_eq!(world.transport.attempts().len(), 1);
-    publication_assertions::assert_dispatch_publication_and_work(&receipt, scenario);
+    publication_assertions::assert_dispatch_publication_and_work(receipt, scenario);
 
     let posture = receipt
         .external_dispatch_posture()
