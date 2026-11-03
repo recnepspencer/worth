@@ -125,7 +125,9 @@ class MoveModel:
         if reference.glob:
             scope = self.everything.scopes.get(reference.module)
             words = {t.value for t in stream if t.kind == 'ident'}
-            return [Reference(reference.module, n) for n in sorted(self.visible(reference.module) & words)] \
+            # The glob itself reads its module (the rewrite keeps it a glob), plus each name it binds.
+            return [Reference(reference.module, None)] + [Reference(reference.module, n) for n in
+                                                          sorted(self.visible(reference.module) & words)] \
                 if scope is not None else []
         if reference.item is None or (reference.module + (reference.item,)) in self.index:
             module = reference.module if reference.item is None else reference.module + (reference.item,)
