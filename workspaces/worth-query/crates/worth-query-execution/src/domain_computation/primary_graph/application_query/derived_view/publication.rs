@@ -15,7 +15,7 @@ use super::dependency::ViewDependency;
 /// publication. A field event also changes aspect readers; a whole-aspect
 /// event changes every field reader of that aspect.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ViewChange {
+pub(in crate::domain_computation::primary_graph) enum ViewChange {
     /// Record lifecycle can change, so every dependency on the entity is affected.
     Entity(EntityId),
     Aspect(EntityId, AspectKey),
@@ -23,7 +23,7 @@ pub enum ViewChange {
     Adjacency(EntityId, KindId, u8),
 }
 
-pub struct ViewPublicationBasis<'a> {
+pub(in crate::domain_computation::primary_graph) struct ViewPublicationBasis<'a> {
     pub before: &'a CompositeCommitIdentity,
     pub relational_branch: &'a BranchId,
     pub product_branch: &'a ProductBranchIdentity,

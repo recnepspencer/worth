@@ -45,7 +45,7 @@ impl CompletedComputationRetention {
             },
         }
     }
-    pub fn seal(
+    pub(in crate::domain_computation::primary_graph) fn seal(
         self,
         facts: Option<SealedComputationFacts>,
     ) -> Result<SealedComputationRetention, ()> {

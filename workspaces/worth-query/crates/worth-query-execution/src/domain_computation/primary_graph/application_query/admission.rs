@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph) use funded_parameters::capture_
 pub(in crate::domain_computation) use funded_parameters::CapturedApplicationQueryParameters;
 mod governed_access;
 mod live_readmission;
-pub mod permission;
+mod permission;
 mod source_readmission;
 mod work_limit;
 pub(in crate::domain_computation::primary_graph::application_query) use governed_access::governance_denial;
@@ -34,7 +34,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn admit_application_query<
+    pub(in crate::domain_computation::primary_graph) fn admit_application_query<
         'a,
         Query,
         Parameters,

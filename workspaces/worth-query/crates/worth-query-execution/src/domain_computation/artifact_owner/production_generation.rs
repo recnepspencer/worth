@@ -6,7 +6,7 @@ use super::{WorthQueryArtifactDenial, WorthQueryWorkflowArtifactRegistry};
 pub struct WorthQueryArtifactProductionGeneration(u64);
 
 impl WorthQueryArtifactProductionGeneration {
-    pub const fn initial() -> Self {
+    pub(super) const fn initial() -> Self {
         Self(1)
     }
 
@@ -19,7 +19,7 @@ impl WorthQueryArtifactProductionGeneration {
     }
 }
 
-pub struct WorthQueryArtifactProductionGenerationPending {
+pub(crate) struct WorthQueryArtifactProductionGenerationPending {
     pub(super) registry: Arc<WorthQueryWorkflowArtifactRegistry>,
     pub(super) prior: WorthQueryArtifactProductionGeneration,
     pub(super) next: WorthQueryArtifactProductionGeneration,

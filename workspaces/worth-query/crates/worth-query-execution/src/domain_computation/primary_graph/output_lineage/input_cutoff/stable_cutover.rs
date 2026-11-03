@@ -37,7 +37,7 @@ impl From<WorthQueryOutputDemandDenial> for StablePublicationStop {
 /// or for the row a retained observation selects, which its reader verifies
 /// at that observation before using it.
 #[derive(Clone)]
-pub struct PublishedStableLineage {
+pub(in crate::domain_computation::primary_graph) struct PublishedStableLineage {
     cell: Arc<OnceLock<RecordedOutput>>,
     observation: ProductBranchObservation,
 }

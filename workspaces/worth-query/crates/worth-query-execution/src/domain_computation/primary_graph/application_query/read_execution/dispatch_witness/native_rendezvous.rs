@@ -34,13 +34,13 @@ struct NativeState {
     initial_acquisitions: Option<u64>,
     exit_acquisitions: Vec<(EntityId, u64)>,
 }
-pub struct NativeReadRendezvousGuardForTest {
+pub(in crate::domain_computation::primary_graph) struct NativeReadRendezvousGuardForTest {
     witness: Arc<DispatchWitness>,
     gate: Arc<NativeReadRendezvous>,
     previous: Option<Arc<dyn NativeReadRendezvousControl>>,
 }
 impl DispatchWitness {
-    pub fn hold_native_reads_for_test(
+    pub(in crate::domain_computation::primary_graph) fn hold_native_reads_for_test(
         self: &Arc<Self>,
         roots: [EntityId; 2],
         owner: ReadLockProbeForTest,
@@ -66,7 +66,7 @@ impl DispatchWitness {
             previous,
         }
     }
-    pub fn with_native_owner_lock_for_test<T>(
+    pub(in crate::domain_computation::primary_graph) fn with_native_owner_lock_for_test<T>(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce() -> T,
@@ -84,7 +84,7 @@ impl DispatchWitness {
             None => read(),
         }
     }
-    pub fn release_native_snapshot_for_test(&self) {
+    pub(in crate::domain_computation::primary_graph) fn release_native_snapshot_for_test(&self) {
         if let Some(gate) = self.native_reads.lock().unwrap().clone() {
             gate.release_snapshot();
         }
@@ -171,7 +171,7 @@ impl NativeReadRendezvousControl for NativeReadRendezvous {
     }
 }
 impl NativeReadRendezvousGuardForTest {
-    pub fn assert_overlap_for_test(&self) {
+    pub(in crate::domain_computation::primary_graph) fn assert_overlap_for_test(&self) {
         let state = self.gate.state.lock().unwrap();
         assert!(
             !state.watchdog_failed,

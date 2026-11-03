@@ -11,12 +11,12 @@ pub(in crate::domain_computation::primary_graph) use dependencies::StructuralWal
 mod commitment;
 mod key;
 pub(in crate::domain_computation::primary_graph) mod memory;
-pub mod read;
+mod read;
 pub(in crate::domain_computation::primary_graph) use key::StructuralWalkKey;
 pub(in crate::domain_computation::primary_graph) use read::StructuralWalkQuery;
 
 #[derive(Debug)]
-pub struct StructuralWalkObservation {
+pub(in crate::domain_computation) struct StructuralWalkObservation {
     query: StructuralWalkKey,
     native: PinnedStructuralWalk,
     commitment: [u8; 32],
@@ -66,16 +66,16 @@ impl StructuralWalkObservation {
         poll()?;
         Ok(true)
     }
-    pub fn key(&self) -> &StructuralWalkKey {
+    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &StructuralWalkKey {
         &self.query
     }
-    pub fn native(&self) -> &PinnedStructuralWalk {
+    pub(in crate::domain_computation::primary_graph) fn native(&self) -> &PinnedStructuralWalk {
         &self.native
     }
     pub(in crate::domain_computation::primary_graph) fn commitment(&self) -> [u8; 32] {
         self.commitment
     }
-    pub fn source(&self) -> &SnapshotHandle {
+    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
         &self.snapshot
     }
     pub(in crate::domain_computation::primary_graph) fn checkpoint(

@@ -1,4 +1,4 @@
-pub mod field_text;
+mod field_text;
 use super::actor::encoding::FundedActorText;
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
 pub(in crate::domain_computation::primary_graph) use field_text::WorkflowApprovalFieldText;
@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
 
-pub struct WorkflowApprovalMeaning {
+pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalMeaning {
     pub identity: [u8; 32],
     pub identity_text: String,
     pub instance_identity: String,
@@ -49,7 +49,7 @@ pub struct WorkflowApprovalMeaning {
     pub decision: super::super::application_attempt::WorkflowApprovalDecision,
 }
 
-pub fn workflow_approval_fields(
+pub(in crate::domain_computation::primary_graph) fn workflow_approval_fields(
     layout: &WorthQueryWorkflowLayout,
     meaning: &WorkflowApprovalMeaning,
     basis: &AdmittedRelationalBranchBasis,

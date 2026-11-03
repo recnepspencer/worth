@@ -19,7 +19,7 @@ impl WorthQueryPrimaryGraphProvider {
     /// Prepare the same one terminal Relational mutation used by authenticated
     /// inbound completion. Transport evidence is identified as such in the
     /// canonical row; no verifier claim or signed message is fabricated.
-    pub fn prepare_installed_transport_completion_candidate(
+    pub(in crate::domain_computation::primary_graph) fn prepare_installed_transport_completion_candidate(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,

@@ -28,7 +28,7 @@ type Partitions = BTreeMap<Option<[u8; 32]>, Generations>;
 type Occurrences = BTreeMap<ProductBranchIncarnation, Partitions>;
 
 #[derive(Default)]
-pub struct OutputPartitionIndex {
+pub(super) struct OutputPartitionIndex {
     slots: BTreeMap<SemanticSource, Occurrences>,
 }
 
@@ -55,7 +55,7 @@ impl OutputPartitionIndex {
             .is_some_and(|generations| generations.contains_key(&coordinate.generation))
     }
 
-    pub fn insert_vacancy(
+    pub(super) fn insert_vacancy(
         &mut self,
         source: SemanticSource,
         coordinate: ProductCoordinate,
@@ -106,7 +106,7 @@ impl OutputPartitionIndex {
         }
     }
 
-    pub fn insert(
+    pub(super) fn insert(
         &mut self,
         source: SemanticSource,
         occurrence: ProductBranchIncarnation,
@@ -258,7 +258,7 @@ impl WorthQueryApplicationOutputLineage {
             slot,
         ))
     }
-    pub fn latest_output_in_partition(
+    pub(super) fn latest_output_in_partition(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
@@ -268,7 +268,7 @@ impl WorthQueryApplicationOutputLineage {
             .and_then(|cell| cell.get())
     }
 
-    pub fn matching_output_in_partition_budgeted(
+    pub(super) fn matching_output_in_partition_budgeted(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
@@ -315,7 +315,7 @@ impl WorthQueryApplicationOutputLineage {
         Ok((None, work))
     }
 
-    pub fn matching_legacy_output_budgeted(
+    pub(super) fn matching_legacy_output_budgeted(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,

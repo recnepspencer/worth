@@ -20,7 +20,7 @@ pub(super) enum DemandProgressionProvenance {
     RequiredSuccessor(RequiredSuccessorProvenance),
 }
 
-pub struct RequiredSuccessorProvenance {
+pub(super) struct RequiredSuccessorProvenance {
     commit_authority: WorthQueryProducerCommitAuthority,
     installed_edition: InstalledProducerEdition,
 }

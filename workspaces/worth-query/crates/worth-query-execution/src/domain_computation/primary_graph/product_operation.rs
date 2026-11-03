@@ -1,5 +1,5 @@
 mod application_basis;
-pub mod shared_query_basis;
+mod shared_query_basis;
 pub(in crate::domain_computation::primary_graph) use shared_query_basis::SelectedQueryBasisRetentionStop;
 pub(in crate::domain_computation) use shared_query_basis::SharedSelectedProductOperation;
 mod branches;
@@ -9,7 +9,7 @@ mod close;
 mod conditional_definition;
 mod context;
 pub(in crate::domain_computation::primary_graph) use context::SelectedQueryOrigin;
-pub mod correction_source;
+pub(in crate::domain_computation::primary_graph) mod correction_source;
 pub(in crate::domain_computation::primary_graph) mod document_history;
 pub use correction_source::{
     WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,
@@ -21,13 +21,13 @@ pub use correction_source::{
     WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
     WorthQuerySelectedCorrectionSource,
 };
-pub mod generated_materialization;
+mod generated_materialization;
 pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;
 mod history;
 mod observation_room;
 mod operation;
-pub mod program_adoption;
-pub mod query;
+pub(in crate::domain_computation::primary_graph) mod program_adoption;
+mod query;
 mod relational_change_delivery;
 mod security_basis;
 mod transaction;

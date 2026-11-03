@@ -10,7 +10,7 @@ use std::{
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 use worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract;
 
-pub struct WorthQueryApplicationInspectionTarget {
+pub(in crate::domain_computation) struct WorthQueryApplicationInspectionTarget {
     original: InspectionOriginal,
     contract: WorthQueryInstalledApplicationInspectionContract,
     connection_source: Option<Arc<Self>>,
@@ -25,13 +25,13 @@ enum InspectionOriginal {
     Source(super::source_original::SourceOriginal),
 }
 
-pub enum InspectionTargetDenial {
+pub(super) enum InspectionTargetDenial {
     ForeignBinding,
     Storage(CaptureStop<RetainedStorageDenial>),
 }
 
 impl WorthQueryApplicationInspectionTarget {
-    pub fn capture(
+    pub(super) fn capture(
         execution: &ExecutionRequest<'_, '_>,
         original: &WorthQueryApplicationQueryObservation,
         before: Option<&WorthQueryApplicationQueryObservation>,
@@ -112,7 +112,7 @@ impl WorthQueryApplicationInspectionTarget {
                 .as_ref()
                 .is_some_and(|source| Arc::ptr_eq(source, target))
     }
-    pub fn original_subject(
+    pub(in crate::domain_computation) fn original_subject(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
         match &self.original {
@@ -152,7 +152,7 @@ impl WorthQueryApplicationInspectionTarget {
             _ => None,
         }
     }
-    pub fn parameters(&self) -> worth_foundational::facade::CanonicalDigestId {
+    pub(super) fn parameters(&self) -> worth_foundational::facade::CanonicalDigestId {
         match &self.original {
             InspectionOriginal::Query { original, .. } => {
                 original.source.parameter_binding_identity
@@ -163,7 +163,7 @@ impl WorthQueryApplicationInspectionTarget {
         }
     }
 
-    pub fn contract(
+    pub(in crate::domain_computation) fn contract(
         &self,
     ) -> &WorthQueryInstalledApplicationInspectionContract {
         &self.contract
@@ -205,7 +205,7 @@ impl WorthQueryApplicationInspectionTarget {
         }
     }
 
-    pub fn original(&self) -> Option<&WorthQueryApplicationQueryObservation> {
+    pub(super) fn original(&self) -> Option<&WorthQueryApplicationQueryObservation> {
         match &self.original {
             InspectionOriginal::Query { original, .. } => Some(original),
             InspectionOriginal::Source(_) => None,

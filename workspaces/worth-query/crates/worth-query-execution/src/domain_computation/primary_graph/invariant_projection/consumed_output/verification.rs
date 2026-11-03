@@ -37,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) use work_budget::map_verificati
 pub(in crate::domain_computation::primary_graph) use work_budget::reserve_pending;
 
 #[derive(Clone, Copy)]
-pub struct EvidenceView<'a> {
+pub(in crate::domain_computation::primary_graph) struct EvidenceView<'a> {
     pub(super) identity: &'a Arc<RecordedSettlementIdentity>,
     pub(super) source_facts:
         &'a crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
@@ -90,7 +90,7 @@ impl<'a> From<&'a ConsumedOutputEvidence> for EvidenceView<'a> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ConsumedOutputVerification {
+pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification {
     Current,
     ChangedDirectFact(usize),
     ChangedUpstream,
@@ -112,7 +112,7 @@ impl ConsumedOutputVerification {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ConsumedOutputVerificationStop {
+pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerificationStop {
     ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     SourceQueryAuthorization(
@@ -129,7 +129,7 @@ pub enum ConsumedOutputVerificationStop {
 }
 
 impl ConsumedOutputEvidence {
-    pub fn verify_many_with_admission(
+    pub(in crate::domain_computation::primary_graph) fn verify_many_with_admission(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: &[Self],
         owner: &SourceInvalidationOwner,

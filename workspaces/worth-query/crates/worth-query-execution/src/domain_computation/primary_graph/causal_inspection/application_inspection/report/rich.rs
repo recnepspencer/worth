@@ -2,9 +2,9 @@
 use super::super::admission::rich::PreparedRichMaterialization;
 use super::*;
 use worth_runtime_bridge::facade::BridgeIdentityEvidence;
-pub struct FundedRichInspectionReport {
-    pub reference: FundedInspectionReport,
-    pub body: PreparedRichMaterialization,
+pub(in super::super) struct FundedRichInspectionReport {
+    pub(in super::super) reference: FundedInspectionReport,
+    pub(in super::super) body: PreparedRichMaterialization,
     pub(in super::super) identity: BridgeIdentityEvidence,
     pub(in super::super) retained_bytes: u64,
     pub(in super::super) connection_identity: Option<BridgeIdentityEvidence>,
@@ -94,7 +94,7 @@ fn finish(
     })
 }
 impl PreparedRichMaterialization {
-    pub fn matches(&self, reference: &FundedInspectionReport) -> bool {
+    pub(in super::super) fn matches(&self, reference: &FundedInspectionReport) -> bool {
         self.scope.session == reference.session()
             && self.scope.plan == reference.plan()
             && Arc::ptr_eq(&self.scope.target, reference.target())

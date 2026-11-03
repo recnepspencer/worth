@@ -38,7 +38,7 @@ pub(super) enum WorthQueryWorkflowArtifactRegistryPosture {
 }
 
 impl WorthQueryWorkflowArtifactRegistry {
-    pub fn new(run_identity: String) -> Self {
+    pub(super) fn new(run_identity: String) -> Self {
         Self {
             run_identity,
             state: Mutex::new(WorthQueryWorkflowArtifactRegistryState {
@@ -144,7 +144,7 @@ impl WorthQueryWorkflowArtifactRegistry {
         }
     }
 
-    pub fn prepare_next_generation(
+    pub(crate) fn prepare_next_generation(
         self: &Arc<Self>,
     ) -> Result<WorthQueryArtifactProductionGenerationPending, WorthQueryArtifactDenial> {
         let mut state = self

@@ -11,7 +11,7 @@ use worth_query_installation::facade::OperationReads;
 #[path = "resolution/candidate_verification.rs"]
 mod candidate_verification;
 #[path = "resolution/cardinality.rs"]
-pub mod cardinality;
+mod cardinality;
 mod current_identity;
 #[path = "resolution/decision_plan_denial.rs"]
 mod decision_plan_denial;

@@ -2,7 +2,7 @@
 //! The checkpoint handoff consumes the sealed paid inspection; storage carries its Ready.
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkClaim;
-pub enum MemberInput<Ready> {
+pub(in super::super) enum MemberInput<Ready> {
     /// The popped claim pays its registry selection at first inspection.
     Queued {
         claim: RequiredWorkClaim,
@@ -12,7 +12,7 @@ pub enum MemberInput<Ready> {
 }
 impl<Ready> MemberInput<Ready> {
     /// The actual owner that issued this native pin has paid for its selection.
-    pub fn native(ready: Ready) -> Self {
+    pub(in super::super) fn native(ready: Ready) -> Self {
         Self::Selected(ready)
     }
     pub(in super::super) fn selected(&self) -> &Ready {

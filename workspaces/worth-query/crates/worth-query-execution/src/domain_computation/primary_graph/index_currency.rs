@@ -11,7 +11,7 @@ pub(crate) use selected_field::ensure_selected_field_indexes_admitted;
 pub(crate) use selected_field::SelectedFieldIndexAdmissionStop;
 
 #[derive(Debug)]
-pub enum WorthQueryPrimaryIndexCurrencyDenial {
+pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Basis(super::exact_basis_access::WorthQueryExactBasisSnapshotDenial),
     IndexUnavailable(&'static str),
@@ -38,7 +38,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     /// Currency is judged on the observing branch. A fork that has not
     /// committed selects its parent's commit, and a branch-scoped index still
     /// needs a generation of its own there, built from the same exact root.
-    pub fn ensure_primary_indexes_for_basis(
+    pub(crate) fn ensure_primary_indexes_for_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut RelationalRuntime,

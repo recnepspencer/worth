@@ -127,9 +127,9 @@ fn clear_observations() {
 }
 
 thread_local! { static RETAINED_FACT_READ: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
-pub struct RetainedFactComparison;
+pub(super) struct RetainedFactComparison;
 impl RetainedFactComparison {
-    pub fn enter() -> Self {
+    pub(super) fn enter() -> Self {
         RETAINED_FACT_READ.set(RETAINED_FACT_READ.get() + 1);
         Self
     }
@@ -139,7 +139,7 @@ impl Drop for RetainedFactComparison {
         RETAINED_FACT_READ.set(RETAINED_FACT_READ.get() - 1);
     }
 }
-pub fn retained_fact_comparison_is_active_for_test() -> bool {
+pub(crate) fn retained_fact_comparison_is_active_for_test() -> bool {
     crate::domain_computation::execution_observation::is_installed()
         && RETAINED_FACT_READ.get() != 0
 }

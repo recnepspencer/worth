@@ -67,12 +67,12 @@ impl WorthQueryExecutionGraphReadStreamEvidence {
     }
 }
 
-pub struct WorthQueryGraphReadStreamAccumulator {
+pub(crate) struct WorthQueryGraphReadStreamAccumulator {
     materialization: WorthQueryGraphReadMaterialization,
 }
 
 impl WorthQueryGraphReadStreamAccumulator {
-    pub fn new(_call: &WorthQueryGraphProviderCall) -> Self {
+    pub(crate) fn new(_call: &WorthQueryGraphProviderCall) -> Self {
         Self {
             materialization: WorthQueryGraphReadMaterialization::default(),
         }
@@ -87,7 +87,7 @@ impl WorthQueryGraphReadStreamAccumulator {
             .saturating_add(std::mem::size_of::<usize>().saturating_mul(2))
     }
 
-    pub fn admit_chunk(&mut self, material: WorthQueryGraphReadMaterial) -> usize {
+    pub(crate) fn admit_chunk(&mut self, material: WorthQueryGraphReadMaterial) -> usize {
         self.materialization.push(material)
     }
 
@@ -95,7 +95,7 @@ impl WorthQueryGraphReadStreamAccumulator {
         self.materialization.retained_bytes()
     }
 
-    pub fn finish(
+    pub(crate) fn finish(
         self,
         call: &WorthQueryGraphProviderCall,
     ) -> WorthQueryExecutionGraphReadStreamEvidence {

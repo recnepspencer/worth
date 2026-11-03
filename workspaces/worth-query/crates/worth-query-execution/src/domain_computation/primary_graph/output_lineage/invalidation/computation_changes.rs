@@ -13,14 +13,14 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 /// Only a performed record that actually retained a computation requests tracking.
 #[derive(Clone, Copy)]
-pub struct ComputationRegistration(());
+pub(in crate::domain_computation::primary_graph) struct ComputationRegistration(());
 impl ComputationRegistration {
-    pub fn retained() -> Self {
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn retained() -> Self {
         Self(())
     }
 }
 #[derive(Clone)]
-pub struct ComputationChanges {
+pub(in crate::domain_computation::primary_graph) struct ComputationChanges {
     pub(in crate::domain_computation::primary_graph::output_lineage) identity:
         Arc<RecordedSettlementIdentity>,
     selected: worth_relational::facade::runtime::PositionedRelationalSnapshot,
@@ -38,7 +38,7 @@ pub struct ComputationChanges {
 impl ComputationChanges {
     /// A publication can readmit after computation. Only the native owner can
     /// establish that its genuine before-image still names this captured source.
-    pub fn matches_publication_source(
+    pub(in crate::domain_computation::primary_graph) fn matches_publication_source(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -56,7 +56,7 @@ impl ComputationChanges {
     }
     /// The same native-position check lends this image to the reader's exact
     /// live pin. The cutoff's separate snapshot handle is never substituted.
-    pub fn for_snapshot(
+    pub(in crate::domain_computation::primary_graph) fn for_snapshot(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -66,17 +66,17 @@ impl ComputationChanges {
         selected.snapshot = snapshot.clone();
         Some(selected)
     }
-    pub fn ordinals(&self) -> &OrdSet<usize> {
+    pub(in crate::domain_computation::primary_graph) fn ordinals(&self) -> &OrdSet<usize> {
         &self.ordinals
     }
-    pub fn bind_original(
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn bind_original(
         mut self,
         original: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     ) -> Self {
         self.original = Some(original);
         self
     }
-    pub fn at_snapshot(
+    pub(in crate::domain_computation::primary_graph) fn at_snapshot(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -91,7 +91,7 @@ impl ComputationChanges {
     }
 }
 impl SourceInvalidationOwner {
-    pub fn computation_changes(
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn computation_changes(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,

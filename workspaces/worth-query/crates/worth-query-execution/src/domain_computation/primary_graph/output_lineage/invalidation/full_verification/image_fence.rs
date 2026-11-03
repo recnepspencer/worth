@@ -3,7 +3,7 @@
 use super::*;
 
 impl FullVerificationImage<'_> {
-    pub fn fence_semantic_image(
+    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn fence_semantic_image(
         &self,
         observed: &OrdSet<Arc<RecordedSettlementIdentity>>,
     ) -> Result<(), FullVerificationStop> {

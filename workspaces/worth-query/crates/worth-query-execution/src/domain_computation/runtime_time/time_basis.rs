@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_capability::ApplicationCapabili
 use super::time_source::{WorthQueryRuntimeTimeSource, WorthQuerySystemRuntimeTimeSource};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryRuntimeTimeDenial {
+pub(crate) enum WorthQueryRuntimeTimeDenial {
     SourceUnavailable,
     BeforeUnixEpoch,
     TimelineValueOverflow,
@@ -35,7 +35,7 @@ impl WorthQueryRuntimeTimeSample {
     }
 }
 
-pub struct WorthQueryRuntimeClock {
+pub(crate) struct WorthQueryRuntimeClock {
     source: Box<dyn WorthQueryRuntimeTimeSource>,
 }
 
@@ -46,7 +46,7 @@ impl WorthQueryRuntimeClock {
         }
     }
 
-    pub fn from_source(
+    pub(in crate::domain_computation) fn from_source(
         source: impl WorthQueryRuntimeTimeSource,
     ) -> Self {
         Self {

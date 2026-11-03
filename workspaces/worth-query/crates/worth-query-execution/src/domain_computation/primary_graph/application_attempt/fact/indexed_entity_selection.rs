@@ -18,7 +18,7 @@ pub enum IndexedSelectionReobserveDenial {
 
 /// Why an indexed lookup yields no selection fact.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryIndexedSelectionRefusal {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryIndexedSelectionRefusal {
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// More entities hold the value than the lookup's candidate limit.
     Overflowed,
@@ -26,7 +26,7 @@ pub enum WorthQueryIndexedSelectionRefusal {
     Unavailable,
 }
 
-pub fn observe_indexed_entity_selection(
+pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selection(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -95,7 +95,7 @@ fn selection_refusal(denial: IndexedSelectionReobserveDenial) -> WorthQueryIndex
     }
 }
 
-pub fn observe_checked(
+fn observe_checked(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -127,7 +127,7 @@ pub fn observe_checked(
     })
 }
 
-pub fn remains_equal(
+pub(super) fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

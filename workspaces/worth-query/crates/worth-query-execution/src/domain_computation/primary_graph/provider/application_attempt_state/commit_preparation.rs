@@ -10,8 +10,8 @@ use super::super::{
     WorthQueryPrimaryGraphProvider,
 };
 
-pub mod preimage_retention;
-pub mod relational_commit;
+mod preimage_retention;
+mod relational_commit;
 pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQueryPreImageRetentionWork;
 pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;

@@ -1,6 +1,6 @@
 //! The existing measured-call tree, with relative counts and funded AVL joins.
 use super::*;
-pub fn build(
+pub(super) fn build(
     start: usize,
     entries: &[(ComputationRead, Call)],
     execution: &QueryRequestExecution<'_>,
@@ -259,7 +259,7 @@ pub(super) fn remove(
         }
     }
 }
-pub fn summary(node: &Node, range: &Range<usize>) -> Option<CallSummary> {
+pub(super) fn summary(node: &Node, range: &Range<usize>) -> Option<CallSummary> {
     summary_at(node, 0, range)
 }
 fn summary_at(node: &Node, start: usize, range: &Range<usize>) -> Option<CallSummary> {
@@ -282,7 +282,7 @@ fn summary_at(node: &Node, start: usize, range: &Range<usize>) -> Option<CallSum
         }
     }
 }
-pub fn visit<E>(
+pub(super) fn visit<E>(
     node: &Node,
     range: &Range<usize>,
     marked: &BTreeSet<usize>,

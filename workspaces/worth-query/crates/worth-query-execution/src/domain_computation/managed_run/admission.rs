@@ -15,7 +15,7 @@ use crate::domain_computation::{
 };
 
 impl WorthQueryExecutionRuntime {
-    pub fn admit_direct_run(
+    pub(in crate::domain_computation) fn admit_direct_run(
         &self,
         operation: &WorthQueryExecutionBoundOperationAuthority,
         resource_attempt: WorthQueryDirectExecutionResourceAttempt,
@@ -169,7 +169,7 @@ fn validate_run_lower(
     Ok(counters)
 }
 
-pub struct WorthQueryManagedRunAdmissionRejection {
+pub(crate) struct WorthQueryManagedRunAdmissionRejection {
     denial: WorthQueryManagedRunDenial,
     resource_attempt: WorthQueryDirectExecutionResourceAttempt,
     bridge_basis: BridgeBoundExecutionBasis,
@@ -177,11 +177,11 @@ pub struct WorthQueryManagedRunAdmissionRejection {
 }
 
 impl WorthQueryManagedRunAdmissionRejection {
-    pub fn denial(&self) -> &WorthQueryManagedRunDenial {
+    pub(crate) fn denial(&self) -> &WorthQueryManagedRunDenial {
         &self.denial
     }
 
-    pub fn into_resource_attempt(self) -> WorthQueryDirectExecutionResourceAttempt {
+    pub(crate) fn into_resource_attempt(self) -> WorthQueryDirectExecutionResourceAttempt {
         self.resource_attempt
     }
 }

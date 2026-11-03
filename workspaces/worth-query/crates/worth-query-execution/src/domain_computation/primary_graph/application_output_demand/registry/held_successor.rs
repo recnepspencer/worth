@@ -24,7 +24,7 @@ impl WorthQueryOutputDemandRegistry {
     /// Keep `successor` on the row `key_of` names. Returns what the caller
     /// drops after this call: a replaced older successor of that row, or
     /// `successor` itself when its row no longer needs it.
-    pub fn hold_required_successor(
+    pub(in crate::domain_computation::primary_graph) fn hold_required_successor(
         &self,
         successor: HeldRequiredSuccessor,
         key_of: impl FnOnce(&HeldRequiredSuccessor) -> Option<&WorthQueryOutputDemandKey>,
@@ -47,7 +47,7 @@ impl WorthQueryOutputDemandRegistry {
     }
 
     /// Take the successor held on `key`'s row so a dependent can resume it.
-    pub fn take_published_held_successor(
+    pub(in crate::domain_computation::primary_graph) fn take_published_held_successor(
         &self,
         key: &WorthQueryOutputDemandKey,
     ) -> Result<Option<HeldRequiredSuccessor>, WorthQueryOutputDemandDenial> {

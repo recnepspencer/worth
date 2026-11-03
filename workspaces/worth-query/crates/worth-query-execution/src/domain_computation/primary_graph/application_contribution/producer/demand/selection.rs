@@ -21,8 +21,8 @@ enum SelectionPurpose {
 
 mod native_selection;
 mod recovered_candidates;
-pub mod retained_liveness;
-pub mod selected_basis;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) mod retained_liveness;
+mod selected_basis;
 
 pub(super) use selected_basis::source_basis_is_admitted;
 

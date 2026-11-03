@@ -24,7 +24,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ///
     /// A suspended record that retained no performed proof has nothing to
     /// continue. It is recorded as a restored row, Fresh until verified.
-    pub fn record_restored_generated_output(
+    pub(super) fn record_restored_generated_output(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,

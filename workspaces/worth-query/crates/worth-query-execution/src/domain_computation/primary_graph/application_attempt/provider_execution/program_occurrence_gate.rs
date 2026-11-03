@@ -24,7 +24,7 @@ use super::super::{
 
 /// The rostered program one occurrence resolved to, together with the exact
 /// stored rendering the attempt observed.
-pub struct WorthQueryOccurrenceProgram<
+pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryOccurrenceProgram<
     'support,
 > {
     entry: &'support WorthQueryProgramSupportEntry,
@@ -67,7 +67,7 @@ pub(super) fn require_selected_program_matches_occurrence(
 }
 
 /// Requires the activated program to declare the effectful operation route.
-pub fn require_occurrence_acts_through<Operation: 'static>(
+pub(super) fn require_occurrence_acts_through<Operation: 'static>(
     occurrence: &WorthQueryOccurrenceProgram<'_>,
 ) -> Result<(), WorthQueryApplicationCommitDenial> {
     if !occurrence

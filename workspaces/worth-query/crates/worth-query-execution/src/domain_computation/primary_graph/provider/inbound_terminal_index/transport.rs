@@ -17,7 +17,7 @@ impl WorthQueryCanonicalInboundCompletion {
     /// effect. A transport winner's original attempt remains in terminal
     /// provenance, but a later physical attempt on that same outbox has a
     /// different attempt and observation identity by design.
-    pub fn matches_transport_observation(
+    pub(in crate::domain_computation::primary_graph) fn matches_transport_observation(
         &self,
         evidence: &InstalledTransportCompletion,
         binding: &WorthQueryInstalledTransportCompletionBinding,

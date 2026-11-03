@@ -13,7 +13,7 @@ use crate::domain_computation::application_aftermath::{
 };
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn reserve_installed_transport_publication(
+    pub(in crate::domain_computation) fn reserve_installed_transport_publication(
         &self,
         binding: &WorthQueryInstalledTransportCompletionBinding,
     ) -> Result<WorthQueryTransportPublicationPermit, WorthQueryTransportPublicationPermitDenial>

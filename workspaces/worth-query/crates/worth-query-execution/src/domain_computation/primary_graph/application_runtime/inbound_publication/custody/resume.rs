@@ -4,7 +4,7 @@ use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRet
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Continue one retained observation. A World-performed result stays in
     /// custody until the exact World protection and provider seal both succeed.
-    pub fn resume_installed_transport_completion(
+    pub(in crate::domain_computation::primary_graph) fn resume_installed_transport_completion(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

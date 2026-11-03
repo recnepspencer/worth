@@ -1,13 +1,13 @@
 mod authority;
-pub mod producer_identity;
+mod producer_identity;
 use producer_identity::SettlementProducerIdentity;
 mod current_commit;
 use current_commit::reacquire_current_committed_output;
 mod current_accepted;
-pub mod observation;
+pub(super) mod observation;
 mod producing_publication;
 pub(in crate::domain_computation::primary_graph) use producing_publication::OriginalProducingPublication;
-pub mod receipt_custody;
+mod receipt_custody;
 mod reused;
 use receipt_custody::SettlementReceiptCustody;
 use std::sync::Arc;
@@ -36,18 +36,18 @@ use super::WorthQueryOutputReadinessDeliveryEvidence;
 /// settlement is held. After compaction, the receipt identifies the same
 /// committed lineage so the owner can reacquire its still-current occurrence.
 pub struct WorthQueryOutputDemandSettlement {
-    pub posture: WorthQueryOutputSettlementPosture,
-    pub runtime_authority: u64,
-    pub schema_binding: ApplicationSchemaBindingIdentity,
-    pub producer_identity: SettlementProducerIdentity,
-    pub output_family_identity: String,
-    pub receipt: Option<SettlementReceiptCustody>,
+    posture: WorthQueryOutputSettlementPosture,
+    runtime_authority: u64,
+    schema_binding: ApplicationSchemaBindingIdentity,
+    producer_identity: SettlementProducerIdentity,
+    output_family_identity: String,
+    receipt: Option<SettlementReceiptCustody>,
     pub stable: Option<super::super::output_lineage::PublishedStableLineage>,
     pub output_correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub restored_source: Option<super::WorthQueryRestoredAcceptedOutput>,
-    pub readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
-    pub producer_contacts_in_this_demand: usize,
-    pub observation: Arc<WorthQueryApplicationReadObservation>,
+    readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
+    producer_contacts_in_this_demand: usize,
+    observation: Arc<WorthQueryApplicationReadObservation>,
 }
 
 /// Whether settlement performed an output or reused stable lineage, including

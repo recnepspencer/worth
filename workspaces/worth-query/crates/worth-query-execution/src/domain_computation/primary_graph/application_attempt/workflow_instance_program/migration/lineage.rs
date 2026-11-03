@@ -11,7 +11,7 @@ use super::super::super::{
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 /// The identity of the one successor a migrated source links from.
-pub fn successor_identity(
+pub(super) fn successor_identity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,

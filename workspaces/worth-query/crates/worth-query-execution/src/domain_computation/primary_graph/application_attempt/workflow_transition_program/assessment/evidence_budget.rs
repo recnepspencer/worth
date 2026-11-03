@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
 
-pub fn admit(
+pub(super) fn admit(
     layout: &WorthQueryWorkflowLayout,
     allowance: u64,
     node_path: &str,

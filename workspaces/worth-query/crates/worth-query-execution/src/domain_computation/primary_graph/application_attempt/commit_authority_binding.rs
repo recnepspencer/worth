@@ -20,7 +20,7 @@ use worth_query_declaration::facade::application_operation::ApplicationSharedInp
 /// input and its funded allocation through receipt and recovery custody.
 /// Correction preparation accesses the original binding's encoded carrier.
 #[derive(Clone)]
-pub struct WorthQueryRetainedGovernedInput {
+pub(crate) struct WorthQueryRetainedGovernedInput {
     encoded: Option<Arc<dyn Any + Send + Sync>>,
     _value: Arc<dyn Any + Send + Sync>,
     type_id: TypeId,
@@ -36,7 +36,7 @@ impl WorthQueryRetainedGovernedInput {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn from_admission<Input>(
+    fn from_admission<Input>(
         input: &ApplicationSharedInput<Input>,
         governed_identity: Option<[u8; 32]>,
         original_scope: Option<&Arc<super::super::WorthQueryObservedScopeSelector>>,
@@ -59,7 +59,7 @@ impl WorthQueryRetainedGovernedInput {
         }
     }
 
-    pub fn downcast_ref<Input: 'static>(&self) -> Option<&Input> {
+    fn downcast_ref<Input: 'static>(&self) -> Option<&Input> {
         (self.type_id == TypeId::of::<Input>())
             .then(|| {
                 self._value
@@ -81,7 +81,7 @@ impl WorthQueryRetainedGovernedInput {
         self.encoded.as_ref()?.downcast_ref()
     }
 
-    pub const fn governed_identity(&self) -> Option<[u8; 32]> {
+    pub(crate) const fn governed_identity(&self) -> Option<[u8; 32]> {
         self.governed_identity
     }
 
@@ -101,7 +101,7 @@ impl WorthQueryRetainedGovernedInput {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn axis_probe(governed_identity: [u8; 32]) -> Self {
+    pub(crate) fn axis_probe(governed_identity: [u8; 32]) -> Self {
         Self {
             encoded: None,
             _value: Arc::new(()),
@@ -237,17 +237,17 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     ///
     /// A mismatched type yields no value; the caller never supplies replacement
     /// bytes or a fallback value.
-    pub fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
+    pub(crate) fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
         self.retained_governed_input.as_ref()?.downcast_ref()
     }
 
-    pub const fn retained_governed_input_carrier(
+    pub(crate) const fn retained_governed_input_carrier(
         &self,
     ) -> Option<&WorthQueryRetainedGovernedInput> {
         self.retained_governed_input.as_ref()
     }
 
-    pub fn original_inspection_disclosure(
+    pub(in crate::domain_computation::primary_graph) fn original_inspection_disclosure(
         &self,
     ) -> Option<&super::super::source_disclosure::OriginalSourceInspectionDisclosure> {
         self.original_inspection_disclosure.as_deref()
@@ -259,14 +259,14 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         self.original_inspection_disclosure.clone()
     }
 
-    pub fn corrupt_original_disclosure(
+    pub(in crate::domain_computation::primary_graph) fn corrupt_original_disclosure(
         &mut self,
         disclosure: Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>,
     ) {
         self.original_inspection_disclosure = Some(disclosure);
     }
 
-    pub fn replace_idempotency_binding_for_test(
+    pub(crate) fn replace_idempotency_binding_for_test(
         &mut self,
         binding: WorthQueryApplicationIdempotencyBinding,
     ) {

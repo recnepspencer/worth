@@ -40,13 +40,13 @@ where
         runtime.validate_capability_read_access(execution, self)
     }
 
-    pub fn graph_work_session_identity(
+    pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
         self.graph_work.identity()
     }
 
-    pub fn graph_work_managed_run_identity(
+    pub(in crate::domain_computation) fn graph_work_managed_run_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
         self.graph_work.managed_run_identity()

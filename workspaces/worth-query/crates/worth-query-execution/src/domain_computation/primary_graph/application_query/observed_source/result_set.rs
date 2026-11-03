@@ -23,7 +23,7 @@ impl<Query> WorthQueryObservedResultSet<Query> {
         Self { source }
     }
 
-    pub fn idempotency_identity(&self) -> [u8; 32] {
+    pub(in crate::domain_computation) fn idempotency_identity(&self) -> [u8; 32] {
         self.source.idempotency_identity().bytes()
     }
 

@@ -3,7 +3,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
-pub fn resolve_before_binding(
+pub(in super::super) fn resolve_before_binding(
     state: &mut DemandRegistryState,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) {
@@ -13,7 +13,7 @@ pub fn resolve_before_binding(
 
 /// This reads a publication already committed into source custody; there is
 /// no request admission. All readers project the same eager entry eligibility.
-pub fn visible(
+pub(in super::super) fn visible(
     state: &DemandRegistryState,
     commit: &worth_runtime_world::facade::CompositeCommitIdentity,
 ) -> bool {

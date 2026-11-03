@@ -58,7 +58,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self.product_runtime
     }
 
-    pub fn select_product_branch(
+    pub(crate) fn select_product_branch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &ProductBranchIdentity,
@@ -95,7 +95,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub fn on_product(
+    pub(crate) fn on_product(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: WorthQueryProductBranchLease,
@@ -223,7 +223,7 @@ where
         self.select_with_request(&request)
     }
 
-    pub fn select_with_request(
+    pub(in crate::domain_computation) fn select_with_request(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
@@ -272,13 +272,13 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         self.application
     }
 
-    pub fn application_basis(
+    pub(crate) fn application_basis(
         &self,
     ) -> &super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease {
         &self.application_basis
     }
 
-    pub fn original_settled_producer(
+    pub(in crate::domain_computation::primary_graph) fn original_settled_producer(
         &self,
     ) -> Option<
         &std::sync::Arc<
@@ -295,7 +295,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         &mut self.application_basis
     }
 
-    pub fn into_parts(
+    pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
     ) -> (
         &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -320,7 +320,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         self
     }
 
-    pub fn retain_selection(
+    pub(in crate::domain_computation::primary_graph) fn retain_selection(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {

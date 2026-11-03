@@ -2,7 +2,7 @@
 use super::*;
 
 impl WorthQueryObservedSourceEpoch {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         query: [u8; 32],
         parameters: [u8; 32],
         root: worth_relational::facade::identity::EntityId,

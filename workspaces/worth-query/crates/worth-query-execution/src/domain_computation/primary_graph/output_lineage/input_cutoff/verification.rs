@@ -3,7 +3,7 @@
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
 mod owned;
-pub mod refusal;
+mod refusal;
 pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
 pub(in crate::domain_computation::primary_graph) use refusal::InputCutoffVerificationStop;
 
@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph) fn cutoff_declines(
 
 /// A prior performed record and the exact native read basis checked for reuse.
 /// Only the output-lineage owner can consume this at publication.
-pub struct VerifiedInputCutoff<'selected> {
+pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'selected> {
     _computation: super::super::CurrentComputation,
     pub(super) candidate: RetainedInputCutoffCandidate,
     pub(super) selected: &'selected PositionedRelationalSnapshot,
@@ -51,7 +51,7 @@ pub struct VerifiedInputCutoff<'selected> {
     pub(super) verified_consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
 }
 
-pub enum InputCutoffDecision<'selected> {
+pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selected> {
     Fresh {
         key: PreparedInputReuseKey,
         context: PreparedDecisionReuseContext,
@@ -59,7 +59,7 @@ pub enum InputCutoffDecision<'selected> {
     Reuse(VerifiedInputCutoff<'selected>),
 }
 
-pub struct VerifiedDependencies {
+struct VerifiedDependencies {
     facts: super::super::ComparableSourceFacts,
     consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
 }
@@ -68,7 +68,7 @@ impl RetainedInputCutoffCandidate {
     /// A fresh selected input replaces the obsolete source-query suffix. The
     /// performed handler prefix and actually consumed upstream outputs still
     /// require proof at this exact native root. The candidate's own dirty marks remain intact.
-    pub fn verify_for_reuse<'selected>(
+    pub(in crate::domain_computation::primary_graph) fn verify_for_reuse<'selected>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh_key: PreparedInputReuseKey,
@@ -113,7 +113,7 @@ impl RetainedInputCutoffCandidate {
         )
     }
 
-    pub fn eligible_for_reuse(
+    fn eligible_for_reuse(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh_key: &PreparedInputReuseKey,
@@ -344,8 +344,8 @@ impl RetainedInputCutoffCandidate {
 }
 
 mod matched_roots;
-pub mod pending_upstream;
+mod pending_upstream;
 
-pub mod source_facts;
+mod source_facts;
 use source_facts::facts_are_current;
 use source_facts::marked_facts_permit_reuse;

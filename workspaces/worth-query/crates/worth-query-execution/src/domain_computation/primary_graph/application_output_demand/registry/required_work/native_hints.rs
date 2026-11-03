@@ -7,7 +7,7 @@ use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
 use super::RequiredWorkMembership;
 
-pub struct NativeHint {
+pub(in crate::domain_computation::primary_graph) struct NativeHint {
     pub(super) observer: CompanionPublicationCompletionObserver,
     pub(super) branch: Arc<NativeBranch>,
     // The selection version at which this publication was seen installed
@@ -18,18 +18,18 @@ pub struct NativeHint {
 
 /// The final selected Arc, not the hint node, owns branch text and control
 /// block capacity. A stale selected worker can outlive an acknowledged node.
-pub struct NativeBranch {
+pub(in crate::domain_computation::primary_graph) struct NativeBranch {
     branch: BranchId,
 }
 
 impl NativeBranch {
-    pub fn branch_id(&self) -> &BranchId {
+    pub(in crate::domain_computation::primary_graph) fn branch_id(&self) -> &BranchId {
         &self.branch
     }
 }
 
 impl RequiredWorkMembership {
-    pub fn prepared_native_branch(
+    pub(in crate::domain_computation::primary_graph) fn prepared_native_branch(
         branch: BranchId,
     ) -> Arc<NativeBranch> {
         Arc::new(NativeBranch { branch })
@@ -37,7 +37,7 @@ impl RequiredWorkMembership {
 
     /// Construction happens only after native preflight pays the Box and
     /// retained ticket. Installation only links this already-owned node.
-    pub fn prepared_native_hint(
+    pub(in crate::domain_computation::primary_graph) fn prepared_native_hint(
         observer: CompanionPublicationCompletionObserver,
         branch: Arc<NativeBranch>,
     ) -> Box<NativeHint> {

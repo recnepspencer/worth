@@ -32,7 +32,7 @@ impl WorthQueryRunningDirectRun {
         self.affinity.provider_plan_resources()
     }
 
-    pub fn provider_plan_bridge_basis(&self) -> &BridgeBoundExecutionBasis {
+    pub(crate) fn provider_plan_bridge_basis(&self) -> &BridgeBoundExecutionBasis {
         &self.bridge_basis
     }
 }

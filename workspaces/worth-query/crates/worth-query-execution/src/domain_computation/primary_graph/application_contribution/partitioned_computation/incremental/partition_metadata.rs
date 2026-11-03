@@ -4,11 +4,11 @@ use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap, ExecutionOrderedMapDenial};
 use worth_foundational::facade::PartitionIdentity;
 
-pub struct PartitionMetadata<Key> {
+pub(super) struct PartitionMetadata<Key> {
     entries: ExecutionOrderedMap<PartitionIdentity, RetainedPartition<Key>>,
 }
 impl<Key> PartitionMetadata<Key> {
-    pub fn from_recorded(
+    pub(super) fn from_recorded(
         entries:BTreeMap<PartitionIdentity,(Arc<Key>,crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge)>,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, ExecutionOrderedMapDenial> {
@@ -20,12 +20,12 @@ impl<Key> PartitionMetadata<Key> {
         }
         Ok(result)
     }
-    pub fn fork(&self) -> Self {
+    pub(super) fn fork(&self) -> Self {
         Self {
             entries: self.entries.clone(),
         }
     }
-    pub fn put(
+    pub(super) fn put(
         &mut self,
         id: PartitionIdentity,
         value: RetainedPartition<Key>,
@@ -40,24 +40,24 @@ impl<Key> PartitionMetadata<Key> {
     ) -> Result<(), ExecutionOrderedMapDenial> {
         self.entries.remove_in(&id, policy).map(|_| ())
     }
-    pub fn get(&self, id: &PartitionIdentity) -> Option<&RetainedPartition<Key>> {
+    pub(super) fn get(&self, id: &PartitionIdentity) -> Option<&RetainedPartition<Key>> {
         self.entries.get(id)
     }
-    pub fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.entries.len()
     }
-    pub fn iter(
+    pub(super) fn iter(
         &self,
     ) -> impl Iterator<Item = (&PartitionIdentity, &RetainedPartition<Key>)> {
         self.entries.iter()
     }
-    pub fn values(&self) -> impl Iterator<Item = &RetainedPartition<Key>> {
+    pub(super) fn values(&self) -> impl Iterator<Item = &RetainedPartition<Key>> {
         self.entries.values()
     }
-    pub fn keys(&self) -> impl Iterator<Item = &PartitionIdentity> {
+    pub(super) fn keys(&self) -> impl Iterator<Item = &PartitionIdentity> {
         self.entries.keys()
     }
-    pub fn bytes(&self) -> Option<u64> {
+    pub(super) fn bytes(&self) -> Option<u64> {
         self.entries.accounted_bytes()
     }
 }

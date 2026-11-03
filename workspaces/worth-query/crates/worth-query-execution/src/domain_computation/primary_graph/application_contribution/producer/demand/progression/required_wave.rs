@@ -29,17 +29,17 @@ use super::WorthQueryOutputDemandDenialKind;
 
 pub(in crate::domain_computation::primary_graph) use performed::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use performed::CurrentProof;
-pub mod caller;
+mod caller;
 mod requested;
 pub(super) use requested::advance_requested_output;
 mod cycles;
-pub mod drive;
-pub mod frontier;
+mod drive;
+mod frontier;
 mod member_key;
-pub mod performed;
-pub mod queued;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod performed;
+mod queued;
 mod resolved;
-pub mod selection;
+mod selection;
 pub(in crate::domain_computation::primary_graph) use resolved::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use resolved::ReboundConsumedOutput;
 use resolved::ResolvedOnWave;
@@ -112,7 +112,7 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-pub fn denial(
+fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: &'static str,
 ) -> WorthQueryOutputDemandDenial {

@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryInvariantProjectionWorkBudget {
+pub(super) struct WorthQueryInvariantProjectionWorkBudget {
     remaining: Option<usize>,
     exceeded: bool,
     overflowed: bool,
@@ -19,7 +19,7 @@ impl WorthQueryInvariantProjectionWorkBudget {
         }
     }
 
-    pub const fn bounded(maximum: usize) -> Self {
+    pub(super) const fn bounded(maximum: usize) -> Self {
         Self {
             remaining: Some(maximum),
             exceeded: false,
@@ -29,7 +29,7 @@ impl WorthQueryInvariantProjectionWorkBudget {
         }
     }
 
-    pub fn can_afford(&mut self, maximum_work: usize) -> bool {
+    pub(super) fn can_afford(&mut self, maximum_work: usize) -> bool {
         if self.exceeded {
             return false;
         }
@@ -50,7 +50,7 @@ impl WorthQueryInvariantProjectionWorkBudget {
     }
 
     #[must_use]
-    pub fn consume(&mut self, actual_work: usize) -> bool {
+    pub(super) fn consume(&mut self, actual_work: usize) -> bool {
         if !self.can_afford(actual_work) {
             return false;
         }
@@ -103,7 +103,7 @@ impl WorthQueryInvariantProjectionWorkBudget {
     /// made now: it passes exactly when `demand` remains, and then consumes
     /// what it consumed through the budget's one checked spend. False,
     /// charging nothing, when it would not pass.
-    pub fn carry(&mut self, demand: usize, consumed: usize) -> bool {
+    pub(super) fn carry(&mut self, demand: usize, consumed: usize) -> bool {
         if self.exceeded
             || self.remaining.is_some_and(|remaining| remaining < demand)
             || consumed > demand
@@ -126,11 +126,11 @@ impl WorthQueryInvariantProjectionWorkBudget {
         self.exceeded = true;
     }
 
-    pub const fn remaining(&self) -> Option<usize> {
+    pub(super) const fn remaining(&self) -> Option<usize> {
         self.remaining
     }
 
-    pub const fn exceeded(&self) -> bool {
+    pub(super) const fn exceeded(&self) -> bool {
         self.exceeded
     }
 }

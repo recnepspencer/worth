@@ -188,7 +188,7 @@ impl WorthQueryGraphProviderAnchor {
         self.session_lifecycle.is_some()
     }
 
-    pub fn retains_convergence_and_phase_seven_through_ten(&self) -> bool {
+    pub(crate) fn retains_convergence_and_phase_seven_through_ten(&self) -> bool {
         self.convergence_provider.is_some()
             && self.session_lifecycle.is_some()
             && self.decision_fact_provider.is_some()
@@ -226,7 +226,7 @@ impl WorthQueryGraphProviderAnchor {
         )
     }
 
-    pub fn stage_provisional_overlay(
+    pub(crate) fn stage_provisional_overlay(
         &self,
         session: WorthQueryProviderSessionView<'_>,
         program: WorthQueryProvisionalEffectProgramView<'_>,
@@ -240,7 +240,7 @@ impl WorthQueryGraphProviderAnchor {
         )
     }
 
-    pub fn discard_provisional_overlay(
+    pub(crate) fn discard_provisional_overlay(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,

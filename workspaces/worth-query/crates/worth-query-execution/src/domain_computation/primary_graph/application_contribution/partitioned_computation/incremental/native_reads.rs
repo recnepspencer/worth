@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_contribution::Retained
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 #[derive(Clone)]
-pub struct NativeComputationReads {
+pub(in crate::domain_computation::primary_graph) struct NativeComputationReads {
     prior: Arc<RetainedComputation>,
     snapshot: SnapshotHandle,
     rebase_changes: Option<

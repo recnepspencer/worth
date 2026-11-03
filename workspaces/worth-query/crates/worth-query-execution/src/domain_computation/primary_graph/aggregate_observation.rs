@@ -11,20 +11,20 @@ mod currentness;
 mod key;
 mod member;
 pub(in crate::domain_computation::primary_graph) mod member_work;
-pub mod selection;
+mod selection;
 pub(in crate::domain_computation::primary_graph) use key::AggregateKey;
 pub(in crate::domain_computation::primary_graph) use selection::AggregateSelection;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.
 #[derive(Debug)]
-pub struct AggregateObservation<Member = EntityId> {
+pub(in crate::domain_computation) struct AggregateObservation<Member = EntityId> {
     key: AggregateKey<Member>,
     native: PinnedAggregateRead<Member>,
     source: SnapshotHandle,
     _allocation: Option<Arc<super::source_facts::SourceFactsAllocation>>,
 }
-pub struct AggregateQuery<'a> {
+pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
     pub allocation: Option<&'a Arc<super::source_facts::SourceFactsAllocation>>,
     pub subject: &'a str,
     pub entity_kind: KindId,
@@ -34,7 +34,7 @@ pub struct AggregateQuery<'a> {
     pub control: Option<&'a dyn Fn() -> Result<(), Cause>>,
 }
 impl AggregateObservation {
-    pub fn read(
+    pub(in crate::domain_computation::primary_graph) fn read(
         pin: &RelationalPinnedRead,
         execution: &ExecutionRequest<'_, '_>,
         query: AggregateQuery<'_>,
@@ -61,7 +61,7 @@ impl AggregateObservation {
             _allocation: query.allocation.cloned(),
         }))
     }
-    pub fn same_truth_with_poll<E>(
+    pub(in crate::domain_computation::primary_graph) fn same_truth_with_poll<E>(
         &self,
         other: &Self,
         mut poll: impl FnMut() -> Result<(), E>,
@@ -103,13 +103,13 @@ impl PartialEq for AggregateObservation {
 impl Eq for AggregateObservation {}
 
 impl<Member> AggregateObservation<Member> {
-    pub fn key(&self) -> &AggregateKey<Member> {
+    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &AggregateKey<Member> {
         &self.key
     }
     pub fn native(&self) -> &PinnedAggregateRead<Member> {
         &self.native
     }
-    pub fn source(&self) -> &SnapshotHandle {
+    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
         &self.source
     }
 }

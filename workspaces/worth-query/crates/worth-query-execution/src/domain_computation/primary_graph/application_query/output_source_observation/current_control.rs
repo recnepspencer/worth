@@ -15,7 +15,7 @@ pub(super) struct HistorySourceQueryControl<'a, S> {
 
 impl SourceQueryObservationStop {
     /// Authorized model-result outcomes retain the handler's existing semantics.
-    pub fn is_control_refusal(&self) -> bool {
+    pub(super) fn is_control_refusal(&self) -> bool {
         use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Read;
         use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
         use SourceQueryObservationStop as Stop;

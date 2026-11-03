@@ -79,7 +79,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Resolve current issued identities without preparing Query payload
     /// permission. The continuation must separately admit its actual intent.
     #[allow(clippy::too_many_arguments)]
-    pub fn with_fresh_retained_query_identities<
+    pub(in crate::domain_computation::primary_graph) fn with_fresh_retained_query_identities<
         'a,
         'selected,
         'runtime,

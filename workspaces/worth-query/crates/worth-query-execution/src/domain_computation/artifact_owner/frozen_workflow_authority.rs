@@ -8,7 +8,7 @@ use super::{
     WorthQueryWorkflowArtifactRegistry, WorthQueryWorkflowArtifactRegistryEvidence,
 };
 
-pub struct WorthQueryFrozenWorkflowArtifactAuthority {
+pub(crate) struct WorthQueryFrozenWorkflowArtifactAuthority {
     authority: Option<WorthQueryWorkflowArtifactAuthority>,
     production_generation: WorthQueryArtifactProductionGeneration,
 }
@@ -37,7 +37,7 @@ impl WorthQueryFrozenWorkflowArtifactAuthority {
         }
     }
 
-    pub fn registry(&self) -> Arc<WorthQueryWorkflowArtifactRegistry> {
+    pub(crate) fn registry(&self) -> Arc<WorthQueryWorkflowArtifactRegistry> {
         self.authority().registry()
     }
 

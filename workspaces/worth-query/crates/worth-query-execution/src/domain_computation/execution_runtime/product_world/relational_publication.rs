@@ -1,4 +1,4 @@
-pub mod delivery;
+mod delivery;
 mod outcome;
 mod performed;
 

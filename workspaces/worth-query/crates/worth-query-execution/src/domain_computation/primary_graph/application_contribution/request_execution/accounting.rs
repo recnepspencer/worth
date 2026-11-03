@@ -2,7 +2,7 @@
 use super::{Form, QueryRequestExecution};
 
 impl QueryRequestExecution<'_> {
-    pub fn has_accounting(&self) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn has_accounting(&self) -> bool {
         match &self.form {
             Form::Leased { lease, policy } | Form::Serial { lease, policy } => lease
                 .as_ref()

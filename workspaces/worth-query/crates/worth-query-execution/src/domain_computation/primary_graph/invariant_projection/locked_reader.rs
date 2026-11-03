@@ -44,17 +44,17 @@ pub use traversal_denial::{
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) value_bindings: &'runtime worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     pub(super) value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
-    pub execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
-    pub runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
-    pub layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
-    pub snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
+    pub(super) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
+    pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
+    pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    pub(super) snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
     entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
     pub(super) observation: worth_relational::facade::mvcc::RelationalBranchObservation,
-    pub authority_identity: u64,
+    pub(super) authority_identity: u64,
     pub(super) binding_identity: &'runtime worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(super) program_activation:
         Option<&'runtime super::super::program_occurrence::WorthQueryProgramActivationCell>,
-    pub work: WorthQueryInvariantProjectionWork,
+    pub(super) work: WorthQueryInvariantProjectionWork,
     pub(super) work_budget: WorthQueryInvariantProjectionWorkBudget,
     /// A read found no capacity to retain its evidence. The projection then
     /// ends as that capacity's stop, whatever the closure made of the read's
@@ -147,7 +147,7 @@ where
         )
     }
 
-    pub fn project_with_work_limit<Output>(
+    pub(super) fn project_with_work_limit<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         maximum_work: Option<usize>,

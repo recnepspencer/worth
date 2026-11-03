@@ -20,8 +20,8 @@ mod read;
 mod reconcile;
 mod reconstruct_dependent;
 mod reconstruct_lazy;
-pub mod reconstruct_parallel;
-pub mod reconstruction;
+mod reconstruct_parallel;
+mod reconstruction;
 use super::super::super::reconstruction_denial;
 mod refresh_batch;
 

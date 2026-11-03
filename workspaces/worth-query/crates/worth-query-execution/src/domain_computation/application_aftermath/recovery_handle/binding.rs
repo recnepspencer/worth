@@ -22,29 +22,29 @@ use super::denial::{WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDeni
 /// Binding axes a recovery handle retains from admitted commit truth.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRecoveryHandleBinding {
-    pub runtime_instance_id: u64,
-    pub schema_identity: [u8; 32],
-    pub commit: RelationalCommitReceipt,
+    runtime_instance_id: u64,
+    schema_identity: [u8; 32],
+    commit: RelationalCommitReceipt,
     committed_product_publication:
         crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     /// Generation of the installed application schema binding.
-    pub application_binding_generation: u64,
-    pub installed_operation: [u8; 32],
+    application_binding_generation: u64,
+    installed_operation: [u8; 32],
     mutation_work: Option<WorthQueryPrimaryMutationWorkEvidence>,
     retained_preimage: Option<WorthQueryRetainedPreImage>,
-    pub retained_governed_input: Option<WorthQueryRetainedGovernedInput>,
-    pub principal_scope: WorthQueryOperationScopeBinding,
-    pub idempotency: WorthQueryApplicationIdempotencyBinding,
+    retained_governed_input: Option<WorthQueryRetainedGovernedInput>,
+    principal_scope: WorthQueryOperationScopeBinding,
+    idempotency: WorthQueryApplicationIdempotencyBinding,
     provider_posture: Option<WorthQueryExternalDispatchPosture>,
     /// Co-committed outbox record — R8.28 correlation evidence (R8.68).
-    pub committed_dispatch_outbox:
+    committed_dispatch_outbox:
         Option<crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding>,
-    pub installed_aftermath: WorthQueryInstalledAftermathContract,
-    pub expires_at_unix_ms: Option<u64>,
+    installed_aftermath: WorthQueryInstalledAftermathContract,
+    expires_at_unix_ms: Option<u64>,
 }
 
 impl WorthQueryRecoveryHandleBinding {
-    pub fn from_receipt(
+    pub(in crate::domain_computation::application_aftermath) fn from_receipt(
         receipt: &WorthQueryApplicationCommitReceipt,
         expires_at_unix_ms: Option<u64>,
     ) -> Result<Self, WorthQueryRecoveryHandleDenial> {

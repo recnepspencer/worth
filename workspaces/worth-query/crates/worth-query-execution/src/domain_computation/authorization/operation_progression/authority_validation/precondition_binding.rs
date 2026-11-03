@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditio
 
 use super::{ValidatedCapabilityOperation, ValidatedConventionalOperation};
 
-pub mod transition;
+mod transition;
 pub use transition::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use transition::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use transition::WorthQueryOperationAdmissionIdentity;

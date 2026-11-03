@@ -4,7 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-pub enum ConsumerCustody {
+pub(in crate::domain_computation::primary_graph) enum ConsumerCustody {
     Handoff(ConsumerHandoff),
     Released,
 }
@@ -21,7 +21,7 @@ impl ConsumerCustody {
     }
 }
 impl WorthQueryOutputDemandRegistry {
-    pub fn retain_consumer_handoff(
+    pub(in crate::domain_computation::primary_graph) fn retain_consumer_handoff(
         &self,
         identity: &Arc<RecordedSettlementIdentity>,
     ) -> Result<ConsumerCustody, WorthQueryOutputDemandDenial> {

@@ -25,7 +25,7 @@ pub use producer_access::WorthQueryApplicationConditionalProducerAccess;
 mod dependency;
 mod target_coverage;
 pub(super) use dependency::validate_required_producer;
-pub mod output_readiness_contract;
+mod output_readiness_contract;
 pub use output_readiness_contract::{
     WorthQueryOutputReadinessContract, WorthQueryOutputReadinessContractBuilder,
     WorthQueryOutputReadinessContractDenial, WorthQueryReadinessFieldUse,
@@ -59,13 +59,13 @@ where
     ) -> Result<Self::Installed, WorthQueryConditionalRuntimeInstallationDenial>;
 }
 
-pub struct DeclaredConditionalBinding {
-    pub owner: String,
-    pub contract: WorthQueryApplicationConditionalPackageContract,
-    pub required_producers: Vec<String>,
-    pub binding_type: TypeId,
-    pub operation_type: TypeId,
-    pub installed_type: TypeId,
+pub(super) struct DeclaredConditionalBinding {
+    pub(super) owner: String,
+    pub(super) contract: WorthQueryApplicationConditionalPackageContract,
+    pub(super) required_producers: Vec<String>,
+    pub(super) binding_type: TypeId,
+    pub(super) operation_type: TypeId,
+    pub(super) installed_type: TypeId,
 }
 
 struct InstalledConditionalBinding {

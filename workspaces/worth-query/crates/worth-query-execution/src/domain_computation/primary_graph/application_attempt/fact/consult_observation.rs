@@ -5,7 +5,7 @@ use std::{
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub enum Door {
+pub(in crate::domain_computation) enum Door {
     Equality,
     Approval,
     Activation,
@@ -16,13 +16,13 @@ struct State {
     count: Cell<usize>,
 }
 thread_local! { static ACTIVE: RefCell<Option<Rc<State>>> = const { RefCell::new(None) }; }
-pub struct ReadConsultObservationForTest {
+pub(in crate::domain_computation) struct ReadConsultObservationForTest {
     state: Rc<State>,
     previous: Option<Rc<State>>,
     _listener: worth_execution::ExecutionCheckpointObservationForTest,
 }
 impl ReadConsultObservationForTest {
-    pub fn install_on_this_thread_for_test(
+    pub(in crate::domain_computation) fn install_on_this_thread_for_test(
         door: Door,
         cancel: Option<(usize, WorthQueryCancellationSource)>,
     ) -> Self {
@@ -33,14 +33,14 @@ impl ReadConsultObservationForTest {
             }
         })
     }
-    pub fn install_callback_on_this_thread_for_test(
+    pub(in crate::domain_computation) fn install_callback_on_this_thread_for_test(
         door: Door,
         at: Option<usize>,
         mut cancel: impl FnMut() + 'static,
     ) -> Self {
         Self::install_with_work_on_this_thread_for_test(door, at, move |_| cancel())
     }
-    pub fn install_with_work_on_this_thread_for_test(
+    pub(in crate::domain_computation) fn install_with_work_on_this_thread_for_test(
         door: Door,
         at: Option<usize>,
         mut stop: impl FnMut(Option<&mut worth_execution::MapKernelContext<'_, '_>>) + 'static,
@@ -71,7 +71,7 @@ impl ReadConsultObservationForTest {
             _listener: listener,
         }
     }
-    pub fn consults(&self) -> usize {
+    pub(in crate::domain_computation) fn consults(&self) -> usize {
         self.state.count.get()
     }
 }

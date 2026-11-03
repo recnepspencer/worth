@@ -1,7 +1,7 @@
 //! Exact native backing and stop semantics with actually retained query descriptors.
 use super::*;
 impl WorthQueryRetainedQueryDependencies {
-    pub fn assert_storage_custody_for_test(
+    pub(in crate::domain_computation::primary_graph) fn assert_storage_custody_for_test(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryRetainedQueryDependencies {

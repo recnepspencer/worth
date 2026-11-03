@@ -1,6 +1,6 @@
 //! Reader projection of claims whose physical transfer is still noted.
 mod incoming;
-pub mod visibility;
+mod visibility;
 use super::DemandRecord;
 use super::DemandRegistryState;
 use super::WorthQueryOutputDemandKey;
@@ -30,7 +30,7 @@ impl ClaimOwnerState {
 impl DemandRegistryState {
     /// Admit the batch and every incoming link before publishing any link.
     /// Both sides use this same link, so a transfer needs no allocation.
-    pub fn prepare_claim_readthrough(
+    pub(super) fn prepare_claim_readthrough(
         &self,
         owner: &WorthQueryOutputDemandKey,
         upstream: &[Arc<WorthQueryOutputDemandKey>],

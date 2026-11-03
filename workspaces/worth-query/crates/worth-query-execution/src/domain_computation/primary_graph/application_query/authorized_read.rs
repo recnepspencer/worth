@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use selected
     execute_selected_authorized_read_with_native_access, SelectedAuthorizedReadStop,
 };
 
-pub enum WorthQueryAuthorizedApplicationReadDenial {
+pub(super) enum WorthQueryAuthorizedApplicationReadDenial {
     StalePrincipal,
     StaleScope,
     StaleBasisScope,

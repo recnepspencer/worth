@@ -22,7 +22,7 @@ use worth_query_declaration::facade::application_capability::{
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
 
 #[derive(Clone, Debug)]
-pub struct WorkflowRecordedActorObservation {
+pub(in crate::domain_computation) struct WorkflowRecordedActorObservation {
     requirement: Requirement,
     actor: Option<EntityId>,
     record: Option<EntityId>,

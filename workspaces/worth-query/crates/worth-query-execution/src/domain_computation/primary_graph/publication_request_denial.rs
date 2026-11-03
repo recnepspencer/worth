@@ -1,6 +1,6 @@
 //! Request stops carried by World's no-effect publication outcomes.
 use worth_runtime_world::facade::NoEffectCause;
-pub fn publication(
+pub(crate) fn publication(
     cause: NoEffectCause,
 ) -> Result<NoEffectCause, worth_execution::WorkCeilingDenial> {
     use worth_execution::{MapKernelStop, WorkCeilingDenial as Stop};

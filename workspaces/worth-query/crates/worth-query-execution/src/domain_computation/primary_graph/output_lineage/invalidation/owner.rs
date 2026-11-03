@@ -8,16 +8,16 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::CompanionBranchCellSlot;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::mvcc::PublicationCompanionPreflight;
-pub struct SourceInvalidationOwner {
+pub(in crate::domain_computation) struct SourceInvalidationOwner {
     pub(super) runtime_instance_id: u64,
-    pub resources: WorthQueryInvalidationResources,
+    pub(super) resources: WorthQueryInvalidationResources,
     pub(in crate::domain_computation::primary_graph) managed_views:
         Arc<crate::domain_computation::primary_graph::application_query::derived_view::ManagedDerivedViewRegistry>,
-    pub branches: Mutex<BranchCells>,
+    pub(super) branches: Mutex<BranchCells>,
     pub(super) released: Mutex<Vec<Arc<super::super::RecordedSettlementIdentity>>>,
 }
-pub struct BranchCells {
-    pub cells: OrdMap<BranchId, CompanionBranchCellSlot<BranchMarkRoot>>,
+pub(super) struct BranchCells {
+    pub(super) cells: OrdMap<BranchId, CompanionBranchCellSlot<BranchMarkRoot>>,
     pub(super) vacant: Option<Arc<BranchMarkRoot>>,
 }
 impl fmt::Debug for SourceInvalidationOwner {

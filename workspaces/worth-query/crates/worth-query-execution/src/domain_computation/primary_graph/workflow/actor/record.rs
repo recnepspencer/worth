@@ -5,10 +5,10 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 
 /// Historical identity, not a grant or an execution right.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorkflowAdmittedActor(EntityId);
+pub(in crate::domain_computation) struct WorkflowAdmittedActor(EntityId);
 
 impl WorkflowAdmittedActor {
-    pub fn from_admission<S, O, I, C>(
+    pub(in crate::domain_computation::primary_graph) fn from_admission<S, O, I, C>(
         admitted: &WorthQueryAdmittedApplicationOperation<S, O, I, C>,
     ) -> Self {
         let principal = admitted.operation_scope_binding().principal();
@@ -23,10 +23,10 @@ impl WorkflowAdmittedActor {
     ) -> Self {
         Self(receipt.principal())
     }
-    pub const fn entity(self) -> EntityId {
+    pub(in crate::domain_computation) const fn entity(self) -> EntityId {
         self.0
     }
-    pub fn append_fields(
+    pub(in crate::domain_computation::primary_graph) fn append_fields(
         self,
         locators: &WorkflowActorFields,
         fields: &mut BTreeMap<AspectFieldLocator, AspectValue>,
@@ -46,7 +46,7 @@ impl WorkflowAdmittedActor {
     }
 }
 #[derive(Clone, Debug)]
-pub struct WorkflowActorFields {
+pub(in crate::domain_computation) struct WorkflowActorFields {
     pub(in crate::domain_computation) partition: AspectFieldLocator,
     pub(in crate::domain_computation) slot: AspectFieldLocator,
     pub(in crate::domain_computation) generation: AspectFieldLocator,
@@ -67,7 +67,7 @@ impl WorkflowActorFields {
         ])
         .map_err(|_| invalid())
     }
-    pub fn observe(
+    pub(in crate::domain_computation) fn observe(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

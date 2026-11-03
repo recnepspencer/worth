@@ -346,7 +346,7 @@ pub use super::application_contribution::{
 
 pub use worth_execution::ExecutionRequest;
 
-pub mod authorization;
+mod authorization;
 mod operation_body;
 
 pub use authorization::*;

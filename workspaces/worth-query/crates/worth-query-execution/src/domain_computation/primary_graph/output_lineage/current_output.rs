@@ -18,17 +18,17 @@ use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryProducerLineageHead;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
-pub struct RetainedOutputCurrentnessRead {
-    pub identity:
+pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnessRead {
+    pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
-    pub facts: Option<super::ComparableSourceFacts>,
-    pub consumed_outputs:
+    pub(in crate::domain_computation::primary_graph) facts: Option<super::ComparableSourceFacts>,
+    pub(in crate::domain_computation::primary_graph) consumed_outputs:
         Arc<[ConsumedOutputEvidence]>,
-    pub native_output_witness:
+    pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// The facts and the witness are everything this output depends on.
-    pub consumed_nothing: bool,
-    pub verification_requirement:
+    pub(in crate::domain_computation::primary_graph) consumed_nothing: bool,
+    pub(in crate::domain_computation::primary_graph) verification_requirement:
         Option<super::invalidation::FullVerificationReason>,
 }
 
@@ -97,7 +97,7 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    pub fn source_facts_for_receipt(
+    pub(in crate::domain_computation::primary_graph) fn source_facts_for_receipt(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
@@ -220,7 +220,7 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    pub fn current_output_matches_receipt(
+    pub(in crate::domain_computation::primary_graph) fn current_output_matches_receipt(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,

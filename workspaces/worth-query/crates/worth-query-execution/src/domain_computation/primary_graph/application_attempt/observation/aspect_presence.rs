@@ -7,7 +7,7 @@ use worth_relational::facade::{
     storage::RecordLifecycleState,
 };
 
-pub fn observe_aspect_presence(
+pub(in crate::domain_computation::primary_graph) fn observe_aspect_presence(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,

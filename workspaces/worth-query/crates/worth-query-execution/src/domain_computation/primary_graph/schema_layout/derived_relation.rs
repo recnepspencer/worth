@@ -18,15 +18,15 @@ mod expression;
 mod laws;
 
 #[derive(Debug)]
-pub struct DerivedRelationLayout {
+pub(in crate::domain_computation::primary_graph) struct DerivedRelationLayout {
     pub(in crate::domain_computation::primary_graph) orbit_definition:
         Option<worth_foundational::facade::AggregateDefinitionIdentity>,
-    pub from: ApplicationGraphMemberMeaning,
-    pub to: ApplicationGraphMemberMeaning,
-    pub handle: DerivedRelationHandle,
+    pub(in crate::domain_computation::primary_graph) from: ApplicationGraphMemberMeaning,
+    pub(in crate::domain_computation::primary_graph) to: ApplicationGraphMemberMeaning,
+    pub(in crate::domain_computation::primary_graph) handle: DerivedRelationHandle,
     pub sources: Arc<[(Arc<str>, KindId, KindId, KindId)]>,
     pub(in crate::domain_computation::primary_graph) operations: Arc<[Arc<str>]>,
-    pub carriers: Arc<[(Arc<str>, KindId)]>,
+    pub(in crate::domain_computation::primary_graph) carriers: Arc<[(Arc<str>, KindId)]>,
 }
 
 pub(super) fn lower(

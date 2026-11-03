@@ -8,7 +8,7 @@ use worth_query_declaration::facade::application_capability::ApplicationCapabili
 use worth_query_installation::facade::{ApplicationSchema, ApplicationSchemaBindingIdentity};
 use worth_relational::facade::identity::EntityId;
 
-pub mod funded;
+mod funded;
 pub(in crate::domain_computation) use funded::prepare_funded_pending_disclosure;
 
 pub(in crate::domain_computation) fn prepare_pending_disclosure<

@@ -9,7 +9,7 @@ use worth_relational::facade::transactions::EntityReference;
 use super::super::read_set::WorthQueryCompleteApplicationReadSet;
 use super::super::WorthQueryProjectedApplicationMutation;
 
-pub mod emission;
+mod emission;
 pub(in crate::domain_computation::primary_graph) use emission::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
@@ -21,11 +21,11 @@ pub(in crate::domain_computation::primary_graph) use emission::{
 /// `create_entity`, then write fields or link relations through it. A handle
 /// from another effect program is refused.
 pub struct WorthQueryApplicationEffectEntity<Schema, Entity> {
-    pub reference: EntityReference,
-    pub entity: String,
-    pub created_effect: Option<usize>,
-    pub program: Arc<()>,
-    pub _marker: PhantomData<fn() -> (Schema, Entity)>,
+    pub(super) reference: EntityReference,
+    pub(super) entity: String,
+    pub(super) created_effect: Option<usize>,
+    pub(super) program: Arc<()>,
+    pub(super) _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
 /// Only the creating effect program can initialize this new relation's payload.
@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOpt
         Option<AspectValue>,
 }
 
-pub enum WorthQueryApplicationRealizedEffect {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationRealizedEffect {
     CreateEntity {
         kind: KindId,
         key: String,
@@ -98,7 +98,7 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
             Scope,
             WorthQueryProjectedApplicationMutation,
         >,
-    pub effects:
+    pub(in crate::domain_computation::primary_graph::application_attempt) effects:
         Vec<WorthQueryApplicationRealizedEffect>,
     pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
@@ -130,7 +130,7 @@ impl<Schema, Operation, Input, Scope>
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    pub fn with_consumed_output_for_test(
+    pub(in crate::domain_computation::primary_graph) fn with_consumed_output_for_test(
         mut self,
         evidence: crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     ) -> Self {
@@ -166,7 +166,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationCreationPartition {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationCreationPartition {
     Issued,
     Context(worth_relational::facade::identity::PartitionId),
 }
@@ -210,7 +210,7 @@ impl<Schema, Operation, Input, Scope>
         self
     }
 
-    pub fn with_producer_required_invariants(
+    pub(in crate::domain_computation::primary_graph) fn with_producer_required_invariants(
         mut self,
         requirements: &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     ) -> Self {

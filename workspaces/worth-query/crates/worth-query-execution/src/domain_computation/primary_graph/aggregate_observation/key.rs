@@ -5,7 +5,7 @@ use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct AggregateKey<Member = EntityId> {
+pub(in crate::domain_computation::primary_graph) struct AggregateKey<Member = EntityId> {
     pub(super) subject: Arc<str>,
     pub(super) entity_kind: KindId,
     pub(super) selection: AggregateSelection,
@@ -33,7 +33,7 @@ impl AggregateKey {
     ) -> worth_relational::facade::runtime::PinnedAggregateReadScope<'static> {
         self.selection.scope(self.member)
     }
-    pub fn member(&self) -> EntityId {
+    pub(in crate::domain_computation::primary_graph) fn member(&self) -> EntityId {
         self.member
     }
     pub(in crate::domain_computation::primary_graph) fn write_locator(

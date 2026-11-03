@@ -1,7 +1,7 @@
 //! Current source facts preserve the request stop through input cutoff.
 use super::*;
 
-pub fn marked_facts_permit_reuse<'fact>(
+pub(super) fn marked_facts_permit_reuse<'fact>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     runtime: &RelationalRuntime,

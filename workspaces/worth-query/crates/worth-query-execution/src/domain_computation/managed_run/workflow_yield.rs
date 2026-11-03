@@ -67,7 +67,7 @@ pub struct WorthQueryYieldedWorkflowRun {
     relational_basis: WorthQueryManagedRelationalObservation,
     bridge: BridgeYieldedExecutionBasis,
     execution: WorthQueryRetainedManagedGraphExecution,
-    pub artifacts: WorthQueryFrozenWorkflowArtifactAuthority,
+    artifacts: WorthQueryFrozenWorkflowArtifactAuthority,
     artifact_evidence: WorthQueryWorkflowArtifactRegistryEvidence,
     run_counters: WorthQueryManagedRunCounters,
     provider_artifact_occurrences: Arc<WorthQueryArtifactOccurrenceLedger>,

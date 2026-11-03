@@ -6,7 +6,7 @@ use worth_execution::{
 
 impl QueryRequestExecution<'_> {
     /// Lends the original request's active descendant to native retained nodes.
-    pub fn with_native_lease<R>(
+    pub(in crate::domain_computation::primary_graph) fn with_native_lease<R>(
         &self,
         use_lease: impl FnOnce(&ExecutionResourceLease<'_>) -> R,
     ) -> Result<R, worth_execution::WorkCeilingDenial> {
@@ -46,7 +46,7 @@ impl QueryDispatch<'_> {
         )
     }
 
-    pub fn reduce_retained<T, R, E, Kernel, Diagnostic, Combine>(
+    pub(in super::super) fn reduce_retained<T, R, E, Kernel, Diagnostic, Combine>(
         &self,
         ceiling: Option<u64>,
         map: &ExecutionMap<T, (), worth_execution::NativePayload>,

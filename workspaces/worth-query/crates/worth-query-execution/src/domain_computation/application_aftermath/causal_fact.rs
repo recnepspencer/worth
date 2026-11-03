@@ -23,7 +23,7 @@ impl WorthQueryAftermathCausalRole {
 
 /// Query-owned semantic fact awaiting an ordinary Relational commit.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPendingAftermathCausality {
+pub(crate) struct WorthQueryPendingAftermathCausality {
     role: WorthQueryAftermathCausalRole,
     parent: RelationalCommitReceipt,
     target_branch: worth_relational::facade::history::BranchId,
@@ -58,7 +58,7 @@ impl WorthQueryRecordedCorrectionSource {
 }
 
 impl WorthQueryPendingAftermathCausality {
-    pub fn recorded_correction(
+    pub(crate) fn recorded_correction(
         correction: std::sync::Arc<
             crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
         >,
@@ -80,7 +80,7 @@ impl WorthQueryPendingAftermathCausality {
         self.role
     }
 
-    pub const fn parent(&self) -> &RelationalCommitReceipt {
+    pub(crate) const fn parent(&self) -> &RelationalCommitReceipt {
         &self.parent
     }
     pub(crate) fn target_branch(&self) -> &worth_relational::facade::history::BranchId {
@@ -116,7 +116,7 @@ pub struct WorthQueryCommittedAftermathCausality {
 }
 
 impl WorthQueryCommittedAftermathCausality {
-    pub fn owned_receipt_backing_bytes(&self) -> Option<u64> {
+    pub(in crate::domain_computation) fn owned_receipt_backing_bytes(&self) -> Option<u64> {
         receipt_backing_bytes(&self.parent)?
             .checked_add(receipt_backing_bytes(&self.child)?)?
             .checked_add(receipt_backing_bytes(self.source.relational())?)?

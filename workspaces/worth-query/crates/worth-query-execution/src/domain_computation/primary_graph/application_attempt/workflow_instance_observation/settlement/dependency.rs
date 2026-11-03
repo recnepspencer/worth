@@ -7,7 +7,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
 
 use super::{denial, observed_text, observed_u64};
-pub mod aspect_presence;
+mod aspect_presence;
 mod traversal;
 use crate::domain_computation::primary_graph::application_attempt::{
     observation::{observe_field, WorthQueryApplicationFieldObservation},
@@ -274,7 +274,7 @@ fn observe_dependency(
     }
 }
 
-pub fn decode_field_revision_fact(
+pub(in crate::domain_computation::primary_graph) fn decode_field_revision_fact(
     entity: EntityId,
     aspect: Option<String>,
     field: Option<String>,

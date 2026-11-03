@@ -13,7 +13,7 @@ pub struct SourceFactExpansionControl<'request, 'authority> {
     storage: StorageControl<'request, 'authority>,
 }
 impl<'request, 'authority> SourceFactExpansionControl<'request, 'authority> {
-    pub fn in_request(
+    pub(in crate::domain_computation::primary_graph) fn in_request(
         execution: ExecutionRequest<'request, 'authority>,
         request: Option<&'request WorthQueryRequestScope>,
     ) -> Self {

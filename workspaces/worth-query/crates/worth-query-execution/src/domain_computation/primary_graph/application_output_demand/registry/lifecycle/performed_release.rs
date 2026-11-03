@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// What a released performed source kept. It drops after the registry lock
 /// is released.
-pub struct ReleasedPerformedSource {
+pub(in super::super) struct ReleasedPerformedSource {
     _custody: SourceCustody,
     _admitted: Vec<WorthQueryPerformedOutputDemandSource>,
 }
@@ -29,7 +29,7 @@ pub struct ReleasedPerformedSource {
 impl DemandRegistryState {
     /// Release the oldest retained performed source that no prepared token
     /// and no demand of a row it admitted holds.
-    pub fn release_unheld_performed_source(
+    pub(in super::super) fn release_unheld_performed_source(
         &mut self,
     ) -> Result<Option<ReleasedPerformedSource>, WorthQueryOutputDemandDenial> {
         let mut oldest = None;

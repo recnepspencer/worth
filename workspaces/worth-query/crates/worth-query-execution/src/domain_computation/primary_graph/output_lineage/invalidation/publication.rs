@@ -97,7 +97,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
 /// continues unchanged, and a predecessor with no row to continue leaves the
 /// republication without one.
 #[allow(clippy::too_many_arguments)]
-pub fn register_republished(
+pub(in crate::domain_computation::primary_graph) fn register_republished(
     owner: &SourceInvalidationOwner,
     predecessor: &RecordedSettlementIdentity,
     identity: Arc<RecordedSettlementIdentity>,
@@ -184,7 +184,7 @@ fn own_effect_stale_ordinals(
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub fn require_settlement_verification(
+    pub(in crate::domain_computation::primary_graph) fn require_settlement_verification(
         &mut self,
         identity: &RecordedSettlementIdentity,
         reason: FullVerificationReason,

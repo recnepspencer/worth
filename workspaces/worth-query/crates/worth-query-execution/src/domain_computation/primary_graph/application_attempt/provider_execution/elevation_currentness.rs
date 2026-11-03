@@ -9,7 +9,7 @@ use super::super::super::super::authorization::{
 };
 use super::super::super::WorthQueryElevationClosureKind;
 
-pub enum WorthQueryElevationCommitCurrentness {
+pub(super) enum WorthQueryElevationCommitCurrentness {
     Window {
         timeline: ApplicationCapabilityValidityTimeline,
         issued_at: AspectValue,

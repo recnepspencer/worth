@@ -4,7 +4,7 @@ impl WorthQueryOutputDemandRegistry {
     /// Claim one required row for the already admitted Product and its exact
     /// native branch. A foreign-cell hint stays queued; a later hint for this
     /// cell cannot be hidden behind it.
-    pub fn next_required_claim_for_selected(
+    pub(in crate::domain_computation::primary_graph) fn next_required_claim_for_selected(
         &self,
         product: &crate::basis::WorthQueryProductObservationLease,
         selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
@@ -90,7 +90,7 @@ impl WorthQueryOutputDemandRegistry {
 
         self.drain_terminal_cleanup_admitted(source_owner)
     }
-    pub fn select_required_claim(
+    pub(in crate::domain_computation::primary_graph) fn select_required_claim(
         &self,
         claim: &mut RequiredWorkClaim,
         selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,

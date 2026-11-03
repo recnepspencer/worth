@@ -24,21 +24,21 @@ struct ReadyCell {
 
 /// Identity of the actual prepaid cell, retained without retaining its answer.
 /// Its weak control block prevents address reuse while an old row exists.
-pub struct OutputCheckpointGeneration(Weak<ReadyCell>);
+pub(super) struct OutputCheckpointGeneration(Weak<ReadyCell>);
 impl OutputCheckpointGeneration {
-    pub fn same(&self, other: &Self) -> bool {
+    pub(super) fn same(&self, other: &Self) -> bool {
         Weak::ptr_eq(&self.0, &other.0)
     }
 }
 
 /// Prepared before an output effect. It cannot be read as a Ready completion.
-pub struct PreparedReadyBacking {
+pub(in crate::domain_computation::primary_graph) struct PreparedReadyBacking {
     cell: Arc<ReadyCell>,
 }
 
 /// The completed cell pins the original authority.
 #[derive(Clone)]
-pub struct ReadyCompletion(Arc<ReadyCell>);
+pub(in crate::domain_computation::primary_graph) struct ReadyCompletion(Arc<ReadyCell>);
 
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -61,11 +61,11 @@ impl<Schema>
 }
 
 impl PreparedReadyBacking {
-    pub fn generation(&self) -> OutputCheckpointGeneration {
+    pub(super) fn generation(&self) -> OutputCheckpointGeneration {
         OutputCheckpointGeneration(Arc::downgrade(&self.cell))
     }
 
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             cell: Arc::new(ReadyCell {
                 completion: OnceLock::new(),
@@ -76,7 +76,7 @@ impl PreparedReadyBacking {
         }
     }
 
-    pub fn for_test() -> Self {
+    pub(in crate::domain_computation::primary_graph) fn for_test() -> Self {
         Self::new()
     }
 
@@ -131,7 +131,7 @@ impl Deref for ReadyCompletion {
 }
 
 impl ReadyCompletion {
-    pub fn generation(&self) -> OutputCheckpointGeneration {
+    pub(super) fn generation(&self) -> OutputCheckpointGeneration {
         OutputCheckpointGeneration(Arc::downgrade(&self.0))
     }
 
@@ -170,7 +170,7 @@ impl ReadyCompletion {
 }
 
 impl PreparedReadyBacking {
-    pub fn for_registry_test() -> Self {
+    pub(in crate::domain_computation::primary_graph) fn for_registry_test() -> Self {
         Self::new()
     }
 }

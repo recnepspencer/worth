@@ -149,7 +149,7 @@ pub(super) fn lineage_head(
 /// Why the head row of a refresh lineage can never become Ready: the row
 /// itself, or its refresh, met a stop intrinsic to it. Any other stop
 /// belonged to the advance that met it.
-pub fn head_stop(
+pub(super) fn head_stop(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> Option<WorthQueryOutputDemandDenial> {

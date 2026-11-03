@@ -9,15 +9,15 @@ use std::cmp::Ordering;
 // Family and source precede the binding: one output occurrence remains a
 // contiguous range even when Initial and Preserve have separate executors.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryOutputDemandKey {
-    pub family: OutputFamilyIdentity,
-    pub source: SourceEpoch,
-    pub applicability: WorthQueryProducerApplicability,
-    pub producer: String,
+pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandKey {
+    pub(super) family: OutputFamilyIdentity,
+    pub(super) source: SourceEpoch,
+    pub(super) applicability: WorthQueryProducerApplicability,
+    pub(super) producer: String,
 }
 
 impl WorthQueryOutputDemandKey {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         family: &'static str,
         producer: String,
         applicability: WorthQueryProducerApplicability,
@@ -35,7 +35,7 @@ impl WorthQueryOutputDemandKey {
         self.family.as_str()
     }
 
-    pub fn producer_identity(&self) -> &str {
+    pub(in crate::domain_computation::primary_graph) fn producer_identity(&self) -> &str {
         &self.producer
     }
 
@@ -43,15 +43,15 @@ impl WorthQueryOutputDemandKey {
         self.applicability
     }
 
-    pub fn source_epoch(&self) -> &SourceEpoch {
+    pub(in crate::domain_computation::primary_graph) fn source_epoch(&self) -> &SourceEpoch {
         &self.source
     }
 
-    pub fn same_occurrence(&self, other: &Self) -> bool {
+    pub(super) fn same_occurrence(&self, other: &Self) -> bool {
         self.family == other.family && self.source.same_occurrence(&other.source)
     }
 
-    pub fn same_semantic_source(&self, other: &Self) -> bool {
+    pub(super) fn same_semantic_source(&self, other: &Self) -> bool {
         // One installed binding may serve both lifecycle postures. Its Ready
         // keeps the same output meaning; delivery still certifies native
         // currentness. Another binding never joins through this predicate.
@@ -61,7 +61,7 @@ impl WorthQueryOutputDemandKey {
             && self.source.same_semantic_source(&other.source)
     }
 
-    pub fn replacement_order(&self, other: &Self) -> Option<Ordering> {
+    pub(super) fn replacement_order(&self, other: &Self) -> Option<Ordering> {
         if self.family != other.family {
             return None;
         }

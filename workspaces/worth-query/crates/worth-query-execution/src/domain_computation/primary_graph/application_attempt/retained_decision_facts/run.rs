@@ -2,9 +2,9 @@ use super::{AdmittedFactKey, RetainedFact, Slot, Slots, StoreDenial};
 use std::cell::{Cell, RefCell};
 use worth_execution::ExecutionArrayBuilder;
 
-pub struct Run<T> {
-    pub slots: Slots<T>,
-    pub used: usize,
+pub(in crate::domain_computation::primary_graph) struct Run<T> {
+    pub(in crate::domain_computation::primary_graph) slots: Slots<T>,
+    pub(in crate::domain_computation::primary_graph) used: usize,
     cursor: Cell<usize>,
 }
 
@@ -22,7 +22,7 @@ impl<T> Run<T> {
             cursor: Cell::new(0),
         })
     }
-    pub fn locate(
+    pub(in crate::domain_computation::primary_graph) fn locate(
         &self,
         key: &AdmittedFactKey,
         policy: super::StorageControl<'_, '_>,
@@ -74,7 +74,7 @@ impl<T> Run<T> {
         self.cursor.set(index + 1);
         self.slots[index].borrow_mut().take().unwrap()
     }
-    pub fn merge(
+    pub(in crate::domain_computation::primary_graph) fn merge(
         left: Self,
         right: Self,
         policy: super::StorageControl<'_, '_>,

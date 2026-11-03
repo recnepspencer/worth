@@ -13,7 +13,7 @@ pub(super) struct MemberStop {
     recording: StopRecording,
 }
 impl MemberStop {
-    pub fn member(index: usize, stop: WorthQueryOutputDemandDenial) -> Self {
+    pub(super) fn member(index: usize, stop: WorthQueryOutputDemandDenial) -> Self {
         Self {
             index,
             stop,
@@ -38,14 +38,14 @@ impl MemberStop {
     }
 }
 
-pub struct StopRecording(Recording);
+pub(super) struct StopRecording(Recording);
 impl StopRecording {
     /// The continuation owner already recorded this on its genuine successor.
     pub(super) fn successor() -> Self {
         Self(Recording::Successor)
     }
 
-    pub fn member() -> Self {
+    pub(super) fn member() -> Self {
         Self(Recording::Member)
     }
     pub(super) fn record_if_needed(

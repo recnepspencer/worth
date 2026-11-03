@@ -16,7 +16,7 @@ mod bridge_observation;
 mod decision_denial;
 mod elevation;
 mod expiry;
-pub mod grant_selection;
+mod grant_selection;
 mod path_preparation;
 mod projection_validation;
 mod recorded_actor;

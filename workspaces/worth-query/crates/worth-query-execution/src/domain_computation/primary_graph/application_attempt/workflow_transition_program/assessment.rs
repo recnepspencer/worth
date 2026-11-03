@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[path = "assessment/evidence_budget.rs"]
-pub mod evidence_budget;
+mod evidence_budget;
 #[path = "assessment/identity.rs"]
 mod identity;
 #[path = "assessment/replay.rs"]

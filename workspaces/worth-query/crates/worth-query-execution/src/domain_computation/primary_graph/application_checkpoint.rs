@@ -8,15 +8,15 @@ pub use inspection::{
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
-pub mod capture;
+mod capture;
 mod decode;
-pub mod header;
-pub mod metadata_funding;
+mod header;
+mod metadata_funding;
 pub(in crate::domain_computation::primary_graph) use header::CheckpointDecodeDenial;
 pub(in crate::domain_computation::primary_graph) use metadata_funding::CheckpointMetadataFunding;
 mod denial;
-pub mod encode;
-pub mod facts;
+mod encode;
+pub(in crate::domain_computation::primary_graph) mod facts;
 mod producer_computation;
 pub(in crate::domain_computation::primary_graph) use facts::FactDecodeDenial;
 pub(in crate::domain_computation::primary_graph) use producer_computation::{
@@ -34,20 +34,20 @@ pub use section_bytes::{
 };
 pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCapturePolicy;
 
-pub const MAGIC: &[u8; 8] = b"WQAPCP01";
+const MAGIC: &[u8; 8] = b"WQAPCP01";
 // Current-only combined grammar: whole-aspect facts remain wire12 (presence tag11); producer quotes are absent.
-pub const FORMAT_VERSION: u16 = 13;
-pub const WORKFLOW_FACTS: u16 = 2;
-pub const WORKFLOW_INSTANCES: u16 = 4;
-pub const CHECKSUM_BYTES: usize = 32;
-pub const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8;
-pub const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
+const FORMAT_VERSION: u16 = 13;
+const WORKFLOW_FACTS: u16 = 2;
+const WORKFLOW_INSTANCES: u16 = 4;
+const CHECKSUM_BYTES: usize = 32;
+const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8;
+const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
 // Version 9 preserves the row layout and certifies the exporter exclusion.
 pub const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize =
     8 + 1 + 48 + 32 + 16 + 32 + 33 + 32 + 8 + 8 + 1 + 2;
-pub const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
-pub const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
-pub const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
+const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
+const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
+const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
 
 /// Opaque bytes for one complete Query application checkpoint.
 ///
@@ -57,13 +57,13 @@ pub const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
 /// the embedded native region; native recovery still owns fresh readmission.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCheckpoint {
-    pub bytes: worth_execution::ExecutionImmutableBytes,
+    bytes: worth_execution::ExecutionImmutableBytes,
 }
 
-pub struct DecodedApplicationCheckpoint {
-    pub native: worth_relational::facade::durability::RelationalNativeCheckpoint,
-    pub bootstrap_commit_id: worth_relational::facade::history::CommitId,
-    pub accepted_outputs:
+pub(in crate::domain_computation::primary_graph) struct DecodedApplicationCheckpoint {
+    pub(super) native: worth_relational::facade::durability::RelationalNativeCheckpoint,
+    pub(super) bootstrap_commit_id: worth_relational::facade::history::CommitId,
+    pub(super) accepted_outputs:
         Vec<super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     pub(super) metadata: CheckpointMetadataFunding,
 }
@@ -100,7 +100,7 @@ impl WorthQueryApplicationCheckpoint {
         Self::from_untrusted_bytes(bytes.into_boxed_slice())
     }
 
-    pub fn decode_with_execution(
+    pub(super) fn decode_with_execution(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
@@ -124,7 +124,7 @@ impl WorthQueryApplicationCheckpoint {
         result
     }
 
-    pub fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
+    pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
         let host = worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),

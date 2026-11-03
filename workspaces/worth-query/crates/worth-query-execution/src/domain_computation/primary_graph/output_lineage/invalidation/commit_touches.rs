@@ -18,14 +18,14 @@ use super::owner::SourceInvalidationOwner;
 /// The records a reader watches. Conditional source records are entities;
 /// `every_commit` covers whole-graph dependencies and bootstrap catch-up.
 #[derive(Clone, Copy)]
-pub struct CommitTouchInterest<'a> {
-    pub entities: CommitTouchEntities<'a>,
-    pub every_commit: bool,
+pub(in crate::domain_computation::primary_graph) struct CommitTouchInterest<'a> {
+    pub(in crate::domain_computation::primary_graph) entities: CommitTouchEntities<'a>,
+    pub(in crate::domain_computation::primary_graph) every_commit: bool,
 }
 
 /// Borrowed interest uses the same canonical touch stream for sets and bounded read dependencies.
 #[derive(Clone, Copy)]
-pub enum CommitTouchEntities<'a> {
+pub(in crate::domain_computation::primary_graph) enum CommitTouchEntities<'a> {
     Set(&'a BTreeSet<EntityId>),
     Slice(&'a [EntityId]),
 }
@@ -48,9 +48,9 @@ impl CommitTouchEntities<'_> {
     }
 }
 /// One relevant commit on the branch and the watched entities it touched.
-pub struct TouchedCommit {
+pub(in crate::domain_computation::primary_graph) struct TouchedCommit {
     pub(in crate::domain_computation::primary_graph) position: PatchStreamPosition,
-    pub commit: CommitId,
+    pub(in crate::domain_computation::primary_graph) commit: CommitId,
     /// `None` when exact touches were unavailable for the commit.
     touched: Option<BTreeSet<EntityId>>,
 }
@@ -64,17 +64,17 @@ impl TouchedCommit {
     }
 }
 
-pub struct TouchedCommits {
-    pub commits: Vec<TouchedCommit>,
-    pub next_cursor: Option<PatchStreamPosition>,
+pub(in crate::domain_computation::primary_graph) struct TouchedCommits {
+    pub(in crate::domain_computation::primary_graph) commits: Vec<TouchedCommit>,
+    pub(in crate::domain_computation::primary_graph) next_cursor: Option<PatchStreamPosition>,
     pub(in crate::domain_computation::primary_graph) work_remaining: bool,
-    pub caught_up_to_latest: bool,
+    pub(in crate::domain_computation::primary_graph) caught_up_to_latest: bool,
 }
 
 impl SourceInvalidationOwner {
     /// Latest delivered position across branches. Positions are globally
     /// ordered, so a cursor taken here precedes every later commit anywhere.
-    pub fn latest_position(
+    pub(in crate::domain_computation::primary_graph) fn latest_position(
         &self,
     ) -> Option<PatchStreamPosition> {
         let cells = self
@@ -94,7 +94,7 @@ impl SourceInvalidationOwner {
     /// Commits on `branch` after `cursor`, up to the selected `ceiling`, that
     /// touch the interest. Irrelevant commits advance the cursor silently; at
     /// most `limit` relevant commits are returned per call.
-    pub fn touched_commits_after(
+    pub(in crate::domain_computation::primary_graph) fn touched_commits_after(
         &self,
         branch: &BranchId,
         cursor: Option<PatchStreamPosition>,

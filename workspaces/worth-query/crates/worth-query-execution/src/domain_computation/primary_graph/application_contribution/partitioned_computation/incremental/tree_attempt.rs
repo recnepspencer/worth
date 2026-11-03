@@ -9,18 +9,18 @@ use super::tree_report::{
     WorthQueryPartitionedTreeRun as Run,
 };
 
-pub enum EditDisposition<Tree> {
+pub(super) enum EditDisposition<Tree> {
     Completed(Tree),
     Rebuild(Cause),
 }
 
-pub struct TreeAttempt<T, E> {
+pub(super) struct TreeAttempt<T, E> {
     outcome: Result<T, E>,
     work: Metrics,
 }
 
 impl<T, E> TreeAttempt<EditDisposition<T>, Denial<E>> {
-    pub fn resolve(
+    pub(super) fn resolve(
         self,
         rebuild: impl FnOnce() -> TreeAttempt<T, Denial<E>>,
     ) -> ReportedTree<T, E> {
@@ -55,7 +55,7 @@ impl<T, E> TreeAttempt<T, E> {
         }
     }
 
-    pub fn map_result<U, F>(
+    pub(super) fn map_result<U, F>(
         self,
         convert: impl FnOnce(Result<T, E>) -> Result<U, F>,
     ) -> TreeAttempt<U, F> {
@@ -90,7 +90,7 @@ impl<T, E> TreeAttempt<T, E> {
 }
 
 impl<T, E> TreeAttempt<T, ReductionRunFailure<E>> {
-    pub fn native(outcome: Result<(T, ReductionMetrics), ReductionRunFailure<E>>) -> Self {
+    pub(super) fn native(outcome: Result<(T, ReductionMetrics), ReductionRunFailure<E>>) -> Self {
         match outcome {
             Ok((value, work)) => Self {
                 outcome: Ok(value),
@@ -105,7 +105,7 @@ impl<T, E> TreeAttempt<T, ReductionRunFailure<E>> {
 }
 
 impl<T> TreeAttempt<T, ReductionRunFailure<worth_execution::MapKernelStop>> {
-    pub fn finish_edits<E>(self) -> TreeAttempt<EditDisposition<T>, Denial<E>> {
+    pub(super) fn finish_edits<E>(self) -> TreeAttempt<EditDisposition<T>, Denial<E>> {
         self.map_result(|outcome| match outcome {
             Ok(tree) => Ok(EditDisposition::Completed(tree)),
             Err(failure) => match super::tree_report::rebuild_cause(failure.reason) {

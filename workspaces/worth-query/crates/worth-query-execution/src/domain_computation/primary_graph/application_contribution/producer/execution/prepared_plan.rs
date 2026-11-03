@@ -1,5 +1,5 @@
 //! Sealed computes travel; producer completion and publication stay on the owner.
-pub mod canonical_apply;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod canonical_apply;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot;
 use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
@@ -11,7 +11,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 type OwnerCallback<'owner, Value, Stop> =
     Box<dyn FnOnce(Vec<ComputedSlot>) -> Result<Value, Stop> + 'owner>;
 
-pub struct OwnerPlan<'owner, Value, Stop> {
+pub(in crate::domain_computation::primary_graph) struct OwnerPlan<'owner, Value, Stop> {
     requests: Vec<PreparedCompute>,
 
     inputs: Option<
@@ -51,7 +51,7 @@ impl<Value, Stop, Custody> OwnerCompletion<'_, Value, Stop, Custody> {
 }
 
 impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
-    pub fn immediate(
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn immediate(
         outcome: Result<Value, Stop>,
     ) -> Self {
         Self::new(Vec::new(), move |slots| {
@@ -62,7 +62,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
             outcome
         })
     }
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         requests: Vec<PreparedCompute>,
         complete: impl FnOnce(Vec<ComputedSlot>) -> Result<Value, Stop> + 'owner,
     ) -> Self {
@@ -81,7 +81,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
         !self.requests.is_empty()
     }
 
-    pub fn with_inputs(
+    pub(in crate::domain_computation::primary_graph) fn with_inputs(
         mut self,
         inputs: crate::domain_computation::primary_graph::application_output_demand::PreparedRequiredInputs,
     ) -> Self {

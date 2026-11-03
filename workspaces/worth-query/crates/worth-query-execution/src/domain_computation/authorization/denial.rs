@@ -224,7 +224,7 @@ pub struct WorthQueryOperationAuthorizationDenial {
 }
 
 impl WorthQueryOperationAuthorizationDenial {
-    pub fn new(
+    pub(in crate::domain_computation) fn new(
         kind: WorthQueryOperationAuthorizationDenialKind,
         subject: impl Into<String>,
     ) -> Self {

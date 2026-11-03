@@ -13,12 +13,12 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
 };
 
-pub struct ConditionalDefinitionAdmission<'a, Schema> {
+pub(in crate::domain_computation::primary_graph) struct ConditionalDefinitionAdmission<'a, Schema> {
     application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: Option<&'a WorthQueryProductBranchLease>,
 }
 impl<'a, Schema> ConditionalDefinitionAdmission<'a, Schema> {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         product: Option<&'a WorthQueryProductBranchLease>,
     ) -> Self {

@@ -25,7 +25,7 @@ impl WorthQueryCurrentBodyRequirementAssessment {
     pub fn findings(&self) -> &[WorthQueryOperationBodyRequirementFinding] {
         &self.findings
     }
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph::operation_body) fn new(
         findings: Vec<WorthQueryOperationBodyRequirementFinding>,
         memory: crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
     ) -> Self {

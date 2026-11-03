@@ -13,23 +13,23 @@ use worth_relational::facade::identity::KindId;
 
 /// Borrowed installed meaning, never a read permission or a rewritten descriptor.
 #[derive(Clone, Copy, Debug)]
-pub struct InstalledFieldCoordinate<'a> {
+pub(in crate::domain_computation::primary_graph) struct InstalledFieldCoordinate<'a> {
     field: &'a WorthQueryPrimaryFieldLayout,
     native: &'a WorthQueryInstalledApplicationAspectContract,
 }
 impl InstalledFieldCoordinate<'_> {
-    pub fn field(&self) -> &FieldKey {
+    pub(in crate::domain_computation::primary_graph) fn field(&self) -> &FieldKey {
         &self.field.locator.field_path().fields()[0]
     }
-    pub fn native(
+    pub(in crate::domain_computation::primary_graph) fn native(
         &self,
     ) -> &WorthQueryInstalledApplicationAspectContract {
         self.native
     }
-    pub fn same_field(&self, other: &Self) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn same_field(&self, other: &Self) -> bool {
         std::ptr::eq(self.field, other.field) && std::ptr::eq(self.native, other.native)
     }
-    pub fn entity_kind(&self) -> KindId {
+    pub(in crate::domain_computation::primary_graph) fn entity_kind(&self) -> KindId {
         self.field.entity_kind
     }
     pub fn contract_revision(&self) -> AspectContractRevision {
@@ -39,7 +39,7 @@ impl InstalledFieldCoordinate<'_> {
 
 impl WorthQueryPrimaryGraphLayout {
     /// O(installed fields + selected contract fields), diagnostic only; no allocation.
-    pub fn resolve_field_coordinate<'a>(
+    pub(in crate::domain_computation::primary_graph) fn resolve_field_coordinate<'a>(
         &'a self,
         contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog,
         entity: &str,
@@ -70,7 +70,7 @@ impl WorthQueryPrimaryGraphLayout {
     }
 
     /// Resolve an already issued query footprint through the same installed inventory.
-    pub fn resolve_declared_field_coordinate<'a>(
+    pub(in crate::domain_computation::primary_graph) fn resolve_declared_field_coordinate<'a>(
         &'a self,
         contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog,
         entity: &str,

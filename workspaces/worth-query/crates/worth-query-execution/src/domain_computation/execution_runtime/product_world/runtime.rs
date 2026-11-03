@@ -24,15 +24,15 @@ pub(crate) struct WorthQueryProductRootIdentity {
 pub struct WorthQueryProductRuntime {
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
-    pub owner: Arc<RuntimeWorldOwner<(), (), (), (), ()>>,
-    pub source: RuntimeBridgeRelationalSource,
+    pub(crate) owner: Arc<RuntimeWorldOwner<(), (), (), (), ()>>,
+    pub(crate) source: RuntimeBridgeRelationalSource,
     pub(crate) activations: Arc<WorthQueryProductActivationRegistry>,
     pub(crate) clock: WorthQueryProductWorldClock,
     pub(crate) relational_lifecycle: RelationalBranchLifecyclePort,
     pub(crate) signal_basis: worth_signal::facade::branch::SignalBranchBasisPort<(), (), ()>,
     pub(crate) signal_lifecycle:
         worth_signal::facade::branch::SignalBranchLifecyclePort<(), (), ()>,
-    pub owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
+    pub(crate) owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
     pub(crate) default_branch: ProductBranchIdentity,
     pub(crate) default_occurrence: ProductBranchIncarnation,
     next_public_branch_ordinal: Arc<std::sync::atomic::AtomicU64>,
@@ -104,7 +104,7 @@ impl WorthQueryProductRuntime {
         branch.occurrence().owner_identity() == self.owner.owner_identity()
     }
 
-    pub fn default_branch(&self) -> &ProductBranchIdentity {
+    pub(crate) fn default_branch(&self) -> &ProductBranchIdentity {
         &self.default_branch
     }
 

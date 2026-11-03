@@ -15,13 +15,13 @@ type FamilySourceQuery<Schema, Family> =
 
 pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
-pub mod bridge_denial;
-pub mod checkpoint_delivery;
+pub(super) mod bridge_denial;
+mod checkpoint_delivery;
 mod denial_diagnostic;
 mod denial_posture;
 pub(super) mod disclosure;
 mod fulfillment;
-pub mod progression;
+mod progression;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::DecisionInput;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::PerformedMembers;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::SelectedDecisionInput;
@@ -29,11 +29,11 @@ pub(in crate::domain_computation::primary_graph) use progression::MatchedRequire
 pub(in crate::domain_computation::primary_graph) use progression::ReboundConsumedOutput;
 pub(in crate::domain_computation::primary_graph) use progression::ResolvedRequiredPredecessors;
 mod readiness;
-pub mod required_continuations;
+mod required_continuations;
 mod required_provenance;
-pub mod scheduling_progression;
+mod scheduling_progression;
 mod selected_source;
-pub mod selection;
+mod selection;
 pub(in crate::domain_computation::primary_graph) use required_continuations::PreparedRequiredFreshSlot;
 use required_continuations::RequiredContinuations;
 pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshOutcome;
@@ -59,14 +59,14 @@ pub use read_close::WorthQueryOutputReadCloseDenial;
 /// and advancing the demand re-check that the producer is still installed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQuerySelectedApplicationProducer {
-    pub identity: String,
-    pub applicability: WorthQueryProducerApplicability,
-    pub exact_retained_output: bool,
-    pub retained_idempotency_key: Option<[u8; 32]>,
-    pub retained_output_binding: Option<TypeId>,
+    pub(super) identity: String,
+    pub(super) applicability: WorthQueryProducerApplicability,
+    pub(super) exact_retained_output: bool,
+    pub(super) retained_idempotency_key: Option<[u8; 32]>,
+    pub(super) retained_output_binding: Option<TypeId>,
     // An exact selection whose producer declares no Preserve posture reuses
     // the live output it was selected for and never executes over it.
-    pub reuses_live_output_only: bool,
+    pub(super) reuses_live_output_only: bool,
 }
 
 /// Runtime-affine admission for one exact source occurrence and installed producer.

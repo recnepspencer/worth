@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::{
 /// `retains_computation` is fixed at installation: the producer's operation
 /// runs a partitioned computation whose state its runs retain.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct InstalledProducerEdition {
+pub(in crate::domain_computation::primary_graph) struct InstalledProducerEdition {
     digest: [u8; 32],
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     binding_type: TypeId,
@@ -60,7 +60,7 @@ impl InstalledProducerEdition {
         self.retains_computation
     }
 
-    pub fn from_declaration(
+    pub(super) fn from_declaration(
         declaration: &DeclaredProducerBinding,
         build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial> {
@@ -226,17 +226,17 @@ impl InstalledProducerEdition {
         })
     }
 
-    pub const fn digest(self) -> [u8; 32] {
+    pub(in crate::domain_computation::primary_graph) const fn digest(self) -> [u8; 32] {
         self.digest
     }
 
-    pub const fn build_identity(
+    pub(in crate::domain_computation::primary_graph) const fn build_identity(
         self,
     ) -> worth_foundational::facade::ApplicationBuildIdentity {
         self.build_identity
     }
 
-    pub fn for_test(digest: [u8; 32]) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn for_test(digest: [u8; 32]) -> Self {
         let unit = TypeId::of::<()>();
         Self {
             digest,

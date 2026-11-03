@@ -11,14 +11,14 @@ use crate::domain_computation::{
 };
 
 #[derive(Default)]
-pub struct WorthQueryRecoveredOutputs {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRecoveredOutputs {
     records: Vec<WorthQueryReadmittedAcceptedOutput>,
     by_source_partition: Vec<usize>,
     // Declared last: every retained row/string/role/wire and index drops first.
     _metadata: Option<CheckpointMetadataFunding>,
 }
 impl WorthQueryRecoveredOutputs {
-    pub fn from_checkpoint(
+    pub(in crate::domain_computation::primary_graph) fn from_checkpoint(
         checkpoint: DecodedApplicationCheckpoint,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut readmit: impl FnMut(
@@ -58,7 +58,7 @@ impl WorthQueryRecoveredOutputs {
         Self::from_records(records, metadata, execution)
             .map_err(CheckpointDecodeDenial::into_installation_denial)
     }
-    pub fn from_records(
+    fn from_records(
         records: Vec<WorthQueryReadmittedAcceptedOutput>,
         mut metadata: CheckpointMetadataFunding,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -81,7 +81,7 @@ impl WorthQueryRecoveredOutputs {
     pub fn iter(&self) -> impl Iterator<Item = &WorthQueryReadmittedAcceptedOutput> {
         self.records.iter()
     }
-    pub fn matching_source_partition(
+    pub(in crate::domain_computation::primary_graph) fn matching_source_partition(
         &self,
         scope: WorthQueryOperationScopeEntityBinding,
         partition: [u8; 32],

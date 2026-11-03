@@ -13,14 +13,14 @@ use super::{
 };
 
 impl WorthQueryPrimaryGraphLayout {
-    pub fn principal_binding(
+    pub(in crate::domain_computation) fn principal_binding(
         &self,
         name: &str,
     ) -> Option<&WorthQueryPrimaryPrincipalBindingLayout> {
         self.principal_bindings.get(name)
     }
 
-    pub fn principal_bindings(
+    pub(in crate::domain_computation::primary_graph) fn principal_bindings(
         &self,
     ) -> impl Iterator<Item = (&str, &WorthQueryPrimaryPrincipalBindingLayout)> {
         self.principal_bindings
@@ -38,14 +38,14 @@ impl WorthQueryPrimaryGraphLayout {
 }
 
 #[derive(Clone, Debug)]
-pub struct WorthQueryPrimaryPrincipalBindingLayout {
-    pub mapping_kind: KindId,
-    pub identity_locator: AspectFieldLocator,
-    pub status_locator: AspectFieldLocator,
-    pub relation_kind: KindId,
-    pub principal_kind: KindId,
-    pub principal_identity_locator: AspectFieldLocator,
-    pub index_id: DerivedIndexId,
+pub(in crate::domain_computation) struct WorthQueryPrimaryPrincipalBindingLayout {
+    pub(in crate::domain_computation::primary_graph) mapping_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) identity_locator: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) status_locator: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) relation_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) principal_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) principal_identity_locator: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) index_id: DerivedIndexId,
 }
 
 impl WorthQueryPrimaryPrincipalBindingLayout {

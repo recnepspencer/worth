@@ -17,7 +17,7 @@ const SCRATCH_CHARGE: usize = 16 * 1024;
 const TRANSITION_CHARGE: usize = 4096;
 const OWNED_COPY_MULTIPLICITY: usize = 4;
 
-pub struct HistoryReconstructionCharge {
+pub(super) struct HistoryReconstructionCharge {
     budget: WorthQueryWorkflowHistoryReconstructionBudget,
     bytes: usize,
 }
@@ -26,7 +26,7 @@ impl HistoryReconstructionCharge {
     pub(super) fn record_limit(&self) -> usize {
         (self.maximum_bytes() - self.bytes) / TRANSITION_CHARGE
     }
-    pub fn new(
+    pub(super) fn new(
         budget: WorthQueryWorkflowHistoryReconstructionBudget,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         let mut charge = Self { budget, bytes: 0 };

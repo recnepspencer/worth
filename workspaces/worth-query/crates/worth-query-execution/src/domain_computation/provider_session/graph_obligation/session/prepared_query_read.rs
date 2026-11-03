@@ -9,21 +9,21 @@ use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIden
 
 /// A move-only operation on an exact admitted session's source. This excludes
 /// its Send-only capacity reservation and exposes no mutation capability.
-pub struct WorthQueryPreparedSessionRead {
+pub(in crate::domain_computation) struct WorthQueryPreparedSessionRead {
     pin: std::sync::Arc<WorthQueryPreparedQueryPin>,
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
 }
 /// One immutable source pin per query side, shared with owner-held plans.
 /// Private fields prevent re-pairing its root, layout, binding or basis.
-pub struct WorthQueryPreparedQueryPin {
+pub(in crate::domain_computation) struct WorthQueryPreparedQueryPin {
     read: worth_relational::facade::runtime::RelationalPinnedRead,
     layout: std::sync::Arc<WorthQueryPrimaryGraphLayout>,
     basis: WorthQueryApplicationBasisIdentity,
     binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
 }
 impl WorthQueryManagedGraphWorkSession {
-    pub fn prepare_query_read(
+    pub(in crate::domain_computation) fn prepare_query_read(
         &self,
         basis: &WorthQueryApplicationBasisIdentity,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -58,7 +58,7 @@ impl WorthQueryManagedGraphWorkSession {
     /// Bind an existing side pin to this already admitted session's identity.
     /// Equal roots share immutable custody. A changed admitted root pins its
     /// own state, so post-read currentness retains its answer and work.
-    pub fn prepare_query_read_from_pin(
+    pub(in crate::domain_computation) fn prepare_query_read_from_pin(
         &self,
         basis: &WorthQueryApplicationBasisIdentity,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -110,7 +110,7 @@ impl WorthQueryPreparedSessionRead {
     pub fn retained_pin(&self) -> std::sync::Arc<WorthQueryPreparedQueryPin> {
         std::sync::Arc::clone(&self.pin)
     }
-    pub fn execute<T>(
+    pub(in crate::domain_computation) fn execute<T>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(
@@ -134,7 +134,7 @@ impl WorthQueryPreparedSessionRead {
 
 /// Move-only evidence that the sealed capability executed its read. The owner
 /// supplies the retained basis when it seals this evidence, after the join.
-pub struct WorthQueryPreparedReadCompletion {
+pub(in crate::domain_computation) struct WorthQueryPreparedReadCompletion {
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
 }

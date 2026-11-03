@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::{
 
 /// Invocation evidence awaiting the completed, exactly covered handler read.
 /// The static producer declaration supplies the upper bound on context use.
-pub struct PreparedDecisionReuseContext {
+pub(in crate::domain_computation::primary_graph) struct PreparedDecisionReuseContext {
     contract: WorthQueryProducerInputReuseContract,
     key: Option<[u8; 32]>,
     principal: Option<WorthQueryPrincipalReuseWitness>,
@@ -22,7 +22,7 @@ pub struct PreparedDecisionReuseContext {
 
 /// Recorded fixed native and canonical context for a completed producer read.
 /// An absent proof is ineligible; the handler fact count remains independent.
-pub struct CompletedDecisionReuseProof {
+pub(in crate::domain_computation::primary_graph) struct CompletedDecisionReuseProof {
     key: Option<[u8; 32]>,
     principal: Option<WorthQueryPrincipalReuseWitness>,
     scope: Option<WorthQueryDecisionScopeWitness>,
@@ -42,7 +42,7 @@ impl CompletedDecisionReuseProof {
 }
 
 impl PreparedDecisionReuseContext {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         contract: WorthQueryProducerInputReuseContract,
         key: Option<[u8; 32]>,
         principal: Option<WorthQueryPrincipalReuseWitness>,
@@ -85,7 +85,7 @@ impl PreparedDecisionReuseContext {
 
     /// A fresh invocation can compare its descriptive admitted context with
     /// prior completed evidence without pretending the new handler ran.
-    pub fn matches_completed(
+    pub(in crate::domain_computation::primary_graph) fn matches_completed(
         &self,
         prior: &CompletedDecisionReuseProof,
     ) -> bool {
@@ -96,7 +96,7 @@ impl PreparedDecisionReuseContext {
 impl CompletedHandlerFactBoundary {
     /// Only the exactly completed read can turn a descriptive capture into
     /// reusable decision evidence. The handler fact prefix stays separate.
-    pub fn seal_decision_reuse(
+    pub(in crate::domain_computation::primary_graph) fn seal_decision_reuse(
         &self,
         prepared: PreparedDecisionReuseContext,
         actual: DecisionContextUse,

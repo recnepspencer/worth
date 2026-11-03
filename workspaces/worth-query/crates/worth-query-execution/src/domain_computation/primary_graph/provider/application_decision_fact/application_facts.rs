@@ -10,7 +10,7 @@ use worth_query_installation::facade::WorthQueryOperationGraphReadScope;
 
 /// Keeps exact backing and its native/decode funding; never a freshness proof.
 #[derive(Clone)]
-pub struct SharedObservedFact {
+pub(in crate::domain_computation) struct SharedObservedFact {
     payload: FactPayload,
     ordinal: usize,
 }
@@ -34,7 +34,7 @@ impl Deref for SharedObservedFact {
 }
 
 #[derive(Clone)]
-pub struct SharedReadScope {
+pub(in crate::domain_computation) struct SharedReadScope {
     backing: ScopeBacking,
 }
 #[derive(Clone)]

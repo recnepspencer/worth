@@ -11,11 +11,11 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding
 /// The exact row meanings share their original immutable footprints; the roster
 /// owns its original request's fixed backing. Native disclosed rows are
 /// retained only when the original one-shot explicitly requests them.
-pub struct WorthQueryRetainedObservedParameters
+pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryRetainedObservedParameters
 {
     admitted: WorthQueryAdmittedApplicationQueryParameters,
     binding: Option<WorthQueryInstalledApplicationQueryBindingObservation>,
-    pub rows: worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
+    rows: worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
     producer: Option<
         Arc<super::super::super::application_output_demand::OriginalSettledProducerObservation>,
     >,

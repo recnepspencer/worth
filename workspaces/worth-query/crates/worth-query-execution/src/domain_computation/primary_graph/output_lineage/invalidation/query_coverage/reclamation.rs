@@ -3,7 +3,7 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub enum QueryReadBacking {
+pub(super) enum QueryReadBacking {
     Live(Arc<QueryReadProjection>),
     Released {
         keys: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
@@ -12,7 +12,7 @@ pub enum QueryReadBacking {
     },
 }
 impl QueryReadBacking {
-    pub fn keys(&self) -> &OrdMap<Arc<FactPostingKey>, OrdSet<usize>> {
+    pub(super) fn keys(&self) -> &OrdMap<Arc<FactPostingKey>, OrdSet<usize>> {
         match self {
             Self::Live(projection) => &projection.keys,
             Self::Released { keys, .. } => keys,

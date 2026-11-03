@@ -44,7 +44,7 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relatio
         }
     }
 
-    pub fn issued_at(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn issued_at(
         &self,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         cookie: u64,

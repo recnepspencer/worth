@@ -64,7 +64,7 @@ impl WorthQueryApplicationAttemptDenial {
             }
         }
     }
-    pub fn relational_execution_cause(
+    pub(in crate::domain_computation) fn relational_execution_cause(
         &self,
     ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         match &self.meaning {
@@ -100,7 +100,7 @@ impl WorthQueryApplicationAttemptDenial {
         )
     }
 
-    pub fn allocation_denied(
+    pub(in crate::domain_computation::primary_graph) fn allocation_denied(
         subject: impl Into<String>,
         denial: worth_execution::ExecutionAllocationDenial,
     ) -> Self {

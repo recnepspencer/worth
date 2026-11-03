@@ -4,7 +4,7 @@ impl WorthQueryPrimaryGraphLayout {
     /// The installed native contract inventory is the complete output-aspect
     /// vocabulary for this application entity, including fields that were not
     /// written by the performed operation.
-    pub fn native_output_aspects<'a>(
+    pub(in crate::domain_computation::primary_graph) fn native_output_aspects<'a>(
         &'a self,
         entity: &'a str,
     ) -> impl Iterator<Item = &'a AspectKey> + Clone {

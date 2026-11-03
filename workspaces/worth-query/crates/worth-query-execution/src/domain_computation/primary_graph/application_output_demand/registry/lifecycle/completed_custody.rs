@@ -4,7 +4,7 @@ use super::*;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 thread_local! { static CONTACTS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
-pub fn contacts() -> u64 {
+pub(in super::super) fn contacts() -> u64 {
     CONTACTS.with(std::cell::Cell::get)
 }
 

@@ -23,9 +23,9 @@ pub struct WorthQueryProductWorldResources {
 /// the required policy on the calling thread, or leased from the host's
 /// authority when installed beside it. The policy is required at construction.
 #[derive(Clone)]
-pub struct WorthQueryProductExecution {
-    pub authority: Option<Arc<ExecutionAuthority>>,
-    pub policy: ExecutionRequestPolicy,
+pub(crate) struct WorthQueryProductExecution {
+    pub(crate) authority: Option<Arc<ExecutionAuthority>>,
+    pub(crate) policy: ExecutionRequestPolicy,
 }
 
 impl WorthQueryProductWorldResources {
@@ -78,7 +78,7 @@ impl WorthQueryProductWorldResources {
         self.invalidation.clone()
     }
 
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         RuntimeWorldBudgets,
@@ -89,7 +89,7 @@ impl WorthQueryProductWorldResources {
         (self.budgets, self.clock, self.invalidation, self.execution)
     }
 
-    pub const fn budgets(&self) -> &RuntimeWorldBudgets {
+    pub(crate) const fn budgets(&self) -> &RuntimeWorldBudgets {
         &self.budgets
     }
 }

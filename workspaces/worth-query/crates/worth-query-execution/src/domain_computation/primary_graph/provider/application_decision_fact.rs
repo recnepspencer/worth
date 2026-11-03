@@ -1,5 +1,5 @@
 mod application_facts;
-pub mod application_table;
+mod application_table;
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
 use crate::domain_computation::{
     WorthQueryDecisionReadSetDenialKind as BindingKind,
@@ -15,7 +15,7 @@ use worth_execution::ExecutionRequest;
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
 
 #[derive(Clone)]
-pub enum WorthQueryPrimaryGraphApplicationDecisionFact {
+pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecisionFact {
     Application {
         read_scope: SharedReadScope,
         fact: SharedObservedFact,
@@ -110,7 +110,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         }
     }
 
-    pub fn locator_identity(&self) -> String {
+    pub(in crate::domain_computation) fn locator_identity(&self) -> String {
         match self {
             Self::Application { fact, .. } => fact.dependency_locator_identity(),
             Self::ObservedSource { fact } => fact.dependency_locator_identity(),
@@ -131,7 +131,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         }
     }
 
-    pub fn remains_equal_in(
+    pub(in crate::domain_computation) fn remains_equal_in(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,

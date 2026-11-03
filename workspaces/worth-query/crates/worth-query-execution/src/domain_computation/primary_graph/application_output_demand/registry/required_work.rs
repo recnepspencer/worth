@@ -1,6 +1,6 @@
 //! Exact required-work hints shared by the demand record and native marks.
 
-pub mod wave_admission;
+mod wave_admission;
 pub(in crate::domain_computation::primary_graph) use wave_admission::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use wave_admission::PreparedRequiredInputs;
 mod branch_selection;
@@ -11,10 +11,10 @@ mod discontinuity;
 mod interest_readmission;
 mod native_hints;
 mod pending_readmission;
-pub mod queue;
+mod queue;
 mod refresh_claim;
 mod requested_claim;
-pub mod selection;
+mod selection;
 mod subsumed;
 mod successor_join;
 
@@ -44,7 +44,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-pub struct RequiredWorkMembership {
+pub(in crate::domain_computation::primary_graph) struct RequiredWorkMembership {
     key: Arc<WorthQueryOutputDemandKey>,
     queue: Weak<RequiredWorkQueue>,
     state: Mutex<MembershipState>,
@@ -76,7 +76,7 @@ struct MembershipState {
         Option<crate::domain_computation::primary_graph::application_contribution::CurrentBasis>,
 }
 
-pub struct SelectedRequiredWork {
+pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
     pub(in crate::domain_computation::primary_graph) membership: Arc<RequiredWorkMembership>,
     pub(in crate::domain_computation::primary_graph) version: u64,
     // The registry pins the row that answers this occurrence after succession.
@@ -85,7 +85,7 @@ pub struct SelectedRequiredWork {
     armed: bool,
 }
 
-pub enum SelectedRequiredWorkKind {
+pub(in crate::domain_computation::primary_graph) enum SelectedRequiredWorkKind {
     Native {
         observer: CompanionPublicationCompletionObserver,
         branch: Arc<NativeBranch>,
@@ -98,13 +98,13 @@ pub enum SelectedRequiredWorkKind {
     UnresolvedInitial,
 }
 
-pub struct ReplacedRequiredWorkHint {
+pub(in crate::domain_computation::primary_graph) struct ReplacedRequiredWorkHint {
     _native: Option<Box<NativeHint>>,
     _settlement: Option<Arc<RecordedSettlementIdentity>>,
 }
 
 impl RequiredWorkMembership {
-    pub fn new(key: Arc<WorthQueryOutputDemandKey>, queue: &Arc<RequiredWorkQueue>) -> Self {
+    pub(super) fn new(key: Arc<WorthQueryOutputDemandKey>, queue: &Arc<RequiredWorkQueue>) -> Self {
         Self {
             key,
             queue: Arc::downgrade(queue),
@@ -112,7 +112,7 @@ impl RequiredWorkMembership {
         }
     }
 
-    pub fn key(&self) -> &WorthQueryOutputDemandKey {
+    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &WorthQueryOutputDemandKey {
         &self.key
     }
 
@@ -120,7 +120,7 @@ impl RequiredWorkMembership {
         &self.key
     }
 
-    pub fn set_required(self: &Arc<Self>, required: bool) {
+    pub(super) fn set_required(self: &Arc<Self>, required: bool) {
         let should_enqueue = {
             let mut state = self
                 .state
@@ -141,7 +141,7 @@ impl RequiredWorkMembership {
 
     /// The native prepared effect owns this observer. Publish its hint before
     /// testing active membership so a simultaneous activation cannot miss it.
-    pub fn prepare_hint(
+    pub(in crate::domain_computation::primary_graph) fn prepare_hint(
         self: &Arc<Self>,
         mut hint: Box<NativeHint>,
     ) {
@@ -161,7 +161,7 @@ impl RequiredWorkMembership {
         }
     }
 
-    pub fn mark_local_required(
+    pub(in crate::domain_computation::primary_graph) fn mark_local_required(
         self: &Arc<Self>,
         settlement: Arc<RecordedSettlementIdentity>,
     ) -> ReplacedRequiredWorkHint {
@@ -248,11 +248,11 @@ impl RequiredWorkMembership {
 }
 
 impl SelectedRequiredWork {
-    pub fn key(&self) -> &WorthQueryOutputDemandKey {
+    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &WorthQueryOutputDemandKey {
         self.membership.key()
     }
 
-    pub fn kind(&self) -> &SelectedRequiredWorkKind {
+    pub(in crate::domain_computation::primary_graph) fn kind(&self) -> &SelectedRequiredWorkKind {
         &self.kind
     }
 
@@ -311,7 +311,7 @@ impl Drop for SelectedRequiredWork {
 }
 
 impl super::DemandRegistryState {
-    pub fn fixture_page_required_discontinuity(
+    pub(super) fn fixture_page_required_discontinuity(
         &mut self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         branch: &worth_relational::facade::history::BranchId,

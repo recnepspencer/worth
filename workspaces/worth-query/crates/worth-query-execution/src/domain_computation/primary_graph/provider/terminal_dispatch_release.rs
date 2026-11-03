@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl WorthQueryPrimaryGraphProvider {
-    pub fn begin_external_dispatch_in_flight(
+    pub(in crate::domain_computation::primary_graph) fn begin_external_dispatch_in_flight(
         &self,
         original: &WorthQueryCommittedDispatchOutboxObservation,
     ) -> Result<Option<OutstandingDispatchInFlightLease>, WorthQueryOutstandingInFlightDenial> {

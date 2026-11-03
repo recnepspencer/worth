@@ -23,22 +23,22 @@ pub struct WorthQueryArtifactProductionAuthority {
     pub(super) production_generation: WorthQueryArtifactProductionGeneration,
 }
 
-pub struct WorthQueryArtifactProductionAuthorityParts {
-    pub contract:
+pub(crate) struct WorthQueryArtifactProductionAuthorityParts {
+    pub(crate) contract:
         Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
-    pub domain_authority:
+    pub(crate) domain_authority:
         Arc<crate::domain_computation::WorthQueryInstalledDomainExecutionAuthority>,
-    pub operation_identity: String,
-    pub binding_identity: String,
-    pub run_identity: String,
-    pub stage_identity: String,
-    pub basis_identity: String,
-    pub registry: Arc<WorthQueryWorkflowArtifactRegistry>,
-    pub production_generation: WorthQueryArtifactProductionGeneration,
+    pub(crate) operation_identity: String,
+    pub(crate) binding_identity: String,
+    pub(crate) run_identity: String,
+    pub(crate) stage_identity: String,
+    pub(crate) basis_identity: String,
+    pub(crate) registry: Arc<WorthQueryWorkflowArtifactRegistry>,
+    pub(crate) production_generation: WorthQueryArtifactProductionGeneration,
 }
 
 impl WorthQueryArtifactProductionAuthority {
-    pub fn mint(parts: WorthQueryArtifactProductionAuthorityParts) -> Arc<Self> {
+    pub(crate) fn mint(parts: WorthQueryArtifactProductionAuthorityParts) -> Arc<Self> {
         Arc::new(Self {
             contract: parts.contract,
             domain_authority: parts.domain_authority,

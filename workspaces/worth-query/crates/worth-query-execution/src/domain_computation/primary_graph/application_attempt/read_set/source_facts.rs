@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
 
-pub mod storage;
+mod storage;
 pub(super) use storage::SourceFacts;
 
 pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
@@ -71,7 +71,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     }
 }
 
-pub fn merge_source_facts(
+pub(super) fn merge_source_facts(
     admitted: Vec<WorthQueryApplicationObservedFact>,
     dependent: Option<RetainedSourceFacts>,
     operation: &str,

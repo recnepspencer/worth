@@ -13,11 +13,11 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 /// The complete selected source meaning, without its revision-bearing identity.
 /// A restored or incomplete observation cannot mint this cutoff input.
 #[derive(Clone)]
-pub struct WorthQueryObservedSourceSelection {
-    pub runtime_authority: u64,
-    pub schema_binding: ApplicationSchemaBindingIdentity,
-    pub meaning: Arc<WorthQueryObservedSourceMeaning>,
-    pub managed: Option<Arc<ManagedSourceRead>>,
+pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceSelection {
+    runtime_authority: u64,
+    schema_binding: ApplicationSchemaBindingIdentity,
+    meaning: Arc<WorthQueryObservedSourceMeaning>,
+    managed: Option<Arc<ManagedSourceRead>>,
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
@@ -52,7 +52,7 @@ impl<Query> WorthQueryObservedSource<Query> {
 
 impl WorthQueryObservedSourceSelection {
     /// Compare selected membership and contract meaning exactly. Native revisions are deliberately excluded.
-    pub fn same_selected_membership_as(
+    pub(in crate::domain_computation::primary_graph) fn same_selected_membership_as(
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), Cause>,
@@ -123,7 +123,7 @@ impl WorthQueryObservedSourceSelection {
     }
 }
 
-pub fn same_footprint_membership(
+fn same_footprint_membership(
     left: &WorthQueryObservedSourceFootprint,
     right: &WorthQueryObservedSourceFootprint,
 ) -> bool {
@@ -249,7 +249,7 @@ fn same_adjacencies(
     true
 }
 
-pub fn same_text(left: &str, right: &str) -> bool {
+fn same_text(left: &str, right: &str) -> bool {
     if left.len() != right.len() {
         return false;
     }

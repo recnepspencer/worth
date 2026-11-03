@@ -8,11 +8,11 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 mod checkpoint_commitment;
 #[path = "source_identity/tests/epoch_construction.rs"]
 mod epoch_construction;
-pub mod identity_kind;
+mod identity_kind;
 mod interning;
 mod material_storage;
 pub(in crate::domain_computation::primary_graph::application_query) use material_storage::admit_footprint_comparison;
-pub mod membership;
+mod membership;
 mod ordering;
 mod runtime_commitment;
 pub(in crate::domain_computation::primary_graph) use identity_kind::{
@@ -28,7 +28,7 @@ enum WorthQueryObservedSourceOccurrence {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryObservedSourceCoordinate {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceCoordinate {
     query: [u8; 32],
     parameters: [u8; 32],
     occurrence: WorthQueryObservedSourceOccurrence,
@@ -36,7 +36,7 @@ pub struct WorthQueryObservedSourceCoordinate {
 }
 
 /// Runtime-owned exact meaning retained by observed sources and output epochs.
-pub struct WorthQueryObservedSourceMeaning {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaning {
     coordinate: WorthQueryObservedSourceCoordinate,
     footprint: WorthQueryObservedSourceFootprint,
     identity: [u8; 32],
@@ -52,15 +52,15 @@ impl WorthQueryObservedSourceMeaning {
         &self.footprint
     }
 
-    pub const fn identity(&self) -> &[u8; 32] {
+    pub(super) const fn identity(&self) -> &[u8; 32] {
         &self.identity
     }
 
-    pub const fn checkpoint_identity(&self) -> WorthQueryCheckpointSourceIdentity {
+    pub(super) const fn checkpoint_identity(&self) -> WorthQueryCheckpointSourceIdentity {
         WorthQueryCheckpointSourceIdentity::new(self.checkpoint_identity)
     }
 
-    pub const fn runtime_idempotency_identity(&self) -> WorthQueryRuntimeSourceIdentity {
+    pub(super) const fn runtime_idempotency_identity(&self) -> WorthQueryRuntimeSourceIdentity {
         WorthQueryRuntimeSourceIdentity::new(self.runtime_idempotency_identity)
     }
 }
@@ -99,15 +99,15 @@ impl Drop for WorthQueryObservedSourceMeaning {
     }
 }
 
-pub struct WorthQueryObservedSourceMeaningRegistryState {
-    pub next_ordinal: u64,
+struct WorthQueryObservedSourceMeaningRegistryState {
+    next_ordinal: u64,
     pub meanings:
         BTreeMap<WorthQueryObservedSourceCoordinate, material_storage::CoordinateMeanings>,
 }
 
-pub struct WorthQueryObservedSourceMeaningRegistry {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaningRegistry {
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-    pub state: Arc<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,
+    state: Arc<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,
 }
 
 impl WorthQueryObservedSourceMeaningRegistry {
@@ -135,7 +135,7 @@ fn source_identity(
 
 /// Complete runtime coordinate of one observed source.
 #[derive(Clone, Debug)]
-pub struct WorthQueryObservedSourceEpoch {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceEpoch {
     query: [u8; 32],
     parameters: [u8; 32],
     root: worth_relational::facade::identity::EntityId,
@@ -145,7 +145,7 @@ pub struct WorthQueryObservedSourceEpoch {
 }
 
 impl WorthQueryObservedSourceEpoch {
-    pub fn from_observation(
+    pub(in crate::domain_computation::primary_graph) fn from_observation(
         query: &[u8; 32],
         parameters: &[u8; 32],
         root: worth_relational::facade::identity::EntityId,
@@ -208,7 +208,7 @@ impl WorthQueryObservedSourceEpoch {
         self.root
     }
 
-    pub const fn observation_generation(&self) -> u64 {
+    pub(in crate::domain_computation::primary_graph) const fn observation_generation(&self) -> u64 {
         self.observation_generation
     }
 
@@ -220,7 +220,7 @@ impl WorthQueryObservedSourceEpoch {
         self.meaning.runtime_idempotency_identity().bytes()
     }
 
-    pub const fn checkpoint_occurrence(
+    pub(in crate::domain_computation::primary_graph) const fn checkpoint_occurrence(
         &self,
     ) -> worth_runtime_world::facade::ProductBranchIncarnation {
         self.occurrence

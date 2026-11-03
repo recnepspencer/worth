@@ -1,10 +1,10 @@
 //! Required members and their actual unresolved consumed-output edges.
 use super::*;
 mod reinspection;
-pub mod selection;
+mod selection;
 pub(super) use selection::MemberInput;
 
-pub enum MemberState {
+pub(super) enum MemberState {
     Inspect,
     Waiting(usize),
     /// A declared predecessor schedules inspection, not a consumed-edge proof.
@@ -41,18 +41,18 @@ impl MemberState {
     }
 }
 
-pub enum RequiredUpstream {
+pub(super) enum RequiredUpstream {
     Member(usize),
     HeldCaller,
 }
 
 /// Scheduling posture only; each basis still requires native certification.
-pub enum DependencySchedule {
+pub(super) enum DependencySchedule {
     OwnSelection,
     PendingConsumed,
 }
 
-pub struct RequiredMember<Ready = SelectedReadyReadmission> {
+pub(super) struct RequiredMember<Ready = SelectedReadyReadmission> {
     pub ready: MemberInput<Ready>,
     pub caller: bool,
     pub caller_successor: bool,
@@ -63,7 +63,7 @@ pub struct RequiredMember<Ready = SelectedReadyReadmission> {
     pub dependency_schedule: DependencySchedule,
 }
 
-pub struct RequiredFrontier<Ready = SelectedReadyReadmission> {
+pub(super) struct RequiredFrontier<Ready = SelectedReadyReadmission> {
     pub members: Vec<RequiredMember<Ready>>,
 }
 

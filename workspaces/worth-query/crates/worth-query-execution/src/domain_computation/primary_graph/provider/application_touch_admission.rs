@@ -17,7 +17,7 @@ mod struct_aspect;
 use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryInstalledTouchAdmissionEvidence {
+pub(super) struct WorthQueryInstalledTouchAdmissionEvidence {
     projection_work: ValidatedMutationTouchProjectionWork,
     validated_application_touches: usize,
     installed_touch_scopes: usize,
@@ -61,7 +61,7 @@ enum ResolvedApplicationTouch {
     RemoveEntityAspect(KindId, worth_foundational::facade::AspectKey),
 }
 
-pub fn admit_validated_application_touches(
+pub(super) fn admit_validated_application_touches(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     candidate: &ValidatedRelationalProposal,
     layout: &WorthQueryPrimaryGraphLayout,
@@ -319,7 +319,7 @@ fn application_relation_touch(
 }
 
 #[derive(Debug)]
-pub enum TouchAdmissionFailure {
+pub(super) enum TouchAdmissionFailure {
     Contract,
     Projection(worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError),
 }
@@ -329,7 +329,7 @@ impl From<()> for TouchAdmissionFailure {
     }
 }
 impl TouchAdmissionFailure {
-    pub fn into_invariant_failure(
+    pub(super) fn into_invariant_failure(
         self,
     ) -> crate::domain_computation::WorthQueryInvariantExecutionFailure {
         use worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError as Error;

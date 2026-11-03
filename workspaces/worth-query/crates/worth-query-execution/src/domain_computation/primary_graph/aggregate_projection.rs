@@ -30,7 +30,7 @@ pub(super) struct WorthQueryIncomingSumKey {
 }
 
 #[derive(Clone, Default)]
-pub struct WorthQueryAggregateProjections {
+pub(super) struct WorthQueryAggregateProjections {
     incoming_sums: BTreeMap<WorthQueryIncomingSumKey, WorthQueryIncomingSumGeneration>,
 }
 
@@ -86,7 +86,7 @@ impl WorthQueryAggregateProjections {
             .insert(target, WorthQueryIncomingAggregate { sum, source_count });
     }
 
-    pub fn refresh_after_commit(
+    pub(super) fn refresh_after_commit(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut RelationalRuntime,

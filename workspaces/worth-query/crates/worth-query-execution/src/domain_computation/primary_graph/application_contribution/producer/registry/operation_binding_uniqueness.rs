@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use super::DeclaredProducerBinding;
 
-pub fn duplicate_operation_binding(
+pub(super) fn duplicate_operation_binding(
     declared: &BTreeMap<String, DeclaredProducerBinding>,
 ) -> Option<(&str, &str)> {
     let declarations = declared.values().collect::<Vec<_>>();

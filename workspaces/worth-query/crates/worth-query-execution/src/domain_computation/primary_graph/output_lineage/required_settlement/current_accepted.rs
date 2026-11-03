@@ -23,7 +23,7 @@ use super::super::invalidation::SettlementRegistrationStop;
 use super::super::invalidation::VerifiedCurrentCleanup;
 use super::AcceptedCurrentCandidate;
 
-pub enum CurrentAcceptedResult<'basis> {
+pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedResult<'basis> {
     Current(CurrentAcceptedOutput<'basis>),
     PendingExact(SelectedPendingConsumedOutput<'basis>),
     PendingUnresolved,
@@ -82,7 +82,7 @@ impl<'basis> CurrentAcceptedOutput<'basis> {
 }
 
 #[derive(Debug)]
-pub enum CurrentAcceptedStop {
+pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedStop {
     Closure(ConsumedOutputVerificationStop),
     Registration(SettlementRegistrationStop),
 }
@@ -171,7 +171,7 @@ impl AcceptedCurrentCandidate {
 
     /// A complete actor posting set makes Clean a zero-fact-check proof. The
     /// recorded row and exact accepted cell remain pinned throughout the edit.
-    pub fn certify_current<'basis>(
+    pub(in crate::domain_computation::primary_graph) fn certify_current<'basis>(
         &'basis self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,

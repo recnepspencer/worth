@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
-pub mod index_directory;
+mod index_directory;
 mod managed_index;
 mod managed_source;
 mod native_count;
@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Regist
     );
 }
 
-pub struct PreparedManagedViewPublication {
+pub(in crate::domain_computation::primary_graph) struct PreparedManagedViewPublication {
     views: Vec<(Arc<dyn RegisteredDerivedView>, Option<Box<dyn Any + Send>>)>,
 }
 
@@ -86,7 +86,7 @@ impl RegistryState {
 }
 
 #[derive(Default)]
-pub struct ManagedDerivedViewRegistry {
+pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
     native_runtime: Option<u64>,
     sources: super::super::managed_index::ManagedSourceInstallation,
@@ -114,7 +114,7 @@ impl ManagedDerivedViewRegistry {
             .any(|view| view.strong_count() > 0)
     }
 
-    pub fn prepare_publication(
+    pub(in crate::domain_computation::primary_graph) fn prepare_publication(
         &self,
         basis: super::publication::ViewPublicationBasis<'_>,
         changes: &[super::publication::ViewChange],

@@ -8,7 +8,7 @@ use crate::domain_computation::WorthQueryBoundGraphExecutionReceipt;
 
 #[must_use = "paused graph execution must be advanced, yielded, or explicitly abandoned"]
 pub struct WorthQueryPausedWorkflowGraphExecution {
-    pub active: WorthQueryActiveWorkflowGraphExecution,
+    pub(in crate::domain_computation::managed_run) active: WorthQueryActiveWorkflowGraphExecution,
     pub(in crate::domain_computation::managed_run) safe_point:
         super::super::yield_eligibility::WorthQueryManagedYieldSafePoint,
 }

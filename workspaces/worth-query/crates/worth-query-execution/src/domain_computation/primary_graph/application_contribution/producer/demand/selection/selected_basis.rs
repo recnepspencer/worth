@@ -99,7 +99,7 @@ where
     }
 }
 
-pub fn source_basis_is_admitted(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn source_basis_is_admitted(
     source: &crate::basis::WorthQueryProductBranchReadIdentity,
     current: &worth_runtime_world::facade::ProductBranchObservation,
     owner_retained_program_basis: bool,

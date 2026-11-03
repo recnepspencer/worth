@@ -2,7 +2,7 @@
 use super::*;
 
 impl WorthQueryApplicationCheckpoint {
-    pub fn decode_current_body(
+    pub(super) fn decode_current_body(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {

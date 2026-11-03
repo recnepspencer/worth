@@ -74,19 +74,19 @@ impl<'original> WorthQueryObservedApplicationInspection<'original> {
 }
 
 /// The consuming terminal is retained until its matching report is checked.
-pub struct CompletedInspection {
+pub(super) struct CompletedInspection {
     completion: WorthQueryInspectionReadCompletion,
     request: WorthQueryRequestScope,
 }
 
 /// Publication remains private until the caller transfers its original ticket.
-pub struct PreparedObservedInspection<'original> {
+pub(super) struct PreparedObservedInspection<'original> {
     original: &'original WorthQueryApplicationQueryObservation,
     report: InspectionReportPayload,
 }
 
 impl CompletedInspection {
-    pub fn assert_completion_facts(
+    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn assert_completion_facts(
         &mut self,
         other: &mut Self,
         execution: &ExecutionRequest<'_, '_>,
@@ -130,7 +130,7 @@ impl CompletedInspection {
         }
     }
 
-    pub fn publish<'original>(
+    pub(super) fn publish<'original>(
         self,
         execution: &ExecutionRequest<'_, '_>,
         original: &'original WorthQueryApplicationQueryObservation,

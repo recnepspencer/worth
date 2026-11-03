@@ -1,47 +1,47 @@
 use worth_query_installation::facade::WorthQueryClockCoordinate;
 
-pub struct ErasedClockObservationReceipt {
-    pub sequence: u64,
-    pub observed_coordinate:
+pub(in crate::domain_computation::primary_graph) struct ErasedClockObservationReceipt {
+    pub(in crate::domain_computation::primary_graph::conditional_operation) sequence: u64,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) observed_coordinate:
         u64,
-    pub due_wake_count: usize,
-    pub due_work_remaining:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) due_wake_count: usize,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) due_work_remaining:
         bool,
-    pub authoritative_commit_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) authoritative_commit_count:
         usize,
-    pub authoritative_work_remaining:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) authoritative_work_remaining:
         bool,
-    pub retained_due_wake_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_due_wake_count:
         usize,
-    pub retained_eligible_wake_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_eligible_wake_count:
         usize,
-    pub retained_suppressed_wake_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_suppressed_wake_count:
         usize,
-    pub retained_deferred_wake_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_deferred_wake_count:
         usize,
-    pub retained_failed_wake_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_failed_wake_count:
         usize,
-    pub committed_operation_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) committed_operation_count:
         usize,
-    pub already_committed_operation_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) already_committed_operation_count:
         usize,
-    pub failed_operation_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) failed_operation_count:
         usize,
-    pub indeterminate_operation_count:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) indeterminate_operation_count:
         usize,
-    pub snapshot_capacity_backpressure:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) snapshot_capacity_backpressure:
         Option<usize>,
-    pub retention_capacity_backpressure:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) retention_capacity_backpressure:
         bool,
-    pub execution_provenance:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) execution_provenance:
         Vec<super::super::WorthQueryConditionalExecutionProvenance>,
-    pub granular_invalidations:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) granular_invalidations:
         Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
-    pub granular_invalidation_coverage:
+    pub(in crate::domain_computation::primary_graph::conditional_operation) granular_invalidation_coverage:
         crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage,
 }
 
-pub enum ErasedClockObservationOutcome {
+pub(in crate::domain_computation::primary_graph) enum ErasedClockObservationOutcome {
     Accepted(ErasedClockObservationReceipt),
     Duplicate(ErasedClockObservationReceipt),
     Stale,
@@ -54,7 +54,7 @@ pub enum ErasedClockObservationOutcome {
 }
 
 impl ErasedClockObservationOutcome {
-    pub fn typed<Clock>(
+    pub(in crate::domain_computation::primary_graph::conditional_operation) fn typed<Clock>(
         self,
         installation: crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation,
         source_read_basis: Option<
@@ -85,7 +85,7 @@ impl ErasedClockObservationOutcome {
 }
 
 impl ErasedClockObservationReceipt {
-    pub fn typed<Clock>(
+    pub(in crate::domain_computation::primary_graph::conditional_operation) fn typed<Clock>(
         self,
         granular_invalidation_installation: crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation,
         granular_source_read_basis: Option<

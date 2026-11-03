@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 #[path = "operation_admission/capability_admission/mod.rs"]
-pub mod capability_admission;
+mod capability_admission;
 pub use capability_admission::WorthQueryAdmittedApplicationCapabilityAccess;
 pub(in crate::domain_computation) use capability_admission::{
     admit_capability_access, admit_encoded_capability_access,
@@ -74,7 +74,7 @@ static NEXT_OPERATION_ADMISSION_IDENTITY: AtomicU64 = AtomicU64::new(1);
 const RESOURCE_LABEL: &str = "worth-query-application-admission:";
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryOperationAdmissionIdentity(u64);
+pub(crate) struct WorthQueryOperationAdmissionIdentity(u64);
 
 impl WorthQueryOperationAdmissionIdentity {
     pub(in crate::domain_computation::authorization) fn mint() -> Option<Self> {

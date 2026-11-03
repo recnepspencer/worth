@@ -37,19 +37,19 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) planned_batch_item: Option<super::batch::PlannedBatchItem>,
     pub(super) retain_expression_context: bool,
     pub(super) retain_projection_for_inspection: bool,
-    pub runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     pub(super) graph_authority_identity: String,
     pub(super) provider_identity: String,
-    pub query:
+    pub(super) query:
         &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     pub principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    pub scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
-    pub parameters: WorthQueryAdmittedApplicationQueryParameters,
+    pub(super) scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    pub(super) parameters: WorthQueryAdmittedApplicationQueryParameters,
     pub(super) controls: WorthQueryAdmittedApplicationQueryControls<'a>,
     pub(super) canonical_work: WorthQueryCanonicalWorkPhases,
-    pub continuation_index_id: Option<DerivedIndexId>,
+    pub(super) continuation_index_id: Option<DerivedIndexId>,
     pub(super) continuation_state: Option<WorthQueryAdmittedContinuationState>,
-    pub basis: WorthQueryApplicationQueryBasisCustody,
+    pub(super) basis: WorthQueryApplicationQueryBasisCustody,
     pub(super) index_posture: WorthQueryQueryIndexPosture,
     pub(super) security_product: crate::basis::WorthQueryProductObservationLease,
     pub(super) security_basis: Option<super::basis::WorthQueryApplicationQueryBasisCustody>,
@@ -60,7 +60,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) selected_access: Option<
         super::admission::SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
     >,
-    pub governance: super::disclosure::WorthQueryApplicationQueryGovernance,
+    pub(super) governance: super::disclosure::WorthQueryApplicationQueryGovernance,
     pub(super) history_metadata: Option<super::history::HistoryMetadataAdmission>,
 }
 

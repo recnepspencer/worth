@@ -220,7 +220,7 @@ pub(super) fn resolution_denial(
     WorthQueryPrincipalResolutionDenial::new(kind, binding)
 }
 
-pub fn query_read_resolution_denial(
+pub(super) fn query_read_resolution_denial(
     stop: worth_relational::facade::runtime::QueryReadExecutionStop,
     binding: &str,
 ) -> WorthQueryPrincipalResolutionDenial {

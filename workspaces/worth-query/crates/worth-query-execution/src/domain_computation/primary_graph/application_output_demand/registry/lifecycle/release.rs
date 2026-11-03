@@ -131,7 +131,7 @@ impl WorthQueryOutputDemandRegistry {
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn release_prepared_token(
+    pub(in crate::domain_computation::primary_graph) fn release_prepared_token(
         &self,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
     ) {

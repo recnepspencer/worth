@@ -6,13 +6,13 @@ use worth_relational::facade::{
 
 /// The exact before-image observer needed by Query's post-publication work.
 /// It closes on every pre-publication exit, including an owner-call unwind.
-pub struct WorthQueryPrecommitSnapshot {
+pub(super) struct WorthQueryPrecommitSnapshot {
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: Option<SnapshotHandle>,
 }
 
 impl WorthQueryPrecommitSnapshot {
-    pub fn acquire(
+    pub(super) fn acquire(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         basis: &AdmittedRelationalBranchBasis,

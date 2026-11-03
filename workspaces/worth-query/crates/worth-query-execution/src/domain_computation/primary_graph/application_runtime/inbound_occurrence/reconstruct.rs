@@ -9,7 +9,7 @@ use crate::domain_computation::application_aftermath::ExternalEffectCorrelationI
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundTerminalIndexDenial as Denial;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn verify_completed_inbound_for_cleanup(
+    pub(in crate::domain_computation) fn verify_completed_inbound_for_cleanup(
         &self,
         correlations: &[ExternalEffectCorrelationIdentity],
         now_unix_seconds: u64,

@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::application_query::derived_view::{
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod aftermath;
-pub mod registry;
+pub(super) mod registry;
 mod stops;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
 use registry::WorthQueryPendingApplicationIdempotency;
@@ -57,7 +57,7 @@ impl WorthQueryPrimaryGraphProvider {
             .active_slot_count()
     }
 
-    pub fn reserve_application_publication_recovery(
+    pub(in crate::domain_computation::primary_graph) fn reserve_application_publication_recovery(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         binding: Option<

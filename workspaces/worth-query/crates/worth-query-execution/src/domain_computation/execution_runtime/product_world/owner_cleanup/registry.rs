@@ -10,34 +10,34 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 
-pub struct CleanupEntry {
-    pub record: Mutex<Option<WorthQueryProductBranchOwnerCleanupRecord>>,
+struct CleanupEntry {
+    record: Mutex<Option<WorthQueryProductBranchOwnerCleanupRecord>>,
     scope: CleanupScope,
 }
 
 #[derive(Clone)]
-pub enum CleanupScope {
+pub(crate) enum CleanupScope {
     Creation,
     Application,
     WorkspaceRetirement,
     ApplicationRetirement(WorthQueryRetiredProductOccurrence),
 }
 
-pub struct CleanupRegistryState {
+struct CleanupRegistryState {
     maximum: Option<usize>,
     next_identity: u64,
-    pub reserved: usize,
-    pub entries: BTreeMap<u64, Arc<CleanupEntry>>,
+    reserved: usize,
+    entries: BTreeMap<u64, Arc<CleanupEntry>>,
 }
 
 #[derive(Clone)]
-pub struct WorthQueryProductBranchOwnerCleanupRegistry {
-    pub state: Arc<Mutex<CleanupRegistryState>>,
+pub(crate) struct WorthQueryProductBranchOwnerCleanupRegistry {
+    state: Arc<Mutex<CleanupRegistryState>>,
     pub(super) follower: Arc<OnceLock<Weak<dyn WorthQueryProductRetentionFollower>>>,
 }
 
 impl WorthQueryProductBranchOwnerCleanupRegistry {
-    pub fn new(maximum: Option<usize>) -> Self {
+    pub(crate) fn new(maximum: Option<usize>) -> Self {
         Self {
             state: Arc::new(Mutex::new(CleanupRegistryState {
                 maximum,
@@ -63,7 +63,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         }
     }
 
-    pub fn reserve(
+    pub(super) fn reserve(
         &self,
         scope: CleanupScope,
     ) -> Result<
@@ -189,7 +189,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         record.record_mut().release_retired_history(runtime)
     }
 
-    pub fn pending_application_retired_product_occurrences(
+    pub(super) fn pending_application_retired_product_occurrences(
         &self,
     ) -> Vec<WorthQueryRetiredProductOccurrence> {
         let mut occurrences: Vec<_> = lock(&self.state)
@@ -280,7 +280,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         testing::replace_after_install_hook(hook);
     }
 
-    pub fn replace_after_component_progress_hook(&self, hook: Option<Box<dyn Fn()>>) {
+    pub(crate) fn replace_after_component_progress_hook(&self, hook: Option<Box<dyn Fn()>>) {
         testing::replace_after_component_progress_hook(hook);
     }
 }
@@ -289,7 +289,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
 // install consumes self and disarms Drop before callbacks; Drop decrements only
 // an armed reservation. Each decrement therefore owns one distinct reserved slot.
 #[must_use = "cleanup capacity must be installed or released"]
-pub struct WorthQueryProductBranchOwnerCleanupReservation {
+pub(crate) struct WorthQueryProductBranchOwnerCleanupReservation {
     registry: WorthQueryProductBranchOwnerCleanupRegistry,
     identity: u64,
     entry: Arc<CleanupEntry>,
@@ -297,7 +297,7 @@ pub struct WorthQueryProductBranchOwnerCleanupReservation {
 }
 
 impl WorthQueryProductBranchOwnerCleanupReservation {
-    pub fn install_retirement(
+    pub(crate) fn install_retirement(
         self,
         report: worth_runtime_world::facade::ProductBranchRetirementReport,
     ) -> u64 {
@@ -351,6 +351,6 @@ impl Drop for WorthQueryProductBranchOwnerCleanupReservation {
     }
 }
 
-pub fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
 }

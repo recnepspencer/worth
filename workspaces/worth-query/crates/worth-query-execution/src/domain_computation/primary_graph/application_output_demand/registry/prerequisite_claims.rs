@@ -23,10 +23,10 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 /// Claims the exact previously settled inputs of one running output before its
 /// product effect. The successful publication moves these claims into the
 /// demand record; dropping the ticket reverses them.
-pub struct PreparedPrerequisiteClaims {
+pub(in crate::domain_computation::primary_graph) struct PreparedPrerequisiteClaims {
     context: RequiredOutputDemandContext,
-    pub predecessors: Vec<Arc<WorthQueryOutputDemandKey>>,
-    pub claim_batch: Option<super::claim_readthrough::ClaimBatch>,
+    predecessors: Vec<Arc<WorthQueryOutputDemandKey>>,
+    claim_batch: Option<super::claim_readthrough::ClaimBatch>,
     checkpoint_predecessors: Option<CheckpointPrerequisiteClaims>,
     reserved_identity: Option<Arc<RecordedSettlementIdentity>>,
     reserved_posting: Option<super::settlement_index::Posting>,
@@ -35,7 +35,7 @@ pub struct PreparedPrerequisiteClaims {
 }
 
 impl RequiredOutputDemandContext {
-    pub fn prepare_prerequisites<'a>(
+    pub(in crate::domain_computation::primary_graph) fn prepare_prerequisites<'a>(
         self,
         inputs: impl ExactSizeIterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
         source_owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,

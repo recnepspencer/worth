@@ -4,13 +4,13 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 
 /// Only a newly committed effect lends this member's publication seal.
 /// A replay never constructs this capability.
-pub struct PublishedMember<
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PublishedMember<
     'record,
 > {
     performed: &'record mut bool,
 }
 impl PublishedMember<'_> {
-    pub fn performed(
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn performed(
         self,
     ) {
         *self.performed = true;
@@ -18,7 +18,7 @@ impl PublishedMember<'_> {
 }
 
 /// The receipt and a read-only view of the record at its publication handoff.
-pub struct PublicationHandoff<
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PublicationHandoff<
     'record,
 > {
     receipt: ProducerCommitReceipt,
@@ -33,7 +33,7 @@ impl<'record> PublicationHandoff<'record> {
 }
 
 impl PerformedMembers {
-    pub fn publication<
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn publication<
         'record,
     >(
         &'record mut self,

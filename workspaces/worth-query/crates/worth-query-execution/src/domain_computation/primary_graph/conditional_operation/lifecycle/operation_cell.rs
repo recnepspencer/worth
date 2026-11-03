@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 /// Retained ownership of one installed operation. The lease is immutable and
 /// lookup never needs to acquire the operation's execution mutex.
-pub struct WorthQueryConditionalOperationCell<Schema> {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalOperationCell<Schema> {
     operation: Arc<Mutex<Box<dyn WorthQueryInstalledConditionalOperation<Schema>>>>,
     lease: Arc<ConditionalClockLease>,
 }
@@ -43,7 +43,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         self.lock_operation().operation_anchor()
     }
 
-    pub fn lock_operation(
+    pub(in crate::domain_computation::primary_graph) fn lock_operation(
         &self,
     ) -> MutexGuard<'_, Box<dyn WorthQueryInstalledConditionalOperation<Schema>>> {
         self.operation

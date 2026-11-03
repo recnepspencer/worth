@@ -22,7 +22,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// holding one is evidence the program passed rostered installation against
 /// this exact installed schema. It grants nothing by itself: activation still
 /// decides which rostered program an occurrence is actually running.
-pub struct WorthQuerySupportedProgramRecord {
+pub(in crate::domain_computation::primary_graph) struct WorthQuerySupportedProgramRecord {
     program_type: TypeId,
     revision: ApplicationProgramRevision,
     /// The typed installed program, so owners that install against program
@@ -36,7 +36,7 @@ pub struct WorthQuerySupportedProgramRecord {
 }
 
 impl WorthQuerySupportedProgramRecord {
-    pub fn installed<Schema, Program>(
+    pub(in crate::domain_computation::primary_graph) fn installed<Schema, Program>(
         installed: std::sync::Arc<WorthQueryInstalledApplicationProgram<Schema, Program>>,
         output_source_bindings: &[TypeId],
         root_graph_types: &[TypeId],

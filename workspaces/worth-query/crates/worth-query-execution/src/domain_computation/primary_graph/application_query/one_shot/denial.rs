@@ -87,16 +87,16 @@ pub enum WorthQueryApplicationOneShotDenialKind {
 /// authorization causes, [`Self::authorization_denial`] carries the full denial.
 #[derive(Clone, Debug)]
 pub struct WorthQueryApplicationOneShotDenial {
-    pub kind: WorthQueryApplicationOneShotDenialKind,
-    pub payload: std::sync::Arc<OneShotDenialPayload>,
+    kind: WorthQueryApplicationOneShotDenialKind,
+    payload: std::sync::Arc<OneShotDenialPayload>,
 }
 
 #[derive(Debug)]
-pub struct OneShotDenialPayload {
-    pub authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
-    pub query: String,
-    pub subject: String,
-    pub custody: std::sync::OnceLock<worth_execution::ExecutionMemoryReservation>,
+struct OneShotDenialPayload {
+    authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
+    query: String,
+    subject: String,
+    custody: std::sync::OnceLock<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl PartialEq for WorthQueryApplicationOneShotDenial {
@@ -109,7 +109,7 @@ impl PartialEq for WorthQueryApplicationOneShotDenial {
 }
 impl Eq for WorthQueryApplicationOneShotDenial {}
 
-pub fn denial(
+pub(in crate::domain_computation::primary_graph::application_query) fn denial(
     kind: WorthQueryApplicationOneShotDenialKind,
     query: impl Into<String>,
     subject: impl Into<String>,
@@ -125,7 +125,7 @@ pub fn denial(
     }
 }
 
-pub fn authorization_denial(
+pub(super) fn authorization_denial(
     denial: WorthQueryOperationAuthorizationDenial,
     query: &str,
 ) -> WorthQueryApplicationOneShotDenial {
@@ -186,7 +186,7 @@ impl WorthQueryApplicationOneShotDenial {
 
 /// Owner stages and the complete reconstruction return through this boundary.
 /// A worker's map allowance ends before its returned payload acquires custody.
-pub fn retain_reconstruction_result<T>(
+pub(in crate::domain_computation::primary_graph) fn retain_reconstruction_result<T>(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     result: Result<T, super::super::WorthQueryManagedDerivedViewDenial>,
     on_admission_denial: impl FnOnce(

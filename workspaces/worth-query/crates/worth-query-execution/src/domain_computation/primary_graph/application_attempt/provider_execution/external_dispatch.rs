@@ -12,7 +12,7 @@
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
-pub mod denial;
+mod denial;
 
 use std::sync::Arc;
 
@@ -226,7 +226,7 @@ where
         }
     }
 
-    pub fn perform_committed_external_dispatch(
+    fn perform_committed_external_dispatch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

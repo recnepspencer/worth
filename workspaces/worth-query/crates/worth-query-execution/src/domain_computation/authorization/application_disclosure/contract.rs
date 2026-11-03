@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 use super::influence_validation::{validate_influence, GovernedInternalFieldRules};
 pub(super) mod admission;
 mod compilation;
-pub mod field_masks;
+mod field_masks;
 mod result_rules;
 pub(in crate::domain_computation) use compilation::compile_disclosure_contract;
 pub(in crate::domain_computation) use field_masks::admit_field_mask_categories;

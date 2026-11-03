@@ -11,7 +11,7 @@ use crate::domain_computation::operation_binding::WorthQueryExecutionCommitPostu
 use crate::domain_computation::provider_session::WorthQueryGraphProviderCallKind;
 
 #[derive(Clone, Default)]
-pub struct WorthQueryExecutionResourceTopology {
+pub(super) struct WorthQueryExecutionResourceTopology {
     pub(super) conditional_nodes: BTreeSet<String>,
     graph_providers: BTreeMap<String, WorthQueryInstalledGraphCallAuthority>,
     pub(super) commit_groups: BTreeSet<String>,
@@ -106,7 +106,7 @@ pub(super) fn touched_roles(
     }
 }
 
-pub fn resource_topology<'a>(
+pub(super) fn resource_topology<'a>(
     conditional_nodes: impl Iterator<Item = String>,
     graph_authorities: &[&WorthQueryInstalledGraphParticipationAuthority],
     graph_reads: impl Iterator<Item = (&'a str, WorthQueryOperationGraphAccess)>,
@@ -181,7 +181,7 @@ fn commit_groups(
         .collect()
 }
 
-pub fn test_topology<'a>(
+pub(super) fn test_topology<'a>(
     conditional_nodes: impl Iterator<Item = &'a str>,
     graph_providers: impl Iterator<Item = &'a str>,
     commit_groups: impl Iterator<Item = &'a str>,

@@ -1,6 +1,6 @@
 //! Fail-closed retention from the admitted decision read-set.
 
-pub mod selection;
+mod selection;
 
 pub(crate) use selection::WorthQueryRetainedPreImageSeal;
 

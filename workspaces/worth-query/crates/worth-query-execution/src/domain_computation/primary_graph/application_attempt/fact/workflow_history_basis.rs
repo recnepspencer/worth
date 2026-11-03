@@ -3,13 +3,13 @@ use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHa
 /// Currentness is not permission to append. Replay-only observations deliberately
 /// cannot authorize a new candidate, even at the original immutable basis.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorkflowHistoryRequirement {
+pub(in crate::domain_computation) enum WorkflowHistoryRequirement {
     Append { maximum_transitions: usize },
     Exact,
     ReplayOnly,
 }
 
-pub fn remains_equal(
+pub(super) fn remains_equal(
     runtime: &RelationalRuntime,
     current: &SnapshotHandle,
     observed: &SnapshotHandle,

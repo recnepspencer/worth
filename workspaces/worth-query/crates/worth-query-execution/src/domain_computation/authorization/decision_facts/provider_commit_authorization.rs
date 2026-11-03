@@ -2,7 +2,7 @@
 
 use super::{WorthQueryCommitAuthorizationBasis, WorthQueryProviderAuthorizationDecisionFacts};
 
-pub struct WorthQueryProviderCommitAuthorization {
+pub(in crate::domain_computation) struct WorthQueryProviderCommitAuthorization {
     provider: Option<WorthQueryProviderAuthorizationDecisionFacts>,
     commit: WorthQueryCommitAuthorizationBasis,
     workflow_approval_authority: Option<super::super::WorthQueryWorkflowApprovalAuthorityBasis>,
@@ -28,7 +28,7 @@ impl WorthQueryProviderCommitAuthorization {
         self
     }
 
-    pub fn authorize_application_commit<
+    pub(in crate::domain_computation) fn authorize_application_commit<
         'serialization,
         'admission,
         Schema,
@@ -96,12 +96,12 @@ impl WorthQueryProviderCommitAuthorization {
     }
 }
 
-pub struct WorthQueryRegisteredCommitAuthorization {
+pub(in crate::domain_computation) struct WorthQueryRegisteredCommitAuthorization {
     authorization: WorthQueryProviderCommitAuthorization,
 }
 
 impl WorthQueryRegisteredCommitAuthorization {
-    pub fn authorize_application_commit<
+    pub(in crate::domain_computation) fn authorize_application_commit<
         'serialization,
         'admission,
         Schema,

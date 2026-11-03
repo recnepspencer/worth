@@ -53,7 +53,7 @@ impl<'member> WorthQueryMemberExecution<'member> {
 
     /// An ordinary returned error acknowledges nothing. Only a nested call's
     /// transported failure consumes its own computational cause.
-    pub fn compute<T, E>(
+    pub(in crate::domain_computation::primary_graph) fn compute<T, E>(
         self,
         run: impl FnOnce(
             WorthQueryManagedComputationExecution<'member>,
@@ -74,7 +74,7 @@ impl<'member> WorthQueryMemberExecution<'member> {
         )
     }
 
-    pub fn into_parts(
+    pub(super) fn into_parts(
         self,
     ) -> (
         WorthQueryManagedComputationExecution<'member>,

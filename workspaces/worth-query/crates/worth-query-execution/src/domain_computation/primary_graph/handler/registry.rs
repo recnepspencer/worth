@@ -45,7 +45,7 @@ where
     handler: Arc<dyn OperationHandler<Schema, Binding>>,
 }
 
-pub struct PendingMutationHandlerRegistry<Schema> {
+pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
     computations: HashMap<TypeId, InstalledManagedComputationOwner>,
     // Locates a typed setup owner; seal still verifies that owner's actual binding.
@@ -53,7 +53,7 @@ pub struct PendingMutationHandlerRegistry<Schema> {
     _schema: PhantomData<fn() -> Schema>,
 }
 
-pub struct InstalledMutationHandlerRegistry<Schema> {
+pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
     _schema: PhantomData<fn() -> Schema>,
 }
@@ -91,7 +91,7 @@ impl<Schema> PendingMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn seal(
+    pub(in crate::domain_computation::primary_graph) fn seal(
         &self,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         binding_identity: &ApplicationSchemaBindingIdentity,

@@ -40,7 +40,7 @@ pub fn provider_compare_denied(denial: Compare) -> Progression {
     Progression::Denied(denial)
 }
 
-pub fn provider_session_denied(
+pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Denial {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
@@ -152,7 +152,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn read_se
     }
 }
 
-pub fn provider_session_execution_denied(
+pub(in crate::domain_computation::primary_graph) fn provider_session_execution_denied(
     stop: Result<
         crate::domain_computation::WorthQueryProviderSessionDenialKind,
         crate::domain_computation::WorthQueryProviderSessionControlStopKind,
@@ -165,7 +165,7 @@ pub fn provider_session_execution_denied(
     Denial::provider_execution_denied(stage, stop, detail)
 }
 
-pub fn control_stopped_outcome(
+pub(in crate::domain_computation::primary_graph) fn control_stopped_outcome(
     stopped: crate::domain_computation::WorthQueryProviderSessionCommitControlStopped,
 ) -> Progression {
     if stopped.is_execution_preparation() {

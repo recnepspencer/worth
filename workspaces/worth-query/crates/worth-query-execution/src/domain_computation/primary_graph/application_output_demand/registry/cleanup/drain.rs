@@ -4,7 +4,7 @@ use super::*;
 impl WorthQueryOutputDemandRegistry {
     /// Released settlements leave the invalidation owner too, with every
     /// upstream row only they still held.
-    pub fn drain_terminal_cleanup_admitted(
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn drain_terminal_cleanup_admitted(
         &self,
         owner: &SourceInvalidationOwner,
     ) -> Result<(), WorthQueryOutputDemandDenial> {

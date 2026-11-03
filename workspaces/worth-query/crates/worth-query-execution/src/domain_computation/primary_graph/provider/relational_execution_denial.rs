@@ -95,7 +95,7 @@ pub fn relational_execution_kind(
 }
 
 /// Preparation executes before publication; a refusal never asks for recovery.
-pub fn relational_execution_stop(
+pub(in crate::domain_computation::primary_graph) fn relational_execution_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     partition_identity: Option<u64>,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
@@ -118,7 +118,7 @@ pub fn relational_execution_stop(
 }
 
 /// Native preparation evidence keeps the typed cause at the application boundary.
-pub fn native_preparation_kind(
+pub(in crate::domain_computation::primary_graph) fn native_preparation_kind(
     failure: &crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Result<
     Option<crate::domain_computation::WorthQueryProviderSessionDenialKind>,

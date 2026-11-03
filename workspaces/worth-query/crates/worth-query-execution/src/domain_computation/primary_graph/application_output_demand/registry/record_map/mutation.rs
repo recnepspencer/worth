@@ -1,8 +1,8 @@
 //! Mutating a row publishes its claim-owner state on every return path.
 use super::super::DemandRecord;
-pub struct RecordMutation<'a>(&'a mut DemandRecord);
+pub(in super::super) struct RecordMutation<'a>(&'a mut DemandRecord);
 impl<'a> RecordMutation<'a> {
-    pub fn finish(self) {}
+    pub(in super::super) fn finish(self) {}
     pub(super) fn new(row: &'a mut DemandRecord) -> Self {
         Self(row)
     }

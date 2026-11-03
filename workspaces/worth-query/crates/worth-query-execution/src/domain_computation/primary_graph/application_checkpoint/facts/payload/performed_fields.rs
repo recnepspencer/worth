@@ -6,7 +6,7 @@ impl FactPayload {
     /// O(facts + copied field bodies + balanced join paths). Copies only the
     /// genuine completed handler reads and original field revisions, funded by
     /// that producer request before any effect. No view retains a parent body.
-    pub fn copy_performed_field_reads(
+    pub(in crate::domain_computation::primary_graph) fn copy_performed_field_reads(
         facts: &Self,
         control: StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {

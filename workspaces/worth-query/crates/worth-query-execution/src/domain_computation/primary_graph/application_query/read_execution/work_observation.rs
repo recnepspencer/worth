@@ -3,7 +3,7 @@
 use std::cell::Cell;
 
 /// Root and tree observations include a refused read's completed prefix.
-pub struct OneShotReadWorkObservation<
+pub(in crate::domain_computation::primary_graph::application_query) struct OneShotReadWorkObservation<
     'charge,
 > {
     charge: Option<

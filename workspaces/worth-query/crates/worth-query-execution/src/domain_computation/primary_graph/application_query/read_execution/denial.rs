@@ -20,7 +20,7 @@ pub enum WorthQueryApplicationReadExecutionDenialKind {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationReadExecutionDenial
+pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationReadExecutionDenial
 {
     kind: WorthQueryApplicationReadExecutionDenialKind,
     subject: String,

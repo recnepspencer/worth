@@ -11,14 +11,14 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::{
 /// Retained postconditions have no slice projection or Deref. Only the one
 /// computation-current door can expose them for comparison.
 #[derive(Clone, Debug)]
-pub struct RetainedSourceFacts {
+pub(in crate::domain_computation::primary_graph) struct RetainedSourceFacts {
     source: ComputationSourceEvidence,
     facts: FactPayload,
     payload_bytes: Option<u64>,
     posting_continuation: Option<super::invalidation::PostingContinuation>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ComparableSourceFacts {
+pub(in crate::domain_computation::primary_graph) struct ComparableSourceFacts {
     computation: CurrentComputation,
     facts: FactPayload,
 }
@@ -31,7 +31,7 @@ impl RetainedSourceFacts {
             posting_continuation: None,
         }
     }
-    pub fn with_posting_continuation(
+    pub(super) fn with_posting_continuation(
         mut self,
         continuation: Option<super::invalidation::PostingContinuation>,
     ) -> Self {
@@ -60,16 +60,16 @@ impl RetainedSourceFacts {
         self.source
     }
     /// Owner-only custody/index posting. This is never a comparison proof.
-    pub fn postconditions(&self) -> &FactPayload {
+    pub(super) fn postconditions(&self) -> &FactPayload {
         &self.facts
     }
-    pub fn len(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.facts.len()
     }
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.facts.is_empty()
     }
-    pub fn for_test(
+    pub(in crate::domain_computation::primary_graph) fn for_test(
         stale: bool,
         facts: Arc<[Fact]>,
     ) -> Self {
@@ -80,7 +80,7 @@ impl ComparableSourceFacts {
     pub(in crate::domain_computation::primary_graph) fn computation(&self) -> CurrentComputation {
         self.computation
     }
-    pub fn facts(&self) -> &FactPayload {
+    pub(in crate::domain_computation::primary_graph) fn facts(&self) -> &FactPayload {
         &self.facts
     }
     pub(in crate::domain_computation::primary_graph) fn retained(&self) -> RetainedSourceFacts {

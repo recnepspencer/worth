@@ -12,7 +12,7 @@ use super::super::{
     },
     read_execution::RawOneShotRows,
 };
-pub mod body;
+mod body;
 mod comparison;
 pub(in crate::domain_computation::primary_graph) use body::OriginalProjection;
 pub(in crate::domain_computation::primary_graph) use comparison::{
@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph) use comparison::{
 };
 pub(in crate::domain_computation::primary_graph::application_query) mod storage;
 
-pub fn retain(
+pub(in crate::domain_computation::primary_graph::application_query) fn retain(
     execution: &ExecutionRequest<'_, '_>,
     raw: &mut RawOneShotRows,
     graph: &WorthQueryInstalledGraphReadContract,

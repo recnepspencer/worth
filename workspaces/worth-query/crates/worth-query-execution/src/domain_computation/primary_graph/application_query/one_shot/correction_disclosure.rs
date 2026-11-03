@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use worth_relational::facade::identity::EntityId;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn execute_correction_disclosure<
+    pub(in crate::domain_computation::primary_graph) fn execute_correction_disclosure<
         Query,
         Parameters,
         QueryResult,

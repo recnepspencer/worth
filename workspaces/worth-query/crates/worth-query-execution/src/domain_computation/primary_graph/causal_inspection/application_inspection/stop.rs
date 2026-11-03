@@ -25,7 +25,7 @@ pub use owner::{
 #[cfg(test)]
 mod output_tests;
 
-pub enum InspectionCause {
+pub(super) enum InspectionCause {
     Unavailable,
     Advancement(WorthQueryAdvancementDenial),
     Selection(crate::basis::WorthQueryProductBranchAdmissionDenial),
@@ -46,7 +46,7 @@ pub enum WorthQueryApplicationInspectionStopKind {
 
 /// Owns the exact failing cause and the same original request's ticket, last.
 pub struct WorthQueryApplicationInspectionDenial {
-    pub cause: InspectionCause,
+    pub(super) cause: InspectionCause,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -167,7 +167,7 @@ impl WorthQueryApplicationInspectionDenial {
         }
     }
 
-    pub fn new(cause: InspectionCause, memory: Option<ExecutionMemoryReservation>) -> Self {
+    pub(super) fn new(cause: InspectionCause, memory: Option<ExecutionMemoryReservation>) -> Self {
         Self {
             cause,
             _memory: memory,

@@ -2,9 +2,9 @@
 
 mod correction;
 pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
-pub mod commit_causality;
+mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;
-pub mod causal_fact;
+mod causal_fact;
 mod correction_coordinates;
 pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
 pub mod derivation_failure;

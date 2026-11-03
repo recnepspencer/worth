@@ -8,7 +8,7 @@ use std::sync::Arc;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-pub struct CompletedOriginalRead {
+pub(in crate::domain_computation) struct CompletedOriginalRead {
     body: FactPayload,
     projection: Arc<CompletedFactProjection>,
     lease: WorthQueryApplicationSnapshotLease,

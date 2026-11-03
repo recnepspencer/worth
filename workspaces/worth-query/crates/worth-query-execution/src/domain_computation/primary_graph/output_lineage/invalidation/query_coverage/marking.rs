@@ -5,7 +5,7 @@ use super::super::settlement;
 use super::super::settlement::PostingBindings;
 use super::*;
 
-pub fn mark_query_reads(
+pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn mark_query_reads(
     state: &mut MarkState,
     key: &FactPostingKey,
 

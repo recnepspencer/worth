@@ -5,7 +5,7 @@ use super::super::resource_lifecycle::{
 
 /// The basis admitted by the query pipeline owns the exact selected World
 /// occurrence and its matching application component lease.
-pub struct WorthQueryApplicationQueryBasisCustody {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationQueryBasisCustody {
     product: crate::basis::WorthQueryProductObservationLease,
     application_basis: WorthQueryApplicationBasisLease,
 }

@@ -19,7 +19,7 @@ use super::super::recovery_handle::{
 
 worth_proof::binding_axes! {
     /// Current operation facts that must still match a live recovery handle.
-    pub struct WorthQueryRecoveryBindingCurrentTruth {
+    pub(crate) struct WorthQueryRecoveryBindingCurrentTruth {
         schema_identity: [u8; 32] => SchemaIdentity,
         branch: BranchId => Branch,
         application_binding_generation: u64 => ApplicationBindingGeneration,
@@ -28,7 +28,7 @@ worth_proof::binding_axes! {
         principal_scope: WorthQueryOperationScopeBinding => PrincipalScope,
         installed_aftermath: [u8; 32] => InstalledAftermath,
     }
-    drift pub enum WorthQueryRecoveryBindingDrift;
+    drift pub(crate) enum WorthQueryRecoveryBindingDrift;
 }
 
 impl WorthQueryRecoveryBindingCurrentTruth {
@@ -75,7 +75,7 @@ impl WorthQueryRecoveryBindingCurrentTruth {
         }
     }
 
-    pub fn check(
+    pub(crate) fn check(
         &self,
         binding: &WorthQueryRecoveryHandleBinding,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {
@@ -85,7 +85,7 @@ impl WorthQueryRecoveryBindingCurrentTruth {
             .map_err(|drift| map_binding_drift(drift, self, binding))
     }
 
-    pub fn axis_probe(binding: &WorthQueryRecoveryHandleBinding) -> Self {
+    pub(crate) fn axis_probe(binding: &WorthQueryRecoveryHandleBinding) -> Self {
         Self::from_handle_binding(binding)
     }
 }

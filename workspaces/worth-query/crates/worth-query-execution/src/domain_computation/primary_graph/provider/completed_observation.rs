@@ -4,7 +4,7 @@ use super::{
 };
 
 impl WorthQueryPrimaryGraphProvider {
-    pub fn capture_correction_witness(
+    pub(in crate::domain_computation::primary_graph) fn capture_correction_witness(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
@@ -18,7 +18,7 @@ impl WorthQueryPrimaryGraphProvider {
             .capture_correction_witness(execution, commit)
     }
 
-    pub fn observe_completed_application(
+    pub(in crate::domain_computation::primary_graph) fn observe_completed_application(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
     ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
@@ -38,7 +38,7 @@ impl WorthQueryPrimaryGraphProvider {
             .observe_session(session)
     }
 
-    pub fn retained_application_commit_basis(
+    pub(in crate::domain_computation::primary_graph) fn retained_application_commit_basis(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
     ) -> Option<super::WorthQueryRetainedApplicationCommitBasis> {

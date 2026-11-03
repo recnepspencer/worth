@@ -6,7 +6,7 @@ use std::sync::{
 };
 
 #[derive(Default)]
-pub struct CallerPassControl {
+pub(in crate::domain_computation::primary_graph) struct CallerPassControl {
     next_arm: AtomicU64,
     interleaving_owner: AtomicU64,
     interleaving: Mutex<Option<Box<dyn FnOnce() + Send>>>,
@@ -58,7 +58,7 @@ impl CallerPassControl {
         drop(pending);
         drop(previous);
     }
-    pub fn run_interleaving(&self) {
+    pub(in crate::domain_computation::primary_graph) fn run_interleaving(&self) {
         // Unarmed: one atomic read; the callback runs after the mutex is released.
         if self.interleaving_owner.load(Ordering::Acquire) == 0 {
             return;

@@ -1,7 +1,7 @@
 mod verification_denial;
 pub(in crate::domain_computation::primary_graph) use verification_denial::verification_denial;
 mod dependency;
-pub mod selection;
+mod selection;
 mod verification_extent;
 pub(in crate::domain_computation::primary_graph) use verification_extent::RetainedFactVerification;
 

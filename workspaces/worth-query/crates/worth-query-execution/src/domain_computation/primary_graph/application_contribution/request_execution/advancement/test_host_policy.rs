@@ -5,7 +5,7 @@ use super::{
 };
 
 #[derive(Clone, Copy)]
-pub struct TestHostRequest<'scope> {
+pub(crate) struct TestHostRequest<'scope> {
     active: &'scope ActiveAdvancement<'scope>,
     installed: Option<(
         AdvancementSource,
@@ -14,7 +14,7 @@ pub struct TestHostRequest<'scope> {
 }
 
 impl<'scope> TestHostRequest<'scope> {
-    pub fn test_host_request(&self) -> Self {
+    pub(crate) fn test_host_request(&self) -> Self {
         *self
     }
 
@@ -25,14 +25,14 @@ impl<'scope> TestHostRequest<'scope> {
         }
     }
 
-    pub fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
+    pub(crate) fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
         self.active
             .execution
             .execution_request()
             .expect("the fixture host is admitted")
     }
 
-    pub fn execution_request_for(
+    pub(crate) fn execution_request_for(
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<ExecutionRequest<'_, '_>, WorthQueryForeignAdvancementPhase> {
@@ -41,11 +41,11 @@ impl<'scope> TestHostRequest<'scope> {
         Ok(self.borrowed_request_for_test())
     }
 
-    pub fn bootstrap_for_test(&self) -> WorthQueryBootstrapAdvancementPhase<'_> {
+    pub(crate) fn bootstrap_for_test(&self) -> WorthQueryBootstrapAdvancementPhase<'_> {
         WorthQueryBootstrapAdvancementPhase::new(self.borrowed_request_for_test())
     }
 
-    pub fn phase_for_application<Schema: ApplicationSchema>(
+    pub(crate) fn phase_for_application<Schema: ApplicationSchema>(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> WorthQueryAdvancementPhase<'scope> {
@@ -90,7 +90,7 @@ impl<'scope> TestHostRequest<'scope> {
         )
     }
 
-    pub fn phase_for_direct(
+    pub(crate) fn phase_for_direct(
         &self,
         run: &crate::domain_computation::WorthQueryRunningDirectRun,
     ) -> WorthQueryAdvancementPhase<'scope> {
@@ -100,7 +100,7 @@ impl<'scope> TestHostRequest<'scope> {
         )
     }
 
-    pub fn phase_for_workflow(
+    pub(crate) fn phase_for_workflow(
         &self,
         run: &crate::domain_computation::WorthQueryRunningWorkflowRun,
     ) -> WorthQueryAdvancementPhase<'scope> {

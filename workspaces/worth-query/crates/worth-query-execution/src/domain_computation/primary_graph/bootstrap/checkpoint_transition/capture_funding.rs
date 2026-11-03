@@ -11,7 +11,7 @@ impl WorthQueryCheckpointTransitionResources {
         self.maximum_capture_bytes.is_some()
     }
 
-    pub fn capture_lease<'scope, 'authority>(
+    pub(in crate::domain_computation::primary_graph) fn capture_lease<'scope, 'authority>(
         self,
         request: ExecutionRequest<'scope, 'authority>,
         policy: ExecutionAllocationPolicy<'scope, 'authority>,

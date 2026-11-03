@@ -267,7 +267,7 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
         self.disclosure.result_set_observation
     }
 
-    pub fn into_single_source(
+    pub(in crate::domain_computation::primary_graph) fn into_single_source(
         self,
     ) -> Option<(QueryResult, super::WorthQueryObservedSource<Query>)> {
         let (mut sources, _, _) = self.disclosure.into_parts();

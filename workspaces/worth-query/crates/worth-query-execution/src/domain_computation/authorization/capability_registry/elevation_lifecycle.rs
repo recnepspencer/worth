@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_schema::ApplicationOperationMar
 use super::WorthQueryInstalledCapabilityPlan;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryElevationLifecycleOperationRole {
+pub(in crate::domain_computation) enum WorthQueryElevationLifecycleOperationRole {
     Request,
     Approve,
     Revoke,

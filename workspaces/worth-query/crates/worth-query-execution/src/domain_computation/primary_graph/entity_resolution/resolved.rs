@@ -72,7 +72,7 @@ pub struct WorthQueryApplicationEntityIdentity<Schema, Entity> {
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
-pub struct WorthQueryResolvedEntity {
+pub(in crate::domain_computation) struct WorthQueryResolvedEntity {
     entity_id: EntityId,
     entity_kind: KindId,
     entity_name: String,
@@ -110,15 +110,15 @@ impl WorthQueryResolvedEntity {
         }
     }
 
-    pub const fn entity_id(&self) -> EntityId {
+    pub(in crate::domain_computation) const fn entity_id(&self) -> EntityId {
         self.entity_id
     }
 
-    pub const fn entity_kind(&self) -> KindId {
+    pub(in crate::domain_computation) const fn entity_kind(&self) -> KindId {
         self.entity_kind
     }
 
-    pub fn into_application_identity<Schema, Entity>(
+    pub(in crate::domain_computation) fn into_application_identity<Schema, Entity>(
         self,
     ) -> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         WorthQueryApplicationEntityIdentity {
@@ -167,11 +167,11 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         )
     }
 
-    pub const fn entity_id(&self) -> EntityId {
+    pub(crate) const fn entity_id(&self) -> EntityId {
         self.entity_id
     }
 
-    pub const fn entity_kind(&self) -> KindId {
+    pub(crate) const fn entity_kind(&self) -> KindId {
         self.entity_kind
     }
 
@@ -183,7 +183,7 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         self.runtime_authority
     }
 
-    pub const fn identity_index_id(&self) -> DerivedIndexId {
+    pub(crate) const fn identity_index_id(&self) -> DerivedIndexId {
         self.identity_index_id
     }
 
@@ -195,7 +195,7 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         &self.identity_locator
     }
 
-    pub fn identity_value(&self) -> &AspectValue {
+    pub(crate) fn identity_value(&self) -> &AspectValue {
         &self.identity_value
     }
 

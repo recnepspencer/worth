@@ -34,9 +34,9 @@ pub enum WorthQueryNativeMarkingPrecision {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct NativeMarkingReport {
+pub(super) struct NativeMarkingReport {
     pub(super) commit: CommitId,
-    pub precision: WorthQueryNativeMarkingPrecision,
+    pub(super) precision: WorthQueryNativeMarkingPrecision,
 }
 
 pub(super) struct AppliedNativeMarking {

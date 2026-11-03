@@ -4,7 +4,7 @@ use super::{
 };
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
-pub struct RetainedFactStore<T> {
+pub(in crate::domain_computation::primary_graph) struct RetainedFactStore<T> {
     seed: Option<Run<T>>,
     chunk: Option<Run<T>>,
     directory: Option<RunDirectory<T>>,
@@ -27,7 +27,7 @@ impl<T> RetainedFactStore<T> {
     }
     /// Re-author a sealed canonical payload only when new facts must merge.
     /// The old owning iterator and its charge coexist with the admitted slots.
-    pub fn from_sorted_records(
+    pub(in crate::domain_computation::primary_graph) fn from_sorted_records(
         records: ExecutionArray<RetainedFact<T>>,
         policy: super::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
@@ -52,7 +52,7 @@ impl<T> RetainedFactStore<T> {
             .unwrap_or(&[])
     }
 
-    pub fn insert(
+    pub(in crate::domain_computation::primary_graph) fn insert(
         &mut self,
         key: AdmittedFactKey,
         value: T,
@@ -239,7 +239,7 @@ impl<T> RetainedFactStore<T> {
             level = level.checked_add(1).ok_or(StoreDenial::Representability)?;
         }
     }
-    pub fn finish(
+    pub(in crate::domain_computation::primary_graph) fn finish(
         self,
         policy: super::StorageControl<'_, '_>,
     ) -> Result<ExecutionArray<RetainedFact<T>>, StoreDenial> {

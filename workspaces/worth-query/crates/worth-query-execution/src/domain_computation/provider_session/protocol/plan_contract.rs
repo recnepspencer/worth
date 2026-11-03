@@ -134,7 +134,7 @@ impl WorthQueryProviderExecutionPlanContract {
         &self.identity
     }
 
-    pub const fn runtime_authority(
+    pub(crate) const fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.runtime_authority
@@ -192,24 +192,24 @@ impl WorthQueryProviderExecutionPlanContract {
         &self.snapshot_identity
     }
 
-    pub const fn application_operation_attempt(
+    pub(crate) const fn application_operation_attempt(
         &self,
     ) -> Option<crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity>
     {
         self.application_operation_attempt
     }
 
-    pub const fn application_schema_binding(
+    pub(crate) const fn application_schema_binding(
         &self,
     ) -> Option<&worth_query_installation::facade::ApplicationSchemaBindingIdentity> {
         self.application_schema_binding.as_ref()
     }
 
-    pub fn application_operation_slot(&self) -> Option<&str> {
+    pub(crate) fn application_operation_slot(&self) -> Option<&str> {
         self.application_operation_slot.as_deref()
     }
 
-    pub const fn application_snapshot(
+    pub(crate) const fn application_snapshot(
         &self,
     ) -> Option<&worth_relational::facade::snapshots::SnapshotHandle> {
         self.application_snapshot.as_ref()

@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-pub mod demand;
+mod demand;
 mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
@@ -26,14 +26,14 @@ pub use denial_value::{
     WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
     WorthQueryUndeclaredProducerDenial,
 };
-pub mod execution;
+mod execution;
 pub(in crate::domain_computation::primary_graph) use execution::unpublished::PendingProducerPublication;
-pub mod invocation;
+mod invocation;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
 pub(in crate::domain_computation::primary_graph) use invocation::ProducerInvocationAuthority;
-pub mod output_equivalence_contract;
-pub mod output_evaluation;
+mod output_equivalence_contract;
+mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
 pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
 pub(in crate::domain_computation::primary_graph) use output_evaluation::{
@@ -45,7 +45,7 @@ pub use input_reuse_contract::{
 };
 
 #[derive(Clone, Eq, PartialEq)]
-pub enum WorthQueryProducerCommitAuthority {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerCommitAuthority {
     Ordinary,
     ProgramOutput,
     SelectedProgram {
@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) use readiness::{
     evaluate_output_readiness, install_output_readiness_routes, PendingOutputReadiness,
     TypedPendingOutputReadiness, WorthQueryInstalledOutputReadinessRoutes,
 };
-pub mod scheduling;
+mod scheduling;
 mod source_qualification;
 pub(in crate::domain_computation::primary_graph) use scheduling::{
     schedule_output_producer, schedule_output_producer_on_selected,
@@ -279,7 +279,7 @@ where
     }
 }
 
-pub mod registry;
+mod registry;
 pub(super) use registry::DeclaredProducerBinding;
 pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;
 pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;

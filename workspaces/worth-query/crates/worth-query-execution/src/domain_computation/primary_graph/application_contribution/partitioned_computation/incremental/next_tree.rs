@@ -41,7 +41,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ComputationC
 
 /// An incremental run after `prepare`: every partition carried or gathered
 /// again, the preparation receipt, and the prior run it carries from.
-pub struct PreparedIncremental<Key, Item, Reduced, Gathered> {
+pub(in super::super) struct PreparedIncremental<Key, Item, Reduced, Gathered> {
     preparation_work: PreparationWork,
     compute_ceiling: Option<u64>,
     partitions: BTreeMap<PartitionIdentity, Recomputed<Key, Gathered>>,

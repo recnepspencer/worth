@@ -12,7 +12,7 @@ use worth_query_installation::facade::WorthQueryProgramSupportEntry;
 /// compared against the program its occurrence actually activated. It is
 /// minted solely by the installed support roster, which is why no caller can
 /// present meaning this host never admitted.
-pub struct WorthQueryPresentedProgram<'support> {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryPresentedProgram<'support> {
     entry: &'support WorthQueryProgramSupportEntry,
     rendering: &'support AspectValue,
 }

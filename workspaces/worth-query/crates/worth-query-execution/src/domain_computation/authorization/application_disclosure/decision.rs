@@ -40,7 +40,7 @@ pub(in crate::domain_computation) use field_admission::{
     WorthQueryApplicationInternalProjectionAdmission,
 };
 
-pub struct WorthQueryPendingApplicationQueryGovernance {
+pub(in crate::domain_computation) struct WorthQueryPendingApplicationQueryGovernance {
     capability_name: String,
     capability_type: String,
     disclosure_value: AspectValue,
@@ -89,7 +89,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationDisclosureDecision
     omitted: BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
 }
 
-pub enum WorthQueryApplicationQueryGovernance {
+pub(in crate::domain_computation) enum WorthQueryApplicationQueryGovernance {
     Public,
     Governed {
         capability_name: String,
@@ -117,7 +117,7 @@ pub(in crate::domain_computation) fn admit_application_query_governance(
     preparation::prepare(contract, pending).map(|prepared| prepared.bind(binding))
 }
 
-pub mod binding;
+mod binding;
 pub(in crate::domain_computation) use binding::WorthQueryApplicationGovernanceBinding;
 
 pub use diagnostic::DiagnosticComparisonDenial;

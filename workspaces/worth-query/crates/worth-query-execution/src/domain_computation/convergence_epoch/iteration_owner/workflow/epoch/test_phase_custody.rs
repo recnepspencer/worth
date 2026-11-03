@@ -2,7 +2,7 @@
 use super::*;
 
 impl WorthQueryStartedWorkflowConvergenceIteration {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
@@ -11,7 +11,7 @@ impl WorthQueryStartedWorkflowConvergenceIteration {
 }
 
 impl WorthQueryPausedWorkflowConvergenceIteration {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {

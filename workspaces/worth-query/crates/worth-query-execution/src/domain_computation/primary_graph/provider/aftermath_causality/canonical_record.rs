@@ -8,7 +8,7 @@ mod borrowed;
 pub(super) use borrowed::matches_reverse;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryCanonicalCorrectionFact {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryCanonicalCorrectionFact {
     pub role: WorthQueryAftermathCausalRole,
     pub parent: RelationalCommitReceipt,
     pub child: RelationalCommitReceipt,

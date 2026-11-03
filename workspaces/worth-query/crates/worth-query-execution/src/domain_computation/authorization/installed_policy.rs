@@ -85,7 +85,7 @@ pub(super) struct BridgePathBinding {
     rule_effect: BridgeAuthorizationRuleEffect,
 }
 
-pub struct WorthQueryInstalledAuthorizationRegistry {
+pub(in crate::domain_computation) struct WorthQueryInstalledAuthorizationRegistry {
     bridge: BridgeAuthorizationRuntime,
     policies: BTreeMap<PolicyKey, WorthQueryInstalledAuthorizationPolicy>,
     capabilities: WorthQueryInstalledCapabilityRegistry,
@@ -174,11 +174,11 @@ impl WorthQueryInstalledAuthorizationRegistry {
             })
     }
 
-    pub const fn bridge(&self) -> &BridgeAuthorizationRuntime {
+    pub(in crate::domain_computation) const fn bridge(&self) -> &BridgeAuthorizationRuntime {
         &self.bridge
     }
 
-    pub fn capability_plan<Schema, Capability, Operation, Input>(
+    pub(super) fn capability_plan<Schema, Capability, Operation, Input>(
         &self,
         capability: &worth_query_installation::facade::WorthQueryInstalledApplicationCapability<
             Schema,
@@ -197,7 +197,7 @@ impl WorthQueryInstalledAuthorizationRegistry {
         self.capabilities.plan_by_identity(capability_identity)
     }
 
-    pub fn elevation_lifecycle_operation<Schema, Operation>(
+    pub(in crate::domain_computation) fn elevation_lifecycle_operation<Schema, Operation>(
         &self,
         operation: &str,
         input_type: &str,

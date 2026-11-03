@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::{
 
 use super::WorthQueryCapabilityOperationProgression;
 
-pub mod precondition_binding;
+mod precondition_binding;
 pub use precondition_binding::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use precondition_binding::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use precondition_binding::WorthQueryOperationAdmissionIdentity;

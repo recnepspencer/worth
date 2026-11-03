@@ -19,7 +19,7 @@ use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 use super::execution_denial::{interruption_stop, lease_denial, memory_denial};
 use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial};
 
-pub mod test_placement;
+mod test_placement;
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
 pub(in crate::domain_computation::primary_graph) use test_placement::FixturePlacement;
 pub use test_placement::{
@@ -32,7 +32,7 @@ mod serial_placement;
 mod test_authority;
 pub use test_authority::query_test_execution_authority_for_test;
 
-pub type Resource = WorthQueryManagedComputationResourceDenial;
+type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod accounting;
 mod decision_stage;
@@ -40,7 +40,7 @@ mod descendants;
 mod retained_dispatch;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
-pub mod advancement;
+pub(in crate::domain_computation::primary_graph) mod advancement;
 pub(in crate::domain_computation::primary_graph) use advancement::advancement_denial;
 
 pub use advancement::{
@@ -49,10 +49,10 @@ pub use advancement::{
 
 /// One request's execution, borrowed from the World owner the request entry
 /// holds for the request's duration.
-pub struct QueryRequestExecution<'a> {
+pub(in crate::domain_computation::primary_graph) struct QueryRequestExecution<'a> {
     cancellation: worth_execution::CancellationToken,
     deadline: Option<std::time::Instant>,
-    pub declared_work: Option<u64>,
+    declared_work: Option<u64>,
     certified_seed: Option<u64>,
     form: Form<'a>,
 }
@@ -73,7 +73,7 @@ enum Form<'a> {
 impl<'a> QueryRequestExecution<'a> {
     /// The actual current lease funds new persistent cells; the policy is
     /// borrowed for allocation only and is never stored in retained state.
-    pub fn allocation_policy(
+    pub(in crate::domain_computation::primary_graph) fn allocation_policy(
         &self,
     ) -> Result<worth_execution::ExecutionAllocationPolicy<'_, 'a>, Resource> {
         match &self.form {
@@ -86,7 +86,7 @@ impl<'a> QueryRequestExecution<'a> {
     /// The request's execution under `placement`. The request's cancellation
     /// is the one every lease and serial run observes, and its deadline is
     /// theirs.
-    pub fn open(
+    pub(in crate::domain_computation::primary_graph) fn open(
         placement: RuntimeWorldExecutionPlacement<'a>,
         request: &'a WorthQueryRequestScope,
     ) -> Self {
@@ -95,7 +95,7 @@ impl<'a> QueryRequestExecution<'a> {
         Self::open_control(placement, cancellation, deadline)
     }
 
-    pub fn open_control(
+    fn open_control(
         placement: RuntimeWorldExecutionPlacement<'a>,
         cancellation: worth_execution::CancellationToken,
         deadline: Option<std::time::Instant>,
@@ -128,7 +128,7 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// A safe point outside any pattern: the stop a kernel would make here.
-    pub fn checkpoint(&self) -> Result<(), MapKernelStop> {
+    pub(super) fn checkpoint(&self) -> Result<(), MapKernelStop> {
         self.interruption()
             .map_or(Ok(()), |interruption| Err(interruption_stop(interruption)))
     }
@@ -150,7 +150,7 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// Every run, including serial placement, descends from the request's lease.
-    pub fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
+    pub(super) fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
             Form::Leased { lease, policy } | Form::Serial { lease, policy } => {
                 let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
@@ -173,7 +173,7 @@ impl<'a> QueryRequestExecution<'a> {
 }
 
 /// Bytes held against the request's lease lineage until the reservation drops.
-pub struct QueryMemoryReservation {
+pub(in crate::domain_computation::primary_graph) struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
     bytes: u64,
 }
@@ -213,20 +213,20 @@ enum DispatchForm<'d> {
 }
 
 /// One run's placement. Each pattern runs inside a work ceiling on it.
-pub struct QueryDispatch<'d> {
+pub(super) struct QueryDispatch<'d> {
     form: DispatchForm<'d>,
     certified_seed: Option<u64>,
 }
 
 impl QueryDispatch<'_> {
-    pub fn native_lease_for_test(&self) -> &ExecutionResourceLease<'_> {
+    pub(in super::super) fn native_lease_for_test(&self) -> &ExecutionResourceLease<'_> {
         let DispatchForm::Leased(lease) = &self.form;
         lease
     }
     /// Maps every partition of `map` inside `ceiling`. The map's admission
     /// takes over `inputs`, the request memory held for its partitions, in
     /// one ledger step: no byte of them is unreserved between the two holds.
-    pub fn map<T, K, R, E, Kernel>(
+    pub(super) fn map<T, K, R, E, Kernel>(
         &self,
         ceiling: u64,
         map: &ExecutionMap<T, K>,

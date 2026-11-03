@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 mod approval;
-pub mod dependency;
+mod dependency;
 pub(in crate::domain_computation::primary_graph) use dependency::decode_field_revision_fact;
 mod proposal;
 mod retained_evidence;

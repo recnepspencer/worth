@@ -23,9 +23,9 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 
 mod cold;
 mod connection;
-pub mod global_actions;
+mod global_actions;
 pub(in crate::domain_computation::primary_graph) use connection::observe_connection;
-pub mod node;
+mod node;
 pub(in crate::domain_computation::primary_graph) use node::compile_node;
 mod operation_input;
 mod publication_header;

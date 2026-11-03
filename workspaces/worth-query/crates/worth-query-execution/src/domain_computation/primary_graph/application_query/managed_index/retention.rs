@@ -19,7 +19,7 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{identity::EntityId, transactions::RelationalExecutionDenialCause};
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIncarnation};
 
-pub mod association;
+mod association;
 mod eviction;
 pub(in crate::domain_computation::primary_graph::application_query) use association::ManagedIndexRegistrationKey;
 mod maintained;

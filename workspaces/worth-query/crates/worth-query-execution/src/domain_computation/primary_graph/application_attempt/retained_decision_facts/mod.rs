@@ -2,14 +2,14 @@
 use std::cell::RefCell;
 use worth_execution::{ExecutionAllocationDenial, ExecutionArray};
 
-pub mod canonical_key;
-pub mod control;
-pub mod directory;
+mod canonical_key;
+mod control;
+mod directory;
 pub(in crate::domain_computation::primary_graph) mod endpoints;
-pub mod fact_store;
-pub mod handoff;
-pub mod run;
-pub mod storage;
+mod fact_store;
+mod handoff;
+mod run;
+mod storage;
 mod streaming;
 
 pub(in crate::domain_computation::primary_graph) use canonical_key::AdmittedFactKey;
@@ -17,15 +17,15 @@ pub(in crate::domain_computation) use control::StorageControl;
 pub(in crate::domain_computation::primary_graph) use handoff::restore_authored_order;
 pub(in crate::domain_computation::primary_graph) use storage::RetainedFactStore;
 
-pub type Slot<T> = RefCell<Option<RetainedFact<T>>>;
+type Slot<T> = RefCell<Option<RetainedFact<T>>>;
 
 /// Algorithmic author/merge granule, not an admission or request count limit.
-pub const AUTHOR_CHUNK: usize = 32;
+const AUTHOR_CHUNK: usize = 32;
 
-pub struct RetainedFact<T> {
-    pub key: AdmittedFactKey,
-    pub value: T,
-    pub ordinal: usize,
+pub(in crate::domain_computation::primary_graph) struct RetainedFact<T> {
+    pub(in crate::domain_computation::primary_graph) key: AdmittedFactKey,
+    pub(in crate::domain_computation::primary_graph) value: T,
+    pub(in crate::domain_computation::primary_graph) ordinal: usize,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -69,7 +69,7 @@ pub(in crate::domain_computation::primary_graph) use fact_store::{
 };
 
 impl StoreDenial {
-    pub fn into_attempt_denial(
+    pub(in crate::domain_computation::primary_graph) fn into_attempt_denial(
         self,
         subject: &str,
     ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {

@@ -9,15 +9,15 @@ use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 
-pub mod aspect_presence;
-pub mod predecode_admission;
+mod aspect_presence;
+mod predecode_admission;
 pub(in crate::domain_computation::primary_graph) use aspect_presence::observe_aspect_presence;
-pub mod read_rendezvous;
+mod read_rendezvous;
 pub(in crate::domain_computation::primary_graph) use read_rendezvous::ReadRendezvous;
 std::thread_local! {
     static NATIVE_FIELD_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
-pub fn take_native_field_contacts() -> usize {
+pub(in crate::domain_computation::primary_graph) fn take_native_field_contacts() -> usize {
     NATIVE_FIELD_CONTACTS.with(|count| count.replace(0))
 }
 pub(in crate::domain_computation::primary_graph) use predecode_admission::{
@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) use predecode_admission::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationFieldObservation {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFieldObservation {
     Present(worth_foundational::facade::AspectValue),
     Absent,
     AspectAbsent,
@@ -59,7 +59,7 @@ impl From<worth_relational::facade::runtime::RelationalProjectedFieldObservation
     }
 }
 
-pub fn observe_field(
+pub(in crate::domain_computation::primary_graph) fn observe_field(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -92,7 +92,7 @@ pub fn observe_field(
     })
 }
 
-pub fn observe_field_value(
+pub(in crate::domain_computation::primary_graph) fn observe_field_value(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -109,7 +109,7 @@ pub fn observe_field_value(
     )
 }
 
-pub fn exact_relations(
+pub(super) fn exact_relations(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

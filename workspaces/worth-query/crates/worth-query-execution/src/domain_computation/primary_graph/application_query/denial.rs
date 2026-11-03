@@ -112,7 +112,7 @@ pub struct WorthQueryApplicationQueryAdmissionDenial {
 }
 
 impl WorthQueryApplicationQueryAdmissionDenial {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryApplicationQueryAdmissionDenialKind,
         subject: impl Into<String>,
     ) -> Self {

@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_capability::{
 
 use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind};
 
-pub fn validate_elevation_projection<Schema, Scope, Context>(
+pub(in crate::domain_computation) fn validate_elevation_projection<Schema, Scope, Context>(
     contract: &ErasedApplicationCapabilityContract,
     projection: &ApplicationCapabilityRequestProjection<Schema, Scope, Context>,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {

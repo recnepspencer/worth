@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::workflow::captured_input::Workflow
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RetainedCapturedInputs {
+pub(super) struct RetainedCapturedInputs {
     transition: WorkflowTransitionLocator,
     support: Arc<WorkflowCapturedInputSupport>,
 }

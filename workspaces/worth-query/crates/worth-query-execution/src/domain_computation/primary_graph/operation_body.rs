@@ -1,5 +1,5 @@
 //! Execution of a complete installed body, never a caller-selected replacement.
-pub mod assessment;
+mod assessment;
 mod children;
 pub(in crate::domain_computation::primary_graph) mod emission;
 mod expression;

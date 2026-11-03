@@ -223,7 +223,7 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
     }
 
     /// Why the reduction over the canonical tree stopped.
-    pub fn from_reduction(failure: ReductionRunFailure<MapKernelStop>) -> Self {
+    pub(super) fn from_reduction(failure: ReductionRunFailure<MapKernelStop>) -> Self {
         Self::from_reduction_reason(failure.reason)
     }
 

@@ -25,7 +25,7 @@ impl WorthQueryPreparedApplicationGovernance {
 }
 
 impl WorthQueryApplicationQueryGovernance {
-    pub fn inspection_matches(
+    pub(in crate::domain_computation) fn inspection_matches(
         &self,
         graph_work: &WorthQueryManagedGraphWorkSession,
         target: &Arc<WorthQueryApplicationInspectionTarget>,

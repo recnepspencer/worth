@@ -153,7 +153,7 @@ impl ChargedBytes for Denial {
     }
 }
 
-pub fn session(
+pub(in crate::domain_computation::primary_graph::application_query) fn session(
     cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
     root: EntityId,
     plan: &crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan<'_>,

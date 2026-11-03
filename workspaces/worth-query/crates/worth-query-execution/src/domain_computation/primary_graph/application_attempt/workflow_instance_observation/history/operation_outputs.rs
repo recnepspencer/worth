@@ -16,7 +16,7 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-pub struct ObservedOperationOutputs
+pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedOperationOutputs
 {
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) entries:
@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) target: EntityId,
 }
 
-pub fn observe(
+pub(super) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
@@ -185,7 +185,7 @@ impl OutputContextReader<'_, '_, '_> {
     }
 }
 
-pub fn text(
+fn text(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,

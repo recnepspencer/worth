@@ -21,20 +21,20 @@
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
-pub mod carriage;
+mod carriage;
 mod item_bounds;
-pub mod native_reads;
-pub mod prepare_ranges;
-pub mod prepare_rekeys;
+mod native_reads;
+mod prepare_ranges;
+mod prepare_rekeys;
 pub(in crate::domain_computation::primary_graph) use native_reads::NativeComputationReads;
 mod deposit;
-pub mod next_tree;
-pub mod observed;
+mod next_tree;
+mod observed;
 pub use observed::full_partitioned_computation_preparations_on_this_thread_for_test;
 pub(super) use observed::observe_full_preparation;
 mod prepare;
 use super::preparation_work::PreparationWork;
-pub mod prior_absence;
+mod prior_absence;
 mod published_state;
 pub(in crate::domain_computation) use published_state::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use published_state::observe_published;
@@ -44,9 +44,9 @@ pub use published_state::{
     WorthQueryPublishedComputationStateForTest,
 };
 mod carried_partitions;
-pub mod partition_metadata;
-pub mod recording;
-pub mod retained;
+mod partition_metadata;
+mod recording;
+mod retained;
 mod sealing;
 mod typed_prior;
 pub(in crate::domain_computation::primary_graph) use deposit::ComputationDeposit;
@@ -54,11 +54,11 @@ pub(in crate::domain_computation::primary_graph) use prior_absence::CompletedCom
 pub(in crate::domain_computation) use prior_absence::{
     PriorAbsence, SealedComputationRetention, Suppression,
 };
-pub mod tree_attempt;
+mod tree_attempt;
 mod tree_edits;
 mod tree_membership;
-pub mod tree_report;
-pub mod tree_update;
+mod tree_report;
+mod tree_update;
 pub(in super::super) use observed::observe_retained_full_tree;
 pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
 pub use tree_report::{
@@ -88,7 +88,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
 
-pub type Reader<'reader, 'runtime, Schema, Operation> =
+type Reader<'reader, 'runtime, Schema, Operation> =
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>;
 
 /// How a retained fact stands at this attempt's snapshot. Only the fact
@@ -106,7 +106,7 @@ enum KeyMovement {
 /// a retained call.
 pub(in crate::domain_computation::primary_graph) struct Comparator(());
 
-pub const COMPARATOR: Comparator = Comparator(());
+const COMPARATOR: Comparator = Comparator(());
 
 /// What the comparator decided before any owner call ran.
 pub(super) enum Begun<Key, Item, Reduced> {
@@ -121,11 +121,11 @@ pub(super) enum Begun<Key, Item, Reduced> {
 }
 
 /// The basis a full run retains its state under, opaque outside this module.
-pub struct RetainedBasisToken(pub RetainedBasis);
+pub(super) struct RetainedBasisToken(RetainedBasis);
 
 /// A comparison of a retained run under the same basis: which of its calls
 /// read a fact that moved, and the facts each call read.
-pub struct IncrementalRun<Key, Item, Reduced> {
+pub(super) struct IncrementalRun<Key, Item, Reduced> {
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
     /// Whether a fact the membership read moved.

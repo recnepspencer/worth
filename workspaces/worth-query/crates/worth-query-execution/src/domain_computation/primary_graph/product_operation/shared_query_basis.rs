@@ -5,12 +5,12 @@ use crate::domain_computation::primary_graph::application_query::resource_lifecy
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-pub struct SharedSelectedProductOperation<'runtime, Schema> {
+pub(in crate::domain_computation) struct SharedSelectedProductOperation<'runtime, Schema> {
     selected: WorthQuerySelectedProductOperation<'runtime, Schema>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum SelectedQueryBasisRetentionStop {
+pub(in crate::domain_computation::primary_graph) enum SelectedQueryBasisRetentionStop {
     Basis,
     Admission(CompanionPreflightStop),
 }
@@ -18,7 +18,7 @@ pub enum SelectedQueryBasisRetentionStop {
 impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     /// This phase preserves the issued snapshot and its program interpretation;
     /// it performs no Native registration, latest selection or program inspection.
-    pub fn prepare_shared_query_basis(
+    pub(in crate::domain_computation::primary_graph) fn prepare_shared_query_basis(
         mut self,
     ) -> Result<SharedSelectedProductOperation<'runtime, Schema>, (Self, CompanionPreflightStop)>
     {
@@ -36,7 +36,7 @@ impl<'runtime, Schema> SharedSelectedProductOperation<'runtime, Schema> {
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn retain_selected_query_basis_admitted(
+    pub(in crate::domain_computation::primary_graph) fn retain_selected_query_basis_admitted(
         &self,
         shared: &SharedSelectedProductOperation<'_, Schema>,
     ) -> Result<

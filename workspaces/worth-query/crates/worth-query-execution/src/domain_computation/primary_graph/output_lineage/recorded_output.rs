@@ -10,36 +10,36 @@ use crate::domain_computation::primary_graph::{
     application_attempt::CompletedHandlerFactBoundary, invariant_projection::ConsumedOutputEvidence,
 };
 
-pub struct RecordedOutput {
-    pub producing_implementation:
+pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
+    pub(super) producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
-    pub required_publication:
+    pub(super) required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     /// The performed computation read a fact that its own effect replaced.
     /// Postcondition facts cannot discharge this knowledge after index loss.
-    pub computation_source: super::ComputationSourceEvidence,
-    pub native_prior_checkpoint:
+    pub(super) computation_source: super::ComputationSourceEvidence,
+    pub(super) native_prior_checkpoint:
         Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
     /// Stable settlements pin the original performed record, never another
     /// alias. This preserves completion proof and its original lifetime cost.
-    pub performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,
-    pub consumed_outputs: Arc<[ConsumedOutputEvidence]>,
-    pub completed_handler_facts: Option<CompletedHandlerFactBoundary>,
-    pub completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
-    pub prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
+    pub(super) performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,
+    pub(super) consumed_outputs: Arc<[ConsumedOutputEvidence]>,
+    pub(super) completed_handler_facts: Option<CompletedHandlerFactBoundary>,
+    pub(super) completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
+    pub(super) prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
     /// Performed output initializes this slot at publication. Recovery may fill
     /// the same empty slot only after verifying its original checkpoint witness.
-    pub native_output_witness: OnceLock<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
-    pub settlement_identity: Arc<RecordedSettlementIdentity>,
-    pub correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub source_identity: Option<RecordedSourceIdentity>,
-    pub source_partition_identity: Option<[u8; 32]>,
-    pub producer_dependency_identity: Option<[u8; 32]>,
-    pub idempotency_key_identity: [u8; 32],
-    pub mutable: Mutex<RecordedOutputMutable>,
+    pub(super) native_output_witness: OnceLock<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    pub(super) settlement_identity: Arc<RecordedSettlementIdentity>,
+    pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub(super) source_identity: Option<RecordedSourceIdentity>,
+    pub(super) source_partition_identity: Option<[u8; 32]>,
+    pub(super) producer_dependency_identity: Option<[u8; 32]>,
+    pub(super) idempotency_key_identity: [u8; 32],
+    pub(super) mutable: Mutex<RecordedOutputMutable>,
 }
 
-pub struct RecordedOutputMutable {
+pub(super) struct RecordedOutputMutable {
     pub(super) verification_requirement: Option<FullVerificationReason>,
     observed_source_facts: Option<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
@@ -47,11 +47,11 @@ pub struct RecordedOutputMutable {
     stable_fact_spans: Option<super::input_cutoff::stable_publication::StableFactSpans>,
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
-    pub computation: super::retained_computation::RecordedComputation,
+    pub(super) computation: super::retained_computation::RecordedComputation,
 }
 
 impl RecordedOutputMutable {
-    pub fn new(
+    pub(super) fn new(
         verification_requirement: Option<FullVerificationReason>,
         facts: Option<super::RetainedSourceFacts>,
         computation: super::retained_computation::RecordedComputation,
@@ -80,7 +80,7 @@ impl RecordedOutputMutable {
         self.set_stable_fact_spans(spans);
         self
     }
-    pub fn set_stable_fact_spans(
+    pub(super) fn set_stable_fact_spans(
         &mut self,
         spans: super::input_cutoff::stable_publication::StableFactSpans,
     ) {
@@ -107,19 +107,19 @@ impl RecordedOutput {
         self.native_output_witness_cell()?.get()
     }
 
-    pub fn native_output_witness_cell(
+    pub(super) fn native_output_witness_cell(
         &self,
     ) -> Option<&Arc<OnceLock<super::SealedNativeOutputWitness>>> {
         self.native_output_witness.get()
     }
-    pub fn verification_requirement(&self) -> Option<FullVerificationReason> {
+    pub(super) fn verification_requirement(&self) -> Option<FullVerificationReason> {
         self.mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .verification_requirement
     }
 
-    pub fn observed_source_facts(&self) -> Option<super::RetainedSourceFacts> {
+    pub(super) fn observed_source_facts(&self) -> Option<super::RetainedSourceFacts> {
         self.mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -132,7 +132,7 @@ impl RecordedOutput {
     /// verified against its own source facts and claims nothing upstream, so
     /// an output that consumed others carries none: after a restore it starts
     /// Fresh and consumes its upstreams again, never a stale reuse.
-    pub fn checkpoint_source_facts(
+    pub(super) fn checkpoint_source_facts(
         &self,
     ) -> Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
     {
@@ -161,7 +161,7 @@ impl RecordedOutput {
             .cloned()
     }
 
-    pub fn restore(
+    pub(super) fn restore(
         &self,
         facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
@@ -190,7 +190,7 @@ impl RecordedOutput {
         }
     }
 
-    pub fn require_verification(&self, reason: FullVerificationReason) {
+    pub(super) fn require_verification(&self, reason: FullVerificationReason) {
         self.mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

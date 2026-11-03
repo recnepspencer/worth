@@ -10,7 +10,7 @@ mod checkpoint;
 mod storage;
 use storage::CorrespondenceStorage;
 
-pub mod candidate;
+mod candidate;
 pub(in crate::domain_computation::primary_graph::application_attempt) use candidate::WorthQueryApplicationOutputCorrespondenceCandidate;
 
 mod family_entry;
@@ -20,7 +20,7 @@ mod projection;
 pub use projection::WorthQueryApplicationOutputEntity;
 pub use projection::WorthQueryApplicationOutputProjectionDenial;
 
-pub mod role_use;
+mod role_use;
 pub(in crate::domain_computation::primary_graph) use role_use::OutputRoleUse;
 
 mod typed;
@@ -35,11 +35,11 @@ struct CommittedOutputBinding {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryCheckpointOutputRole {
-    pub role: String,
-    pub posture: WorthQueryApplicationOutputPosture,
-    pub entity_name: String,
-    pub entity: EntityId,
+pub(in crate::domain_computation::primary_graph) struct WorthQueryCheckpointOutputRole {
+    pub(in crate::domain_computation::primary_graph) role: String,
+    pub(in crate::domain_computation::primary_graph) posture: WorthQueryApplicationOutputPosture,
+    pub(in crate::domain_computation::primary_graph) entity_name: String,
+    pub(in crate::domain_computation::primary_graph) entity: EntityId,
 }
 
 /// Sealed role-to-identity correspondence resolved from one Relational commit.
@@ -49,14 +49,14 @@ pub struct WorthQueryCheckpointOutputRole {
 /// [`WorthQueryApplicationTypedOutputCorrespondence`], which checks the
 /// contract once and then checks every role read at compile time.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct WorthQueryApplicationOutputCorrespondence {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOutputCorrespondence {
     binding_type: Option<TypeId>,
     contract_type: Option<TypeId>,
     storage: std::sync::Arc<CorrespondenceStorage>,
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
-    pub fn native_witness_roles(
+    pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str, EntityId)> + Clone
     {
@@ -85,7 +85,7 @@ impl WorthQueryApplicationOutputCorrespondence {
             .collect()
     }
 
-    pub fn workflow_content_identity(
+    pub(in crate::domain_computation::primary_graph) fn workflow_content_identity(
         &self,
     ) -> [u8; 32] {
         use sha2::Digest;
@@ -111,7 +111,7 @@ impl WorthQueryApplicationOutputCorrespondence {
     /// This correspondence read as `Contract`, refused as
     /// [`WorthQueryApplicationOutputProjectionDenial::ForeignContract`] when
     /// the commit was made under another contract.
-    pub fn outputs_of<Contract: 'static>(
+    pub(in crate::domain_computation::primary_graph) fn outputs_of<Contract: 'static>(
         &self,
     ) -> Result<
         WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>,
@@ -158,7 +158,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         self.storage.binding(role).map(|binding| binding.entity)
     }
 
-    pub fn active_entity_for_role(
+    pub(in crate::domain_computation::primary_graph) fn active_entity_for_role(
         &self,
         role: &str,
     ) -> Option<EntityId> {
@@ -171,7 +171,7 @@ impl WorthQueryApplicationOutputCorrespondence {
     /// The entity bound under `role`, or `None` when it is unbound, once the
     /// contract, the declared cardinality, the posture and the entity type
     /// agree with the use.
-    pub fn bound_entity(
+    pub(in crate::domain_computation::primary_graph) fn bound_entity(
         &self,
         role: &OutputRoleUse,
     ) -> Result<Option<EntityId>, WorthQueryApplicationOutputProjectionDenial> {
@@ -210,7 +210,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         }
     }
 
-    pub fn entity_for_binding_role<
+    pub(in crate::domain_computation::primary_graph) fn entity_for_binding_role<
         Binding: 'static,
     >(
         &self,
@@ -259,7 +259,7 @@ impl WorthQueryApplicationOutputCorrespondence {
 
     /// Every member of `Family`, in role-name order, once the contract agrees
     /// with the family's.
-    pub fn family_members<Family>(
+    pub(in crate::domain_computation::primary_graph) fn family_members<Family>(
         &self,
     ) -> Result<
         impl Iterator<

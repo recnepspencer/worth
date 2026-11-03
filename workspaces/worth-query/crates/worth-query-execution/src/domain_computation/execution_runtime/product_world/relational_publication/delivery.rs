@@ -120,7 +120,7 @@ impl WorthQueryProductSharedRoot {
     }
 }
 
-pub fn preserve_delivery_authority(
+pub(in crate::domain_computation) fn preserve_delivery_authority(
     outcome: worth_runtime_bridge::facade::CorrespondenceDeliveryOutcome,
     change: super::WorthQueryPerformedRelationalProductChange,
 ) -> super::WorthQueryPerformedRelationalProductChangeDeliveryOutcome {

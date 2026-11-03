@@ -12,20 +12,20 @@ use std::hash::Hasher;
 use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 mod ordering;
-pub struct PreparedPostingOrdinals {
-    pub ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
+pub(in super::super) struct PreparedPostingOrdinals {
+    ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
 }
-pub struct ProjectedKey {
-    pub hash: u64,
-    pub key: Arc<FactPostingKey>,
-    pub ordinal: usize,
+struct ProjectedKey {
+    hash: u64,
+    key: Arc<FactPostingKey>,
+    ordinal: usize,
 }
-pub struct PostingGroup {
-    pub key: Arc<FactPostingKey>,
-    pub ordinals: OrdSet<usize>,
+struct PostingGroup {
+    key: Arc<FactPostingKey>,
+    ordinals: OrdSet<usize>,
 }
 impl PreparedPostingOrdinals {
-    pub fn prepare(
+    pub(in super::super) fn prepare(
         facts: &(impl FactSequence + ?Sized),
         output_facts: Option<&[WorthQueryApplicationObservedFact]>,
         verification_requirement: &mut Option<FullVerificationReason>,
@@ -63,7 +63,7 @@ impl PreparedPostingOrdinals {
     pub(in super::super) fn into_query_parts(self) -> OrdMap<Arc<FactPostingKey>, OrdSet<usize>> {
         self.ordinals
     }
-    pub fn into_projection(
+    pub(super) fn into_projection(
         self,
         id: u64,
         source_len: usize,
@@ -80,7 +80,7 @@ impl PreparedPostingOrdinals {
     }
 }
 /// Fingerprints order the sort; exact key equality alone groups ordinals.
-pub fn group_projected(
+fn group_projected(
     mut projected: Vec<ProjectedKey>,
 ) -> Result<Vec<PostingGroup>, CompanionPreflightStop> {
     ordering::sort(&mut projected);

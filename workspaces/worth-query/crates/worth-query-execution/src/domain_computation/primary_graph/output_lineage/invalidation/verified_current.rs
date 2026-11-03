@@ -22,7 +22,7 @@ use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
 
-pub enum PreparedVerifiedCurrent {
+pub(in crate::domain_computation::primary_graph) enum PreparedVerifiedCurrent {
     AlreadyCurrent {
         cell: CompanionBranchCell<BranchMarkRoot>,
         image: CompanionBranchImage<BranchMarkRoot>,
@@ -32,13 +32,13 @@ pub enum PreparedVerifiedCurrent {
     LiveEdit(PreparedSettlementRegistration),
 }
 
-pub struct StoppedVerifiedCurrent {
+pub(in crate::domain_computation::primary_graph) struct StoppedVerifiedCurrent {
     reason: CompanionCellEditStop,
     _prepared: Option<StoppedSettlementRegistration>,
     _observed: Option<ObservedCurrentCustody>,
 }
 
-pub struct VerifiedCurrentCleanup {
+pub(in crate::domain_computation::primary_graph) struct VerifiedCurrentCleanup {
     _observed: Option<ObservedCurrentCustody>,
     _edited: Option<SettlementRegistrationCleanup>,
 }
@@ -50,13 +50,13 @@ pub(in crate::domain_computation::primary_graph) struct ObservedCurrentCustody {
 }
 
 impl StoppedVerifiedCurrent {
-    pub fn reason(&self) -> CompanionCellEditStop {
+    pub(in crate::domain_computation::primary_graph) fn reason(&self) -> CompanionCellEditStop {
         self.reason
     }
 }
 
 impl PreparedVerifiedCurrent {
-    pub fn install(
+    pub(in crate::domain_computation::primary_graph) fn install(
         self,
     ) -> Result<VerifiedCurrentCleanup, StoppedVerifiedCurrent> {
         match self {
@@ -103,7 +103,7 @@ impl PreparedVerifiedCurrent {
 impl SourceInvalidationOwner {
     /// This checks the live image only. Historical Clean does not authorize an
     /// edit to downstream pending marks at the selected current source.
-    pub fn prepare_verified_current(
+    pub(in crate::domain_computation::primary_graph) fn prepare_verified_current(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,

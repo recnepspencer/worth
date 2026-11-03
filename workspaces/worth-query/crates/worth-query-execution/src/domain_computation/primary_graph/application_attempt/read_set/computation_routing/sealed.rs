@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::Arc;
 
-pub struct PreparedComputationFacts
+pub(in crate::domain_computation::primary_graph::application_attempt::read_set) struct PreparedComputationFacts
 {
     index: Arc<ComputationFactIndex>,
     metadata: Arc<
@@ -18,10 +18,10 @@ pub struct PreparedComputationFacts
 }
 
 impl SealedComputationFacts {
-    pub fn has_aggregate(&self) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn has_aggregate(&self) -> bool {
         self.index.aggregate
     }
-    pub fn has_structural_walk(&self) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn has_structural_walk(&self) -> bool {
         self.index.structural_walk
     }
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn retain_projection(
@@ -94,7 +94,7 @@ impl SealedComputationFacts {
         })
     }
 
-    pub fn fact(
+    pub(in crate::domain_computation::primary_graph) fn fact(
         &self,
         key: &WorthQueryApplicationFactKey,
     ) -> Option<&WorthQueryApplicationObservedFact> {
@@ -105,7 +105,7 @@ impl SealedComputationFacts {
         self.index.observation_work
     }
 
-    pub fn facts(
+    pub(in crate::domain_computation::primary_graph) fn facts(
         &self,
     ) -> impl Iterator<
         Item = (
@@ -129,7 +129,7 @@ impl SealedComputationFacts {
         Arc::clone(&self.index)
     }
 
-    pub fn at_ordinal(
+    pub(in crate::domain_computation::primary_graph) fn at_ordinal(
         &self,
         ordinal: usize,
     ) -> Option<(
@@ -189,7 +189,7 @@ impl PreparedComputationFacts {
         }
     }
 
-    pub fn bind_fixture(self, original: FactPayload) -> SealedComputationFacts {
+    pub(super) fn bind_fixture(self, original: FactPayload) -> SealedComputationFacts {
         self.finish(original, layout::SealedReadLayout::OwnerFixture, None)
     }
 }

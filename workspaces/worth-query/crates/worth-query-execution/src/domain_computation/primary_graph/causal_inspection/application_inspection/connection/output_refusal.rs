@@ -44,7 +44,7 @@ impl WorthQueryProducerOutputConnectionDenial {
         }
     }
 
-    pub fn include(&mut self, candidate: Self) {
+    pub(super) fn include(&mut self, candidate: Self) {
         if candidate.prefix() > self.prefix() {
             *self = candidate;
         }

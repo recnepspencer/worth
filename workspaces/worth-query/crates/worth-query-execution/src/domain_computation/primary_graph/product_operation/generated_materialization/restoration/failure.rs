@@ -43,7 +43,7 @@ pub enum WorthQueryGeneratedOutputRestorationFailureCause {
     PublicationNoEffect(WorthQueryGeneratedOutputPublicationNoEffect),
 }
 
-pub fn preparation_failure_cause(
+pub(super) fn preparation_failure_cause(
     error: &RelationalMaterializationError,
 ) -> WorthQueryGeneratedOutputRestorationFailureCause {
     use WorthQueryGeneratedOutputRestorationFailureCause as Cause;

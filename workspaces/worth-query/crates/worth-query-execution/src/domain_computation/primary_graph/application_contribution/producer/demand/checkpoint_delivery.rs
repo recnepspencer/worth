@@ -16,10 +16,10 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 mod selected;
 mod unpublished;
 
-pub struct PreparedSelectedDelivery<'a> {
-    pub lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
-    pub ordinal: usize,
-    pub preserved: bool,
+struct PreparedSelectedDelivery<'a> {
+    lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+    ordinal: usize,
+    preserved: bool,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -134,7 +134,7 @@ where
         }
     }
 
-    pub fn deliver_output_checkpoint_with_finish(
+    fn deliver_output_checkpoint_with_finish(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 

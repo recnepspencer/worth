@@ -22,7 +22,7 @@ impl RequiredWorkMembership {
         );
         work
     }
-    pub fn fixture_is_unresolved(&self) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn fixture_is_unresolved(&self) -> bool {
         self.state.lock().unwrap().unresolved_initial
     }
 }

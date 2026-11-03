@@ -2,7 +2,7 @@ use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn retain_performed_source(
+    pub(in crate::domain_computation::primary_graph) fn retain_performed_source(
         &self,
         source: WorthQueryPerformedOutputDemandSource,
         preparation: &super::super::WorthQueryRequiredOutputSourcePreparation,

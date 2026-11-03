@@ -1,14 +1,14 @@
 //! An invisible lineage address prepared before the World owner is contacted.
 
-pub mod cancellation;
+mod cancellation;
 
 mod capacity;
 mod checkpoint_locator;
-pub mod computation;
+mod computation;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use computation::PreparedComputationCustody;
 mod preparation;
-pub mod recovery;
+mod recovery;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
 pub(super) use capacity::denial;
 
@@ -29,38 +29,38 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// The identity stays invisible until the actual performed product head and
 /// sealed output source match this reservation. Drop removes only its vacancy.
 #[must_use = "a prepared output slot must be filled or released"]
-pub struct PreparedOutputLineageSlot {
-    pub required_publication:
+pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlot {
+    pub(in crate::domain_computation::primary_graph) required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
-    pub owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
-    pub source: SemanticSource,
-    pub output_binding_type: TypeId,
-    pub coordinate: ProductCoordinate,
-    pub partition: Option<[u8; 32]>,
-    pub identity: Arc<RecordedSettlementIdentity>,
-    pub record_cell: Arc<OnceLock<RecordedOutput>>,
-    pub partition_cell: Arc<OnceLock<usize>>,
-    pub cancellation: Option<Box<CancelledLineageSlot>>,
-    pub completed_handler_facts: Option<
+    owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    pub(super) source: SemanticSource,
+    pub(super) output_binding_type: TypeId,
+    pub(super) coordinate: ProductCoordinate,
+    pub(super) partition: Option<[u8; 32]>,
+    pub(super) identity: Arc<RecordedSettlementIdentity>,
+    pub(super) record_cell: Arc<OnceLock<RecordedOutput>>,
+    pub(super) partition_cell: Arc<OnceLock<usize>>,
+    cancellation: Option<Box<CancelledLineageSlot>>,
+    pub(super) completed_handler_facts: Option<
         crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,
     >,
-    pub completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
-    pub prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
-    pub native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    pub(super) completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
+    pub(super) prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
+    pub(super) native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// A sealed partitioned computation run and the record its prior state
     /// came from. World recovery carries both unchanged to its replacement slot.
-    pub computation: PreparedComputationCustody,
+    pub(super) computation: PreparedComputationCustody,
     /// A pre-publication work allowance; a larger current fork set is not scanned.
-    pub prior_computation: Option<super::PriorComputationRecord>,
-    pub native_prior_checkpoint:
+    pub(super) prior_computation: Option<super::PriorComputationRecord>,
+    pub(super) native_prior_checkpoint:
         Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
-    pub filled: bool,
+    filled: bool,
 }
 
-pub struct CancelledLineageSlot {
-    pub identity: Arc<RecordedSettlementIdentity>,
-    pub partition: Option<[u8; 32]>,
-    pub next: Option<Box<Self>>,
+pub(super) struct CancelledLineageSlot {
+    identity: Arc<RecordedSettlementIdentity>,
+    partition: Option<[u8; 32]>,
+    pub(super) next: Option<Box<Self>>,
 }
 
 impl CancelledLineageSlot {
@@ -123,7 +123,7 @@ impl PreparedOutputLineageSlot {
         self.completed_handler_facts = Some(boundary);
     }
 
-    pub fn retain_computation(
+    pub(in crate::domain_computation::primary_graph) fn retain_computation(
         &mut self,
         sealed: SealedComputationRetention,
         prior: Option<super::PriorComputationRecord>,

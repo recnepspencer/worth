@@ -11,7 +11,7 @@ use super::super::super::direct_outcome::{
     WorthQueryDirectReadmissionOutcome,
 };
 use super::super::super::evidence::WorthQueryReadmissionProgress;
-pub mod progression;
+pub(super) mod progression;
 mod validation;
 
 use crate::domain_computation::managed_run::{
@@ -71,7 +71,7 @@ struct WorthQueryDirectBridgeReadmissionAttempt {
     contract: WorthQueryAdmittedManagedStepContract,
 }
 
-pub struct WorthQueryDirectBridgeReadmissionPending {
+pub(super) struct WorthQueryDirectBridgeReadmissionPending {
     state: WorthQueryDirectRetainedState,
     execution: WorthQueryRetainedManagedGraphExecution,
     resource: WorthQueryDirectRunReadmissionPending,
@@ -79,7 +79,7 @@ pub struct WorthQueryDirectBridgeReadmissionPending {
     contract: WorthQueryAdmittedManagedStepContract,
 }
 
-pub fn prepare_direct_provider_restore(
+pub(in crate::domain_computation::managed_run::readmission) fn prepare_direct_provider_restore(
     yielded: WorthQueryYieldedDirectRun,
     query_runtime: &WorthQueryExecutionRuntime,
     bridge_runtime: &RuntimeBridge,

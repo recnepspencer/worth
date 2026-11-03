@@ -7,7 +7,7 @@ impl FactPayload {
     /// O(new facts * source depth + output join paths). Each bounded leaf
     /// is admitted before its first copy.
     /// This funds storage only; it grants no original-read or source authority.
-    pub fn copy_funded(
+    pub(in crate::domain_computation::primary_graph) fn copy_funded(
         facts: &(impl FactSequence + ?Sized),
         control: StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {

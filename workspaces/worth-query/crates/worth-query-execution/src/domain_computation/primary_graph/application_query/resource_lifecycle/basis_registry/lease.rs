@@ -13,7 +13,7 @@ use worth_relational::facade::branch::RelationalBranchRetentionLease;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-pub struct WorthQueryApplicationBasisLease {
+pub(crate) struct WorthQueryApplicationBasisLease {
     identity: WorthQueryApplicationBasisIdentity,
     custody: BasisCustody,
 }

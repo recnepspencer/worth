@@ -19,7 +19,7 @@ where
     }
 }
 
-pub fn declared_output_family_bindings<'a>(
+pub(super) fn declared_output_family_bindings<'a>(
     declarations: impl Iterator<Item = &'a super::DeclaredProducerBinding>,
 ) -> BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>> {
     let mut families = BTreeMap::<OutputFamilyIdentity, Vec<(TypeId, String)>>::new();

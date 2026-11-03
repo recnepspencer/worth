@@ -3,7 +3,7 @@ use super::*;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 impl WorthQueryObservedSourceMeaningRegistry {
-    pub fn intern_compared(
+    pub(in crate::domain_computation::primary_graph) fn intern_compared(
         &self,
         query: &[u8; 32],
         parameters: &[u8; 32],
@@ -215,7 +215,7 @@ impl WorthQueryObservedSourceMeaningRegistry {
         )
     }
 
-    pub fn intern(
+    pub(in crate::domain_computation::primary_graph) fn intern(
         &self,
         query: &[u8; 32],
         parameters: &[u8; 32],
@@ -228,7 +228,7 @@ impl WorthQueryObservedSourceMeaningRegistry {
         .expect("ordinary equality comparison cannot refuse")
     }
 
-    pub fn intern_result_set(
+    pub(in crate::domain_computation::primary_graph) fn intern_result_set(
         &self,
         query: &[u8; 32],
         parameters: &[u8; 32],

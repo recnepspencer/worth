@@ -12,13 +12,13 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 
 /// A completed physical attempt paired with its exact committed outbox owner.
 /// The transport observation carries no inbound signature or verifier claim.
-pub struct InstalledTransportCompletion {
+pub(in crate::domain_computation::primary_graph) struct InstalledTransportCompletion {
     committed: WorthQueryCommittedDispatchOutboxObservation,
     dispatch: WorthQueryExternalEffectDispatch,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum InstalledTransportCompletionDenial {
+pub(in crate::domain_computation::primary_graph) enum InstalledTransportCompletionDenial {
     NotCompleted,
     CorrelationMismatch,
     CausalMismatch,
@@ -29,7 +29,7 @@ impl InstalledTransportCompletion {
     /// Admit only the actual result of a runtime-admitted dispatch attempt.
     /// `WorthQueryExternalEffectDispatch` is sealed by the dispatch owner; the
     /// source row is independently sealed by the Relational observation owner.
-    pub fn from_observed_dispatch(
+    pub(in crate::domain_computation::primary_graph) fn from_observed_dispatch(
         committed: WorthQueryCommittedDispatchOutboxObservation,
         dispatch: &WorthQueryExternalEffectDispatch,
     ) -> Result<Self, InstalledTransportCompletionDenial> {
@@ -163,7 +163,7 @@ impl UnpublishedInstalledTransportCompletion {
 }
 
 #[derive(Debug)]
-pub enum InstalledTransportPublicationDenial {
+pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicationDenial {
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     ForeignRelationalRuntime,
     ForeignProductWorld,
@@ -177,7 +177,7 @@ pub enum InstalledTransportPublicationDenial {
 }
 
 #[must_use = "retain actual dispatch evidence and any World recovery custody"]
-pub enum InstalledTransportPublicationOutcome {
+pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicationOutcome {
     AlreadyCompleted,
     Performed(PerformedInstalledTransportCompletion),
     ProductUnpublished(UnpublishedInstalledTransportCompletion),

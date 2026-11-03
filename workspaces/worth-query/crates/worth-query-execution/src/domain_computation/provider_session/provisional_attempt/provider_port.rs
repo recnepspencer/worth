@@ -82,7 +82,7 @@ pub struct WorthQueryProvisionalOverlayAdmission {
 }
 
 impl WorthQueryProvisionalOverlayAdmission {
-    pub fn new(
+    pub(in crate::domain_computation) fn new(
         session: crate::domain_computation::provider_session::WorthQueryProviderSessionView<'_>,
         binding_identity: &str,
         program_identity: &str,
@@ -240,7 +240,7 @@ impl WorthQueryProvisionalOverlayEvidence {
         observed == expected.len()
     }
 
-    pub fn view(&self) -> WorthQueryProvisionalOverlayEvidenceView<'_> {
+    pub(crate) fn view(&self) -> WorthQueryProvisionalOverlayEvidenceView<'_> {
         WorthQueryProvisionalOverlayEvidenceView { evidence: self }
     }
 }

@@ -4,21 +4,21 @@ use super::member_stop::StopRecording;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry;
 
-pub enum RefusalRow<'a> {
+pub(super) enum RefusalRow<'a> {
     Member,
     HeldHead(&'a WorthQueryOutputDemandKey),
 }
-pub enum RefusalEnd {
+pub(super) enum RefusalEnd {
     Held,
     QueueBudget,
 }
 /// A caller keeps its continuation for recovery; a queue refusal ends it.
-pub enum RefusalCustody<'a, Schema: ApplicationSchema> {
+pub(super) enum RefusalCustody<'a, Schema: ApplicationSchema> {
     Caller,
     Queue(&'a mut RequiredContinuations<Schema>),
 }
 
-pub struct RefusingMember<'a, Schema: ApplicationSchema> {
+pub(super) struct RefusingMember<'a, Schema: ApplicationSchema> {
     pub registry: &'a WorthQueryOutputDemandRegistry,
     pub member: &'a mut RequiredMember,
     pub row: RefusalRow<'a>,
@@ -44,7 +44,7 @@ impl<'a, Schema: ApplicationSchema + 'static> RefusingMember<'a, Schema> {
         }
     }
 
-    pub fn end(
+    pub(super) fn end(
         self,
         stop: WorthQueryOutputDemandDenial,
         recording: StopRecording,
@@ -96,7 +96,7 @@ pub(super) fn member_stop(
 impl RefusalEnd {
     /// The caller's refusal returns before this door. A held queue row leaves
     /// its cursor open; a queue-budget stop invokes the owner's canonical end.
-    pub fn finish<T>(self, finish_cursor: impl FnOnce() -> T) -> Option<T> {
+    pub(super) fn finish<T>(self, finish_cursor: impl FnOnce() -> T) -> Option<T> {
         match self {
             Self::Held => None,
             Self::QueueBudget => Some(finish_cursor()),

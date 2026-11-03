@@ -72,21 +72,21 @@ pub struct WorthQueryApplicationLiveLease<
     query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     parameters: ApplicationQueryParameterSet<Query>,
-    pub controls: WorthQueryApplicationLiveControls,
+    controls: WorthQueryApplicationLiveControls,
     _opening_product: crate::basis::WorthQueryProductBranchLease,
     governance: super::super::disclosure::WorthQueryApplicationQueryGovernance,
     scope_identity: AspectValue,
-    pub basis: Option<WorthQueryManagedLowerExecutionBasis>,
+    basis: Option<WorthQueryManagedLowerExecutionBasis>,
     graph_work:
         Option<crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession>,
     read_proof:
         Option<crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof>,
-    pub initial_read_work:
+    initial_read_work:
         Option<crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork>,
     basis_release: Option<super::super::WorthQueryApplicationBasisReleaseReceipt>,
     read_completion:
         Option<crate::domain_computation::provider_session::WorthQueryGraphReadCompletion>,
-    pub queue: WorthQueryLiveCauseQueue<
+    queue: WorthQueryLiveCauseQueue<
         <Binding::PayloadBinding as ApplicationStructuredValueBinding>::Value,
     >,
     _target: PhantomData<fn() -> (Principal, PrincipalIdentity, Target, Binding)>,
@@ -134,7 +134,7 @@ where
         self.queue.buffered_cause_count()
     }
 
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {

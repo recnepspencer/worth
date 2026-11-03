@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 #[derive(Clone)]
-pub struct WorthQueryApplicationEmission {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmission {
     effect: &'static str,
     payload_type: WorthQueryPortableTypeIdentity,
     payload_type_id: TypeId,
@@ -134,16 +134,16 @@ impl WorthQueryApplicationEmission {
             .flatten()
     }
 
-    pub const fn effect(&self) -> &'static str {
+    pub(crate) const fn effect(&self) -> &'static str {
         self.effect
     }
 
-    pub fn payload<Payload: 'static>(&self) -> Option<&Payload> {
+    pub(crate) fn payload<Payload: 'static>(&self) -> Option<&Payload> {
         self.payload.downcast_ref()
     }
 }
 
-pub struct WorthQueryAdmittedApplicationEmissionBatch {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedApplicationEmissionBatch {
     emissions: Vec<WorthQueryApplicationEmission>,
 }
 

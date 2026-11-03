@@ -8,7 +8,7 @@ use super::selection::SelectedReadyReadmission;
 use super::*;
 
 /// Each node funds its own Box and interest key. No source is reconstructed.
-pub struct RequestedOutputReadClaim
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct RequestedOutputReadClaim
 {
     node: Box<RequestedReadNode>,
     // Refund after the interest key and physical node backing leave custody.
@@ -63,7 +63,7 @@ impl WorthQueryOutputDemandRegistry {
     /// The issuer's exact settlement already joined `key` on this native basis.
     /// Claim only an idle Ready with its installed source, entry and membership.
     /// The normal actor and installed executor still prove currentness afterward.
-    pub fn claim_cached_requested_ready(
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn claim_cached_requested_ready(
         &self,
         key: &WorthQueryOutputDemandKey,
     ) -> Result<

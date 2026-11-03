@@ -5,7 +5,7 @@ use super::{
     WorthQueryApplicationObservedRelation,
 };
 
-pub fn remains_equal(
+pub(super) fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

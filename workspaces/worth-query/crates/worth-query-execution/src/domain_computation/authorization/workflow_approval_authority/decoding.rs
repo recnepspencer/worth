@@ -3,7 +3,7 @@ use super::super::WorkflowApprovalRequestDecodingDenial as Denial;
 use super::*;
 use worth_execution::ExecutionRequest;
 
-pub struct DecodedApprovalPrincipal {
+pub(in crate::domain_computation) struct DecodedApprovalPrincipal {
     value: WorthQueryDurablePrincipalCurrentness,
     _funding: Arc<ActorCodecFunding>,
 }
@@ -14,7 +14,7 @@ impl DecodedApprovalPrincipal {
     }
 }
 
-pub struct DecodedApprovalLineage {
+pub(in crate::domain_computation) struct DecodedApprovalLineage {
     value: super::super::WorthQueryDurableCapabilityLineage,
     _text_funding: Arc<ActorCodecFunding>,
     _node_funding: Arc<ActorCodecFunding>,
@@ -28,7 +28,7 @@ impl DecodedApprovalLineage {
     }
 }
 
-pub fn decode_principal(
+pub(in crate::domain_computation) fn decode_principal(
     execution: &ExecutionRequest<'_, '_>,
     encoded: &str,
 ) -> Result<DecodedApprovalPrincipal, Denial> {
@@ -44,7 +44,7 @@ pub fn decode_principal(
     })
 }
 
-pub fn decode_lineage(
+pub(in crate::domain_computation) fn decode_lineage(
     execution: &ExecutionRequest<'_, '_>,
     encoded: &str,
 ) -> Result<DecodedApprovalLineage, Denial> {

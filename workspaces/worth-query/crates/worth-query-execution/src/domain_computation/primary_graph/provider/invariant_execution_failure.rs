@@ -65,7 +65,7 @@ pub(super) fn map_transaction_staging_failure(
     )
 }
 
-pub fn map_validation_failure(
+pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
     failure: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> WorthQueryInvariantExecutionFailure {
     use worth_relational::facade::mvcc::{

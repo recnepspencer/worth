@@ -26,7 +26,7 @@ impl WorthQueryInvalidationResources {
         resources.attach_runtime_observations();
         resources
     }
-    pub fn attach_runtime_observations(&self) {
+    pub(in crate::domain_computation) fn attach_runtime_observations(&self) {
         crate::domain_computation::invalidation_equivalence_control::attach_constructed_receiver(
             &self.oracle,
         );
@@ -36,7 +36,7 @@ impl WorthQueryInvalidationResources {
     ) -> &Arc<InvalidationOracleReceiver> {
         &self.oracle
     }
-    pub fn invalidation_equivalence_is_armed(&self) -> bool {
+    pub(in crate::domain_computation) fn invalidation_equivalence_is_armed(&self) -> bool {
         self.oracle
             .oracle_guards
             .load(std::sync::atomic::Ordering::Acquire)

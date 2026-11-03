@@ -5,7 +5,7 @@ use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 /// Optional authored-order handoff, never a second authoritative lookup index.
 /// Projected facts use canonical store output directly. Ordinary source arrays
 /// already in authored order should bypass this bridge and retain that order.
-pub fn restore_authored_order<T>(
+pub(in crate::domain_computation::primary_graph) fn restore_authored_order<T>(
     records: ExecutionArray<RetainedFact<T>>,
     policy: super::StorageControl<'_, '_>,
 ) -> Result<ExecutionArray<RetainedFact<T>>, StoreDenial> {

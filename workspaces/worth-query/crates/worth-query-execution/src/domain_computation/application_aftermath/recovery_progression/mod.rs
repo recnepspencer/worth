@@ -1,11 +1,11 @@
 //! Recovery handle progression transitions (Gate 8.3 / R8.30 / Gate 8.7).
 
-pub mod authority;
-pub mod binding_axis;
+mod authority;
+mod binding_axis;
 mod compensate;
 mod disclose;
 mod dispose;
-pub mod expiry;
+mod expiry;
 mod inspect;
 mod reconcile;
 mod redispatch;

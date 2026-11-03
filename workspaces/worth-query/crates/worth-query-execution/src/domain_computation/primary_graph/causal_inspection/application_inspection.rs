@@ -9,7 +9,7 @@ pub use availability::{
     WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionRetainedEvidence,
     WorthQueryInspectionSupplierEvidence,
 };
-pub mod admission;
+mod admission;
 mod connection;
 mod source_original;
 pub use connection::{
@@ -17,8 +17,8 @@ pub use connection::{
     WorthQueryProducerConnectionDenial, WorthQueryProducerEvaluationDecision,
     WorthQueryProducerEvaluationDenial, WorthQueryProducerOutputConnectionDenial,
 };
-pub mod identity;
-pub mod report;
+mod identity;
+mod report;
 mod rich;
 pub use rich::{
     WorthQueryApplicationEvidenceFamily, WorthQueryApplicationMaterializationPolicy,
@@ -30,9 +30,9 @@ pub use rich::{
     WorthQueryMaterializedSourceField, WorthQueryMaterializedSourceFieldEffect,
     WorthQueryProjectionMaterializationRefusal,
 };
-pub mod request;
+mod request;
 mod result;
-pub mod stop;
+mod stop;
 pub use request::{
     WorthQueryApplicationInspectionRequest, WorthQueryChangedInspectionRequest,
     WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryConnectedInspectionRequest,
@@ -61,6 +61,6 @@ pub use stop::{
     WorthQueryManagedGraphWorkSessionStartDenial,
 };
 
-pub mod target;
+mod target;
 
 pub(in crate::domain_computation) use target::WorthQueryApplicationInspectionTarget;

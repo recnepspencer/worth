@@ -162,7 +162,7 @@ pub(super) fn prepare(
 }
 
 /// Association only: the caller separately validates and consumes real readiness evidence.
-pub fn dependency_matches_output(
+pub(in super::super) fn dependency_matches_output(
     dependency: &worth_runtime_bridge::facade::BridgeSemanticDependencyCandidate,
     field: &InstalledProducerOutputEquivalence,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,

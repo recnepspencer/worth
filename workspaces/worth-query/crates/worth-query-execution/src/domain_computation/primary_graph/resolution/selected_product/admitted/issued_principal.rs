@@ -2,7 +2,7 @@
 use super::*;
 /// Principal accepted by the installed decoder on this exact selected root.
 /// The selected operation remains borrowed for the whole scoped Query read.
-pub struct WorthQueryIssuedSelectedPrincipal<
+pub(in crate::domain_computation) struct WorthQueryIssuedSelectedPrincipal<
     'selected,
     'runtime,
     Schema,
@@ -21,7 +21,7 @@ pub struct WorthQueryIssuedSelectedPrincipal<
 impl<Schema, Principal, PrincipalIdentity>
     WorthQueryIssuedSelectedPrincipal<'_, '_, Schema, Principal, PrincipalIdentity>
 {
-    pub fn principal(
+    pub(in crate::domain_computation) fn principal(
         &self,
     ) -> &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
         &self.principal

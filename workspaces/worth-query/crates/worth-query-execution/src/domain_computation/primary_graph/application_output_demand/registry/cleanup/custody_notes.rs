@@ -3,25 +3,25 @@ use super::super::{DemandRegistryState, SourceCustody};
 use worth_runtime_world::facade::CompositeCommitIdentity as Commit;
 
 #[derive(Default)]
-pub struct CustodyCleanupQueue {
+pub(in super::super) struct CustodyCleanupQueue {
     pub head: Option<Commit>,
     tail: Option<Commit>,
     pub len: usize,
 }
 
 #[derive(Default)]
-pub struct CustodyCleanupLinks {
+pub(in super::super) struct CustodyCleanupLinks {
     pub queued: bool,
     previous: Option<Commit>,
     pub next: Option<Commit>,
 }
 
 impl DemandRegistryState {
-    pub fn pending_custody_prune(&self) -> bool {
+    pub(in super::super) fn pending_custody_prune(&self) -> bool {
         self.custody_cleanup.head.is_some()
     }
 
-    pub fn note_custody(&mut self, commit: &Commit) {
+    pub(in super::super) fn note_custody(&mut self, commit: &Commit) {
         self.custody_cleanup.note(&mut self.source_custody, commit);
     }
 
@@ -38,7 +38,7 @@ impl DemandRegistryState {
 
     /// Existing custody edits can append their changed entries in the same
     /// traversal. Live, unchanged entries never become cleanup debt.
-    pub fn note_custody_changes(
+    pub(in super::super) fn note_custody_changes(
         &mut self,
         mut edit: impl FnMut(&Commit, &mut SourceCustody) -> bool,
     ) {
@@ -126,7 +126,7 @@ impl DemandRegistryState {
         Some(self.take_custody_note(commit).prune())
     }
 
-    pub fn discard_custody(&mut self, commit: &Commit) {
+    pub(in super::super) fn discard_custody(&mut self, commit: &Commit) {
         drop(self.remove_custody(commit));
     }
 }

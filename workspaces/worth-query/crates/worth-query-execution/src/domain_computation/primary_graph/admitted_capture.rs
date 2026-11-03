@@ -1,5 +1,5 @@
 //! One original-request capture posture for opaque authored projections.
-pub mod retained_stage;
+mod retained_stage;
 pub(in crate::domain_computation) mod storage;
 pub(in crate::domain_computation) use retained_stage::{run_retained_stage, RetainedStorageDenial};
 use worth_execution::{
@@ -8,7 +8,7 @@ use worth_execution::{
     WorkCeilingDenial,
 };
 
-pub enum CaptureStop<E> {
+pub(in crate::domain_computation) enum CaptureStop<E> {
     Request(WorkCeilingDenial),
     Kernel(ScopeStop<E>),
 }

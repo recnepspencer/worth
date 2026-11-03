@@ -53,7 +53,7 @@ pub(in crate::domain_computation::primary_graph) enum RequiredRefreshCheckpoint 
 
 /// A temporary real interest in the exact Ready row selected for a required
 /// wave. The key's owned String remains funded until its interest drops.
-pub struct SelectedRequiredRefreshClaim {
+pub(in crate::domain_computation::primary_graph) struct SelectedRequiredRefreshClaim {
     interest: super::super::WorthQueryOutputDemandInterest,
 
     selected: SelectedReadyReadmission,

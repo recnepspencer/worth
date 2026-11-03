@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
 
 /// Descriptive position only. No source, permission or currentness grant.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum InstalledScopePosition {
+pub(in crate::domain_computation::primary_graph) enum InstalledScopePosition {
     Physical {
         role: usize,
         scope: usize,
@@ -45,7 +45,7 @@ impl InstalledScopePosition {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum CompletedReadScopes {
+pub(in crate::domain_computation::primary_graph) enum CompletedReadScopes {
     Installed {
         contracts: Arc<Contracts>,
         positions: Arc<ExecutionArray<InstalledScopePosition>>,

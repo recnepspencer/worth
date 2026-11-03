@@ -1,8 +1,8 @@
 //! Discardable execution meaning reconstructed from performed definition facts.
 
-pub mod plan;
-pub mod publication_binding;
-pub mod reconstruction;
+mod plan;
+mod publication_binding;
+mod reconstruction;
 mod reuse;
 
 pub(in crate::domain_computation::primary_graph) use plan::{

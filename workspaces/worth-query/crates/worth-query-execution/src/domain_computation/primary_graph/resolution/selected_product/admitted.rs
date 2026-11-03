@@ -112,7 +112,7 @@ where
         })
     }
 
-    pub fn resolve_authenticated_principal_admitted<
+    pub(in crate::domain_computation::primary_graph) fn resolve_authenticated_principal_admitted<
         Binding,
         Mapping,
         Principal,

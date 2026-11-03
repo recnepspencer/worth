@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// Rebased source facts cannot replace what the computation actually read.
 /// This evidence has no default and derived runtime records must copy it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ComputationSourceEvidence(Origin);
+pub(in crate::domain_computation::primary_graph) struct ComputationSourceEvidence(Origin);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Origin {
@@ -45,7 +45,7 @@ impl ComputationSourceEvidence {
         Self(Origin::CheckpointFacts)
     }
 
-    pub fn unavailable() -> Self {
+    pub(super) fn unavailable() -> Self {
         Self(Origin::Unavailable)
     }
 
@@ -82,7 +82,7 @@ impl CurrentComputation {
 impl ComputationSourceEvidence {
     /// Bind explicitly carried provenance to admitted wire or Native facts.
     /// This does not certify currentness or expose a stale record's facts.
-    pub fn retain_facts(
+    pub(in crate::domain_computation::primary_graph) fn retain_facts(
         self,
         facts: impl Into<
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,

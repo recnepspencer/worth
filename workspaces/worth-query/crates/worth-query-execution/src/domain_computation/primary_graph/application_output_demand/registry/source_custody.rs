@@ -6,15 +6,15 @@ use super::{
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum PreparedOutputRootKind {
+pub(in crate::domain_computation::primary_graph) enum PreparedOutputRootKind {
     Required(TypeId),
     Discovered(TypeId),
 }
 
 #[derive(Default)]
-pub struct SourcePreparationState {
+pub(super) struct SourcePreparationState {
     pub(super) active: usize,
-    pub retired: bool,
+    pub(super) retired: bool,
 }
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
@@ -31,7 +31,7 @@ pub use reservation_control::{
 mod undelivered_root;
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn validate_recovery_root_kind(
+    pub(in crate::domain_computation::primary_graph) fn validate_recovery_root_kind(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         kind: PreparedOutputRootKind,
@@ -105,7 +105,7 @@ impl WorthQueryOutputDemandRegistry {
             .map(|source| source.observation.clone())
     }
 
-    pub fn ensure_prepared_output_source_bound(
+    pub(in crate::domain_computation::primary_graph) fn ensure_prepared_output_source_bound(
         &self,
         commit: &CompositeCommitIdentity,
         source: BoundOutputSource,
@@ -146,7 +146,7 @@ impl WorthQueryOutputDemandRegistry {
         ))
     }
 
-    pub fn bind_prepared_output_source(
+    pub(in crate::domain_computation::primary_graph) fn bind_prepared_output_source(
         &self,
         commit: &CompositeCommitIdentity,
         source: BoundOutputSource,
@@ -257,7 +257,7 @@ impl WorthQueryOutputDemandRegistry {
         Ok(())
     }
 
-    pub fn ensure_discovered_sources_bound(
+    pub(in crate::domain_computation::primary_graph) fn ensure_discovered_sources_bound(
         &self,
         commit: &CompositeCommitIdentity,
         sources: &[BoundOutputSource],
@@ -317,7 +317,7 @@ impl SourceCustody {
         self.retired = Some(cause);
     }
 
-    pub fn retire_superseded_roots(&mut self, successors: &[BoundOutputSource]) {
+    pub(super) fn retire_superseded_roots(&mut self, successors: &[BoundOutputSource]) {
         let retired = self
             .bound_sources
             .as_ref()
@@ -344,7 +344,7 @@ impl SourceCustody {
     }
 }
 
-pub fn root_revision_order(
+pub(super) fn root_revision_order(
     prior: &BoundOutputSource,
     successor: &BoundOutputSource,
 ) -> Option<Ordering> {

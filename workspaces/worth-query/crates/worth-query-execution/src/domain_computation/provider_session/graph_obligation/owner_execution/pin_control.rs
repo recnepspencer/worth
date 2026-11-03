@@ -11,9 +11,9 @@ struct Armed {
     action: Action,
 }
 thread_local! { static ARMED: RefCell<Option<Armed>> = const { RefCell::new(None) }; }
-pub struct PinControlGuardForTest(Option<Armed>);
+pub(in crate::domain_computation) struct PinControlGuardForTest(Option<Armed>);
 impl PinControlGuardForTest {
-    pub fn unavailable_snapshot(
+    pub(in crate::domain_computation) fn unavailable_snapshot(
         skip: usize,
         snapshot: SnapshotHandle,
     ) -> Self {
@@ -28,7 +28,7 @@ impl PinControlGuardForTest {
             action: Action::Cancel(source),
         })
     }
-    pub fn install(armed: Armed) -> Self {
+    fn install(armed: Armed) -> Self {
         assert!(crate::domain_computation::execution_observation::is_installed());
         Self(ARMED.with(|slot| slot.replace(Some(armed))))
     }

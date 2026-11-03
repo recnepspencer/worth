@@ -10,10 +10,10 @@ use crate::domain_computation::primary_graph::application_contribution::Comparat
 
 /// Whether a fact moved. No value of it is built outside the fact module.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct FactMovement(Movement);
+pub(in crate::domain_computation::primary_graph) struct FactMovement(Movement);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Movement {
+pub(in crate::domain_computation::primary_graph) enum Movement {
     Unmoved,
     Moved,
 }
@@ -44,7 +44,7 @@ impl FactMovement {
         })
     }
 
-    pub const fn movement(self) -> Movement {
+    pub(in crate::domain_computation::primary_graph) const fn movement(self) -> Movement {
         self.0
     }
 

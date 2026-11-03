@@ -43,7 +43,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
 }
 
 /// Minted only by a verified stable publication at its exact selected source.
-pub struct StableEqualityConsequence<'selected> {
+pub(in crate::domain_computation::primary_graph) struct StableEqualityConsequence<'selected> {
     partition: Option<[u8; 32]>,
     predecessor: Arc<RecordedSettlementIdentity>,
     successor: Arc<RecordedSettlementIdentity>,
@@ -51,7 +51,7 @@ pub struct StableEqualityConsequence<'selected> {
 }
 
 impl<'selected> StableEqualityConsequence<'selected> {
-    pub fn native_actor_fixture(
+    pub(in crate::domain_computation::primary_graph) fn native_actor_fixture(
         predecessor: Arc<RecordedSettlementIdentity>,
         successor: Arc<RecordedSettlementIdentity>,
         selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,

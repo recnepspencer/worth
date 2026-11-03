@@ -9,10 +9,10 @@ use worth_query_installation::facade::{
 
 /// Every child read borrows the original control. Explicitly accounted reads
 /// also retain their original meter and cumulative reservation.
-pub struct ValueDecodeSession<'a> {
+pub(in crate::domain_computation::primary_graph) struct ValueDecodeSession<'a> {
     pub(super) on_refusal: Option<&'a dyn Fn(Stop)>,
     pub(super) state: &'a super::state::ValueDecodeState,
-    pub checkpoint: Option<&'a dyn Fn(u64) -> Result<(), MapKernelStop>>,
+    pub(super) checkpoint: Option<&'a dyn Fn(u64) -> Result<(), MapKernelStop>>,
     pub(super) poll: &'a dyn Fn() -> Result<(), MapKernelStop>,
 }
 
@@ -34,7 +34,7 @@ impl<'a> ValueDecodeSession<'a> {
         self.state.denial().is_some()
     }
 
-    pub fn denial(&self) -> Option<Stop> {
+    pub(in crate::domain_computation::primary_graph) fn denial(&self) -> Option<Stop> {
         self.state.denial()
     }
 

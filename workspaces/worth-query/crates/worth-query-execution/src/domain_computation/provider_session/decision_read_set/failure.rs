@@ -32,7 +32,7 @@ pub enum WorthQueryDecisionReadSetDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryDecisionReadSetFailure {
     kind: WorthQueryDecisionReadSetDenialKind,
-    pub detail: Arc<str>,
+    detail: Arc<str>,
     allocation: Option<ExecutionAllocationDenial>,
     managed_index:
         Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
@@ -70,7 +70,7 @@ impl WorthQueryDecisionReadSetFailure {
         }
     }
 
-    pub fn with_native_query_read_stop(
+    pub(in crate::domain_computation) fn with_native_query_read_stop(
         mut self,
         stop: worth_relational::facade::runtime::QueryReadExecutionStop,
     ) -> Self {

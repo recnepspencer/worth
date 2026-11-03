@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationQueryAdmissionDenialKind as AdmissionKind,
 };
 
-pub fn query_admission_denied(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn query_admission_denied(
     subject: &str,
     error: WorthQueryApplicationQueryAdmissionDenial,
 ) -> ProducerExecutionStop {
@@ -76,7 +76,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 }
 
 /// Selected Source disclosure preserves the original admitted read or managed cause.
-pub fn selected_source_read_denied(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn selected_source_read_denied(
     subject: &'static str,
     stop: crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
 ) -> ProducerExecutionStop {
@@ -106,7 +106,7 @@ pub fn selected_source_read_denied(
     }
 }
 
-pub fn managed_authority_rejection(
+fn managed_authority_rejection(
     cause: crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenialCause<'_>,
 ) -> bool {
     use crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenialCause as Cause;
@@ -135,7 +135,7 @@ pub fn managed_authority_rejection(
     }
 }
 
-pub fn admission_authority_rejection(kind: AdmissionKind) -> bool {
+fn admission_authority_rejection(kind: AdmissionKind) -> bool {
     matches!(
         kind,
         AdmissionKind::Authorization(_)
@@ -146,7 +146,7 @@ pub fn admission_authority_rejection(kind: AdmissionKind) -> bool {
             | AdmissionKind::ScopeTypeMismatch
     )
 }
-pub fn execution_authority_rejection(kind: ExecutionKind) -> bool {
+fn execution_authority_rejection(kind: ExecutionKind) -> bool {
     matches!(
         kind,
         ExecutionKind::Authorization(_) | ExecutionKind::StalePrincipal | ExecutionKind::StaleScope

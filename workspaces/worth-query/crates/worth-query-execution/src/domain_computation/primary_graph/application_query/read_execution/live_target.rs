@@ -14,7 +14,7 @@ use super::{
     WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
 };
 
-pub fn read_live_target<
+pub(in crate::domain_computation::primary_graph::application_query) fn read_live_target<
     Schema,
     Query,
     Parameters,

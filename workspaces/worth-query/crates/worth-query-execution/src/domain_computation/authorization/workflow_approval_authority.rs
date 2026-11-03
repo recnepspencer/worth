@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-pub mod decoding;
+pub(in crate::domain_computation) mod decoding;
 mod lineage_inventory;
 use crate::domain_computation::primary_graph::workflow::actor::{
     fund_actor_codec, ActorCodecFunding,
@@ -50,7 +50,7 @@ enum PortableSupportRole {
 }
 
 #[derive(Clone)]
-pub struct WorthQueryWorkflowApprovalSupportBasis {
+pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalSupportBasis {
     data: Arc<ApprovalSupportData>,
 }
 struct ApprovalSupportData {
@@ -158,7 +158,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
     )
 }
 
-pub fn decode_workflow_approval_support(
+pub(in crate::domain_computation) fn decode_workflow_approval_support(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     encoded: &str,
 ) -> Result<
@@ -222,7 +222,7 @@ pub fn decode_workflow_approval_support(
 }
 
 #[derive(Clone)]
-pub struct WorthQueryWorkflowApprovalAuthorityBasis {
+pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalAuthorityBasis {
     data: Arc<ApprovalAuthorityData>,
 }
 struct ApprovalAuthorityData {
@@ -238,7 +238,7 @@ struct ApprovalAuthorityData {
 }
 
 impl WorthQueryWorkflowApprovalAuthorityBasis {
-    pub fn from_retained_approval(
+    pub(in crate::domain_computation) fn from_retained_approval(
         request: WorthQueryRetainedCapabilityRequest,
         principal: DecodedApprovalPrincipal,
         grant: EntityId,

@@ -28,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryBoundMutationP
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryBoundMutationPreconditions {
+pub(in crate::domain_computation) struct WorthQueryBoundMutationPreconditions {
     entries: Vec<WorthQueryBoundMutationPrecondition>,
     canonical_digest: Option<CanonicalDigestId>,
     canonical_work: WorthQueryCanonicalWorkEvidence,
@@ -163,7 +163,7 @@ impl WorthQueryBoundMutationPreconditions {
         })
     }
 
-    pub fn identity(&self) -> Option<&[u8; 32]> {
+    pub(in crate::domain_computation) fn identity(&self) -> Option<&[u8; 32]> {
         self.canonical_digest.as_ref().map(CanonicalDigestId::bytes)
     }
 

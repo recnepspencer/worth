@@ -143,7 +143,7 @@ impl WorthQueryProductRetentionFollower for WorthQueryPrimaryGraphProvider {
 
 /// The World commits of `candidates` history still retains. A World that is
 /// not attached or cannot answer keeps them all; nothing is lost but capacity.
-pub fn retained_among(
+fn retained_among(
     world: Option<&RuntimeWorldLifecyclePort>,
     candidates: &[CompositeCommitIdentity],
 ) -> BTreeSet<CompositeCommitIdentity> {

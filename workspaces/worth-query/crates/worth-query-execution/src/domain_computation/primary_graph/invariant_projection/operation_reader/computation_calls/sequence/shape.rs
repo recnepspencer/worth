@@ -1,13 +1,13 @@
 //! Persistent canonical order; ranks are views, never stored suffix positions.
 use super::*;
 use worth_execution::ExecutionOrderedMap;
-pub struct CallShape {
+pub(in crate::domain_computation::primary_graph) struct CallShape {
     pub(super) order: ExecutionOrderedMap<ComputationRead, ()>,
     pub(super) prefix: usize,
     pub(super) _memory: Option<QueryMemoryReservation>,
 }
 impl CallShape {
-    pub fn bytes(&self) -> Option<u64> {
+    pub(super) fn bytes(&self) -> Option<u64> {
         self._memory
             .as_ref()?
             .bytes()
@@ -22,7 +22,7 @@ impl CallShape {
     pub fn call_at(&self, ordinal: usize) -> Option<ComputationRead> {
         self.order.entry_at(ordinal).map(|(read, _)| *read)
     }
-    pub fn len(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.order.len()
     }
     pub(in crate::domain_computation::primary_graph) fn lower_bound(
@@ -36,7 +36,7 @@ impl CallShape {
             })
     }
     /// Prepare identity correspondence before fresh gathers produce charges.
-    pub fn prepare_transition(
+    pub(in crate::domain_computation::primary_graph) fn prepare_transition(
         self: &Arc<Self>,
         inserted: &BTreeSet<ComputationRead>,
         retired: &BTreeSet<ComputationRead>,
@@ -106,7 +106,7 @@ impl CallShape {
 }
 /// Issued only by the sequence's checked edits. It describes correspondence;
 /// the native prior and successful completed run must independently bind it.
-pub struct CallShapeTransition {
+pub(in crate::domain_computation::primary_graph) struct CallShapeTransition {
     pub(super) prior: Arc<CallShape>,
     pub(super) target: Arc<CallShape>,
     pub(super) inserted: ExecutionOrderedMap<ComputationRead, ()>,

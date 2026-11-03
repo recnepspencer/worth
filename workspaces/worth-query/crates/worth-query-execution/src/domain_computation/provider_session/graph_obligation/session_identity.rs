@@ -8,7 +8,7 @@ static NEXT_GRAPH_WORK_MANAGED_RUN_IDENTITY: AtomicU64 = AtomicU64::new(1);
 pub struct WorthQueryGraphWorkManagedRunIdentity(u64);
 
 impl WorthQueryGraphWorkManagedRunIdentity {
-    pub fn mint() -> Option<Self> {
+    pub(super) fn mint() -> Option<Self> {
         {
             let update_counter = &NEXT_GRAPH_WORK_MANAGED_RUN_IDENTITY;
             let mut value = update_counter.load(Ordering::Relaxed);
@@ -56,7 +56,7 @@ impl WorthQueryGraphWorkSessionIdentity {
             worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
         )))
     }
-    pub fn mint() -> Option<Self> {
+    pub(super) fn mint() -> Option<Self> {
         {
             let update_counter = &NEXT_GRAPH_WORK_SESSION_IDENTITY;
             let mut value = update_counter.load(Ordering::Relaxed);

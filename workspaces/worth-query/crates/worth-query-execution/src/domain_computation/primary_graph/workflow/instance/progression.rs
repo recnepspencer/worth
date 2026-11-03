@@ -5,14 +5,14 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::EntityId;
 
 mod accounting;
-pub mod captured_inputs;
+mod captured_inputs;
 mod collection;
-pub mod locator;
+mod locator;
 mod navigation;
 mod replay;
 mod retention;
 
-pub mod update;
+mod update;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph) use update::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct SettledWorkflowTransition {
+pub(in crate::domain_computation::primary_graph) struct SettledWorkflowTransition {
     node: EntityId,
     occurrence: u64,
     outcome: ApplicationWorkflowControlOutcome,
@@ -46,7 +46,7 @@ pub struct SettledWorkflowTransition {
 }
 
 impl SettledWorkflowTransition {
-    pub const fn new(
+    pub(in crate::domain_computation::primary_graph) const fn new(
         node: EntityId,
         occurrence: u64,
         outcome: ApplicationWorkflowControlOutcome,
@@ -60,7 +60,7 @@ impl SettledWorkflowTransition {
         }
     }
 
-    pub const fn occurrence(self) -> u64 {
+    pub(in crate::domain_computation::primary_graph) const fn occurrence(self) -> u64 {
         self.occurrence
     }
 
@@ -88,24 +88,24 @@ impl SettledWorkflowTransition {
 /// must still prove its source revision and live facts current before use. A
 /// cold rebuild of a completed instance excludes its final terminal settlement.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorkflowInstanceProgress {
-    pub captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
-    pub head: EntityId,
-    pub next_occurrence: u64,
-    pub retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
-    pub path_depth: u64,
-    pub path: OrdMap<u64, WorkflowPathFrame>,
-    pub back_blocked_by_operation: bool,
-    pub back_edge_iterations: OrdMap<(EntityId, EntityId), u64>,
-    pub latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
-    pub latest_transition_identities: OrdMap<EntityId, (u64, String)>,
-    pub latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
+pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress {
+    captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
+    head: EntityId,
+    next_occurrence: u64,
+    retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
+    path_depth: u64,
+    path: OrdMap<u64, WorkflowPathFrame>,
+    back_blocked_by_operation: bool,
+    back_edge_iterations: OrdMap<(EntityId, EntityId), u64>,
+    latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
+    latest_transition_identities: OrdMap<EntityId, (u64, String)>,
+    latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
     /// Assessment evidence bytes this instance's own history retains.
-    pub retained_evidence_bytes: u64,
+    retained_evidence_bytes: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorkflowPathFrame {
+struct WorkflowPathFrame {
     source: EntityId,
 }
 
@@ -129,7 +129,7 @@ impl WorkflowInstanceProgress {
         }
     }
 
-    pub fn retained_charge_bytes(&self) -> usize {
+    pub(super) fn retained_charge_bytes(&self) -> usize {
         std::mem::size_of::<Self>()
             .saturating_add(self.captured_input_charge_bytes())
             .saturating_add(accounting::map_charge_bytes(&self.retry_counts))
@@ -174,11 +174,11 @@ impl WorkflowInstanceProgress {
         Ok(progress)
     }
 
-    pub const fn head(&self) -> EntityId {
+    pub(in crate::domain_computation::primary_graph) const fn head(&self) -> EntityId {
         self.head
     }
 
-    pub const fn next_occurrence(&self) -> u64 {
+    pub(in crate::domain_computation::primary_graph) const fn next_occurrence(&self) -> u64 {
         self.next_occurrence
     }
 
@@ -285,7 +285,7 @@ impl WorkflowInstanceProgress {
         self.finish_advance(successor)
     }
 
-    pub fn advance_with(
+    fn advance_with(
         &mut self,
         transition: SettledWorkflowTransition,
         successor: &mut impl FnMut(

@@ -38,7 +38,7 @@ pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: Fa
     composed_aspects: BTreeSet<worth_relational::facade::identity::EntityId>,
 }
 
-pub struct WorthQueryRegisteredProviderEffects {
+pub(super) struct WorthQueryRegisteredProviderEffects {
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     expected_steps: WorthQueryExpectedEffectSteps,
     batch: WorkerIntentBatch,
@@ -186,7 +186,7 @@ impl WorthQueryRegisteredProviderEffects {
         self.output_correspondence.binding_type()
     }
 
-    pub fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
+    pub(super) fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
         self.expected_steps.steps()
     }
 
@@ -200,7 +200,7 @@ impl WorthQueryRegisteredProviderEffects {
         self.expected_steps.preparation_work()
     }
 
-    pub const fn batch(&self) -> &WorkerIntentBatch {
+    pub(super) const fn batch(&self) -> &WorkerIntentBatch {
         &self.batch
     }
 
@@ -267,7 +267,7 @@ impl WorthQueryRegisteredProviderEffects {
         ))
     }
 
-    pub fn into_emissions(self) -> WorthQueryAdmittedApplicationEmissionBatch {
+    pub(super) fn into_emissions(self) -> WorthQueryAdmittedApplicationEmissionBatch {
         self.emissions
     }
 

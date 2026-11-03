@@ -16,7 +16,7 @@ mod batch;
 pub use batch::WorthQueryApplicationBatchReadDenial;
 pub use batch::WorthQueryApplicationBatchResult;
 
-pub mod denial;
+mod denial;
 pub(super) mod outcome;
 pub(super) mod plan_admission;
 use plan_admission::admit_request;
@@ -111,7 +111,7 @@ where
         self.execute_application_query_one_shot_with_request(execution, plan)
     }
 
-    pub fn execute_application_query_one_shot_with_request<
+    pub(in crate::domain_computation) fn execute_application_query_one_shot_with_request<
         Query,
         Parameters,
         QueryResult,
@@ -182,7 +182,7 @@ where
     }
 }
 
-pub fn map_authorized_read_denial(
+pub(super) fn map_authorized_read_denial(
     denial_value: WorthQueryAuthorizedApplicationReadDenial,
     query: &str,
 ) -> WorthQueryApplicationOneShotDenial {

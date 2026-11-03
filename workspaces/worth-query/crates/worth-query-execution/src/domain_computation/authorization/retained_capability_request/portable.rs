@@ -16,7 +16,7 @@ use worth_relational::facade::identity::EntityId;
 use super::{WorthQueryCapabilityContextKey, WorthQueryRetainedCapabilityRequest};
 
 const PORTABLE_VERSION: u8 = 2;
-pub const MAXIMUM_PORTABLE_BYTES: usize = 64 * 1024;
+pub(in crate::domain_computation) const MAXIMUM_PORTABLE_BYTES: usize = 64 * 1024;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -55,7 +55,7 @@ struct PortableRelation {
 }
 
 #[derive(Debug)]
-pub enum WorkflowApprovalRequestEncodingDenial {
+pub(in crate::domain_computation) enum WorkflowApprovalRequestEncodingDenial {
     TooLarge,
     NonPortableValue,
     InvalidRequest,
@@ -63,7 +63,7 @@ pub enum WorkflowApprovalRequestEncodingDenial {
 }
 
 #[derive(Debug)]
-pub enum WorkflowApprovalRequestDecodingDenial {
+pub(in crate::domain_computation) enum WorkflowApprovalRequestDecodingDenial {
     InvalidRequest,
     Actor(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
 }
@@ -83,7 +83,7 @@ impl From<()> for WorkflowApprovalRequestDecodingDenial {
 }
 
 impl WorthQueryRetainedCapabilityRequest {
-    pub fn decode_workflow_approval_request(
+    pub(in crate::domain_computation) fn decode_workflow_approval_request(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         encoded: &str,
     ) -> Result<Self, WorkflowApprovalRequestDecodingDenial> {

@@ -12,16 +12,16 @@ use super::super::RecordedSettlementIdentity;
 use super::fact_key::FactPostingKey;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct FactPosting {
-    pub settlement: Arc<RecordedSettlementIdentity>,
-    pub ordinal: usize,
+pub(super) struct FactPosting {
+    pub(super) settlement: Arc<RecordedSettlementIdentity>,
+    pub(super) ordinal: usize,
 }
 
 /// Why a retained row's first reader compares it in full. Each value is a
 /// reason a row can record. A stop ends the request that meets it instead,
 /// so none is here.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum FullVerificationReason {
+pub(in crate::domain_computation::primary_graph) enum FullVerificationReason {
     NativeRevisionUnavailable,
     NativeFactRevisionUnavailable(usize),
     IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
@@ -62,7 +62,7 @@ impl FullVerificationReason {
 pub(super) struct DeliveryEpoch(Option<CommitId>);
 
 impl DeliveryEpoch {
-    pub const fn initial() -> Self {
+    pub(super) const fn initial() -> Self {
         Self(None)
     }
 
@@ -79,14 +79,14 @@ impl DeliveryEpoch {
 /// advances it once without scanning settlements; individual native verification
 /// can then re-establish a row in that exact epoch.
 #[derive(Clone, Debug)]
-pub struct SettlementMarks {
+pub(super) struct SettlementMarks {
     /// Changes since retained computation, preserved by ordinary dirty clearing.
     pub(super) computation_frontier: Option<OrdSet<usize>>,
     pub(super) work_membership: Option<Arc<RequiredWorkMembership>>,
 
-    pub posting_projection: Arc<super::settlement::PostingProjection>,
+    pub(super) posting_projection: Arc<super::settlement::PostingProjection>,
     pub(super) consumed_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
-    pub facts: super::super::RetainedSourceFacts,
+    pub(super) facts: super::super::RetainedSourceFacts,
     pub(super) output_facts: Option<super::output_facts::RegisteredOutputFacts>,
     pub(super) output_coverage: OutputFactCoverage,
     pub(super) read_basis: Arc<PositionedRelationalSnapshot>,
@@ -134,16 +134,16 @@ pub(super) struct EqualOutputLink {
 }
 
 #[derive(Clone, Debug)]
-pub struct MarkState {
+pub(super) struct MarkState {
     pub(super) source_publications: OrdMap<Arc<crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress>, Arc<super::output_availability::SourcePublicationState>>,
     pub(super) source_publication_postings: OrdMap<super::output_availability::PublicationSourceKey, OrdSet<Arc<crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress>>>,
     pub(super) source_publication_posting_count: usize,
     pub(super) source_publication_head_count: usize,
 
-    pub posting_count: usize,
+    pub(super) posting_count: usize,
 
     pub(super) next_posting_projection: u64,
-    pub posting_bindings: OrdMap<u64, Arc<super::settlement::PostingBindings>>,
+    pub(super) posting_bindings: OrdMap<u64, Arc<super::settlement::PostingBindings>>,
     /// Whole-index upper bound for carried basis allocations. Registration's
     /// initial basis has its own fact ticket; a carried clone is index-owned.
 
@@ -153,14 +153,14 @@ pub struct MarkState {
     pub(super) pending_edge_count: usize,
     pub(super) delivery_epoch: DeliveryEpoch,
     pub(super) last_discontinuity: Option<FullVerificationReason>,
-    pub postings: OrdMap<Arc<FactPostingKey>, OrdSet<u64>>,
-    pub settlements: OrdMap<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>,
+    pub(super) postings: OrdMap<Arc<FactPostingKey>, OrdSet<u64>>,
+    pub(super) settlements: OrdMap<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>,
     pub(super) downstream:
         OrdMap<Arc<RecordedSettlementIdentity>, OrdSet<Arc<RecordedSettlementIdentity>>>,
     pub(super) equal_links: OrdMap<Arc<RecordedSettlementIdentity>, Arc<EqualOutputLink>>,
 }
 
-pub enum SettlementCurrentness<'state> {
+pub(super) enum SettlementCurrentness<'state> {
     Clean,
     Dirty(&'state OrdSet<usize>),
     PendingUpstream(&'state OrdSet<Arc<RecordedSettlementIdentity>>),
@@ -180,7 +180,7 @@ impl MarkState {
         Ok(id)
     }
 
-    pub fn initial() -> Self {
+    pub(super) fn initial() -> Self {
         Self {
             source_publications: OrdMap::new(),
             source_publication_postings: OrdMap::new(),

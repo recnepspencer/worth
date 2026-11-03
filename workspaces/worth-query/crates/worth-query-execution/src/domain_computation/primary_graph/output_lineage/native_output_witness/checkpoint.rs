@@ -12,7 +12,7 @@ impl SealedNativeOutputWitness {
     /// The original output revisions and the decodable producer observations
     /// must both hold at the authentic recovered Native snapshot. Unsupported
     /// fact probes conservatively require ordinary Fresh execution.
-    pub fn checkpoint_facts_current_in(
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_facts_current_in(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &RelationalRuntime,
@@ -52,7 +52,7 @@ impl SealedNativeOutputWitness {
     /// output role. Producer-only legacy payloads cannot invent missing proof.
     /// The roles are indexed once by entity and the facts are read in one
     /// pass, so cost grows with the facts plus the roles, not their product.
-    pub fn from_checkpoint_facts(
+    pub(in crate::domain_computation::primary_graph) fn from_checkpoint_facts(
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         layout: &WorthQueryPrimaryGraphLayout,
         facts: &(impl FactSequence + ?Sized),

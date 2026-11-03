@@ -104,7 +104,7 @@ fn same_row<E>(
     Ok(true)
 }
 
-pub fn same_value<E>(
+fn same_value<E>(
     left: &AspectValue,
     right: &AspectValue,
     admit: &mut impl FnMut(u64) -> Result<(), E>,
@@ -126,7 +126,7 @@ fn same_text<E>(
     Ok(left == right)
 }
 
-pub fn admit_pair_width<E>(
+fn admit_pair_width<E>(
     left: usize,
     right: usize,
     admit: &mut impl FnMut(u64) -> Result<(), E>,

@@ -1,6 +1,6 @@
 //! A finite installed-query schedule. Each read still requires fresh authorization.
 use std::sync::{Arc, Mutex};
-pub mod planning;
+mod planning;
 pub(in crate::domain_computation::primary_graph) use planning::PlannedBatchItem;
 pub use planning::WorthQueryApplicationQueryBatchReadPlan;
 

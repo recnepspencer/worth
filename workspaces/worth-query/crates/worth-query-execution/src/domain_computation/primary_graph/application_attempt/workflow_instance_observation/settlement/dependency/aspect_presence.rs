@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use worth_foundational::facade::AspectKey;
 use worth_relational::facade::identity::{EntityId, KindId};
 
-pub fn decode(
+pub(super) fn decode(
     entity_id: EntityId,
     aspect: Option<String>,
     native_kind: Option<u64>,

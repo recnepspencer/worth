@@ -1,20 +1,20 @@
-pub mod activation;
+pub(crate) mod activation;
 mod admission;
 mod application_publication;
 mod bootstrap;
-pub mod branch_close;
+mod branch_close;
 mod clock;
 mod conditional_recovery;
 mod creation;
 mod history;
 mod installation_denial;
 mod owned_async;
-pub mod owner_cleanup;
+mod owner_cleanup;
 mod publication_binding;
 mod receipt;
-pub mod relational_publication;
-pub mod request_control;
-pub mod resources;
+mod relational_publication;
+mod request_control;
+mod resources;
 mod retirement;
 mod runtime;
 mod shared_root;
@@ -67,7 +67,7 @@ pub use read_observation::installed_source_reads_on_this_thread_for_test;
 
 pub(crate) use read_observation::record_read_for_test as record_installed_source_read_for_test;
 
-pub mod publication_denial;
+pub(crate) mod publication_denial;
 
 mod adoption_preparation;
 

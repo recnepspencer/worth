@@ -1,6 +1,6 @@
 mod access_context;
 mod access_receipt;
-pub mod admission;
+mod admission;
 pub(in crate::domain_computation::primary_graph) use admission::capture_parameters;
 pub(in crate::domain_computation) use admission::CapturedApplicationQueryParameters;
 pub(in crate::domain_computation::primary_graph) use admission::{
@@ -10,9 +10,9 @@ mod admission_preparation;
 mod admitted_result;
 mod authorization_observation;
 mod authorization_work;
-pub mod authorized_read;
-pub mod basis;
-pub mod batch;
+mod authorized_read;
+mod basis;
+mod batch;
 pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
 pub use batch::{
@@ -21,7 +21,7 @@ pub use batch::{
 };
 mod continuation;
 mod control_validation;
-pub mod controls;
+mod controls;
 mod denial;
 mod document_history;
 pub(in crate::domain_computation::primary_graph) use document_history::CompletedMetadataRead;
@@ -31,7 +31,7 @@ pub use document_history::{WorthQueryDocumentHistoryRead, WorthQueryHistoryPrevi
 pub use document_history::{
     WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial,
 };
-pub mod derived_view;
+pub(in crate::domain_computation::primary_graph) mod derived_view;
 mod disclosure;
 mod execution_shape;
 mod execution_validation;
@@ -47,7 +47,7 @@ pub use history::{
 pub use one_shot::WorthQueryApplicationHistoryCaptureResult;
 mod installed_schema_currentness;
 mod live;
-pub mod managed_index;
+pub(in crate::domain_computation::primary_graph) mod managed_index;
 pub(in crate::domain_computation::primary_graph) use managed_index::WatchSlot;
 pub use managed_index::{
     WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
@@ -70,37 +70,37 @@ pub use managed_index::{
 };
 mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;
-pub mod observed_source;
+pub(in crate::domain_computation::primary_graph) mod observed_source;
 pub(in crate::domain_computation) use observed_source::ObservedQueryExpressionContext;
 mod component_result;
-pub mod one_shot;
+mod one_shot;
 mod orbit_result;
 pub use component_result::{
     WorthQueryApplicationQueryComponent, WorthQueryApplicationQueryComponents,
 };
 pub use orbit_result::WorthQueryApplicationQueryOrbit;
-pub mod output_source_observation;
+mod output_source_observation;
 pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
 pub(in crate::domain_computation::primary_graph) use output_source_observation::{
     ObservedQuerySource, SourceQueryObservationStop, SourceQueryReadClosure,
     SourceQueryReaderAccess,
 };
-pub mod projection;
+mod projection;
 pub(in crate::domain_computation::primary_graph) use projection::retained_projection::{
     compare_original_projections, ProjectionComparisonDenial,
 };
 pub(in crate::domain_computation::primary_graph) use projection::{
     ContentScratch, ProjectionContentStorageFault,
 };
-pub mod read_execution;
+mod read_execution;
 pub use read_execution::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
     query_read_kernel_entries_on_this_thread_for_test,
 };
 mod readiness;
-pub mod resource_lifecycle;
+pub(crate) mod resource_lifecycle;
 mod retained_read;
-pub mod runtime_support;
+mod runtime_support;
 pub use access_context::WorthQueryApplicationQueryAccessContext;
 pub use access_receipt::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryOmissionPosture,

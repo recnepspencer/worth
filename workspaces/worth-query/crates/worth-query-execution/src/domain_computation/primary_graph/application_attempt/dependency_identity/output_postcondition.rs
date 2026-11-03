@@ -10,7 +10,7 @@ use super::super::WorthQueryApplicationObservedFact;
 /// effect replaced. Normalizing hides such a replacement, so the commit's
 /// rebase marks those ordinals moved.
 #[derive(Clone, Debug)]
-pub struct OutputCurrentnessFacts {
+pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     performed_inputs: Option<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,

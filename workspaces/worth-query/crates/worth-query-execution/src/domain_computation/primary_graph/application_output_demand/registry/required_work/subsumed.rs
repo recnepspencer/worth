@@ -42,7 +42,7 @@ impl SelectedRequiredWork {
 
     /// A Current inspection covers this row's selected local/initial causes as
     /// well as its settled same-branch hints. Newer marks remain unacknowledged.
-    pub fn acknowledge_current_admitted<T>(
+    pub(in crate::domain_computation::primary_graph) fn acknowledge_current_admitted<T>(
         self,
         proof: CurrentProof<T>,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {

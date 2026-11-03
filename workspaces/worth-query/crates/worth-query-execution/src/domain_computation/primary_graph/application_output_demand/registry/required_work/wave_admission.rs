@@ -8,10 +8,10 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 /// No driver can mint this from a dependency name, level or readiness flag.
 /// The pinned projection remains in owner completion while this token travels.
-pub struct PreparedRequiredInputs {
-    pub runtime: u64,
-    pub root: u64,
-    pub owner: WorthQueryOutputDemandRegistry,
+pub(in crate::domain_computation::primary_graph) struct PreparedRequiredInputs {
+    runtime: u64,
+    root: u64,
+    owner: WorthQueryOutputDemandRegistry,
 }
 impl PreparedRequiredInputs {
     pub(in crate::domain_computation::primary_graph) fn accepts_basis(
@@ -117,7 +117,7 @@ fn requested_read_denial(
 
 /// The sole required-wave dispatch input. Its selected basis stays borrowed
 /// until every compute and owner completion has finished or been discarded.
-pub struct AdmittedRequiredWave<'basis, Key, Payload> {
+pub(in crate::domain_computation::primary_graph) struct AdmittedRequiredWave<'basis, Key, Payload> {
     basis: &'basis PositionedRelationalSnapshot,
     keys: worth_proof::CanonicalUniqueVec<Key>,
     payloads: Vec<Payload>,

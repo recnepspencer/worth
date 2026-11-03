@@ -56,7 +56,7 @@ impl WorthQuerySourceExpectationDenial {
         &self.subject
     }
 
-    pub fn source_retention_denied(
+    pub(in crate::domain_computation::primary_graph) fn source_retention_denied(
         subject: &str,
         denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
     ) -> Self {

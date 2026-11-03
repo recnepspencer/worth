@@ -31,11 +31,11 @@ pub(crate) fn hash_parts(parts: &[String]) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-pub fn test_hash_parts_call_count() -> u64 {
+pub(crate) fn test_hash_parts_call_count() -> u64 {
     TEST_HASH_PARTS_CALL_COUNT.with(std::cell::Cell::get)
 }
 
-pub fn test_hash_parts_domains_since(start: u64) -> Vec<String> {
+pub(crate) fn test_hash_parts_domains_since(start: u64) -> Vec<String> {
     let start = usize::try_from(start).expect("test digest count fits usize");
     TEST_HASH_PARTS_DOMAINS.with(|domains| domains.borrow()[start..].to_vec())
 }

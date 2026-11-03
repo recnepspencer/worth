@@ -1,6 +1,6 @@
 //! Recovery handle module (Gate 8.3).
 
-pub mod binding;
+mod binding;
 mod denial;
 mod handle;
 mod identity;

@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use orbit::D
 
 /// An immutable Query selection witness, retaining its actual physical read facts.
 #[derive(Debug)]
-pub struct WorthQueryObservedRootSelection {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSelection {
     facts: SourceFacts,
     pub(in crate::domain_computation::primary_graph::application_query) orbit:
         Option<DeclaredOrbitSelection>,

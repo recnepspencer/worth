@@ -359,11 +359,11 @@ where
         Ok(candidate)
     }
 
-    pub fn provider_session_resource_count_for_test(&self) -> usize {
+    pub(crate) fn provider_session_resource_count_for_test(&self) -> usize {
         self.primary_provider.application_attempt_resource_count()
     }
 
-    pub fn application_attempt_work_for_test(
+    pub(crate) fn application_attempt_work_for_test(
         &self,
     ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationAttemptWorkSnapshot
     {

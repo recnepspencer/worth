@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::runtime::ManagedIndexSourceProgram;
 
 #[derive(Default)]
-pub struct ManagedSourceInstallation {
+pub(in crate::domain_computation::primary_graph) struct ManagedSourceInstallation {
     sources: BTreeMap<ManagedIndexSourceProgram, Arc<dyn SourceService>>,
     public_cache_owner: bool,
     predicate_routing: bool,

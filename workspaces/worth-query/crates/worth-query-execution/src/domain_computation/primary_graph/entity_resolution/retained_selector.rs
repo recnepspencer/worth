@@ -5,7 +5,7 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::EntityId;
 mod funding;
 
-pub struct WorthQueryObservedScopeSelector {
+pub(in crate::domain_computation) struct WorthQueryObservedScopeSelector {
     locator: AspectFieldLocator,
     value: AspectValue,
     subject: EntityId,
@@ -20,7 +20,7 @@ impl WorthQueryObservedScopeSelector {
     pub(in crate::domain_computation::primary_graph) fn value(&self) -> &AspectValue {
         &self.value
     }
-    pub fn subject(&self) -> EntityId {
+    pub(in crate::domain_computation) fn subject(&self) -> EntityId {
         self.subject
     }
 }

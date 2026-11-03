@@ -13,7 +13,7 @@ use crate::domain_computation::application_aftermath::{
 };
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn progress_accepted_inbound_occurrence(
+    pub(in crate::domain_computation) fn progress_accepted_inbound_occurrence(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,

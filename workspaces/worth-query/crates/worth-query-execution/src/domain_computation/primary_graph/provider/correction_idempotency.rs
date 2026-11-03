@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
-pub enum CorrectionIdempotencyObservation {
+pub(in crate::domain_computation::primary_graph) enum CorrectionIdempotencyObservation {
     Unseen,
     Completed(
         WorthQueryApplicationIdempotencyBinding,
@@ -17,7 +17,7 @@ pub enum CorrectionIdempotencyObservation {
 
 impl WorthQueryPrimaryGraphProvider {
     /// Observation never resumes pending publication or claims a recovery handle.
-    pub fn observe_correction_key(
+    pub(in crate::domain_computation::primary_graph) fn observe_correction_key(
         &self,
         product: &worth_runtime_world::facade::ProductBranchObservation,
         key: &[u8; 32],

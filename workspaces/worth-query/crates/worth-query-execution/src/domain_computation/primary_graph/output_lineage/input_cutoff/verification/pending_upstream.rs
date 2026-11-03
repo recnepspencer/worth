@@ -32,7 +32,7 @@ pub(super) fn resolve<'edges>(
     Ok(Resolution::Resolved(ResolvedPendingUpstreams(())))
 }
 
-pub fn upstream_settled(current: ConsumedOutputCurrentness) -> bool {
+fn upstream_settled(current: ConsumedOutputCurrentness) -> bool {
     match current {
         ConsumedOutputCurrentness::Direct(SourceSettlementCurrentness::Clean)
         | ConsumedOutputCurrentness::CanonicallyEqualClean(_) => true,

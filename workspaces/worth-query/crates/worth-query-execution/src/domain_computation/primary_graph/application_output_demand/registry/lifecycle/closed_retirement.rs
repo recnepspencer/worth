@@ -88,7 +88,7 @@ impl DemandRegistryState {
 
     /// Remove `key`'s row with its claims, which it returns. A superseded
     /// row first hands its settlements to the newest row of its occurrence.
-    pub fn retire_row(
+    pub(in super::super) fn retire_row(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired: &mut Vec<DemandRecord>,
@@ -141,7 +141,7 @@ impl DemandRegistryState {
     /// Move `dependent`'s claim on `upstream` to the newest row of its
     /// occurrence when `upstream` is superseded, its own demands closed, and
     /// that newest row settled Ready. Returns the row the claim left.
-    pub fn follow_newest(
+    pub(in super::super) fn follow_newest(
         &mut self,
         dependent: &WorthQueryOutputDemandKey,
         upstream: &WorthQueryOutputDemandKey,
@@ -213,7 +213,7 @@ pub(super) fn closed_superseded(record: &DemandRecord) -> bool {
 }
 
 /// The newest row of `key`'s occurrence holds a Ready no refresh replaced.
-pub fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
+pub(super) fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
     ready_at_newest(records, newest_of_occurrence(records, key))
 }
 

@@ -14,7 +14,7 @@ use worth_relational::facade::{
 };
 
 /// O(k) in the actual output inventory, never in unrelated instances or business records.
-pub fn append_operation_outputs<'output>(
+pub(in crate::domain_computation::primary_graph) fn append_operation_outputs<'output>(
     layout: &WorthQueryWorkflowLayout,
     transition: CreatedEntityRef,
     binding: &str,

@@ -39,7 +39,7 @@ pub(super) fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Opti
 
 /// The fact `key` names as `snapshot` holds it, or the denial seal gives when
 /// it cannot be observed there.
-pub fn observe_fact(
+pub(in crate::domain_computation::primary_graph) fn observe_fact(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,

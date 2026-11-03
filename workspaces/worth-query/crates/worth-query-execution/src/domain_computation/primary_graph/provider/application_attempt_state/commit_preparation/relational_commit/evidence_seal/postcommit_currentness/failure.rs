@@ -4,15 +4,15 @@ use crate::domain_computation::primary_graph::application_attempt::IndexedSelect
 use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason as Registration;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RebaseVerificationFailure {
+pub(in crate::domain_computation::primary_graph) struct RebaseVerificationFailure {
     reason: Reason,
     registration: Registration,
 }
 impl RebaseVerificationFailure {
-    pub fn reason(&self) -> &Reason {
+    pub(in crate::domain_computation::primary_graph) fn reason(&self) -> &Reason {
         &self.reason
     }
-    pub fn into_reason(self) -> Reason {
+    pub(in crate::domain_computation::primary_graph) fn into_reason(self) -> Reason {
         self.reason
     }
     pub(in crate::domain_computation::primary_graph) fn into_registration_requirement(

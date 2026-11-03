@@ -17,7 +17,7 @@ use crate::domain_computation::application_aftermath::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryObservedPreImageCandidate {
+struct WorthQueryObservedPreImageCandidate {
     read_scope: WorthQueryOperationGraphReadScope,
     value: AspectValue,
     target_record: RecordRef,
@@ -39,12 +39,12 @@ pub(crate) struct WorthQueryRetainedPreImageSeal {
     total_encoded_bytes: usize,
 }
 
-pub struct WorthQueryRetainedPreImageSelection {
+pub(super) struct WorthQueryRetainedPreImageSelection {
     retained: WorthQueryRetainedPreImage,
     candidates_materialized: usize,
 }
 
-pub fn retain_from_attempt<'fact>(
+pub(super) fn retain_from_attempt<'fact>(
     demand: &InstalledPreImageDemand,
     facts: impl Iterator<Item = &'fact WorthQueryPrimaryGraphApplicationDecisionFact>,
     mutation: &ValidatedMutationFootprint,
@@ -62,7 +62,7 @@ pub fn retain_from_attempt<'fact>(
 }
 
 impl WorthQueryRetainedPreImageSelection {
-    pub fn into_parts(self) -> (WorthQueryRetainedPreImage, usize) {
+    pub(super) fn into_parts(self) -> (WorthQueryRetainedPreImage, usize) {
         (self.retained, self.candidates_materialized)
     }
 }
@@ -93,7 +93,7 @@ impl WorthQueryObservedPreImageCandidate {
         )
     }
 
-    pub fn from_observed_field(
+    fn from_observed_field(
         read_scope: WorthQueryOperationGraphReadScope,
         locator: AspectFieldLocator,
         value: AspectValue,
@@ -130,7 +130,7 @@ impl WorthQueryObservedPreImageCandidate {
         &self.value
     }
 
-    pub const fn target_record(&self) -> &RecordRef {
+    const fn target_record(&self) -> &RecordRef {
         &self.target_record
     }
 
@@ -138,12 +138,12 @@ impl WorthQueryObservedPreImageCandidate {
         self.entity_kind
     }
 
-    pub const fn locator(&self) -> &AspectFieldLocator {
+    const fn locator(&self) -> &AspectFieldLocator {
         &self.locator
     }
 }
 
-pub fn retain_matching(
+fn retain_matching(
     demand: &InstalledPreImageDemand,
     candidates: &[WorthQueryObservedPreImageCandidate],
     mutation_is_empty: bool,
@@ -251,13 +251,13 @@ fn candidate_matches_locus(
 }
 
 impl WorthQueryRetainedPreImageSeal {
-    pub fn into_parts(self) -> (Vec<WorthQueryRetainedPreImageFieldSeal>, usize) {
+    pub(crate) fn into_parts(self) -> (Vec<WorthQueryRetainedPreImageFieldSeal>, usize) {
         (self.fields, self.total_encoded_bytes)
     }
 }
 
 impl WorthQueryRetainedPreImageFieldSeal {
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         InstalledPreImageLocus,

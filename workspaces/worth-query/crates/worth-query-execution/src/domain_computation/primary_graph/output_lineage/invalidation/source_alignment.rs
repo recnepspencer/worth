@@ -22,19 +22,19 @@ pub(super) enum EqualOutputCurrentness {
 /// No history is nested inside a MarkState. Historical clearing therefore
 /// retains the earlier state without building recursive history ownership.
 #[derive(Clone, Debug)]
-pub struct BranchMarkRoot {
+pub(in crate::domain_computation::primary_graph) struct BranchMarkRoot {
     /// Shared only by replacements that retain this exact history map.
 
     /// What the oldest retained version shares with versions that have left.
-    pub current: Arc<MarkState>,
+    pub(super) current: Arc<MarkState>,
     pub(super) last_native_marking: Option<super::logical_marking::NativeMarkingReport>,
-    pub past: OrdMap<Option<PatchStreamPosition>, HistoricalMarkState>,
+    pub(super) past: OrdMap<Option<PatchStreamPosition>, HistoricalMarkState>,
 }
 
 #[derive(Clone, Debug)]
-pub struct HistoricalMarkState {
-    pub root_id: u64,
-    pub commit_id: Option<CommitId>,
+pub(super) struct HistoricalMarkState {
+    pub(super) root_id: u64,
+    pub(super) commit_id: Option<CommitId>,
     pub(super) state: Arc<MarkState>,
     pub(super) next_delivery: Arc<RetainedTouchDelivery>,
 }
@@ -55,7 +55,7 @@ enum ReadBasis {
 }
 
 /// Only exact native source selection can construct this observation.
-pub struct SnapshotAlignedMarkState<'selected> {
+pub(super) struct SnapshotAlignedMarkState<'selected> {
     state: Arc<MarkState>,
     retained: Arc<BranchMarkRoot>,
     current_root_id: u64,
@@ -93,7 +93,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         Self::observe_image(&image, selected)
     }
 
-    pub fn observe_image(
+    pub(super) fn observe_image(
         image: &CompanionBranchImage<BranchMarkRoot>,
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Result<Self, FullVerificationReason> {
@@ -148,7 +148,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         }
     }
 
-    pub fn currentness(
+    pub(super) fn currentness(
         &self,
         settlement: &RecordedSettlementIdentity,
     ) -> SettlementCurrentness<'_> {

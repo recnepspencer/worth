@@ -6,12 +6,12 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::ReadyCompletion;
 
-pub enum WorthQueryPendingOutputDelivery {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryPendingOutputDelivery {
     Change(WorthQueryPerformedRelationalProductChange),
     NoChange,
 }
 
-pub enum WorthQueryOutputCheckpoint {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputCheckpoint {
     PublicationPending {
         owner: crate::domain_computation::primary_graph::application_contribution::PendingProducerPublication,
         ready_backing: super::PreparedReadyBacking,
@@ -71,7 +71,7 @@ impl WorthQueryOutputCheckpoint {
     }
 }
 
-pub enum WorthQueryOutputAdvancement {
+pub(super) enum WorthQueryOutputAdvancement {
     Idle,
     Claimed(WorthQueryOutputClaimIdentity),
     Stopped {
@@ -80,21 +80,21 @@ pub enum WorthQueryOutputAdvancement {
     },
 }
 
-pub struct WorthQueryOutputProgress {
+pub(super) struct WorthQueryOutputProgress {
     generation: Option<super::ready_backing::OutputCheckpointGeneration>,
     undelivered: Option<super::publication_head::UndeliveredPublication>,
     publication_head: Option<std::sync::Arc<std::sync::atomic::AtomicUsize>>,
     /// Exact owner-issued commit retained while the sole full checkpoint is
     /// temporarily claimed for delivery. This fixed identity replaces a deep
     /// descriptive receipt clone after producer effects.
-    pub published_commit: Option<CompositeCommitIdentity>,
-    pub checkpoint: Option<WorthQueryOutputCheckpoint>,
+    pub(super) published_commit: Option<CompositeCommitIdentity>,
+    pub(super) checkpoint: Option<WorthQueryOutputCheckpoint>,
     advancement: WorthQueryOutputAdvancement,
     pub(super) next_claim: u64,
 }
 
 impl WorthQueryOutputProgress {
-    pub fn new(checkpoint: WorthQueryOutputCheckpoint) -> Self {
+    pub(super) fn new(checkpoint: WorthQueryOutputCheckpoint) -> Self {
         let (output, retired_observation) = Self::new_with_detached_observation(checkpoint);
         drop(retired_observation);
         output
@@ -130,7 +130,7 @@ impl WorthQueryOutputProgress {
         )
     }
 
-    pub fn restored(completion: ReadyCompletion) -> Self {
+    pub(super) fn restored(completion: ReadyCompletion) -> Self {
         Self {
             generation: Some(completion.generation()),
             published_commit: None,
@@ -142,7 +142,7 @@ impl WorthQueryOutputProgress {
         }
     }
 
-    pub fn stopped_without_checkpoint(denial: WorthQueryOutputDemandDenial) -> Self {
+    pub(super) fn stopped_without_checkpoint(denial: WorthQueryOutputDemandDenial) -> Self {
         let mut output = Self {
             generation: None,
             undelivered: None,
@@ -156,14 +156,14 @@ impl WorthQueryOutputProgress {
         output
     }
 
-    pub fn owns_checkpoint(&self, checkpoint: &WorthQueryOutputCheckpoint) -> bool {
+    pub(super) fn owns_checkpoint(&self, checkpoint: &WorthQueryOutputCheckpoint) -> bool {
         self.generation
             .as_ref()
             .is_some_and(|generation| generation.same(&checkpoint.generation()))
     }
 
     /// Disposal borrows present custody without reopening stopped business work.
-    pub fn claim_stopped_checkpoint_for_close(
+    pub(super) fn claim_stopped_checkpoint_for_close(
         &mut self,
     ) -> Option<(WorthQueryOutputClaimIdentity, WorthQueryOutputCheckpoint)> {
         let WorthQueryOutputAdvancement::Stopped {
@@ -185,19 +185,19 @@ impl WorthQueryOutputProgress {
         ))
     }
 
-    pub fn advancement(&self) -> &WorthQueryOutputAdvancement {
+    pub(super) fn advancement(&self) -> &WorthQueryOutputAdvancement {
         &self.advancement
     }
-    pub fn claim(&mut self, claim: WorthQueryOutputClaimIdentity) {
+    pub(super) fn claim(&mut self, claim: WorthQueryOutputClaimIdentity) {
         self.advancement = WorthQueryOutputAdvancement::Claimed(claim);
     }
-    pub fn reopen(&mut self) {
+    pub(super) fn reopen(&mut self) {
         self.advancement = WorthQueryOutputAdvancement::Idle;
     }
-    pub fn finish_stopped(&mut self, denial: WorthQueryOutputDemandDenial) {
+    pub(super) fn finish_stopped(&mut self, denial: WorthQueryOutputDemandDenial) {
         self.set_stopped(denial, None);
     }
-    pub fn stop(&mut self, denial: WorthQueryOutputDemandDenial) {
+    pub(super) fn stop(&mut self, denial: WorthQueryOutputDemandDenial) {
         let interrupted_claim = match self.advancement {
             WorthQueryOutputAdvancement::Stopped { .. } => return,
             WorthQueryOutputAdvancement::Claimed(claim) => Some(claim),

@@ -3,13 +3,13 @@ use worth_relational::facade::identity::EntityId;
 use super::{SettledWorkflowTransition, WorkflowInstanceProgress};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorkflowTransitionLocator {
+pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLocator {
     entity: EntityId,
     settlement: SettledWorkflowTransition,
 }
 
 impl WorkflowTransitionLocator {
-    pub const fn new(
+    pub(in crate::domain_computation::primary_graph) const fn new(
         entity: EntityId,
         settlement: SettledWorkflowTransition,
     ) -> Self {
@@ -20,7 +20,7 @@ impl WorkflowTransitionLocator {
         self.entity
     }
 
-    pub const fn settlement(
+    pub(in crate::domain_computation::primary_graph) const fn settlement(
         self,
     ) -> SettledWorkflowTransition {
         self.settlement
@@ -28,13 +28,13 @@ impl WorkflowTransitionLocator {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorkflowAssessmentEvidenceLocator {
+pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEvidenceLocator {
     transition: WorkflowTransitionLocator,
     evidence: EntityId,
 }
 
 impl WorkflowAssessmentEvidenceLocator {
-    pub const fn new(
+    pub(in crate::domain_computation::primary_graph) const fn new(
         transition: WorkflowTransitionLocator,
         evidence: EntityId,
     ) -> Self {
@@ -56,7 +56,7 @@ impl WorkflowAssessmentEvidenceLocator {
 }
 
 #[derive(Clone)]
-pub struct WorkflowTransitionProgressObservation {
+pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionProgressObservation {
     captured_inputs: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
     transition: WorkflowTransitionLocator,
     assessment_evidence: Option<EntityId>,
@@ -64,7 +64,7 @@ pub struct WorkflowTransitionProgressObservation {
 }
 
 impl WorkflowTransitionProgressObservation {
-    pub const fn new(
+    pub(in crate::domain_computation::primary_graph) const fn new(
         transition: WorkflowTransitionLocator,
         assessment_evidence: Option<EntityId>,
     ) -> Self {
@@ -106,7 +106,7 @@ impl WorkflowTransitionProgressObservation {
 }
 
 impl WorkflowInstanceProgress {
-    pub fn latest_transition(
+    pub(in crate::domain_computation::primary_graph) fn latest_transition(
         &self,
         node: EntityId,
     ) -> Option<WorkflowTransitionLocator> {
@@ -120,7 +120,7 @@ impl WorkflowInstanceProgress {
         self.latest_assessment_evidence.get(&node).copied()
     }
 
-    pub fn retain_observation(
+    pub(in crate::domain_computation::primary_graph) fn retain_observation(
         &mut self,
         observation: WorkflowTransitionProgressObservation,
     ) {

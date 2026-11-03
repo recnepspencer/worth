@@ -1,6 +1,6 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
-pub mod postcommit_currentness;
+mod postcommit_currentness;
 pub use postcommit_currentness::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     FailedRebase, RebaseVerificationFailure,
@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::provider::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPrimaryGraphCommitEvidence {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommitEvidence {
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
@@ -170,7 +170,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     }
     /// Original admitted meaning co-retained with the performed occurrence.
     /// This is historical evidence; current authority is admitted separately.
-    pub fn original_authority(
+    pub(in crate::domain_computation::primary_graph) fn original_authority(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding
     {
@@ -203,7 +203,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self.mutation_work
     }
 
-    pub const fn retained_preimage(
+    pub(in crate::domain_computation::primary_graph) const fn retained_preimage(
         &self,
     ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
         self.retained_preimage.as_ref()
@@ -274,7 +274,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     /// The facts this commit retains, each one a verifier can compare, or
     /// the rebase that failed and left it none.
-    pub fn rebased_source_facts(
+    pub(in crate::domain_computation::primary_graph) fn rebased_source_facts(
         &self,
     ) -> Result<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,

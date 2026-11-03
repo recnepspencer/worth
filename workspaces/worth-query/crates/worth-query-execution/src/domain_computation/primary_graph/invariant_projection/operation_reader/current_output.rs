@@ -2,7 +2,7 @@ use super::super::WorthQueryInvariantEntityIdentity;
 
 mod certified_correspondence;
 pub(in crate::domain_computation::primary_graph::invariant_projection) use certified_correspondence::CertifiedOutputCorrespondence;
-pub mod resolution;
+mod resolution;
 
 /// Which current entity a producer's output family holds for a producer.
 pub enum WorthQueryCurrentOutputSelection<Schema, Entity> {

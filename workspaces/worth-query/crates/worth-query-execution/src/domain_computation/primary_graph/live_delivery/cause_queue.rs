@@ -11,7 +11,7 @@ use super::{
 };
 use crate::domain_computation::managed_run::WorthQueryManagedLowerExecutionBasis;
 
-pub struct WorthQueryLiveCauseQueue<Payload> {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCauseQueue<Payload> {
     subscription: WorthQueryLiveSubscription,
     cursor: u64,
     active_batch: Option<WorthQueryActiveLiveBatch>,
@@ -30,7 +30,7 @@ struct WorthQueryBufferedLiveCause {
     occupancy: BridgeManagedQueueOccupancy,
 }
 
-pub enum WorthQueryLiveCauseFillPosture {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryLiveCauseFillPosture {
     Pending,
     Overflow(u64),
     Closed,
@@ -112,7 +112,7 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
 }
 
 impl<Payload: 'static> WorthQueryLiveCauseQueue<Payload> {
-    pub fn fill<Schema, Effect>(
+    pub(in crate::domain_computation::primary_graph) fn fill<Schema, Effect>(
         &mut self,
         source: &WorthQueryLiveDeliverySource,
         basis: &mut WorthQueryManagedLowerExecutionBasis,

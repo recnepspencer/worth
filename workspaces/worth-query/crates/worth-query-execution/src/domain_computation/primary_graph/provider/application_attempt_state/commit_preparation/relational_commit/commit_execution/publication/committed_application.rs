@@ -3,7 +3,7 @@
 use worth_relational::facade::history::{BranchId, RelationalCommitReceipt};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPrimaryGraphCommittedApplication {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommittedApplication {
     application_outcome_identity: Option<
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     >,
@@ -107,7 +107,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         self.exact_output_settlement.as_ref()
     }
 
-    pub const fn committed_product_publication(
+    pub(in crate::domain_computation::primary_graph) const fn committed_product_publication(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
         &self.committed_product_publication
@@ -136,7 +136,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         &self.commit_evidence.commit_reference().branch_id
     }
 
-    pub const fn commit_reference(
+    pub(in crate::domain_computation::primary_graph) const fn commit_reference(
         &self,
     ) -> &RelationalCommitReceipt {
         self.commit_evidence.commit_reference()

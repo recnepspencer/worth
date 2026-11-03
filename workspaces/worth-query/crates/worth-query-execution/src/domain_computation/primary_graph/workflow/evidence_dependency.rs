@@ -1,7 +1,7 @@
 use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 
 #[derive(Clone, Copy)]
-pub enum WorkflowEvidenceDependencyKind {
+pub(in crate::domain_computation::primary_graph) enum WorkflowEvidenceDependencyKind {
     Entity,
     EntityKind,
     AspectRevision,
@@ -12,7 +12,7 @@ pub enum WorkflowEvidenceDependencyKind {
 }
 
 impl WorkflowEvidenceDependencyKind {
-    pub const fn encode(self) -> &'static str {
+    pub(in crate::domain_computation::primary_graph) const fn encode(self) -> &'static str {
         match self {
             Self::Entity => "entity",
             Self::EntityKind => "entity-kind",
@@ -24,7 +24,7 @@ impl WorkflowEvidenceDependencyKind {
         }
     }
 
-    pub fn decode(value: &str) -> Option<Self> {
+    pub(in crate::domain_computation::primary_graph) fn decode(value: &str) -> Option<Self> {
         match value {
             "entity" => Some(Self::Entity),
             "entity-kind" => Some(Self::EntityKind),

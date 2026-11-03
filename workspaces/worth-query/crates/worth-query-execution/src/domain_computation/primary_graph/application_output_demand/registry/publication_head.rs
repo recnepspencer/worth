@@ -13,8 +13,8 @@ pub(super) struct Head {
 }
 
 /// Only the registry's answer can issue a live-head witness.
-pub struct LivePublicationHead(());
-pub enum PublicationHeadSelection {
+pub(in crate::domain_computation::primary_graph) struct LivePublicationHead(());
+pub(in crate::domain_computation::primary_graph) enum PublicationHeadSelection {
     Live(LivePublicationHead),
     Frozen,
 }
@@ -110,7 +110,7 @@ impl PublicationHeads {
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn publication_head_selection(
+    pub(in crate::domain_computation::primary_graph) fn publication_head_selection(
         &self,
         occurrence: ProductBranchIncarnation,
     ) -> Result<PublicationHeadSelection, WorthQueryOutputDemandDenial> {

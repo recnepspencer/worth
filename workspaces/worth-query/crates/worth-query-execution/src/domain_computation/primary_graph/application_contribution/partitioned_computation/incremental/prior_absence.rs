@@ -3,7 +3,7 @@
 use super::{SealedComputationRun, WorthQueryPartitionedComputationFullCause as Cause};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum PriorAbsence {
+pub(in crate::domain_computation) enum PriorAbsence {
     FirstRun,
     Restored,
     Republished,
@@ -15,7 +15,7 @@ pub enum PriorAbsence {
 }
 
 impl PriorAbsence {
-    pub const fn full_cause(&self) -> Cause {
+    pub(in crate::domain_computation) const fn full_cause(&self) -> Cause {
         match self {
             Self::FirstRun => Cause::FirstRun,
             Self::Restored => Cause::Restored,
@@ -33,14 +33,14 @@ impl PriorAbsence {
 }
 
 /// Completion must state an absence explicitly; publication cannot infer it.
-pub enum SealedComputationRetention {
+pub(in crate::domain_computation) enum SealedComputationRetention {
     Produced(SealedComputationRun),
     Absent(PriorAbsence),
 }
 
 /// Why a completed computation could not leave one reusable state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Suppression {
+pub(in crate::domain_computation) enum Suppression {
     Policy,
     Several,
     Collision,
@@ -49,7 +49,7 @@ pub enum Suppression {
 }
 
 /// A run writes its result where it completes or drops its state.
-pub enum CompletedComputationRetention {
+pub(in crate::domain_computation::primary_graph) enum CompletedComputationRetention {
     Produced(super::retained::CompletedComputationRun),
     Absent(PriorAbsence),
 }

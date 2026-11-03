@@ -4,7 +4,7 @@ use worth_proof::CanonicalUniqueVec;
 
 use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 
-pub struct CanonicalApplyCursor<
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct CanonicalApplyCursor<
     'owner,
     Key,
     Value,
@@ -12,7 +12,7 @@ pub struct CanonicalApplyCursor<
 > {
     basis: Option<&'owner worth_relational::facade::runtime::PositionedRelationalSnapshot>,
     keys: CanonicalUniqueVec<Key>,
-    pub slots: Vec<(
+    slots: Vec<(
         OwnerPlan<'owner, Value, Stop>,
         Result<
             crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember,
@@ -32,7 +32,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         cursor
     }
 
-    pub fn compute(
+    fn compute(
         keys: CanonicalUniqueVec<Key>,
         mut plans: Vec<OwnerPlan<'owner, Value, Stop>>,
         execution: &QueryRequestExecution<'_>,
@@ -62,7 +62,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
 
     /// The owner classifies each completion: holding a queued failure continues
     /// the cursor. A caller failure or request stop drops the inaccessible suffix.
-    pub fn apply(
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn apply(
         self,
 
         mut published: impl FnMut(Key, Result<Value, Stop>) -> Result<(), Stop>,

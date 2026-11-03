@@ -10,13 +10,13 @@ use worth_relational::facade::identity::EntityId;
 /// that was never published is not a permissive default: readers that find it
 /// empty refuse the work they were about to do.
 #[derive(Clone, Debug)]
-pub struct WorthQueryProgramActivationCell {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramActivationCell {
     identity: Arc<OnceLock<EntityId>>,
     candidate: Arc<OnceLock<EntityId>>,
 }
 
 impl WorthQueryProgramActivationCell {
-    pub fn unpublished() -> Self {
+    pub(in crate::domain_computation::primary_graph) fn unpublished() -> Self {
         Self {
             identity: Arc::new(OnceLock::new()),
             candidate: Arc::new(OnceLock::new()),
@@ -32,7 +32,7 @@ impl WorthQueryProgramActivationCell {
         }
     }
 
-    pub fn published(&self) -> Option<EntityId> {
+    pub(in crate::domain_computation::primary_graph) fn published(&self) -> Option<EntityId> {
         self.identity.get().copied()
     }
 

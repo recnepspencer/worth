@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxO
 
 /// Runtime-sealed operation and verifier audience for one installed outbox.
 /// An external dispatch result cannot supply either field.
-pub struct WorthQueryInstalledTransportCompletionBinding {
+pub(in crate::domain_computation) struct WorthQueryInstalledTransportCompletionBinding {
     operation: String,
     audience: String,
     contract: InstalledInboundOccurrenceContract,
@@ -28,13 +28,13 @@ impl WorthQueryInstalledTransportCompletionBinding {
         &self.contract
     }
 
-    pub fn runtime(&self) -> WorthQueryRuntimeAuthorityIdentity {
+    pub(in crate::domain_computation) fn runtime(&self) -> WorthQueryRuntimeAuthorityIdentity {
         self.runtime
     }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryTransportCompletionBindingDenial {
+pub(in crate::domain_computation) enum WorthQueryTransportCompletionBindingDenial {
     OutboxWithoutInboundContract,
     OutboxContractMismatch,
     OutboxOperationUnbound,
@@ -48,7 +48,7 @@ where
     /// Resolve the operation slot co-committed in the original outbox through
     /// the existing installed-operation registry. A transport result cannot
     /// select a different operation after the external effect has occurred.
-    pub fn resolve_installed_transport_completion_binding(
+    pub(in crate::domain_computation) fn resolve_installed_transport_completion_binding(
         &self,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
     ) -> Result<

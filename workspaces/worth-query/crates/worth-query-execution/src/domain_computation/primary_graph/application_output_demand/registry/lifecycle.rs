@@ -1,12 +1,12 @@
 pub(in crate::domain_computation::primary_graph) use selected_execution_finish::RunningSelectedExecution;
 mod cached_reclaim;
 
-pub mod closed_retirement;
-pub mod completed_custody;
+mod closed_retirement;
+pub(super) mod completed_custody;
 
 mod performed_release;
 pub(super) mod release;
-pub mod selected_execution_finish;
+mod selected_execution_finish;
 
 use super::*;
 
@@ -51,7 +51,7 @@ impl WorthQueryOutputDemandRegistry {
         )
     }
 
-    pub fn discard_prepared_source(
+    pub(in crate::domain_computation::primary_graph) fn discard_prepared_source(
         &self,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
     ) {
@@ -62,7 +62,7 @@ impl WorthQueryOutputDemandRegistry {
         state.discard_custody(source_commit);
     }
 
-    pub fn complete_prepared_source(
+    pub(in crate::domain_computation::primary_graph) fn complete_prepared_source(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) {
@@ -85,7 +85,7 @@ impl WorthQueryOutputDemandRegistry {
         state.note_custody(receipt.committed_product_publication().composite_commit());
     }
 
-    pub fn begin_source_preparation(
+    pub(in crate::domain_computation::primary_graph) fn begin_source_preparation(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> WorthQueryRequiredOutputSourcePreparation {

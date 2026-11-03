@@ -6,7 +6,7 @@ use worth_execution::{
     ExecutionMemoryReservation, ExecutionRounds, MapKernelContext, MapStop, RoundsOutcome,
 };
 
-pub fn run<T>(
+pub(in super::super) fn run<T>(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     operation: impl FnOnce(&mut MapKernelContext<'_, '_>) -> Result<T, Denial>,
 ) -> Result<T, Denial> {

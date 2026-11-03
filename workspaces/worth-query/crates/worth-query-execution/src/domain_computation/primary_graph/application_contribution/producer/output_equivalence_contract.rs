@@ -83,18 +83,18 @@ where
 }
 
 impl<Schema, Role> WorthQueryProducerOutputEquivalence<Schema, Role> {
-    pub fn into_field(self) -> NativeFieldBindingExpectation {
+    pub(super) fn into_field(self) -> NativeFieldBindingExpectation {
         self.field
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct InstalledProducerOutputEquivalence {
-    pub field: FieldExpectation,
-    pub meaning: [u8; 32],
+pub(in super::super) struct InstalledProducerOutputEquivalence {
+    pub(in super::super) field: FieldExpectation,
+    pub(in super::super) meaning: [u8; 32],
 }
 
-pub fn seal<Schema: schema::ApplicationSchema>(
+pub(in super::super) fn seal<Schema: schema::ApplicationSchema>(
     identity: &str,
     role: &str,
     field: &NativeFieldBindingExpectation,

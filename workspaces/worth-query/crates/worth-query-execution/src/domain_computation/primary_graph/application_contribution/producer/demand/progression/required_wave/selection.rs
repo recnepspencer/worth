@@ -157,7 +157,7 @@ where
 }
 
 /// The same owner-issued Product/native basis for both kinds of wave anchor.
-pub fn select_required_basis<'runtime, Schema>(
+pub(super) fn select_required_basis<'runtime, Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: WorthQueryProductBranch,

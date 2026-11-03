@@ -1,9 +1,9 @@
 mod composition;
 mod derived_relation;
-pub mod native_field_contract;
+mod native_field_contract;
 pub use derived_relation::WorthQueryDerivedRelationCountOwner;
-pub mod computation;
-pub mod conditional;
+pub(in crate::domain_computation::primary_graph) mod computation;
+mod conditional;
 mod contracts;
 mod feature;
 pub use feature::{
@@ -12,12 +12,12 @@ pub use feature::{
     WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 pub(in crate::domain_computation) mod execution_denial;
-pub mod partitioned_computation;
-pub mod producer;
+mod partitioned_computation;
+mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
 pub(in crate::domain_computation::primary_graph) use producer::PendingProducerPublication;
 pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
-pub mod request_execution;
+mod request_execution;
 pub(in crate::domain_computation::primary_graph) use request_execution::{
     QueryMemoryReservation, QueryRequestExecution,
 };

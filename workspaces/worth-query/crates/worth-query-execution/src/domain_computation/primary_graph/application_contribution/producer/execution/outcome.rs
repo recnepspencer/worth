@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 /// The commit owner distinguishes a new effect from a descriptive replay.
 /// Only this conversion constructs the fact used to mark the advance.
 #[derive(Debug)]
-pub struct ProducerCommitReceipt
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ProducerCommitReceipt
 {
     receipt: WorthQueryApplicationCommitReceipt,
     publication: CommitPublication,
@@ -48,7 +48,7 @@ impl ProducerCommitReceipt {
         matches!(self.publication, CommitPublication::PublishedNow)
     }
 
-    pub fn record_publication(
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn record_publication(
         self,
         record: impl FnOnce(),
     ) -> Self {
@@ -126,7 +126,7 @@ where
 }
 
 /// Maps a producer commit to its receipt or to the demand denial it settles as.
-pub fn commit_receipt(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn commit_receipt(
     identity: &str,
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> Result<ProducerCommitReceipt, WorthQueryOutputDemandDenial> {

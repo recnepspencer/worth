@@ -4,7 +4,7 @@ use worth_execution::{ExecutionByteBuffer, ExecutionImmutableBytes};
 
 /// Mirrors CURRENT StorageKey ordering: locator, optional predicate, numeric limit.
 /// A flattened decimal/string tuple would change ordering (e.g. limit 2 vs 10).
-pub struct AdmittedFactKey {
+pub(in crate::domain_computation::primary_graph) struct AdmittedFactKey {
     locator: ExecutionImmutableBytes,
     predicate: Option<(ExecutionImmutableBytes, usize)>,
 }
@@ -13,7 +13,7 @@ impl AdmittedFactKey {
     /// Emit borrowed canonical data directly. No external/owned String adoption.
     /// Caller must use the canonical grammar; literal emission in tests is only
     /// a storage-mechanics oracle, NOT evidence of Query canonical encoding.
-    pub fn write(
+    pub(in crate::domain_computation::primary_graph) fn write(
         locator_length: usize,
         predicate: Option<(usize, usize)>,
         policy: super::StorageControl<'_, '_>,
@@ -35,7 +35,7 @@ impl AdmittedFactKey {
         };
         Ok(Self { locator, predicate })
     }
-    pub fn locator(&self) -> &[u8] {
+    pub(in crate::domain_computation::primary_graph) fn locator(&self) -> &[u8] {
         self.locator.bytes()
     }
     pub fn predicate_material(&self) -> Option<(&[u8], usize)> {

@@ -1,7 +1,7 @@
 //! Typed progression for one owner-validated Relational commit.
 
-pub mod commit_execution;
-pub mod evidence_seal;
+mod commit_execution;
+mod evidence_seal;
 pub(in crate::domain_computation::primary_graph::provider) use commit_execution::ManagedUnpublishedAttempt;
 
 pub(in crate::domain_computation::primary_graph) use commit_execution::WorthQueryPrimaryGraphCommittedApplication;

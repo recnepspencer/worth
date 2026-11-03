@@ -11,7 +11,7 @@ pub(in crate::domain_computation::primary_graph) enum HistoryBorrowedReadStop {
 }
 
 #[derive(Clone, Copy)]
-pub struct HistoryProducerInvocation<'invocation> {
+pub(in crate::domain_computation::primary_graph) struct HistoryProducerInvocation<'invocation> {
     current: &'invocation WorthQueryProductObservationLease,
     request: &'invocation AdmittedRequestCurrentness,
     principal: &'invocation crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,

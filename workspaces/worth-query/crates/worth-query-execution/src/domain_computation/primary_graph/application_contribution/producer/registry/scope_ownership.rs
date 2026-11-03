@@ -57,7 +57,7 @@ impl<S: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S> {
     }
 }
 
-pub fn require_family_agreement(
+pub(super) fn require_family_agreement(
     declarations: &std::collections::BTreeMap<String, DeclaredProducerBinding>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let mut families = std::collections::BTreeMap::new();

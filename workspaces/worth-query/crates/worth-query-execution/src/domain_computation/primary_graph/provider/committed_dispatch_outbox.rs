@@ -13,11 +13,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCommittedProductPublication,
 };
 
-pub mod correlation;
+mod correlation;
 
-pub mod restoration;
+mod restoration;
 
-pub mod work;
+mod work;
 
 use restoration::{required_fields, restore_record};
 
@@ -34,7 +34,7 @@ pub struct WorthQueryCommittedDispatchOutboxObservation {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryCommittedDispatchOutboxOwnerObservation {
+struct WorthQueryCommittedDispatchOutboxOwnerObservation {
     record: WorthQueryDispatchOutboxRecord,
     commit: RelationalCommitReceipt,
     record_ref: RecordRef,
@@ -115,7 +115,7 @@ impl WorthQueryCommittedDispatchOutboxObservation {
 
     /// Substitution probe for proving the exact World publication is paired
     /// with its own Relational owner row before transport admission.
-    pub fn with_product_publication_for_test(
+    pub(in crate::domain_computation::primary_graph) fn with_product_publication_for_test(
         mut self,
         publication: WorthQueryCommittedProductPublication,
     ) -> Self {
@@ -206,7 +206,7 @@ impl WorthQueryPrimaryGraphProvider {
         })
     }
 
-    pub fn observe_expected(
+    fn observe_expected(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &super::WorthQueryCommittedDispatchOutboxBinding,

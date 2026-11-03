@@ -16,14 +16,14 @@ impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
     #[inline]
-    pub fn graph_work_session_identity(
+    pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
         self.core.graph_work_session_identity()
     }
 
     #[inline]
-    pub fn graph_work_managed_run_identity(
+    pub(in crate::domain_computation) fn graph_work_managed_run_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
         self.core.graph_work_managed_run_identity()
@@ -35,12 +35,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn graph_work_decision_fact_count(&self) -> usize {
+    pub(in crate::domain_computation) fn graph_work_decision_fact_count(&self) -> usize {
         self.core.graph_work_decision_fact_count()
     }
 
     #[inline]
-    pub fn graph_work_runtime_ordinal(&self) -> u64 {
+    pub(in crate::domain_computation) fn graph_work_runtime_ordinal(&self) -> u64 {
         self.core.graph_work_runtime_ordinal()
     }
 
@@ -50,19 +50,19 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn graph_work_scope_entity_id(
+    pub(in crate::domain_computation) fn graph_work_scope_entity_id(
         &self,
     ) -> Option<worth_relational::facade::identity::EntityId> {
         self.core.graph_work_scope_entity_id()
     }
 
     #[inline]
-    pub fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
+    pub(in crate::domain_computation) fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
         self.core.graph_work_capability_identity()
     }
 
     #[inline]
-    pub fn graph_work_provider(&self) -> &str {
+    pub(in crate::domain_computation) fn graph_work_provider(&self) -> &str {
         self.core.graph_work_provider()
     }
 
@@ -74,7 +74,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub const fn graph_work(
+    pub(in crate::domain_computation) const fn graph_work(
         &self,
     ) -> &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession {
         self.core.graph_work()
@@ -88,17 +88,17 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub const fn operation_definition_identity(&self) -> &[u8; 32] {
+    pub(in crate::domain_computation) const fn operation_definition_identity(&self) -> &[u8; 32] {
         self.core.operation_definition_identity()
     }
 
     #[inline]
-    pub const fn governed_input_identity(&self) -> Option<&[u8; 32]> {
+    pub(in crate::domain_computation) const fn governed_input_identity(&self) -> Option<&[u8; 32]> {
         self.core.governed_input_identity()
     }
 
     #[inline]
-    pub fn governed_proposal_identity(&self) -> Option<&[u8; 32]> {
+    pub(in crate::domain_computation) fn governed_proposal_identity(&self) -> Option<&[u8; 32]> {
         self.core.governed_proposal_identity()
     }
 

@@ -21,7 +21,7 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause,
 };
 
-pub fn admit(
+pub(in crate::domain_computation::primary_graph) fn admit(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
@@ -57,14 +57,14 @@ pub fn admit(
 }
 
 #[derive(Debug)]
-pub enum StartProvenanceReadDenial {
+pub(in crate::domain_computation::primary_graph) enum StartProvenanceReadDenial {
     Corrupt,
     UnsupportedProtocol(u64),
     Execution(RelationalExecutionDenialCause),
 }
 /// Caller first admits scope/subject/Spec. Reads ONLY the supplied retained root.
 /// The result is copied from installed meaning, never constructed from recorded bytes.
-pub fn read<Schema>(
+pub(in crate::domain_computation::primary_graph) fn read<Schema>(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,

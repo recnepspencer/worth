@@ -12,7 +12,7 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle, transactions::RelationalExecutionDenialCause as Cause,
 };
 
-pub struct SourceReadVerification<'runtime> {
+pub(in crate::domain_computation::primary_graph) struct SourceReadVerification<'runtime> {
     runtime: &'runtime RelationalRuntime,
     pin: RelationalPinnedRead,
     completed: BTreeMap<usize, (Arc<StructuralWalkObservation>, bool)>,

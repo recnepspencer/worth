@@ -157,7 +157,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn take_authorization_dependencies(
+    pub(in crate::domain_computation) fn take_authorization_dependencies(
         &mut self,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
     ) -> Result<
@@ -219,7 +219,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn publication_request(
+    pub(in crate::domain_computation) fn publication_request(
         &self,
     ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
         self.core.publication_request()
@@ -240,7 +240,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn bind_source_partition(&mut self, identity: [u8; 32]) {
+    pub(in crate::domain_computation) fn bind_source_partition(&mut self, identity: [u8; 32]) {
         self.core.bind_source_partition(identity)
     }
 
@@ -311,7 +311,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_request_snapshot(
+    pub(in crate::domain_computation) fn workflow_approval_request_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
@@ -319,7 +319,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_principal_snapshot(
+    pub(in crate::domain_computation) fn workflow_approval_principal_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
@@ -327,7 +327,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_lineage_snapshot(
+    pub(in crate::domain_computation) fn workflow_approval_lineage_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
@@ -335,7 +335,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_support_snapshot(
+    pub(in crate::domain_computation) fn workflow_approval_support_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
@@ -343,7 +343,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_dependencies_snapshot(
+    pub(in crate::domain_computation) fn workflow_approval_dependencies_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {

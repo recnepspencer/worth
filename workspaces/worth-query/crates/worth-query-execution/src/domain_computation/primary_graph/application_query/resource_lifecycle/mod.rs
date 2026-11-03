@@ -1,4 +1,4 @@
-pub mod basis_registry;
+mod basis_registry;
 mod lifecycle_count;
 
 pub(crate) use basis_registry::WorthQueryApplicationBasisRegistry;

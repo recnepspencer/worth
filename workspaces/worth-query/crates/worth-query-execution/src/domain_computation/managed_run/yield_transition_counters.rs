@@ -38,38 +38,38 @@ impl WorthQueryYieldTransitionCounters {
         self.yielded_capability_mint_count
     }
 
-    pub fn classified_eligibility(&mut self) {
+    pub(super) fn classified_eligibility(&mut self) {
         self.eligibility_classification_count =
             self.eligibility_classification_count.saturating_add(1);
     }
 
-    pub fn attempted_bridge_finalization(&mut self) {
+    pub(super) fn attempted_bridge_finalization(&mut self) {
         self.bridge_finalization_attempt_count =
             self.bridge_finalization_attempt_count.saturating_add(1);
     }
 
-    pub fn attempted_checkpoint_suspension(&mut self) {
+    pub(super) fn attempted_checkpoint_suspension(&mut self) {
         self.checkpoint_suspension_attempt_count =
             self.checkpoint_suspension_attempt_count.saturating_add(1);
     }
 
-    pub fn observed_checkpoint_retained_bytes(&mut self, count: usize) {
+    pub(super) fn observed_checkpoint_retained_bytes(&mut self, count: usize) {
         self.checkpoint_retained_byte_probe_count = self
             .checkpoint_retained_byte_probe_count
             .saturating_add(count);
     }
 
-    pub fn validated_retained_resources(&mut self) {
+    pub(super) fn validated_retained_resources(&mut self) {
         self.retained_resource_validation_count =
             self.retained_resource_validation_count.saturating_add(1);
     }
 
-    pub fn observed_artifact_registry(&mut self) {
+    pub(super) fn observed_artifact_registry(&mut self) {
         self.artifact_registry_snapshot_count =
             self.artifact_registry_snapshot_count.saturating_add(1);
     }
 
-    pub fn minted_yielded_capability(&mut self) {
+    pub(super) fn minted_yielded_capability(&mut self) {
         self.yielded_capability_mint_count = self.yielded_capability_mint_count.saturating_add(1);
     }
 }

@@ -85,7 +85,7 @@ impl WorkflowTransitionReplayRetention {
         self.retained_charge_bytes
     }
 
-    pub const fn len(&self) -> usize {
+    pub(super) const fn len(&self) -> usize {
         self.len
     }
 }

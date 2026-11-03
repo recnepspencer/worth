@@ -307,7 +307,7 @@ fn denial(
 }
 
 #[path = "grant_selection/late_cancellation.rs"]
-pub mod late_cancellation;
+pub(in crate::domain_computation) mod late_cancellation;
 
 fn grant_lookup_denial_kind(
     refusal: worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind,

@@ -48,7 +48,7 @@ impl ApplicationRelationPayloadLayout {
 }
 
 impl super::WorthQueryPrimaryGraphLayout {
-    pub fn relation_field_locator(
+    pub(in crate::domain_computation::primary_graph) fn relation_field_locator(
         &self,
         relation: &str,
         aspect: &str,

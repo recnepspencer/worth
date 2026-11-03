@@ -23,7 +23,7 @@ impl WorthQueryApplicationWorkingProjectionTree {
         Self { rows }
     }
 
-    pub fn into_disclosed(
+    pub(in crate::domain_computation::primary_graph::application_query) fn into_disclosed(
         mut self,
         governance: &WorthQueryApplicationQueryGovernance,
     ) -> WorthQueryApplicationDisclosedProjectionTree {
@@ -76,7 +76,7 @@ impl WorthQueryApplicationDisclosedProjectionTree {
         Some(WorthQueryApplicationDisclosedProjectionNode::new(node))
     }
 
-    pub fn take(&mut self) -> Self {
+    pub(in crate::domain_computation::primary_graph::application_query) fn take(&mut self) -> Self {
         Self {
             rows: std::mem::replace(
                 &mut self.rows,
@@ -85,11 +85,11 @@ impl WorthQueryApplicationDisclosedProjectionTree {
         }
     }
 
-    pub fn clear(&mut self) {
+    pub(in crate::domain_computation::primary_graph::application_query) fn clear(&mut self) {
         self.rows.clear();
     }
 
-    pub fn retain_projection(
+    pub(in crate::domain_computation::primary_graph::application_query) fn retain_projection(
         &mut self,
         disclosure: worth_execution::ExecutionArray<(
             std::sync::Arc<
@@ -104,7 +104,7 @@ impl WorthQueryApplicationDisclosedProjectionTree {
 }
 
 impl<'a> WorthQueryApplicationDisclosedProjectionNode<'a> {
-    pub fn new(node: &'a WorthQueryApplicationProjectionNode) -> Self {
+    fn new(node: &'a WorthQueryApplicationProjectionNode) -> Self {
         Self { node }
     }
 

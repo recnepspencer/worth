@@ -23,7 +23,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Prepa
 }
 
 /// Construction remains with the owner-side admission stage.
-pub struct PreparedPair<'a> {
+pub(in crate::domain_computation::primary_graph::application_query) struct PreparedPair<'a> {
     pub(in crate::domain_computation::primary_graph::application_query) root: EntityId,
     pub(in crate::domain_computation::primary_graph::application_query) witness:
         Option<std::sync::Arc<super::dispatch_witness::DispatchWitness>>,
@@ -34,7 +34,7 @@ pub struct PreparedPair<'a> {
         &'a AspectValue,
 }
 
-pub struct ReadOutput {
+pub(in crate::domain_computation::primary_graph::application_query) struct ReadOutput {
     pub raw: RawNonLiveKernelOutcome,
     pub(in crate::domain_computation::primary_graph::application_query) proof:
         WorthQueryPreparedReadCompletion,
@@ -42,9 +42,9 @@ pub struct ReadOutput {
         Option<super::super::batch::PlannedBatchItem>,
 }
 
-pub struct PairOutput {
-    pub first: ReadOutput,
-    pub second: ReadOutput,
+pub(in crate::domain_computation::primary_graph::application_query) struct PairOutput {
+    pub(in crate::domain_computation::primary_graph::application_query) first: ReadOutput,
+    pub(in crate::domain_computation::primary_graph::application_query) second: ReadOutput,
 }
 
 impl ChargedBytes for PreparedRead<'_> {
@@ -97,7 +97,7 @@ impl ChargedBytes for PairOutput {
 }
 
 impl PreparedPair<'_> {
-    pub fn run(
+    pub(in crate::domain_computation::primary_graph::application_query) fn run(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         context: &mut MapKernelContext<'_, '_>,
@@ -144,7 +144,7 @@ impl PreparedPair<'_> {
 }
 
 impl PreparedRead<'_> {
-    pub fn run(
+    fn run(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: EntityId,

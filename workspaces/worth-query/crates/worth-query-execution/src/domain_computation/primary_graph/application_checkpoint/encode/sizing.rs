@@ -7,13 +7,13 @@ use super::super::{
 };
 
 /// Proof that the complete frame and every contained wire length fit this host.
-pub struct ValidatedCheckpointSize {
+pub(super) struct ValidatedCheckpointSize {
     total: usize,
     accepted: usize,
 }
 
 impl ValidatedCheckpointSize {
-    pub fn new(
+    pub(super) fn new(
         native_len: usize,
         accepted_outputs: &[WorthQueryAcceptedOutputCheckpointIdentity],
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
@@ -60,7 +60,7 @@ impl ValidatedCheckpointSize {
         Ok(Self { total, accepted })
     }
 
-    pub fn total(&self) -> usize {
+    pub(super) fn total(&self) -> usize {
         self.total
     }
     pub(super) fn accepted(&self) -> usize {

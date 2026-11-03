@@ -15,10 +15,10 @@ use crate::domain_computation::{
     WorthQueryFreshDecisionReadSet, WorthQueryProviderSessionView,
 };
 
-pub mod indexed;
+mod indexed;
 use indexed::PreparedSelections;
 
-pub struct PrimaryDecisionReadSetComparison<'provider> {
+pub(in crate::domain_computation) struct PrimaryDecisionReadSetComparison<'provider> {
     provider: &'provider WorthQueryPrimaryGraphProvider,
     facts: Arc<crate::domain_computation::primary_graph::ApplicationFactTable>,
     registration: crate::domain_computation::primary_graph::RegisteredPrimaryRead,
@@ -27,7 +27,7 @@ pub struct PrimaryDecisionReadSetComparison<'provider> {
 }
 
 impl WorthQueryPrimaryGraphProvider {
-    pub fn capture_application_read_set(
+    pub(in crate::domain_computation::primary_graph) fn capture_application_read_set(
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
@@ -52,7 +52,7 @@ impl WorthQueryPrimaryGraphProvider {
         check_control(control)?;
         Ok(receipt)
     }
-    pub fn compare_application_read_set(
+    pub(in crate::domain_computation::primary_graph) fn compare_application_read_set(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
@@ -69,7 +69,7 @@ impl WorthQueryPrimaryGraphProvider {
         authority.compare_primary_read_set(execution, receipt, &mut comparison, control)
     }
 
-    pub fn recompare_application_read_set(
+    pub(in crate::domain_computation::primary_graph) fn recompare_application_read_set(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
@@ -141,7 +141,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
         check_control(control)?;
         Ok(same)
     }
-    pub fn acquire(
+    fn acquire(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &'provider WorthQueryPrimaryGraphProvider,
         session: WorthQueryProviderSessionView<'_>,
@@ -175,7 +175,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
         Ok(comparison)
     }
 
-    pub fn compare(
+    pub(in crate::domain_computation) fn compare(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,

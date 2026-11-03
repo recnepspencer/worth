@@ -48,12 +48,12 @@ impl WorthQueryProductBranchCloseReceipt {
     }
 }
 
-pub enum WorthQueryProductBranchCloseScope {
+pub(crate) enum WorthQueryProductBranchCloseScope {
     Workspace,
     Application,
 }
 
-pub struct WorthQueryPendingProductBranchClose {
+pub(crate) struct WorthQueryPendingProductBranchClose {
     runtime: WorthQueryProductRuntime,
     branch: WorthQueryProductBranch,
     occurrence: WorthQueryRetiredProductOccurrence,
@@ -84,7 +84,7 @@ impl WorthQueryPendingProductBranchClose {
 }
 
 impl WorthQueryProductRuntime {
-    pub fn begin_product_branch_close(
+    pub(crate) fn begin_product_branch_close(
         &self,
         branch: WorthQueryProductBranch,
         scope: WorthQueryProductBranchCloseScope,

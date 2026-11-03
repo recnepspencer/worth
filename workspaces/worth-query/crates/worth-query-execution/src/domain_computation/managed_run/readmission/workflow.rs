@@ -22,7 +22,7 @@ mod workflow_completion;
 #[path = "workflow_preflight.rs"]
 mod workflow_preflight;
 #[path = "workflow_state.rs"]
-pub mod workflow_state;
+mod workflow_state;
 
 pub(in crate::domain_computation::managed_run::readmission) use workflow_state::workflow_cleanup_owner;
 pub(in crate::domain_computation::managed_run) use workflow_state::WorthQueryWorkflowReadmissionCommitState;

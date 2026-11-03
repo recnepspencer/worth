@@ -9,7 +9,7 @@ use super::{
 /// The request a managed computation runs for: its cancellation, its
 /// deadline and how its patterns are placed.
 pub struct WorthQueryManagedComputationExecution<'request> {
-    pub request: &'request QueryRequestExecution<'request>,
+    pub(in super::super) request: &'request QueryRequestExecution<'request>,
 }
 
 impl<'request> WorthQueryManagedComputationExecution<'request> {
@@ -26,7 +26,7 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
 }
 
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
-    pub charge:
+    pub(super) charge:
         Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
     pub(super) poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
     pub(super) refused: Option<WorthQueryManagedComputationCheckpointDenial>,
@@ -41,7 +41,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
         self.native = lease;
         self
     }
-    pub fn native_lease_for_test(
+    pub(in crate::domain_computation::primary_graph) fn native_lease_for_test(
         &self,
     ) -> Option<&'request worth_execution::ExecutionResourceLease<'request>> {
         crate::domain_computation::execution_observation::owned_control_scope::current_id();

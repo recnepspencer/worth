@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFie
 
 /// Two candidates tell a free value from a taken one, and a held value from
 /// a duplicated one.
-pub const UNIQUE_VALUE_CANDIDATE_LIMIT: usize = 2;
+const UNIQUE_VALUE_CANDIDATE_LIMIT: usize = 2;
 
 type SelectionKey = (
     DerivedIndexId,
@@ -77,7 +77,7 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-pub fn observe_unique_values(
+fn observe_unique_values(
     facts: &(impl FactSequence + ?Sized),
     unique: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<'_>,
     effects: &[WorthQueryApplicationRealizedEffect],

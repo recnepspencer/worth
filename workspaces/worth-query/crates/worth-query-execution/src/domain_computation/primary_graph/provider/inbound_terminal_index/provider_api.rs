@@ -65,7 +65,7 @@ impl WorthQueryPrimaryGraphProvider {
             .retain_transport(terminal, protection)
     }
 
-    pub fn lookup_completed_inbound(
+    pub(in crate::domain_computation::primary_graph) fn lookup_completed_inbound(
         &self,
         correlation: &ExternalEffectCorrelationIdentity,
     ) -> Result<Option<WorthQueryCanonicalInboundCompletion>, WorthQueryInboundTerminalIndexDenial>

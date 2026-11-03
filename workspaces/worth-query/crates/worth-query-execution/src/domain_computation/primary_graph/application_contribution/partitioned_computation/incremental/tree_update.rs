@@ -18,7 +18,7 @@ pub(super) struct TreeBeginning(pub(super) bool);
 /// Canonical changed-path edits, or the same full canonical build when the
 /// actual request work ceiling cannot cover the full-build contractual work.
 /// Every native attempt retains its original stop and accepted-prefix metrics.
-pub fn next_tree<Key, Item, Reduced, Stopped>(
+pub(super) fn next_tree<Key, Item, Reduced, Stopped>(
     retained: &RetainedPartitions<Key, Item, Reduced>,
     target: impl Into<TreeTarget>,
     reduction_work: Option<u64>,

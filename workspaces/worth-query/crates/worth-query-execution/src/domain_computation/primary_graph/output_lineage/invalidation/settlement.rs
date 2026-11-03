@@ -22,11 +22,11 @@ use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::EqualOutputCurrentness;
 use super::source_alignment::SnapshotAlignedMarkState;
 
-pub mod posting_bindings;
+mod posting_bindings;
 mod posting_continuation;
-pub mod posting_projection;
-pub mod posting_removal;
-pub mod postings;
+mod posting_projection;
+mod posting_removal;
+mod postings;
 pub(super) use posting_bindings::install_physical;
 pub(super) use posting_bindings::PostingBindings;
 pub(in crate::domain_computation::primary_graph) use posting_continuation::PostingContinuation;
@@ -42,20 +42,20 @@ pub(super) enum SettlementReadAlignment {
     Retained,
 }
 
-pub struct SettlementRegistration {
-    pub computation:
+pub(in crate::domain_computation::primary_graph) struct SettlementRegistration {
+    pub(in crate::domain_computation::primary_graph) computation:
         Option<super::ComputationRegistration>,
-    pub work_membership:
+    pub(in crate::domain_computation::primary_graph) work_membership:
         Option<Arc<RequiredWorkMembership>>,
-    pub identity: Arc<RecordedSettlementIdentity>,
-    pub facts: super::super::RetainedSourceFacts,
-    pub output_facts: Option<RegisteredOutputFacts>,
-    pub read_basis: PositionedRelationalSnapshot,
+    pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
+    pub(in crate::domain_computation::primary_graph) facts: super::super::RetainedSourceFacts,
+    pub(in crate::domain_computation::primary_graph) output_facts: Option<RegisteredOutputFacts>,
+    pub(in crate::domain_computation::primary_graph) read_basis: PositionedRelationalSnapshot,
     /// Fact ordinals the registrant already knows are not current at
     /// `read_basis`: no delivery after that basis would ever mark them.
-    pub stale_at_read_basis: OrdSet<usize>,
-    pub requirement: Option<FullVerificationReason>,
-    pub upstream:
+    pub(in crate::domain_computation::primary_graph) stale_at_read_basis: OrdSet<usize>,
+    pub(in crate::domain_computation::primary_graph) requirement: Option<FullVerificationReason>,
+    pub(in crate::domain_computation::primary_graph) upstream:
         OrdSet<Arc<RecordedSettlementIdentity>>,
 }
 

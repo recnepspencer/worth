@@ -136,7 +136,7 @@ where
         validate_controls(query, controls)
     }
 
-    pub fn validate_installed_query<Query, Parameters, QueryResult, Scope>(
+    fn validate_installed_query<Query, Parameters, QueryResult, Scope>(
         &self,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {

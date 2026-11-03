@@ -10,7 +10,7 @@ use worth_query_installation::facade::ApplicationSchema;
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
     /// Returns this session's exact proof after current authority and request checks.
     /// Intermediate reads discard it; the terminal obtains its own fresh proof.
-    pub fn check(
+    pub(super) fn check(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<WorthQuerySessionInspectionReadProof, InspectionAdmissionDenial> {

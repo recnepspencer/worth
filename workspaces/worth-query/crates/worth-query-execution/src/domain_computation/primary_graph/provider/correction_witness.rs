@@ -6,15 +6,15 @@ use worth_execution::{
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
-pub struct CorrectionPerformedWitness {
+pub(in crate::domain_computation::primary_graph) struct CorrectionPerformedWitness {
     pub world: CompositeCommitIdentity,
     pub aftermath: Option<WorthQueryCommittedAftermathCausality>,
     // Last: copied causality and the Arc allocation drop before their payer.
-    pub _memory: Option<ExecutionMemoryReservation>,
+    pub(super) _memory: Option<ExecutionMemoryReservation>,
 }
 
 #[derive(Debug)]
-pub enum CorrectionWitnessDenial {
+pub(in crate::domain_computation::primary_graph) enum CorrectionWitnessDenial {
     Request(WorkCeilingDenial),
     CopyAdmission(WorkCeilingDenial),
     Interrupted(MapKernelStop),

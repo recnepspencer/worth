@@ -6,7 +6,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use std::cmp::Ordering;
-pub fn retire_stale_records(
+pub(in super::super) fn retire_stale_records(
     state: &mut DemandRegistryState,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,

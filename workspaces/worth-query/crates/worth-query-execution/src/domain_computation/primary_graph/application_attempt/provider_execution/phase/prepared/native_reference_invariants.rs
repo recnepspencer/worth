@@ -28,7 +28,7 @@ pub(super) fn derive(
     WorthQueryInvariantExecutionContract::for_installed_application_invariants(&descriptors)
 }
 
-pub fn applies_to_references(
+fn applies_to_references(
     applicability: &[ApplicationInvariantScopeTarget],
     entities: &BTreeSet<&str>,
 ) -> bool {
@@ -38,7 +38,7 @@ pub fn applies_to_references(
     })
 }
 
-pub fn referenced_entities<'a>(
+fn referenced_entities<'a>(
     layout: &WorthQueryPrimaryGraphLayout,
     effects: &'a [Effect],
 ) -> Result<BTreeSet<&'a str>, &'static str> {

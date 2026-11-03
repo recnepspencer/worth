@@ -7,13 +7,13 @@ pub(super) struct CompiledWorkflowDispatchEdge {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct CompiledWorkflowDispatch {
+pub(in super::super) struct CompiledWorkflowDispatch {
     outgoing: Box<[Box<[CompiledWorkflowDispatchEdge]>]>,
     incoming: Box<[Box<[CompiledWorkflowDispatchEdge]>]>,
 }
 
 impl CompiledWorkflowDispatch {
-    pub fn build(
+    pub(in super::super) fn build(
         node_count: usize,
         connections: &[CompiledWorkflowSemanticConnection],
     ) -> Self {

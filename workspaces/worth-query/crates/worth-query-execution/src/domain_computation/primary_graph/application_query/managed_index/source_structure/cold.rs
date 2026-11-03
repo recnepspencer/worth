@@ -5,7 +5,7 @@ use worth_execution::ExecutionRequestArrayBuilder;
 
 /// The caller supplies every live node as a seed and only actual live parents.
 /// This numeric traversal creates no Source, node-identity or root authority.
-pub fn acyclic(
+pub(super) fn acyclic(
     seeds: impl IntoIterator<Item = usize>,
     node_count: usize,
     frontier: usize,

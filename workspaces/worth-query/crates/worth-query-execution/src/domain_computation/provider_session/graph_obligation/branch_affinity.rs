@@ -5,7 +5,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use worth_runtime_bridge::facade::TruthBranchIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryGraphWorkBranchAffinity {
+pub(in crate::domain_computation) struct WorthQueryGraphWorkBranchAffinity {
     relational: BranchId,
     truth: TruthBranchIdentity,
 }
@@ -15,7 +15,7 @@ impl WorthQueryGraphWorkBranchAffinity {
         Self::from_relational_branch(basis.branch_id().clone())
     }
 
-    pub fn from_snapshot(snapshot: &SnapshotHandle) -> Self {
+    pub(super) fn from_snapshot(snapshot: &SnapshotHandle) -> Self {
         Self::from_relational_branch(snapshot.branch_id().clone())
     }
 
@@ -29,11 +29,11 @@ impl WorthQueryGraphWorkBranchAffinity {
         Self { relational, truth }
     }
 
-    pub const fn relational(&self) -> &BranchId {
+    pub(in crate::domain_computation) const fn relational(&self) -> &BranchId {
         &self.relational
     }
 
-    pub const fn truth(&self) -> &TruthBranchIdentity {
+    pub(in crate::domain_computation) const fn truth(&self) -> &TruthBranchIdentity {
         &self.truth
     }
 
@@ -41,7 +41,7 @@ impl WorthQueryGraphWorkBranchAffinity {
         basis.branch_id() == &self.relational
     }
 
-    pub fn admits_snapshot(&self, snapshot: &SnapshotHandle) -> bool {
+    pub(super) fn admits_snapshot(&self, snapshot: &SnapshotHandle) -> bool {
         snapshot.branch_id() == &self.relational
     }
 }

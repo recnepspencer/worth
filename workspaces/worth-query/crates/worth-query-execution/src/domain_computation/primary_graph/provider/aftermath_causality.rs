@@ -12,8 +12,8 @@ use worth_relational::facade::transactions::{
 };
 
 use super::WorthQueryPrimaryGraphProvider;
-pub mod canonical_record;
-pub mod correction_history;
+mod canonical_record;
+mod correction_history;
 mod lineage_fields;
 mod restored_witness;
 mod source_fields;
@@ -113,7 +113,7 @@ impl WorthQueryPrimaryGraphProvider {
     /// Reads the co-committed relation through an already open snapshot of
     /// `basis`, as publication does once, before the commit's history may
     /// retire.
-    pub fn resolve_aftermath_causality_in_snapshot(
+    pub(in crate::domain_computation::primary_graph) fn resolve_aftermath_causality_in_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
@@ -343,7 +343,7 @@ fn as_u64(value: &AspectValue) -> Option<u64> {
     }
 }
 
-pub fn aftermath_read_stop(
+fn aftermath_read_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryAftermathCausalityReadDenial {
     WorthQueryAftermathCausalityReadDenial::ExecutionDenied(

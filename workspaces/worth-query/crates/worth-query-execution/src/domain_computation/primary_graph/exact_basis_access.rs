@@ -5,7 +5,7 @@ use worth_relational::facade::{
 };
 use worth_relational::facade::{branch::RelationalBranchBasisDenial, history::BranchId};
 
-pub fn open_exact_basis_snapshot(
+pub(crate) fn open_exact_basis_snapshot(
     runtime: &mut RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
 ) -> Result<SnapshotHandle, RelationalSnapshotAdmissionDenial> {
@@ -15,7 +15,7 @@ pub fn open_exact_basis_snapshot(
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryExactBasisSnapshotDenial {
+pub(crate) enum WorthQueryExactBasisSnapshotDenial {
     BranchIdentityUnavailable,
     BranchObservationUnavailable,
     BranchMaterializationSuspended,
@@ -71,7 +71,7 @@ impl From<RelationalSnapshotAdmissionDenial> for WorthQueryExactBasisSnapshotDen
 /// Opens an ephemeral snapshot from the Relational owner's exact current
 /// branch observation. The descriptive branch name never selects storage on
 /// its own.
-pub fn open_current_branch_snapshot(
+pub(crate) fn open_current_branch_snapshot(
     runtime: &mut RelationalRuntime,
     branch: &BranchId,
 ) -> Result<SnapshotHandle, WorthQueryExactBasisSnapshotDenial> {

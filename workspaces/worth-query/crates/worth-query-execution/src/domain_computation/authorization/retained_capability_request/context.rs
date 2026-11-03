@@ -4,7 +4,7 @@ type Entry = (
     WorthQueryCapabilityContextKey,
     worth_relational::facade::identity::EntityId,
 );
-pub enum RetainedContext {
+pub(in crate::domain_computation::authorization) enum RetainedContext {
     Native(BTreeMap<WorthQueryCapabilityContextKey, worth_relational::facade::identity::EntityId>),
     Decoded(Vec<Entry>),
 }

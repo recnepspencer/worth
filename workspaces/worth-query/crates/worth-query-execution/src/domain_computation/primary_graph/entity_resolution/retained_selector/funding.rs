@@ -36,7 +36,7 @@ fn bytes(locator: &AspectFieldLocator, value: &AspectValue) -> Option<u64> {
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
-    pub fn retain_scope_selector_funded(
+    pub(in crate::domain_computation) fn retain_scope_selector_funded(
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<WorthQueryObservedScopeSelector>, Stop> {

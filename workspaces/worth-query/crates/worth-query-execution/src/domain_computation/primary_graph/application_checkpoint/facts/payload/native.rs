@@ -16,7 +16,7 @@ enum BuildStage {
     Postcommit,
 }
 
-pub struct NativeFactPayloadBuilder {
+pub(in crate::domain_computation::primary_graph) struct NativeFactPayloadBuilder {
     chunks: AuthorSlots<ExecutionArrayBuilder<Fact>>,
     joins: AuthorSlots<ExecutionArrayBuilder<FactPayload>>,
     roots: AuthorSlots<FactPayload>,
@@ -30,7 +30,7 @@ impl NativeFactPayloadBuilder {
         Self::allocate_at(count, control, BuildStage::Postcommit)
     }
 
-    pub fn allocate_completed_read(
+    pub(in crate::domain_computation::primary_graph) fn allocate_completed_read(
         count: usize,
         control: StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {

@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::retained_deci
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 
 #[derive(Debug)]
-pub struct PostingRebaseBasis {
+pub(in crate::domain_computation::primary_graph) struct PostingRebaseBasis {
     prior: Arc<RecordedSettlementIdentity>,
     baseline: FactPayload,
     storage: PostingComputationStorage,
@@ -25,7 +25,7 @@ impl PostingRebaseBasis {
             selected,
         }
     }
-    pub fn seal(
+    pub(in crate::domain_computation::primary_graph) fn seal(
         self,
         body: FactPayload,
         after: PositionedRelationalSnapshot,
@@ -47,7 +47,7 @@ struct CompletedPostingRebase {
     after: PositionedRelationalSnapshot,
 }
 #[derive(Clone, Debug)]
-pub struct PostingContinuation(
+pub(in crate::domain_computation::primary_graph) struct PostingContinuation(
     Arc<CompletedPostingRebase>,
 );
 impl PartialEq for PostingContinuation {

@@ -11,14 +11,14 @@ use crate::domain_computation::primary_graph::{
 /// has no such proof, and a republished output continues its own.
 /// The installed edition is the producer's whole identity: a runtime installs
 /// one producer under it, whichever program selects the occurrence.
-pub struct PreparedInputReuseKey {
+pub(in crate::domain_computation::primary_graph) struct PreparedInputReuseKey {
     selection: WorthQueryObservedSourceSelection,
     input_identity: [u8; 32],
     installed_edition: InstalledProducerEdition,
 }
 
 impl PreparedInputReuseKey {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         selection: WorthQueryObservedSourceSelection,
         input_identity: [u8; 32],
         installed_edition: InstalledProducerEdition,
@@ -32,7 +32,7 @@ impl PreparedInputReuseKey {
 
     /// The prepared input a republished output continues: the same selected
     /// membership, input and installed producer that performed it.
-    pub fn continued_by_republication(&self) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn continued_by_republication(&self) -> Self {
         Self {
             selection: self.selection.clone(),
             input_identity: self.input_identity,
@@ -40,7 +40,7 @@ impl PreparedInputReuseKey {
         }
     }
 
-    pub fn same_prepared_input_as(
+    pub(in crate::domain_computation::primary_graph) fn same_prepared_input_as(
         &self,
         other: &Self,
         admit: &mut impl FnMut(

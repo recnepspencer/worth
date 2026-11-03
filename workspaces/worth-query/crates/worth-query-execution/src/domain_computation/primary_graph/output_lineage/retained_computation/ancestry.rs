@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 impl WorthQueryApplicationOutputLineage {
-    pub fn computation_cell_in_ancestry(
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn computation_cell_in_ancestry(
         &self,
         source: &SemanticSource,
         mut coordinate: ProductCoordinate,

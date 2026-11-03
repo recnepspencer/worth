@@ -120,7 +120,7 @@ impl WorthQuerySessionEffectAuthority<'_> {
         )
     }
 
-    pub fn lower_shared_provisional_program(
+    pub(in crate::domain_computation) fn lower_shared_provisional_program(
         &self,
         read_set: &WorthQueryFreshDecisionReadSet,
         steps: Arc<[WorthQueryProvisionalEffectStep]>,

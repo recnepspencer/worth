@@ -113,7 +113,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
         self.publication_product.as_ref()
     }
-    pub fn product_one_shot(
+    pub(in crate::domain_computation::primary_graph) fn product_one_shot(
         product: crate::basis::WorthQueryProductBranchLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_result_count: NonZeroUsize,

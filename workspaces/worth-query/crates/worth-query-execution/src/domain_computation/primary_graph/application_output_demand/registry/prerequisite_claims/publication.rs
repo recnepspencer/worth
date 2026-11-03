@@ -5,7 +5,7 @@ use super::*;
 impl PreparedPrerequisiteClaims {
     /// The lineage owner has already reserved and minted this exact address.
     /// Insert its invisible registry vacancy before any World owner effect.
-    pub fn reserve_identity(
+    pub(in crate::domain_computation::primary_graph) fn reserve_identity(
         &mut self,
         identity: &Arc<RecordedSettlementIdentity>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
@@ -42,7 +42,7 @@ impl PreparedPrerequisiteClaims {
 
     /// This is called only after the product publication has committed. All
     /// allocations and index capacity were admitted by `prepare_prerequisites`.
-    pub fn publish(
+    pub(in crate::domain_computation::primary_graph) fn publish(
         mut self,
         identity: Arc<RecordedSettlementIdentity>,
     ) -> super::super::SupersededSettlements {

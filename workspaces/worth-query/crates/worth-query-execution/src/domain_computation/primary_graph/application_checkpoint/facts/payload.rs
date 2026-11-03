@@ -10,12 +10,12 @@ mod chunk;
 mod concatenation;
 mod copied;
 mod iteration;
-pub mod native;
+mod native;
 mod patch;
 mod performed_fields;
 pub(in crate::domain_computation::primary_graph) use patch::NativeFactPatchBuilder;
 
-pub mod sequence;
+mod sequence;
 #[cfg(test)]
 mod tests;
 pub(in crate::domain_computation::primary_graph) use iteration::FactIter;
@@ -53,7 +53,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Na
     }
 }
 #[derive(Clone, Debug)]
-pub struct FactPayload {
+pub(in crate::domain_computation::primary_graph) struct FactPayload {
     storage: FactStorage,
     start: usize,
     length: usize,
@@ -100,7 +100,7 @@ impl FactPayload {
             height: 0,
         }
     }
-    pub fn same_backing(&self, other: &Self) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn same_backing(&self, other: &Self) -> bool {
         self.start == other.start
             && self.length == other.length
             && match (&self.storage, &other.storage) {
@@ -128,10 +128,10 @@ impl FactPayload {
     ) -> Option<u64> {
         self.resident_bytes
     }
-    pub fn len(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.length
     }
-    pub fn is_empty(&self) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.length == 0
     }
     pub fn get(&self, ordinal: usize) -> Option<&Fact> {
@@ -141,7 +141,7 @@ impl FactPayload {
         let (start, chunk) = self.chunk_at(ordinal);
         chunk.get(ordinal - start)
     }
-    pub fn iter(&self) -> FactIter<'_> {
+    pub(in crate::domain_computation::primary_graph) fn iter(&self) -> FactIter<'_> {
         FactIter::new(self)
     }
     pub(in crate::domain_computation::primary_graph) fn checked_slice(

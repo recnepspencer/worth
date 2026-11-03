@@ -2,7 +2,7 @@
 /// bound check against a producer's static reuse declaration, not a source of
 /// declared dependencies.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct DecisionContextUse(u8);
+pub(in crate::domain_computation) struct DecisionContextUse(u8);
 
 impl DecisionContextUse {
     const KEY: u8 = 1;
@@ -60,11 +60,11 @@ impl DecisionContextUse {
         self.request_context()
     }
 
-    pub const fn raw_reader_for_test(self) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn raw_reader_for_test(self) -> Self {
         self.opaque_reader()
     }
 
-    pub const fn key_for_test(self) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn key_for_test(self) -> Self {
         self.key()
     }
 }

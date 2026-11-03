@@ -6,17 +6,17 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.
-pub struct WorthQueryRetainedOutputCandidate {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedOutputCandidate {
     pub(in crate::domain_computation::primary_graph) producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
-    pub correspondence:
+    pub(in crate::domain_computation::primary_graph) correspondence:
         Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>,
-    pub source_identity:
+    pub(in crate::domain_computation::primary_graph) source_identity:
         Option<RecordedSourceIdentity>,
-    pub observed_source_facts: Option<super::super::ComparableSourceFacts>,
+    pub(in crate::domain_computation::primary_graph) observed_source_facts: Option<super::super::ComparableSourceFacts>,
     /// The performed output's sealed witness: its origin's for a stable
     /// alias. A restored row has none until a full verification builds it.
-    pub native_output_witness:
+    pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>>,
     /// Why the row's settlement is verified in full, when it is: the row was
     /// restored, or the owner could not register it. A commit that could not
@@ -34,7 +34,7 @@ impl WorthQueryApplicationOutputLineage {
     /// Each binding's latest retained output, with every lookup reserved on
     /// the request's meter before it reads. A lookup that runs out keeps its
     /// reservation spent.
-    pub fn retained_output_candidates_metered(
+    pub(in crate::domain_computation::primary_graph) fn retained_output_candidates_metered(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,

@@ -34,7 +34,7 @@ pub enum WorthQueryArtifactProviderValueView<'a> {
 }
 
 impl WorthQueryArtifactProviderValueView<'_> {
-    pub fn physical_bytes(self) -> usize {
+    pub(crate) fn physical_bytes(self) -> usize {
         match self {
             Self::Null => 0,
             Self::Bool(value) => std::mem::size_of_val(value),

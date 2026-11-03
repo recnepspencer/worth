@@ -61,7 +61,7 @@ impl WorthQueryCommittedProviderSession {
         self.disposition.counters()
     }
 
-    pub const fn terminal_binding(
+    pub(in crate::domain_computation) const fn terminal_binding(
         &self,
     ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding
     {

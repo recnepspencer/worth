@@ -11,7 +11,7 @@ pub enum WorthQueryInMemoryApplicationProfile {
 }
 
 impl WorthQueryInMemoryApplicationProfile {
-    pub fn publication_override(
+    pub(super) fn publication_override(
         self,
         maximum_records: Option<std::num::NonZeroUsize>,
     ) -> Option<worth_relational::facade::config::PublicationConfig> {
@@ -26,7 +26,7 @@ impl WorthQueryInMemoryApplicationProfile {
         Some(policy)
     }
 
-    pub const fn relational_profile(
+    pub(super) const fn relational_profile(
         self,
     ) -> worth_relational::facade::config::RelationalRuntimeProfile {
         match self {

@@ -2,7 +2,7 @@ use super::*;
 
 /// An installed scope resolved on the selected Product's exact native root.
 /// The selected operation is borrowed until the scoped Query read completes.
-pub struct WorthQueryIssuedSelectedScope<
+pub(in crate::domain_computation) struct WorthQueryIssuedSelectedScope<
     'selected,
     'runtime,
     Schema,
@@ -14,7 +14,7 @@ pub struct WorthQueryIssuedSelectedScope<
 }
 
 impl<Schema, Scope> WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope> {
-    pub fn scope(
+    pub(in crate::domain_computation) fn scope(
         &self,
     ) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
         &self.scope

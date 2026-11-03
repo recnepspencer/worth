@@ -143,7 +143,7 @@ where
         )
     }
 
-    pub fn publish_application_runtime_with_ports(
+    pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_ports(
         self,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,

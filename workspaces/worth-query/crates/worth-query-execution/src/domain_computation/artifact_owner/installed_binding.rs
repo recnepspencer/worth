@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
-pub struct WorthQueryInstalledWorkflowArtifactContracts {
+pub(crate) struct WorthQueryInstalledWorkflowArtifactContracts {
     input:
         Option<Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>>,
     output:
@@ -12,7 +12,7 @@ pub struct WorthQueryInstalledWorkflowArtifactContracts {
 }
 
 impl WorthQueryInstalledWorkflowArtifactContracts {
-    pub const fn empty() -> Self {
+    pub(crate) const fn empty() -> Self {
         Self {
             input: None,
             output: None,
@@ -20,7 +20,7 @@ impl WorthQueryInstalledWorkflowArtifactContracts {
         }
     }
 
-    pub fn with_output(
+    pub(crate) fn with_output(
         output: Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
     ) -> Self {
         Self {

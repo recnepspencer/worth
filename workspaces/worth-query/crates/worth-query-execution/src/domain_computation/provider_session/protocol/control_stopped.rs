@@ -27,7 +27,7 @@ impl WorthQueryProviderSessionCommitControlStopped {
         }
     }
 
-    pub fn execution_preparation(
+    pub(in crate::domain_computation) fn execution_preparation(
         kind: WorthQueryProviderSessionControlStopKind,
         detail: impl Into<String>,
     ) -> Self {

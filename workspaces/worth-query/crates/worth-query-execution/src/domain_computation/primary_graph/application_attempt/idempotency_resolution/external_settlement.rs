@@ -10,7 +10,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
 {
     /// Correlation selects a terminal candidate; its original publication and
     /// dispatch facts must match the guarded receipt before workflow use.
-    pub fn resolve_guarded_workflow_external_settlement(
+    pub(in crate::domain_computation::primary_graph) fn resolve_guarded_workflow_external_settlement(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<bool, Denial> {

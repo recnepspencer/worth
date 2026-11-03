@@ -33,7 +33,7 @@ where
     ) -> Result<bool, Stop<Self::Denial>>;
 }
 
-pub struct RefinementCallbacks<S, I, P>
+pub(in crate::domain_computation::primary_graph) struct RefinementCallbacks<S, I, P>
 where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,

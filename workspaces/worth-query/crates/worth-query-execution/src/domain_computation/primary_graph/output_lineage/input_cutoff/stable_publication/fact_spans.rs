@@ -5,13 +5,13 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[derive(Clone)]
-pub struct StableFactSpans {
+pub(in crate::domain_computation::primary_graph::output_lineage) struct StableFactSpans {
     body: FactPayload,
     handler_end: usize,
     witness_end: usize,
 }
 impl StableFactSpans {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn new(
         body: FactPayload,
         handler_count: usize,
         witness_count: usize,

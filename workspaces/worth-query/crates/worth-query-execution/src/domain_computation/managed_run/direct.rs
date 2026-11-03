@@ -190,7 +190,7 @@ impl WorthQueryRunningDirectRun {
             .bind_graph_provider_call(graph_authority, request)
     }
 
-    pub fn execution_snapshot_reference(&self) -> String {
+    pub(crate) fn execution_snapshot_reference(&self) -> String {
         let parts = self
             .bridge_basis
             .observation()
@@ -269,7 +269,7 @@ impl WorthQueryRunningDirectRun {
         }
     }
 
-    pub fn terminate_for_convergence(
+    pub(crate) fn terminate_for_convergence(
         self,
         kind: WorthQueryManagedRunTerminalKind,
     ) -> WorthQueryDirectRunTerminal {

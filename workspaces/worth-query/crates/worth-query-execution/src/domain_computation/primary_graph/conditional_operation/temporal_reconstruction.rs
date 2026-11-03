@@ -35,7 +35,7 @@ use source_record_binding::bind_source_records;
 pub(super) use source_record_binding::WorthQueryReconstructedTemporalIntent;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct WorthQueryTemporalReconstructionWork {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryTemporalReconstructionWork {
     pub(super) examined_candidates: usize,
     pub(super) projected_records: usize,
     pub(super) projected_fields: usize,

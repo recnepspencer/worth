@@ -14,10 +14,10 @@
 #![recursion_limit = "256"]
 
 mod basis;
-pub mod domain_computation;
-pub mod equality_type_id;
-pub mod execution_digest;
-pub mod relational_snapshot_release;
+mod domain_computation;
+mod equality_type_id;
+mod execution_digest;
+mod relational_snapshot_release;
 
 pub mod facade;
 pub mod publication_boundary;

@@ -5,13 +5,13 @@ use super::{
     WorthQueryLiveCommitBatchCell, WorthQueryLiveDeliverySourceState, WorthQueryLiveProductKey,
 };
 
-pub struct WorthQueryLiveSubscription {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveSubscription {
     pub(super) state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     pub(super) key: WorthQueryLiveProductKey,
     pub(super) cursor: u64,
 }
 
-pub struct WorthQueryLivePublicationReservation {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePublicationReservation {
     pub(super) state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     pub(super) key: WorthQueryLiveProductKey,
     pub(super) slot: Option<Arc<WorthQueryLiveCommitBatchCell>>,

@@ -9,14 +9,14 @@ use worth_execution::ExecutionArrayBuilder;
 use worth_relational::facade::history::RelationalDescriptiveTouchGraph;
 
 /// Candidate-derived coverage and its allocation custody move together.
-pub struct SelectedPostconditionRebase {
-    pub ordinals: OrdSet<usize>,
-    pub basis:
+pub(in crate::domain_computation::primary_graph) struct SelectedPostconditionRebase {
+    pub(in crate::domain_computation::primary_graph) ordinals: OrdSet<usize>,
+    pub(in crate::domain_computation::primary_graph) basis:
         super::super::settlement::PostingRebaseBasis,
 }
 
 #[derive(Clone)]
-pub struct PostconditionCarry {
+pub(in crate::domain_computation::primary_graph) struct PostconditionCarry {
     changes: ComputationChanges,
     prefix: usize,
     fresh: Arc<ExecutionArray<usize>>,
@@ -29,7 +29,7 @@ impl std::fmt::Debug for PostconditionCarry {
     }
 }
 impl ComputationChanges {
-    pub fn carry(
+    pub(in crate::domain_computation::primary_graph) fn carry(
         &self,
         original: &FactPayload,
         prefix: usize,
@@ -79,7 +79,7 @@ impl PostconditionCarry {
         )
     }
 
-    pub fn matches_publication_source(
+    pub(in crate::domain_computation::primary_graph) fn matches_publication_source(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -112,7 +112,7 @@ impl PostconditionCarry {
     }
     /// Both passes visit only candidate touches and their matching local postings.
     /// The original image owns the projection; no independent reverse index exists.
-    pub fn select(
+    pub(in crate::domain_computation::primary_graph) fn select(
         &self,
         touches: &RelationalDescriptiveTouchGraph,
         count: usize,

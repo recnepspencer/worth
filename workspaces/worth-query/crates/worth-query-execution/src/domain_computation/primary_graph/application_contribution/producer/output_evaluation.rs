@@ -1,6 +1,6 @@
 //! One actual producer field comparison, completed before Ready and retained through retries.
 pub(super) mod installation;
-pub mod native;
+mod native;
 use super::output_equivalence_contract::InstalledProducerOutputEquivalence;
 use crate::domain_computation::primary_graph::{
     application_output_demand::PreparedReadyBacking,
@@ -84,7 +84,7 @@ impl ProducerOutputEvaluation {
 }
 
 /// One installed comparison owns its exact field/role meaning and lowering.
-pub struct InstalledOutputComparison {
+pub(in crate::domain_computation::primary_graph) struct InstalledOutputComparison {
     lowering: Arc<BridgeInstalledConditionalLowering>,
     field: Arc<InstalledProducerOutputEquivalence>,
     role: Arc<str>,

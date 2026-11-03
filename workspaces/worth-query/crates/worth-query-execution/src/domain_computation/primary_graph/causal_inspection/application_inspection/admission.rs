@@ -2,21 +2,21 @@
 mod plan;
 pub(super) use plan::InspectionPlanDenial;
 mod source_scope;
-pub mod subject;
+mod subject;
 pub(super) use subject::InspectionSubject;
 pub(super) mod connected;
-pub mod policy;
-pub mod preparation;
+pub(super) mod policy;
+pub(super) mod preparation;
 pub(super) use preparation::prepare;
 mod affinity;
 pub(super) use affinity::validate_original_affinity;
 mod comparison;
 mod currentness;
 mod governance_binding;
-pub mod materialization;
+mod materialization;
 
-pub mod rich;
-pub mod terminal;
+pub(super) mod rich;
+mod terminal;
 use super::target::InspectionTargetDenial;
 use super::WorthQueryApplicationInspectionTarget;
 use crate::domain_computation::{
@@ -34,7 +34,7 @@ use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
-pub enum InspectionAdmissionDenial {
+pub(super) enum InspectionAdmissionDenial {
     Request(worth_execution::WorkCeilingDenial),
     RequestControl(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption),
     ForeignIssuedAccess,
@@ -65,19 +65,19 @@ pub enum InspectionAdmissionDenial {
     Report(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::report::InspectionReportDenial>),
 }
 
-pub struct InspectionRead<'a, 'storage, Schema, Scope> {
+pub(super) struct InspectionRead<'a, 'storage, Schema, Scope> {
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    pub scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     request: &'a WorthQueryRequestScope,
-    pub principal: worth_relational::facade::identity::EntityId,
+    principal: worth_relational::facade::identity::EntityId,
     basis: WorthQueryApplicationBasisIdentity,
-    pub target: Arc<WorthQueryApplicationInspectionTarget>,
-    pub session: WorthQueryManagedGraphWorkSession,
+    target: Arc<WorthQueryApplicationInspectionTarget>,
+    session: WorthQueryManagedGraphWorkSession,
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
     diagnostic: Option<WorthQueryApplicationQueryGovernance>,
     source: Option<connected::SourceRead<'a>>,
-    pub memory: &'storage mut Option<ExecutionMemoryReservation>,
+    memory: &'storage mut Option<ExecutionMemoryReservation>,
 }
 
 pub(super) struct InspectionComparisonPreparation<'original> {
@@ -85,7 +85,7 @@ pub(super) struct InspectionComparisonPreparation<'original> {
     pub(super) pending: crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
 }
 
-pub enum InspectionDiagnosticPreparation<'o> {
+pub(super) enum InspectionDiagnosticPreparation<'o> {
     Comparison(InspectionComparisonPreparation<'o>),
     Rich {
         request:super::rich::WorthQueryApplicationMaterializationRequest,
@@ -115,7 +115,7 @@ impl<'o> InspectionDiagnosticPreparation<'o> {
         }
     }
 }
-pub fn require_request(
+pub(super) fn require_request(
     execution: &ExecutionRequest<'_, '_>,
     request: &WorthQueryRequestScope,
 ) -> Result<(), InspectionAdmissionDenial> {

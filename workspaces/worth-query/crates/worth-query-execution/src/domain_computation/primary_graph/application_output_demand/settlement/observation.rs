@@ -1,6 +1,6 @@
 //! The real settlement's readonly seed, separate from its operational read lease.
 
-pub mod provenance;
+mod provenance;
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
 /// No variant asserts that a query row or field was produced by this source.
 /// Fresh metadata admission and exact revision/output overlap remain necessary.
 #[derive(Clone)]
-pub enum OriginalSettledProducerSource {
+pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSource {
     Committed {
         settlement: Option<Arc<RecordedSettlementIdentity>>,
         publication: Option<WorthQueryProductBranchReadIdentity>,
@@ -34,13 +34,13 @@ pub enum OriginalSettledProducerSource {
 
 /// One original-request funded header sharing only original immutable backings.
 /// It owns no Product observation, Native reader, Ready cell or commit receipt.
-pub struct OriginalSettledProducerObservation {
-    pub runtime_authority: u64,
-    pub schema: ApplicationSchemaBindingIdentity,
-    pub read: WorthQueryProductBranchReadIdentity,
-    pub source: OriginalSettledProducerSource,
-    pub correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub _memory: Option<worth_execution::ExecutionMemoryReservation>,
+pub(in crate::domain_computation::primary_graph) struct OriginalSettledProducerObservation {
+    runtime_authority: u64,
+    schema: ApplicationSchemaBindingIdentity,
+    read: WorthQueryProductBranchReadIdentity,
+    source: OriginalSettledProducerSource,
+    correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl std::fmt::Debug for OriginalSettledProducerObservation {

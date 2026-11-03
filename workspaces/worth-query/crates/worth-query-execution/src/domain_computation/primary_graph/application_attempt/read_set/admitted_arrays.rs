@@ -3,7 +3,7 @@ use worth_execution::{ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayB
 
 /// Moves only the known inline payload into fresh admitted backing. Upstream
 /// maps and nested values remain separate allocation owners.
-pub fn admit_array<T>(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn admit_array<T>(
     count: usize,
     values: impl IntoIterator<Item = T>,
     policy: ExecutionAllocationPolicy<'_, '_>,

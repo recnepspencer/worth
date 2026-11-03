@@ -4,9 +4,9 @@ use std::cell::{Cell, RefCell};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
 
-pub struct ValueDecodeState {
+pub(in crate::domain_computation::primary_graph) struct ValueDecodeState {
     pub(super) bindings: WorthQueryInstalledApplicationValueBindingCatalog,
-    pub memory: RefCell<Option<ExecutionMemoryReservation>>,
+    pub(super) memory: RefCell<Option<ExecutionMemoryReservation>>,
     first: Cell<Option<Stop>>,
     pub(super) require_admitted: bool,
 }
@@ -31,7 +31,7 @@ impl ValueDecodeState {
         }
     }
 
-    pub fn denial(&self) -> Option<Stop> {
+    pub(in crate::domain_computation::primary_graph) fn denial(&self) -> Option<Stop> {
         self.first.get()
     }
 
@@ -57,7 +57,7 @@ impl ValueDecodeState {
 
     /// Retains the first failure and any explicitly accounted grants across reads.
     /// Its owner supplies the original borrowed request each time.
-    pub fn run<R>(
+    pub(in crate::domain_computation::primary_graph) fn run<R>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         body: impl FnOnce(&ValueDecodeSession<'_>) -> R,

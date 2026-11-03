@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
-    pub fn validate_effects(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn validate_effects(
         &self,
         effects: &[WorthQueryApplicationRealizedEffect],
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {

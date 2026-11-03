@@ -6,10 +6,10 @@ use super::{
 use std::sync::{atomic::Ordering, Arc};
 
 #[derive(Debug)]
-pub struct WorthQueryLiveSubscriptionCapacityExhausted;
+pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveSubscriptionCapacityExhausted;
 
 impl WorthQueryLiveDeliverySource {
-    pub fn open(
+    pub(in crate::domain_computation::primary_graph) fn open(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> Result<WorthQueryLiveSubscription, WorthQueryLiveSubscriptionCapacityExhausted> {

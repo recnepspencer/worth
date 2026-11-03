@@ -24,7 +24,7 @@ pub(super) struct ReachedCalls {
     entries: ExecutionOrderedMap<ReachedEntity, Calls>,
 }
 impl ReachedCalls {
-    pub fn bytes(&self) -> Option<u64> {
+    pub(super) fn bytes(&self) -> Option<u64> {
         self.entries
             .values()
             .try_fold(self.entries.accounted_bytes()?, |bytes, calls| {

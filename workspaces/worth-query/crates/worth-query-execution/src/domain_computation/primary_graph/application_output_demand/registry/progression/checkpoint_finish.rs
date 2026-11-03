@@ -1,13 +1,13 @@
 //! Ordinary checkpoint restoration returns custody whenever its claim moved.
 use super::*;
 
-pub enum CheckpointFinishStop {
+pub(in crate::domain_computation::primary_graph) enum CheckpointFinishStop {
     Restored(WorthQueryOutputDemandDenial),
     Returned(WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint),
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn finish_checkpoint_owned(
+    pub(in crate::domain_computation::primary_graph) fn finish_checkpoint_owned(
         &self,
         interest: &WorthQueryOutputDemandInterest,
         claim: WorthQueryOutputClaimIdentity,

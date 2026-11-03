@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 
 /// Bound to the exact source root checked by the cutoff, and to the new
 /// lineage address whose marks this source image will install.
-pub struct PreparedCurrentSettlementRegistration<
+pub(in crate::domain_computation::primary_graph) struct PreparedCurrentSettlementRegistration<
     'selected,
 > {
     prepared: PreparedSettlementRegistration,
@@ -25,12 +25,12 @@ pub struct PreparedCurrentSettlementRegistration<
     selected: &'selected PositionedRelationalSnapshot,
 }
 
-pub struct CurrentSettlementRegistrationCleanup {
+pub(in crate::domain_computation::primary_graph) struct CurrentSettlementRegistrationCleanup {
     _prepared: SettlementRegistrationCleanup,
     _identity: Arc<RecordedSettlementIdentity>,
 }
 
-pub struct StoppedCurrentSettlementRegistration<
+pub(in crate::domain_computation::primary_graph) struct StoppedCurrentSettlementRegistration<
     'selected,
 > {
     stopped: StoppedSettlementRegistration,
@@ -39,19 +39,19 @@ pub struct StoppedCurrentSettlementRegistration<
 }
 
 impl<'selected> PreparedCurrentSettlementRegistration<'selected> {
-    pub fn identity(
+    pub(in crate::domain_computation::primary_graph) fn identity(
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {
         &self.identity
     }
 
-    pub fn selected_source(
+    pub(in crate::domain_computation::primary_graph) fn selected_source(
         &self,
     ) -> &'selected PositionedRelationalSnapshot {
         self.selected
     }
 
-    pub fn install(
+    pub(in crate::domain_computation::primary_graph) fn install(
         self,
     ) -> Result<CurrentSettlementRegistrationCleanup, StoppedCurrentSettlementRegistration<'selected>>
     {
@@ -89,7 +89,7 @@ impl<'selected> StoppedCurrentSettlementRegistration<'selected> {
 }
 
 impl SourceInvalidationOwner {
-    pub fn prepare_current_settlement<'selected>(
+    pub(in crate::domain_computation::primary_graph) fn prepare_current_settlement<'selected>(
         &self,
         registration: SettlementRegistration,
         selected: &'selected PositionedRelationalSnapshot,
@@ -113,7 +113,7 @@ impl SourceInvalidationOwner {
 
     /// Only the sealed stable-publication relation may discharge an old
     /// consumed identity in the same prepared current source image.
-    pub fn prepare_current_stable_settlement<
+    pub(in crate::domain_computation::primary_graph) fn prepare_current_stable_settlement<
         'selected,
     >(
         &self,

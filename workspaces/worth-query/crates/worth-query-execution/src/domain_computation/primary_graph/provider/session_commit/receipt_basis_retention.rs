@@ -11,7 +11,7 @@ use worth_relational::facade::history::CommitId;
 const RETAINED_RECEIPT_BASIS_LIMIT: usize = 64;
 
 #[derive(Clone)]
-pub struct WorthQueryRetainedApplicationCommitBasis {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedApplicationCommitBasis {
     lease: Arc<RelationalBranchRetentionLease>,
 }
 
@@ -53,7 +53,7 @@ impl PartialEq for WorthQueryRetainedApplicationCommitBasis {
 impl Eq for WorthQueryRetainedApplicationCommitBasis {}
 
 #[derive(Default)]
-pub struct WorthQueryReceiptBasisRetentionStore {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryReceiptBasisRetentionStore {
     order: VecDeque<CommitId>,
     by_commit: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
     mandatory: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
@@ -95,7 +95,7 @@ impl WorthQueryReceiptBasisRetentionStore {
         }
     }
 
-    pub fn retain(
+    pub(in crate::domain_computation::primary_graph::provider) fn retain(
         &mut self,
         commit: CommitId,
         lease: RelationalBranchRetentionLease,

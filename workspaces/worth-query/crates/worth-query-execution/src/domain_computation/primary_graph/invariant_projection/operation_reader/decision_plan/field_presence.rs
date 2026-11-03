@@ -4,7 +4,7 @@ use worth_query_installation::facade::{
     WorthQueryOperationTouchContract, WorthQueryOperationTouchScope,
 };
 
-pub fn may_write(
+pub(super) fn may_write(
     contract: &WorthQueryOperationTouchContract,
     entity: &str,
     locator: &AspectFieldLocator,

@@ -18,12 +18,12 @@ use crate::domain_computation::primary_graph::conditional_operation::temporal_re
 /// commit; the owner's retained touches decide relevance against this set.
 #[derive(Clone, Default)]
 pub struct WorthQueryConditionalCommitWatchSet {
-    pub entities: Option<Arc<WatchEntries>>,
-    pub whole_graph: bool,
+    entities: Option<Arc<WatchEntries>>,
+    whole_graph: bool,
 }
 
-pub struct WatchEntries {
-    pub entities: BTreeSet<EntityId>,
+struct WatchEntries {
+    entities: BTreeSet<EntityId>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -57,7 +57,7 @@ impl WorthQueryConditionalCommitWatchSet {
         Ok(watch)
     }
 
-    pub fn retain_entities(
+    fn retain_entities(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         predecessor: Option<&Self>,
         incoming: impl Iterator<Item = EntityId>,
@@ -105,7 +105,7 @@ impl WorthQueryConditionalCommitWatchSet {
         }))
     }
 
-    pub fn entities(&self) -> &BTreeSet<EntityId> {
+    pub(super) fn entities(&self) -> &BTreeSet<EntityId> {
         static EMPTY: BTreeSet<EntityId> = BTreeSet::new();
         self.entities
             .as_ref()

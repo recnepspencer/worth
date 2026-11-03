@@ -13,23 +13,23 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 #[derive(Clone)]
-pub struct WorthQueryRestoredAcceptedOutput {
-    pub checkpoint:
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAcceptedOutput {
+    pub(in crate::domain_computation::primary_graph) checkpoint:
         super::WorthQueryAcceptedOutputCheckpointIdentity,
-    pub correspondence: std::sync::Arc<
+    pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
-    pub observation:
+    pub(in crate::domain_computation::primary_graph) observation:
         worth_runtime_world::facade::ProductBranchObservation,
-    pub source_scope:
+    pub(in crate::domain_computation::primary_graph) source_scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub source_identity:
+    pub(in crate::domain_computation::primary_graph) source_identity:
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
-    pub observed_source_facts:
+    pub(in crate::domain_computation::primary_graph) observed_source_facts:
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     /// Only a reconstruction verified against the authentic recovered Native
     /// snapshot may populate this original-output witness.
-    pub native_output_witness: Option<
+    pub(in crate::domain_computation::primary_graph) native_output_witness: Option<
         std::sync::Arc<std::sync::OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>,
     >,
 }
@@ -64,7 +64,7 @@ impl WorthQueryRestoredAcceptedOutput {
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn admit_restored(
+    pub(in crate::domain_computation::primary_graph) fn admit_restored(
         &self,
         requested_key: WorthQueryOutputDemandKey,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,

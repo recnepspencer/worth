@@ -9,7 +9,7 @@ use std::sync::Arc;
 /// installed edition, the state the selected record retained, and that
 /// record.
 #[derive(Clone)]
-pub struct ComputationPrior {
+pub(in crate::domain_computation) struct ComputationPrior {
     pub(super) edition: InstalledProducerEdition,
     pub retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
     record: Option<PriorComputationRecord>,
@@ -19,7 +19,7 @@ pub struct ComputationPrior {
 }
 
 impl ComputationPrior {
-    pub const fn new(
+    pub(in crate::domain_computation::primary_graph) const fn new(
         edition: InstalledProducerEdition,
         retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
         record: Option<PriorComputationRecord>,
@@ -78,17 +78,17 @@ impl ComputationPrior {
         PRIOR_IN_TEST.with(|prior| prior.borrow().clone())
     }
 
-    pub fn hand_in_test(prior: Option<Self>) {
+    pub(super) fn hand_in_test(prior: Option<Self>) {
         PRIOR_IN_TEST.with(|handed| *handed.borrow_mut() = prior);
     }
 }
 
 impl SealedComputationRun {
-    pub fn keep_in_test(run: Option<Self>) {
+    pub(in crate::domain_computation) fn keep_in_test(run: Option<Self>) {
         SEALED_IN_TEST.with(|kept| *kept.borrow_mut() = run);
     }
 
-    pub fn kept_in_test() -> Option<Self> {
+    pub(super) fn kept_in_test() -> Option<Self> {
         SEALED_IN_TEST.with(|kept| kept.borrow_mut().take())
     }
 }

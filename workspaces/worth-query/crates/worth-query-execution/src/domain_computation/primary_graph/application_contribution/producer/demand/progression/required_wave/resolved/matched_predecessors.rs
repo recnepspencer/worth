@@ -5,7 +5,7 @@ use super::*;
 /// Ready was already certified Current on this selected wave, whether this
 /// wave or an earlier advance refreshed it. A consumer of several outputs
 /// carries one per resolved consumed edge.
-pub struct MatchedRequiredPredecessors<'a> {
+pub(in crate::domain_computation::primary_graph) struct MatchedRequiredPredecessors<'a> {
     _custody: crate::domain_computation::primary_graph::application_output_demand::ConsumerCustody,
     roots: Vec<MatchedConsumedRoot>,
     selected: &'a PositionedRelationalSnapshot,

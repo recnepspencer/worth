@@ -244,7 +244,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         self.counters
     }
 
-    pub fn bind_application_product(
+    pub(in crate::domain_computation) fn bind_application_product(
         mut self,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryProviderSessionFailure> {

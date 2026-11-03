@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use std::collections::BTreeMap;
 
-pub enum ObservedComputationInputs {
+pub(in crate::domain_computation::primary_graph) enum ObservedComputationInputs {
     None,
     One(std::sync::Arc<ComputationFactAttribution>),
     Several(std::sync::Arc<ComputationFactAttribution>),

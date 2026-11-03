@@ -51,7 +51,7 @@ impl<'o> WorthQueryMaterializedApplicationInspection<'o> {
         drop(self)
     }
 }
-pub struct PreparedRichInspection<'o> {
+pub(in super::super) struct PreparedRichInspection<'o> {
     original: &'o WorthQueryApplicationQueryObservation,
     report: InspectionReportPayload,
     materialization: WorthQueryApplicationRichMaterialization,
@@ -59,7 +59,7 @@ pub struct PreparedRichInspection<'o> {
     connection_identity: Option<BridgeIdentityEvidence>,
 }
 impl CompletedInspection {
-    pub fn publish_rich<'o>(
+    pub(in super::super) fn publish_rich<'o>(
         self,
         execution: &ExecutionRequest<'_, '_>,
         original: &'o WorthQueryApplicationQueryObservation,

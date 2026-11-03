@@ -34,7 +34,7 @@ pub enum WorthQueryProviderSessionCommitDeferredKind {
 }
 
 impl WorthQueryProviderSessionCommitDeferred {
-    pub fn new(
+    pub(in crate::domain_computation) fn new(
         kind: WorthQueryProviderSessionCommitDeferredKind,
         detail: impl Into<String>,
     ) -> Self {

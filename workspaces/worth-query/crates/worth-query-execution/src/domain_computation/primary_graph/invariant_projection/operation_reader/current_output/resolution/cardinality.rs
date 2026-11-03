@@ -2,13 +2,13 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum CurrentOutputCardinality<T> {
+pub(super) enum CurrentOutputCardinality<T> {
     Missing,
     Unique(T),
     Ambiguous(Vec<T>),
 }
 
-pub fn classify_current_entities<T: Copy + Eq + Hash>(
+pub(super) fn classify_current_entities<T: Copy + Eq + Hash>(
     entities: impl IntoIterator<Item = T>,
 ) -> CurrentOutputCardinality<T> {
     let mut seen = HashSet::new();

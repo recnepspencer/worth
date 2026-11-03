@@ -1,4 +1,4 @@
-pub mod content_storage;
+pub(super) mod content_storage;
 use std::sync::Arc;
 
 use worth_foundational::facade::AspectValue;
@@ -16,11 +16,11 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 pub(in crate::domain_computation::primary_graph::application_query::projection) mod comparison;
-pub mod content;
-pub mod content_comparison;
-pub mod disclosure_boundary;
+pub(in crate::domain_computation::primary_graph::application_query) mod content;
+mod content_comparison;
+mod disclosure_boundary;
 mod field;
-pub mod owned_rows;
+mod owned_rows;
 pub(in crate::domain_computation::primary_graph::application_query) use owned_rows::{
     OwnedProjectionRows, ProjectionDisposal,
 };
@@ -31,32 +31,32 @@ pub(in crate::domain_computation::primary_graph::application_query) use disclosu
 };
 
 pub struct WorthQueryApplicationProjectedField {
-    pub result_path: Arc<str>,
-    pub slot_type: Arc<str>,
-    pub slot_key: Arc<ApplicationQueryResultSlotKey>,
-    pub value: AspectValue,
+    result_path: Arc<str>,
+    slot_type: Arc<str>,
+    slot_key: Arc<ApplicationQueryResultSlotKey>,
+    value: AspectValue,
 }
 
 pub struct WorthQueryApplicationProjectedRelation {
-    pub result_path: Arc<str>,
-    pub slot_type: Arc<str>,
-    pub slot_key: Arc<ApplicationQueryResultSlotKey>,
-    pub cardinality: ApplicationQueryCardinality,
-    pub predicate_sources: Vec<EntityId>,
-    pub rows: Vec<WorthQueryApplicationProjectionNode>,
+    result_path: Arc<str>,
+    slot_type: Arc<str>,
+    slot_key: Arc<ApplicationQueryResultSlotKey>,
+    cardinality: ApplicationQueryCardinality,
+    predicate_sources: Vec<EntityId>,
+    rows: Vec<WorthQueryApplicationProjectionNode>,
 }
 
 pub struct WorthQueryApplicationProjectionNode {
-    pub entity_id: EntityId,
-    pub incoming_relation: Option<RelationId>,
-    pub source_path: Option<Arc<str>>,
-    pub source_dependencies_complete: bool,
-    pub fields: Vec<WorthQueryApplicationProjectedField>,
-    pub relations: Vec<WorthQueryApplicationProjectedRelation>,
+    entity_id: EntityId,
+    incoming_relation: Option<RelationId>,
+    source_path: Option<Arc<str>>,
+    source_dependencies_complete: bool,
+    fields: Vec<WorthQueryApplicationProjectedField>,
+    relations: Vec<WorthQueryApplicationProjectedRelation>,
 }
 
 impl WorthQueryApplicationProjectionNode {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph::application_query) fn new(
         entity_id: EntityId,
         source_path: Option<Arc<str>>,
         source_dependencies_complete: bool,
@@ -194,7 +194,7 @@ impl WorthQueryApplicationProjectionNode {
 }
 
 impl WorthQueryApplicationProjectedRelation {
-    pub fn new(
+    pub(in crate::domain_computation::primary_graph::application_query) fn new(
         relation: &WorthQueryInstalledGraphRelation,
         predicate_sources: Vec<EntityId>,
         rows: Vec<WorthQueryApplicationProjectionNode>,
@@ -239,7 +239,7 @@ impl WorthQueryApplicationProjectedRelation {
         &self.predicate_sources
     }
 
-    pub fn retained_bytes(&self) -> usize {
+    fn retained_bytes(&self) -> usize {
         let Self {
             result_path: _result_path,
             slot_type: _slot_type,

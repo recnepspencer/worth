@@ -2,16 +2,16 @@ use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId};
 
-pub mod adjacency;
+mod adjacency;
 mod dependency_key;
 mod entity_touch;
 mod equality;
-pub mod indexed_entity_selection;
+mod indexed_entity_selection;
 mod locator_identity;
 mod managed_source_read;
-pub mod movement;
+mod movement;
 mod retirement_equality;
-pub mod source_currentness;
+mod source_currentness;
 mod source_read_authorization;
 pub(in crate::domain_computation::primary_graph) use source_read_authorization::{
     SourceReadAuthorization, SourceReadAuthorizationKey,
@@ -23,9 +23,9 @@ pub(in crate::domain_computation::primary_graph) use managed_source_read::{
 };
 pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
 mod workflow_definition_predecessor;
-pub mod workflow_history_basis;
+mod workflow_history_basis;
 pub(in crate::domain_computation) use workflow_history_basis::WorkflowHistoryRequirement;
-pub mod workflow_instance_capacity;
+mod workflow_instance_capacity;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency_with_work;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_audit_outgoing_adjacency;
@@ -43,20 +43,20 @@ pub(in crate::domain_computation::primary_graph) use movement::{
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum WorthQueryApplicationAdjacencyDirection {
+pub(in crate::domain_computation) enum WorthQueryApplicationAdjacencyDirection {
     Outgoing,
     Incoming,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryApplicationObservedRelation {
-    pub relation_id: RelationId,
-    pub from: EntityId,
-    pub to: EntityId,
+pub(in crate::domain_computation) struct WorthQueryApplicationObservedRelation {
+    pub(in crate::domain_computation::primary_graph) relation_id: RelationId,
+    pub(in crate::domain_computation::primary_graph) from: EntityId,
+    pub(in crate::domain_computation::primary_graph) to: EntityId,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum WorthQueryApplicationFactKey {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactKey {
     StructuralWalk(super::super::structural_walk::StructuralWalkKey),
     Aggregate(super::super::aggregate_observation::AggregateKey),
     ComponentSelection(super::super::component_selection::ComponentSelectionKey),
@@ -91,7 +91,7 @@ pub enum WorthQueryApplicationFactKey {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationObservedFact {
+pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
     /// Actual conventional Source permission, independently retained and checked.
     SourceReadAuthorization {
         observation: std::sync::Arc<SourceReadAuthorization>,
@@ -257,7 +257,7 @@ impl WorthQueryApplicationObservedFact {
         }
     }
 
-    pub fn locator_identity(&self) -> String {
+    pub(crate) fn locator_identity(&self) -> String {
         locator_identity::encode(self)
     }
 

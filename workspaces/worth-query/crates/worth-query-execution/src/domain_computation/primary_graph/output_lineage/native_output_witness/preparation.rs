@@ -12,7 +12,7 @@ impl PreparedNativeOutputWitness {
     /// A restoration re-creates an output its producer already performed. The
     /// committed correspondence names the roles that producer's attempt
     /// declared, so the same preparation serves the re-created entities.
-    pub fn prepare_republication(
+    pub(in crate::domain_computation::primary_graph) fn prepare_republication(
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         layout: &WorthQueryPrimaryGraphLayout,
     ) -> Result<Option<Self>, CompanionPreflightStop> {

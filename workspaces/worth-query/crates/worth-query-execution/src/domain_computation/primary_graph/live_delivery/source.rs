@@ -7,7 +7,7 @@ mod partition;
 mod predicate;
 mod publication;
 mod reservation;
-pub mod subscription;
+mod subscription;
 pub(in crate::domain_computation::primary_graph) use subscription::WorthQueryLiveSubscriptionCapacityExhausted;
 mod testing;
 
@@ -23,7 +23,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 #[derive(Debug)]
-pub enum WorthQueryLiveAdmissionDenial {
+pub(in crate::domain_computation::primary_graph) enum WorthQueryLiveAdmissionDenial {
     Execution(Cause),
     Unavailable(&'static str),
 }
@@ -44,13 +44,13 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublicat
 const RETAINED_COMMIT_BATCH_CAPACITY: usize = 64;
 
 #[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryLiveProductKey {
+struct WorthQueryLiveProductKey {
     branch: worth_runtime_world::facade::ProductBranchIdentity,
     incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
 }
 
 impl WorthQueryLiveProductKey {
-    pub fn from_observation(
+    fn from_observation(
         observation: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> Self {
         Self {
@@ -65,26 +65,26 @@ impl WorthQueryLiveProductKey {
     }
 }
 
-pub struct WorthQueryLiveDeliverySource {
-    pub state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
+pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveDeliverySource {
+    state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     batch_capacity: AtomicUsize,
     after_reservation: Mutex<Option<Arc<dyn Fn() + Send + Sync>>>,
 }
 
 #[derive(Default)]
-pub struct WorthQueryLiveDeliverySourceState {
-    pub partitions: BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
+struct WorthQueryLiveDeliverySourceState {
+    partitions: BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
     published_commit_count: usize,
-    pub subscriber_count: usize,
+    subscriber_count: usize,
     closed: bool,
 }
 
-pub struct WorthQueryLiveProductPartition {
+struct WorthQueryLiveProductPartition {
     batches: VecDeque<Arc<WorthQueryLiveCommitBatchCell>>,
     allocated_batch_capacity: usize,
     next_sequence: u64,
     last_product_commit: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
-    pub subscriber_count: usize,
+    subscriber_count: usize,
     reservation_live: bool,
     retired: bool,
     preparation_count: usize,
@@ -143,7 +143,7 @@ impl WorthQueryLiveDeliverySource {
         }
     }
 
-    pub fn reserve(
+    pub(in crate::domain_computation::primary_graph) fn reserve(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
@@ -268,7 +268,7 @@ impl WorthQueryLiveDeliverySource {
         drop(retired);
     }
 
-    pub fn close(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn close(&self) -> usize {
         let mut state = self
             .state
             .lock()

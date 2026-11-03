@@ -28,7 +28,7 @@ struct Dependencies {
 }
 
 #[derive(Clone)]
-pub struct WorthQueryWorkflowApprovalDependencies {
+pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalDependencies {
     owned: Arc<OwnedDependencies>,
 }
 struct OwnedDependencies {
@@ -67,7 +67,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_dependencies(
 }
 
 impl WorthQueryWorkflowApprovalDependencies {
-    pub fn decode(
+    pub(in crate::domain_computation) fn decode(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         encoded: &str,
     ) -> Result<Self, DecodeDenial> {

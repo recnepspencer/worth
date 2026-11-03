@@ -4,13 +4,13 @@ use super::*;
 // prepaid before publication, including the commit's own deletion version.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct RetirementMetadata {
-    pub kind: KindId,
-    pub created_at: VersionId,
-    pub deleted_at: VersionId,
+pub(super) struct RetirementMetadata {
+    pub(super) kind: KindId,
+    pub(super) created_at: VersionId,
+    pub(super) deleted_at: VersionId,
 }
 
-pub fn native_metadata(
+pub(super) fn native_metadata(
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,

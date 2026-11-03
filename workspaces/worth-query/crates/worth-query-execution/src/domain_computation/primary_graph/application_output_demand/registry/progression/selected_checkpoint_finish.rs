@@ -7,7 +7,7 @@ use super::*;
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-pub struct PreparedSelectedCheckpointFinish<'a> {
+pub(in crate::domain_computation::primary_graph) struct PreparedSelectedCheckpointFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
     interest: &'a WorthQueryOutputDemandInterest,
     member: Arc<RequiredWorkMembership>,
@@ -16,7 +16,7 @@ pub struct PreparedSelectedCheckpointFinish<'a> {
 impl WorthQueryOutputDemandRegistry {
     /// Prepare before the registry's begin. No later budget refusal may leave
     /// a claimed checkpoint outside both the row and successor custody.
-    pub fn prepare_selected_checkpoint_finish<'a>(
+    pub(in crate::domain_computation::primary_graph) fn prepare_selected_checkpoint_finish<'a>(
         &'a self,
         interest: &'a WorthQueryOutputDemandInterest,
     ) -> Result<PreparedSelectedCheckpointFinish<'a>, WorthQueryOutputDemandDenial> {
@@ -52,7 +52,7 @@ impl WorthQueryOutputDemandRegistry {
 impl PreparedSelectedCheckpointFinish<'_> {
     /// Claim only a real Published/Delivered checkpoint. Scheduled and
     /// already Ready successors are left untouched for their own owners.
-    pub fn claim(
+    pub(in crate::domain_computation::primary_graph) fn claim(
         self,
     ) -> Result<
         Option<(
@@ -96,7 +96,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
         }
     }
 
-    pub fn finish(
+    pub(in crate::domain_computation::primary_graph) fn finish(
         self,
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: WorthQueryOutputCheckpoint,

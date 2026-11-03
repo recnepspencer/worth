@@ -2,7 +2,7 @@ use super::{run::Run, StoreDenial};
 use std::cell::RefCell;
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
-pub struct RunDirectory<T> {
+pub(in crate::domain_computation::primary_graph) struct RunDirectory<T> {
     // None only during replacement in a failed/owned attempt, never a fallback.
     pub slots: Option<ExecutionArray<RefCell<Option<Run<T>>>>>,
 }
@@ -15,7 +15,7 @@ impl<T> RunDirectory<T> {
             slots: Some(slots.seal()?),
         })
     }
-    pub fn ensure(
+    pub(in crate::domain_computation::primary_graph) fn ensure(
         &mut self,
         level: usize,
         policy: super::StorageControl<'_, '_>,

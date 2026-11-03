@@ -209,7 +209,7 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
             .execute_inbound_admission(&execution, phase, admission, self.envelope, request)
     }
 
-    pub fn progress_for_test(
+    pub(in crate::domain_computation) fn progress_for_test(
         &mut self,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {

@@ -21,10 +21,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
-pub struct WorthQueryInstalledOutputProducerRoute {
-    pub scheduling:
+pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledOutputProducerRoute {
+    pub(in crate::domain_computation::primary_graph) scheduling:
         Arc<BridgeInstalledConditionalLowering>,
-    pub output_comparison:
+    pub(in crate::domain_computation::primary_graph) output_comparison:
         Option<super::output_evaluation::InstalledOutputComparison>,
 }
 pub(in crate::domain_computation::primary_graph) type WorthQueryInstalledOutputProducerRoutes =

@@ -5,23 +5,23 @@ use crate::domain_computation::primary_graph::application_discovery::{
 };
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
-pub struct WorkflowRecord {
+pub(in crate::domain_computation::primary_graph) struct WorkflowRecord {
     pub(in crate::domain_computation::primary_graph) state: State,
     pub(in crate::domain_computation::primary_graph) instance: EntityId,
     pub(in crate::domain_computation::primary_graph) lineage: EntityId,
-    pub subject: EntityId,
-    pub original_start_revision:
+    pub(in crate::domain_computation::primary_graph) subject: EntityId,
+    pub(in crate::domain_computation::primary_graph) original_start_revision:
         worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph) occurrence: u64,
     pub(in crate::domain_computation::primary_graph) live: bool,
     pub(in crate::domain_computation::primary_graph) history: ReadOnlyWorkflowHistory,
     pub(in crate::domain_computation::primary_graph) dependencies:
         worth_execution::ExecutionArray<EntityId>,
-    pub reference:
+    pub(in crate::domain_computation::primary_graph) reference:
         Option<PublishedWorkflowInstanceRef>,
 }
 /// Capability admission and full subject/Spec validation occur before this native record read.
-pub fn observe<Schema>(
+pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

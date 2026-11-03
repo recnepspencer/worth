@@ -1,11 +1,11 @@
 //! A computational failure is transported only from the call that owns its cause.
 use worth_execution::NestedComputationStop;
 
-pub struct NestedFailureTransport<'context> {
+pub(in crate::domain_computation::primary_graph) struct NestedFailureTransport<'context> {
     take: &'context mut dyn FnMut() -> Option<NestedComputationStop>,
 }
 
-pub enum MemberComputeFailure<E> {
+pub(in crate::domain_computation::primary_graph) enum MemberComputeFailure<E> {
     Own(E),
     Nested(TakenNestedFailure<E>),
 }
@@ -25,7 +25,7 @@ impl<'context> NestedFailureTransport<'context> {
 
     /// Run and classify one nested call before any subsequent call can start.
     /// A request-owned cause yields no value and remains latched.
-    pub fn call<T, E>(
+    pub(in crate::domain_computation::primary_graph) fn call<T, E>(
         &mut self,
         run: impl FnOnce() -> Result<T, E>,
     ) -> Result<T, MemberComputeFailure<E>> {
@@ -45,7 +45,7 @@ impl<E> From<E> for MemberComputeFailure<E> {
 impl<E> MemberComputeFailure<E> {
     /// The owner's public denial already carries the specific value and identity.
     /// Consume its transport proof only as the completed request becomes data.
-    pub fn into_failure(self) -> E {
+    pub(in crate::domain_computation::primary_graph) fn into_failure(self) -> E {
         match self {
             Self::Own(failure) => failure,
             Self::Nested(TakenNestedFailure { cause, failure }) => match cause {

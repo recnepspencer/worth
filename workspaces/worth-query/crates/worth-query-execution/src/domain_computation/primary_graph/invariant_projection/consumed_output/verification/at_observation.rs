@@ -84,7 +84,7 @@ impl ConsumedOutputEvidence {
     /// following its old pending edges. Consumed native content remains the
     /// child's evidence; only a disjoint changed fact can reject those edges.
     /// This comparison grants no currentness.
-    pub fn own_evidence_is_current(
+    pub(in crate::domain_computation::primary_graph) fn own_evidence_is_current(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         facts: &(impl FactSequence + ?Sized),
         consumed: &[ConsumedOutputEvidence],
@@ -122,7 +122,7 @@ impl ConsumedOutputEvidence {
     /// than the row recorded at its observation, which retention has since
     /// released; the reader never takes it on its position alone. Both the
     /// marked and the full comparison are paid from the reader's meter.
-    pub fn verify_at_observation(
+    pub(in crate::domain_computation::primary_graph) fn verify_at_observation(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,

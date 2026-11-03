@@ -23,7 +23,7 @@ pub struct WorthQueryApplicationReadObservation {
 }
 
 impl WorthQueryApplicationReadObservation {
-    pub fn with_original_producer(
+    pub(in crate::domain_computation::primary_graph) fn with_original_producer(
         &self,
         producer: Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
     ) -> Arc<Self> {
@@ -36,7 +36,7 @@ impl WorthQueryApplicationReadObservation {
         })
     }
 
-    pub fn original_settled_producer(
+    pub(in crate::domain_computation::primary_graph) fn original_settled_producer(
         &self,
     ) -> Option<&super::super::application_output_demand::OriginalSettledProducerObservation> {
         self.producer.as_deref()

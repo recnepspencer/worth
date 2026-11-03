@@ -95,11 +95,11 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
         self.counters
     }
 
-    pub fn provisional_binding_identity(&self) -> &str {
+    pub(crate) fn provisional_binding_identity(&self) -> &str {
         self.affinity.binding().canonical_identity()
     }
 
-    pub fn provisional_provider(&self) -> &WorthQueryGraphProviderAnchor {
+    pub(crate) fn provisional_provider(&self) -> &WorthQueryGraphProviderAnchor {
         self.affinity.provider()
     }
 
@@ -107,15 +107,15 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
         self.affinity.provider_arc()
     }
 
-    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'run, 'run> {
+    pub(crate) fn execution_request(&self) -> worth_execution::ExecutionRequest<'run, 'run> {
         self.affinity.execution_request()
     }
 
-    pub fn provider_session_view(&self) -> WorthQueryProviderSessionView<'_> {
+    pub(crate) fn provider_session_view(&self) -> WorthQueryProviderSessionView<'_> {
         self.affinity.provider_session_view()
     }
 
-    pub fn provider_session_terminal_binding(
+    pub(in crate::domain_computation) fn provider_session_terminal_binding(
         &self,
     ) -> super::super::super::WorthQueryProviderSessionTerminalBinding {
         self.affinity.terminal_binding()
@@ -126,7 +126,7 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     /// The descriptive terminal projection is minted only inside the live
     /// session owner; possessing a copied terminal projection cannot admit an
     /// application attempt.
-    pub fn bind_application_attempt(
+    pub(in crate::domain_computation) fn bind_application_attempt(
         &self,
         basis: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptBasis,
     ) -> Result<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptAffinity, ()>
@@ -189,7 +189,7 @@ impl WorthQuerySessionReadAuthority<'_> {
     pub(crate) fn provider(&self) -> &WorthQueryGraphProviderAnchor {
         self.provider
     }
-    pub fn session(&self) -> WorthQueryProviderSessionView<'_> {
+    pub(crate) fn session(&self) -> WorthQueryProviderSessionView<'_> {
         self.session
     }
 }

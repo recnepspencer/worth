@@ -1,6 +1,6 @@
 //! Retained output liveness keeps request failures separate from absent output.
 use super::*;
-pub fn read(
+pub(super) fn read(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &worth_relational::facade::runtime::VisibilityProjectionView,
     entity: worth_relational::facade::identity::EntityId,
@@ -14,7 +14,7 @@ pub fn read(
     .map(|state| state == Some(worth_relational::facade::storage::RecordLifecycleState::Live))
     .map_err(denial)
 }
-pub fn denial(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn denial(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Execution;

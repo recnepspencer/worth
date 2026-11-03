@@ -1,13 +1,13 @@
 //! Advance original capture work while retaining the same physical reservation.
 use super::*;
 
-pub enum RetainedStorageDenial {
+pub(in crate::domain_computation) enum RetainedStorageDenial {
     Overflow,
     Memory(worth_execution::MemoryLimitDenial),
 }
 
 /// Borrowed stage view; existing retained backing cannot be surrendered by it.
-pub struct RetainedCaptureMemory<'a> {
+pub(in crate::domain_computation) struct RetainedCaptureMemory<'a> {
     reservation: &'a mut ExecutionMemoryReservation,
     base: u64,
 }
@@ -31,7 +31,7 @@ impl RetainedCaptureMemory<'_> {
     }
 }
 
-pub fn run_retained_stage<Value, E>(
+pub(in crate::domain_computation) fn run_retained_stage<Value, E>(
     execution: &ExecutionRequest<'_, '_>,
     memory: &mut Option<ExecutionMemoryReservation>,
     kernel: impl FnOnce(

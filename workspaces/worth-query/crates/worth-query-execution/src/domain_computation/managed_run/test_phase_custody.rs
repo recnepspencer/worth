@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{TestHostRequest, WorthQueryAdvancementPhase};
 
 impl WorthQueryRunningDirectRun {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
@@ -12,7 +12,7 @@ impl WorthQueryRunningDirectRun {
 }
 
 impl WorthQueryActiveDirectGraphExecution {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
@@ -21,7 +21,7 @@ impl WorthQueryActiveDirectGraphExecution {
 }
 
 impl WorthQueryPausedDirectGraphExecution {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
@@ -30,7 +30,7 @@ impl WorthQueryPausedDirectGraphExecution {
 }
 
 impl WorthQueryRunningWorkflowRun {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
@@ -39,7 +39,7 @@ impl WorthQueryRunningWorkflowRun {
 }
 
 impl WorthQueryActiveWorkflowGraphExecution {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {
@@ -48,7 +48,7 @@ impl WorthQueryActiveWorkflowGraphExecution {
 }
 
 impl WorthQueryPausedWorkflowGraphExecution {
-    pub fn fixture_phase<'scope>(
+    pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &TestHostRequest<'scope>,
     ) -> WorthQueryAdvancementPhase<'scope> {

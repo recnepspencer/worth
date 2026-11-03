@@ -9,7 +9,7 @@ use super::runtime::WorthQueryProductRootIdentity;
 /// One admitted product occurrence carried into a provider attempt. The weak
 /// ports cannot extend the root's admission lifetime or choose a different head.
 #[derive(Clone)]
-pub struct WorthQueryProductPublicationBinding {
+pub(crate) struct WorthQueryProductPublicationBinding {
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     observation: ProductBranchObservation,
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
@@ -37,7 +37,7 @@ impl WorthQueryProductPublicationBinding {
         }
     }
 
-    pub fn observation(&self) -> &ProductBranchObservation {
+    pub(crate) fn observation(&self) -> &ProductBranchObservation {
         &self.observation
     }
 

@@ -11,7 +11,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    pub fn admit_inbound_occurrence(
+    pub(in crate::domain_computation) fn admit_inbound_occurrence(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
         envelope: &[u8],

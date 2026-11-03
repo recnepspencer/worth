@@ -122,7 +122,7 @@ mod preflight_progression;
 #[path = "workflow_state/recovery_progression.rs"]
 mod recovery_progression;
 #[path = "recovery/workflow_cleanup.rs"]
-pub mod workflow_cleanup_owner;
+pub(in crate::domain_computation::managed_run::readmission) mod workflow_cleanup_owner;
 
 pub(in crate::domain_computation::managed_run::readmission) use commit_progression::WorthQueryWorkflowCommittedAssociation;
 

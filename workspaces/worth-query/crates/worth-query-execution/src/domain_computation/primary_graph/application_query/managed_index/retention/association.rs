@@ -12,7 +12,7 @@ pub struct ManagedIndexRegistrationKey {
 
 impl ManagedIndexRegistrationKey {
     // Metadata-storage tests only: this key cannot create a typed receiver or READ.
-    pub fn storage_key_for_test(
+    pub(in crate::domain_computation::primary_graph::application_query) fn storage_key_for_test(
         runtime: WorthQueryRuntimeAuthorityIdentity,
         incarnation: ProductBranchIncarnation,
         scope: EntityId,

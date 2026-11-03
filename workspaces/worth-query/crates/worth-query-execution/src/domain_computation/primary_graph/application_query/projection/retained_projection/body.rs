@@ -3,14 +3,14 @@ use super::super::OwnedProjectionRows;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey;
 
-pub struct OriginalProjection {
-    pub rows: OwnedProjectionRows,
+pub(in crate::domain_computation::primary_graph) struct OriginalProjection {
+    pub(super) rows: OwnedProjectionRows,
     // Every declared field/relation decision, including withheld slots.
     // The original compiled binding interprets these exact shared slot keys.
     pub disclosure: worth_execution::ExecutionArray<(Arc<ApplicationQueryResultSlotKey>, bool)>,
     // Successful construction is only for complete non-continuation trees.
     // Row source-dependency completeness is separate provenance, not payload.
-    pub _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl OriginalProjection {
@@ -26,7 +26,7 @@ impl OriginalProjection {
         }
     }
 
-    pub fn allocation_bytes() -> u64 {
+    pub(super) fn allocation_bytes() -> u64 {
         std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
             .extend(std::alloc::Layout::new::<Self>())
             .expect("fixed original projection layout")

@@ -44,7 +44,7 @@ impl WorthQueryRecoveryHandleIdentity {
 /// Unlike the wire projection, this type never crosses the facade and has no
 /// caller-accessible constructor.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub struct WorthQueryRecoveryHandleAuthorityIdentity {
+pub(crate) struct WorthQueryRecoveryHandleAuthorityIdentity {
     secret: u64,
     ordinal: u64,
 }

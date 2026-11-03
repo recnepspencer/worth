@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
 
 /// Prepared before Running and consumed by exactly one execution outcome.
-pub struct PreparedSelectedExecutionFinish<'a> {
+pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutionFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
     key: Arc<super::super::WorthQueryOutputDemandKey>,
     member: Arc<RequiredWorkMembership>,
@@ -26,7 +26,7 @@ pub struct PreparedSelectedExecutionFinish<'a> {
 
 /// Holds only this invocation's Running claim. Abandoning a prepared suffix
 /// releases it back to Scheduled before its last Interest can be destroyed.
-pub struct RunningSelectedExecution<'a> {
+pub(in crate::domain_computation::primary_graph) struct RunningSelectedExecution<'a> {
     finish: Option<PreparedSelectedExecutionFinish<'a>>,
 }
 impl<'a> RunningSelectedExecution<'a> {
@@ -38,7 +38,7 @@ impl<'a> RunningSelectedExecution<'a> {
     pub(in crate::domain_computation::primary_graph) fn relinquish(mut self) {
         self.finish.take().expect("one Running finish").relinquish();
     }
-    pub fn publish(
+    pub(in crate::domain_computation::primary_graph) fn publish(
         mut self,
         checkpoint: WorthQueryOutputCheckpoint,
     ) -> Result<(), (WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint)> {
@@ -63,7 +63,7 @@ impl Drop for RunningSelectedExecution<'_> {
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn prepare_selected_execution_finish<'a>(
+    pub(in crate::domain_computation::primary_graph) fn prepare_selected_execution_finish<'a>(
         &'a self,
         interest: &WorthQueryOutputDemandInterest,
     ) -> Result<PreparedSelectedExecutionFinish<'a>, WorthQueryOutputDemandDenial> {
@@ -129,7 +129,7 @@ impl PreparedSelectedExecutionFinish<'_> {
 
     /// The checkpoint stays with the caller if another owner moved this
     /// exact row before installation. The registry never clones its receipt.
-    pub fn publish(
+    pub(in crate::domain_computation::primary_graph) fn publish(
         self,
         checkpoint: WorthQueryOutputCheckpoint,
     ) -> Result<(), (WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint)> {

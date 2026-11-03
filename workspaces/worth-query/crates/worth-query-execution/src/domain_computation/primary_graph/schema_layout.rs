@@ -17,9 +17,9 @@ mod application_layout_lowering;
 mod authorization_selectors;
 mod capability_grant_join;
 mod continuation_ordering;
-pub mod derived_relation;
+mod derived_relation;
 mod equality_fields;
-pub mod field_coordinate;
+mod field_coordinate;
 mod field_optionality;
 pub(in crate::domain_computation::primary_graph) use field_coordinate::InstalledFieldCoordinate;
 mod installation_primitives;
@@ -44,7 +44,7 @@ mod signed_entities;
 mod signing_lifecycle;
 mod support_admission;
 
-pub mod unique_fields;
+mod unique_fields;
 mod workflow_reads;
 pub(in crate::domain_computation::primary_graph) use unique_fields::WorthQueryUniqueFieldFixture;
 pub(in crate::domain_computation::primary_graph) use unique_fields::{
@@ -78,11 +78,11 @@ pub(in crate::domain_computation::primary_graph) use registry_lowering::{
 };
 
 #[derive(Debug)]
-pub struct WorthQueryPrimaryGraphLayout {
+pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
     live_control_entity_kinds: BTreeSet<KindId>,
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,
-    pub entity_kinds: BTreeMap<String, KindId>,
+    entity_kinds: BTreeMap<String, KindId>,
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     component_sets: BTreeMap<String, ComponentSetLayout>,
     derived_relations: BTreeMap<String, derived_relation::DerivedRelationLayout>,
@@ -96,7 +96,7 @@ pub struct WorthQueryPrimaryGraphLayout {
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
     relation_payload: relation_payload::ApplicationRelationPayloadLayout,
     unique_fields: unique_fields::WorthQueryUniqueFieldNames,
-    pub aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, DeclaredAspectContractBinding>>,
+    aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, DeclaredAspectContractBinding>>,
     equality_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     projection_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     continuation_orderings: Vec<WorthQueryPrimaryContinuationOrderingLayout>,
@@ -111,8 +111,8 @@ pub struct WorthQueryPrimaryGraphLayout {
 }
 
 #[derive(Clone, Debug)]
-pub struct WorthQueryPrimaryRelationLayout {
-    pub kind: KindId,
+pub(in crate::domain_computation) struct WorthQueryPrimaryRelationLayout {
+    pub(in crate::domain_computation) kind: KindId,
     pub(in crate::domain_computation) from: KindId,
     pub(in crate::domain_computation) to: KindId,
     pub(in crate::domain_computation) source_max: Option<u64>,
@@ -120,18 +120,18 @@ pub struct WorthQueryPrimaryRelationLayout {
 }
 
 #[derive(Clone, Debug)]
-pub struct WorthQueryPrimaryFieldLayout {
-    pub entity_kind: KindId,
-    pub locator: AspectFieldLocator,
+pub(in crate::domain_computation) struct WorthQueryPrimaryFieldLayout {
+    pub(super) entity_kind: KindId,
+    pub(super) locator: AspectFieldLocator,
     /// Whether the schema declares the field equality-queryable.
     pub(super) equality_queryable: bool,
     /// The installed equality index; `None` until installation registers it.
-    pub equality_index_id: Option<DerivedIndexId>,
+    pub(super) equality_index_id: Option<DerivedIndexId>,
     pub(super) unique: bool,
 }
 
 impl WorthQueryPrimaryGraphLayout {
-    pub fn lower(
+    pub(super) fn lower(
         schema: &ErasedApplicationSchemaDeclaration,
         native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
         existing_registry: &RelationalSchemaRegistry,
@@ -310,7 +310,7 @@ impl WorthQueryPrimaryGraphLayout {
         self.relation_kinds.get(relation)
     }
 
-    pub fn field(
+    pub(super) fn field(
         &self,
         entity: &str,
         aspect: &str,
@@ -336,7 +336,7 @@ impl WorthQueryPrimaryGraphLayout {
             .map(|(_, kind)| *kind)
     }
 
-    pub fn field_locator(
+    pub(in crate::domain_computation) fn field_locator(
         &self,
         entity: &str,
         aspect: &str,
@@ -347,7 +347,7 @@ impl WorthQueryPrimaryGraphLayout {
             .map(|layout| &layout.locator)
     }
 
-    pub const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {
+    pub(super) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {
         &self.provider_idempotency
     }
 
@@ -355,7 +355,7 @@ impl WorthQueryPrimaryGraphLayout {
         &mut self.provider_idempotency
     }
 
-    pub const fn provider_dispatch_outbox(&self) -> &WorthQueryDispatchOutboxLayout {
+    pub(super) const fn provider_dispatch_outbox(&self) -> &WorthQueryDispatchOutboxLayout {
         &self.provider_dispatch_outbox
     }
 

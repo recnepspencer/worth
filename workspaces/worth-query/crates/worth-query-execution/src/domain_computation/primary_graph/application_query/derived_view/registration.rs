@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub mod collection;
+mod collection;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

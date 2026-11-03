@@ -17,7 +17,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::ApplicationSchema,
 };
-pub mod preflight;
+mod preflight;
 pub(in crate::domain_computation::primary_graph) use preflight::validate_witness;
 
 /// The original source field could not be lawfully projected.
@@ -125,7 +125,7 @@ impl<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>> ApplicationCorrec
     }
 }
 
-pub fn read_checked<T>(
+pub(in crate::domain_computation::primary_graph) fn read_checked<T>(
     failure: &RefCell<Option<WorthQueryCorrectionOutputProjectionDenial>>,
     read: impl FnOnce() -> Result<T, WorthQueryCorrectionOutputProjectionDenial>,
 ) -> Result<T, ApplicationCorrectionSourceFieldDenial> {

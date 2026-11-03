@@ -5,7 +5,7 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 /// Scheduling evidence only; it grants neither a current entity nor a commit.
 #[derive(Clone, Debug)]
-pub struct RequestedOutputRead {
+pub(in crate::domain_computation::primary_graph) struct RequestedOutputRead {
     identity: Arc<RecordedSettlementIdentity>,
     selected: PositionedRelationalSnapshot,
 }

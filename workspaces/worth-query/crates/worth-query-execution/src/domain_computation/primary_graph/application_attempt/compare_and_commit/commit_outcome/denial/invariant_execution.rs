@@ -19,7 +19,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub fn invariant_execution_denied(
+    pub(in crate::domain_computation::primary_graph) fn invariant_execution_denied(
         stage: WorthQueryApplicationCommitDenialStage,
         failure: WorthQueryInvariantExecutionFailure,
     ) -> Self {

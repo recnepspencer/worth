@@ -21,13 +21,13 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// }
 /// ```
 pub struct WorthQueryApplicationQueryBatchReadPlan {
-    pub runtime: u64,
-    pub schema: ApplicationSchemaBindingIdentity,
+    runtime: u64,
+    schema: ApplicationSchemaBindingIdentity,
 
-    pub query: WorthQueryInstalledApplicationQueryIdentity,
+    query: WorthQueryInstalledApplicationQueryIdentity,
     count: usize,
 
-    pub roots: usize,
+    roots: usize,
 }
 
 pub(super) struct InstalledBatchPlan {
@@ -48,7 +48,7 @@ struct PlannedSlots {
     roots: usize,
 }
 
-pub struct PlannedBatchItem {
+pub(in crate::domain_computation::primary_graph) struct PlannedBatchItem {
     plan: Arc<Mutex<InstalledBatchPlan>>,
 }
 
@@ -222,7 +222,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
         Ok(())
     }
 
-    pub fn take_planned_read(
+    pub(in crate::domain_computation::primary_graph) fn take_planned_read(
         &self,
         runtime: u64,
         schema: &ApplicationSchemaBindingIdentity,

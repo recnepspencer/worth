@@ -11,7 +11,7 @@ use crate::domain_computation::authorization::{
 use super::denial_cause::DenialCause;
 
 impl WorthQueryApplicationCommitDenial {
-    pub fn with_provider_session_failure(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_provider_session_failure(
         mut self,
         failure: crate::domain_computation::WorthQueryProviderSessionFailure,
     ) -> Self {

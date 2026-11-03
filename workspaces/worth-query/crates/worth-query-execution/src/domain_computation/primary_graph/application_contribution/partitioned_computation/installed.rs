@@ -41,7 +41,7 @@ where
     Computation: ApplicationManagedComputation<Schema, Feature>,
     Owner: WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
 {
-    pub owner: Arc<Owner>,
+    pub(super) owner: Arc<Owner>,
     pub(super) completion: Option<fn(&Owner::Output) -> Result<(), Owner::Stopped>>,
     retention: ComputationRetention,
     installation: ComputationInstallation,
@@ -52,7 +52,7 @@ where
 /// hands a run the prior it compares with, so only a run of a producer's
 /// operation digests its input. No other run does that work or pays for it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ComputationRetention {
+pub(in crate::domain_computation::primary_graph) enum ComputationRetention {
     /// A declared producer runs the owner's operation.
     ProducerOperation,
     /// No producer runs it, so no run is ever compared.
@@ -122,7 +122,7 @@ where
         self.prepare_through(reader.operation_reader(), execution, input)
     }
 
-    pub fn prepare_through(
+    pub(in crate::domain_computation::primary_graph) fn prepare_through(
         &self,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
             '_,

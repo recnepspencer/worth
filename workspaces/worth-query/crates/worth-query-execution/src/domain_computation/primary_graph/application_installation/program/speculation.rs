@@ -59,8 +59,8 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
 /// send_sync::<WorthQueryReadmittedApplicationPreview>();
 /// ```
 pub struct WorthQueryApplicationPreviewSession {
-    pub handle: BridgeSpeculativeSessionHandle,
-    pub _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
+    handle: BridgeSpeculativeSessionHandle,
+    _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
     // One actual installed runtime clone, held solely for destruction custody.
     // Native handle and source above are destroyed before this backing is released.
     _runtime: Box<dyn PreviewRuntimeDestructionCustody>,
@@ -82,7 +82,7 @@ impl std::fmt::Debug for WorthQueryApplicationPreviewSession {
 /// Promotion finalizes that evidence; it does not certify current Query output.
 #[derive(Debug)]
 pub struct WorthQueryReadmittedApplicationPreview {
-    pub session: WorthQueryApplicationPreviewSession,
+    session: WorthQueryApplicationPreviewSession,
 }
 
 impl WorthQueryApplicationPreviewSession {

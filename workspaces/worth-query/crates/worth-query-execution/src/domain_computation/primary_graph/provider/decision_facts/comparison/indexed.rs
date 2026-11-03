@@ -19,12 +19,12 @@ use worth_relational::facade::{
 
 // This directory is call-local and descriptive; its map backing is not charged
 // as ExecutionArray payload. Every value is the native owner's exact-root token.
-pub struct PreparedSelections {
-    pub selectors:
+pub(super) struct PreparedSelections {
+    pub(super) selectors:
         BTreeMap<(DerivedIndexId, KindId, AspectFieldLocator), PreparedEntityFieldLookup>,
 }
 impl PreparedSelections {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             selectors: BTreeMap::new(),
         }
@@ -33,7 +33,7 @@ impl PreparedSelections {
         self.selectors.clear();
     }
 
-    pub fn remains_equal(
+    pub(super) fn remains_equal(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         fact: &WorthQueryApplicationObservedFact,
@@ -106,7 +106,7 @@ impl PreparedSelections {
     }
 }
 
-pub fn comparison_stop(
+fn comparison_stop(
     stop: BoundedEntityFieldLookupAdmissionStop<WorthQueryDecisionReadSetFailure>,
 ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
     match stop {

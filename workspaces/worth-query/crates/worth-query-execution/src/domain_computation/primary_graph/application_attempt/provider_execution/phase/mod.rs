@@ -1,4 +1,4 @@
-pub mod prepared;
+mod prepared;
 // The managed provider progression phases live beneath `prepared::running::progression`,
 // whose private state they consume. This parent exposes only the opaque permits needed by
 // the surrounding application-attempt owner.

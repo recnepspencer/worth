@@ -15,18 +15,18 @@ pub struct WorthQueryPendingApplicationPublicationRegistry {
     maximum_slots: usize,
     pub slots:
         BTreeMap<ProductBranchIncarnation, Arc<WorthQueryApplicationPublicationRecoverySlot>>,
-    pub corrections: BTreeMap<[u8; 32], ProductBranchIncarnation>,
+    corrections: BTreeMap<[u8; 32], ProductBranchIncarnation>,
 }
 
-pub struct WorthQueryApplicationPublicationRecoveryReservation
+pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationPublicationRecoveryReservation
 {
     registry: Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>,
     occurrence: ProductBranchIncarnation,
-    pub slot: Arc<WorthQueryApplicationPublicationRecoverySlot>,
+    slot: Arc<WorthQueryApplicationPublicationRecoverySlot>,
     active: bool,
 }
 
-pub struct WorthQueryApplicationPublicationRecoverySlot {
+pub(super) struct WorthQueryApplicationPublicationRecoverySlot {
     binding: Option<WorthQueryApplicationIdempotencyBinding>,
     state: Mutex<WorthQueryApplicationPublicationRecoveryState>,
 }
@@ -54,7 +54,7 @@ impl super::WorthQueryPrimaryGraphProvider {
     }
 }
 
-pub enum WorthQueryPendingApplicationIdempotency {
+pub(super) enum WorthQueryPendingApplicationIdempotency {
     Reserved,
     Pending(
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
@@ -62,7 +62,7 @@ pub enum WorthQueryPendingApplicationIdempotency {
 }
 
 impl WorthQueryPendingApplicationPublicationRegistry {
-    pub fn new(maximum_slots: usize) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn new(maximum_slots: usize) -> Self {
         Self {
             maximum_slots,
             slots: BTreeMap::new(),
@@ -70,7 +70,7 @@ impl WorthQueryPendingApplicationPublicationRegistry {
         }
     }
 
-    pub fn reserve(
+    pub(super) fn reserve(
         registry: &Arc<Mutex<Self>>,
         occurrence: ProductBranchIncarnation,
         binding: Option<WorthQueryApplicationIdempotencyBinding>,
@@ -113,7 +113,7 @@ impl WorthQueryPendingApplicationPublicationRegistry {
     ) -> Option<Arc<WorthQueryApplicationPublicationRecoverySlot>> {
         self.slots.get(&occurrence).map(Arc::clone)
     }
-    pub fn correction_slot(
+    pub(super) fn correction_slot(
         &self,
         key: &[u8; 32],
     ) -> Option<Arc<WorthQueryApplicationPublicationRecoverySlot>> {
@@ -185,7 +185,7 @@ impl Drop for WorthQueryApplicationPublicationRecoveryReservation {
 }
 
 impl WorthQueryApplicationPublicationRecoverySlot {
-    pub fn inspect_idempotency(&self) -> Option<WorthQueryPendingApplicationIdempotency> {
+    pub(super) fn inspect_idempotency(&self) -> Option<WorthQueryPendingApplicationIdempotency> {
         let state = self
             .state
             .lock()

@@ -37,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryRecordedIntentMa
 
 impl WorthQueryApplicationIdempotencyBinding {
     /// The intent this binding records under its key.
-    pub fn intent_text(self) -> String {
+    pub(in crate::domain_computation::primary_graph) fn intent_text(self) -> String {
         format!("{DURABLE_ENCODING}{}", self.intent_slots())
     }
 

@@ -1,6 +1,6 @@
 //! One installed provider consumes the two actual product-retention notifications.
 /// The installed provider follows actual product-history and Native owner retirement.
-pub trait WorthQueryProductRetentionFollower: Send + Sync {
+pub(crate) trait WorthQueryProductRetentionFollower: Send + Sync {
     /// History a walk released may have been the last to keep evidence Query
     /// inherited onto its commits; that evidence goes now.
     fn history_released(&self);

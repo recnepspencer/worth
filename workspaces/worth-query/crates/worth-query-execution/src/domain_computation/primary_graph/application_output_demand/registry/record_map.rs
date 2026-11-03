@@ -13,7 +13,7 @@ pub(super) use mutation::RecordMutation;
 // coordinate. An iterator borrows the owner, excluding structural mutation.
 type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
-pub struct DemandRecords(Map, BTreeMap<
+pub(super) struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
     std::collections::BTreeSet<WorthQueryOutputDemandKey>>,
     super::cleanup::ClosedCleanupQueue,
@@ -23,7 +23,7 @@ pub struct DemandRecords(Map, BTreeMap<
 
 thread_local! { static WHOLE_ROWS: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(Some(0)) }; }
 thread_local! { static OCCURRENCE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
-pub fn occurrence_rows_visited() -> u64 {
+pub(super) fn occurrence_rows_visited() -> u64 {
     OCCURRENCE_ROWS.with(std::cell::Cell::get)
 }
 fn observe_row() {
@@ -35,11 +35,11 @@ fn observe_row() {
     }
     WHOLE_ROWS.with(|count| count.set(count.get().and_then(|prior| prior.checked_add(1))));
 }
-pub fn whole_rows() -> Option<u64> {
+pub(super) fn whole_rows() -> Option<u64> {
     WHOLE_ROWS.with(std::cell::Cell::get)
 }
 impl DemandRecords {
-    pub fn occurrence_visits_for_test(&self) -> u64 {
+    pub(super) fn occurrence_visits_for_test(&self) -> u64 {
         self.4.get()
     }
 
@@ -65,7 +65,7 @@ impl DemandRecords {
             keep
         });
     }
-    pub fn extend(
+    pub(super) fn extend(
         &mut self,
         rows: impl IntoIterator<Item = (WorthQueryOutputDemandKey, DemandRecord)>,
     ) {
@@ -82,30 +82,30 @@ impl DemandRecords {
             Default::default(),
         )
     }
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self::default()
     }
-    pub fn iter(
+    pub(super) fn iter(
         &self,
     ) -> impl DoubleEndedIterator<Item = (&WorthQueryOutputDemandKey, &DemandRecord)> {
         ObservedRows(self.0.iter())
     }
-    pub fn values(&self) -> impl DoubleEndedIterator<Item = &DemandRecord> {
+    pub(super) fn values(&self) -> impl DoubleEndedIterator<Item = &DemandRecord> {
         ObservedRows(self.0.values())
     }
-    pub fn values_mut(&mut self) -> impl DoubleEndedIterator<Item = RecordMutation<'_>> {
+    pub(super) fn values_mut(&mut self) -> impl DoubleEndedIterator<Item = RecordMutation<'_>> {
         ObservedRows(self.0.values_mut()).map(RecordMutation::new)
     }
-    pub fn get(&self, key: &WorthQueryOutputDemandKey) -> Option<&DemandRecord> {
+    pub(super) fn get(&self, key: &WorthQueryOutputDemandKey) -> Option<&DemandRecord> {
         self.0.get(key)
     }
     pub fn get_mut(&mut self, key: &WorthQueryOutputDemandKey) -> Option<RecordMutation<'_>> {
         self.0.get_mut(key).map(RecordMutation::new)
     }
-    pub fn contains_key(&self, key: &WorthQueryOutputDemandKey) -> bool {
+    pub(super) fn contains_key(&self, key: &WorthQueryOutputDemandKey) -> bool {
         self.0.contains_key(key)
     }
-    pub fn insert(
+    pub(super) fn insert(
         &mut self,
         key: WorthQueryOutputDemandKey,
         mut row: DemandRecord,
@@ -124,7 +124,7 @@ impl DemandRecords {
             .insert(key.clone());
         self.0.insert(key, row)
     }
-    pub fn remove(&mut self, key: &WorthQueryOutputDemandKey) -> Option<DemandRecord> {
+    pub(super) fn remove(&mut self, key: &WorthQueryOutputDemandKey) -> Option<DemandRecord> {
         let row = self.0.remove(key)?;
         self.3.remove(row.product_occurrence);
         let coordinate = key.source.occurrence_coordinate();
@@ -135,10 +135,10 @@ impl DemandRecords {
         }
         Some(row)
     }
-    pub fn is_empty(&self) -> bool {
+    pub(super) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
-    pub fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.0.len()
     }
     /// Two keyed seeks, bounded by the contiguous occurrence on either side.
@@ -172,7 +172,7 @@ impl std::ops::Index<&WorthQueryOutputDemandKey> for DemandRecords {
 }
 impl DemandRecords {
     /// Keyed source-coordinate lookup includes its producer occurrences only.
-    pub fn source_occurrence_rows<'a>(
+    pub(super) fn source_occurrence_rows<'a>(
         &'a self,
         source: &super::SourceEpoch,
     ) -> impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)> + use<'a> {
@@ -232,7 +232,7 @@ mod observation {
     }
 
     impl DemandRecords {
-        pub fn publication_count_for_test(
+        pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn publication_count_for_test(
             &self,
         ) -> usize {
             self.3
@@ -244,7 +244,7 @@ mod observation {
     }
 }
 
-pub struct ObservedRows<I>(I);
+pub(super) struct ObservedRows<I>(I);
 impl<I: Iterator> Iterator for ObservedRows<I> {
     type Item = I::Item;
     fn next(&mut self) -> Option<Self::Item> {
@@ -278,7 +278,7 @@ impl<'a> IntoIterator for &'a mut DemandRecords {
     }
 }
 
-pub struct MutRows<I>(I);
+pub(super) struct MutRows<I>(I);
 impl<'a, I: Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a mut DemandRecord)>> Iterator
     for MutRows<I>
 {

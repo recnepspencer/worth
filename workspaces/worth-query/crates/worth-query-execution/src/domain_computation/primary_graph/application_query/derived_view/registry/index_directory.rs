@@ -7,24 +7,24 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 const BTREE_MAXIMUM_NODE_COMPARISONS: u64 = 11;
 
 #[derive(Default)]
-pub struct ManagedIndexDirectory {
+pub(super) struct ManagedIndexDirectory {
     routes: BTreeMap<Key, u64>,
     owned: BTreeMap<u64, RegisteredIndex>,
 }
-pub struct RegisteredIndex {
+pub(super) struct RegisteredIndex {
     pub(super) key: Key,
-    pub state: Arc<dyn Any + Send + Sync>,
+    pub(super) state: Arc<dyn Any + Send + Sync>,
     cleanup: Arc<dyn RegisteredManagedIndex>,
     _memory: Option<ExecutionMemoryReservation>,
 }
-pub struct RetiredIndex {
+pub(super) struct RetiredIndex {
     // Both real backings close before the last original registration grant.
     _empty_routes: Option<BTreeMap<Key, u64>>,
     _empty_owned: Option<BTreeMap<u64, RegisteredIndex>>,
     _entry: Option<RegisteredIndex>,
 }
 impl RegisteredIndex {
-    pub fn prepare(
+    pub(super) fn prepare(
         execution: &ExecutionRequest<'_, '_>,
         key: Key,
         state: Arc<dyn Any + Send + Sync>,
@@ -49,7 +49,7 @@ impl RegisteredIndex {
     }
 }
 impl ManagedIndexDirectory {
-    pub fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.owned.len()
     }
 
@@ -65,17 +65,17 @@ impl ManagedIndexDirectory {
             .and_then(|work| work.checked_mul(BTREE_MAXIMUM_NODE_COMPARISONS))
             .ok_or(Cause::WorkCounterOverflow)
     }
-    pub fn get(&self, key: &Key) -> Option<(u64, &RegisteredIndex)> {
+    pub(super) fn get(&self, key: &Key) -> Option<(u64, &RegisteredIndex)> {
         let id = *self.routes.get(key)?;
         self.owned.get(&id).map(|entry| (id, entry))
     }
-    pub fn insert(&mut self, id: u64, entry: RegisteredIndex) {
+    pub(super) fn insert(&mut self, id: u64, entry: RegisteredIndex) {
         // The issuer already proved the route absent and the id fresh.
         debug_assert_eq!(self.routes.len(), self.owned.len());
         self.routes.insert(entry.key, id);
         self.owned.insert(id, entry);
     }
-    pub fn remove(&mut self, id: u64) -> Option<RetiredIndex> {
+    pub(super) fn remove(&mut self, id: u64) -> Option<RetiredIndex> {
         let entry = self.owned.remove(&id)?;
         self.routes.remove(&entry.key);
         let empty = self.owned.is_empty();
@@ -87,7 +87,7 @@ impl ManagedIndexDirectory {
     }
     /// All actual map backing closes while its original grants are still live.
     /// Capacity already bounds this stack scratch; no cleanup heap is allocated.
-    pub fn dispose(self) {
+    pub(super) fn dispose(self) {
         let Self { routes, owned } = self;
         let mut retired: [Option<RegisteredIndex>; MAXIMUM_REGISTERED_VIEWS] =
             std::array::from_fn(|_| None);

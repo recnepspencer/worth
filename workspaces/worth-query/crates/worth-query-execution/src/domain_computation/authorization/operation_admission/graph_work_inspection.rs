@@ -23,7 +23,7 @@ impl WorthQueryAdmittedOperation {
         self.graph_work.retained_decision_facts()
     }
 
-    pub fn graph_work_runtime_ordinal(&self) -> u64 {
+    pub(in crate::domain_computation) fn graph_work_runtime_ordinal(&self) -> u64 {
         self.graph_work.runtime_ordinal()
     }
 
@@ -31,17 +31,17 @@ impl WorthQueryAdmittedOperation {
         self.graph_work.principal()
     }
 
-    pub fn graph_work_scope_entity_id(
+    pub(in crate::domain_computation) fn graph_work_scope_entity_id(
         &self,
     ) -> Option<worth_relational::facade::identity::EntityId> {
         self.graph_work.entity_access_context()
     }
 
-    pub fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
+    pub(in crate::domain_computation) fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
         self.graph_work.capability_access_context()
     }
 
-    pub fn graph_work_provider(&self) -> &str {
+    pub(in crate::domain_computation) fn graph_work_provider(&self) -> &str {
         self.graph_work.provider()
     }
 

@@ -9,26 +9,26 @@ use super::plan::{
     CompiledWorkflowSemanticPlan,
 };
 
-pub struct ColdCompiledWorkflowDefinition {
-    pub lineage: EntityId,
-    pub definition: EntityId,
-    pub start_node: EntityId,
-    pub nodes: Box<[CompiledWorkflowNode]>,
-    pub connections: Box<[CompiledWorkflowConnection]>,
-    pub global_actions:
+pub(super) struct ColdCompiledWorkflowDefinition {
+    pub(super) lineage: EntityId,
+    pub(super) definition: EntityId,
+    pub(super) start_node: EntityId,
+    pub(super) nodes: Box<[CompiledWorkflowNode]>,
+    pub(super) connections: Box<[CompiledWorkflowConnection]>,
+    pub(super) global_actions:
         Box<[worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency]>,
-    pub revisions: WorkflowDefinitionPublicationRevisions,
+    pub(super) revisions: WorkflowDefinitionPublicationRevisions,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorkflowDefinitionPublicationRevisions {
-    pub start: Option<VersionId>,
-    pub nodes: Option<VersionId>,
-    pub connections: Option<VersionId>,
+pub(super) struct WorkflowDefinitionPublicationRevisions {
+    pub(super) start: Option<VersionId>,
+    pub(super) nodes: Option<VersionId>,
+    pub(super) connections: Option<VersionId>,
 }
 
 #[derive(Clone)]
-pub struct WorkflowDefinitionPublicationBinding {
+pub(super) struct WorkflowDefinitionPublicationBinding {
     pub(super) lineage: EntityId,
     pub(super) definition: EntityId,
     pub(super) start_node: EntityId,
@@ -40,7 +40,7 @@ pub struct WorkflowDefinitionPublicationBinding {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorkflowDefinitionPublicationBindingDenial {
+pub(super) enum WorkflowDefinitionPublicationBindingDenial {
     MissingStartNode,
     UnknownConnectionEndpoint,
     BindingCardinalityMismatch,
@@ -68,7 +68,7 @@ impl WorkflowDefinitionPublicationBinding {
             )
     }
 
-    pub fn bind(
+    pub(super) fn bind(
         &self,
         semantic: Arc<CompiledWorkflowSemanticPlan>,
         content_identity: worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity,
@@ -171,7 +171,7 @@ impl WorkflowDefinitionPublicationBinding {
     }
 }
 
-pub fn separate_compiled_definition(
+pub(super) fn separate_compiled_definition(
     compiled: ColdCompiledWorkflowDefinition,
 ) -> Result<
     (

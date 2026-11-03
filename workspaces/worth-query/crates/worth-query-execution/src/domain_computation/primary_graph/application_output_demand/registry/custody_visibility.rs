@@ -3,7 +3,7 @@ use super::refreshed_rejoin::source_rows;
 use super::*;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 impl DemandRegistryState {
-    pub fn custody_prunable(&self, commit: &CompositeCommitIdentity) -> bool {
+    pub(super) fn custody_prunable(&self, commit: &CompositeCommitIdentity) -> bool {
         let Some(custody) = self.source_custody.get(commit) else {
             return true;
         };

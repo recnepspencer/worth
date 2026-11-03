@@ -1,10 +1,10 @@
 //! The framework lends member execution only from an advancement's wave.
 use super::{Form, QueryRequestExecution};
 
-pub struct WaveRequestExecution<'authority> {
+pub(in crate::domain_computation::primary_graph) struct WaveRequestExecution<'authority> {
     execution: QueryRequestExecution<'authority>,
 }
-pub struct MemberRequestExecution<'authority> {
+pub(in crate::domain_computation::primary_graph) struct MemberRequestExecution<'authority> {
     execution: QueryRequestExecution<'authority>,
 }
 impl<'authority> QueryRequestExecution<'authority> {
@@ -28,7 +28,7 @@ impl<'authority> QueryRequestExecution<'authority> {
             form,
         }
     }
-    pub fn wave(
+    pub(in crate::domain_computation::primary_graph) fn wave(
         &self,
     ) -> WaveRequestExecution<'authority> {
         WaveRequestExecution {
@@ -37,13 +37,13 @@ impl<'authority> QueryRequestExecution<'authority> {
     }
 }
 impl<'authority> WaveRequestExecution<'authority> {
-    pub fn request(
+    pub(in crate::domain_computation::primary_graph) fn request(
         &self,
     ) -> &QueryRequestExecution<'_> {
         &self.execution
     }
 
-    pub fn member(
+    pub(in crate::domain_computation::primary_graph) fn member(
         &self,
     ) -> MemberRequestExecution<'authority> {
         MemberRequestExecution {
@@ -52,7 +52,7 @@ impl<'authority> WaveRequestExecution<'authority> {
     }
 }
 impl MemberRequestExecution<'_> {
-    pub fn request(
+    pub(in crate::domain_computation::primary_graph) fn request(
         &self,
     ) -> &QueryRequestExecution<'_> {
         &self.execution

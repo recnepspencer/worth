@@ -27,7 +27,7 @@ use crate::domain_computation::application_aftermath::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryCanonicalInboundCompletion {
+pub(in crate::domain_computation) struct WorthQueryCanonicalInboundCompletion {
     correlation: ExternalEffectCorrelationIdentity,
     operation: String,
     audience: String,
@@ -53,7 +53,7 @@ impl WorthQueryCanonicalInboundCompletion {
     /// A workflow may consume only the terminal for its original committed
     /// operation. Correlation selects this row; these owner facts authorize its
     /// use after both the dispatch and completion have been World-performed.
-    pub fn matches_original_dispatch(
+    pub(in crate::domain_computation::primary_graph) fn matches_original_dispatch(
         &self,
         record: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
         original_relational_commit: &RelationalCommitReceipt,
@@ -162,7 +162,7 @@ impl WorthQueryCanonicalInboundCompletion {
         &self.correlation
     }
 
-    pub fn operation(&self) -> &str {
+    pub(in crate::domain_computation) fn operation(&self) -> &str {
         &self.operation
     }
 
@@ -189,7 +189,7 @@ impl WorthQueryCanonicalInboundCompletion {
             && self.signed_meaning_digest == Some(claims.signed_meaning_digest)
     }
 
-    pub const fn authenticated_message_identity(
+    pub(in crate::domain_computation) const fn authenticated_message_identity(
         &self,
     ) -> Option<&[u8; 32]> {
         self.message_identity.as_ref()
@@ -199,13 +199,13 @@ impl WorthQueryCanonicalInboundCompletion {
         self.key_epoch
     }
 
-    pub const fn original_world_commit(
+    pub(in crate::domain_computation) const fn original_world_commit(
         &self,
     ) -> &CompositeCommitIdentity {
         &self.original_world_commit
     }
 
-    pub const fn completion_world_commit(
+    pub(in crate::domain_computation) const fn completion_world_commit(
         &self,
     ) -> &CompositeCommitIdentity {
         &self.completion_world_commit
@@ -219,7 +219,7 @@ impl WorthQueryCanonicalInboundCompletion {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryInboundTerminalIndexDenial {
+pub(in crate::domain_computation) enum WorthQueryInboundTerminalIndexDenial {
     ReadRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     IndexUnavailable,
     ReconstructionWorkExhausted,

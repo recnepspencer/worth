@@ -10,7 +10,7 @@ use std::{
 };
 
 mod commit_completion;
-pub mod commit_preparation;
+mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
 mod phase;
@@ -56,7 +56,7 @@ impl WorthQueryApplicationAttemptLookupKey {
 }
 
 #[derive(Default)]
-pub struct WorthQueryPrimaryGraphApplicationAttemptStore {
+pub(super) struct WorthQueryPrimaryGraphApplicationAttemptStore {
     attempts: BTreeMap<WorthQueryApplicationAttemptLookupKey, WorthQueryApplicationAttemptEntry>,
     next_registration: u64,
     next_overlay: u64,
@@ -126,7 +126,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         ))
     }
 
-    pub fn shared_observed_facts(
+    pub(super) fn shared_observed_facts(
         &self,
         session: WorthQueryProviderSessionView<'_>,
     ) -> Option<(

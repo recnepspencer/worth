@@ -11,12 +11,12 @@ use crate::domain_computation::primary_graph::fact_verification_observation;
 
 mod diagnostic;
 pub use diagnostic::RebaseVerificationReason;
-pub mod adjacency;
+mod adjacency;
 mod resolution;
-pub mod retirement;
+mod retirement;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum RebasedSourceFacts {
+pub(super) enum RebasedSourceFacts {
     Exact(FactPayload),
     /// Exact selected native rebase, paired with the unchanged owner capacity rule.
     Cached {
@@ -47,12 +47,12 @@ pub enum RebasedSourceFacts {
 /// What a commit's own effect did to the facts its source query read, where
 /// its rebase failed. Only the rebase's walk builds one.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct OwnEffectOnReads(pub OwnEffect);
+pub struct OwnEffectOnReads(OwnEffect);
 
 /// The walk's answer, ordered as answers join: one moved read decides it, and
 /// one the walk asked about and could not compare leaves it undecidable.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum OwnEffect {
+enum OwnEffect {
     /// No read the walk asked about moved. It asks about a producer
     /// commit's source reads, and the facts an owner call read that the
     /// effect replaced are moved before it asks: every other fact is
@@ -83,7 +83,7 @@ pub enum FactlessCurrentness {
 /// A rebase that failed: why, and what the commit's own effect did to its
 /// reads. No caller holds the one without the other.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FailedRebase {
+pub(in crate::domain_computation::primary_graph) struct FailedRebase {
     pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationFailure,
     pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
 }
@@ -94,9 +94,9 @@ pub(in crate::domain_computation::primary_graph) use failure::RebaseVerification
 mod full_preparation;
 use full_preparation::FullSourceFactRebase;
 mod preparation;
-pub mod selected;
+mod selected;
 use preparation::Preparation;
-pub struct PreparedSourceFactRebase {
+pub(in crate::domain_computation::primary_graph) struct PreparedSourceFactRebase {
     preparation: Preparation,
     performed_input_facts: Option<FactPayload>,
     retain_output_field_evidence: bool,
@@ -176,7 +176,7 @@ impl RebasedSourceFacts {
         }
     }
 
-    pub fn retain_exact(&self) -> Option<FactPayload> {
+    pub(super) fn retain_exact(&self) -> Option<FactPayload> {
         self.retained().ok()
     }
 
@@ -203,7 +203,7 @@ impl RebasedSourceFacts {
 /// An output entity this commit retired is read as that retirement; it is not
 /// a source the effect moved.
 #[allow(clippy::too_many_arguments)]
-pub fn rebase_output(
+pub(super) fn rebase_output(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -237,7 +237,7 @@ pub fn rebase_output(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn rebase(
+fn rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -251,7 +251,7 @@ mod rebase_walk;
 
 /// Exact physical source refusal stays distinct from legacy temporary Vec refusal.
 #[derive(Debug)]
-pub enum PreparedRebaseDenial {
+pub(in crate::domain_computation::primary_graph) enum PreparedRebaseDenial {
     Admission(CompanionPreflightStop),
     Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial),
     Temporary(std::collections::TryReserveError),

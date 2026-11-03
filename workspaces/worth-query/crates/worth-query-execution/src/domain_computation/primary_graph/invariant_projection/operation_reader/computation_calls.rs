@@ -24,7 +24,7 @@ use crate::domain_computation::primary_graph::application_contribution::Comparat
 use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget;
 
 mod ranges;
-pub mod sequence;
+mod sequence;
 pub(in crate::domain_computation::primary_graph) use sequence::{
     CallSequenceDenial, CallShape, CallShapeTransition, CallSummary, CallVisit,
     ComputationCallSequence,
@@ -32,18 +32,18 @@ pub(in crate::domain_computation::primary_graph) use sequence::{
 
 /// The work one owner call charged and the entities it reached.
 #[derive(Clone, Debug)]
-pub struct ComputationCallCharge {
-    pub accounting: Option<ComputationCallAccounting>,
-    pub reached: Arc<[EntityId]>,
+pub(in crate::domain_computation::primary_graph) struct ComputationCallCharge {
+    accounting: Option<ComputationCallAccounting>,
+    reached: Arc<[EntityId]>,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct ComputationCallAccounting {
+struct ComputationCallAccounting {
     /// The remaining work the call needed at its start to pass every
     /// preflight it made.
-    pub demand: usize,
+    demand: usize,
     /// The work it consumed from the budget.
-    pub consumed: usize,
+    consumed: usize,
 }
 
 impl ComputationCallCharge {

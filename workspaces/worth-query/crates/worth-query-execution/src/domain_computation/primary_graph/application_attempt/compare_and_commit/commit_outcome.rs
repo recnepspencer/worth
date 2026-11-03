@@ -66,7 +66,7 @@ impl WorthQueryApplicationStaleAttempt {
     }
 }
 
-pub mod denial;
+mod denial;
 pub(in crate::domain_computation::primary_graph) use denial::WorthQueryProgramActivationUnresolved;
 pub use denial::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
@@ -227,7 +227,7 @@ pub enum WorthQueryApplicationCommitRecoveryKind {
 }
 
 impl WorthQueryApplicationUnresolvedCommitEvidence {
-    pub fn from_provider_session_failure(
+    pub(in crate::domain_computation::primary_graph) fn from_provider_session_failure(
         recovery: WorthQueryApplicationCommitRecoveryKind,
         failure: &crate::domain_computation::provider_session::WorthQueryProviderSessionFailure,
     ) -> Self {
@@ -251,7 +251,7 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
         self
     }
 
-    pub fn with_cleanup_failure(mut self) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn with_cleanup_failure(mut self) -> Self {
         self.cleanup_failure = Some(WorthQueryApplicationManagedCleanupFailure::RunFinishRejected);
         self
     }

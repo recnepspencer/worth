@@ -1,9 +1,9 @@
 //! Prospective stable lineage addresses held by the existing occurrence lane.
 
-pub mod fact_spans;
+mod fact_spans;
 mod performed_sequence;
 pub(in crate::domain_computation::primary_graph::output_lineage) use fact_spans::StableFactSpans;
-pub mod source_registration;
+mod source_registration;
 mod storage_denial;
 use storage_denial::storage_denial;
 mod stable_record;

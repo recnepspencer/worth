@@ -4,11 +4,11 @@ use super::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
 };
 
-pub mod native_priors;
+mod native_priors;
 mod output_facts;
 pub(in crate::domain_computation::primary_graph) use native_priors::merge as merge_native_checkpoint_priors;
 
-pub fn merge_accepted_outputs(
+pub(super) fn merge_accepted_outputs(
     mut current: Vec<
         super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
     >,

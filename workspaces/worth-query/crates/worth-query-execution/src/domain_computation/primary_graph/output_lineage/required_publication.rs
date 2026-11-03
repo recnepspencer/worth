@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
-pub mod head;
+mod head;
 use head::SelectedRequiredPublicationHead;
 
 impl WorthQueryApplicationOutputLineage {

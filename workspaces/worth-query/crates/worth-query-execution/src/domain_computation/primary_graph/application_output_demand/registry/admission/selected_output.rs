@@ -5,7 +5,7 @@ use super::super::{
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
-pub struct SelectedOutputAdmission<'a> {
+pub(in crate::domain_computation::primary_graph) struct SelectedOutputAdmission<'a> {
     pub(super) commit: &'a CompositeCommitIdentity,
     retained_key: Option<[u8; 32]>,
 }

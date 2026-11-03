@@ -68,7 +68,7 @@ impl From<crate::domain_computation::provider_session::WorthQueryProviderSession
 }
 
 impl WorthQueryApplicationCommitDeferred {
-    pub fn from_provider_session(
+    pub(in crate::domain_computation::primary_graph) fn from_provider_session(
         deferred: crate::domain_computation::provider_session::WorthQueryProviderSessionCommitDeferred,
     ) -> Self {
         Self {

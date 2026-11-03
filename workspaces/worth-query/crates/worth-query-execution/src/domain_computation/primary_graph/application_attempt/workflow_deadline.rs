@@ -61,7 +61,7 @@ pub(super) fn instance_deadline(
 
 /// The instant a new instance's lineage must finish by: the earlier of the
 /// deadline it inherits and its own definition's, measured from now.
-pub fn start_deadline(
+pub(super) fn start_deadline(
     clock: &WorthQueryRuntimeClock,
     inherited: Option<u64>,
     declared: Option<u64>,
@@ -75,7 +75,7 @@ pub fn start_deadline(
 
 /// Refuses once the deadline is no longer ahead on the installed clock. An
 /// unreadable clock cannot show that it is.
-pub fn ensure_before(
+pub(super) fn ensure_before(
     clock: &WorthQueryRuntimeClock,
     deadline: u64,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
@@ -151,7 +151,7 @@ fn positive_field(
     }
 }
 
-pub fn now(clock: &WorthQueryRuntimeClock) -> Result<u64, WorthQueryApplicationAttemptDenial> {
+fn now(clock: &WorthQueryRuntimeClock) -> Result<u64, WorthQueryApplicationAttemptDenial> {
     match clock.sample(TIMELINE).as_ref().map(|sample| sample.value()) {
         Ok(AspectValue::UInt64(now)) => Ok(*now),
         _ => Err(WorthQueryApplicationAttemptDenial::new(

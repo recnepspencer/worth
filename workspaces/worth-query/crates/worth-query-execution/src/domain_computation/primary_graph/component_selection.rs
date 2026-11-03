@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph) use key::{
 use origin::ComponentSelectionOrigin;
 
 #[derive(Debug)]
-pub struct ComponentSelection {
+pub(in crate::domain_computation) struct ComponentSelection {
     key: ComponentSelectionKey,
     origin: ComponentSelectionOrigin,
     layout: ComponentSetLayout,

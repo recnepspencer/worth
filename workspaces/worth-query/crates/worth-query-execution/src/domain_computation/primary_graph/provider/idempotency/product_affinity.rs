@@ -7,7 +7,7 @@ use worth_runtime_world::facade::{
 /// Relational component branches may be shared by multiple products. They are
 /// therefore insufficient to index a completed or unpublished product result.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryProductIdempotencyAffinity {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryProductIdempotencyAffinity {
     branch: ProductBranchIdentity,
     incarnation: ProductBranchIncarnation,
 }

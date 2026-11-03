@@ -1,12 +1,12 @@
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct WorthQueryRuntimeSourceIdentity([u8; 32]);
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRuntimeSourceIdentity([u8; 32]);
 
 impl WorthQueryRuntimeSourceIdentity {
-    pub const fn new(identity: [u8; 32]) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn new(identity: [u8; 32]) -> Self {
         Self(identity)
     }
 
-    pub const fn bytes(self) -> [u8; 32] {
+    pub(in crate::domain_computation::primary_graph) const fn bytes(self) -> [u8; 32] {
         self.0
     }
 }
@@ -15,11 +15,11 @@ impl WorthQueryRuntimeSourceIdentity {
 pub struct WorthQueryCheckpointSourceIdentity([u8; 32]);
 
 impl WorthQueryCheckpointSourceIdentity {
-    pub const fn new(identity: [u8; 32]) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn new(identity: [u8; 32]) -> Self {
         Self(identity)
     }
 
-    pub const fn bytes(self) -> [u8; 32] {
+    pub(in crate::domain_computation::primary_graph) const fn bytes(self) -> [u8; 32] {
         self.0
     }
 }

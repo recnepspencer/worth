@@ -18,7 +18,7 @@ struct ActivationEntry {
 }
 
 /// Bounded coordination only. Entries contain no head or component selection.
-pub struct WorthQueryProductActivationRegistry {
+pub(crate) struct WorthQueryProductActivationRegistry {
     state: Mutex<ActivationRegistryState>,
     capacity: Arc<ActivationCapacity>,
 }
@@ -54,7 +54,7 @@ impl WorthQueryProductActivationRegistry {
         })
     }
 
-    pub fn reserve(
+    pub(crate) fn reserve(
         &self,
     ) -> Result<WorthQueryProductActivationReservation<'_>, WorthQueryProductActivationDenial> {
         let capacity = self.capacity.reserve()?;
@@ -163,7 +163,7 @@ impl WorthQueryProductActivationRegistry {
         Ok(occurrences.into_boxed_slice())
     }
 
-    pub fn gate(
+    pub(crate) fn gate(
         &self,
         identity: &ProductBranchIdentity,
     ) -> Result<Arc<WorthQueryProductActivationGate>, WorthQueryProductActivationDenial> {
@@ -198,7 +198,7 @@ impl WorthQueryProductActivationRegistry {
     }
 
     /// Release only the retired occurrence; delayed cleanup cannot erase a replacement.
-    pub fn release(
+    pub(crate) fn release(
         &self,
         identity: &ProductBranchIdentity,
         incarnation: ProductBranchIncarnation,
@@ -222,7 +222,7 @@ impl WorthQueryProductActivationRegistry {
 }
 
 /// Branch capacity admission precedes World branch creation.
-pub struct WorthQueryProductActivationReservation<'a> {
+pub(crate) struct WorthQueryProductActivationReservation<'a> {
     registry: &'a WorthQueryProductActivationRegistry,
     gate: Arc<WorthQueryProductActivationGate>,
     program: Option<ApplicationProgramRevision>,
@@ -231,7 +231,7 @@ pub struct WorthQueryProductActivationReservation<'a> {
 }
 
 impl WorthQueryProductActivationReservation<'_> {
-    pub fn commit(mut self, branch: &ProductBranchObservation) {
+    pub(crate) fn commit(mut self, branch: &ProductBranchObservation) {
         let mut state = self
             .registry
             .state
@@ -322,7 +322,7 @@ pub(crate) struct WorthQueryProgramRetirementBarrier {
 }
 
 impl WorthQueryProgramRetirementBarrier {
-    pub fn commit(mut self) {
+    pub(crate) fn commit(mut self) {
         self.committed = true;
     }
 }

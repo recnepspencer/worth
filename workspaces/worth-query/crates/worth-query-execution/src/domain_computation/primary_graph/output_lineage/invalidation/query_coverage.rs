@@ -12,7 +12,7 @@ use std::sync::Weak;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
-pub mod marking;
+mod marking;
 mod reclamation;
 mod registration;
 use reclamation::QueryReadBacking;
@@ -21,29 +21,29 @@ pub(super) use marking::mark_query_reads;
 
 /// Addresses and their allocation only. No source/session/currentness permission.
 #[derive(Debug)]
-pub struct QueryReadProjection {
+pub(super) struct QueryReadProjection {
     keys: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
 }
 #[derive(Debug)]
-pub struct QueryReadIdentity;
+struct QueryReadIdentity;
 
 /// Runtime-only custody minted from an original native query capture. Clones
 /// share the one registration; the last owner removes its live index binding.
 /// The slot is a locator only: native identity, epoch and selected image decide.
-pub struct QueryFactCoverage {
+pub(in crate::domain_computation::primary_graph) struct QueryFactCoverage {
     owner: Arc<SourceInvalidationOwner>,
     basis: PositionedRelationalSnapshot,
-    pub projection: Arc<QueryReadProjection>,
+    projection: Arc<QueryReadProjection>,
     identity: Arc<QueryReadIdentity>,
-    pub slot: Mutex<Option<u64>>,
+    slot: Mutex<Option<u64>>,
 }
 #[derive(Clone, Debug)]
-pub struct QueryReadBinding {
-    pub projection: QueryReadBacking,
-    pub identity: Weak<QueryReadIdentity>,
+pub(super) struct QueryReadBinding {
+    projection: QueryReadBacking,
+    identity: Weak<QueryReadIdentity>,
     established: Option<PatchStreamPosition>,
     epoch: super::mark_state::DeliveryEpoch,
-    pub dirty: Option<usize>,
+    dirty: Option<usize>,
     // Weak identity allocation survives until the LAST historical binding drops.
 }
 impl QueryReadBinding {
@@ -53,7 +53,7 @@ impl QueryReadBinding {
     }
 }
 
-pub enum QueryCoverageStop {
+pub(in crate::domain_computation::primary_graph) enum QueryCoverageStop {
     Native(CompanionPreflightStop),
     Allocation(worth_execution::ExecutionAllocationDenial),
     Verification(super::SettlementVerificationStop),
@@ -75,7 +75,7 @@ impl From<super::SettlementVerificationStop> for QueryCoverageStop {
 }
 
 /// Only exact native selected-image lookup can issue this ephemeral consequence.
-pub struct CleanQueryFacts<'selected> {
+pub(in crate::domain_computation::primary_graph) struct CleanQueryFacts<'selected> {
     _coverage: &'selected QueryFactCoverage,
     _selected: &'selected PositionedRelationalSnapshot,
 }
@@ -83,7 +83,7 @@ pub struct CleanQueryFacts<'selected> {
 impl SourceInvalidationOwner {
     /// Original facts were compared at this exact query image before entry.
     /// Unsupported projection or a historical capture retains full verification.
-    pub fn retain_query_fact_coverage(
+    pub(in crate::domain_computation::primary_graph) fn retain_query_fact_coverage(
         self: &Arc<Self>,
         basis: PositionedRelationalSnapshot,
         facts: &[WorthQueryApplicationObservedFact],
@@ -137,7 +137,7 @@ impl SourceInvalidationOwner {
     /// Lookup only the selected image and its exact opaque read binding. Every
     /// intervening publication maintained that binding through the ONE index;
     /// no original-basis retention or touch-history replay is needed.
-    pub fn query_facts_clean_at<'selected>(
+    pub(in crate::domain_computation::primary_graph) fn query_facts_clean_at<'selected>(
         &self,
         coverage: &'selected QueryFactCoverage,
         selected: &'selected PositionedRelationalSnapshot,

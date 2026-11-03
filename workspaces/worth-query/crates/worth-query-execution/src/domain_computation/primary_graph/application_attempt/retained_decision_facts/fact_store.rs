@@ -4,7 +4,7 @@ use super::{AdmittedFactKey, RetainedFact, RetainedFactStore, StorageControl, St
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use worth_execution::{ExecutionArray, ExecutionArrayIntoIter};
 
-pub struct AuthoringSourceFacts {
+pub(in crate::domain_computation::primary_graph) struct AuthoringSourceFacts {
     store: RetainedFactStore<Fact>,
     failure: Option<StoreDenial>,
 }
@@ -34,7 +34,7 @@ impl AuthoringSourceFacts {
             failure: None,
         }
     }
-    pub fn capture(
+    pub(in crate::domain_computation::primary_graph) fn capture(
         &mut self,
         fact: Fact,
         control: StorageControl<'_, '_>,
@@ -104,7 +104,7 @@ impl AuthoringSourceFacts {
                     .ok_or(StoreDenial::ConflictingBody)
             })
     }
-    pub fn finish(
+    pub(in crate::domain_computation::primary_graph) fn finish(
         self,
         control: StorageControl<'_, '_>,
     ) -> Result<RetainedSourceFacts, StoreDenial> {
@@ -115,7 +115,7 @@ impl AuthoringSourceFacts {
     }
 }
 impl RetainedSourceFacts {
-    pub fn len(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         self.0.len()
     }
     pub(in crate::domain_computation::primary_graph) fn into_values(

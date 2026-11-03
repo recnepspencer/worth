@@ -100,7 +100,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Checks the output witness and exact selected-image native marks. Missing
     /// or unqualified marks use full source verification and re-establishment;
     /// neither path borrows authority from content equality or another image.
-    pub fn require_current_read(
+    pub(in crate::domain_computation::primary_graph) fn require_current_read(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,

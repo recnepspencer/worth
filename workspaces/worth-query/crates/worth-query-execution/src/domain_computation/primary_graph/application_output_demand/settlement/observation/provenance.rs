@@ -204,7 +204,7 @@ fn require_owner<T>(
     }
 }
 
-pub fn require_disclosure_owner(
+pub(super) fn require_disclosure_owner(
     original: Option<&Arc<OriginalSourceInspectionDisclosure>>,
     expected: Option<&Arc<OriginalSourceInspectionDisclosure>>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {

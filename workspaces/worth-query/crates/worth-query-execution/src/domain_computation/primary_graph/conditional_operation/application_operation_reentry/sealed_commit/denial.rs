@@ -11,7 +11,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Session,
 };
 
-pub fn classify_denial(denial: &Denial) -> Outcome {
+pub(super) fn classify_denial(denial: &Denial) -> Outcome {
     if let Some(invariant) = denial.custom_invariant_denial() {
         return Outcome::TerminalFailure(Terminal::CustomInvariant(invariant.clone()));
     }
@@ -127,7 +127,7 @@ pub fn classify_denial(denial: &Denial) -> Outcome {
     classify_kind(denial.kind())
 }
 
-pub fn classify_kind(kind: Kind) -> Outcome {
+fn classify_kind(kind: Kind) -> Outcome {
     match kind {
         Kind::StorageUnavailable(_) => Outcome::TerminalFailure(Terminal::ApplicationCommit(kind)),
         Kind::ActiveSnapshotCapacityExhausted {

@@ -18,7 +18,7 @@ use crate::domain_computation::primary_graph::{
     PerformedInstalledTransportCompletion, WorthQueryCommittedDispatchOutboxObservation,
 };
 
-pub mod in_flight;
+mod in_flight;
 pub(in crate::domain_computation::primary_graph) use in_flight::{
     OutstandingDispatchInFlightLease, WorthQueryOutstandingInFlightDenial,
 };

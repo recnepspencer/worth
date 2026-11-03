@@ -2,7 +2,7 @@ use worth_relational::facade::identity::{EntityId, KindId};
 
 use super::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObservedRelation};
 
-pub fn remains_equal(
+pub(super) fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -24,7 +24,7 @@ pub fn remains_equal(
     .is_some_and(|current| current == expected))
 }
 
-pub fn observe_adjacency(
+pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -49,7 +49,7 @@ pub fn observe_adjacency(
 }
 
 /// Historical identity observation only. Ordinary adjacency remains Live-only.
-pub fn observe_audit_outgoing_adjacency(
+pub(in crate::domain_computation::primary_graph) fn observe_audit_outgoing_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -110,14 +110,14 @@ fn resolve_observation(
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum AdjacencyObservationDenial {
+pub(in crate::domain_computation::primary_graph) enum AdjacencyObservationDenial {
     SnapshotUnavailable,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
     WorkBudgetExceeded,
 }
 
-pub fn observe_adjacency_checked(
+pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -138,7 +138,7 @@ pub fn observe_adjacency_checked(
     .map(|(relations, _)| relations)
 }
 
-pub fn observe_adjacency_with_work(
+pub(in crate::domain_computation::primary_graph) fn observe_adjacency_with_work(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

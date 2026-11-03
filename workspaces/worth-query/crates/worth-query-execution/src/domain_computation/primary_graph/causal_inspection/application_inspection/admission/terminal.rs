@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub struct InspectionTerminal<
+pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) struct InspectionTerminal<
     'storage,
 > {
     session: WorthQueryManagedGraphWorkSession,
@@ -23,7 +23,7 @@ pub struct InspectionTerminal<
 }
 
 impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Schema, Scope> {
-    pub fn terminal(
+    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn terminal(
         mut self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<InspectionTerminal<'storage>, InspectionAdmissionDenial> {
@@ -43,7 +43,7 @@ impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Sc
 }
 
 impl InspectionTerminal<'_> {
-    pub fn complete(
+    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn complete(
         self,
         execution: &ExecutionRequest<'_, '_>,
         release: WorthQueryApplicationBasisReleaseReceipt,

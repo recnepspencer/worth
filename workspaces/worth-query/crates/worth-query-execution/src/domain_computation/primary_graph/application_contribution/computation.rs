@@ -34,16 +34,16 @@ where
     ) -> Result<Self::Output, Self::Stopped>;
 }
 
-pub mod checkpoint;
+mod checkpoint;
 mod member_execution;
-pub mod nested_failure;
-pub mod worker_custody;
+pub(in crate::domain_computation::primary_graph) mod nested_failure;
+pub(in crate::domain_computation::primary_graph) mod worker_custody;
 pub use member_execution::WorthQueryMemberExecution;
-pub mod decision_plan;
-pub mod denial;
+mod decision_plan;
+mod denial;
 mod preparation_loans;
-pub mod prepared_request;
-pub mod wave_dispatch;
+pub(in crate::domain_computation::primary_graph) mod prepared_request;
+pub(in crate::domain_computation::primary_graph) mod wave_dispatch;
 
 pub use checkpoint::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,
@@ -78,7 +78,7 @@ where
     Computation: ApplicationManagedComputation<Schema, Feature>,
     Owner: WorthQueryManagedComputationOwner<Schema, Feature, Computation>,
 {
-    pub fn new(owner: Owner) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn new(owner: Owner) -> Self {
         Self {
             owner: Arc::new(owner),
             marker: PhantomData,

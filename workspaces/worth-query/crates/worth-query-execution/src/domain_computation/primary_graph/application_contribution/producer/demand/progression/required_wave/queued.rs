@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::application_output_demand::Selecte
 /// Popped work for one advance. Each token backs its selected required root.
 /// Held items requeue when this advance ends: only a cause
 /// covered by a Current proof on this wave is acknowledged.
-pub struct QueuedRequiredRoots {
+pub(super) struct QueuedRequiredRoots {
     drained: bool,
     roots: Vec<Option<SelectedRequiredWork>>,
     held: Vec<SelectedRequiredWork>,
@@ -29,7 +29,7 @@ enum CallerOutcome {
 }
 
 impl QueuedRequiredRoots {
-    pub const fn new() -> Self {
+    pub(super) const fn new() -> Self {
         Self {
             drained: false,
             roots: Vec::new(),
@@ -39,7 +39,7 @@ impl QueuedRequiredRoots {
     }
 
     /// Whether the caller's outcome is decided, Settled or Pending.
-    pub const fn draining(&self) -> bool {
+    pub(super) const fn draining(&self) -> bool {
         self.caller.is_some()
     }
 
@@ -51,7 +51,7 @@ impl QueuedRequiredRoots {
         self.caller = Some(CallerOutcome::Current(proof));
     }
 
-    pub fn defer_caller(&mut self) {
+    pub(super) fn defer_caller(&mut self) {
         self.caller = Some(CallerOutcome::Pending);
     }
 
@@ -65,7 +65,7 @@ impl QueuedRequiredRoots {
     }
 
     /// The caller's outcome once queue work ends, in any way.
-    pub fn take_caller(&mut self) -> Option<WorthQueryOutputDemandAdvance> {
+    pub(super) fn take_caller(&mut self) -> Option<WorthQueryOutputDemandAdvance> {
         self.caller.take().map(|outcome| match outcome {
             CallerOutcome::Current(proof) => {
                 WorthQueryOutputDemandAdvance::Settled(proof.into_value())

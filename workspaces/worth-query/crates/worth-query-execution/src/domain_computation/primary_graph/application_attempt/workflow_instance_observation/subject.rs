@@ -5,7 +5,7 @@ use super::{
     WorthQueryWorkflowLayout,
 };
 
-pub fn observe_subject(
+pub(in crate::domain_computation::primary_graph) fn observe_subject(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

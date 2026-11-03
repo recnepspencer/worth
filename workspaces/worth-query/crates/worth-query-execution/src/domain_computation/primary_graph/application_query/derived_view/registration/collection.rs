@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::application_query::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationProjection,
 };
 
-pub mod pair;
+mod pair;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

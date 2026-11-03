@@ -13,7 +13,7 @@ pub struct WorthQueryManagedTruthReadRequest {
 }
 
 impl WorthQueryManagedTruthReadRequest {
-    pub fn from_relational_basis(
+    pub(crate) fn from_relational_basis(
         relational_basis: RelationalBranchBasisDescriptor,
         packet: SnapshotReadPacket,
     ) -> Self {
@@ -56,7 +56,7 @@ impl WorthQueryManagedTruthReadRequest {
         self
     }
 
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         RelationalBranchBasisDescriptor,

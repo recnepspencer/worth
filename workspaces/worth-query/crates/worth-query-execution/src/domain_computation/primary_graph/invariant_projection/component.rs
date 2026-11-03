@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_schema::ApplicationComponentSetRef;
 use worth_query_installation::facade::ApplicationSchema;
 mod physical_reads;
-pub mod result;
+mod result;
 pub use result::WorthQueryInvariantProjectionComponent;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {

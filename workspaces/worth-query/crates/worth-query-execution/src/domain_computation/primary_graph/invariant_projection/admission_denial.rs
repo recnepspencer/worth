@@ -76,7 +76,7 @@ impl WorthQueryInvariantProjectionDenial {
             | Decode::CodecRejected => Self::value_decode_stopped(cause, work),
         }
     }
-    pub fn execution_request_stopped(
+    pub(super) fn execution_request_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         work: Option<super::WorthQueryInvariantProjectionWork>,
     ) -> Self {

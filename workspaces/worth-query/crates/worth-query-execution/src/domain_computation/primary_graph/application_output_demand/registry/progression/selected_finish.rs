@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use super::*;
 
-pub struct PreparedSelectedSchedulingFinish<'a> {
+pub(in crate::domain_computation::primary_graph) struct PreparedSelectedSchedulingFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
     interest: &'a WorthQueryOutputDemandInterest,
     member: Arc<required_work::RequiredWorkMembership>,
@@ -25,7 +25,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
 
     /// The original denial stays with the immediate caller. The registry
     /// retains its diagnostic clone, which carries no cleanup authority.
-    pub fn finish(
+    pub(in crate::domain_computation::primary_graph) fn finish(
         self,
         mut performed_source: Option<WorthQueryPerformedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,

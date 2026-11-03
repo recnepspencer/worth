@@ -148,7 +148,7 @@ where
         Ok(())
     }
 
-    pub fn lower(
+    pub(super) fn lower(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding_identity: ApplicationSchemaBindingIdentity,

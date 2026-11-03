@@ -2,7 +2,7 @@ use super::*;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn release_product_occurrence(
+    pub(in crate::domain_computation::primary_graph) fn release_product_occurrence(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) {

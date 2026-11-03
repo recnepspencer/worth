@@ -10,22 +10,22 @@ use worth_runtime_world::facade::ProductBranchObservation;
 mod contention;
 mod correction;
 pub use contention::WorthQueryApplicationBranchCommitContentionForTest;
-pub struct WorthQueryApplicationBranchCommitCoordinator {
+pub(super) struct WorthQueryApplicationBranchCommitCoordinator {
     corrections: correction::CorrectionCommitLanes,
     contention: Arc<contention::ContentionControl>,
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,
 }
-pub struct WorthQueryApplicationBranchCommitLane {
+pub(crate) struct WorthQueryApplicationBranchCommitLane {
     contention: Arc<contention::ContentionControl>,
     occurrence: ProductBranchIncarnation,
     transition: Mutex<()>,
 }
-pub struct WorthQueryApplicationBranchCommitCoordination<'lane> {
+pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
     occurrence: ProductBranchIncarnation,
     _guard: MutexGuard<'lane, ()>,
 }
 impl WorthQueryApplicationBranchCommitCoordinator {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             corrections: correction::CorrectionCommitLanes::default(),
             contention: Arc::default(),
@@ -37,7 +37,7 @@ impl WorthQueryApplicationBranchCommitCoordinator {
     ) -> WorthQueryApplicationBranchCommitContentionForTest {
         self.contention.arm()
     }
-    pub fn lane_for(
+    pub(super) fn lane_for(
         &self,
         observation: &ProductBranchObservation,
     ) -> Arc<WorthQueryApplicationBranchCommitLane> {
@@ -62,13 +62,13 @@ impl WorthQueryApplicationBranchCommitCoordinator {
         lanes.insert(occurrence, Arc::downgrade(&lane));
         lane
     }
-    pub fn retire(&self, occurrence: ProductBranchIncarnation) {
+    pub(super) fn retire(&self, occurrence: ProductBranchIncarnation) {
         self.lanes
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .remove(&occurrence);
     }
-    pub fn entry_count(&self) -> usize {
+    fn entry_count(&self) -> usize {
         self.lanes
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -91,7 +91,7 @@ impl WorthQueryApplicationBranchCommitLane {
         })
     }
 
-    pub fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
+    pub(crate) fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
         // Ordinary entry is the same blocking mutex. The receiver's armed
         // certification recorder only reports an actual native contention.
         let guard = if self.contention.armed() {

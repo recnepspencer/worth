@@ -2,7 +2,7 @@
 
 use super::*;
 
-pub fn remove(
+pub(super) fn remove(
     state: &mut MarkState,
     identity: &Arc<RecordedSettlementIdentity>,
     projection: &Arc<PostingProjection>,

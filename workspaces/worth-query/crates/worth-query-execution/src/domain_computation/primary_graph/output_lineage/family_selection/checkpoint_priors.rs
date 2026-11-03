@@ -12,7 +12,7 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 use super::super::ProductCoordinate;
 use super::super::WorthQueryApplicationOutputLineage;
 
-pub mod denial;
+mod denial;
 mod materialization;
 pub(in crate::domain_computation::primary_graph) use denial::CheckpointPriorSelectionDenial;
 pub(in crate::domain_computation::primary_graph) use denial::CheckpointPriorStructure;
@@ -37,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) struct OutputFamilyRole {
 
 /// A selected native family head, with a reusable locator only when that
 /// exact performed lineage retained one before its effect.
-pub struct NativePriorCheckpointOutput<'a> {
+pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointOutput<'a> {
     pub(in crate::domain_computation::primary_graph) family_role: OutputFamilyRole,
     pub(in crate::domain_computation::primary_graph) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
@@ -47,11 +47,11 @@ pub struct NativePriorCheckpointOutput<'a> {
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) partition: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) entity: Option<EntityId>,
-    pub identity:
+    pub(in crate::domain_computation::primary_graph) identity:
         Option<NativePriorCheckpointIdentity<'a>>,
 }
 
-pub struct NativePriorCheckpointIdentity<'a> {
+pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointIdentity<'a> {
     pub(in crate::domain_computation::primary_graph) producer: &'a str,
     pub(in crate::domain_computation::primary_graph) source: [u8; 32],
     recorded: &'a super::super::RecordedOutput,
@@ -59,7 +59,7 @@ pub struct NativePriorCheckpointIdentity<'a> {
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub fn checkpoint_prior_outputs(
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_prior_outputs(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime_authority: u64,

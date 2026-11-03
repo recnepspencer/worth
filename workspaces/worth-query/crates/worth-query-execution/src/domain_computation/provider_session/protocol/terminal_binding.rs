@@ -11,7 +11,7 @@ use std::sync::Arc;
 /// authority, and its fields stay private so a domain sibling cannot assemble
 /// a session identity, token binding, and execution plan independently.
 #[derive(Clone)]
-pub struct WorthQueryProviderSessionTerminalBinding {
+pub(in crate::domain_computation) struct WorthQueryProviderSessionTerminalBinding {
     inner: Arc<WorthQueryProviderSessionTerminalBindingInner>,
 }
 
@@ -77,7 +77,7 @@ impl WorthQueryProviderSessionTerminalBinding {
             && self.inner.plan.identity() == session.plan_identity()
     }
 
-    pub fn same_session(&self, other: &Self) -> bool {
+    pub(in crate::domain_computation) fn same_session(&self, other: &Self) -> bool {
         self == other
     }
 

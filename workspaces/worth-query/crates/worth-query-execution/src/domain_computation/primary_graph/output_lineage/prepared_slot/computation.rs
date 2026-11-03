@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 
-pub enum PreparedComputationCustody {
+pub(in crate::domain_computation::primary_graph::output_lineage) enum PreparedComputationCustody {
     Unassigned,
     Assigned(SealedComputationRetention),
     Transferred,

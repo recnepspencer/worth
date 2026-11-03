@@ -31,13 +31,13 @@ type SourcePostings = BTreeMap<Address, Posting>;
 
 /// Prepared before the product effect. Cancellation only links this node;
 /// ordered-index removal runs at the next admitted registry entry.
-pub struct PendingVacancyCleanup {
+pub(super) struct PendingVacancyCleanup {
     identity: Arc<RecordedSettlementIdentity>,
     next: Option<Box<Self>>,
 }
 
 #[derive(Default)]
-pub struct SettlementIndex {
+pub(super) struct SettlementIndex {
     sources: BTreeMap<SemanticSource, SourcePostings>,
     cancelled_head: Option<Box<PendingVacancyCleanup>>,
 }
@@ -73,7 +73,7 @@ impl SettlementIndex {
         Ok((recorded.as_ref() == identity).then(|| Arc::clone(key)))
     }
 
-    pub fn fill_prepared(
+    pub(super) fn fill_prepared(
         posting: &Posting,
         expected: &RecordedSettlementIdentity,
         identity: Arc<RecordedSettlementIdentity>,
@@ -156,7 +156,7 @@ impl DemandRegistryState {
         }
     }
 
-    pub fn reserve_settlement_vacancy(
+    pub(super) fn reserve_settlement_vacancy(
         &mut self,
         identity: &Arc<RecordedSettlementIdentity>,
     ) -> Result<(Posting, Box<PendingVacancyCleanup>), WorthQueryOutputDemandDenial> {

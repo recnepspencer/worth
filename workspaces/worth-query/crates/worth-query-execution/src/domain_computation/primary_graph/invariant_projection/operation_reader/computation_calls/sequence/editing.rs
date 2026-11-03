@@ -2,7 +2,7 @@
 use super::*;
 use worth_execution::ExecutionOrderedMap;
 impl ComputationCallSequence {
-    pub fn patched<'a>(
+    pub(in crate::domain_computation::primary_graph) fn patched<'a>(
         self: &Arc<Self>,
         changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, Option<u64>)>,
         execution: &QueryRequestExecution<'_>,
@@ -10,7 +10,7 @@ impl ComputationCallSequence {
         self.edit_core(changes, &ExecutionOrderedMap::default(), None, execution)
     }
     /// Settle the exact previously prepared shape with actual measured calls.
-    pub fn edited<'a>(
+    pub(in crate::domain_computation::primary_graph) fn edited<'a>(
         self: &Arc<Self>,
         transition: &CallShapeTransition,
         changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, Option<u64>)>,

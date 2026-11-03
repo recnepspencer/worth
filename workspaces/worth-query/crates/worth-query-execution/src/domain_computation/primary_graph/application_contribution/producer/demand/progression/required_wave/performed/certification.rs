@@ -2,11 +2,11 @@
 use super::super::*;
 use super::PerformedMembers;
 use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
-pub mod current_basis;
+mod current_basis;
 pub(in crate::domain_computation::primary_graph) use current_basis::CurrentBasis;
 
 impl PerformedMembers {
-    pub fn current<T>(
+    fn current<T>(
         &self,
         value: T,
         basis: CurrentBasis,
@@ -21,7 +21,7 @@ impl PerformedMembers {
 }
 
 /// A move-only key to acknowledgement, caller acceptance or requested return.
-pub struct CurrentProof<T> {
+pub(in crate::domain_computation::primary_graph) struct CurrentProof<T> {
     value: T,
     basis: CurrentBasis,
     record: Arc<

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryBoundExecutionSnapshotIdentity(Arc<str>);
+pub(in crate::domain_computation) struct WorthQueryBoundExecutionSnapshotIdentity(Arc<str>);
 
 impl WorthQueryBoundExecutionSnapshotIdentity {
-    pub fn capture(identity: Arc<str>) -> Self {
+    pub(in crate::domain_computation) fn capture(identity: Arc<str>) -> Self {
         Self(identity)
     }
 

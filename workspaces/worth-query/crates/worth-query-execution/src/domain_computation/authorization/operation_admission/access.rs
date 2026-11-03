@@ -22,7 +22,7 @@ use super::WorthQueryOperationAdmissionIdentity;
 #[path = "access/workflow_approval_snapshot.rs"]
 mod workflow_approval_snapshot;
 
-pub struct WorthQueryWorkflowApprovalAuthority {
+pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalAuthority {
     pub principal: worth_relational::facade::identity::EntityId,
     pub grant: worth_relational::facade::identity::EntityId,
     pub decision_identity: [u8; 32],

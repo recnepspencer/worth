@@ -19,14 +19,14 @@ impl DemandRecord {
         self.performed_obligations = Vec::new();
     }
 
-    pub fn is_required(&self) -> bool {
+    pub(super) fn is_required(&self) -> bool {
         self.interests != 0
             || self.required_interests != 0
             || !self.performed_obligations.is_empty()
             || self.framework_required_count != 0
     }
 
-    pub fn has_cached_ready(&self) -> bool {
+    pub(super) fn has_cached_ready(&self) -> bool {
         matches!(&self.state, DemandState::Output(output)
             if matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_))))
     }
@@ -35,7 +35,7 @@ impl DemandRecord {
 impl DemandRegistryState {
     /// Release one terminal output's framework claims while the registry lock
     /// is held. Return the old Arc pointers for destruction after that lock.
-    pub fn release_record_prerequisites(
+    pub(super) fn release_record_prerequisites(
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Vec<Arc<WorthQueryOutputDemandKey>> {

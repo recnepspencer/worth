@@ -5,7 +5,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 impl SourceInvalidationOwner {
-    pub fn native_marking_report(
+    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn native_marking_report(
         &self,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<Option<NativeMarkingReport>, CompanionPreflightStop> {

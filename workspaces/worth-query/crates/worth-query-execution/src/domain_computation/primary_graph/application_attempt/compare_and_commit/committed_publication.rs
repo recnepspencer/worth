@@ -186,7 +186,7 @@ impl WorthQueryCommittedProductPublication {
     /// Whether `observation` still selects this publication: nothing has been
     /// published on its branch since, so the effect it committed is current
     /// with nothing to compare.
-    pub fn is_selected_at(
+    pub(in crate::domain_computation::primary_graph) fn is_selected_at(
         &self,
         observation: &ProductBranchObservation,
     ) -> bool {
@@ -276,7 +276,7 @@ impl WorthQueryCommittedProductPublication {
         self.performed()?.take_live_successor_observation()
     }
 
-    pub fn take_output_demand_observation(
+    pub(in crate::domain_computation::primary_graph) fn take_output_demand_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.performed()?.take_output_demand_observation()

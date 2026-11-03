@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 mod material_ordering;
-pub mod material_storage;
+mod material_storage;
 mod traversal;
 use material_storage::MaterialFootprintStorage;
 
@@ -96,7 +96,7 @@ pub(super) fn collect_source_footprints(
     Ok(footprints)
 }
 
-pub fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) {
+fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) {
     footprint.aspects.sort_by(|left, right| {
         (left.entity, &left.aspect, &left.field).cmp(&(right.entity, &right.aspect, &right.field))
     });

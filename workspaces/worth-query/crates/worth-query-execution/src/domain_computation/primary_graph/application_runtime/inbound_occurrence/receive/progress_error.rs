@@ -3,7 +3,7 @@ use super::{
     WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundPendingReason as Pending,
 };
 impl Denial {
-    pub fn pending_reason(self) -> Pending {
+    pub(in crate::domain_computation::primary_graph) fn pending_reason(self) -> Pending {
         match self {
             Denial::ExecutionDenied(cause) => Pending::ExecutionRequest(cause),
             Denial::PublicationExecutionDenied { stage, kind } => {

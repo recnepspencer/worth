@@ -27,10 +27,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Workf
 /// observation of the instance it admits.
 #[must_use = "a step is admitted only with the allowance its budget check granted"]
 #[derive(Debug)]
-pub struct WorkflowStepAllowance(());
+pub(in crate::domain_computation::primary_graph) struct WorkflowStepAllowance(());
 
 impl WorkflowStepAllowance {
-    pub fn for_test() -> Self {
+    pub(in crate::domain_computation::primary_graph) fn for_test() -> Self {
         Self(())
     }
 

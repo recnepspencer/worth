@@ -9,7 +9,7 @@ impl<Schema, Operation, Input, Scope>
 {
     /// Expect the roles and families `Contract` declares, in place of the
     /// operation's own output contract.
-    pub fn prepare_output_contract_for_test<Contract>(
+    pub(in crate::domain_computation::primary_graph) fn prepare_output_contract_for_test<Contract>(
         &mut self,
     ) where
         Schema: ApplicationSchema,
@@ -42,7 +42,7 @@ impl<Schema, Operation, Input, Scope>
     /// Bind `target` under `role`. Public writers build `role` from a
     /// declaration marker, which checks it against the contract at compile
     /// time; the runtime checks here guard the erased use.
-    pub fn bind_output<Entity>(
+    pub(in crate::domain_computation::primary_graph) fn bind_output<Entity>(
         &mut self,
         role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,

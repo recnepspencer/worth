@@ -2,7 +2,7 @@
 use super::funding::shape_bound;
 use super::*;
 impl ComputationCallSequence {
-    pub fn build<'a, I>(
+    pub(in crate::domain_computation::primary_graph) fn build<'a, I>(
         calls: impl Fn() -> I,
         execution: &QueryRequestExecution<'_>,
     ) -> Result<Arc<Self>, CallSequenceDenial>

@@ -75,7 +75,7 @@ use super::{
 };
 
 #[derive(Clone)]
-pub struct WorthQueryInstalledEntityResolutionContext {
+pub(in crate::domain_computation) struct WorthQueryInstalledEntityResolutionContext {
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,
@@ -83,7 +83,7 @@ pub struct WorthQueryInstalledEntityResolutionContext {
     layout: Arc<WorthQueryPrimaryGraphLayout>,
 }
 
-pub struct WorthQueryEntityResolutionTruth<'truth> {
+pub(in crate::domain_computation) struct WorthQueryEntityResolutionTruth<'truth> {
     installed: &'truth WorthQueryInstalledEntityResolutionContext,
     relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,
@@ -102,7 +102,7 @@ impl WorthQueryPrimaryGraph {
 }
 
 impl WorthQueryInstalledEntityResolutionContext {
-    pub fn at_snapshot<'truth>(
+    pub(in crate::domain_computation) fn at_snapshot<'truth>(
         &'truth self,
         relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,
@@ -128,7 +128,7 @@ impl WorthQueryInstalledEntityResolutionContext {
 }
 
 impl WorthQueryEntityResolutionTruth<'_> {
-    pub fn resolve(
+    pub(in crate::domain_computation) fn resolve(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: &str,
@@ -216,7 +216,7 @@ impl WorthQueryEntityResolutionTruth<'_> {
         (result, examined_candidate_count)
     }
 
-    pub fn validate_entity_freshness<Schema, Entity>(
+    pub(in crate::domain_computation) fn validate_entity_freshness<Schema, Entity>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,

@@ -8,7 +8,7 @@ use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
 mod managed_recovery;
 mod release;
-pub mod reservation;
+mod reservation;
 pub(in crate::domain_computation::primary_graph::provider) use managed_recovery::{
     ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop,
 };

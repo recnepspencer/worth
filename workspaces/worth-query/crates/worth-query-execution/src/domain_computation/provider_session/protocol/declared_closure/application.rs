@@ -4,7 +4,7 @@ use super::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationEffectPosture {
+pub(crate) enum WorthQueryApplicationEffectPosture {
     Application,
     Platform,
     ApplicationWithPlatform,
@@ -86,7 +86,7 @@ fn bind_native_reference_invariants(
     Ok(())
 }
 
-pub fn bind_application_candidate_effect_closure(
+pub(crate) fn bind_application_candidate_effect_closure(
     closure: &mut WorthQueryProviderPlanDeclaredClosure,
     posture: WorthQueryApplicationEffectPosture,
     touches_application: bool,

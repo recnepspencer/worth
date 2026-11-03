@@ -16,7 +16,7 @@ use crate::domain_computation::{
 ///
 /// This value is move-only and private to the application-attempt state
 /// machine. The provider session is joined exactly once by [`bind_session`].
-pub struct WorthQueryApplicationAttemptBasis {
+pub(in crate::domain_computation) struct WorthQueryApplicationAttemptBasis {
     core: WorthQueryApplicationAttemptCore,
     product: crate::basis::WorthQueryProductBranchLease,
 }
@@ -42,7 +42,7 @@ struct WorthQueryApplicationAttemptCore {
 /// this value. It is minted only after the exact provider plan is checked
 /// against the already-admitted operation, pinned snapshot, graph-work session,
 /// and Relational branch.
-pub struct WorthQueryApplicationAttemptAffinity {
+pub(in crate::domain_computation) struct WorthQueryApplicationAttemptAffinity {
     basis: WorthQueryApplicationAttemptCore,
     provider_session: WorthQueryProviderSessionTerminalBinding,
     product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
@@ -172,7 +172,7 @@ impl WorthQueryApplicationAttemptBasis {
         })
     }
 
-    pub fn affinity_mismatches(
+    pub(super) fn affinity_mismatches(
         &self,
         provider_session: &WorthQueryProviderSessionTerminalBinding,
     ) -> std::collections::BTreeSet<WorthQueryApplicationAttemptAffinityMismatch> {
@@ -191,7 +191,7 @@ impl WorthQueryApplicationAttemptBasis {
         mismatches
     }
 
-    pub fn affinity_mismatches_view(
+    pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn affinity_mismatches_view(
         &self,
         plan: &impl WorthQueryApplicationAttemptAffinityView,
     ) -> std::collections::BTreeSet<WorthQueryApplicationAttemptAffinityMismatch> {

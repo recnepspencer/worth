@@ -3,11 +3,11 @@ use super::*;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 use worth_relational::facade::mvcc::RelationalRequiredOutputPublication;
 
-pub struct SelectedRequiredPublicationHead {
+pub(in crate::domain_computation::primary_graph) struct SelectedRequiredPublicationHead {
     selected: Arc<OnceLock<RecordedOutput>>,
 }
 
-pub struct RequiredPublicationPredecessor {
+pub(in crate::domain_computation::primary_graph) struct RequiredPublicationPredecessor {
     pub(in crate::domain_computation::primary_graph) implementation:
         worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub(in crate::domain_computation::primary_graph) correspondence:
@@ -18,7 +18,7 @@ pub struct RequiredPublicationPredecessor {
 }
 
 impl SelectedRequiredPublicationHead {
-    pub fn retain(selected: &Arc<OnceLock<RecordedOutput>>) -> Result<Self, Stop> {
+    pub(super) fn retain(selected: &Arc<OnceLock<RecordedOutput>>) -> Result<Self, Stop> {
         let row = selected.get().ok_or(Stop::SelectedSourceMismatch)?;
         let origin = match &row.performed_origin {
             Some(alias) => {
@@ -44,13 +44,13 @@ impl SelectedRequiredPublicationHead {
         })
     }
 
-    pub fn warm_publication(
+    pub(in crate::domain_computation::primary_graph) fn warm_publication(
         &self,
     ) -> Option<RelationalRequiredOutputPublication> {
         self.origin().required_publication.clone()
     }
 
-    pub fn cold_predecessor(
+    pub(in crate::domain_computation::primary_graph) fn cold_predecessor(
         &self,
     ) -> Result<RequiredPublicationPredecessor, Stop> {
         let origin = self.origin();

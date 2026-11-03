@@ -23,7 +23,7 @@ use super::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEmission,
 };
 
-pub struct WorthQueryPreparedApplicationProviderAttempt {
+pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
@@ -32,7 +32,7 @@ pub struct WorthQueryPreparedApplicationProviderAttempt {
     application_projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
     original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
-    pub effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
+    effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
@@ -118,7 +118,7 @@ pub(super) fn installed_preimage_demand(
     }
 }
 
-pub fn prepare_provider_attempt<'layout>(
+pub(super) fn prepare_provider_attempt<'layout>(
     unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
         'layout,
     >,

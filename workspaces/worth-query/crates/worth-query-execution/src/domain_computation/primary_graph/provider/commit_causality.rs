@@ -2,7 +2,7 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch;
 
 impl WorthQueryPrimaryGraphProvider {
-    pub fn observe_application_commit_causality(
+    pub(in crate::domain_computation::primary_graph) fn observe_application_commit_causality(
         &self,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveSubscription {
@@ -11,11 +11,11 @@ impl WorthQueryPrimaryGraphProvider {
             .expect("the test observer has subscription capacity")
     }
 
-    pub fn set_application_commit_causality_limits(&self, batch_capacity: usize) {
+    pub(crate) fn set_application_commit_causality_limits(&self, batch_capacity: usize) {
         self.live_delivery.set_limits(batch_capacity);
     }
 
-    pub fn set_application_commit_causality_reservation_hook(
+    pub(crate) fn set_application_commit_causality_reservation_hook(
         &self,
         hook: Option<std::sync::Arc<dyn Fn() + Send + Sync>>,
     ) {
@@ -44,7 +44,7 @@ impl WorthQueryPrimaryGraphProvider {
             .publish(reservation, publication, emissions, predicate)
     }
 
-    pub fn committed_application_emissions(
+    pub(in crate::domain_computation::primary_graph) fn committed_application_emissions(
         &self,
         publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     ) -> Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission>
@@ -52,11 +52,11 @@ impl WorthQueryPrimaryGraphProvider {
         self.live_delivery.emissions(publication)
     }
 
-    pub fn published_application_commit_count(&self) -> usize {
+    pub(crate) fn published_application_commit_count(&self) -> usize {
         self.live_delivery.published_commit_count()
     }
 
-    pub fn active_application_commit_causality_partitions(&self) -> usize {
+    pub(crate) fn active_application_commit_causality_partitions(&self) -> usize {
         self.live_delivery.active_partition_count()
     }
 }

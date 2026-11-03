@@ -8,7 +8,7 @@ impl Serialize for ProjectionAuthorityEncoding {
     }
 }
 
-pub mod tests {
+mod tests {
     use super::super::*;
     use worth_query_declaration::facade::application_operation::application_computation_partition_identity;
     use worth_query_declaration::facade::application_program::ApplicationComputationPartition;

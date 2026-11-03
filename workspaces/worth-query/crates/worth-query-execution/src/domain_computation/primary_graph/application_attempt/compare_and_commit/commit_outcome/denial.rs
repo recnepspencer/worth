@@ -18,7 +18,7 @@ mod request_authority;
 mod signed_creation;
 mod signing_lifecycle;
 mod unobserved_write;
-pub mod workflow;
+mod workflow;
 
 /// Why a commit was refused before publication.
 ///
@@ -296,7 +296,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub fn provider_rejected_with_detail(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn provider_rejected_with_detail(
         stage: WorthQueryApplicationCommitDenialStage,
         detail: impl Into<std::sync::Arc<str>>,
     ) -> Self {

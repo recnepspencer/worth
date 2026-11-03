@@ -65,7 +65,7 @@ impl WorthQueryApplicationDisclosureReceipt {
         }
     }
 
-    pub fn governed(
+    pub(in crate::domain_computation) fn governed(
         classification: impl Into<String>,
         disclosed: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,
         omitted: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,

@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use std::{collections::BTreeSet, sync::Arc};
 
-pub struct ExpectedFactKeys {
+pub(in crate::domain_computation::primary_graph) struct ExpectedFactKeys {
     walks: super::structural_walks::IssuedWalkValues,
     aggregates: super::aggregates::IssuedAggregateValues,
     components: super::components::IssuedComponentValues,
@@ -76,7 +76,7 @@ impl ExpectedFactKeys {
     > {
         self.managed_sources.get(key, admission, contracts, source)
     }
-    pub fn aggregate(
+    pub(in crate::domain_computation::primary_graph) fn aggregate(
         &self,
         key: &crate::domain_computation::primary_graph::aggregate_observation::AggregateKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
@@ -89,7 +89,7 @@ impl ExpectedFactKeys {
     > {
         self.aggregates.get(key, admission, contracts, snapshot)
     }
-    pub fn structural_walk(
+    pub(in crate::domain_computation::primary_graph) fn structural_walk(
         &self,
         key: &crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
@@ -105,7 +105,7 @@ impl ExpectedFactKeys {
     pub(in crate::domain_computation::primary_graph) fn source_publication(&self,key:&crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead)->Option<&Arc<crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication>>{
         self.source_publications.as_deref()?.get(key)
     }
-    pub fn iter(&self) -> impl Iterator<Item = &Key> {
+    pub(in crate::domain_computation::primary_graph) fn iter(&self) -> impl Iterator<Item = &Key> {
         union(self.refresh_keys(), self.computation.carried_keys())
     }
     pub(in crate::domain_computation::primary_graph) fn refresh_keys(

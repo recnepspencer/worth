@@ -7,7 +7,7 @@ use worth_query_declaration::facade::application_query::ApplicationQueryOrbitMea
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DeclaredOrbitSelection {
+pub(in crate::domain_computation::primary_graph::application_query) struct DeclaredOrbitSelection {
     pub(in crate::domain_computation::primary_graph::application_query) meaning:
         Arc<ApplicationQueryOrbitMeaning>,
     pub(in crate::domain_computation::primary_graph::application_query) aggregate:

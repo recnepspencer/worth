@@ -35,7 +35,7 @@ impl WorthQueryProductObservationLease {
         }
     }
 
-    pub fn retained_clone(&self) -> Self {
+    pub(crate) fn retained_clone(&self) -> Self {
         Self {
             observation: self.observation.clone(),
             current_security_guard: self.current_security_guard.clone(),
@@ -52,7 +52,7 @@ impl WorthQueryProductObservationLease {
         self.current_security_guard.as_ref()
     }
 
-    pub fn relational_basis(
+    pub(crate) fn relational_basis(
         &self,
     ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
         self.observation.basis().relational_basis()
@@ -82,10 +82,10 @@ impl WorthQueryProductBranchLease {
         self.read
     }
 
-    pub const fn read_lease_ref(&self) -> &WorthQueryProductObservationLease {
+    pub(crate) const fn read_lease_ref(&self) -> &WorthQueryProductObservationLease {
         &self.read
     }
-    pub fn retained_clone(&self) -> Self {
+    pub(crate) fn retained_clone(&self) -> Self {
         Self {
             publication: self.publication.clone(),
             read: self.read.retained_clone(),
@@ -115,11 +115,11 @@ impl WorthQueryProductBranchLease {
         }
     }
 
-    pub fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
+    pub(crate) fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
         self.read.observation()
     }
 
-    pub fn relational_basis(
+    pub(crate) fn relational_basis(
         &self,
     ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
         self.observation().basis().relational_basis()
@@ -164,7 +164,7 @@ impl WorthQueryProductBranchLease {
         self.observation().basis().signal_basis()
     }
 
-    pub fn publication_binding(
+    pub(crate) fn publication_binding(
         &self,
     ) -> crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
         self.publication.clone()

@@ -37,7 +37,7 @@ struct SupportLifecycleState {
 }
 
 #[derive(Clone)]
-pub struct WorthQueryProgramSupportLifecycle {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportLifecycle {
     state: Arc<Mutex<SupportLifecycleState>>,
 }
 
@@ -130,7 +130,7 @@ impl WorthQueryProgramSupportLifecycle {
         *count = remaining;
     }
 
-    pub fn begin_retirement(
+    pub(in crate::domain_computation::primary_graph) fn begin_retirement(
         &self,
         revision: &ApplicationProgramRevision,
     ) -> Result<WorthQueryProgramSupportRetirementAttempt, WorthQueryProgramSupportRetirementDenial>
@@ -175,7 +175,7 @@ enum SupportUse {
     Custody,
 }
 
-pub struct WorthQueryProgramSupportInterpretation {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportInterpretation {
     lifecycle: WorthQueryProgramSupportLifecycle,
     revision: ApplicationProgramRevision,
 }
@@ -219,7 +219,7 @@ impl Drop for WorthQueryProgramSupportCustody {
     }
 }
 
-pub struct WorthQueryProgramSupportRetirementAttempt {
+pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportRetirementAttempt {
     lifecycle: WorthQueryProgramSupportLifecycle,
     revision: ApplicationProgramRevision,
     finished: bool,
@@ -250,7 +250,7 @@ impl WorthQueryProgramSupportRetirementAttempt {
         WorthQueryProgramSupportRetirementDenial::InventoryUnavailable(inventory)
     }
 
-    pub fn finish(
+    pub(in crate::domain_computation::primary_graph) fn finish(
         mut self,
         current_branches: usize,
         retained_program_bytes: usize,

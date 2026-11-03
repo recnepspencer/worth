@@ -149,7 +149,7 @@ pub(super) fn map_bootstrap_staging_denial(
     )
 }
 
-pub mod commit_denial;
+mod commit_denial;
 pub(super) use commit_denial::map_bootstrap_commit_denial;
 
 pub(super) fn append_typed_rows(
@@ -283,7 +283,7 @@ pub(super) fn build_identity_indexes(
 }
 
 // The bootstrap caller's request owns this work, just as it owns its commit.
-pub fn build_requested_indexes(
+fn build_requested_indexes(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     request: DerivedIndexBuildRequest,
@@ -293,7 +293,7 @@ pub fn build_requested_indexes(
         .build_for_commit(execution, request)
 }
 
-pub fn identity_indexes_built(
+fn identity_indexes_built(
     build: DerivedIndexBuildOutcome,
     requested_indexes: usize,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {

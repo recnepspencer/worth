@@ -3,7 +3,7 @@ mod commit_outcome;
 mod commit_stop;
 mod control_stopped;
 mod counters;
-pub mod declared_closure;
+mod declared_closure;
 
 mod denial;
 mod execution_plan;
@@ -11,10 +11,10 @@ mod plan_contract;
 mod product_affinity;
 mod provider_port;
 mod readmission;
-pub mod session_affinity;
+mod session_affinity;
 mod session_binding;
 mod session_lease;
-pub mod terminal_binding;
+mod terminal_binding;
 mod terminal_outcome;
 
 pub use abort_outcome::*;

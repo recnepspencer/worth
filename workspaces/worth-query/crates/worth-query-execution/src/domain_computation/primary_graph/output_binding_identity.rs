@@ -3,19 +3,19 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct OutputBindingIdentity(Arc<str>);
+pub(super) struct OutputBindingIdentity(Arc<str>);
 
 impl OutputBindingIdentity {
-    pub fn declared(name: &str) -> Self {
+    pub(super) fn declared(name: &str) -> Self {
         Self(Arc::from(name))
     }
-    pub fn as_str(&self) -> &str {
+    pub(super) fn as_str(&self) -> &str {
         &self.0
     }
 }
 
 #[derive(Default)]
-pub struct OutputBindingInventory {
+pub(super) struct OutputBindingInventory {
     by_type: HashMap<TypeId, OutputBindingIdentity>,
     by_identity: HashMap<OutputBindingIdentity, TypeId>,
 }
@@ -30,7 +30,7 @@ impl OutputBindingInventory {
             assert_eq!(old, binding);
         }
     }
-    pub fn identity(&self, binding: TypeId) -> Option<OutputBindingIdentity> {
+    pub(super) fn identity(&self, binding: TypeId) -> Option<OutputBindingIdentity> {
         self.by_type.get(&binding).cloned()
     }
     pub(super) fn binding_type(&self, identity: &OutputBindingIdentity) -> Option<TypeId> {

@@ -8,15 +8,15 @@ pub enum PostingBindings {
     QueryRead(super::super::query_coverage::QueryReadBinding),
 }
 #[derive(Clone, Debug)]
-pub struct SettlementPostingBindings
+pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) struct SettlementPostingBindings
 {
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) projection:
         Arc<PostingProjection>,
-    pub settlements:
+    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) settlements:
         OrdSet<Arc<RecordedSettlementIdentity>>,
 }
 impl PostingBindings {
-    pub fn settlements(
+    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn settlements(
         &self,
     ) -> Option<&SettlementPostingBindings> {
         match self {
@@ -26,7 +26,7 @@ impl PostingBindings {
     }
 }
 
-pub fn bind(
+pub(super) fn bind(
     state: &mut MarkState,
     projection: &Arc<PostingProjection>,
     identity: &Arc<RecordedSettlementIdentity>,

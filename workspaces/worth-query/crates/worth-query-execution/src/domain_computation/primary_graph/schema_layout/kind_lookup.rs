@@ -9,7 +9,7 @@ impl super::WorthQueryPrimaryGraphLayout {
         self.application_relation_kinds.contains(&kind)
     }
 
-    pub fn entity_kind(&self, entity: &str) -> Option<KindId> {
+    pub(in crate::domain_computation) fn entity_kind(&self, entity: &str) -> Option<KindId> {
         self.entity_kinds.get(entity).copied()
     }
 

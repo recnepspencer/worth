@@ -95,7 +95,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     /// Expect the roles and families `Contract` declares, as a binding with
     /// that output contract would. The contract stands in for the binding's
     /// own type, so the program's publication is recorded like any output.
-    pub fn prepare_test_contract<Schema, Contract>(&mut self)
+    pub(super) fn prepare_test_contract<Schema, Contract>(&mut self)
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Contract: worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract<Schema>,
@@ -201,7 +201,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         );
     }
 
-    pub fn bind<Schema, Entity>(
+    pub(super) fn bind<Schema, Entity>(
         &mut self,
         role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
@@ -219,7 +219,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         self.seal_with(|created| commit.created_entity(created))
     }
 
-    pub fn seal_with(
+    pub(super) fn seal_with(
         self,
         resolve_created: impl Fn(
             &worth_relational::facade::transactions::CreatedEntityRef,

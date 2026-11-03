@@ -1,24 +1,24 @@
 //! Receiver-owned evidence about every closure-scoped installed-owner acquisition.
 use super::WorthQueryRelationalSourceOwner;
 #[derive(Clone)]
-pub struct ReadLockProbeForTest {
+pub(in crate::domain_computation) struct ReadLockProbeForTest {
     owner: WorthQueryRelationalSourceOwner,
 }
 impl WorthQueryRelationalSourceOwner {
-    pub fn read_lock_probe_for_test(&self) -> ReadLockProbeForTest {
+    pub(in crate::domain_computation) fn read_lock_probe_for_test(&self) -> ReadLockProbeForTest {
         ReadLockProbeForTest {
             owner: self.clone(),
         }
     }
 }
 impl ReadLockProbeForTest {
-    pub fn is_locked_for_test(&self) -> bool {
+    pub(in crate::domain_computation) fn is_locked_for_test(&self) -> bool {
         self.owner.lock_is_held_for_test()
     }
-    pub fn acquisitions_for_test(&self) -> u64 {
+    pub(in crate::domain_computation) fn acquisitions_for_test(&self) -> u64 {
         self.owner.lock_acquisitions_for_test()
     }
-    pub fn with_owner_lock_for_test<T>(
+    pub(in crate::domain_computation) fn with_owner_lock_for_test<T>(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce() -> T,

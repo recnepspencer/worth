@@ -22,17 +22,17 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 mod equality;
 mod image_fence;
 mod native_evidence;
-pub mod root_source;
+mod root_source;
 use crate::domain_computation::primary_graph::invariant_projection::EvidenceView;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum FullVerificationDecision {
+pub(in crate::domain_computation::primary_graph) enum FullVerificationDecision {
     Current,
     Changed,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum FullVerificationStop {
+pub(in crate::domain_computation::primary_graph) enum FullVerificationStop {
     Alignment(FullVerificationReason),
     /// The selected source or a row it reaches belongs to another source.
     Foreign,
@@ -52,7 +52,7 @@ impl From<CompanionPreflightStop> for FullVerificationStop {
 
 /// The observer retains the exact pre-verification image. It grants no edit,
 /// scheduling, equality, or publication authority.
-pub struct FullVerificationImage<'selected> {
+pub(in crate::domain_computation::primary_graph) struct FullVerificationImage<'selected> {
     state: Arc<MarkState>,
     native_only: bool,
     selected: &'selected PositionedRelationalSnapshot,
@@ -62,7 +62,7 @@ pub struct FullVerificationImage<'selected> {
 }
 
 impl SourceInvalidationOwner {
-    pub fn capture_full_verification<'selected>(
+    pub(in crate::domain_computation::primary_graph) fn capture_full_verification<'selected>(
         &'selected self,
         runtime: &'selected RelationalRuntime,
         snapshot: &'selected SnapshotHandle,
@@ -121,7 +121,7 @@ impl FullVerificationImage<'_> {
         )
     }
 
-    pub fn verify_root(
+    pub(in crate::domain_computation::primary_graph) fn verify_root(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,

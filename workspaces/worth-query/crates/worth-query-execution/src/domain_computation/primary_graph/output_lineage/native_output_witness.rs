@@ -18,21 +18,21 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGr
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
 
-pub mod checkpoint;
+mod checkpoint;
 mod equality;
 mod fact_coverage;
 mod fact_projection;
 mod preparation;
-pub mod retirement;
+mod retirement;
 use retirement::RetirementMetadata;
 
 #[derive(Debug)]
-pub struct RoleProbe {
+struct RoleProbe {
     role: String,
     entity_name: String,
-    pub kind: KindId,
-    pub posture: WorthQueryApplicationOutputPosture,
-    pub retirement: Option<RetirementMetadata>,
+    kind: KindId,
+    posture: WorthQueryApplicationOutputPosture,
+    retirement: Option<RetirementMetadata>,
     entity: Option<EntityId>,
     first_aspect: usize,
     end_aspect: usize,
@@ -48,9 +48,9 @@ struct AspectProbe {
 /// Prepared role and aspect probes are constructed before the native commit.
 /// Their storage never authorizes a write.
 #[must_use = "the prepared output witness must be sealed or dropped"]
-pub struct PreparedNativeOutputWitness {
+pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputWitness {
     cell: Arc<OnceLock<SealedNativeOutputWitness>>,
-    pub roles: Vec<RoleProbe>,
+    roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
 }
 
@@ -58,28 +58,28 @@ pub struct PreparedNativeOutputWitness {
 /// proves that the previously performed output has not changed. A revision
 /// change conservatively requests ordinary producer execution, even for ABA.
 #[derive(Debug)]
-pub struct SealedNativeOutputWitness {
-    pub roles: Vec<RoleProbe>,
+pub(in crate::domain_computation::primary_graph) struct SealedNativeOutputWitness {
+    roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
 }
 
 /// A checked projection of the sealed performed roles into ordinary observed
 /// facts. It borrows the witness so the installed aspect list remains the only
 /// source of this output dependency footprint.
-pub struct PreparedNativeOutputFacts<'a> {
+pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputFacts<'a> {
     witness: &'a SealedNativeOutputWitness,
     count: usize,
     retained_payload_bytes: u64,
 }
 
 impl PreparedNativeOutputFacts<'_> {
-    pub fn count(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn count(&self) -> usize {
         self.count
     }
 
     /// The caller has already reserved the complete flat Vec and Arc. No
     /// additional allocation is possible except the admitted aspect clones.
-    pub fn append_into(self, facts: &mut Vec<Fact>) {
+    pub(in crate::domain_computation::primary_graph) fn append_into(self, facts: &mut Vec<Fact>) {
         assert!(facts.capacity().saturating_sub(facts.len()) >= self.count);
         for role in &self.witness.roles {
             let entity_id = role.entity.expect("prepared witness role is filled");
@@ -106,7 +106,7 @@ impl PreparedNativeOutputWitness {
     /// The committed correspondence supplies created IDs. All storage was
     /// allocated by `prepare`; an unavailable native projection only makes
     /// this optional reuse proof ineligible.
-    pub fn finish(
+    pub(in crate::domain_computation::primary_graph) fn finish(
         mut self,
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         runtime: &RelationalRuntime,
@@ -161,7 +161,7 @@ impl SealedNativeOutputWitness {
     /// Claim the actual role/aspect traversal and initialized name copies
     /// before a stable alias materializes its observed-fact row. An unfilled
     /// witness cannot be promoted into reusable output authority.
-    pub fn prepare_fact_projection(
+    pub(in crate::domain_computation::primary_graph) fn prepare_fact_projection(
         &self,
     ) -> Result<Option<PreparedNativeOutputFacts<'_>>, CompanionPreflightStop> {
         let mut count = 0usize;
@@ -219,7 +219,7 @@ impl SealedNativeOutputWitness {
         Ok(true)
     }
 
-    pub fn unchanged_in(
+    pub(in crate::domain_computation::primary_graph) fn unchanged_in(
         &self,
         runtime: &RelationalRuntime,
         selected: &SnapshotHandle,

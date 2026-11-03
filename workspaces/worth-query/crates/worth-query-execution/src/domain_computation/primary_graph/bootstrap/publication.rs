@@ -38,7 +38,7 @@ impl WorthQueryPrimaryGraphPublication {
         self.policy_relation_count
     }
 
-    pub const fn bootstrap_commit_id(
+    pub(in crate::domain_computation::primary_graph) const fn bootstrap_commit_id(
         &self,
     ) -> worth_relational::facade::history::CommitId {
         self.bootstrap_commit_id

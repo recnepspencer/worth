@@ -23,7 +23,7 @@ impl std::fmt::Debug for WorthQuerySessionPrepareOutcome<'_> {
 }
 
 impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
-    pub fn prepare_for_commit(
+    pub(crate) fn prepare_for_commit(
         mut self,
     ) -> Result<WorthQuerySessionPrepareOutcome<'run>, WorthQueryProviderSessionFailure> {
         self.counters.called_provider();
@@ -74,7 +74,7 @@ impl WorthQuerySessionPrepareOutcome<'_> {
         self.counters
     }
 
-    pub fn commit(
+    pub(crate) fn commit(
         self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQuerySessionCommitOutcome {

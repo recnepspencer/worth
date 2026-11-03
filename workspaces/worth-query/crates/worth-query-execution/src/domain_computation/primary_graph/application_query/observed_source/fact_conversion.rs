@@ -3,9 +3,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationObservedFact as Fact, WorthQueryPrimaryGraphLayout,
 };
 
-pub mod control;
+mod control;
 mod field_preparation;
-pub mod materialization;
+mod materialization;
 pub(in crate::domain_computation::primary_graph) use control::SourceFactExpansionControl;
 mod retention_validation;
 mod source_fact_locator;
@@ -46,7 +46,7 @@ impl<Query> WorthQueryObservedSource<Query> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn validate_and_into_facts(
+    pub(in crate::domain_computation::primary_graph) fn validate_and_into_facts(
         self,
         runtime_authority: u64,
         binding: &ApplicationSchemaBindingIdentity,
@@ -77,7 +77,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         )
     }
 
-    pub fn retained_checkpoint_facts(
+    pub(in crate::domain_computation::primary_graph) fn retained_checkpoint_facts(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
         request: Option<

@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::application_query::resource_lifecy
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 impl<'request, Schema> WorthQueryApplicationQueryControls<'request, Schema> {
-    pub fn selected_read_one_shot(
+    pub(in crate::domain_computation::primary_graph) fn selected_read_one_shot(
         product: WorthQueryProductObservationLease,
         application_basis: WorthQueryApplicationBasisLease,
         maximum_result_count: NonZeroUsize,

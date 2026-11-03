@@ -18,7 +18,7 @@ pub(super) fn canonical_key(
     }
 }
 
-pub fn denial(
+pub(super) fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationAttemptDenial {

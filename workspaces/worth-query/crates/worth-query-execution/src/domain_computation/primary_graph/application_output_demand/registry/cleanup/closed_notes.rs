@@ -10,7 +10,7 @@ mod visit;
 pub(in super::super) use visit::ClosedRowNote;
 pub(in super::super) use visit::QueuedClosedRow;
 
-pub struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
+pub(in super::super) struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
 pub(in super::super) struct ClosedNoteBacking {
     pub(in super::super) claim_owner: super::super::claim_readthrough::OwnerState,
     pub(in super::super) claimants:
@@ -43,7 +43,7 @@ impl ClosedCleanupLinks {
         self.queued()
             .then(|| QueuedClosedRow::new(Arc::clone(&self.0)))
     }
-    pub fn queued(&self) -> bool {
+    pub(in super::super) fn queued(&self) -> bool {
         self.0.closed_note.lock().unwrap().queued
     }
 }
@@ -86,7 +86,7 @@ pub(in super::super) struct ClosedNoteLinks {
 }
 /// The fixed actor order owns admitted growing nodes; rows retain only a handle.
 #[derive(Default, Clone)]
-pub struct ClosedCleanupQueue(Arc<Mutex<ClosedOrder>>);
+pub(in super::super) struct ClosedCleanupQueue(Arc<Mutex<ClosedOrder>>);
 #[derive(Default)]
 struct ClosedOrder {
     first: Option<Arc<ClosedNoteBacking>>,
@@ -94,10 +94,10 @@ struct ClosedOrder {
     len: usize,
 }
 impl ClosedCleanupQueue {
-    pub fn len(&self) -> usize {
+    pub(in super::super) fn len(&self) -> usize {
         self.0.lock().unwrap().len
     }
-    pub fn head(&self) -> Option<Arc<WorthQueryOutputDemandKey>> {
+    pub(in super::super) fn head(&self) -> Option<Arc<WorthQueryOutputDemandKey>> {
         self.front().map(|note| note.key())
     }
     pub(in super::super) fn front(&self) -> Option<QueuedClosedRow> {
@@ -131,7 +131,7 @@ impl ClosedCleanupQueue {
     fn unlink(&self, node: &Arc<ClosedNoteBacking>) {
         self.0.lock().unwrap().unlink(node);
     }
-    pub fn valid_order(&self) -> bool {
+    pub(in super::super) fn valid_order(&self) -> bool {
         self.0.lock().unwrap().valid_order()
     }
 }
@@ -179,7 +179,7 @@ impl ClosedOrder {
         clippy::disallowed_methods,
         reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
     )]
-    pub fn valid_order(&self) -> bool {
+    pub(in super::super) fn valid_order(&self) -> bool {
         let mut node = self.first.clone();
         let mut previous = None;
         let mut count = 0;
@@ -206,7 +206,7 @@ impl Drop for ClosedOrder {
     }
 }
 impl DemandRegistryState {
-    pub fn note_closed_row(&mut self, key: &WorthQueryOutputDemandKey) {
+    pub(in super::super) fn note_closed_row(&mut self, key: &WorthQueryOutputDemandKey) {
         // Fixture issuer only: production notes come exclusively from the transition.
         let node = self.records[key].closed_cleanup.node();
         self.closed_cleanup.enqueue(node);

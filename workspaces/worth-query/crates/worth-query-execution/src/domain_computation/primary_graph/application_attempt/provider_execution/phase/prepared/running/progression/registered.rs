@@ -4,15 +4,15 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
-pub struct WorthQueryRegisteredProviderAttempt<'run> {
-    pub staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
+pub(in crate::domain_computation) struct WorthQueryRegisteredProviderAttempt<'run> {
+    staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
 
-    pub steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
-    pub dispatch_outbox:
+    steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
+    dispatch_outbox:
         Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
 }
 
-pub struct WorthQueryProviderAttemptRegistrationContext<
+pub(in crate::domain_computation) struct WorthQueryProviderAttemptRegistrationContext<
     'a,
     Schema,
     Operation,
@@ -39,7 +39,7 @@ pub struct WorthQueryProviderAttemptRegistrationContext<
 impl<'a, Schema, Operation, Input, Scope>
     WorthQueryProviderAttemptRegistrationContext<'a, Schema, Operation, Input, Scope>
 {
-    pub fn new(
+    pub(super) fn new(
         provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
         admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
             Schema,

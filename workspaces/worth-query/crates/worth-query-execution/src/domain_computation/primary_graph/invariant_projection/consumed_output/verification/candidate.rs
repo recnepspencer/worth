@@ -35,7 +35,7 @@ impl ConsumedOutputEvidence {
         )
     }
 
-    pub fn verify_candidate_with_admission(
+    pub(in crate::domain_computation::primary_graph) fn verify_candidate_with_admission(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,

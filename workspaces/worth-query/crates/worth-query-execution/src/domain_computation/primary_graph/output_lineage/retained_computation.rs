@@ -26,19 +26,19 @@ use crate::domain_computation::primary_graph::application_contribution::PriorAbs
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRun;
 
 /// What a record holds of its computation's state.
-pub enum RecordedComputation {
+pub(super) enum RecordedComputation {
     Retained(Arc<RetainedComputation>),
     Absent(PriorAbsence),
 }
 
 /// The exact record a producer's run took its prior state from.
 #[derive(Clone)]
-pub struct PriorComputationRecord {
+pub(in crate::domain_computation::primary_graph) struct PriorComputationRecord {
     cell: Arc<OnceLock<RecordedOutput>>,
 }
 
 impl PriorComputationRecord {
-    pub fn from_recorded_cell_for_test(cell: Arc<OnceLock<RecordedOutput>>) -> Self {
+    pub(super) fn from_recorded_cell_for_test(cell: Arc<OnceLock<RecordedOutput>>) -> Self {
         assert!(
             cell.get().is_some(),
             "the test prior has a real published record"
@@ -106,7 +106,7 @@ impl WorthQueryApplicationOutputLineage {
         ))
     }
 
-    pub fn retain_computation(&self, sealed: SealedComputationRun) -> RecordedComputation {
+    pub(super) fn retain_computation(&self, sealed: SealedComputationRun) -> RecordedComputation {
         let SealedComputationRun {
             state,
             cloned_from,

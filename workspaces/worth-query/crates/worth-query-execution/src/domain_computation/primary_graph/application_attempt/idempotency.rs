@@ -86,7 +86,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
-    pub const fn new(key_identity: [u8; 32], intent_identity: [u8; 32]) -> Self {
+    pub(crate) const fn new(key_identity: [u8; 32], intent_identity: [u8; 32]) -> Self {
         Self {
             key_identity,
             intent_identity,
@@ -138,7 +138,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         self.producer_dependency_identity
     }
 
-    pub fn key_text(self) -> String {
+    pub(in crate::domain_computation::primary_graph) fn key_text(self) -> String {
         encode_identity(self.key_identity)
     }
 
@@ -285,7 +285,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 
-    pub const fn bind_governed_proposal(
+    pub(in crate::domain_computation::primary_graph) const fn bind_governed_proposal(
         self,
         governed_proposal_identity: Option<&[u8; 32]>,
     ) -> Self {

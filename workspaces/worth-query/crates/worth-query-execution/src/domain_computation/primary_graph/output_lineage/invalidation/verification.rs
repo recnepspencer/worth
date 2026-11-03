@@ -22,7 +22,7 @@ use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
 
 #[derive(Debug)]
-pub enum SettlementVerificationStop {
+pub(in crate::domain_computation::primary_graph) enum SettlementVerificationStop {
     Alignment,
     Admission(CompanionPreflightStop),
     SourceRead(WorthQuerySourceCurrentnessFailure),
@@ -48,7 +48,7 @@ impl From<super::SettlementRegistrationStop> for SettlementVerificationStop {
     }
 }
 
-pub enum DirtyReverification {
+pub(in crate::domain_computation::primary_graph) enum DirtyReverification {
     Verified(VerifiedDirtySettlement),
     HistoricalCurrent,
     AlreadyCurrent,
@@ -58,7 +58,7 @@ pub enum DirtyReverification {
 
 /// Minted only after native comparisons at the exact selected source root.
 /// The non-clone image binds cell topology, source position, and derived row.
-pub struct VerifiedDirtySettlement {
+pub(in crate::domain_computation::primary_graph) struct VerifiedDirtySettlement {
     runtime_instance_id: u64,
     cell: CompanionBranchCell<BranchMarkRoot>,
     image: CompanionBranchImage<BranchMarkRoot>,
@@ -67,7 +67,7 @@ pub struct VerifiedDirtySettlement {
 }
 
 impl SourceInvalidationOwner {
-    pub fn reverify_dirty(
+    pub(in crate::domain_computation::primary_graph) fn reverify_dirty(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
@@ -151,7 +151,7 @@ impl SourceInvalidationOwner {
 
     /// Historical states remain immutable. A concurrent native delivery or
     /// registration invalidates the sealed image and leaves dirty marks intact.
-    pub fn clear_verified_dirty(
+    pub(in crate::domain_computation::primary_graph) fn clear_verified_dirty(
         &self,
         verified: VerifiedDirtySettlement,
     ) -> Result<(), SettlementVerificationStop> {

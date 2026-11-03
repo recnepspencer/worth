@@ -14,11 +14,11 @@ use crate::domain_computation::WorthQueryConvergenceDomainEvidenceBindingDenial;
 use crate::execution_digest::hash_parts;
 
 #[derive(Clone, Eq, PartialEq)]
-pub struct WorthQueryBoundGraphExecutionAssociation {
+pub(in crate::domain_computation) struct WorthQueryBoundGraphExecutionAssociation {
     call_authority: WorthQueryGraphCallAuthorityIdentity,
     call_identity: Arc<str>,
-    pub provider_session: WorthQueryExecutionProviderSessionIdentity,
-    pub attempt: WorthQueryClosedExecutionAttemptIdentity,
+    provider_session: WorthQueryExecutionProviderSessionIdentity,
+    attempt: WorthQueryClosedExecutionAttemptIdentity,
     call: WorthQueryGraphProviderCallSpec,
 }
 
@@ -30,7 +30,7 @@ pub(in crate::domain_computation) struct WorthQueryCompletedDomainEvidenceDeriva
 }
 
 impl WorthQueryBoundGraphExecutionAssociation {
-    pub fn capture(call: &WorthQueryGraphProviderCall) -> Self {
+    pub(super) fn capture(call: &WorthQueryGraphProviderCall) -> Self {
         Self {
             call_authority: call.authority_identity(),
             call_identity: Arc::from(call.call_identity()),
@@ -142,7 +142,7 @@ impl WorthQueryBoundGraphExecutionAssociation {
         })
     }
 
-    pub fn admits_execution(
+    fn admits_execution(
         &self,
         authority: &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
         session: &crate::domain_computation::WorthQueryExecutionProviderSession,

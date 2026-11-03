@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationBranchCommitCoordination,
 };
 
-pub struct WorthQueryApplicationCommitAuthorization<
+pub(in crate::domain_computation) struct WorthQueryApplicationCommitAuthorization<
     'serialization,
     'admission,
     Schema,
@@ -43,7 +43,7 @@ impl<'serialization, 'admission, Schema, Operation, Input, Scope>
         }
     }
 
-    pub fn govern<Subject, Outcome>(
+    pub(in crate::domain_computation) fn govern<Subject, Outcome>(
         self,
         subject: Subject,
         transition: impl FnOnce(Subject) -> Outcome,

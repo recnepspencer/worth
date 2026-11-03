@@ -18,7 +18,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn admit_application_historical_basis(
+    pub(crate) fn admit_application_historical_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: WorthQueryApplicationHistoricalRead,

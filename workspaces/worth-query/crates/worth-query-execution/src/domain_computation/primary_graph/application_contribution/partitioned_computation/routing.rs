@@ -12,7 +12,7 @@ use super::super::WorthQueryManagedComputationResourceDenial;
 
 /// Why an item has no partition.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ComputationPartitionRoutingDenial {
+pub(super) enum ComputationPartitionRoutingDenial {
     /// The request's memory refused what the partitioner would retain.
     Resource(WorthQueryManagedComputationResourceDenial),
     /// A different key digest already owns this partition identity.
@@ -23,7 +23,7 @@ pub enum ComputationPartitionRoutingDenial {
 /// encoding, so two keys are one partition exactly when their digests are
 /// equal, and two digests that share a partition identity are a collision.
 #[derive(Clone, Default)]
-pub struct ComputationPartitionRouting {
+pub(super) struct ComputationPartitionRouting {
     partitioner: KeyedPartitioner<[u8; 32]>,
 }
 
@@ -79,7 +79,7 @@ impl ComputationPartitionRouting {
     /// its last partition first, uncharged, so every route charges what a
     /// fresh build's route of it charges. Before the partitioner grows,
     /// `admit` is offered all it would retain.
-    pub fn route(
+    pub(super) fn route(
         &mut self,
         item: PartitionItemId,
         digest: [u8; 32],
@@ -117,7 +117,7 @@ impl ComputationPartitionRouting {
     }
 
     /// The partition `item` routes to, when it is routed.
-    pub fn partition_of(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
+    pub(super) fn partition_of(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
         self.partitioner.route(item)
     }
 
@@ -127,12 +127,12 @@ impl ComputationPartitionRouting {
     }
 
     /// Every partition in ascending identity order.
-    pub fn partitions(&self) -> impl ExactSizeIterator<Item = PartitionIdentity> + '_ {
+    pub(super) fn partitions(&self) -> impl ExactSizeIterator<Item = PartitionIdentity> + '_ {
         self.partitioner.partitions()
     }
 
     /// A partition's items in ascending item identity order.
-    pub fn members(
+    pub(super) fn members(
         &self,
         partition: PartitionIdentity,
     ) -> impl Iterator<Item = PartitionItemId> + '_ {

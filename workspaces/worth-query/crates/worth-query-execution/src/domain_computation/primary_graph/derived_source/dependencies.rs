@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::structural_walk::memory;
 use std::collections::BTreeMap;
 use worth_execution::ExecutionRequest;
 #[derive(Debug)]
-pub struct DerivedSourceDependencies {
+pub(in crate::domain_computation::primary_graph) struct DerivedSourceDependencies {
     values: Vec<Arc<DerivedSourceObservation>>,
     _memory: Option<ExecutionMemoryReservation>,
 }

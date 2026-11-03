@@ -5,8 +5,8 @@ pub use cleanup_required::{
 };
 
 mod commit_deferred;
-pub mod commit_outcome;
-pub mod commit_receipt;
+mod commit_outcome;
+mod commit_receipt;
 mod committed_publication;
 
 pub use commit_deferred::{

@@ -4,7 +4,7 @@ use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade as domain;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct NativeFieldBindingExpectation {
+pub(super) struct NativeFieldBindingExpectation {
     pub(super) locus: schema::ApplicationFieldBindingLocus,
     pub(super) binding: TypeId,
     pub(super) value: TypeId,
@@ -51,15 +51,15 @@ impl NativeFieldBindingExpectation {
 }
 
 #[derive(Debug)]
-pub struct NativeFieldContractDenial {
+pub(super) struct NativeFieldContractDenial {
     pub(super) locus: schema::ApplicationFieldBindingLocus,
     pub(super) detail: String,
 }
 impl NativeFieldContractDenial {
-    pub fn detail(&self) -> &str {
+    pub(super) fn detail(&self) -> &str {
         &self.detail
     }
-    pub fn field_locus(&self) -> Option<&schema::ApplicationFieldBindingLocus> {
+    pub(super) fn field_locus(&self) -> Option<&schema::ApplicationFieldBindingLocus> {
         Some(&self.locus)
     }
 }
@@ -74,14 +74,14 @@ fn field_denial(
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FieldExpectation {
+pub(super) struct FieldExpectation {
     pub(super) binding: NativeFieldBindingExpectation,
-    pub aspect: domain::AspectContract,
-    pub native_binding: domain::AspectBinding,
+    pub(super) aspect: domain::AspectContract,
+    pub(super) native_binding: domain::AspectBinding,
 }
 
 impl FieldExpectation {
-    pub fn declared<S, E, A, F, V: 'static, W, Q, U>(
+    pub(super) fn declared<S, E, A, F, V: 'static, W, Q, U>(
         declaration: &schema::ErasedApplicationSchemaDeclaration,
         field: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
     ) -> Result<Self, NativeFieldContractDenial>
@@ -145,7 +145,7 @@ impl NativeFieldBindingExpectation {
 }
 
 impl FieldExpectation {
-    pub fn seal<S: schema::ApplicationSchema>(
+    pub(super) fn seal<S: schema::ApplicationSchema>(
         &self,
         installed: &domain::WorthQueryInstalledApplicationSchema<S>,
     ) -> Result<(), NativeFieldContractDenial> {

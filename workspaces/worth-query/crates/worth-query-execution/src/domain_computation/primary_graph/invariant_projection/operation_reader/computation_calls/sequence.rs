@@ -9,10 +9,10 @@ use std::{collections::BTreeSet, ops::Range};
 mod funding;
 mod issue;
 
-pub mod reached;
+mod reached;
 use reached::ReachedCalls;
 #[derive(Debug)]
-pub enum CallSequenceDenial {
+pub(in crate::domain_computation::primary_graph) enum CallSequenceDenial {
     Resource(Resource),
     InvalidEdit,
     Storage(worth_execution::ExecutionOrderedMapDenial),
@@ -27,17 +27,17 @@ impl From<worth_execution::ExecutionOrderedMapDenial> for CallSequenceDenial {
         Self::Storage(cause)
     }
 }
-pub type Call = (ComputationCallCharge, Option<u64>);
+type Call = (ComputationCallCharge, Option<u64>);
 
-pub mod shape;
+mod shape;
 pub(in crate::domain_computation::primary_graph) use shape::{CallShape, CallShapeTransition};
-pub mod tree;
+mod tree;
 use tree::{build, leaf, patch, summary, visit};
 mod editing;
 #[derive(Clone, Copy)]
-pub struct CallSummary {
-    pub accounting: Option<ComputationCallAccounting>,
-    pub declared: Option<u64>,
+pub(in crate::domain_computation::primary_graph) struct CallSummary {
+    pub(super) accounting: Option<ComputationCallAccounting>,
+    pub(in crate::domain_computation::primary_graph) declared: Option<u64>,
 }
 impl CallSummary {
     fn native() -> Self {
@@ -70,7 +70,7 @@ impl CallSummary {
         })
     }
 }
-pub struct Node {
+struct Node {
     count: usize,
     height: u8,
     summary: Option<CallSummary>,
@@ -82,7 +82,7 @@ enum Kind {
     Leaf(ComputationRead, Call),
     Branch(Arc<Node>, Arc<Node>),
 }
-pub enum CallVisit<'a> {
+pub(in crate::domain_computation::primary_graph) enum CallVisit<'a> {
     Range(Range<usize>, &'a CallSummary),
     Leaf(
         usize,
@@ -93,21 +93,21 @@ pub enum CallVisit<'a> {
 }
 /// No request borrow or parent sequence is stored. Each cell funds its own
 /// representation; unchanged nodes and the exact ordinal shape share grants.
-pub struct ComputationCallSequence {
-    pub shape: Arc<CallShape>,
+pub(in crate::domain_computation::primary_graph) struct ComputationCallSequence {
+    shape: Arc<CallShape>,
     root: Option<Arc<Node>>,
     reached: ReachedCalls,
     bytes: Option<u64>,
     _memory: Option<QueryMemoryReservation>,
 }
 impl ComputationCallSequence {
-    pub fn shape(&self) -> &Arc<CallShape> {
+    pub(in crate::domain_computation::primary_graph) fn shape(&self) -> &Arc<CallShape> {
         &self.shape
     }
-    pub fn prefix(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn prefix(&self) -> usize {
         self.shape.prefix
     }
-    pub fn bytes(&self) -> Option<u64> {
+    pub(in crate::domain_computation::primary_graph) fn bytes(&self) -> Option<u64> {
         self.bytes
     }
     pub fn summary(&self, range: Range<usize>, accounted: bool) -> Option<CallSummary> {
@@ -128,7 +128,7 @@ impl ComputationCallSequence {
         self.reached
             .contains_in(entity, first, self.shape.call_at(range.end))
     }
-    pub fn visit<E>(
+    pub(in crate::domain_computation::primary_graph) fn visit<E>(
         &self,
         range: Range<usize>,
         marked: &BTreeSet<usize>,

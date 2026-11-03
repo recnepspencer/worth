@@ -3,9 +3,9 @@ use super::super::super::retained_decision_facts::StoreDenial;
 use super::*;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap};
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ComputationFactIndex {
+pub(in crate::domain_computation::primary_graph) struct ComputationFactIndex {
     pub(super) ordinals: std::sync::Arc<ExecutionOrderedMap<usize, WorthQueryApplicationFactKey>>,
-    pub calls: ExecutionOrderedMap<ComputationRead, Vec<WorthQueryApplicationFactKey>>,
+    pub(super) calls: ExecutionOrderedMap<ComputationRead, Vec<WorthQueryApplicationFactKey>>,
     pub(super) observation_work: Option<u64>,
     pub(super) structural_walk: bool,
     pub(super) aggregate: bool,
@@ -52,7 +52,7 @@ impl ComputationFactIndex {
             aggregate,
         })
     }
-    pub fn keys(
+    pub(in crate::domain_computation::primary_graph) fn keys(
         &self,
         read: ComputationRead,
     ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {

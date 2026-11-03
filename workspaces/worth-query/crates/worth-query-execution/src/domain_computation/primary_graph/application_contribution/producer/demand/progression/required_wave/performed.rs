@@ -26,28 +26,28 @@ struct PerformedMember {
 /// Only this owner can mint permission to enter the authoritative Fresh path.
 /// Private fields make constructing an unchecked permission outside this
 /// module impossible, including from NeedsDisclosure or a rejoined Ready.
-pub struct FreshReadiness
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FreshReadiness
 {
     member: usize,
 }
 
 /// Publication permission for an attached member key. Ordinary execution
 /// keeps its key; selected execution must attach the actual admitted successor.
-pub struct PublicationReadiness
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PublicationReadiness
 {
     member: usize,
 }
 
 mod captured_input;
-pub mod certification;
+pub(super) mod certification;
 pub(super) use certification::certify_required_ready;
 pub(in crate::domain_computation::primary_graph) use certification::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use certification::CurrentProof;
 mod member_keys;
 use captured_input::CapturedDecisionInput;
-pub mod ordinary;
-pub mod publication;
-pub mod reinspection;
+mod ordinary;
+mod publication;
+mod reinspection;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;
 pub(super) use reinspection::InspectionStamp;
 pub(super) use reinspection::ReinspectionCredit;
@@ -78,7 +78,7 @@ impl PerformedMembers {
         Ok(())
     }
 
-    pub fn fresh<
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn fresh<
         Schema: ApplicationSchema + 'static,
     >(
         &mut self,

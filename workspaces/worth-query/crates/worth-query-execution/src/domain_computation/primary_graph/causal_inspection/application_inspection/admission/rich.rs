@@ -20,9 +20,9 @@ pub(in super::super) struct RichReportScope {
     pub(in super::super) target: Arc<WorthQueryApplicationInspectionTarget>,
     pub(in super::super) request: WorthQueryApplicationMaterializationRequest,
 }
-pub struct PreparedRichMaterialization {
+pub(in super::super) struct PreparedRichMaterialization {
     pub(in super::super) scope: RichReportScope,
-    pub artifact: WorthQueryApplicationRichMaterialization,
+    pub(in super::super) artifact: WorthQueryApplicationRichMaterialization,
 }
 mod source;
 struct AdmittedRichProjection<'a> {
@@ -98,7 +98,7 @@ pub(in super::super) fn capture_original_query(
     .assemble(execution, memory)
 }
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
-    pub fn materialize_rich<Q, P, R, S>(
+    pub(in super::super) fn materialize_rich<Q, P, R, S>(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         query: &WorthQueryInstalledApplicationQuery<Schema, Q, P, R, S>,

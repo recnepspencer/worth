@@ -44,8 +44,8 @@ use crate::domain_computation::execution_observation::owned_control_scope;
 thread_local! {
     static PLACEMENT_OWNER: Cell<u64> = const { Cell::new(0) };
     static BUDGET_OWNER: Cell<u64> = const { Cell::new(0) };
-    pub static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
-    pub static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
+    static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
+    static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
         const { Cell::new(WorthQueryExecutionPlacementForTest::World) };
 }
 
@@ -148,7 +148,7 @@ pub(super) fn certifying() -> Option<u64> {
 /// ceiling, and must agree with each other and with the run on the result's
 /// bits and the charged work. A disagreement panics.
 #[allow(clippy::too_many_arguments)]
-pub fn certify<T, K, R, E, Kernel, Combine>(
+pub(super) fn certify<T, K, R, E, Kernel, Combine>(
     map: &ExecutionMap<T, K>,
     lease: &ExecutionResourceLease<'_>,
     seed: u64,
@@ -234,7 +234,7 @@ where
     Ok(())
 }
 
-pub fn certification_failure<E>(
+fn certification_failure<E>(
     lease: &ExecutionResourceLease<'_>,
     seed: u64,
     failure: ReduceCertificationFailure<E>,
@@ -321,7 +321,7 @@ pub fn bound_advancement_requests_on_this_thread_for_test(
 }
 
 /// The host call uses exactly the computation fixture's declared budget.
-pub struct FixturePlacement {
+pub(in crate::domain_computation::primary_graph) struct FixturePlacement {
     _observation: crate::domain_computation::execution_observation::WorthQueryExecutionObservation,
     placement: WorthQueryExecutionPlacementForTest,
     budget: Option<worth_foundational::ExecutionBudget>,

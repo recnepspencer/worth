@@ -61,7 +61,7 @@ pub(super) fn prepare_candidate_with_cold_fallback(
 /// A captured pre-commit root does not prove that every index has a compatible
 /// prior generation. Retry only that specific absence through the explicit
 /// cold lane; absence never grants reconstruction to the ordinary lane.
-pub fn refresh_with_cold_fallback(
+pub(super) fn refresh_with_cold_fallback(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     request: worth_relational::facade::indexes::DerivedIndexBuildRequest,

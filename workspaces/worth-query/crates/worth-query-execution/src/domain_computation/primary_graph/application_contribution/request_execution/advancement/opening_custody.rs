@@ -3,11 +3,11 @@ use super::WorthQueryAdvancementDenial;
 use std::{cell::Cell, marker::PhantomData, rc::Rc};
 thread_local! { static ACTIVE: Cell<bool> = const { Cell::new(false) }; }
 /// Thread-bound plumbing for admission, never a way to obtain execution authority.
-pub struct OpeningCustody {
+pub(super) struct OpeningCustody {
     _thread: PhantomData<Rc<()>>,
 }
 impl OpeningCustody {
-    pub fn enter() -> Result<Self, WorthQueryAdvancementDenial> {
+    pub(super) fn enter() -> Result<Self, WorthQueryAdvancementDenial> {
         ACTIVE.with(|active| {
             if crate::domain_computation::primary_graph::application_contribution::computation::worker_custody::active()
                 || active.replace(true) {

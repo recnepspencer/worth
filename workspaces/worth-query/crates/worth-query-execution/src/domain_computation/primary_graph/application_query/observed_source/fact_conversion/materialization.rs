@@ -79,7 +79,7 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
     }
 }
 
-pub fn merge_facts(
+pub(super) fn merge_facts(
     facts: Vec<Fact>,
     control: SourceFactExpansionControl<'_, '_>,
     subject: &str,

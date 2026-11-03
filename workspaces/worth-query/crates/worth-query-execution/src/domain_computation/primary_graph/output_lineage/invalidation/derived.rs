@@ -33,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) use prepared::SettlementRegistr
 pub(in crate::domain_computation::primary_graph) use prepared::StoppedSettlementRegistration;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum SettlementRegistrationStop {
+pub(in crate::domain_computation::primary_graph) enum SettlementRegistrationStop {
     Alignment(FullVerificationReason),
     /// The registration's basis or equality belongs to another source.
     Foreign,
@@ -43,7 +43,7 @@ pub enum SettlementRegistrationStop {
     Edit(CompanionCellEditStop),
 }
 
-pub enum SourceSettlementCurrentness {
+pub(in crate::domain_computation::primary_graph) enum SourceSettlementCurrentness {
     Clean,
     Dirty(OrdSet<usize>),
     PendingUpstream(OrdSet<Arc<RecordedSettlementIdentity>>),
@@ -67,7 +67,7 @@ impl SourceSettlementCurrentness {
 
 /// Only consumed-output evidence may interpret the actor's certified equality
 /// consequence. Direct callers still observe the old settlement's own marks.
-pub enum ConsumedOutputCurrentness {
+pub(in crate::domain_computation::primary_graph) enum ConsumedOutputCurrentness {
     Direct(SourceSettlementCurrentness),
     CanonicallyEqualClean(Arc<RecordedSettlementIdentity>),
     PendingEqualSuccessor,
@@ -86,7 +86,7 @@ impl From<CompanionPreflightStop> for SettlementRegistrationStop {
 }
 
 impl SourceInvalidationOwner {
-    pub fn cell_for_read(
+    pub(super) fn cell_for_read(
         &self,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<Option<CompanionBranchCell<BranchMarkRoot>>, CompanionPreflightStop> {
@@ -106,7 +106,7 @@ impl SourceInvalidationOwner {
 
     /// The source snapshot is selected by the native reader before this method
     /// reads any mark image. There is no latest-head substitution or floor lookup.
-    pub fn currentness(
+    pub(in crate::domain_computation::primary_graph) fn currentness(
         &self,
         selected: &PositionedRelationalSnapshot,
         identity: &RecordedSettlementIdentity,
@@ -133,7 +133,7 @@ impl SourceInvalidationOwner {
         Ok(copy_currentness(aligned.currentness(identity)))
     }
 
-    pub fn consumed_output_currentness(
+    pub(in crate::domain_computation::primary_graph) fn consumed_output_currentness(
         &self,
         selected: &PositionedRelationalSnapshot,
         identity: &RecordedSettlementIdentity,
@@ -176,7 +176,7 @@ impl SourceInvalidationOwner {
     /// A sealed image comparison publishes this derived edit at the same source
     /// position. A racing native preflight returns a typed retry; it cannot be
     /// overwritten by a settlement that prepared against the previous image.
-    pub fn register_settlement(
+    pub(in crate::domain_computation::primary_graph) fn register_settlement(
         &self,
         registration: SettlementRegistration,
     ) -> Result<(), SettlementRegistrationStop> {
@@ -191,7 +191,7 @@ impl SourceInvalidationOwner {
     /// All fact/index construction and native image custody precede the
     /// consuming installation. A prepared registration binds the exact cell
     /// image, so a racing source publication cannot be overwritten.
-    pub fn prepare_settlement(
+    pub(in crate::domain_computation::primary_graph) fn prepare_settlement(
         &self,
         registration: SettlementRegistration,
     ) -> Result<PreparedSettlementRegistration, SettlementRegistrationStop> {

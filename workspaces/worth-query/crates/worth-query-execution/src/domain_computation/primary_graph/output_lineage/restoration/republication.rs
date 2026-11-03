@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 /// prepared input and the consumed outputs are still the ones that produced
 /// it. Only the output witness is new: the re-created entities carry new
 /// revisions, sealed at the restoration commit.
-pub struct RepublishedOutput {
+pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
     producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     native_prior_checkpoint:
@@ -43,14 +43,14 @@ pub struct RepublishedOutput {
 }
 
 /// A recorded republication and what its mark row registers.
-pub struct RepublishedRecord {
-    pub identity: Arc<RecordedSettlementIdentity>,
+pub(in crate::domain_computation::primary_graph) struct RepublishedRecord {
+    pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
     /// The suspended record this row continues.
-    pub predecessor: Arc<RecordedSettlementIdentity>,
-    pub facts: super::super::RetainedSourceFacts,
-    pub consumed_outputs:
+    pub(in crate::domain_computation::primary_graph) predecessor: Arc<RecordedSettlementIdentity>,
+    pub(in crate::domain_computation::primary_graph) facts: super::super::RetainedSourceFacts,
+    pub(in crate::domain_computation::primary_graph) consumed_outputs:
         Arc<[ConsumedOutputEvidence]>,
-    pub witness:
+    pub(in crate::domain_computation::primary_graph) witness:
         Arc<OnceLock<SealedNativeOutputWitness>>,
 }
 
@@ -95,7 +95,7 @@ impl WorthQueryApplicationOutputLineage {
     /// this preparation was not admitted: the restoration is then recorded as
     /// a restored row, Fresh until verified.
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare_republication(
+    pub(in crate::domain_computation::primary_graph) fn prepare_republication(
         &self,
         output_binding: TypeId,
         runtime_authority: u64,
@@ -187,7 +187,7 @@ impl WorthQueryApplicationOutputLineage {
     /// already recorded or is owned by a selected World publication, exactly
     /// as for any restored row.
     #[allow(clippy::too_many_arguments)]
-    pub fn record_republished_restoration(
+    pub(in crate::domain_computation::primary_graph) fn record_republished_restoration(
         &mut self,
         output_binding: TypeId,
         runtime_authority: u64,
