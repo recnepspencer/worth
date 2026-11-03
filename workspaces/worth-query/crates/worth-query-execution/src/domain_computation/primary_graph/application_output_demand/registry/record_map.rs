@@ -336,3 +336,5 @@ mod observation_overflow_tests {
         assert_eq!(whole_rows(), Some(0));
     }
 }
+
+mod court_doors_for_test;

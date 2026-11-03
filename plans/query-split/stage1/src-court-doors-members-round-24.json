@@ -1,0 +1,39 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.framework_required_count",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.framework_required_count (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.prerequisites",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.state",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.state (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.work_membership",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.work_membership (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.records",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.required_keys",
+  "domain_computation::primary_graph::application_output_demand::registry::SourceCustody.cleanup",
+  "domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest.key",
+  "domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider.graph"
+ ],
+ "method_doors": [
+  "basis::product_branch::observation::WorthQueryProductBranchLease::observation",
+  "basis::product_branch::observation::WorthQueryProductBranchLease::retained_clone",
+  "domain_computation::managed_run::admission::WorthQueryManagedRunAdmissionRejection::denial",
+  "domain_computation::primary_graph::application_attempt::commit_authority_binding::WorthQueryRetainedGovernedInput::axis_probe",
+  "domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'scope>::execution_request_for",
+  "domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'scope>::phase_for_application",
+  "domain_computation::primary_graph::application_output_demand::registry::cleanup::custody::DemandRegistryState::drain_completed_custody",
+  "domain_computation::primary_graph::application_output_demand::registry::cleanup::custody_notes::DemandRegistryState::pending_custody_prune",
+  "domain_computation::primary_graph::application_output_demand::registry::lifecycle::selected_execution_finish::PreparedSelectedExecutionFinish<'_>::publish",
+  "domain_computation::primary_graph::application_output_demand::registry::progression::selected_finish::PreparedSelectedSchedulingFinish<'a>::finish",
+  "domain_computation::primary_graph::application_output_demand::registry::record_map::DemandRecords::insert",
+  "domain_computation::primary_graph::application_query::managed_index::configuration::ManagedIndexProviderCatalog<S>::register",
+  "domain_computation::primary_graph::provider::application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore::shared_observed_facts",
+  "domain_computation::primary_graph::root::WorthQueryPrimaryGraph::integration_handle",
+  "domain_computation::primary_graph::root::runtime_access::WorthQueryPrimaryGraphIntegrationHandle::with_runtime_mut",
+  "equality_type_id::EqualityTypeId::of"
+ ],
+ "unplaced": [
+  "cannot assign to data in a `&` reference"
+ ]
+}

@@ -38,7 +38,7 @@ pub fn read_selection(
         .with_host_advancement(|phase| {
             let host = phase.test_host_request_for_test();
             let execution = host
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .unwrap();
             let (admission, _) = crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::authorize(
                 world,
@@ -100,7 +100,7 @@ pub fn read_selection(
                 .unwrap();
             let (_, snapshot, _) = projection.into_parts();
             let (lease, _, _, _) =
-                snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone());
+                snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone_for_test());
             Read { body, lease }
         })
         .unwrap()

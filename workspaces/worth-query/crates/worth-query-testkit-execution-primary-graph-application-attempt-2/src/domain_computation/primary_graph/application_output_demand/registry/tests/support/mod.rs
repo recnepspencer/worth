@@ -13,7 +13,7 @@ pub fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
             .product_runtime()
             .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
             .expect("the fixture's default product occurrence is live");
-        product.observation().lifecycle_incarnation()
+        product.observation_for_test().lifecycle_incarnation()
     })
 }
 
@@ -141,7 +141,7 @@ pub fn interest_with_requirement(
 
 /// Retain the owned key exactly as prepare_new_record does, without activating work.
 pub fn retain_owned_key(state: &mut DemandRegistryState, key: &WorthQueryOutputDemandKey) {
-    if (*state.records_for_test())[key].work_membership.is_some() {
+    if(* (*state.records_for_test())[key].work_membership_for_test()).is_some() {
         return;
     }
     let queue = (*state
@@ -150,6 +150,6 @@ pub fn retain_owned_key(state: &mut DemandRegistryState, key: &WorthQueryOutputD
     let member = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership::new_for_test(
         Arc::new(key.clone()),
         queue,
-    ));
-    (*state.records_for_test()).get_mut(key).unwrap().work_membership = Some(member);
+    ));(*
+    (*state.records_for_test()).get_mut(key).unwrap().work_membership_mut_for_test()) = Some(member);
 }

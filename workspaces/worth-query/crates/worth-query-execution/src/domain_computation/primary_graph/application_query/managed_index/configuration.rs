@@ -307,3 +307,5 @@ where
         .downcast_ref::<Arc<dyn InstalledIndexProvider<S, I>>>()
         .is_some_and(|actual| actual.installed().is_installed_in(schema))
 }
+
+mod court_doors_for_test;

@@ -23,3 +23,10 @@ impl WorthQueryProductBranchLease {
         Self::relational_basis(self)
     }
 }
+
+impl WorthQueryProductBranchLease {
+    #[doc(hidden)]
+    pub fn retained_clone_for_test(&self) -> Self {
+        Self::retained_clone(self)
+    }
+}

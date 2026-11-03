@@ -23,17 +23,17 @@ impl RefusalRowWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDemandR
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::selection::SelectedReadyReadmission,
     ){
         let (interest, _) = self.fixture_admitted_work_membership(occurrence());
-        let key = (*interest.key_for_test()).clone();
-        (*self.state_for_test()).lock().unwrap().records.get_mut(&key).unwrap().readmission_source = Some(Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission {
+        let key = (*interest.key_for_test()).clone();(*
+        (*self.state_for_test()).lock().unwrap().records_for_test()).get_mut(&key).unwrap().readmission_source = Some(Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission {
             source: Arc::new(()), producer: std::sync::OnceLock::new(),
             limits: worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(), retained_program_basis: None,
-        }));
+        }));(*
         // This local lifetime fixture declares an already delivered answer;
         // only the ending's custody and row attribution are under test.
         (*self.state_for_test())
             .lock()
             .unwrap()
-            .records
+            .records_for_test())
             .get_mut(&key)
             .unwrap()
             .state = crate::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();
@@ -44,8 +44,8 @@ impl RefusalRowWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDemandR
     fn fixture_stop_kind(
         &self,
         key: &WorthQueryOutputDemandKey,
-    ) -> Option<WorthQueryOutputDemandDenialKind> {
-        (*self.state_for_test()).lock().unwrap().records[key]
+    ) -> Option<WorthQueryOutputDemandDenialKind> {(*
+        (*self.state_for_test()).lock().unwrap().records_for_test())[key]
             .required_stop
             .clone()
     }

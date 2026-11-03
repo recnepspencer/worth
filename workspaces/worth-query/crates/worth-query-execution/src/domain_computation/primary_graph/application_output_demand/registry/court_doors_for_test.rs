@@ -133,3 +133,31 @@ impl DemandRecord {
         &mut self.source_scope
     }
 }
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn cleanup_for_test(&self) -> &cleanup::CustodyCleanupLinks {
+        &self.cleanup
+    }
+}
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn required_keys_for_test(&self) -> &std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>> {
+        &self.required_keys
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn work_membership_for_test(&self) -> &Option<Arc<required_work::RequiredWorkMembership>> {
+        &self.work_membership
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn work_membership_mut_for_test(&mut self) -> &mut Option<Arc<required_work::RequiredWorkMembership>> {
+        &mut self.work_membership
+    }
+}

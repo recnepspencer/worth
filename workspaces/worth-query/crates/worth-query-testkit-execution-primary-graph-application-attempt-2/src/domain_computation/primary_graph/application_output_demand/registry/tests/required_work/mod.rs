@@ -32,7 +32,7 @@ fn fixture_requeue_admitted_work(
         &self,
         interest: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest,
     ) {
-        let member = (*self.state_for_test()).lock().unwrap().records[&(*interest.key_for_test())]
+        let member =(* (*self.state_for_test()).lock().unwrap().records_for_test())[&(*interest.key_for_test())]
             .work_membership
             .as_ref()
             .cloned()
@@ -86,7 +86,7 @@ fn fixture_work_membership_at(
             )
             .expect("real required-interest admission creates its work token")
             .0;
-        let member = (*self.state_for_test()).lock().unwrap().records[&output]
+        let member =(* (*self.state_for_test()).lock().unwrap().records_for_test())[&output]
             .work_membership
             .as_ref()
             .cloned()

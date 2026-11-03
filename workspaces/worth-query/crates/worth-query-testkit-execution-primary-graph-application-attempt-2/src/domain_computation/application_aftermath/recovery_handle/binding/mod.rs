@@ -56,7 +56,7 @@ impl WorthQueryRecoveryHandleBindingAxisProbe {
 
     pub fn retained_governed_input_identity(mut self, value: Option<[u8; 32]>) -> Self {
         (*self.binding.retained_governed_input_mut_for_test()) =
-            value.map(WorthQueryRetainedGovernedInput::axis_probe);
+            value.map(WorthQueryRetainedGovernedInput::axis_probe_for_test);
         self
     }
 

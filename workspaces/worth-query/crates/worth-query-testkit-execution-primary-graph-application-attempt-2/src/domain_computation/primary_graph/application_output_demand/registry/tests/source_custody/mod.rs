@@ -40,7 +40,7 @@ pub fn real_scope_and_occurrence() -> (
             .product_runtime()
             .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
             .expect("the fixture product occurrence is live");
-        (scope, product.observation().lifecycle_incarnation())
+        (scope, product.observation_for_test().lifecycle_incarnation())
     }).expect("the fixture source read owns its host call")
 }
 pub fn custody_wait(superseded: bool, token: bool) {
@@ -68,7 +68,7 @@ pub fn custody_wait(superseded: bool, token: bool) {
             commit.clone(),
             SourceCustody {
                 occurrence: receipt.product_branch().occurrence_for_test(),
-                root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
+                root_kind: PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
                 source: None,
                 discovery: None,
                 consumed_sources: sources
@@ -107,27 +107,27 @@ pub fn custody_wait(superseded: bool, token: bool) {
             usize::from(!token),
         );
         (*active.source_commits_for_test()).push(commit.clone());
-        state.records.insert(selected.clone(), active);
+        (*state.records_for_test()).insert(selected.clone(), active);
     }
     registry.complete_prepared_source_for_test(&receipt);
-    (*registry.state_for_test()).lock().unwrap().drain_completed_custody();
+    (*registry.state_for_test()).lock().unwrap().drain_completed_custody_for_test();
     {
         let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!(state.source_custody.len(), 1);
-        assert!(state.source_custody[&commit].cleanup.queued);
+        assert!((*state.source_custody[&commit].cleanup_for_test()).queued);
     }
     if token {
         registry.release_prepared_token_for_test(&commit);
     } else {
-        let notifications = Arc::clone(&(*registry.state_for_test()).lock().unwrap().records[&selected].wake);
+        let notifications = Arc::clone(&(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&selected].wake);
         drop(interest(&registry, selected.clone(), notifications));
     }
-    (*registry.state_for_test()).lock().unwrap().drain_completed_custody();
+    (*registry.state_for_test()).lock().unwrap().drain_completed_custody_for_test();
     let state = (*registry.state_for_test()).lock().unwrap();
     assert!(state.source_custody.is_empty());
-    assert!(state
-        .records
+    assert!((*state
+        .records_for_test())
         .values()
         .all(|row| row.source_commits.is_empty()));
-    assert!(!state.pending_custody_prune());
+    assert!(!state.pending_custody_prune_for_test());
 }

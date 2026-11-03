@@ -37,7 +37,7 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
             .attempts_for_test())
             .lock()
             .unwrap()
-            .shared_observed_facts(authority.session_for_test())
+            .shared_observed_facts_for_test(authority.session_for_test())
             .unwrap();
         let requests: Vec<_> = table.requests().collect();
         crate::domain_computation::primary_graph::provider::decision_facts::comparison::tests::funding::assert_full_capture_funding(self, execution, authority, request, &table);

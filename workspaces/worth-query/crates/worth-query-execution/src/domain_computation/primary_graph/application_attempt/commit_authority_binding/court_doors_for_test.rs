@@ -8,3 +8,10 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         Self::corrupt_original_disclosure(self, disclosure)
     }
 }
+
+impl WorthQueryRetainedGovernedInput {
+    #[doc(hidden)]
+    pub fn axis_probe_for_test(governed_identity: [u8; 32]) -> Self {
+        Self::axis_probe(governed_identity)
+    }
+}

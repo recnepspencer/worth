@@ -60,7 +60,7 @@ impl Finish {
                 };
                 finish
                     .expect("selected scheduling prepares its real finish")
-                    .finish(source, &mut result);
+                    .finish_for_test(source, &mut result);
             }
         }
         result

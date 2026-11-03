@@ -74,7 +74,7 @@ pub fn commit_live_activity_on_product(
                 .select_product_branch_for_test(execution, product)
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_owned(),
                     request,

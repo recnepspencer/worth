@@ -13,12 +13,12 @@ pub fn family_declarations() -> [[(TypeId, &'static str); 2]; 2] {
     struct B;
     [
         [
-            (TypeId::of::<A>(), "alpha-output"),
-            (TypeId::of::<B>(), "zulu-output"),
+            (TypeId::of_for_test::<A>(), "alpha-output"),
+            (TypeId::of_for_test::<B>(), "zulu-output"),
         ],
         [
-            (TypeId::of::<B>(), "alpha-output"),
-            (TypeId::of::<A>(), "zulu-output"),
+            (TypeId::of_for_test::<B>(), "alpha-output"),
+            (TypeId::of_for_test::<A>(), "zulu-output"),
         ],
     ]
 }

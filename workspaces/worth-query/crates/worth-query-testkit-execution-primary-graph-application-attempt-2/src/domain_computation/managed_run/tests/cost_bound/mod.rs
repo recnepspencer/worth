@@ -298,19 +298,19 @@ pub fn assert_rejection_work_is_constant_with_unrelated_authority(
             Ok(_) => panic!("foreign runtime admitted another runtime's run"),
             Err(rejection) => rejection,
         };
-    assert_eq!(rejection.denial().counters().query_runtime_check_count(), 1);
+    assert_eq!(rejection.denial_for_test().counters().query_runtime_check_count(), 1);
     assert_eq!(
-        rejection.denial().counters().resource_attempt_check_count(),
+        rejection.denial_for_test().counters().resource_attempt_check_count(),
         0
     );
-    assert_eq!(rejection.denial().counters().bridge_intent_check_count(), 0);
-    assert_eq!(rejection.denial().counters().bridge_source_check_count(), 0);
+    assert_eq!(rejection.denial_for_test().counters().bridge_intent_check_count(), 0);
+    assert_eq!(rejection.denial_for_test().counters().bridge_source_check_count(), 0);
     assert_eq!(
-        rejection.denial().counters().relational_basis_check_count(),
+        rejection.denial_for_test().counters().relational_basis_check_count(),
         0
     );
     assert_eq!(
-        rejection.denial().counters().semantic_basis_check_count(),
+        rejection.denial_for_test().counters().semantic_basis_check_count(),
         0
     );
 }

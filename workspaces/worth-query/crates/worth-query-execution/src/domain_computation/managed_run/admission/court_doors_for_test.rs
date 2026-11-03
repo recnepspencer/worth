@@ -8,3 +8,10 @@ impl WorthQueryExecutionRuntime {
         Self::admit_direct_run(self, operation, resource_attempt, bridge_basis, relational_basis)
     }
 }
+
+impl WorthQueryManagedRunAdmissionRejection {
+    #[doc(hidden)]
+    pub fn denial_for_test(&self) -> &WorthQueryManagedRunDenial {
+        Self::denial(self)
+    }
+}

@@ -38,7 +38,7 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                 0,
             );
             (*prior.framework_required_count_mut_for_test()) = 1;
-            (*state.records_for_test()).insert(old.clone(), prior);
+            (*state.records_for_test()).insert_for_test(old.clone(), prior);
             let ready = || {
                 DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Ready(completion.clone()),
@@ -46,31 +46,31 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
             };
             (*state
                 .records_for_test())
-                .insert(newest.clone(), record(occurrence(), ready(), 0));
+                .insert_for_test(newest.clone(), record(occurrence(), ready(), 0));
             let mut row = record(occurrence(), ready(), 0);
             (*row.prerequisites_for_test()).push(Arc::new(old.clone()));
 
-            (*state.records_for_test()).insert(dependent.clone(), row);
+            (*state.records_for_test()).insert_for_test(dependent.clone(), row);
             for selected in [&old, &newest] {
                 let member = state.prepare_required_member_for_test(selected).unwrap();
                 state.install_required_member_for_test(member);
             }
             for generation in 1..=neighbors {
-                (*state.records_for_test()).insert(
+                (*state.records_for_test()).insert_for_test(
                     key("larger-other", generation, 3),
                     record(occurrence(), DemandState::Admitted, 0),
                 );
             }
             if site == 6 {
                 let mut stopped = ready();
-                if let DemandState::Output(output) = &mut stopped {
+                if let DemandState::Output(output) = &mut (*stopped {
                     output.stop_for_test(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::Superseded,
                         "",
                     ));
                 }
-                (*state.records_for_test()).get_mut(&old).unwrap().state = stopped;
-                (*state.records_for_test()).get_mut(&newest).unwrap().state =
+                (*state.records_for_test()).get_mut(&old).unwrap().state_mut_for_test()) = stopped;(*
+                (*state.records_for_test()).get_mut(&newest).unwrap().state_mut_for_test()) =
                     DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::Superseded,
                         "",
@@ -79,19 +79,19 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
             crate::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts[..entries], neighbors);
             let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
             match site {
-                0 => {
+                0 => {(*
                     // The dependent has moved its claim before retirement.
                     (*state
                         .records_mut_for_test())
                         .get_mut(&old)
                         .unwrap()
-                        .framework_required_count = 0;
+                        .framework_required_count_mut_for_test()) = 0;(*
                     (*state
                         .records_mut_for_test())
                         .get_mut(&newest)
                         .unwrap()
-                        .framework_required_count = 1;
-                    (*state.records_mut_for_test()).get_mut(&dependent).unwrap().prerequisites[0] =
+                        .framework_required_count_mut_for_test()) = 1;(*
+                    (*state.records_mut_for_test()).get_mut(&dependent).unwrap().prerequisites_for_test())[0] =
                         Arc::new(newest.clone());
                     state.retire_row_for_test(&old, &mut Vec::new());
                 }

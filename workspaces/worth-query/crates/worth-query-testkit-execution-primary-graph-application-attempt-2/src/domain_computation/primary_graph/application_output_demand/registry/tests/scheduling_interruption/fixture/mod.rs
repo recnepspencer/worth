@@ -50,12 +50,12 @@ impl Fixture {
             // These are published dependency claims, as in caller_chain's
             // registry fixtures; their physical Vec backings are accounted.
             for (reader, input) in [(&interest, &upstream), (&dependent, &interest)] {
-                let claims = vec![Arc::new(input.key.clone())];
+                let claims = vec![Arc::new((*input.key_for_test()).clone())];
 
-                state.records.get_mut(&reader.key).unwrap().prerequisites = claims;
-                state
-                    .records
-                    .get_mut(&input.key)
+                (*state.records_for_test()).get_mut(&(*reader.key_for_test())).unwrap().prerequisites = claims;
+                (*state
+                    .records_for_test())
+                    .get_mut(&(*input.key_for_test()))
                     .unwrap()
                     .framework_required_count += 1;
             }
@@ -68,10 +68,10 @@ impl Fixture {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
                     readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
                 });
-                if input.key == interest.key {
+                if (*input.key_for_test()) == (*interest.key_for_test()) {
                     ready_identity = std::ptr::from_ref(&*ready).cast::<()>();
                 }
-                state.records.get_mut(&input.key).unwrap().state = DemandState::Output(
+                (*state.records_for_test()).get_mut(&(*input.key_for_test())).unwrap().state = DemandState::Output(
                     WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Ready(ready)),
                 );
             }
@@ -82,13 +82,13 @@ impl Fixture {
                 1,
                 Some(OutputRefreshPredecessor::Committed(&receipt)),
             );
-        } else {
+        } else {(*
             (*registry
                 .state_for_test())
                 .lock()
                 .unwrap()
-                .records
-                .get_mut(&interest.key)
+                .records_for_test())
+                .get_mut(&(*interest.key_for_test()))
                 .unwrap()
                 .successor_of = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new_for_test(
                 *receipt.idempotency_binding().key_identity(),
@@ -96,7 +96,7 @@ impl Fixture {
         }
         {
             let mut state = (*registry.state_for_test()).lock().unwrap();
-            let mut row = state.records.get_mut(&interest.key).unwrap();
+            let mut row = (*state.records_for_test()).get_mut(&(*interest.key_for_test())).unwrap();
             row.performed_source = Some(WorthQueryPerformedOutputDemandSource {
                 receipt: receipt.clone(),
                 change,
@@ -105,7 +105,7 @@ impl Fixture {
             });
             row.performed_obligations = vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
                 source_commit: commit.clone(),
-                source: interest.key.source.clone(),
+                source: (*interest.key_for_test()).source.clone(),
             }];
 
             row.finish();

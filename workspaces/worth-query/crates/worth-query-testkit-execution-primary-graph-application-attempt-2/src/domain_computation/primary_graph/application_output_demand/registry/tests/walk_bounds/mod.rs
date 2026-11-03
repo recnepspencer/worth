@@ -18,13 +18,13 @@ pub fn check(search: usize) {
         let mut state = DemandRegistryState::default();
         let selected = key("own", 1, 1);
         for generation in 1..=3 {
-            (*state.records_for_test()).insert(
+            (*state.records_for_test()).insert_for_test(
                 key("own", generation, 1),
                 record(occurrence(), DemandState::Admitted, 0),
             );
         }
         for generation in 1..=neighbors {
-            (*state.records_for_test()).insert(
+            (*state.records_for_test()).insert_for_test(
                 key("larger-other", generation, 2),
                 record(occurrence(), DemandState::Admitted, 0),
             );
@@ -99,7 +99,7 @@ pub fn add_custody_with_completion(
             );
             (*row.source_commits_for_test()).push(commit.clone());
             (*row.source_scope_mut_for_test()) = Some(scope);
-            (*state.records_for_test()).insert(
+            (*state.records_for_test()).insert_for_test(
                 key(
                     &(*selected.producer_for_test()),
                     generation,
@@ -113,7 +113,7 @@ pub fn add_custody_with_completion(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody {
                 occurrence: receipt.product_branch().occurrence_for_test(),
                 root_kind: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(
-                    worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(),
+                    worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(),
                 ),
                 source: None,
                 discovery: None,

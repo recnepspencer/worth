@@ -69,7 +69,7 @@ pub fn read(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) -> Re
         .unwrap();
     let (body, snapshot, _) = completed.into_parts();
     let (lease, _, _, _) =
-        snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone());
+        snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone_for_test());
     Read { body, lease }
 }
 impl Read {

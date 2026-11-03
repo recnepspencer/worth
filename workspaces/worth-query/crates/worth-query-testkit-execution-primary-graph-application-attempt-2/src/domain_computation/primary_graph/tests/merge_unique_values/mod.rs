@@ -48,7 +48,7 @@ impl MergeWorld {
             .runtime_for_test())
             .primary_graph()
             .expect("the fixture publishes its graph")
-            .integration_handle();
+            .integration_handle_for_test();
         let field = |aspect: &str, name: &str| {
             handle
                 .layout

@@ -24,7 +24,7 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
             .attempts_for_test())
             .lock()
             .unwrap()
-            .shared_observed_facts(authority.session_for_test())
+            .shared_observed_facts_for_test(authority.session_for_test())
             .unwrap();
         let requests: Vec<_> = facts.requests().collect();
         let fact = facts
@@ -34,7 +34,7 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
             fact,
             WorthQueryPrimaryGraphApplicationDecisionFact::Principal(_)
         ));
-        let snapshot = (*self.graph_for_test()).with_runtime_mut(execution, |runtime| {
+        let snapshot = (*self.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .unwrap();
