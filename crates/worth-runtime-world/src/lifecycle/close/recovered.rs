@@ -3,17 +3,15 @@ use super::{
     checkpoint_close_step, drain::CloseProgress, recovered_native::RecoveredNativeRetirement,
     RuntimeWorldCloseDenial as Denial,
 };
-use crate::recovery::recovered_publication::{
-    RecoveredNativeCustody, RecoveredWorldPublicationRecord,
-};
+use crate::recovery::{RecoveredNativeCustody, RecoveredWorldPublicationRecord};
 use std::sync::{Arc, Mutex};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
-#[derive(Debug)]
 pub(super) struct RecoveredCloseRetirement {
     record: Arc<RecoveredWorldPublicationRecord>,
     native: Option<RecoveredNativeRetirement>,
     initialized: bool,
+    expected_basis: Option<crate::history::CompositeCommitRetirement>,
 }
 
 impl RecoveredCloseRetirement {
@@ -22,10 +20,15 @@ impl RecoveredCloseRetirement {
             record,
             native: None,
             initialized: false,
+            expected_basis: None,
         }
     }
 
-    fn advance(&mut self, request: &ExecutionRequest<'_, '_>) -> Result<bool, Denial> {
+    fn advance(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+        native_owner: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<bool, Denial> {
         checkpoint_close_step(request, 1)?;
         let record = Arc::get_mut(&mut self.record).ok_or(Denial::UnresolvedBusinessCustody)?;
         if !self.initialized {
@@ -52,11 +55,28 @@ impl RecoveredCloseRetirement {
                 return Ok(false);
             }
         }
-        record
-            .expected
-            .try_retire_for_close()
-            .map_err(|_| Denial::Busy)?;
-        Ok(true)
+        if self.expected_basis.is_none() {
+            record
+                .expected
+                .try_retire_for_close()
+                .map_err(|_| Denial::Busy)?;
+            self.expected_basis = Some(
+                record
+                    .expected
+                    .begin_close_basis_retirement()
+                    .map_err(|_| Denial::Busy)?,
+            );
+        }
+        use worth_relational::facade::branch::RelationalBranchBasisRetirementDenial as NativeDenial;
+        self.expected_basis
+            .as_mut()
+            .expect("same original expected basis")
+            .advance(request, native_owner)
+            .map_err(|cause| match cause {
+                NativeDenial::Busy => Denial::Busy,
+                NativeDenial::Execution(cause) => Denial::Execution(cause),
+                NativeDenial::ForeignOwner => Denial::CloseProgressInvariant,
+            })
     }
 }
 
@@ -89,6 +109,7 @@ pub(in crate::lifecycle) fn retire(
     recovery: &crate::recovery::RecoveryCatalog,
     task: &Arc<Mutex<CloseProgress>>,
     request: &ExecutionRequest<'_, '_>,
+    native_owner: &worth_relational::facade::runtime::RelationalRuntime,
 ) -> Result<(), Denial> {
     // This try-only task guard serializes its own progress. No World catalog,
     // lifecycle or branch lock spans the concrete nonwaiting Native protocol.
@@ -107,7 +128,7 @@ pub(in crate::lifecycle) fn retire(
             .pending_recovered
             .as_mut()
             .expect("retained original recovered row")
-            .advance(request)?
+            .advance(request, native_owner)?
         {
             continue;
         }
@@ -119,5 +140,15 @@ pub(in crate::lifecycle) fn retire(
             .take()
             .expect("completed original recovered row");
         progress.retired_recovered.push(retired);
+    }
+}
+
+impl std::fmt::Debug for RecoveredCloseRetirement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RecoveredCloseRetirement")
+            .field("identity", &self.record.identity)
+            .field("initialized", &self.initialized)
+            .field("expected_basis_started", &self.expected_basis.is_some())
+            .finish_non_exhaustive()
     }
 }

@@ -206,6 +206,21 @@ pub(crate) struct RuntimeWorldCloseContract {
 }
 
 impl RuntimeWorldCloseContract {
+    pub(super) fn retirement_task(
+        &self,
+    ) -> Result<std::sync::Arc<std::sync::Mutex<drain::CloseProgress>>, RuntimeWorldCloseDenial>
+    {
+        match self.state {
+            RuntimeWorldCloseState::Open | RuntimeWorldCloseState::Closing => {
+                Err(RuntimeWorldCloseDenial::CloseNotCompleted)
+            }
+            RuntimeWorldCloseState::Closed => self
+                .progress
+                .as_ref()
+                .cloned()
+                .ok_or(RuntimeWorldCloseDenial::CloseProgressInvariant),
+        }
+    }
     pub(crate) const fn open() -> Self {
         Self {
             state: RuntimeWorldCloseState::Open,

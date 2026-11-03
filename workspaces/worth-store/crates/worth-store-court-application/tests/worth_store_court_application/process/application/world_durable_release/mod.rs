@@ -90,8 +90,9 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     assert_eq!(retained[0].attempt_identity().ordinal(), number(0));
     assert_eq!(retained[0].reserved_commit_identity().ordinal(), number(1));
     assert_eq!(retained[0].native_receipt(), Some(&receipt));
+    let closed = sealed.finish_close(&execution);
     assert!(matches!(
-        sealed.finish_close(&execution),
+        &closed,
         ApplicationHomeCloseOutcome::Closed {
             checkpoint: Ok(_),
             ..
@@ -175,6 +176,13 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     );
     drop(head);
     close(second.home, &execution);
+    // Every reopen above occurs while the first close report and its actual
+    // retired Native/World allocations remain alive.
+    assert!(matches!(
+        &closed,
+        ApplicationHomeCloseOutcome::Closed { .. }
+    ));
+    drop(closed);
 }
 
 fn close(

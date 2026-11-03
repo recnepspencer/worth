@@ -12,6 +12,7 @@ where
     pub fn retire_checkpoint_origin(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial> {
         use WorldCheckpointOriginRetirementDenial as Denial;
         let close = self.state.close.try_lock().map_err(|_| Denial::Busy)?;
@@ -22,15 +23,9 @@ where
             RuntimeWorldCloseState::Closed => {}
         }
         let binding = self.state.durable.as_ref().ok_or(Denial::NotHomeBound)?;
-        let task = close
-            .progress
-            .as_ref()
-            .cloned()
-            .ok_or(Denial::RecoveredCustody(
-                crate::lifecycle::RuntimeWorldCloseDenial::CloseProgressInvariant,
-            ))?;
+        let task = close.retirement_task().map_err(Denial::RecoveredCustody)?;
         drop(close);
-        crate::lifecycle::close::retire_recovered(&self.state.recovery, &task, request)
+        crate::lifecycle::close::retire_recovered(&self.state.recovery, &task, request, native)
             .map_err(Denial::RecoveredCustody)?;
         let origin = binding.take_checkpoint_origin()?;
         Ok(origin.retire())
@@ -50,7 +45,8 @@ where
     pub fn retire_checkpoint_origin(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial> {
-        self.root.retire_checkpoint_origin(request)
+        self.root.retire_checkpoint_origin(request, native)
     }
 }

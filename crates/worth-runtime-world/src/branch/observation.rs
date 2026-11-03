@@ -210,6 +210,13 @@ pub enum RuntimeWorldBranchAdmissionDenial {
 }
 
 impl ProductBranchObservation {
+    pub(crate) fn begin_close_basis_retirement(
+        &mut self,
+    ) -> Result<crate::history::CompositeCommitRetirement, ()> {
+        let snapshot = Arc::get_mut(&mut self.snapshot).ok_or(())?;
+        Ok(snapshot.begin_home_retirement())
+    }
+
     /// Disarm only this exclusive original observation. Inert allocation
     /// ownership stays here; independently cloned observations retain their veto.
     pub(crate) fn try_retire_for_close(&mut self) -> Result<(), ()> {
