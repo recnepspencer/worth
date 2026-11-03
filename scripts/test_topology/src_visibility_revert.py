@@ -65,6 +65,12 @@ def run(root, base, check=False):
             continue
         current = (root / path).read_text(encoding='utf-8')
         new, count = reverted(old, current)
+        # Undoing one change can realign the diff and expose another: run to a fixed point.
+        while count:
+            again, more = reverted(old, new)
+            if not more:
+                break
+            new, count = again, count + more
         if count:
             changed[path] = count
             if not check:
