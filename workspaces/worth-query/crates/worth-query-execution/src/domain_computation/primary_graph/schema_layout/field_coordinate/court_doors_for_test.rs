@@ -30,3 +30,18 @@ impl WorthQueryPrimaryGraphLayout {
         Self::resolve_declared_field_coordinate(self, contracts, entity, aspect, field, admit)
     }
 }
+
+impl InstalledFieldCoordinate<'_> {
+    #[doc(hidden)]
+    pub fn field_for_test(&self) -> &FieldKey {
+        Self::field(self)
+    }
+}
+
+impl InstalledFieldCoordinate<'_> {
+    #[doc(hidden)]
+    pub fn native_for_test(
+        &self) -> &WorthQueryInstalledApplicationAspectContract {
+        Self::native(self)
+    }
+}

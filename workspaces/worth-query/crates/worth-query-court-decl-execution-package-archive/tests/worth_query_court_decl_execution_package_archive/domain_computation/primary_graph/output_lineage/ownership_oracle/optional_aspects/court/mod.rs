@@ -102,23 +102,23 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                 assert_eq!(rows.len(), 1, "retained recovered/stable observation is unambiguous");
             }
             let row = rows[slot].get().unwrap();
-            assert_eq!((*row.settlement_identity_for_test()).source(), &source);
-            assert_eq!((*row.settlement_identity_for_test()).address(), (occurrence, generation, slot));
-            assert!((*row.correspondence_for_test()).native_witness_roles()
+            assert_eq!((*row.settlement_identity_for_test()).source_for_test(), &source);
+            assert_eq!((*row.settlement_identity_for_test()).address_for_test(), (occurrence, generation, slot));
+            assert!((*row.correspondence_for_test()).native_witness_roles_for_test()
                 .eq(settled.output_correspondence.native_witness_roles_for_test()), "exact recorded correspondence");
             let locator = (*row.native_prior_checkpoint_for_test()).as_ref();
             assert!((*row.native_output_witness_for_test()).get().is_some(), "performed publication retains actual warm native custody");
             let locator = locator.expect(
                 "actual required Query handoff records the performed locator",
             );
-            let producer = locator.producer().to_owned();
+            let producer = locator.producer_for_test().to_owned();
             let dependency = (*row.producer_dependency_identity_for_test()).unwrap();
             let meaning = RequiredOutputPublicationMeaning {
                 implementation: (*row.producing_implementation_for_test()).expect("the actual producer publication retains its original implementation"),
                 family: settled.output_family_identity().to_owned(),
                 source_scope: source_entity,
                 source_partition: (*row.source_partition_identity_for_test()).unwrap(),
-                source_epoch: locator.source(),
+                source_epoch: locator.source_for_test(),
             };
             drop(lineage);
             let ordinary_roles = ordinary.map(|receipt| {

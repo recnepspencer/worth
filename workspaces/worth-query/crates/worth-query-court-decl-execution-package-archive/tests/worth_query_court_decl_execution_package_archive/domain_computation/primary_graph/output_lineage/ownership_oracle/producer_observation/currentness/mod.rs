@@ -17,7 +17,7 @@ fn retained_currentness_refuses_corrupted_fact_coordinates_before_clean_marks() 
             lineage.source_facts_for_receipt_for_test((*runtime.runtime_for_test()).authority_identity().as_u64(),
                 &(*runtime.installed_schema_for_test()).binding_identity(), selected.product().observation_for_test(), receipt, &execution).unwrap().unwrap()
         };
-        assert!(!(*read.facts_for_test()).as_ref().unwrap().is_empty(), "real retained producer facts");(*
+        assert!(!(*read.facts_for_test()).as_ref().unwrap().is_empty_for_test(), "real retained producer facts");(*
         (*runtime.primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {
             selected.require_current_read_for_test(&execution, native, &read, Some(receipt)).unwrap();
             for (valid, requirement, expected) in [

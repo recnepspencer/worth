@@ -45,12 +45,12 @@ pub fn refuse_mixed_and_created_subset(
         // It proves that the Query completion reached required_origin::bind;
         // merely lacking native custody would be a wrong-reason negative.
         let locator = (*row.native_prior_checkpoint_for_test()).as_ref().expect("real Query required-output publication handoff ran");
-        let producer = locator.producer().to_owned();
+        let producer = locator.producer_for_test().to_owned();
         let dependency = (*row.producer_dependency_identity_for_test()).unwrap();
         let meaning = RequiredOutputPublicationMeaning {
             implementation: (*row.producing_implementation_for_test()).expect("the actual producer publication retains its original implementation"),
             family: settled.output_family_identity().to_owned(), source_scope: anchor,
-            source_partition: (*row.source_partition_identity_for_test()).unwrap(), source_epoch: locator.source(),
+            source_partition: (*row.source_partition_identity_for_test()).unwrap(), source_epoch: locator.source_for_test(),
         };
         drop(lineage);
         let created: Vec<_> = roles.iter().filter(|role| role.posture == RequiredOutputRolePosture::Create).cloned().collect();

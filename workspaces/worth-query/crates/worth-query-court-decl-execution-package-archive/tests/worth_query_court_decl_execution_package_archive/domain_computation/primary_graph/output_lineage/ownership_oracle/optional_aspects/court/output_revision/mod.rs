@@ -125,8 +125,8 @@ pub fn observe<Schema: BirthSchema>(
             .map_err(worth_execution::MapKernelFailure::<()>::Stop)?;
         let native_locator = AspectFieldLocator::new(
             LocatorAuthority::Authoritative,
-            coordinate.native().contract().key().clone(),
-            CanonicalFieldPath::single(coordinate.field().clone()),
+            coordinate.native_for_test().contract().key().clone(),
+            CanonicalFieldPath::single(coordinate.field_for_test().clone()),
         );
         Ok((effect, native_locator))
     })

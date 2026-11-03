@@ -7,3 +7,10 @@ impl FactPayload {
         Self::iter(self)
     }
 }
+
+impl FactPayload {
+    #[doc(hidden)]
+    pub fn is_empty_for_test(&self) -> bool {
+        Self::is_empty(self)
+    }
+}
