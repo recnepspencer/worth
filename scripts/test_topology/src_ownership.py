@@ -29,6 +29,11 @@ def dispositions(model, unit_of):
     frontier = list(supported)
     while frontier:
         names = frontier.pop()
+        # A support module keeps its module ancestry: its parent's imports resolve `super::` there.
+        parent = names[:-1]
+        if parent in model.records and parent not in supported and not model.records[parent].extracted:
+            supported.add(parent)
+            frontier.append(parent)
         for _reference, origin in model.records[names].uses:
             if origin is None or origin[0] == '<external>':
                 continue
