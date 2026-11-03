@@ -228,7 +228,14 @@ def write_doors(index, doors):
         node = index[names]
         path = door_file_path(node, index)
         existing = path.read_text(encoding='utf-8') if path.exists() else '//! Sealed test doors over this module\'s private members.\nuse super::*;\n'
-        added = [text for key, text in sorted(entries.items()) if text not in existing]
+        # A door already present (under any formatting) is not written again.
+        present = set(re.findall(r'\bpub fn (\w+_for_test)\b', existing))
+        added = []
+        for key, text in sorted(entries.items()):
+            names = set(re.findall(r'\bpub fn (\w+_for_test)\b', text))
+            if text not in existing and not names <= present:
+                added.append(text)
+                present |= names
         for key in entries:
             counts[key[0]] += 1
         if added:
