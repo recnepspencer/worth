@@ -30,7 +30,7 @@ pub enum WorthQueryOutputCheckpoint {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryOutputClaimIdentity(pub(super) u64);
+pub struct WorthQueryOutputClaimIdentity(pub u64);
 
 impl WorthQueryOutputCheckpoint {
     fn generation(&self) -> super::ready_backing::OutputCheckpointGeneration {

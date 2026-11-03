@@ -43,7 +43,7 @@ fn receipts_are_bounded_and_end_with_the_existing_listener() {
         take();
         for _ in 0..35 {
             let _scope = Scope::begin("bounded", Gate::ComparableFacts);
-            worth_query_execution::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+            worth_query_execution::domain_computation::primary_graph::fact_verification_observation::registry_custody::registry_custody(
                 worth_query_execution::facade::domain_computation::WorthQueryRegistryCustodyTransitionForTest::PostingRelease,
                 1,
                 2,

@@ -16,7 +16,7 @@ pub mod operation_binding;
 pub mod primary_graph;
 mod product_publication;
 pub mod provider_session;
-pub(crate) mod runtime_time;
+pub mod runtime_time;
 
 pub use artifact_owner::{
     WorthQueryArtifactDenial, WorthQueryArtifactDenialKind, WorthQueryArtifactProductionAuthority,

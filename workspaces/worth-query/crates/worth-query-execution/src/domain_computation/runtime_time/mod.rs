@@ -3,7 +3,7 @@
 //! One source serves grant validity, dispatch timeout classification, and
 //! recovery expiry. Callers and transport adapters cannot supply a sample.
 
-mod time_basis;
+pub mod time_basis;
 mod time_source;
 
 pub(in crate::domain_computation) use time_basis::WorthQueryRuntimeClock;

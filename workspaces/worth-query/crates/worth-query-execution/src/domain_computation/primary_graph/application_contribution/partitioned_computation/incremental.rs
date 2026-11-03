@@ -121,7 +121,7 @@ pub(super) enum Begun<Key, Item, Reduced> {
 }
 
 /// The basis a full run retains its state under, opaque outside this module.
-pub struct RetainedBasisToken(RetainedBasis);
+pub struct RetainedBasisToken(pub RetainedBasis);
 
 /// A comparison of a retained run under the same basis: which of its calls
 /// read a fact that moved, and the facts each call read.
