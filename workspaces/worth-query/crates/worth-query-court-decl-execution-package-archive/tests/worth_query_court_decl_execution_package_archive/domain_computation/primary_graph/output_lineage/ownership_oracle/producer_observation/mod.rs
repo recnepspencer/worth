@@ -1,10 +1,10 @@
 //! Real settled producer seeds travel with exact reads, never same-looking heads.
 
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_output_demand::settlement::observation::court::CourtWorthQueryOutputDemandSettlementForTest;
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
-pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::Application;
-pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::OwnerSchema;
-pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::ANCHOR;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::Application;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::OwnerSchema;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::ANCHOR;
 pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerSource;
 pub use std::sync::Arc;
 pub use std::time::Duration;
@@ -12,8 +12,8 @@ pub use worth_query_decl::facade::application_query::ApplicationQueryParameterSe
 
 #[test]
 fn real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_read_custody() {
-    let runtime = worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::install();
-    let original = worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::journey::complete(&runtime);
+    let runtime = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::install();
+    let original = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::journey::complete(&runtime);
     runtime
         .with_host_advancement(|phase| {
             let selected = runtime
@@ -39,8 +39,8 @@ fn real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_rea
         .exact_output_settlement()
         .unwrap()
         .clone();
-    worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::birth::admit_genuine_all_create(&runtime);
-    let later = worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::journey::complete_with_contacts(&runtime, 0);
+    crate::domain_computation::primary_graph::output_lineage::ownership_oracle::birth::admit_genuine_all_create(&runtime);
+    let later = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::journey::complete_with_contacts(&runtime, 0);
     let read = later.retained_read();
     assert_ne!(
         read.selected_commit(),

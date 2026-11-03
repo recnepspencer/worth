@@ -12,7 +12,7 @@ pub enum PlanarMutationDenial {
     MissingCoordinate,
 }
 
-#[path = "../../../../../../../worth-query-certification/fixtures/consumer_values/src/planar_operation/outcome.rs"]
+#[path = "../../../../../../../../worth-query-certification/fixtures/consumer_values/src/planar_operation/outcome.rs"]
 pub mod outcome;
-#[path = "../../../../../../../worth-query-certification/fixtures/consumer_values/src/positive_length.rs"]
+#[path = "../../../../../../../../worth-query-certification/fixtures/consumer_values/src/positive_length.rs"]
 pub mod positive_length;

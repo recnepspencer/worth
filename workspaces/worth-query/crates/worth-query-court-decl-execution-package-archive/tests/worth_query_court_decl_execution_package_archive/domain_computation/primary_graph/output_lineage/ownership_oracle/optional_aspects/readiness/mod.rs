@@ -1,5 +1,5 @@
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
-pub use runtime_domain as domain;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
+use runtime_domain as domain;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReadyDomain;
@@ -7,7 +7,7 @@ pub struct ReadyDomain;
 pub struct ReadyOperation;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReadyFamily;
-conditional_node!(pub(super) ReadyNode in ReadyDomain, ReadyOperation, ReadyFamily => operation "optional-aspect-ready");
+conditional_node!(pub ReadyNode in ReadyDomain, ReadyOperation, ReadyFamily => operation "optional-aspect-ready");
 pub struct InitialReady<Schema>(PhantomData<fn() -> Schema>);
 pub struct KeepReady<Schema>(PhantomData<fn() -> Schema>);
 pub fn definition<Schema: BirthSchema>(

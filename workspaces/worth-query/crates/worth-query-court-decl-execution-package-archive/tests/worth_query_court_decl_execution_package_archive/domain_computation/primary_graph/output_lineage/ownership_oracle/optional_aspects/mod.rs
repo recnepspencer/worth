@@ -1,5 +1,5 @@
 //! Explicit optional-aspect semantics through an installed Query producer.
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
 pub use std::marker::PhantomData;
 pub use worth_query_decl::facade::application_operation::*;
 pub use worth_query_decl::facade::application_program::*;
@@ -13,13 +13,13 @@ pub use worth_query_decl::facade::worth_query_operation_links;
 pub use worth_query_decl::facade::worth_query_operation_reads;
 pub use worth_query_decl::facade::worth_query_operation_writes;
 
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::schema::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::schema::*;
 
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::outputs::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::outputs::*;
 
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::operation::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::operation::*;
 
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::producer::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::producer::*;
 
 #[path = "archive/mod.rs"]
 pub mod archive;

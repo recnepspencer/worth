@@ -1,13 +1,13 @@
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
-pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::fixture_values::outcome::PlanarAdjustmentResult;
-pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::fixture_values::PlanarMutationDenial;
-pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::fixture_values::positive_length::PositiveLength;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::fixture_values::outcome::PlanarAdjustmentResult;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::fixture_values::PlanarMutationDenial;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::fixture_values::positive_length::PositiveLength;
 pub use worth_query_decl::facade::worth_query_structured_value_binding;
 macro_rules! input {
     ($input:ident, $binding:ident, $keep:literal, $identity:literal) => {
         #[derive(Clone, Debug, serde::Serialize)]
-        pub(super) struct $input { pub scope_key: String, pub incomplete: bool }
-        worth_query_structured_value_binding!(pub(super) $binding for $input { identity: $identity });
+        pub struct $input { pub scope_key: String, pub incomplete: bool }
+        worth_query_structured_value_binding!(pub $binding for $input { identity: $identity });
         impl<Schema: BirthSchema> ApplicationMutationIntent<Schema> for $input {
             type Binding = Binding<Schema, $keep>;
             fn input(&self) -> &Self { self }
@@ -27,17 +27,17 @@ input!(
     true,
     "worth.query.test.optional-keep-input.v1"
 );
-worth_query_operation!(pub(super) Produce for Schema: BirthSchema, input InputBinding);
+worth_query_operation!(pub Produce for Schema: BirthSchema, input InputBinding);
 worth_query_operation_reads!(Produce => [Body, BodyKey, SourceContent, SourceSelection, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
 worth_query_operation_writes!(Produce => [Value, Extra, SourceContent, SourceSelection]);
 worth_query_operation_creates!(Produce => [OutputNode, PresentNode, FieldlessNode, StrictNode]);
 worth_query_operation_links!(Produce => [Incidence]);
-worth_query_operation!(pub(super) OrdinaryProduce for Schema: BirthSchema, input InputBinding);
+worth_query_operation!(pub OrdinaryProduce for Schema: BirthSchema, input InputBinding);
 worth_query_operation_reads!(OrdinaryProduce => [Body, BodyKey, SourceContent, SourceSelection, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
 worth_query_operation_writes!(OrdinaryProduce => [Value, Extra]);
 worth_query_operation_creates!(OrdinaryProduce => [OutputNode, PresentNode, FieldlessNode, StrictNode]);
 worth_query_operation_links!(OrdinaryProduce => [Incidence]);
-worth_query_operation!(pub(super) KeepProduce for Schema: BirthSchema, input KeepInputBinding);
+worth_query_operation!(pub KeepProduce for Schema: BirthSchema, input KeepInputBinding);
 worth_query_operation_reads!(KeepProduce => [Value, Note, Body, BodyKey, PositionY, SourceContent, SourceSelection, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
 worth_query_operation_writes!(KeepProduce => [Value, Extra, PositionY]);
 worth_query_operation_creates!(KeepProduce => [OutputNode, PresentNode, FieldlessNode, StrictNode]);

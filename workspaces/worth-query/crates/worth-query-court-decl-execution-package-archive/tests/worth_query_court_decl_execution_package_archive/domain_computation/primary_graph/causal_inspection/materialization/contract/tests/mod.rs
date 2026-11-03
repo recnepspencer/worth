@@ -7,14 +7,14 @@ use worth_query_execution::domain_computation::primary_graph::causal_inspection:
 use worth_query_execution::facade::evidence_identity::WorthQueryEvidenceScope;
 use worth_query_execution::domain_computation::primary_graph::causal_inspection::identity::CausalInspectionOutcomeIdentity;
 use worth_query_execution::domain_computation::primary_graph::causal_inspection::observation_identity::CausalObservationAnchorDigest;
-use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle;
 use worth_runtime_bridge::facade::BridgeCausalInspectionAdmissionSummary as Summary;
 use worth_runtime_bridge::facade::BridgeCausalInspectionAdmissionSummaryKind as Kind;
 use worth_runtime_bridge::facade::BridgeConditionalCausalEnvelopeRequest as Request;
 
 #[test]
 fn real_native_envelope_requires_fresh_admission_under_both_legacy_paths_and_policies() {
-    worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::with_genuine_native_observation(|owner, observation| {
+    crate::domain_computation::primary_graph::output_lineage::ownership_oracle::with_genuine_native_observation(|owner, observation| {
         // These are explicitly diagnostic descriptors, never fresh admission.
         let admission: CausalInspectionOutcomeIdentity = descriptor("admission").into();
         let anchor: CausalObservationAnchorDigest = descriptor("anchor").into();

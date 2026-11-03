@@ -3,7 +3,7 @@ pub struct BirthOutputs;
 pub struct KeepOutputs;
 macro_rules! role {
     ($name:ident, $contract:ty, $entity:ty, $action:ty, $label:literal) => {
-        pub(super) struct $name<Schema>(PhantomData<fn() -> Schema>);
+        pub struct $name<Schema>(PhantomData<fn() -> Schema>);
         impl<Schema: BirthSchema> WorthQueryApplicationOutputRole for $name<Schema> {
             type Schema = Schema;
             type Contract = $contract;

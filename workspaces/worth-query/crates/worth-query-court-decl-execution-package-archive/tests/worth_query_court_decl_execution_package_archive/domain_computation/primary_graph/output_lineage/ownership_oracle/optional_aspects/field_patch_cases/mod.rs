@@ -1,10 +1,10 @@
 //! Real handler writes test the sealed-observation and installed-parent boundary.
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
-pub use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::own_effect::SourceWrite;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::own_effect::SourceWrite;
 macro_rules! schema {
     ($schema:ident, $owner:literal, $write:ident) => {
         worth_query_decl::facade::worth_query_application! {
-            pub(super) $schema { owner: $owner, version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
+            pub $schema { owner: $owner, version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
         }
         impl TopologyModelBinding for $schema {}
         impl BirthSchema for $schema {

@@ -12,13 +12,13 @@ pub enum SourceWrite {
     Select,
 }
 worth_query_decl::facade::worth_query_application! {
-    pub(super) MaterializingSchema { owner: "worth.query.test.optional-own-materialize", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
+    pub MaterializingSchema { owner: "worth.query.test.optional-own-materialize", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
 }
 worth_query_decl::facade::worth_query_application! {
-    pub(super) ClearingSchema { owner: "worth.query.test.optional-own-clear", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
+    pub ClearingSchema { owner: "worth.query.test.optional-own-clear", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
 }
 worth_query_decl::facade::worth_query_application! {
-    pub(super) RenewingSchema { owner: "worth.query.test.optional-own-renew", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
+    pub RenewingSchema { owner: "worth.query.test.optional-own-renew", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
 }
 impl TopologyModelBinding for MaterializingSchema {}
 impl TopologyModelBinding for ClearingSchema {}

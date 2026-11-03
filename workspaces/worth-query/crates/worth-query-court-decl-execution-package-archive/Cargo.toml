@@ -17,7 +17,6 @@ worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-execution = { path = "../worth-query-execution" }
 worth-query-installation = { path = "../worth-query-installation" }
 worth-query-package-archive = { path = "../worth-query-package-archive" }
-worth-query-testkit-execution-decl = { path = "../worth-query-testkit-execution-decl" }
 worth-query-testkit-execution-primary-graph-application-attempt = { path = "../worth-query-testkit-execution-primary-graph-application-attempt" }
 worth-query-testkit-execution-primary-graph-application-contribution = { path = "../worth-query-testkit-execution-primary-graph-application-contribution" }
 worth-relational = { path = "../../../../crates/worth-relational" }

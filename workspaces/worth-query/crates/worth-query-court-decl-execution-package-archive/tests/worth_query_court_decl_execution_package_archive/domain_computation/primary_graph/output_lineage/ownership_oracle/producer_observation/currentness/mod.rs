@@ -6,8 +6,8 @@ use worth_query_execution::facade::application_inspection::RebaseVerificationRea
 
 #[test]
 fn retained_currentness_refuses_corrupted_fact_coordinates_before_clean_marks() {
-    let runtime = worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::install();
-    let original = worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::journey::complete(&runtime);
+    let runtime = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::install();
+    let original = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::journey::complete(&runtime);
     let receipt = original.application_commit_receipt().unwrap();
     runtime.with_host_advancement(|phase| {
         let execution = phase.execution_request_for(&runtime.product_runtime).unwrap();

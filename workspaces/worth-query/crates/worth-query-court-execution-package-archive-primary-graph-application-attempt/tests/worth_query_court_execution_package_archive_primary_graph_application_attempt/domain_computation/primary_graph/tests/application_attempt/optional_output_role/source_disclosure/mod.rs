@@ -269,5 +269,3 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
 
 #[path = "compiler_qualification/mod.rs"]
 pub mod compiler_qualification;
-#[path = "native_funding/mod.rs"]
-pub mod native_funding;

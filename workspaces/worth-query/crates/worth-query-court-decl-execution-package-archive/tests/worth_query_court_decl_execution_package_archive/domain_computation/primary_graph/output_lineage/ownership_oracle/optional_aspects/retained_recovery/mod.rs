@@ -106,7 +106,7 @@ fn tracked_aspect_absence_survives_query_checkpoint_then_invalidates_on_other_fi
         let read = retained.retained_read();
         let selected = restored.select_application_read_observation(&phase, &read).unwrap();
         let seed = selected.original_settled_producer().unwrap();
-        let primary_graph::application_output_demand::OriginalSettledProducerSource::Restored { checkpoint } = seed.source() else {
+        let worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerSource::Restored { checkpoint } = seed.source() else {
             panic!("actual checkpoint restoration cannot manufacture a Native conditional observer")
         };
         let source = retained.restored_source.as_ref().unwrap();

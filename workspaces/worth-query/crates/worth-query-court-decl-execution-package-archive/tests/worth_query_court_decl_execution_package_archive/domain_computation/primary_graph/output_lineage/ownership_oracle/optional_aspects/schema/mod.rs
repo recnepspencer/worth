@@ -5,20 +5,20 @@ pub trait BirthSchema: TopologyModelBinding {
     const RENEW_OUTPUT: bool = false;
     const SOURCE_WRITE: crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::own_effect::SourceWrite = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::own_effect::SourceWrite::None;
 }
-worth_query_entity!(pub(super) OutputNode for Schema: BirthSchema);
-worth_query_entity!(pub(super) PresentNode for Schema: BirthSchema);
-worth_query_entity!(pub(super) FieldlessNode for Schema: BirthSchema);
-worth_query_entity!(pub(super) StrictNode for Schema: BirthSchema);
-worth_query_aspect!(pub(super) NodeFacts for Schema: BirthSchema, OutputNode; identity = AspectIdentity(0x9174_3101), revision = AspectContractRevision(1));
-worth_query_aspect!(pub(super) PresentFacts for Schema: BirthSchema, PresentNode; identity = AspectIdentity(0x9174_3102), revision = AspectContractRevision(1));
-worth_query_aspect!(pub(super) StrictFacts for Schema: BirthSchema, StrictNode; identity = AspectIdentity(0x9174_3103), revision = AspectContractRevision(1));
-worth_query_field!(pub(super) Note for Schema: BirthSchema, OutputNode, NodeFacts: optional String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub(super) Value for Schema: BirthSchema, PresentNode, PresentFacts: String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub(super) Mandatory for Schema: BirthSchema, StrictNode, StrictFacts: String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub(super) Extra for Schema: BirthSchema, StrictNode, StrictFacts: optional String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_aspect!(pub(super) SourceNotes for Schema: BirthSchema, Body; identity = AspectIdentity(0x9174_3104), revision = AspectContractRevision(1));
-worth_query_field!(pub(super) SourceContent for Schema: BirthSchema, Body, SourceNotes: String => StringApplicationValueBinding, read_write, no_equality);
-worth_query_field!(pub(super) SourceSelection for Schema: BirthSchema, Body, SourceNotes: optional String => StringApplicationValueBinding, read_write, no_equality);
+worth_query_entity!(pub OutputNode for Schema: BirthSchema);
+worth_query_entity!(pub PresentNode for Schema: BirthSchema);
+worth_query_entity!(pub FieldlessNode for Schema: BirthSchema);
+worth_query_entity!(pub StrictNode for Schema: BirthSchema);
+worth_query_aspect!(pub NodeFacts for Schema: BirthSchema, OutputNode; identity = AspectIdentity(0x9174_3101), revision = AspectContractRevision(1));
+worth_query_aspect!(pub PresentFacts for Schema: BirthSchema, PresentNode; identity = AspectIdentity(0x9174_3102), revision = AspectContractRevision(1));
+worth_query_aspect!(pub StrictFacts for Schema: BirthSchema, StrictNode; identity = AspectIdentity(0x9174_3103), revision = AspectContractRevision(1));
+worth_query_field!(pub Note for Schema: BirthSchema, OutputNode, NodeFacts: optional String => StringApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub Value for Schema: BirthSchema, PresentNode, PresentFacts: String => StringApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub Mandatory for Schema: BirthSchema, StrictNode, StrictFacts: String => StringApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub Extra for Schema: BirthSchema, StrictNode, StrictFacts: optional String => StringApplicationValueBinding, read_write, no_equality);
+worth_query_aspect!(pub SourceNotes for Schema: BirthSchema, Body; identity = AspectIdentity(0x9174_3104), revision = AspectContractRevision(1));
+worth_query_field!(pub SourceContent for Schema: BirthSchema, Body, SourceNotes: String => StringApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub SourceSelection for Schema: BirthSchema, Body, SourceNotes: optional String => StringApplicationValueBinding, read_write, no_equality);
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Incidence;
 impl Incidence {
