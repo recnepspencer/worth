@@ -25,7 +25,7 @@ fn refusal(fault: Fault) -> worth_relational::facade::publication::PublicationEr
         Fault::MissingLeaf => vec![RecordRef::Entity(output_id("root.1.0"))],
         Fault::Partial => vec![RecordRef::Entity(source_id("root.1.0"))],
         Fault::Foreign => vec![RecordRef::Entity(output_id("root.0"))],
-        Fault::Extra => vec![RecordRef::Entity(output_id("unrelated"))],
+        Fault::Extra | Fault::HiddenDeletion => vec![RecordRef::Entity(output_id("unrelated"))],
         Fault::Repeated => vec![RecordRef::Entity(source_id("root.1"))],
         Fault::None => unreachable!("refusal court selects a malformed candidate"),
     };
@@ -35,14 +35,27 @@ fn refusal(fault: Fault) -> worth_relational::facade::publication::PublicationEr
         .retain_program_outputs::<Program, program::Tree>(&app)
         .unwrap_or_else(|e| panic!("{:?}", e.denial()));
     let mut failure = None;
+    let require_hidden_subject_live = || {
+        if fault == Fault::HiddenDeletion {
+            assert!(
+                request
+                    .query(realization_read::ReadRealization("unrelated".into()))
+                    .execute()
+                    .is_ok(),
+                "hidden ordinary entity was deleted before refusal"
+            );
+        }
+    };
     for _ in 0..128 {
         match operation.advance(&request) {
             WorthQueryProgramOutputOperationAdvance::Pending(next) => operation = next,
             WorthQueryProgramOutputOperationAdvance::Refused { denial, .. } => {
+                require_hidden_subject_live();
                 failure = Some(original_error(&denial));
                 break;
             }
             WorthQueryProgramOutputOperationAdvance::Terminal(terminal) => {
+                require_hidden_subject_live();
                 let error = original_error(terminal.denial());
                 terminal
                     .close(&request)
@@ -70,6 +83,9 @@ fn refusal(fault: Fault) -> worth_relational::facade::publication::PublicationEr
         &request,
         &["root", "root.0", "root.0.0", "root.1", "root.1.0"],
     );
+    if fault == Fault::HiddenDeletion {
+        assert_eq!(RecordRef::Entity(output_id("unrelated")), subjects[0]);
+    }
     error
 }
 #[test]
@@ -131,5 +147,14 @@ fn an_omitted_transitive_publication_refuses_with_its_original_member_subject() 
     assert_eq!(
         error.authored_retirement_refusal(),
         Some(worth_relational::facade::publication::AuthoredRetirementRefusal::MissingPublication)
+    );
+}
+
+#[test]
+fn an_entity_deletion_without_a_retire_role_names_the_hidden_subject() {
+    let error = refusal(Fault::HiddenDeletion);
+    assert_eq!(
+        error.authored_retirement_refusal(),
+        Some(worth_relational::facade::publication::AuthoredRetirementRefusal::ExtraEntity)
     );
 }

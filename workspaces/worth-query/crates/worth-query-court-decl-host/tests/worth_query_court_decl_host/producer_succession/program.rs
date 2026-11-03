@@ -1,4 +1,4 @@
-use super::producers::{child, leaf, parent};
+use super::producers::{child, independent_parent, leaf, parent};
 use super::*;
 macro_rules! feature {
     ($feature:ident, $inputs:ty, $name:literal) => {
@@ -14,9 +14,9 @@ feature!(
     ApplicationFeatureInputLeaf,
     "dispatch.split.entry"
 );
-feature!(SplitParent, ApplicationFeatureInputList<SplitParentInput, ApplicationFeatureInputLeaf>, "dispatch.split.parent");
-feature!(SplitChild, ApplicationFeatureInputList<SplitChildInput, ApplicationFeatureInputList<SplitChildRootInput, ApplicationFeatureInputLeaf>>, "dispatch.split.child");
-feature!(SplitLeaf, ApplicationFeatureInputList<SplitLeafInput, ApplicationFeatureInputList<SplitLeafRootInput, ApplicationFeatureInputLeaf>>, "dispatch.split.leaf");
+feature!(SplitParent, ApplicationFeatureInputList<SplitParentInput, ApplicationFeatureInputList<IndependentParentInput, ApplicationFeatureInputLeaf>>, "dispatch.split.parent");
+feature!(SplitChild, ApplicationFeatureInputList<SplitChildInput, ApplicationFeatureInputList<SplitChildRootInput, ApplicationFeatureInputList<IndependentChildInput, ApplicationFeatureInputLeaf>>>, "dispatch.split.child");
+feature!(SplitLeaf, ApplicationFeatureInputList<SplitLeafInput, ApplicationFeatureInputList<SplitLeafRootInput, ApplicationFeatureInputList<IndependentLeafInput, ApplicationFeatureInputLeaf>>>, "dispatch.split.leaf");
 macro_rules! output_port {
     ($port:ident, $feature:ident, $name:literal) => {
         pub struct $port;
@@ -40,6 +40,13 @@ output_port!(SplitEntryOutput, SplitEntry, "entry-output");
 output_port!(SplitParentOutput, SplitParent, "parent-output");
 output_port!(SplitChildOutput, SplitChild, "child-output");
 input_port!(SplitParentInput, SplitParent, "parent-input");
+input_port!(
+    IndependentParentInput,
+    SplitParent,
+    "independent-parent-input"
+);
+input_port!(IndependentChildInput, SplitChild, "independent-child-input");
+input_port!(IndependentLeafInput, SplitLeaf, "independent-leaf-input");
 input_port!(SplitChildInput, SplitChild, "child-input");
 input_port!(SplitChildRootInput, SplitChild, "child-root-input");
 input_port!(SplitLeafInput, SplitLeaf, "leaf-input");
@@ -115,6 +122,34 @@ macro_rules! root_connection {
 }
 root_connection!(StartSplitParent, parent);
 root_connection!(StartSplitChild, child);
+connection!(
+    StartIndependentParent,
+    IndependentParentConnection,
+    SplitEntry,
+    SplitEntryOutput,
+    SplitParent,
+    IndependentParentInput,
+    "dispatch.independent.start-parent"
+);
+root_connection!(StartIndependentParent, independent_parent);
+connection!(
+    IndependentChildSplitLeaf,
+    IndependentLeafConnection,
+    SplitChild,
+    SplitChildOutput,
+    SplitLeaf,
+    IndependentLeafInput,
+    "dispatch.independent.child-leaf"
+);
+connection!(
+    IndependentParentSplitChild,
+    IndependentChildConnection,
+    SplitParent,
+    SplitParentOutput,
+    SplitChild,
+    IndependentChildInput,
+    "dispatch.independent.parent-child"
+);
 macro_rules! edge {
     ($binding:ident, $parent:ident, $child:ident) => {
         impl WorthQueryApplicationDependentOutputConnection<Schema> for $binding {
@@ -140,6 +175,15 @@ macro_rules! edge {
 edge!(SplitParentSplitChild, parent, child);
 edge!(SplitChildSplitLeaf, child, leaf);
 edge!(SplitChildRootSplitLeaf, child, leaf);
+edge!(IndependentParentSplitChild, independent_parent, child);
+edge!(IndependentChildSplitLeaf, child, leaf);
+pub type IndependentTree = ApplicationDemandOutputGraph<
+    IndependentParentConnection,
+    ApplicationOutputEdge<
+        IndependentChildConnection,
+        ApplicationOutputEdge<IndependentLeafConnection, ApplicationOutputLeaf>,
+    >,
+>;
 pub type Tree = ApplicationDemandOutputGraph<
     SplitParentConnection,
     ApplicationOutputEdge<
@@ -163,6 +207,8 @@ pub fn features() -> Vec<ApplicationFeatureSpec> {
             .provides::<SplitParentOutput>()
             .conditional_operation::<parent::initial::Operation>()
             .conditional_operation::<parent::preserve::Operation>()
+            .conditional_operation::<independent_parent::initial::Operation>()
+            .conditional_operation::<independent_parent::preserve::Operation>()
             .finish(),
         ApplicationFeatureSpec::root::<Schema, SplitChild>()
             .provides::<SplitChildOutput>()
@@ -179,7 +225,7 @@ pub fn features() -> Vec<ApplicationFeatureSpec> {
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(Tree, ChildTree)>;
+    type Outputs = ApplicationProgramOutputs<(Tree, (ChildTree, IndependentTree))>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("succession.program");

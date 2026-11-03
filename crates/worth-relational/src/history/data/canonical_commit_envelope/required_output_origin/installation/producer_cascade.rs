@@ -60,10 +60,11 @@ pub(super) fn prepare(
         &mut |commit| runtime.history.canonical_envelope(commit),
         &mut |envelope, context| {
             source_scope_closure::validate_preparation_history(envelope, &runtime.history, context)
+                .map_err(Into::into)
         },
         context,
     )
-    .map_err(|stop| typed_corruption(relation_stop(stop), anchors[0]))?;
+    .map_err(|failure| typed_corruption(relation_stop(failure.stop), anchors[0]))?;
     let selected =
         source_scope_closure::select(&anchors, &latest, context).map_err(relation_stop)?;
     if selected.is_empty() {

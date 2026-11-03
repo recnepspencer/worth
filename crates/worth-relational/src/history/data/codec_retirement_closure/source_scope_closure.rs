@@ -1,5 +1,8 @@
 //! One recorded-fact closure owner for authored and producer-triggered source removal.
-use super::{charge, require_linear_history, CodecRetirementClosureStop as Stop};
+use super::{
+    charge, require_linear_history, CodecRetirementClosureStop as Stop,
+    PublicationHistoryFailure as Failure,
+};
 use crate::{
     history::data::{CanonicalCommitEnvelope, CommitId, SelectedOutputPublication},
     identity::data::EntityId,
@@ -19,9 +22,9 @@ pub(crate) fn current(
     validate: &mut dyn FnMut(
         &CanonicalCommitEnvelope,
         &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Stop>,
+    ) -> Result<(), Failure>,
     context: &mut MapKernelContext<'_, '_>,
-) -> Result<Vec<SelectedOutputPublication>, Stop> {
+) -> Result<Vec<SelectedOutputPublication>, Failure> {
     let mut latest: Vec<SelectedOutputPublication> = Vec::with_capacity(bound);
     for _ in 0..bound {
         let Some(commit) = next else { break };
@@ -35,7 +38,9 @@ pub(crate) fn current(
                     .saturating_add(prior.origin.meaning.family.len() + 64)
             });
             charge(context, work)?;
-            envelope.output_origin_for_route(&origin.meaning, context)?;
+            envelope
+                .output_origin_for_route(&origin.meaning, context)
+                .map_err(|stop| Failure::at_source(origin.meaning.source_scope, stop))?;
             if !latest
                 .iter()
                 .any(|prior| prior.origin.meaning.same_route(&origin.meaning))
@@ -56,9 +61,10 @@ pub(crate) fn current(
                         .is_some()
                         != origin.source_scope_owned
                     {
-                        return Err(
-                            "source-scope publication differs from installed ownership".into()
-                        );
+                        return Err(Failure::at_source(
+                            origin.meaning.source_scope,
+                            "source-scope publication differs from installed ownership".into(),
+                        ));
                     }
                 }
                 latest.push(SelectedOutputPublication {

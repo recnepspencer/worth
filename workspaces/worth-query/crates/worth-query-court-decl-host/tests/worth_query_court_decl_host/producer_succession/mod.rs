@@ -19,6 +19,7 @@ mod correction;
 mod correction_courts;
 mod courts;
 mod history_courts;
+mod independent_generator_courts;
 mod producer;
 mod producers;
 mod program;
@@ -51,6 +52,7 @@ pub enum Fault {
     Partial,
     Foreign,
     Extra,
+    HiddenDeletion,
     Repeated,
 }
 pub struct Configuration {
@@ -88,7 +90,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         producers::parent::contracts(c)?;
         producers::child::contracts(c)?;
-        producers::leaf::contracts(c)
+        producers::leaf::contracts(c).and_then(|()| producers::independent_parent::contracts(c))
     }
     fn configure(
         configuration: Configuration,
@@ -105,6 +107,12 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
             setup,
             configuration.selections.clone(),
             configuration.fault,
+            configuration.child_width,
+        )?;
+        producers::independent_parent::install(
+            setup,
+            configuration.selections.clone(),
+            Fault::None,
             configuration.child_width,
         )?;
         producers::leaf::install(
