@@ -126,7 +126,8 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
     for module, items in sorted(classes.extracted.items()):
         add_extracted(model, module, items)
     first = placed(None)
-    measured = {key: row['text'].count('\n') + 4 for key, row in first['parts'].items()}
+    measured = {key: row['text'].count('\n') + 4 + sum(t.count('\n') + 1 for _l, _t, t in row['includes'])
+                for key, row in first['parts'].items()}
     result = placed(measured)
     result.update({'model': model, 'foreign': foreign, 'renames': renames, 'hooks': classes,
                    'called': called, 'forced': sorted(forced), 'referenced': referenced,
