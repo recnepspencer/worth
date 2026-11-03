@@ -80,18 +80,18 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
             let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
             match site {
                 0 => {
-                    // The dependent has moved its claim before (*retirement.
-                    state
-                        .records_for_test())
+                    // The dependent has moved its claim before retirement.
+                    (*state
+                        .records_mut_for_test())
                         .get_mut(&old)
                         .unwrap()
                         .framework_required_count = 0;
                     (*state
-                        .records_for_test())
+                        .records_mut_for_test())
                         .get_mut(&newest)
                         .unwrap()
                         .framework_required_count = 1;
-                    (*state.records_for_test()).get_mut(&dependent).unwrap().prerequisites[0] =
+                    (*state.records_mut_for_test()).get_mut(&dependent).unwrap().prerequisites[0] =
                         Arc::new(newest.clone());
                     state.retire_row_for_test(&old, &mut Vec::new());
                 }
