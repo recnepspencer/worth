@@ -8,6 +8,9 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     AdmissionClockMismatch,
+    /// An opted-in producer's source is shared, contextual or not its exact entity scope.
+    ProducerOwnershipRequiresEntitySourceScope,
+    ProducerFamilyOwnershipMismatch,
     /// Typed readiness declaration or installed field meaning was refused.
     ReadinessContractRejected,
     /// A binding or input belongs to a different runtime.

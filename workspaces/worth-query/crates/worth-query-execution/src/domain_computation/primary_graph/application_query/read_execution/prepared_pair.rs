@@ -242,8 +242,7 @@ impl PreparedRead<'_> {
                 | WorthQueryManagedGraphReadDenial::ForeignBasis
                 | WorthQueryManagedGraphReadDenial::ForeignGraph
                 | WorthQueryManagedGraphReadDenial::ForeignReadProof
-                | WorthQueryManagedGraphReadDenial::ForeignReadIntent
-                | WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch),
+                | WorthQueryManagedGraphReadDenial::ForeignReadIntent),
             ) => {
                 let read =
                     super::managed_read_denial(cause, &plan).map_err(MapKernelFailure::Stop)?;

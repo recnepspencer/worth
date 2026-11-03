@@ -515,6 +515,7 @@ pub use crate::performance::{
     FoundationalReplayMaterializationPerformanceClaimBuilder,
     FoundationalSupportDerivedPerformanceClaim, FoundationalSupportDerivedPerformanceClaimBuilder,
 };
+pub use crate::producer_publication_ownership::ProducerPublicationOwnership;
 pub use crate::profiles::{
     admit_requested_foundational_profile, admit_requested_foundational_profile_with_resolutions,
     attach_boundary_profiled_artifact, attach_proof_bearing_profiled_artifact,

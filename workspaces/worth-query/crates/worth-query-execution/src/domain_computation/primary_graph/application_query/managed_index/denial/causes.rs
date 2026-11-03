@@ -217,7 +217,7 @@ fn session(cause: &WorthQueryManagedIndexSessionDenial) -> Cause<'_> {
         Denial::Execution(cause) => Cause::Execution(cause),
         Denial::Product(cause) => Cause::Product(cause),
         Denial::AuthorityMismatch => Cause::Refused(Refusal::SessionAuthorityMismatch),
-        Denial::TerminalReleaseMismatch => Cause::Refused(Refusal::TerminalReleaseMismatch),
+        Denial::ForeignReadIntent => Cause::Refused(Refusal::ForeignReadIntent),
         Denial::Parent(cause) => graph_read(cause),
     }
 }
@@ -240,9 +240,6 @@ fn graph_read(cause: &WorthQueryManagedGraphReadDenial) -> Cause<'_> {
         }
         WorthQueryManagedGraphReadDenial::ForeignReadIntent => {
             Cause::Refused(Refusal::ForeignReadIntent)
-        }
-        WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch => {
-            Cause::Refused(Refusal::TerminalReleaseMismatch)
         }
     }
 }

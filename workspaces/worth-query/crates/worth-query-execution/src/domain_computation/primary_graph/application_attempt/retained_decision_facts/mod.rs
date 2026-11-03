@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedFact<T> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum StoreDenial {
+pub enum StoreDenial {
     Allocation(ExecutionAllocationDenial),
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     RequestInterruption(

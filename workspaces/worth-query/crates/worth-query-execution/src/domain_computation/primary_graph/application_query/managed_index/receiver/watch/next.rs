@@ -44,6 +44,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 state.queue.subscription(),
                 context.selected.product().observation(),
             ) || Audience::of(&plan.graph_work)? != state.audience
+                || !state
+                    .selection
+                    .association
+                    .same_association(&context.association)
+                || state.selection.scope != state.audience.scope
                 || plan.controls.maximum_result_count() != state.maximum_results
                 || !state.probe.matches_parameters(
                     &execution,

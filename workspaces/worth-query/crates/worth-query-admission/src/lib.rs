@@ -29,7 +29,7 @@ pub mod integration {
         admit_execution_resource_plan, reserve_execution_resource_plan,
         reserve_workflow_resource_plan, WorthQueryCapacityReservedExecutionResourcePlan,
         WorthQueryCapacityReservedWorkflowResourcePlan, WorthQueryExecutionCapacityReleaseReceipt,
-        WorthQueryExecutionCapacityReservationScope,
+        WorthQueryExecutionCapacityReservationScope, WorthQueryGraphCapacityReservationIdentity,
     };
     pub use crate::graph_obligation::{
         admit_application_operation_graph_work, admit_application_operation_read_graph_work,

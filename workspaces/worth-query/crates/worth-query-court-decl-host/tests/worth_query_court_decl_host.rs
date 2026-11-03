@@ -1,6 +1,9 @@
 //! Query proofs grouped by their product frontier.
 #![recursion_limit = "512"]
 
+#[path = "worth_query_court_decl_host/authored_ownership/mod.rs"]
+mod authored_ownership;
+
 #[path = "worth_query_court_decl_host/certification/mod.rs"]
 mod certification;
 
@@ -15,3 +18,20 @@ mod determinism;
 
 #[path = "worth_query_court_decl_host/effect_order/mod.rs"]
 mod effect_order;
+
+#[test]
+fn inspection_refusal_types_are_nameable_and_comparable_through_host() {
+    use worth_query_host::facade::causal_inspection::*;
+    fn diagnostic<T: Clone + std::fmt::Debug + PartialEq>() {}
+    diagnostic::<OutputFieldCaptureFailure>();
+    diagnostic::<StoreDenial>();
+    diagnostic::<IndexedSelectionReobserveDenial>();
+    diagnostic::<OwnEffectOnReads>();
+    diagnostic::<FactlessCurrentness>();
+    diagnostic::<RebaseVerificationReason>();
+    diagnostic::<WorthQueryApplicationDisclosureContractDenial>();
+    diagnostic::<WorthQueryManagedGraphWorkSessionStartDenial>();
+}
+
+#[path = "worth_query_court_decl_host/inspection_refusal.rs"]
+mod inspection_refusal;

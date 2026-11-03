@@ -14,6 +14,7 @@ impl WorthQueryPrimaryGraphProvider {
         aftermath_causality: Option<
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
+        restoration: Option<worth_relational::facade::mvcc::RequiredOutputPublication>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         (worth_relational::facade::mvcc::ValidatedRelationalProposal, Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>),
@@ -90,6 +91,20 @@ impl WorthQueryPrimaryGraphProvider {
             })
         });
         let candidate = candidate?.map_err(|failure| map_failed_candidate(failure, &control))?;
+        let candidate = match restoration {
+            Some(publication) => candidate
+                .bind_required_output_publication(
+                    &self
+                        .graph
+                        .application_publication
+                        .as_ref()
+                        .ok_or_else(owner_failure)?
+                        .native,
+                    publication,
+                )
+                .map_err(map_validation_failure)?,
+            None => candidate,
+        };
         validate_owner_evidence(candidate.invariant_evidence(), branch)?;
         let predicate = factory.map(|factory| {
             factory.promote(execution, candidate.managed_source_preparation_metadata().ok_or_else(owner_failure)?)

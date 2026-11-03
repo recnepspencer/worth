@@ -16,8 +16,9 @@ pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQu
 pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
+pub(in crate::domain_computation::primary_graph) use relational_commit::RebaseVerificationFailure;
+pub use relational_commit::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
-    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
     WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommittedApplication,
 };
 

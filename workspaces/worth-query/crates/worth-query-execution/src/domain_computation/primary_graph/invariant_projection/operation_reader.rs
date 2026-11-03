@@ -28,6 +28,7 @@ pub use derived_relation::{
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
 mod managed_index;
+pub(in crate::domain_computation::primary_graph) use managed_index::native_index_decision_cause;
 mod output_availability;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,

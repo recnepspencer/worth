@@ -1,3 +1,4 @@
+mod authored_retirement;
 #[path = "leased_preparation/mod.rs"]
 pub(crate) mod leased_preparation;
 mod lineage_checkpoint;

@@ -46,7 +46,9 @@ mod managed_cleanup;
 mod read_close;
 pub use denial::WorthQueryOutputDemandDenial;
 pub use denial::WorthQueryOutputDemandDenialKind;
-pub use denial::WorthQueryOutputDemandRecoveryPosture;
+pub use denial::{
+    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputSettlementProvenanceDenial,
+};
 pub use read_close::WorthQueryOutputReadCleanup;
 pub use read_close::WorthQueryOutputReadCloseDenial;
 

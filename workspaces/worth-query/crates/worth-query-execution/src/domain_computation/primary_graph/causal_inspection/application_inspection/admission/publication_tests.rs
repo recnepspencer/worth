@@ -1,6 +1,7 @@
 //! Cancellation after the actual consuming terminal prevents final publication.
 use super::*;
 mod affinity;
+mod uninstalled;
 use crate::domain_computation::primary_graph::{
     application_query::FreshQueryPermissionStop,
     causal_inspection::application_inspection::{
@@ -18,6 +19,7 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
+    uninstalled::assert_original_installation_cause(world.application.installed_schema());
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
         Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
@@ -63,58 +65,65 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                 let execution = phase
                     .checked_execution_request_for(world.application.product_runtime())
                     .unwrap();
-                let selected = world
-                    .application
-                    .on_branch(world.application.current_world())
-                    .select_with_request(&execution)
-                    .unwrap();
-                let (report, terminal) = world
-                    .application
-                    .with_fresh_retained_query_identities(
-                        &execution,
-                        &installed,
-                        None,
-                        &external,
-                        &original.source,
-                        &selected,
-                        &request,
-                        |_, principal, scope| {
-                            let mut read = prepare(
-                                &world.application,
-                                &execution,
-                                &installed,
-                                &selected,
-                                principal,
-                                scope,
-                                &request,
-                                InspectionSubject::Query(&original),
-                                None,
-                                None,
-                                &mut memory,
-                            )
-                            .unwrap_or_else(|_| {
-                                panic!("actual fresh inspection preparation succeeds")
-                            });
-                            affinity::assert_subject_affinity(
-                                &read,
-                                &execution,
-                                principal.principal().principal_entity_id(),
-                            );
-                            let report = read
-                                .materialize(&execution)
-                                .unwrap_or_else(|_| panic!("actual report materializes"));
-                            let terminal = read
-                                .terminal(&execution)
-                                .unwrap_or_else(|_| panic!("actual final read check succeeds"));
-                            Ok::<_, FreshQueryPermissionStop<()>>((report, terminal))
-                        },
-                    )
-                    .unwrap_or_else(|_| panic!("issued identity continuation succeeds"));
-                let (_, product, basis) = selected.into_parts();
-                drop(product);
-                let completed = terminal
-                    .complete(&execution, basis.release())
-                    .unwrap_or_else(|_| panic!("actual session completes after release"));
+                let mut complete = || {
+                    let selected = world
+                        .application
+                        .on_branch(world.application.current_world())
+                        .select_with_request(&execution)
+                        .unwrap();
+                    let (report, terminal) = world
+                        .application
+                        .with_fresh_retained_query_identities(
+                            &execution,
+                            &installed,
+                            None,
+                            &external,
+                            &original.source,
+                            &selected,
+                            &request,
+                            |_, principal, scope| {
+                                let mut read = prepare(
+                                    &world.application,
+                                    &execution,
+                                    &installed,
+                                    &selected,
+                                    principal,
+                                    scope,
+                                    &request,
+                                    InspectionSubject::Query(&original),
+                                    None,
+                                    None,
+                                    &mut memory,
+                                )
+                                .unwrap_or_else(|_| {
+                                    panic!("actual fresh inspection preparation succeeds")
+                                });
+                                affinity::assert_subject_affinity(
+                                    &read,
+                                    &execution,
+                                    principal.principal().principal_entity_id(),
+                                );
+                                let report = read
+                                    .materialize(&execution)
+                                    .unwrap_or_else(|_| panic!("actual report materializes"));
+                                let terminal = read
+                                    .terminal(&execution)
+                                    .unwrap_or_else(|_| panic!("actual final read check succeeds"));
+                                Ok::<_, FreshQueryPermissionStop<()>>((report, terminal))
+                            },
+                        )
+                        .unwrap_or_else(|_| panic!("issued identity continuation succeeds"));
+                    let (_, product, basis) = selected.into_parts();
+                    drop(product);
+                    let completed = terminal
+                        .complete(&execution, basis.release())
+                        .unwrap_or_else(|_| panic!("actual session completes after release"));
+                    (completed, report)
+                };
+                let (mut completed, report) = complete();
+                let (mut other, _) = complete();
+                drop(complete);
+                completed.assert_completion_facts(&mut other, &execution, &report);
                 completed_actual_terminal = true;
                 assert!(memory.as_ref().unwrap().bytes() > 0);
                 cancellation.cancel();

@@ -58,8 +58,15 @@ impl<P, R, S> Drop for PredicateTree<P, R, S> {
 
 /// Backing (including an empty last map) closes before its last original grant.
 pub(super) struct Retired<P, R, S> {
-    _empty_backing: Option<BTreeMap<WatchSlot, Record<P, R, S>>>,
-    pub(super) record: Record<P, R, S>,
+    empty_backing_custody: Option<BTreeMap<WatchSlot, Record<P, R, S>>>,
+    record_custody: Option<Record<P, R, S>>,
+}
+impl<P, R, S> Drop for Retired<P, R, S> {
+    fn drop(&mut self) {
+        drop(self.empty_backing_custody.take());
+        // The actual probe/receiver and original grant outlive their map backing.
+        drop(self.record_custody.take());
+    }
 }
 
 impl<P, R, S: Summary> PredicateTree<P, R, S> {

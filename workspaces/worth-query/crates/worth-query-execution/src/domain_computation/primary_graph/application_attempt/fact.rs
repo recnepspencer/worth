@@ -33,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
-pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::IndexedSelectionReobserveDenial;
+pub use indexed_entity_selection::IndexedSelectionReobserveDenial;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::{
     observe_indexed_candidates, observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal,
 };

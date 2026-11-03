@@ -15,13 +15,7 @@ pub(super) fn validate<'a>(
             "foreign native predecessor publication custody",
         ));
     }
-    let origin = predecessor
-        .envelope
-        .required_output_origin
-        .as_ref()
-        .ok_or_else(|| {
-            crate::mvcc::origin_denial("predecessor lacks native publication membership")
-        })?;
+    let origin = &predecessor.origin;
     context
         .checkpoint((origin.meaning.family.len() + meaning.family.len() + 96) as u64)
         .map_err(origin_request)?;
@@ -54,19 +48,21 @@ pub(super) fn validate<'a>(
     // The carried holder is checked against its exact performed native coordinate,
     // not an ancestry search or a caller-supplied description.
     context.checkpoint(1).map_err(origin_request)?;
+    if predecessor.envelope.commit != origin.commit {
+        return Err(crate::mvcc::origin_denial(
+            "carried origin differs from its canonical envelope",
+        ));
+    }
     let canonical = runtime
         .history
         .canonical_envelope_for_version(origin.commit.version_id)
         .ok_or_else(|| {
             crate::mvcc::origin_denial("retained predecessor canonical position absent")
         })?;
-    let expected = canonical.required_output_origin.as_deref().ok_or_else(|| {
-        crate::mvcc::origin_denial("retained predecessor native membership absent")
-    })?;
-    compare_retained_origin(origin, expected, context)?;
-    canonical
-        .validate_output_membership_header()
+    let expected = canonical
+        .output_origin_for_route(&origin.meaning, context)
         .map_err(super::relation_stop)?;
+    compare_retained_origin(origin, expected, context)?;
     crate::history::data::publication_relations::validate(
         &basis.inner.root,
         None,
@@ -80,4 +76,26 @@ pub(super) fn validate<'a>(
     )
     .map_err(|stop| super::relation_context(stop, "predecessor", basis, candidate))?;
     Ok(origin.as_ref())
+}
+
+/// Legacy retirement preserves its exact complete, Retire-only roster contract.
+pub(super) fn require_complete_retirement(
+    origin: &CanonicalRequiredOutputOrigin,
+    roles: &[crate::mvcc::RequiredOutputRoleTarget],
+) -> Result<(), TransactionCommitError> {
+    if roles
+        .iter()
+        .any(|role| role.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+        || roles.len()
+            != origin
+                .members
+                .iter()
+                .filter(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+                .count()
+    {
+        return Err(crate::mvcc::origin_denial(
+            "authored retirement requires every prior live member and only Retire roles",
+        ));
+    }
+    Ok(())
 }

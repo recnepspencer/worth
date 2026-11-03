@@ -103,14 +103,23 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatc
     pub(super) predicate: Option<Arc<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicateNotices>>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatchCell(
-    OnceLock<WorthQueryLiveCommitBatch>,
-    Arc<SourceFactsAllocation>,
-);
+pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatchCell {
+    batch: OnceLock<WorthQueryLiveCommitBatch>,
+    // Last original payer closes after all retained event and predicate payloads.
+    allocation_custody: Option<Arc<SourceFactsAllocation>>,
+}
+impl Drop for WorthQueryLiveCommitBatchCell {
+    fn drop(&mut self) {
+        drop(self.batch.take());
+        drop(self.allocation_custody.take());
+    }
+}
 
 impl WorthQueryLiveCommitBatchCell {
     pub(in crate::domain_computation::primary_graph) fn batch(&self) -> &WorthQueryLiveCommitBatch {
-        self.0.get().expect("published live batch is initialized")
+        self.batch
+            .get()
+            .expect("published live batch is initialized")
     }
 }
 

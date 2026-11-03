@@ -2,11 +2,12 @@ pub(in crate::domain_computation::primary_graph) use fact::{
     SourceReadAuthorization, SourceReadAuthorizationKey,
 };
 mod output_field_capture;
+pub use fact::IndexedSelectionReobserveDenial;
 pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
 pub(in crate::domain_computation::primary_graph) use fact::{
     ManagedSourceRead, ManagedSourceReadKey,
 };
-pub(in crate::domain_computation::primary_graph) use output_field_capture::OutputFieldCaptureFailure;
+pub use output_field_capture::{OutputFieldCaptureFailure, StoreDenial};
 mod capability_revocation_program;
 mod commit_authority_binding;
 mod commit_outcome_identity;
@@ -155,10 +156,9 @@ pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
     observe_adjacency, observe_indexed_candidates, reobserve_indexed_entity_selection,
-    FactMovement, IndexedSelectionReobserveDenial, Movement, ObservedRetained,
-    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
-    WorthQueryApplicationObservedRelation, WorthQueryIndexedSelectionRefusal,
-    WorthQuerySourceCurrentnessFailure,
+    FactMovement, Movement, ObservedRetained, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryApplicationFactKey, WorthQueryApplicationObservedRelation,
+    WorthQueryIndexedSelectionRefusal, WorthQuerySourceCurrentnessFailure,
 };
 pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryRecordedIntentMatch;
 pub use idempotency::{

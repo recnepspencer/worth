@@ -161,9 +161,11 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
     assert!(matches!(
         rebased,
         RebasedSourceFacts::VerificationRequired {
-            reason: RebaseVerificationReason::NativeFactRevisionUnavailable(0),
+            reason,
             ..
-        }
+        } if reason.reason() == &RebaseVerificationReason::NativeFactRevisionUnavailable
+            && crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::from(reason.clone())
+                == crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::NativeFactRevisionUnavailable(0)
     ));
 }
 

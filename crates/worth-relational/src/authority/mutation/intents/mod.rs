@@ -13,7 +13,7 @@ pub(super) mod entity_authoritative_deletion_patch;
 pub(crate) mod field_authoring_candidate;
 mod materialization;
 pub(crate) mod record_aspect_patch;
-mod relation_endpoint_candidate;
+pub(crate) mod relation_endpoint_candidate;
 mod replace_entity;
 mod revalidate_entity;
 mod revalidate_relation;

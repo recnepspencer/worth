@@ -1,6 +1,30 @@
 use super::{WorthQueryProposedFact, WorthQueryStagedApplicationAttempt};
 
 impl WorthQueryStagedApplicationAttempt<'_> {
+    pub(in crate::domain_computation::primary_graph::provider) fn authored_restoration_anchor(
+        &self,
+    ) -> Result<
+        Option<(
+            worth_relational::facade::history::CommitId,
+            worth_relational::facade::identity::EntityId,
+            worth_relational::facade::transactions::CreatedEntityRef,
+        )>,
+        crate::domain_computation::WorthQueryInvariantExecutionFailure,
+    > {
+        let Some(pending) = self.attempt.aftermath_causality() else {
+            return Ok(None);
+        };
+        let prepared = pending.prepared_correction();
+        let selected = prepared
+            .authored_restoration_anchor(
+                self.attempt.native_publication_roles(),
+                self.batch(),
+                self.validation_request(),
+            )
+            .map_err(|_| super::super::invariant_execution::touch_failure())?;
+        Ok(selected.map(|(old, new)| (prepared.source_commit().commit_id, old, new)))
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn validation_request(
         &self,
     ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {

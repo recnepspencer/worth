@@ -26,6 +26,7 @@ pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAut
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
+mod lineage_projection;
 mod payload_digest;
 mod retained_entity_selection;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
@@ -46,9 +47,10 @@ pub(crate) use required_output_codec_retirement::{
 pub(crate) use required_output_materialization::{
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
 };
+pub(crate) use required_output_origin::validate_authored_restoration_candidate;
 pub(crate) use required_output_origin::{
-    CanonicalOutputMember, CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
-    CanonicalRequiredOutputRelation,
+    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalOutputMember,
+    CanonicalOutputPublication, CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -60,6 +62,8 @@ pub struct CanonicalCommitEnvelope {
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     pub(crate) required_output_origin: Option<std::sync::Arc<CanonicalRequiredOutputOrigin>>,
+    pub(crate) authored_cascade_retirement: Option<std::sync::Arc<CanonicalAuthoredRetirement>>,
+    pub(crate) authored_cascade_restoration: Option<std::sync::Arc<CanonicalAuthoredRestoration>>,
     #[serde(default)]
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<CanonicalRequiredOutputMaterialization>>,
@@ -161,6 +165,8 @@ impl CanonicalCommitEnvelope {
             live_managed_source_history: LiveManagedSourceHistory::default(),
             required_output_codec_retirements: Vec::new(),
             required_output_origin: None,
+            authored_cascade_retirement: None,
+            authored_cascade_restoration: None,
             required_output_materialization: None,
             commit,
             branch_context,
@@ -188,10 +194,6 @@ impl CanonicalCommitEnvelope {
         }
     }
 
-    pub fn lineage_event_ids(&self) -> &[u64] {
-        self.lineage.lineage_event_ids()
-    }
-
     pub fn descriptive_touches(&self) -> &RelationalDescriptiveTouchGraph {
         &self.descriptive_touches
     }
@@ -206,35 +208,6 @@ impl CanonicalCommitEnvelope {
     pub(crate) fn record_allocations(&self) -> &[crate::history::data::CanonicalRecordAllocation] {
         &self.record_allocations
     }
-    pub fn lineage_events(&self) -> &[LineageEventRecord] {
-        self.lineage.lineage_events()
-    }
-    pub fn lineage_decision_log(&self) -> &[LineageDecisionRecord] {
-        self.lineage.lineage_decision_log()
-    }
-    pub fn lineage_decisions_for_event_id(&self, event_id: u64) -> Vec<&LineageDecisionRecord> {
-        self.lineage.decisions_for_event_id(event_id).collect()
-    }
-
-    pub fn lineage_digest_basis(&self) -> &LineageDigestBasis {
-        self.lineage.digest_basis()
-    }
-    pub fn event_batch_digest_basis(&self) -> &LineageEventBatchDigestBasis {
-        self.lineage.event_batch_digest_basis()
-    }
-
-    pub fn decision_log_digest_basis(&self) -> &LineageDecisionLogDigestBasis {
-        self.lineage.decision_log_digest_basis()
-    }
-
-    pub fn lineage_artifact_counters(&self) -> LineageArtifactCounters {
-        self.lineage.counters()
-    }
-
-    pub fn has_lineage_authority(&self) -> bool {
-        self.lineage.has_authority_content()
-    }
-
     pub fn authority_kind(&self) -> CanonicalCommitAuthorityKind {
         self.authority_kind.clone()
     }
@@ -305,6 +278,8 @@ impl CanonicalCommitEnvelope {
         );
         let canonical_semantics = (
             &self.required_output_origin,
+            &self.authored_cascade_retirement,
+            &self.authored_cascade_restoration,
             &self.required_output_materialization,
             &self.schema_version,
             &self.schema_authority,

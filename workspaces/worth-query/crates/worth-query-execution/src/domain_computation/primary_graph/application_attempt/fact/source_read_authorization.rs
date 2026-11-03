@@ -25,7 +25,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceReadAuthorizationK
     pub scope: EntityId,
 }
 
-pub(in crate::domain_computation::primary_graph) struct SourceReadAuthorization {
+pub(in crate::domain_computation) struct SourceReadAuthorization {
     key: SourceReadAuthorizationKey,
     binding: WorthQueryInstalledApplicationQueryBindingObservation,
     session: WorthQueryGraphWorkSessionIdentity,

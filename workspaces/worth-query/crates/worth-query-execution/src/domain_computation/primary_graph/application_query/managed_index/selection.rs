@@ -129,11 +129,11 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Maint
     pub(in crate::domain_computation::primary_graph::application_query) association:
         WorthQueryInstalledManagedIndexParent,
     pub(in crate::domain_computation::primary_graph::application_query) scope: EntityId,
-    pub(in crate::domain_computation::primary_graph::application_query) native:
-        Arc<worth_relational::facade::runtime::ManagedIndexSourceObservation>,
-    _source: Arc<WorthQueryCompletedSourceRead>,
-    _coverage: Arc<RetainedCoverage>,
-    _dependencies: Arc<ManagedSourceDependencies>,
+    // Keeps the immutable Native source backing alive after the selection loan ends.
+    native_custody: Option<Arc<worth_relational::facade::runtime::ManagedIndexSourceObservation>>,
+    source_custody: Option<Arc<WorthQueryCompletedSourceRead>>,
+    coverage_custody: Option<Arc<RetainedCoverage>>,
+    dependencies_custody: Option<Arc<ManagedSourceDependencies>>,
 }
 impl<'parent, 'request, 'authority> ManagedSelectionLease<'parent, 'request, 'authority> {
     pub(super) fn capture_watch(
@@ -145,16 +145,18 @@ impl<'parent, 'request, 'authority> ManagedSelectionLease<'parent, 'request, 'au
         Ok(MaintainedWatchSelection {
             association: rows.association.clone(),
             scope: rows.scope,
-            native: rows
-                .currency
-                .maintained_observation()
-                .ok_or(SelectionDenial::ForeignSelection)?,
-            _source: self.source.clone(),
-            _coverage: rows
-                .coverage
-                .clone()
-                .ok_or(SelectionDenial::ForeignSelection)?,
-            _dependencies: rows.dependencies.clone(),
+            native_custody: Some(
+                rows.currency
+                    .maintained_observation()
+                    .ok_or(SelectionDenial::ForeignSelection)?,
+            ),
+            source_custody: Some(self.source.clone()),
+            coverage_custody: Some(
+                rows.coverage
+                    .clone()
+                    .ok_or(SelectionDenial::ForeignSelection)?,
+            ),
+            dependencies_custody: Some(rows.dependencies.clone()),
         })
     }
     #[allow(clippy::too_many_arguments)]
@@ -250,5 +252,36 @@ impl<'parent, 'request, 'authority> ManagedSelectionLease<'parent, 'request, 'au
             return Err(SelectionDenial::ForeignSelection);
         }
         Ok(&self.rows)
+    }
+}
+
+impl Drop for MaintainedWatchSelection {
+    fn drop(&mut self) {
+        // The slots become empty only during teardown. Release the actual owners
+        // in custody order, before this selection's association is destroyed.
+        drop(self.native_custody.take());
+        drop(self.source_custody.take());
+        drop(self.coverage_custody.take());
+        drop(self.dependencies_custody.take());
+    }
+}
+
+impl MaintainedWatchSelection {
+    pub(in crate::domain_computation::primary_graph::application_query) fn custody_observer(
+        &self,
+    ) -> impl Fn() -> [bool; 4] + 'static {
+        let native = Arc::downgrade(self.native_custody.as_ref().expect("live custody"));
+        let source = Arc::downgrade(self.source_custody.as_ref().expect("live custody"));
+        let coverage = Arc::downgrade(self.coverage_custody.as_ref().expect("live custody"));
+        let dependencies =
+            Arc::downgrade(self.dependencies_custody.as_ref().expect("live custody"));
+        move || {
+            [
+                native.strong_count() > 0,
+                source.strong_count() > 0,
+                coverage.strong_count() > 0,
+                dependencies.strong_count() > 0,
+            ]
+        }
     }
 }

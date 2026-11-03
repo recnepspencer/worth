@@ -48,6 +48,12 @@ impl CanonicalCommitEnvelope {
                 &self.required_output_origin,
             ))
             .saturating_add(optional_canonical_nested_bytes(
+                &self.authored_cascade_retirement,
+            ))
+            .saturating_add(optional_canonical_nested_bytes(
+                &self.authored_cascade_restoration,
+            ))
+            .saturating_add(optional_canonical_nested_bytes(
                 &self.required_output_materialization,
             ))
             .saturating_add(self.authored_index_writes.unpaid_owned_bytes())
