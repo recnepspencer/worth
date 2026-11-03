@@ -7,10 +7,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::target::WorthQueryApplicationInspectionTarget;
 pub use worth_query_execution::court_doors_for_test::domain_computation::authorization::application_disclosure::decision::WorthQueryApplicationQueryGovernance;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::policy;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::preparation::prepare;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::subject;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::terminal;
 
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::admission::permission::fresh::FreshQueryPermissionStop;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause;

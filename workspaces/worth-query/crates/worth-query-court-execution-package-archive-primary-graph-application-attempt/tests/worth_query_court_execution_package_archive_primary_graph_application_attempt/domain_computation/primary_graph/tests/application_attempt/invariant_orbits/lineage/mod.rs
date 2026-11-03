@@ -13,8 +13,6 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryInvariantPr
 pub use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOperationProjectionDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryProductBranchLease;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 pub use worth_foundational::facade::AggregateLineageKind;
 pub use worth_relational::facade::history::CommitId;
 pub use worth_execution::ExecutionAllocationPolicy as Allocation;

@@ -10,8 +10,6 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryApplication
 pub use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOperationProjectionDenialKind;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 pub use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 

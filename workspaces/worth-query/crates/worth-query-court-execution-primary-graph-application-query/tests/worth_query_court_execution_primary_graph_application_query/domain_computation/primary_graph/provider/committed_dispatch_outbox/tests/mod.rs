@@ -23,7 +23,6 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::applica
 pub use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 pub use crate::domain_computation::primary_graph::provider::committed_dispatch_outbox::tests;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::committed_dispatch_outbox::work;
 pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_relational_branch_id;

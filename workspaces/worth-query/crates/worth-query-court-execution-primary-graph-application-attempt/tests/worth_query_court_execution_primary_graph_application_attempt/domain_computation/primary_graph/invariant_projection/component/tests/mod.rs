@@ -2,7 +2,6 @@
 pub use std::collections::BTreeSet;
 pub use worth_execution::ExecutionAllocationPolicy as Allocation;
 pub use worth_query_declaration::facade::application_schema::ApplicationComponentSetRef;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::component::result;
 pub use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind as Kind;
 
 pub use crate::domain_computation::primary_graph::invariant_projection::component::tests::fixture::*;
