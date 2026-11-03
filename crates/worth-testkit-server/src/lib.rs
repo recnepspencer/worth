@@ -1,3 +1,6 @@
+// The real application fixture has the same concrete runtime as Query's host testkit.
+#![recursion_limit = "512"]
+
 #[allow(
     dead_code,
     reason = "Shared private transport supports typed fields used by other closed testkits."

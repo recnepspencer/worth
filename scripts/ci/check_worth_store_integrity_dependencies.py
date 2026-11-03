@@ -43,6 +43,19 @@ FORMAT_CRATE = re.compile(r"\bworth_store_physical_format\b")
 DECLARATION_ROUTE = re.compile(r"\s*::\s*integrity_declarations\b")
 
 
+def certification_role(name: str) -> bool:
+    """The canonical court/testkit roles enforced by boundary-check's graph rules."""
+    return (name.startswith("worth-store-court-") or name == "worth-store-testkit"
+            or name.startswith("worth-store-testkit-"))
+
+
+def production_certification_edges(document: dict) -> list[str]:
+    """A product may not obtain test authority through a court or testkit."""
+    return [spec.get("package", name) if isinstance(spec, dict) else name
+            for table in production_tables(document) for name, spec in table.items()
+            if certification_role(spec.get("package", name) if isinstance(spec, dict) else name)]
+
+
 def production_dependencies(document: dict) -> set[str]:
     dependencies: set[str] = set()
     for table_name in ("dependencies", "build-dependencies"):
@@ -140,6 +153,13 @@ def main() -> int:
     for manifest in manifests:
         with manifest.open("rb") as source:
             document = tomllib.load(source)
+        name = document.get("package", {}).get("name", "")
+        if certification_role(name):
+            continue
+        for dependency in production_certification_edges(document):
+            violations.append(
+                f"{manifest.relative_to(ROOT)} reaches certification authority through {dependency}"
+            )
         for owner in production_test_support(document):
             violations.append(
                 f"{manifest.relative_to(ROOT)} enables {owner}'s {TEST_SUPPORT} "
