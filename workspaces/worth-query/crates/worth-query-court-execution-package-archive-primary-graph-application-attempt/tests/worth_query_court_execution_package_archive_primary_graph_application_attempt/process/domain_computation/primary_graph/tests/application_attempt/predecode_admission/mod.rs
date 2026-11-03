@@ -14,9 +14,7 @@ pub use worth_foundational::facade::AspectValue;
 pub use worth_foundational::facade::InternedString;
 
 // The compile-time marker alone must not broaden the installed decision plan.
-worth_query_declaration::worth_query_operation_reads!(
-    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::ProgramRequiredOperation => [AccountLabel]
-);
+// (declared with ProgramRequiredOperation in the testkit fixture)
 
 pub fn ordinary_field_allocation(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,

@@ -242,6 +242,8 @@ worth_query_operation_emits!(
 worth_query_operation_emits!(ExactStatusRetentionOperation => [RetainedStatusEffect]);
 worth_query_operation_emits!(MutationFreeEmitOperation => [MutationFreeExternalEffect]);
 worth_query_operation_reads!(TouchAccountOperation => [Account, AccountStatus, AccountLabel, AccountOwner]);
+// Moved from the ordinary admission court: the orphan rule keeps the marker with its types.
+impl worth_query_declaration::facade::application_schema::OperationExpectsFact<TouchAccountOperation> for AccountLabel {}
 worth_query_operation_reads!(WrongFieldRetentionOperation => [AccountStatus, AccountLabel]);
 worth_query_operation_reads!(ExactStatusRetentionOperation => [AccountStatus, AccountLabel]);
 worth_query_operation_reads!(MultiFieldRetentionOperation => [AccountStatus, AccountLabel]);

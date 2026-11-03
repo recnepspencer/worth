@@ -21,7 +21,6 @@ pub use worth_query_declaration::facade::application_schema::OperationExpectsFac
 pub use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
 pub use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
-impl OperationExpectsFact<TouchAccountOperation> for AccountLabel {}
 
 #[test]
 fn current_installed_membership_mints_exact_operation_admission() {

@@ -44,6 +44,8 @@ worth_query_declaration::worth_query_operation!(
 worth_query_declaration::worth_query_operation_requires!(ProgramRequiredOperation => [ViewAccount]);
 worth_query_declaration::worth_query_operation_reads!(ProgramRequiredOperation => [AccountStatus]);
 worth_query_declaration::worth_query_operation_writes!(ProgramRequiredOperation => [AccountStatus]);
+// Moved from the predecode admission court: the orphan rule keeps the marker with its operation.
+worth_query_declaration::worth_query_operation_reads!(ProgramRequiredOperation => [AccountLabel]);
 
 worth_query_declaration::worth_query_mutation_binding!(
     pub ProgramRequiredMutationBinding for ProgramRequiredInput,
