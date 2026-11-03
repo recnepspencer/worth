@@ -25,7 +25,7 @@ worth_query_field!(pub(super) RequiredB for TouchSchema, RequiredNode, RequiredN
 pub struct Input {
     pub value: String,
 }
-worth_query_decl::facade::worth_query_structured_value_binding!(pub(super) InputBinding for Input { identity: "worth.query.test.struct-touch-input.v1" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub InputBinding for Input { identity: "worth.query.test.struct-touch-input.v1" });
 worth_query_operation!(pub(super) OnlyA for TouchSchema, input InputBinding);
 worth_query_operation_reads!(OnlyA => [Node]);
 worth_query_operation_writes!(OnlyA => [A]);
