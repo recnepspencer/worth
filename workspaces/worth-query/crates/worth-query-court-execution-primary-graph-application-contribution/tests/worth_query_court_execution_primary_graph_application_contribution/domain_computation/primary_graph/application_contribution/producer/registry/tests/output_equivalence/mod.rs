@@ -8,7 +8,7 @@ pub use worth_query_declaration::facade::application_schema as schema;
 pub use worth_query_installation::facade as domain;
 
 pub trait Fixture: ApplicationSchema {}
-worth_query_declaration::worth_query_entity!(Output for S: Fixture);
+worth_query_declaration::worth_query_entity!(pub Output for S: Fixture);
 worth_query_declaration::worth_query_aspect!(Values for S: Fixture, Output;
     identity = AspectIdentity(0x0071_9810), revision = AspectContractRevision(1));
 worth_query_declaration::worth_query_field!(Value for S: Fixture, Output, Values:

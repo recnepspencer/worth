@@ -13,7 +13,7 @@ pub struct PlanRefusal {
     pub rule: u64,
     pub evidence: String,
 }
-worth_query_declaration::worth_query_value_binding!(RefusalBinding for PlanRefusal {
+worth_query_declaration::worth_query_value_binding!(pub RefusalBinding for PlanRefusal {
     identity: "tests.plan-refusal.v1", scalar: String,
     canonical: ValueDecodeBounds::new(96, 64, 4, 4),
 });
