@@ -54,7 +54,7 @@ mod initial_schema_denial;
 mod invariant_installation;
 pub(crate) mod invariant_projection;
 pub(crate) mod live_delivery;
-mod managed_bridge;
+pub(crate) mod managed_bridge;
 pub(crate) mod merge_unique_values;
 mod read_observation;
 pub(crate) mod source_facts;

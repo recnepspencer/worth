@@ -1,4 +1,4 @@
-pub(super) mod application_publication;
+pub(crate) mod application_publication;
 mod runtime_access;
 mod snapshot_release;
 

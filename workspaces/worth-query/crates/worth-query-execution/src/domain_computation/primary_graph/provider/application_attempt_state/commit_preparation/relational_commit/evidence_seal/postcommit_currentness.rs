@@ -83,7 +83,7 @@ pub enum FactlessCurrentness {
 /// A rebase that failed: why, and what the commit's own effect did to its
 /// reads. No caller holds the one without the other.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct FailedRebase {
+pub struct FailedRebase {
     pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationFailure,
     pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
 }

@@ -111,7 +111,7 @@ pub struct WorthQueryPrimaryGraphLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation) struct WorthQueryPrimaryRelationLayout {
+pub struct WorthQueryPrimaryRelationLayout {
     pub(in crate::domain_computation) kind: KindId,
     pub(in crate::domain_computation) from: KindId,
     pub(in crate::domain_computation) to: KindId,

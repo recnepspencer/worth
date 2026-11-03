@@ -5,7 +5,7 @@ use worth_relational::facade::{
     runtime::RelationalInitialSchemaInstallationReceipt,
 };
 
-pub(in crate::domain_computation::primary_graph) struct ApplicationPublication {
+pub struct ApplicationPublication {
     pub(in crate::domain_computation::primary_graph) owner: InstalledApplicationPublicationOwner,
     pub native: RelationalInstalledApplicationPublicationAuthority,
 }

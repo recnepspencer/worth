@@ -18,7 +18,7 @@ pub struct RetainedSourceFacts {
     posting_continuation: Option<super::invalidation::PostingContinuation>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct ComparableSourceFacts {
+pub struct ComparableSourceFacts {
     computation: CurrentComputation,
     facts: FactPayload,
 }

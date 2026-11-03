@@ -5,7 +5,7 @@ mod current_commit;
 use current_commit::reacquire_current_committed_output;
 mod current_accepted;
 pub(crate) mod observation;
-mod producing_publication;
+pub(crate) mod producing_publication;
 pub(in crate::domain_computation::primary_graph) use producing_publication::OriginalProducingPublication;
 pub(crate) mod receipt_custody;
 mod reused;

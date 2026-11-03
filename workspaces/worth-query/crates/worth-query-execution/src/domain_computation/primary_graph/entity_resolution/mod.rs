@@ -48,7 +48,7 @@ pub mod interruption_control {
 mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
 mod resolved;
-mod retained_selector;
+pub(crate) mod retained_selector;
 pub(in crate::domain_computation) use retained_selector::WorthQueryObservedScopeSelector;
 
 pub use resolved::WorthQueryApplicationEntityIdentity;
