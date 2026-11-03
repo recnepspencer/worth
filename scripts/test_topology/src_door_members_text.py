@@ -147,8 +147,9 @@ def field_door(shape, field, mutable):
             f'    pub fn {field}{suffix}({receiver}) -> {borrow}{ty} {{\n        {borrow}self.{field}\n    }}\n}}')
 
 
-def constructor_door(shape):
-    fields = shape['fields']
+def constructor_door(shape, order=None):
+    """`new_for_test` over the struct's fields, in the order of the first literal it replaces."""
+    fields = {name: shape['fields'][name] for name in (order or shape['fields'])}
     positional = all(name.isdigit() for name in fields)
     params = ', '.join(f'{"field" + n if positional else n}: {from_child(t)}' for n, t in fields.items())
     body = ('Self(' + ', '.join('field' + n for n in fields) + ')') if positional else \

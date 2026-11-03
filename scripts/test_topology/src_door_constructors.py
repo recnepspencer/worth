@@ -38,7 +38,7 @@ def literal_rewrite(data, at, code, shape):
         if match is None or not text[char + match.end():].startswith('('):
             return None
         end = len(text[:char + match.end()].encode('utf-8'))
-        return (end, end, '::new_for_test')
+        return (end, end, '::new_for_test', tuple(shape['fields']))
     depth, i = 0, char
     while i >= 0:
         if text[i] == '}':
@@ -75,7 +75,8 @@ def literal_rewrite(data, at, code, shape):
         values[name.strip()] = value.strip() if colon else name.strip()
     if set(values) != set(shape['fields']):
         return None
-    arguments = ', '.join(values[name] for name in shape['fields'])
+    # Arguments keep the literal's order: struct literals evaluate in written order.
+    arguments = ', '.join(values.values())
     start = len(text[:path.start(1)].encode('utf-8'))
     end = len(text[:j + 1].encode('utf-8'))
-    return (start, end, f'{path.group(1)}::new_for_test({arguments})')
+    return (start, end, f'{path.group(1)}::new_for_test({arguments})', tuple(values))

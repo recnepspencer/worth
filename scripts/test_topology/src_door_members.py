@@ -111,8 +111,10 @@ def members(root, check, report, write_report):
             if change is None:
                 unplaced.append(diagnostic['message'])
                 continue
-            doors[found[0].names][('new', 'new', struct)] = constructor_door(shape)
-            sites[site].add(change)
+            key = ('new', 'new', struct)
+            if key not in doors[found[0].names]:
+                doors[found[0].names][key] = constructor_door(shape, change[3])
+            sites[site].add(change[:3])
             if AUTHORITY.search(struct):
                 authority.add('::'.join(found[0].names) + f'::{struct}::new')
             continue
