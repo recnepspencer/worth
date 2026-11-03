@@ -161,7 +161,6 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
     gated, nodes = {}, {}
     moving = set(model.moving)
     candidates = set()
-    methods = gated_method_owners(model)
     pending = sorted(seeds) + [('<family>', f) for f in sorted(family_seeds)]
     seen = set()
     while pending:
@@ -199,13 +198,6 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
         for names, text in texts:
             if dev_aliases and crate_uses(text, set(dev_aliases)):
                 nodes[key][1].add(('<test>', 'dev-dependency'))
-            stream = tokens(text)
-            for i in range(len(stream) - 1):
-                if stream[i].value == '.' and stream[i + 1].kind == 'ident':
-                    for owner in methods.get(stream[i + 1].value, ()):
-                        if owner != key:
-                            nodes[key][1].add(owner)
-                            pending.append(owner)
             for dependency in dependencies(model, names, text, key):
                 nodes[key][1].add(dependency)
                 pending.append(dependency)
@@ -213,14 +205,15 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
     for key, (_spans, deps) in nodes.items():
         for dep in deps:
             reverse.setdefault(dep, set()).add(key)
-    dependent = set()
-    stack = [d for deps in (v[1] for v in nodes.values()) for d in deps if d[0] == '<test>']
+    dependent, because = set(), {}
+    stack = [(d, None) for deps in (v[1] for v in nodes.values()) for d in deps if d[0] == '<test>']
     while stack:
-        key = stack.pop()
+        key, via = stack.pop()
         if key in dependent:
             continue
         dependent.add(key)
-        stack.extend(reverse.get(key, ()))
+        because[key] = via
+        stack.extend((r, key) for r in reverse.get(key, ()))
 
     def test_dependent(key):
         return key in dependent
@@ -234,6 +227,7 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
         stack.extend(reverse.get(key, ()))
 
     classes = HookClasses()
+    classes.because = because
     referenced = set(referenced)
     extract, stack = set(), [k for k in sorted(nodes, key=str) if k in referenced and k[0] not in ('<test>', '<family>')
                              and test_dependent(k)]
@@ -264,26 +258,6 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
             classes.compiled.add(key)
             classes.spans[key] = nodes[key][0]
     return classes
-
-
-def gated_method_owners(model):
-    """Method name -> gated item keys that define it (gated methods and gated impl blocks)."""
-    owners = {}
-    for names, node in model.index.items():
-        if model.production.in_family(names):
-            continue
-        own = node.own_text()
-        for attributes, _vis, keyword, _name, start, end in scope_items(own):
-            if keyword != 'impl':
-                continue
-            gated_impl = test_gated(attributes)
-            target = impl_target(own[start:end])
-            for method, _ms, _me, gated in impl_methods(own[start:end]):
-                if gated_impl and target:
-                    owners.setdefault(method, set()).add((names, target))
-                elif gated and not trait_impl(own[start:end]):
-                    owners.setdefault(method, set()).add((names, method))
-    return owners
 
 
 def is_import(model, key):

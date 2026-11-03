@@ -10,7 +10,7 @@ from pathlib import Path
 
 from rust_source import tokens
 from src_audit import audit
-from src_families import ExpandedView, families, function_bodies, included_files
+from src_families import ExpandedView, families, file_text, function_bodies, included_files
 from src_paths import Reference, module_index, references
 from src_scope import scope_items
 from src_surface import Surface
@@ -90,8 +90,9 @@ class MoveModel:
     def record(self, node, family):
         text = node.own_text()
         record = ModuleRecord(node.names, family, node, items_of(text))
-        record.tests = [i.name for i in record.items if i.test]
         record.includes = included_files(node)
+        record.tests = [i.name for i in record.items if i.test] + [
+            name for _literal, target in record.includes for name, _digest in function_bodies(file_text(target))]
         record.uses = self.resolved(ExpandedView(node))
         return record
 
