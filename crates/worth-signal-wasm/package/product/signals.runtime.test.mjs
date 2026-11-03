@@ -1,3 +1,4 @@
+import "./signals_runtime/authoring/readable_signal_runtime_snapshot.test.mjs";
 import "./signals_runtime/authoring/linked_writable_derived_state.test.mjs";
 import "./signals_runtime/local_truth/local_truth_schema_and_commit.test.mjs";
 import "./signals_runtime/local_truth/local_truth_merge_semantics.test.mjs";

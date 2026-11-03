@@ -113,6 +113,8 @@ export const productFilesToCopy = Object.freeze([
   ["product/host_capabilities.ts", "product/host_capabilities.js"],
   ["product/history.ts", "product/history.js"],
   ["product/handles.ts", "product/handles.js"],
+  ["product/readable_signal_handle.ts", "product/readable_signal_handle.js"],
+  ["product/signal_handle_cleanup.ts", "product/signal_handle_cleanup.js"],
   ["product/linked.ts", "product/linked.js"],
   ["product/linked_definition.ts", "product/linked_definition.js"],
   ["product/output_projection_ids.ts", "product/output_projection_ids.js"],
