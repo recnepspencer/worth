@@ -1,0 +1,236 @@
+{
+ "in_crate_test_families": 505,
+ "in_crate_test_family_lines": 204611,
+ "in_crate_tests": 2266,
+ "package": "worth-query-execution",
+ "production_lines": 454268,
+ "query_workspace": {
+  "ceiling": 15000,
+  "court_and_testkit_lines": {
+   "worth-query-court-decl": {
+    "lines": 40,
+    "over_ceiling": false
+   },
+   "worth-query-court-decl-host": {
+    "lines": 31448,
+    "over_ceiling": true
+   },
+   "worth-query-court-decl-host-package-archive-replay-application-graph": {
+    "lines": 15610,
+    "over_ceiling": true
+   },
+   "worth-query-court-decl-host-package-archive-replay-workflow-approval": {
+    "lines": 4541,
+    "over_ceiling": false
+   },
+   "worth-query-court-host-replay": {
+    "lines": 663,
+    "over_ceiling": false
+   },
+   "worth-query-court-installation": {
+    "lines": 1503,
+    "over_ceiling": false
+   },
+   "worth-query-court-package-archive": {
+    "lines": 3401,
+    "over_ceiling": false
+   },
+   "worth-query-court-publication": {
+    "lines": 108,
+    "over_ceiling": false
+   },
+   "worth-query-court-query": {
+    "lines": 3167,
+    "over_ceiling": false
+   },
+   "worth-query-court-query-decl-host": {
+    "lines": 15971,
+    "over_ceiling": true
+   },
+   "worth-query-court-query-installed-operating-world": {
+    "lines": 10262,
+    "over_ceiling": false
+   },
+   "worth-query-court-query-installed-operations": {
+    "lines": 6495,
+    "over_ceiling": false
+   },
+   "worth-query-court-source": {
+    "lines": 9,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-certification": {
+    "lines": 8472,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-certification-application-graph": {
+    "lines": 13777,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-certification-canonical": {
+    "lines": 10284,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-certification-correction": {
+    "lines": 19631,
+    "over_ceiling": true
+   },
+   "worth-query-testkit-certification-granular-invalidation": {
+    "lines": 7056,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-certification-operation": {
+    "lines": 8199,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-decl": {
+    "lines": 73,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-document-retention": {
+    "lines": 14127,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-host": {
+    "lines": 10084,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-installation": {
+    "lines": 340,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-installed-operation-fixture": {
+    "lines": 11667,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-package-archive": {
+    "lines": 1943,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-publication": {
+    "lines": 1135,
+    "over_ceiling": false
+   },
+   "worth-query-testkit-query": {
+    "lines": 9333,
+    "over_ceiling": false
+   }
+  },
+  "court_crates": 13,
+  "test_target_list": [
+   "worth-query-admission::worth_query_admission (lib)",
+   "worth-query-court-decl-host-package-archive-replay-application-graph::worth_query_court_decl_host_package_archive_replay_application_graph",
+   "worth-query-court-decl-host-package-archive-replay-workflow-approval::worth_query_court_decl_host_package_archive_replay_workflow_approval",
+   "worth-query-court-decl-host::worth_query_court_decl_host",
+   "worth-query-court-decl::worth_query_court_decl",
+   "worth-query-court-host-replay::worth_query_court_host_replay",
+   "worth-query-court-installation::worth_query_court_installation",
+   "worth-query-court-package-archive::worth_query_court_package_archive",
+   "worth-query-court-publication::worth_query_court_publication",
+   "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+   "worth-query-court-query-installed-operating-world::worth_query_court_query_installed_operating_world",
+   "worth-query-court-query-installed-operations::worth_query_court_query_installed_operations",
+   "worth-query-court-query::worth_query_court_query",
+   "worth-query-court-source::worth_query_court_source",
+   "worth-query-decl::worth_query_decl (lib)",
+   "worth-query-declaration::worth_query_declaration (lib)",
+   "worth-query-execution::worth_query_execution (lib)",
+   "worth-query-installation::worth_query_installation (lib)",
+   "worth-query-package-archive::worth_query_package_archive (lib)",
+   "worth-query-publication::worth_query_publication (lib)",
+   "worth-query::worth_query (lib)"
+  ],
+  "test_targets": 21,
+  "testkit_crates": 14
+ },
+ "source_lines": 659993,
+ "version": 1,
+ "workspaces": {
+  "Cargo.toml": {
+   "edit_reach": 9,
+   "edit_reach_packages": [
+    "worth-court-server-certification-suite",
+    "worth-court-server-product-operation-phase-eleven",
+    "worth-court-server-product-operation-phase-thirteen-shared-read",
+    "worth-query",
+    "worth-query-host",
+    "worth-query-publication",
+    "worth-server",
+    "worth-server-client-generation",
+    "worth-testkit-server"
+   ],
+   "fan_in_x_production_lines": 4088412,
+   "library_has_test_target": true
+  },
+  "workspaces/worth-query-bank-world/Cargo.toml": {
+   "edit_reach": 18,
+   "edit_reach_packages": [
+    "bank-courtroom",
+    "bank-domain",
+    "bank-estate-certification",
+    "bank-http-adapter",
+    "bank-server",
+    "bank-user-node",
+    "worth-query-bank-court-domain",
+    "worth-query-bank-court-external-rail-server",
+    "worth-query-bank-court-http-adapter",
+    "worth-query-bank-court-server",
+    "worth-query-bank-court-user-node",
+    "worth-query-bank-testkit-courtroom",
+    "worth-query-bank-testkit-domain",
+    "worth-query-bank-testkit-estate-certification",
+    "worth-query-bank-testkit-http-adapter",
+    "worth-query-bank-testkit-server",
+    "worth-query-host",
+    "worth-query-publication"
+   ],
+   "fan_in_x_production_lines": 8176824,
+   "library_has_test_target": true
+  },
+  "workspaces/worth-query/Cargo.toml": {
+   "edit_reach": 25,
+   "edit_reach_packages": [
+    "worth-query",
+    "worth-query-certification",
+    "worth-query-court-decl-host",
+    "worth-query-court-decl-host-package-archive-replay-application-graph",
+    "worth-query-court-decl-host-package-archive-replay-workflow-approval",
+    "worth-query-court-host-replay",
+    "worth-query-court-publication",
+    "worth-query-court-query",
+    "worth-query-court-query-decl-host",
+    "worth-query-court-query-installed-operating-world",
+    "worth-query-court-query-installed-operations",
+    "worth-query-host",
+    "worth-query-publication",
+    "worth-query-replay",
+    "worth-query-testkit-certification",
+    "worth-query-testkit-certification-application-graph",
+    "worth-query-testkit-certification-canonical",
+    "worth-query-testkit-certification-correction",
+    "worth-query-testkit-certification-granular-invalidation",
+    "worth-query-testkit-certification-operation",
+    "worth-query-testkit-document-retention",
+    "worth-query-testkit-host",
+    "worth-query-testkit-installed-operation-fixture",
+    "worth-query-testkit-publication",
+    "worth-query-testkit-query"
+   ],
+   "fan_in_x_production_lines": 11356700,
+   "library_has_test_target": true
+  },
+  "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml": {
+   "edit_reach": 6,
+   "edit_reach_packages": [
+    "worth-query-consumer-root",
+    "worth-query-host",
+    "worth-query-hostile-foreign-schema",
+    "worth-query-parameter-entry",
+    "worth-query-publication",
+    "worth-query-topology-entry"
+   ],
+   "fan_in_x_production_lines": 2725608,
+   "library_has_test_target": true
+  }
+ }
+}
