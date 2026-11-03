@@ -84,7 +84,10 @@ def call_parts(rest):
 
 def split_top(text):
     parts, depth, current = [], 0, ''
-    for ch in text:
+    for index, ch in enumerate(text):
+        if ch == '>' and index and text[index - 1] == '-':
+            current += ch  # the arrow of a return type, not a closing bracket
+            continue
         depth += {'(': 1, '[': 1, '<': 1, '{': 1, ')': -1, ']': -1, '>': -1, '}': -1}.get(ch, 0)
         if ch == ',' and depth == 0:
             parts.append(current)

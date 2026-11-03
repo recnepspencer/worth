@@ -124,7 +124,11 @@ def without_patterns(signature):
     if start < 0 or end is None:
         return signature
     params, current, depth = [], '', 0
-    for ch in signature[start + 1:end]:
+    inner = signature[start + 1:end]
+    for index, ch in enumerate(inner):
+        if ch == '>' and index and inner[index - 1] == '-':
+            current += ch  # `->` inside a closure type
+            continue
         depth += {'(': 1, '[': 1, '<': 1, '{': 1, ')': -1, ']': -1, '>': -1, '}': -1}.get(ch, 0)
         if ch == ',' and depth == 0:
             params.append(current)

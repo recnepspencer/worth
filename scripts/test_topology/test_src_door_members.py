@@ -14,6 +14,9 @@ class MemberDoorTests(unittest.TestCase):
         self.assertIn('Self::get::<T>(self, a, _arg2)', door)
         self.assertIsNone(method_door(('', '', 'Foo', '', body), 'missing'))
 
+    def test_closure_arrows_do_not_close_brackets(self):
+        self.assertEqual(call_parts('(&self, f: impl FnMut(u8) -> Result<u8, E>, b: X) -> R'), ('', ('self', ['f', 'b'])))
+
     def test_impl_trait_arguments_infer_their_generics(self):
         self.assertEqual(call_parts('<F>(f: impl Fn(u8)) -> u8'), ('', (None, ['f'])))
 
