@@ -68,50 +68,61 @@ fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects(
     later.redo_bytes = early.redo_bytes;
     later.recovery_memory_bytes = early.recovery_memory_bytes;
     later.observation_bytes = early.observation_bytes;
-    let mut peaks = Vec::new();
-    for (declaration, expected, dimension) in [
-        (
-            early,
-            RecoveryPlanCostDenial::StagingBytes,
-            PhysicalRecoveryLimitDimension::StagingBytes,
-        ),
-        (
-            later,
-            RecoveryPlanCostDenial::DirtyFrames,
-            PhysicalRecoveryLimitDimension::DirtyFrames,
-        ),
-    ] {
-        let selected = admitted_recovery_with_limits(
-            root.path(),
-            PhysicalRecoveryLimits::admit(declaration).unwrap(),
-        )
-        .discover()
-        .unwrap()
-        .select()
-        .unwrap();
-        let blocked = match selected.plan() {
-            Ok(_) => panic!("the original staging limit must refuse before execution"),
-            Err(outcome) => expect_blocked(outcome),
-        };
-        assert_eq!(
-            blocked.evidence().planning_denial,
-            Some(PhysicalRecoveryPlanningDenial::Cost(expected)),
-            "unexpected refusal: {blocked:?}"
-        );
-        assert_eq!(blocked.cause().limit().unwrap().dimension(), dimension);
-        assert_eq!(blocked.recovery_effects(), 0);
-        peaks.push(
-            blocked
-                .evidence()
-                .planning_counters
-                .unwrap()
-                .peak_recovery_bytes(),
-        );
-    }
-    assert!(
-        peaks[1] > peaks[0],
-        "later scratch must remain measured: {peaks:?}"
+    let (early_peak, root_bytes) = refusal(
+        root.path(),
+        early,
+        RecoveryPlanCostDenial::StagingBytes,
+        PhysicalRecoveryLimitDimension::StagingBytes,
     );
+    // Fund the actual owner's root requirement plus exactly the first page.
+    // The second distinct frame must reach DirtyFrames before another byte charge.
+    later.staging_bytes = root_bytes
+        .checked_add(u64::from(format.declaration().page_size().bytes()))
+        .unwrap();
+    let (later_peak, _) = refusal(
+        root.path(),
+        later,
+        RecoveryPlanCostDenial::DirtyFrames,
+        PhysicalRecoveryLimitDimension::DirtyFrames,
+    );
+    assert!(
+        later_peak > early_peak,
+        "later scratch must remain measured: {early_peak}, {later_peak}"
+    );
+}
+
+fn refusal(
+    root: &std::path::Path,
+    declaration: worth_store_recovery_runtime::PhysicalRecoveryLimitDeclaration,
+    expected: RecoveryPlanCostDenial,
+    dimension: PhysicalRecoveryLimitDimension,
+) -> (u64, u64) {
+    let selected =
+        admitted_recovery_with_limits(root, PhysicalRecoveryLimits::admit(declaration).unwrap())
+            .discover()
+            .unwrap()
+            .select()
+            .unwrap();
+    let blocked = match selected.plan() {
+        Ok(_) => panic!("the original staging limit must refuse before execution"),
+        Err(outcome) => expect_blocked(outcome),
+    };
+    assert_eq!(
+        blocked.evidence().planning_denial,
+        Some(PhysicalRecoveryPlanningDenial::Cost(expected)),
+        "unexpected refusal: {blocked:?}"
+    );
+    let limit = blocked.cause().limit().unwrap();
+    assert_eq!(limit.dimension(), dimension);
+    assert_eq!(blocked.recovery_effects(), 0);
+    (
+        blocked
+            .evidence()
+            .planning_counters
+            .unwrap()
+            .peak_recovery_bytes(),
+        limit.observed(),
+    )
 }
 
 fn append_pending_pages(world: &PhysicalResidencyStoreWorld, batch: RecordAppendBatch) {

@@ -11,8 +11,12 @@ const MAXIMUM_STALE_CANDIDATES: usize = 48;
 /// after recovery's own publication is namespace durable.
 pub(super) fn prepare(reopened: &ReopenedPhysicalRecovery) -> RecoveryStagingResidueOutcome {
     reopened
+        .payload()
         .state
         .coordination
         .owner()
-        .remove_record_staging_residue(&reopened.state.authority.media, MAXIMUM_STALE_CANDIDATES)
+        .remove_record_staging_residue(
+            &reopened.payload().state.authority.media,
+            MAXIMUM_STALE_CANDIDATES,
+        )
 }

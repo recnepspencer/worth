@@ -44,6 +44,9 @@ pub(crate) struct NamespaceDurableState<C = crate::progression::PlanningCustody>
 }
 
 impl NamespaceDurablePhysicalRecovery {
+    pub(crate) const fn payload(&self) -> &NamespaceDurablePayload {
+        self.backing.payload()
+    }
     pub(crate) fn into_payload(self) -> NamespaceDurablePayload {
         self.backing.into_payload()
     }

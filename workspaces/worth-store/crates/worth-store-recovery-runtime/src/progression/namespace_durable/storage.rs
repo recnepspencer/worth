@@ -6,6 +6,7 @@ use crate::entry::{
 use crate::progression::{PlanningMemoryDenial, PlanningResidentAllowance};
 
 pub(crate) struct NamespaceDurablePayload {
+    pub(crate) reopened_backing: crate::progression::ReopenedBacking,
     pub(crate) state: NamespaceDurableState,
     pub(crate) expectation: RecoveryPublicationExpectation,
     pub(crate) publication_counters: PhysicalRecoveryPublicationCounters,

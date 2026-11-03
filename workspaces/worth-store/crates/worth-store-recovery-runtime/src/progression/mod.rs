@@ -36,6 +36,7 @@ pub use planned::{
     RecoveryStagingCommandPlan, RecoveryStagingLayoutPlan, RecoveryStagingRedoStep,
 };
 pub use reopened::ReopenedPhysicalRecovery;
+pub(crate) use reopened::{ReopenedBacking, ReopenedPayload};
 pub use selected::SelectedPhysicalRecovery;
 pub use staged::{ClosedRecoveryStagingGeneration, StagedPhysicalRecovery};
 pub(crate) use staged::{StagedRecoveryState, StagedStateBacking};

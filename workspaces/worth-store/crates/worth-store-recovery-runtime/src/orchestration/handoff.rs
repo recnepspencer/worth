@@ -11,19 +11,19 @@ pub(crate) fn finish_recovery_after_cleanup(
     closed_cleanup: worth_store::physical_runtime::ClosedPhysicalRecoveryCleanup,
     cleanup: crate::handoff::RecoveryCleanupPosture,
 ) -> PhysicalRecoveryOutcome {
-    reopened.state.integrity.release_admitted_wal();
+    reopened.release_admitted_wal();
     let retained = resident_memory::retained_bytes(&reopened, &cleanup)
         .and_then(|heap| heap.checked_add(resident_memory::inline_bytes(&reopened, &cleanup)?))
         .and_then(|bytes| bytes.checked_add(closed_cleanup.owned_heap_bytes()?))
         .and_then(|bytes| bytes.checked_add(std::mem::size_of_val(&closed_cleanup) as u64));
-    let ReopenedPhysicalRecovery {
+    let crate::progression::ReopenedPayload {
         state,
         expectation,
         publication_counters,
         publication_settlement,
         reopened: pending_reopen,
         reopen_counters,
-    } = reopened;
+    } = reopened.into_payload();
     debug_assert!(pending_reopen.is_none());
     let store = state.authority.media.store_identity();
     let session_identity = state.authority.session.identity();

@@ -50,13 +50,16 @@ mod tests {
                 std::mem::size_of::<crate::progression::NamespaceDurablePayload>() as u64;
             let publication =
                 std::mem::size_of::<crate::orchestration::PublicationPayload>() as u64;
+            let reopened = std::mem::size_of::<crate::progression::ReopenedPayload>() as u64;
             let movement = (payload + extraction)
                 .max(payload + 2 * input)
                 .max(input + 2 * staged)
                 .max(staged + 2 * namespace)
                 .max(staged + 2 * publication)
-                .max(publication + 2 * namespace);
-            let required = 17 + payload + staged + input + namespace + publication + movement;
+                .max(publication + 2 * namespace)
+                .max(namespace + 2 * reopened);
+            let required =
+                17 + payload + staged + input + namespace + publication + reopened + movement;
             let mut allowance = PlanningResidentAllowance::new(17, required - 1).unwrap();
             assert!(matches!(
                 PlannedStateBacking::prepare(&mut allowance, extraction),
@@ -82,12 +85,14 @@ mod tests {
                 std::mem::size_of::<crate::progression::NamespaceDurablePayload>() as u64;
             let publication =
                 std::mem::size_of::<crate::orchestration::PublicationPayload>() as u64;
+            let reopened = std::mem::size_of::<crate::progression::ReopenedPayload>() as u64;
             let movement = (payload + extraction)
                 .max(payload + 2 * input)
                 .max(input + 2 * staged)
                 .max(staged + 2 * namespace)
                 .max(staged + 2 * publication)
-                .max(publication + 2 * namespace);
+                .max(publication + 2 * namespace)
+                .max(namespace + 2 * reopened);
             let input_backing = backing.input.backing_bytes().unwrap();
             let namespace_backing = backing.namespace.backing_bytes().unwrap();
             let publication_backing = backing.publication.backing_bytes().unwrap();
@@ -95,12 +100,14 @@ mod tests {
                 + staged_backing
                 + input_backing
                 + namespace_backing
-                + publication_backing;
+                + publication_backing
+                + backing.reopened.backing_bytes().unwrap();
             assert!(planned_backing >= payload);
             assert!(staged_backing >= staged);
             assert!(input_backing >= input);
             assert!(namespace_backing >= namespace);
             assert!(publication_backing >= publication);
+            assert!(backing.reopened.backing_bytes().unwrap() >= reopened);
             assert_eq!(allowance.used(), 17 + actual);
             assert_eq!(allowance.peak(), 17 + actual + movement);
             assert!(backing.values.is_empty());
@@ -119,6 +126,7 @@ pub(crate) struct PlannedStateBacking {
     input: crate::orchestration::RecoveryStagingInputBacking,
     namespace: crate::progression::NamespaceDurableBacking,
     publication: crate::orchestration::PublicationStateBacking,
+    reopened: crate::progression::ReopenedBacking,
 }
 
 impl PlannedStateBacking {
@@ -141,11 +149,14 @@ impl PlannedStateBacking {
         let publication_bytes = super::PlanningResidentAllowance::slot_bytes::<
             crate::orchestration::PublicationPayload,
         >(1)?;
+        let reopened_bytes =
+            super::PlanningResidentAllowance::slot_bytes::<crate::progression::ReopenedPayload>(1)?;
         let backing = payload
             .checked_add(staged)
             .and_then(|bytes| bytes.checked_add(input_bytes))
             .and_then(|bytes| bytes.checked_add(namespace_bytes))
             .and_then(|bytes| bytes.checked_add(publication_bytes))
+            .and_then(|bytes| bytes.checked_add(reopened_bytes))
             .ok_or_else(overflow)?;
         allowance.transient(backing.checked_add(scratch).ok_or_else(overflow)?)?;
         let values = allowance.reserve::<PlannedRecoveryState>(1)?;
@@ -153,6 +164,7 @@ impl PlannedStateBacking {
         let input = crate::orchestration::RecoveryStagingInputBacking::prepare(allowance)?;
         let namespace = crate::progression::NamespaceDurableBacking::prepare(allowance)?;
         let publication = crate::orchestration::PublicationStateBacking::prepare(allowance)?;
+        let reopened = crate::progression::ReopenedBacking::prepare(allowance)?;
         allowance.transient(scratch)?;
         Ok(Self {
             values,
@@ -160,6 +172,7 @@ impl PlannedStateBacking {
             input,
             namespace,
             publication,
+            reopened,
         })
     }
 
@@ -187,6 +200,7 @@ impl PlannedStateBacking {
         crate::progression::StagedStateBacking,
         crate::progression::NamespaceDurableBacking,
         crate::orchestration::PublicationStateBacking,
+        crate::progression::ReopenedBacking,
     ) {
         let state = self
             .values
@@ -198,6 +212,7 @@ impl PlannedStateBacking {
             self.staged,
             self.namespace,
             self.publication,
+            self.reopened,
         )
     }
 }
@@ -208,6 +223,7 @@ fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
     let input = std::mem::size_of::<crate::orchestration::RecoveryStagingInputState>() as u64;
     let namespace = std::mem::size_of::<crate::progression::NamespaceDurablePayload>() as u64;
     let publication = std::mem::size_of::<crate::orchestration::PublicationPayload>() as u64;
+    let reopened = std::mem::size_of::<crate::progression::ReopenedPayload>() as u64;
     Some(
         planned
             .checked_add(extraction_bytes)?
@@ -215,6 +231,7 @@ fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
             .max(input.checked_add(staged.checked_mul(2)?)?)
             .max(staged.checked_add(namespace.checked_mul(2)?)?)
             .max(staged.checked_add(publication.checked_mul(2)?)?)
-            .max(publication.checked_add(namespace.checked_mul(2)?)?),
+            .max(publication.checked_add(namespace.checked_mul(2)?)?)
+            .max(namespace.checked_add(reopened.checked_mul(2)?)?),
     )
 }

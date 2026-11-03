@@ -3027,3 +3027,26 @@ Only terminal block, indeterminate or into_namespace consumes it. Aggregate
 requested/actual capacity and movement admission include staged-to-publication
 and publication-to-namespace overlap. No partial-state mutation, authority clone,
 late allocation, alias or alternate publication issuer replaces the existing path.
+
+
+### Fresh-reopen payload custody and retained census
+
+The normal-stack selected-Complete control reached fresh reopen after publication.
+ReopenedPhysicalRecovery therefore owns the actual ReopenedPayload through a sixth
+slot reserved from the original PlanningResidentAllowance before staging effects.
+Requested aggregate storage, actual capacities and namespace-to-reopened payload
+movement enter the original plan-cost peak. The empty slot passes linearly through
+planned, staging input, staged, publication and namespace custody. Fresh reopen
+builds and executes its command while borrowing the namespace payload. Separate
+non-inlined completed/denied receivers extract it once; the completed receiver
+rebinds the same selected custody and seals the actual reopened payload. No cleanup
+runs until that receiver returns. Cleanup borrows the payload, with only consuming
+fresh-reopen extraction and admitted-WAL release exposed as narrow mutations.
+Terminal failure and handoff extract once. Handoff's live census includes actual
+reopened capacity, its compact owner header and nested heaps exactly once.
+The independent planned quota tests include all six capacities and movement.
+
+The inline-frame refusal cost court derives its late staging allowance from the
+root requirement observed in its earlier original-request refusal plus one real
+page. This admits the first frame and preserves the exact DirtyFrames refusal on
+the second, the zero-effects assertion and the strict later-versus-earlier peak.

@@ -12,25 +12,31 @@ pub(super) fn retained_bytes(
     reopened: &ReopenedPhysicalRecovery,
     cleanup: &RecoveryCleanupPosture,
 ) -> Option<u64> {
-    let state = &reopened.state;
+    let state = &reopened.payload().state;
     let mut bytes = state
         .selection
         .owned_heap_bytes()?
+        .checked_add(reopened.backing_bytes()?)?
         .checked_add(state.integrity.owned_heap_bytes()?)?
         .checked_add(state.integrity_trace.owned_heap_bytes()?)?
         .checked_add(state.freshness.owned_heap_bytes()?)?
         .checked_add(state.fates.owned_heap_bytes()?)?
         .checked_add(state.base.owned_heap_bytes()?)?
-        .checked_add(reopened.expectation.owned_heap_bytes()?)?
+        .checked_add(reopened.payload().expectation.owned_heap_bytes()?)?
         .checked_add(state.staging_settlements.owned_heap_bytes()?)?
-        .checked_add(reopened.publication_settlement.owned_heap_bytes()?)?
+        .checked_add(
+            reopened
+                .payload()
+                .publication_settlement
+                .owned_heap_bytes()?,
+        )?
         .checked_add(cleanup.owned_heap_bytes()?)?
         .checked_add(state.coordination.owner().owned_recovery_heap_bytes()?)?
         .checked_add(vector_bytes(&state.root_protocol_denials)?)?;
     for denial in &state.root_protocol_denials {
         bytes = bytes.checked_add(denial.owned_heap_bytes()?)?;
     }
-    if let Some(fresh) = &reopened.reopened {
+    if let Some(fresh) = &reopened.payload().reopened {
         bytes = bytes.checked_add(fresh.owned_heap_bytes()?)?;
     }
     match &state.custody {
@@ -79,7 +85,7 @@ fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
 }
 
 fn shared_history_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {
-    let state = &reopened.state;
+    let state = &reopened.payload().state;
     let histories: [Option<&VerifiedOrderedRootHistory>; 2] = [
         match &state.custody {
             crate::progression::CustodyState::Pending { claim, .. } => claim.ordered_history(),

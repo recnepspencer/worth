@@ -12,6 +12,7 @@ use worth_store::physical_runtime::StoreRecoveryBindingFreshnessSample;
 use worth_store_recovery_physics::RecoveryPlanningCounters;
 
 pub(crate) struct RecoveryStagingInputState {
+    pub(crate) reopened_backing: crate::progression::ReopenedBacking,
     pub(crate) publication_backing: crate::orchestration::PublicationStateBacking,
     pub(crate) namespace_backing: crate::progression::NamespaceDurableBacking,
     pub(crate) staged_backing: StagedStateBacking,

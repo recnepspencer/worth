@@ -15,6 +15,7 @@ use crate::progression::{
 };
 
 pub(crate) struct PublicationPayload {
+    pub(crate) reopened_backing: crate::progression::ReopenedBacking,
     namespace_backing: crate::progression::NamespaceDurableBacking,
     authority: AdmittedPlatformAuthority,
     coordination: super::super::RecoveryCoordination,
@@ -50,6 +51,7 @@ impl PublicationState {
 
     pub(super) fn from_staged(staged: StagedPhysicalRecovery) -> (Self, RecoveryPublicationPlan) {
         let StagedRecoveryState {
+            reopened_backing,
             publication_backing,
             namespace_backing,
             authority,
@@ -74,6 +76,7 @@ impl PublicationState {
         } = staged.into_state();
         (
             publication_backing.finish(PublicationPayload {
+                reopened_backing,
                 namespace_backing,
                 authority,
                 coordination,
@@ -165,6 +168,7 @@ impl PublicationState {
     ) -> NamespaceDurablePhysicalRecovery {
         let data = self.backing.into_payload();
         data.namespace_backing.finish(NamespaceDurablePayload {
+            reopened_backing: data.reopened_backing,
             state: NamespaceDurableState {
                 authority: data.authority,
                 coordination: data.coordination,
