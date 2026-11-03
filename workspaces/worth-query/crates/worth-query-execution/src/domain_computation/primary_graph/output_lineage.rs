@@ -37,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) use required_settlement::Curren
 pub(in crate::domain_computation::primary_graph) use required_settlement::RequiredSettlementStop;
 pub(crate) mod resolution;
 mod resources;
-mod restoration;
+pub(crate) mod restoration;
 pub(crate) mod retained_computation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;

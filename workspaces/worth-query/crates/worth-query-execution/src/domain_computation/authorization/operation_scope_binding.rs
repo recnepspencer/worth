@@ -53,7 +53,7 @@ pub struct WorthQueryOperationScopeBinding {
 /// Fixed descriptive affinity used only to compare completed producer
 /// decisions. The admitted operation remains the authority to execute.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryDecisionScopeWitness {
+pub struct WorthQueryDecisionScopeWitness {
     runtime_authority: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
     operation_authority_identity: [u8; 32],

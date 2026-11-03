@@ -148,7 +148,7 @@ pub(in crate::domain_computation) struct WorthQueryPrincipalFreshnessEvidence {
 /// authenticated principal. A value rewrite changes its field revision and
 /// therefore refuses reuse even when the new value compares equal.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryPrincipalReuseWitness {
+pub struct WorthQueryPrincipalReuseWitness {
     mapping: EntityId,
     mapping_kind: KindId,
     mapping_identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,

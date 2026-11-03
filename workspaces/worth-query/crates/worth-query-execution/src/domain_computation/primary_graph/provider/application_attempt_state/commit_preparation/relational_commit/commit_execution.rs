@@ -17,7 +17,7 @@ use stops::index_preparation_stop;
 use stops::native_output_witness_stop;
 use stops::transaction_commit_stop;
 pub(in crate::domain_computation::primary_graph::provider) use touched_records::PreparedTouchedRecords;
-mod publication;
+pub(crate) mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::WorthQueryPrimaryGraphCommittedApplication;
 
 use super::super::WorthQueryPreparedApplicationCommit;

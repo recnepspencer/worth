@@ -43,7 +43,7 @@ pub(crate) mod entity_resolution;
 mod entity_resolution_denial;
 pub(crate) mod exact_basis_access;
 mod expression;
-mod freshness;
+pub(crate) mod freshness;
 mod granular_invalidation;
 pub(crate) mod handler;
 pub(in crate::domain_computation) use handler::DecisionContextUse;

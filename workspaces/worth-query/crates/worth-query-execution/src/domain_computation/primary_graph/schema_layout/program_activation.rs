@@ -22,7 +22,7 @@ const PROGRAM_REVISION_FIELD: &str = "program-revision";
 /// by comparison against an admitted support roster; nothing reconstructs a
 /// revision from it.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramActivationLayout {
+pub struct WorthQueryProgramActivationLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) program_revision_locator: AspectFieldLocator,
 }

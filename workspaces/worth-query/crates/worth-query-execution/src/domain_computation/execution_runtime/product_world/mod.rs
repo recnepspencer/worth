@@ -10,7 +10,7 @@ mod history;
 mod installation_denial;
 mod owned_async;
 pub(crate) mod owner_cleanup;
-mod publication_binding;
+pub(crate) mod publication_binding;
 mod receipt;
 pub(crate) mod relational_publication;
 pub(crate) mod request_control;

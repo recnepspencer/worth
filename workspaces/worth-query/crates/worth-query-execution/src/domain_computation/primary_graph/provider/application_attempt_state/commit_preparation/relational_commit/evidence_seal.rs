@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::provider::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommitEvidence {
+pub struct WorthQueryPrimaryGraphCommitEvidence {
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,

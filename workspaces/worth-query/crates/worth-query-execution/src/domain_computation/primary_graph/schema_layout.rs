@@ -32,7 +32,7 @@ mod native_outputs;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
 mod principal_binding;
-mod program_activation;
+pub(crate) mod program_activation;
 mod projected_member_domain;
 mod provider_aftermath_causality;
 mod provider_dispatch_outbox;

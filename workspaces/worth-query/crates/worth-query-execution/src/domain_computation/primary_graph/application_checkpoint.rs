@@ -60,7 +60,7 @@ pub struct WorthQueryApplicationCheckpoint {
     bytes: worth_execution::ExecutionImmutableBytes,
 }
 
-pub(in crate::domain_computation::primary_graph) struct DecodedApplicationCheckpoint {
+pub struct DecodedApplicationCheckpoint {
     pub(super) native: worth_relational::facade::durability::RelationalNativeCheckpoint,
     pub(super) bootstrap_commit_id: worth_relational::facade::history::CommitId,
     pub(super) accepted_outputs:

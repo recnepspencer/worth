@@ -22,7 +22,7 @@ pub struct PreparedDecisionReuseContext {
 
 /// Recorded fixed native and canonical context for a completed producer read.
 /// An absent proof is ineligible; the handler fact count remains independent.
-pub(in crate::domain_computation::primary_graph) struct CompletedDecisionReuseProof {
+pub struct CompletedDecisionReuseProof {
     key: Option<[u8; 32]>,
     principal: Option<WorthQueryPrincipalReuseWitness>,
     scope: Option<WorthQueryDecisionScopeWitness>,

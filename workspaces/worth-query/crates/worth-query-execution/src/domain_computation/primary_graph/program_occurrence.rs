@@ -21,7 +21,7 @@ use super::WorthQueryApplicationCommitDenial;
 
 pub(crate) mod activation_cell;
 mod original_meaning;
-mod presented_program;
+pub(crate) mod presented_program;
 pub(in crate::domain_computation) use original_meaning::OriginalProgramMeaning;
 pub(crate) mod revision_rendering;
 mod support_lifecycle;

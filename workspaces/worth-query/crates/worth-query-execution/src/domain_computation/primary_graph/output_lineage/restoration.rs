@@ -12,7 +12,7 @@ use super::{
 mod republication;
 
 /// A recorded checkpoint output and the source facts its verification covers.
-pub(in crate::domain_computation::primary_graph) struct RestoredRecord {
+pub struct RestoredRecord {
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts: super::RetainedSourceFacts,

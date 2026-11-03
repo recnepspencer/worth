@@ -29,7 +29,7 @@ pub(in crate::domain_computation) use graph_work_session::SelectedOperationGraph
 mod installed_policy;
 mod lowering;
 pub(crate) mod operation_progression;
-mod operation_scope_binding;
+pub(crate) mod operation_scope_binding;
 pub(in crate::domain_computation) use operation_scope_binding::WorthQueryDecisionScopeWitness;
 pub(crate) mod retained_capability_request;
 pub(in crate::domain_computation) use retained_capability_request::WorkflowApprovalRequestDecodingDenial;
