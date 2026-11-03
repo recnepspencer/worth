@@ -30,12 +30,7 @@ pub fn refuse_mixed_and_created_subset(
         let anchor = roles.iter().find(|role| role.posture == RequiredOutputRolePosture::Preserve).unwrap();
         let EntityReference::Existing(anchor) = anchor.target else { unreachable!() };
         let lineage = graph.output_lineage.lock().unwrap();
-        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource {
-            runtime_authority: (*runtime.runtime_for_test()).authority_identity().as_u64(),
-            schema: runtime.installed_schema().binding_identity(),
-            scope: WorthQueryOperationScopeEntityBinding::from_entity_for_test(anchor),
-            output_binding: lineage.binding_identity_for_test(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<RegionOutputBinding<OwnerSchema>>()).unwrap(),
-        };
+        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource::new_for_test((*runtime.runtime_for_test()).authority_identity().as_u64(), runtime.installed_schema().binding_identity(), WorthQueryOperationScopeEntityBinding::from_entity_for_test(anchor), lineage.binding_identity_for_test(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<RegionOutputBinding<OwnerSchema>>()).unwrap());
         let coordinate = product.observation_for_test();
         let cells = &(*lineage.by_source_for_test())[&source][&coordinate.lifecycle_incarnation()][&coordinate.reference_generation().get()];
         assert_eq!(cells.len(), 1, "exact initial performed generation has one publication");
