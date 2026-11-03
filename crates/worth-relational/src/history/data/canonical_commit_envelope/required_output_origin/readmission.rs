@@ -89,6 +89,12 @@ impl CanonicalCommitEnvelope {
             .required_output_origin
             .as_deref()
             .ok_or("present output has no installed producer publication")?;
+        if matches!(
+            origin.publication,
+            CanonicalOutputPublication::ProducerRetirement { .. }
+        ) {
+            return Err("producer retirement cannot be a standalone publication".into());
+        }
         self.validate_output_origin_header(origin)?;
         Ok(origin)
     }
@@ -102,6 +108,7 @@ impl CanonicalCommitEnvelope {
             || (matches!(
                 origin.publication,
                 CanonicalOutputPublication::AuthoredRetirement { .. }
+                    | CanonicalOutputPublication::ProducerRetirement { .. }
             ) && !origin.relations.is_empty())
             || origin.producer.is_empty()
             || origin.basis.branch_id() != &self.branch_context
@@ -132,7 +139,8 @@ impl CanonicalCommitEnvelope {
                                 || member.birth_producer != origin.producer
                                 || member.birth_dependency != origin.dependency_identity
                         }
-                        CanonicalOutputPublication::AuthoredRetirement { .. } => {
+                        CanonicalOutputPublication::AuthoredRetirement { .. }
+                        | CanonicalOutputPublication::ProducerRetirement { .. } => {
                             member.posture != Posture::Retire || member.before_write.is_none()
                         }
                         CanonicalOutputPublication::Preserve { .. } => {

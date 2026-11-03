@@ -46,7 +46,8 @@ pub(crate) use required_output_materialization::{
 pub(crate) use required_output_origin::validate_authored_restoration_candidate;
 pub(crate) use required_output_origin::{
     CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalOutputMember,
-    CanonicalOutputPublication, CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
+    CanonicalOutputPublication, CanonicalProducerRetirement, CanonicalRequiredOutputOrigin,
+    CanonicalRequiredOutputRelation,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -55,6 +56,8 @@ pub struct CanonicalCommitEnvelope {
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     pub(crate) required_output_origin: Option<std::sync::Arc<CanonicalRequiredOutputOrigin>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) producer_cascade_retirement: Option<std::sync::Arc<CanonicalProducerRetirement>>,
     pub(crate) authored_cascade_retirement: Option<std::sync::Arc<CanonicalAuthoredRetirement>>,
     pub(crate) authored_cascade_restoration: Option<std::sync::Arc<CanonicalAuthoredRestoration>>,
     #[serde(default)]
@@ -139,6 +142,7 @@ impl CanonicalCommitEnvelope {
             authored_index_writes: CanonicalAuthoredIndexWrites::default(),
             required_output_codec_retirements: Vec::new(),
             required_output_origin: None,
+            producer_cascade_retirement: None,
             authored_cascade_retirement: None,
             authored_cascade_restoration: None,
             required_output_materialization: None,
@@ -249,6 +253,17 @@ impl CanonicalCommitEnvelope {
             &self.schema_reconciliation_descriptor,
             &self.descriptor_semantics_version,
         );
+        if let Some(event) = &self.producer_cascade_retirement {
+            return rmp_serde::encode::write_named(
+                writer,
+                &(
+                    identity_and_authority,
+                    canonical_semantics,
+                    &self.authored_index_writes,
+                    event,
+                ),
+            );
+        }
         if self.authored_index_writes.is_unavailable() {
             rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
         } else {
