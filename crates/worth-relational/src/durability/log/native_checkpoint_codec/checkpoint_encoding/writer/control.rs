@@ -16,20 +16,9 @@ pub(crate) enum CheckpointEncodingControl<'request, 'authority> {
 impl CheckpointEncodingControl<'_, '_> {
     pub(crate) fn checkpoint(self, work: u64) -> Result<(), Denial> {
         match self {
-            Self::Original(execution) => {
-                let mut stop = None;
-                let outcome = crate::execution::request_stage::optional_stage(
-                    &execution,
-                    |context, _| {
-                        stop = crate::execution::request_stage::checkpoint(context, work).err();
-                    },
-                    |_| 0,
-                );
-                if let Some(stop) = stop {
-                    return Err(Denial::Request(stop.into()));
-                }
-                outcome.map_err(Denial::Request)
-            }
+            Self::Original(execution) => execution
+                .checkpoint_stage::<crate::execution::RelationalExecutionDenialCause>(work)
+                .map_err(Denial::Request),
             #[cfg(test)]
             Self::Policy(policy) => policy.check_live().map_err(Denial::Allocation),
         }

@@ -181,6 +181,10 @@ where
         Option<crate::ExecutionResultMemory<'_>>,
     ) -> Result<R, KernelFailure<E>>,
 {
+    let storage = match payload {
+        PayloadStorage::Native => ScopeStorage::Native,
+        PayloadStorage::Metered { .. } => ScopeStorage::Metered,
+    };
     run_typed_scope(
         lease,
         retained_bytes,
@@ -191,6 +195,7 @@ where
         hold,
         &mut Some(kernel),
         payload,
+        storage,
     )
 }
 
@@ -204,11 +209,8 @@ fn run_typed_scope<R, E>(
     hold: Option<ScopeHold<'_, R>>,
     kernel: &mut dyn ScopeKernel<R, E>,
     payload: PayloadStorage<(), R, E>,
+    storage: ScopeStorage,
 ) -> ScopeOutcome<R, E> {
-    let storage = match payload {
-        PayloadStorage::Native => ScopeStorage::Native,
-        PayloadStorage::Metered { .. } => ScopeStorage::Metered,
-    };
     let (held_reservation, kept) = match hold {
         Some(hold) => (Some(hold.reservation), Some(hold.kept)),
         None => (None, None),
@@ -238,4 +240,29 @@ fn run_typed_scope<R, E>(
         result: body.into_result(verdict),
         report,
     }
+}
+
+/// Only unit payloads may use this metered scope without a heap measurement.
+pub(super) fn run_unit_scope(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    work_ceiling: Option<u64>,
+    serial: Option<&SerialRequest>,
+    kernel: impl FnOnce(&mut KernelContext<'_, '_>) -> Result<(), KernelFailure<()>>,
+) -> ScopeOutcome<(), ()> {
+    run_typed_scope(
+        lease,
+        0,
+        Some(0),
+        true,
+        work_ceiling,
+        serial,
+        None,
+        &mut Some(
+            |context: &mut KernelContext<'_, '_>, _: Option<crate::ExecutionResultMemory<'_>>| {
+                kernel(context)
+            },
+        ),
+        PayloadStorage::<(), (), ()>::metered(),
+        ScopeStorage::Unit,
+    )
 }

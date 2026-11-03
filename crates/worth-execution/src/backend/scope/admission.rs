@@ -10,6 +10,8 @@ use crate::backend::meter::RunLimits;
 pub(super) enum ScopeStorage {
     Native,
     Metered,
+    /// An accounted payload whose result and error heap are statically empty.
+    Unit,
 }
 
 /// One scope's admission inputs, free of its payload types.
@@ -29,7 +31,7 @@ pub(super) struct ScopeRequest<'a, 'lease> {
 impl ScopeRequest<'_, '_> {
     /// Whether this scope's report carries charged work.
     pub(super) fn is_accounted(&self) -> bool {
-        self.storage == ScopeStorage::Metered
+        self.storage != ScopeStorage::Native
             || RunLimits::native_accounting(self.lease)
             || self.work_ceiling.is_some()
             || self.serial.is_some_and(|serial| serial.memory().is_some())
@@ -38,7 +40,7 @@ impl ScopeRequest<'_, '_> {
     fn limits(&self) -> RunLimits {
         match self.storage {
             ScopeStorage::Native => RunLimits::for_native(self.lease, false),
-            ScopeStorage::Metered => RunLimits::for_run(self.lease, false),
+            ScopeStorage::Metered | ScopeStorage::Unit => RunLimits::for_run(self.lease, false),
         }
         .within_work_ceiling(self.work_ceiling)
         .within_serial(self.serial)
@@ -64,7 +66,7 @@ pub(super) struct AdmittedScope<'a, 'lease> {
     pub(super) memory_bytes: u64,
     pub(super) max_result_bytes: Option<u64>,
     pub(super) charge_parent: bool,
-    pub(super) measures_result: bool,
+    pub(super) storage: ScopeStorage,
     pub(super) hold: Option<&'a mut ExecutionMemoryReservation>,
     pub(super) reservation: Option<ResourceReservation>,
     pub(super) serial_reservation: Option<ExecutionMemoryReservation>,
@@ -113,8 +115,7 @@ pub(super) fn admit_scope<'a, 'lease>(
         memory_bytes,
         max_result_bytes: request.max_result_bytes,
         charge_parent: request.charge_parent,
-        measures_result: request.storage == ScopeStorage::Metered
-            && request.max_result_bytes.is_none(),
+        storage: request.storage,
         hold: request.hold,
         reservation,
         serial_reservation,

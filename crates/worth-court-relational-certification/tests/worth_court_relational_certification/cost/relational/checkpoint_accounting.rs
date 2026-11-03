@@ -63,7 +63,12 @@ fn checkpoint_original_work_matches_unfixed_literal_totals() {
 
 #[test]
 fn empty_checkpoint_original_work_ceilings_keep_the_unfixed_outcomes() {
-    for (ceiling, succeeds) in [(784, true), (783, true), (1, false), (0, false)] {
+    for (ceiling, succeeds, consults) in [
+        (784, true, 5_758),
+        (783, true, 5_758),
+        (1, false, 16),
+        (0, false, 6),
+    ] {
         let request = SerialRequest::from_policy(
             &ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
@@ -79,9 +84,23 @@ fn empty_checkpoint_original_work_ceilings_keep_the_unfixed_outcomes() {
             .observe_branch(&runtime.main_branch_identity())
             .unwrap()
             .0;
+        let observer =
+            worth_execution::RequestConsultObservationForTest::install_on_this_thread_for_test(
+                |_| {},
+            );
         let result = runtime
             .durability_authority()
             .native_checkpoint(&execution, Allocation::SystemAllocation);
+        // Frozen from the old production serializer. The two emissions of a
+        // latched work stop include its mandatory trailing zero checkpoint.
+        assert_eq!(observer.count_for_test(), consults, "ceiling={ceiling}");
+        let expected_origins: &[(usize, usize)] = match ceiling {
+            0 => &[(4, 4), (5, 4), (6, 6)],
+            1 => &[(14, 14), (15, 14), (16, 16)],
+            _ => &[],
+        };
+        assert_eq!(observer.stop_origins_for_test(), expected_origins);
+        drop(observer);
         if succeeds {
             let checkpoint = result.expect("the unfixed path accepted this work ceiling");
             assert_eq!(checkpoint.bytes().len(), 1_568);

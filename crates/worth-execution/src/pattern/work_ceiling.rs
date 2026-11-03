@@ -2,7 +2,7 @@ use worth_foundational::ExecutionReport;
 
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial, SerialRequest},
-    backend::{run_scope_within, KernelFailure, KernelStop, ScopeStop},
+    backend::{run_scope_unit_within, KernelFailure, KernelStop, ScopeStop},
 };
 
 /// The work a computation declared for itself.
@@ -48,7 +48,7 @@ impl ExecutionWorkCeiling {
         computation: impl FnOnce(&mut crate::MapKernelContext<'_, '_>) -> R,
     ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
         let mut value = None;
-        let outcome = run_scope_within::<(), (), _>(lease, 0, 0, true, self.0, serial, |context| {
+        let outcome = run_scope_unit_within(lease, self.0, serial, |context| {
             value = Some(computation(context));
             Ok(())
         });
@@ -116,7 +116,7 @@ impl ExecutionWorkCeiling {
         computation: impl FnOnce() -> R,
     ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
         let mut value = None;
-        let outcome = run_scope_within::<(), (), _>(lease, 0, 0, true, self.0, serial, |_| {
+        let outcome = run_scope_unit_within(lease, self.0, serial, |_| {
             value = Some(computation());
             Ok(())
         });

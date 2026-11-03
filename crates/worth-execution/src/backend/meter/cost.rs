@@ -32,17 +32,35 @@ fn repeated_fragment_scopes_do_not_reconstruct_cancellation_storage() {
     limits.tokens.push(cancellation.token());
     let context = KernelContext::new(limits);
     let _parent = context.enter();
-    for fragments in [8, 64, 512] {
+    for (fragments, cumulative_work) in [(8, 8), (64, 72), (512, 584)] {
         let observation = Observation::start();
+        let payloads = crate::backend::scope::cost::Observation::start();
         for _ in 0..fragments {
             let mut inherited = RunLimits::for_run(None, false);
             inherited.tokens.push(cancellation.token());
             assert_eq!(inherited.tokens.len(), 2);
             assert!(!inherited.tokens.iter().any(|token| token.is_cancelled()));
+            crate::backend::scope::run_scope_native_within::<(), ()>(
+                None,
+                true,
+                None,
+                None,
+                |_| Ok(()),
+            )
+            .result
+            .unwrap();
+            crate::backend::scope::run_scope_unit_within(None, None, None, |context| {
+                context.checkpoint(1)?;
+                Ok(())
+            })
+            .result
+            .unwrap();
         }
         let materializations = observation.count();
         eprintln!("fragments={fragments} cancellation materializations={materializations}");
-        assert!(materializations <= 4, "{fragments}: {materializations}");
+        assert_eq!(materializations, 0, "fragments={fragments}");
+        assert_eq!(context.cost().0, cumulative_work);
+        assert_eq!(payloads.count(), 0, "fragments={fragments}");
     }
 }
 
