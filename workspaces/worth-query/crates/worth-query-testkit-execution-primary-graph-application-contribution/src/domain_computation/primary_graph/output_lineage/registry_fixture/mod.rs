@@ -81,16 +81,8 @@ pub fn recorded_settlements(
          None,
      );
     }
-    let source = SemanticSource {
-        runtime_authority,
-        schema,
-        scope,
-        output_binding: OutputBindingIdentity::declared_for_test("RegistryRestoredOutput"),
-    };
-    let coordinate = ProductCoordinate {
-        occurrence: observation.lifecycle_incarnation(),
-        generation: observation.reference_generation().get(),
-    };
+    let source = SemanticSource::new_for_test(runtime_authority, schema, scope, OutputBindingIdentity::declared_for_test("RegistryRestoredOutput"));
+    let coordinate = ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), observation.reference_generation().get());
     let identities = partitions
         .iter()
         .map(|partition| {

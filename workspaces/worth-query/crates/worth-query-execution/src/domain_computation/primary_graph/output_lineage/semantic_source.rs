@@ -32,3 +32,5 @@ impl PartialOrd for SemanticSource {
         Some(self.cmp(other))
     }
 }
+
+mod court_doors_for_test;

@@ -26,3 +26,10 @@ impl WorthQueryApplicationOutputLineage {
         &mut self.by_source
     }
 }
+
+impl ProductCoordinate {
+    #[doc(hidden)]
+    pub fn new_for_test(occurrence: worth_runtime_world::facade::ProductBranchIncarnation, generation: u64) -> Self {
+        Self { occurrence, generation }
+    }
+}
