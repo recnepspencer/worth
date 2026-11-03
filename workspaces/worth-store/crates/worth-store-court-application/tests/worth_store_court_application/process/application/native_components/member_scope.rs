@@ -11,12 +11,9 @@ use worth_relational::facade::{
     symbols::ClientKey,
     transactions::{CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch},
 };
-use worth_store_application::ReadmittedApplicationHome;
+use worth_store_testkit_application_oracle::facade::world_home::WorldHomeFixture;
 
-fn seeded_home(
-    path: &std::path::Path,
-    execution: &ExecutionRequest<'_, '_>,
-) -> ReadmittedApplicationHome {
+fn seeded_home(path: &std::path::Path, execution: &ExecutionRequest<'_, '_>) -> WorldHomeFixture {
     let registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -26,16 +23,15 @@ fn seeded_home(
             aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
         })
         .unwrap();
-    let home = worth_store_testkit_application_oracle::facade::home_opening::open(
-        worth_store_testkit_application_oracle::facade::home_opening::request(
-            path,
-            RelationalRuntimeApi::builder().schema_setup(move |schema| {
-                schema.schema_registry(registry);
-            }),
-        ),
+    let fixture = super::coupled_home::open(
+        path,
+        RelationalRuntimeApi::builder().schema_setup(move |schema| {
+            schema.schema_registry(registry);
+        }),
+        true,
         execution,
-    )
-    .unwrap();
+    );
+    let home = &fixture.home;
     let (_, basis) = home
         .relational()
         .runtime()
@@ -59,7 +55,7 @@ fn seeded_home(
     )
     .unwrap();
     txn.commit(execution, home.relational().runtime()).unwrap();
-    home
+    fixture
 }
 
 #[test]
@@ -73,22 +69,31 @@ fn a_speculative_foreign_runtime_cannot_publish_a_home_checkpoint() {
     let execution = ExecutionRequest::serial(&request);
     for checkpoint_before_fork in [false, true] {
         let root = directory.path().join(checkpoint_before_fork.to_string());
-        let first = seeded_home(&root.join("first"), &execution);
-        let mut second = seeded_home(&root.join("second"), &execution);
+        let first_fixture = seeded_home(&root.join("first"), &execution);
+        let first = first_fixture.home;
+        let second_fixture = seeded_home(&root.join("second"), &execution);
+        let mut second = second_fixture.home;
         if checkpoint_before_fork {
             first.checkpoint(&execution).unwrap();
         }
         // A speculative fork deliberately has no attached publication medium.
         // Replacing a component cannot transfer the first Home's authority.
         second.replace_relational_runtime_for_test(first.relational().runtime().fork().unwrap());
-        let before = crate::selected_checkpoint::generation(&second);
+        let before =
+            crate::selected_checkpoint::generation_from_serving(second.physical_serving_for_test());
         let refusal = second.checkpoint(&execution).unwrap_err();
         assert!(matches!(refusal, worth_store_application::ApplicationHomeCheckpointDenial::Native(
             worth_store_relational::RelationalSectionCheckpointDenial::PublicationAdmission(
                 worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial::CaptureNotBound))));
-        assert_eq!(crate::selected_checkpoint::generation(&second), before);
+        assert_eq!(
+            crate::selected_checkpoint::generation_from_serving(second.physical_serving_for_test()),
+            before
+        );
         first.checkpoint(&execution).unwrap();
-        first.close(&execution);
-        second.close(&execution);
+        first
+            .close(&execution)
+            .unwrap_or_else(|refused| panic!("World close: {:?}", refused.reason()));
+        // The foreign runtime is a deliberate owner-loss fixture.
+        drop(second);
     }
 }

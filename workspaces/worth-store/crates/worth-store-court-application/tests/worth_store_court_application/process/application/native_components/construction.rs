@@ -47,6 +47,18 @@ fn duplicate_strategy_refuses_open_with_its_cause_and_releases_the_home() {
         None,
     );
     let execution = ExecutionRequest::serial(&request);
+    let initialized = worth_store_testkit_application_oracle::facade::home_opening::open(
+        worth_store_testkit_application_oracle::facade::home_opening::request(
+            &location,
+            RelationalRuntimeApi::builder(),
+        ),
+        &execution,
+    )
+    .unwrap();
+    assert!(matches!(
+        initialized.close(&execution),
+        ApplicationHomeCloseOutcome::Closed { .. }
+    ));
     let refused = worth_store_testkit_application_oracle::facade::home_opening::open(
         worth_store_testkit_application_oracle::facade::home_opening::request(&location, builder),
         &execution,
@@ -103,6 +115,15 @@ fn cancelled_attachment_retains_admitted_home_until_explicit_never_attached_clos
     let original =
         SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let original = ExecutionRequest::serial(&original);
+    let initialized = home_opening::open(
+        home_opening::request(directory.path(), RelationalRuntimeApi::builder()),
+        &original,
+    )
+    .unwrap();
+    assert!(matches!(
+        initialized.close(&original),
+        ApplicationHomeCloseOutcome::Closed { .. }
+    ));
     let admitted = original
         .in_scope(|_| {
             let recovered = recover_home(

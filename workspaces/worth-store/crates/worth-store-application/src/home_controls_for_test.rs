@@ -118,21 +118,6 @@ impl crate::ReadmittedApplicationHome {
         &self.context.serving
     }
 
-    pub fn replace_relational_runtime_for_test(
-        &mut self,
-        runtime: worth_relational::facade::runtime::RelationalRuntime,
-    ) {
-        self.relational.replace_runtime_for_test(runtime);
-    }
-
-    pub fn publish_captured_relational_checkpoint_for_test(
-        &self,
-        _checkpoint: worth_relational::facade::durability::RelationalNativeCheckpoint,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
-        crate::checkpoint::publication::worldless_checkpoint(&self.context.checkpoint, execution)
-    }
-
     pub fn abort_for_test(self) {
         drop(self.relational);
         if let Ok(serving) = std::sync::Arc::try_unwrap(self.context.serving) {
