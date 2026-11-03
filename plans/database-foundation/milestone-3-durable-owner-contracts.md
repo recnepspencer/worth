@@ -3103,3 +3103,35 @@ unchanged indeterminate outcome. Original movement admission and both independen
 quota assertions cover three namespace payloads plus two live optional rosters,
 while counting already-funded backing capacity once. No numerical stack guarantee
 is claimed without the direct default-stack acceptance case.
+
+
+### Publication expectation stays in its original funded slot
+
+Stable compiler-emitted IR identifies repeated large inline expectation values in
+reopen conversion and final handoff. These are compiler local-storage totals,
+not a numerical runtime-frame guarantee and not the size of the root-protocol
+field. RecoveryPublicationExpectation now owns its actual ExpectationPayload in
+one slot admitted from the original PlanningResidentAllowance at publication-plan
+birth in closeout::seal. The plan's mandatory empty backing travels with the plan;
+into_command_parts populates that SAME slot before publication. Getters borrow,
+and only the existing release-topology extraction mutates its unique payload.
+Plan and expectation are move-only: unused Clone implementations are removed,
+rather than allowing unmetered allocation when cloning the new slot.
+
+The plan residency census counts empty actual capacity plus its existing nested
+buffers; expectation residency counts populated actual capacity plus its SAME
+nested buffers. Handoff therefore still counts the actual expectation bytes
+when its inline header shrinks. Requested preflight, actual capacity and original
+peak accounting include the plan-to-expectation conversion window explicitly.
+Existing phase quota assertions retain that floor; independent value-only tests
+prove refusal before reservation and actual-capacity/conversion accounting.
+Sealed singleton payload extraction uses remove(0), preserving the one-value
+invariant and capacity without constructing an Option of the large payload.
+No variable-length inventory/tree removal changes, late allocation, generic
+namespace-state change, public issuer, proof meaning change or compatibility path
+is introduced. Direct default-stack controls remain the acceptance evidence.
+
+Requirements: D17 original storage/construction admission maps to
+expectation_slot_refuses_full_plan_conversion_before_allocating and
+expectation_slot_counts_actual_capacity_and_plan_conversion_overlap; retained
+handoff census remains covered by the genuine release-recovery serving court.

@@ -29,6 +29,7 @@ impl NamespaceDurableBacking {
         mut self,
         payload: NamespaceDurablePayload,
     ) -> super::NamespaceDurablePhysicalRecovery {
+        assert!(self.0.is_empty() && self.0.capacity() >= 1);
         self.0.push(payload);
         super::NamespaceDurablePhysicalRecovery { backing: self }
     }
@@ -57,8 +58,7 @@ impl NamespaceDurableBacking {
         (payload, self)
     }
     pub(super) fn into_payload(mut self) -> NamespaceDurablePayload {
-        self.0
-            .pop()
-            .expect("published namespace contains its admitted payload")
+        assert_eq!(self.0.len(), 1, "sealed payload owner contains one value");
+        self.0.remove(0)
     }
 }

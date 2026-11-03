@@ -36,6 +36,7 @@ impl ExecutionBasisBacking {
         allowance: &PlanningResidentAllowance,
     ) -> ExecutionBasis {
         state.planning_construction_peak = allowance.peak();
+        assert!(self.0.is_empty() && self.0.capacity() >= 1);
         self.0.push(state);
         ExecutionBasis(self.0)
     }
@@ -54,8 +55,7 @@ impl ExecutionBasis {
     }
 
     pub(crate) fn into_state(mut self) -> ExecutionBasisState {
-        self.0
-            .pop()
-            .expect("execution owner contains its admitted payload")
+        assert_eq!(self.0.len(), 1, "sealed payload owner contains one value");
+        self.0.remove(0)
     }
 }

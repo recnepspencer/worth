@@ -113,8 +113,10 @@ pub(super) fn seal(
     let staging_generation = pending.staging_generation;
     drop(pending);
     allowance.release(discarded_pending_bytes);
+    let expectation_backing = ExpectationBacking::prepare(allowance)?;
     let backing = ExecutionBasisBacking::prepare(allowance)?;
     let publication = RecoveryPublicationPlan {
+        expectation_backing,
         store,
         checkpoint,
         source_generation,

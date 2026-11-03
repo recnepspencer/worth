@@ -212,9 +212,9 @@ pub(crate) use resident_memory::{PlanningMemoryDenial, PlanningResidentAllowance
 
 pub(crate) use basis::{
     derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
-    ExecutionBasis, ExecutionBasisDenial, ExecutionBasisState, RecoveryObservedCandidateArtifact,
-    RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
-    RecoverySelectedSourceInventory,
+    ExecutionBasis, ExecutionBasisDenial, ExecutionBasisState, ExpectationPayload,
+    RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
+    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
 };
 pub use basis::{
     RecoveryBaseImageAction, RecoveryBaseImagePlan, RecoveryPayloadManifestAction,

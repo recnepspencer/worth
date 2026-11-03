@@ -28,6 +28,7 @@ impl ReopenedBacking {
         PlanningResidentAllowance::vector_bytes(&self.0)
     }
     pub(crate) fn finish(mut self, payload: ReopenedPayload) -> ReopenedPhysicalRecovery {
+        assert!(self.0.is_empty() && self.0.capacity() >= 1);
         self.0.push(payload);
         ReopenedPhysicalRecovery { backing: self }
     }
@@ -35,9 +36,8 @@ impl ReopenedBacking {
         &self.0.as_slice()[0]
     }
     pub(super) fn into_payload(mut self) -> ReopenedPayload {
-        self.0
-            .pop()
-            .expect("reopened owner contains its admitted payload")
+        assert_eq!(self.0.len(), 1, "sealed payload owner contains one value");
+        self.0.remove(0)
     }
     pub(super) fn take_fresh_reopen(&mut self) -> CompletedPhysicalRecoveryFreshReopen {
         self.0[0]

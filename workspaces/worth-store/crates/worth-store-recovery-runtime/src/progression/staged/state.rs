@@ -60,6 +60,7 @@ impl StagedStateBacking {
     }
 
     pub(crate) fn finish(mut self, state: StagedRecoveryState) -> super::StagedPhysicalRecovery {
+        assert!(self.0.is_empty() && self.0.capacity() >= 1);
         self.0.push(state);
         super::StagedPhysicalRecovery { state: self }
     }
@@ -69,8 +70,7 @@ impl StagedStateBacking {
     }
 
     pub(super) fn into_state(mut self) -> StagedRecoveryState {
-        self.0
-            .pop()
-            .expect("closed staged owner contains its admitted state")
+        assert_eq!(self.0.len(), 1, "sealed payload owner contains one value");
+        self.0.remove(0)
     }
 }

@@ -61,7 +61,10 @@ impl RecoveryReleaseTopologyProof {
 
 impl RecoveryPublicationPlan {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
-        let mut bytes = boxed_bytes(&self.actions)?
+        let mut bytes = self
+            .expectation_backing
+            .backing_bytes()?
+            .checked_add(boxed_bytes(&self.actions)?)?
             .checked_add(boxed_bytes(&self.referenced_artifacts)?)?
             .checked_add(boxed_bytes(&self.candidates)?)?
             .checked_add(boxed_bytes(&self.created_artifacts)?)?;
@@ -77,9 +80,12 @@ impl RecoveryPublicationPlan {
 
 impl RecoveryPublicationExpectation {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
-        let mut bytes = boxed_bytes(&self.referenced_artifacts)?
-            .checked_add(boxed_bytes(&self.created_artifacts)?)?;
-        if let Some(release) = &self.release_topology {
+        let mut bytes = self
+            .backing
+            .backing_bytes()?
+            .checked_add(boxed_bytes(&self.payload().referenced_artifacts)?)?
+            .checked_add(boxed_bytes(&self.payload().created_artifacts)?)?;
+        if let Some(release) = &self.payload().release_topology {
             bytes = bytes.checked_add(release.owned_heap_bytes()?)?;
         }
         Some(bytes)

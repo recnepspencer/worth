@@ -54,6 +54,7 @@ impl RecoveryStagingInputBacking {
     }
 
     pub(crate) fn finish(mut self, state: RecoveryStagingInputState) -> RecoveryStagingInput {
+        assert!(self.0.is_empty() && self.0.capacity() >= 1);
         self.0.push(state);
         RecoveryStagingInput { backing: self }
     }
@@ -69,9 +70,11 @@ impl RecoveryStagingInput {
         &mut self.backing.0[0].integrity_trace
     }
     pub(super) fn into_state(mut self) -> RecoveryStagingInputState {
-        self.backing
-            .0
-            .pop()
-            .expect("staging input contains its admitted state")
+        assert_eq!(
+            self.backing.0.len(),
+            1,
+            "sealed payload owner contains one value"
+        );
+        self.backing.0.remove(0)
     }
 }

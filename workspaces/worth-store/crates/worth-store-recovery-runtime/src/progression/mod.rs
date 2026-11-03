@@ -11,10 +11,10 @@ mod staged;
 
 pub(crate) use planned::{
     derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
-    ExecutionBasis, ExecutionBasisDenial, ExecutionBasisState, PlannedStateBacking,
-    PlanningMemoryDenial, PlanningResidentAllowance, RecoveryObservedCandidateArtifact,
-    RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
-    RecoverySelectedSourceInventory,
+    ExecutionBasis, ExecutionBasisDenial, ExecutionBasisState, ExpectationPayload,
+    PlannedStateBacking, PlanningMemoryDenial, PlanningResidentAllowance,
+    RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
+    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
 };
 
 pub use admitted::AdmittedPhysicalRecovery;
