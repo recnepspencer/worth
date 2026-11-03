@@ -37,7 +37,6 @@ use worth_query_decl::facade::application_operation::WorthQueryApplicationOutput
 use worth_query_decl::facade::application_operation::WorthQueryApplicationOutputRoleFamily;
 use worth_query_decl::facade::application_operation::WorthQueryExactlyOneOutput;
 use worth_query_decl::facade::application_operation::WorthQueryPreserveOutput;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::region_output::generated_ring;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::planar_query_definition;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::planar_turn_invariant;
 use worth_query_decl::facade::worth_query_aspect;
