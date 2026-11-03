@@ -6,7 +6,7 @@ impl RejoinConstruction {
         pending: VerifiedPendingWalReleaseCustody,
         effective: VerifiedEffectiveReleaseHeadRosterV14,
         recovery_allocation: Option<PhysicalRecoveryAllocationAdmission>,
-        selection: &crate::orchestration::ResidentSourceSelection,
+        _selection: &crate::orchestration::ResidentSourceSelection,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         let Self {
             coordination,
@@ -46,7 +46,7 @@ impl RejoinConstruction {
         effective: VerifiedEffectiveReleaseHeadRosterV14,
         tier: VerifiedSelectedTierEpochCustody,
         recovery_allocation: Option<PhysicalRecoveryAllocationAdmission>,
-        selection: &crate::orchestration::ResidentSourceSelection,
+        _selection: &crate::orchestration::ResidentSourceSelection,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         let Self {
             coordination,

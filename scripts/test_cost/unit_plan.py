@@ -132,12 +132,14 @@ def checked_test_roots(command, graph):
     if '--all-targets' not in command and '--tests' not in command:
         return ()
     # Cargo erases the harness bit in a check graph. A target's normal stage
-    # can be a dependency; its harness is a leaf root. Preserve both declared
+    # can be a dependency; its checked test stage is a leaf root. Examples
+    # marked test=true also have ordinary and cfg(test) checks, even when their
+    # executable uses harness=false. Preserve both declared
     # stages, including an otherwise identical pair with no incoming edges.
     incoming = {edge['index'] for row in graph['units'] for edge in row['dependencies']}
     groups = {}
     for index, row in enumerate(graph['units']):
-        if row['mode'] == 'check' and row['target']['kind'] in (['lib'], ['bin']):
+        if row['mode'] == 'check' and row['target']['kind'] in (['lib'], ['bin'], ['example']):
             key = digest({key: value for key, value in row.items() if key != 'dependencies'})
             groups.setdefault(key, []).append(index)
     harnesses = []

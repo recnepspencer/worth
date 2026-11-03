@@ -2,7 +2,7 @@
 use super::*;
 use crate::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryCompletedWorkflowOperation,
-    WorthQuerySourceCompletion, WorthQueryWorkflowAcceptance,
+    WorthQueryWorkflowAcceptance,
 };
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationAdmissionBinding,

@@ -8,7 +8,7 @@ impl RejoinConstruction {
         claim: VerifiedSelectedReleaseHeadCustodyV2,
         tier: Option<VerifiedSelectedTierEpochCustody>,
         recovery_allocation: Option<PhysicalRecoveryAllocationAdmission>,
-        selection: &crate::orchestration::ResidentSourceSelection,
+        _selection: &crate::orchestration::ResidentSourceSelection,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         let Self {
             coordination,

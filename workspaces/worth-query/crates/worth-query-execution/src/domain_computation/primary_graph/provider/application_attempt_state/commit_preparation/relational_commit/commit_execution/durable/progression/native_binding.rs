@@ -3,7 +3,7 @@ use super::*;
 
 #[inline(never)]
 pub(super) fn advance(
-    execution: worth_execution::ExecutionRequest<'_, '_>,
+    _execution: worth_execution::ExecutionRequest<'_, '_>,
     guard: &mut QueryDurablePreparationGuard,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<Option<Progress>, worth_execution::WorkCeilingDenial> {
