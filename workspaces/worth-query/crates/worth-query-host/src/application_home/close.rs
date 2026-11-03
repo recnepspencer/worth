@@ -83,9 +83,16 @@ enum CloseCustody<Schema, Program> {
 }
 impl<Schema, Program> std::fmt::Debug for WorthQueryApplicationHomeCloseRefused<Schema, Program> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("WorthQueryApplicationHomeCloseRefused")
-            .field(&self.detail())
-            .finish()
+        let mut output = f.debug_struct("WorthQueryApplicationHomeCloseRefused");
+        output.field("reason", &self.detail());
+        if let CloseCustody::QueryReleased {
+            posture: ApplicationHomeClosePosture::RecoveryRequired(custody),
+            ..
+        } = &self.custody
+        {
+            output.field("checkpoint", custody.checkpoint_result());
+        }
+        output.finish()
     }
 }
 impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Schema, Program> {
