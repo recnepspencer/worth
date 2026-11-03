@@ -34,7 +34,7 @@ pub struct PreparedPair<'a> {
         &'a AspectValue,
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) struct ReadOutput {
+pub struct ReadOutput {
     pub raw: RawNonLiveKernelOutcome,
     pub(in crate::domain_computation::primary_graph::application_query) proof:
         WorthQueryPreparedReadCompletion,

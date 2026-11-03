@@ -69,14 +69,14 @@ impl ComputationChanges {
     pub(in crate::domain_computation::primary_graph) fn ordinals(&self) -> &OrdSet<usize> {
         &self.ordinals
     }
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn bind_original(
+    pub fn bind_original(
         mut self,
         original: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     ) -> Self {
         self.original = Some(original);
         self
     }
-    pub(in crate::domain_computation::primary_graph) fn at_snapshot(
+    pub fn at_snapshot(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,

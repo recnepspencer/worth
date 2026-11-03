@@ -94,7 +94,7 @@ fn finish(
     })
 }
 impl PreparedRichMaterialization {
-    pub(in super::super) fn matches(&self, reference: &FundedInspectionReport) -> bool {
+    pub fn matches(&self, reference: &FundedInspectionReport) -> bool {
         self.scope.session == reference.session()
             && self.scope.plan == reference.plan()
             && Arc::ptr_eq(&self.scope.target, reference.target())

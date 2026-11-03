@@ -130,7 +130,7 @@ impl CompletedInspection {
         }
     }
 
-    pub(super) fn publish<'original>(
+    pub fn publish<'original>(
         self,
         execution: &ExecutionRequest<'_, '_>,
         original: &'original WorthQueryApplicationQueryObservation,

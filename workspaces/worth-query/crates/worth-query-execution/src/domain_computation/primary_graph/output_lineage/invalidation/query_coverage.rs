@@ -33,9 +33,9 @@ struct QueryReadIdentity;
 pub(in crate::domain_computation::primary_graph) struct QueryFactCoverage {
     owner: Arc<SourceInvalidationOwner>,
     basis: PositionedRelationalSnapshot,
-    projection: Arc<QueryReadProjection>,
+    pub projection: Arc<QueryReadProjection>,
     identity: Arc<QueryReadIdentity>,
-    slot: Mutex<Option<u64>>,
+    pub slot: Mutex<Option<u64>>,
 }
 #[derive(Clone, Debug)]
 pub struct QueryReadBinding {

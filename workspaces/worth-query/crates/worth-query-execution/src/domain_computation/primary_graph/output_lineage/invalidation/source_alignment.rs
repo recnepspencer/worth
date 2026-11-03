@@ -26,9 +26,9 @@ pub(in crate::domain_computation::primary_graph) struct BranchMarkRoot {
     /// Shared only by replacements that retain this exact history map.
 
     /// What the oldest retained version shares with versions that have left.
-    pub(super) current: Arc<MarkState>,
+    pub current: Arc<MarkState>,
     pub(super) last_native_marking: Option<super::logical_marking::NativeMarkingReport>,
-    pub(super) past: OrdMap<Option<PatchStreamPosition>, HistoricalMarkState>,
+    pub past: OrdMap<Option<PatchStreamPosition>, HistoricalMarkState>,
 }
 
 #[derive(Clone, Debug)]

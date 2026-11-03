@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) s
 {
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) projection:
         Arc<PostingProjection>,
-    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) settlements:
+    pub settlements:
         OrdSet<Arc<RecordedSettlementIdentity>>,
 }
 impl PostingBindings {

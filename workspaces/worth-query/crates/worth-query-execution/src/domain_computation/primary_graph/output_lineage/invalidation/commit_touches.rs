@@ -65,10 +65,10 @@ impl TouchedCommit {
 }
 
 pub(in crate::domain_computation::primary_graph) struct TouchedCommits {
-    pub(in crate::domain_computation::primary_graph) commits: Vec<TouchedCommit>,
-    pub(in crate::domain_computation::primary_graph) next_cursor: Option<PatchStreamPosition>,
+    pub commits: Vec<TouchedCommit>,
+    pub next_cursor: Option<PatchStreamPosition>,
     pub(in crate::domain_computation::primary_graph) work_remaining: bool,
-    pub(in crate::domain_computation::primary_graph) caught_up_to_latest: bool,
+    pub caught_up_to_latest: bool,
 }
 
 impl SourceInvalidationOwner {

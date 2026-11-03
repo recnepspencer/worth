@@ -87,7 +87,7 @@ impl PreparedSettlementRegistration {
             .is_none());
     }
 
-    pub(in crate::domain_computation::primary_graph) fn install(
+    pub fn install(
         self,
     ) -> Result<SettlementRegistrationCleanup, StoppedSettlementRegistration> {
         let PreparedSettlementRegistration {

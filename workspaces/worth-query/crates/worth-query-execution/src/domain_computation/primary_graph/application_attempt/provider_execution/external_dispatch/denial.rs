@@ -326,7 +326,7 @@ impl InstalledTransportPendingReason {
 }
 
 impl WorthQueryExternalDispatchPreparationDenial {
-    pub(in crate::domain_computation::primary_graph) fn redispatch_denial(
+    pub fn redispatch_denial(
         self,
     ) -> WorthQueryExternalRedispatchDenial {
         redispatch_preparation(self)

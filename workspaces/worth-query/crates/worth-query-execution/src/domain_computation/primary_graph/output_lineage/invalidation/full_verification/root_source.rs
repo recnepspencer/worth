@@ -25,7 +25,7 @@ impl FullVerificationImage<'_> {
         Ok(true)
     }
 
-    pub(super) fn require_complete_root_upstream(
+    pub fn require_complete_root_upstream(
         &self,
         source: EvidenceView<'_>,
         terminal: &Arc<RecordedSettlementIdentity>,

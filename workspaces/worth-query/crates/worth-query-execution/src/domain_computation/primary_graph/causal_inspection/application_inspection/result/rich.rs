@@ -59,7 +59,7 @@ pub(in super::super) struct PreparedRichInspection<'o> {
     connection_identity: Option<BridgeIdentityEvidence>,
 }
 impl CompletedInspection {
-    pub(in super::super) fn publish_rich<'o>(
+    pub fn publish_rich<'o>(
         self,
         execution: &ExecutionRequest<'_, '_>,
         original: &'o WorthQueryApplicationQueryObservation,

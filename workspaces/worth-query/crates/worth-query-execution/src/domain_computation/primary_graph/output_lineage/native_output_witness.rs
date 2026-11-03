@@ -32,7 +32,7 @@ struct RoleProbe {
     entity_name: String,
     pub kind: KindId,
     pub posture: WorthQueryApplicationOutputPosture,
-    retirement: Option<RetirementMetadata>,
+    pub retirement: Option<RetirementMetadata>,
     entity: Option<EntityId>,
     first_aspect: usize,
     end_aspect: usize,
