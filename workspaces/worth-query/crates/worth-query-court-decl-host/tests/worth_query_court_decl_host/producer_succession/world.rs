@@ -111,7 +111,7 @@ fn try_install_source(
                 .field(Width::reference(), width)
                 .field(Produced::reference(), 0),
             )?;
-            if fault == Fault::Extra {
+            if matches!(fault, Fault::Extra | Fault::HiddenDeletion) {
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(
                         realization::Realization::reference(),

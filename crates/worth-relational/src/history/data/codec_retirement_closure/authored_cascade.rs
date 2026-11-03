@@ -72,9 +72,11 @@ pub(crate) fn select_authored_source_retirement(
                     },
                     context,
                 )
-                .map_err(|stop| match stop {
-                    Stop::Request(_) => stopped(stop),
-                    Stop::Payload(_) => reject(Cause::CorruptPublication, anchor),
+                .map_err(|failure| match failure.stop {
+                    Stop::Request(_) => stopped(failure.stop),
+                    Stop::Payload(_) => {
+                        reject(Cause::CorruptPublication, failure.source.unwrap_or(anchor))
+                    }
                 })?;
                 let selected = super::source_scope_closure::select(&[anchor], &latest, context)
                     .map_err(stopped)?;

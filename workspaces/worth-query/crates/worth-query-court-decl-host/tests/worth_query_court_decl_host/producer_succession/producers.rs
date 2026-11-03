@@ -1,4 +1,4 @@
-//! Three distinct producer families with one whole-entity realization owner each.
+//! Producer families with one whole-entity realization owner each.
 use super::realization::*;
 use super::*;
 macro_rules! split_phase {
@@ -62,7 +62,7 @@ macro_rules! split_phase {
                 const IDENTITY: &'static str = $identity;
                 const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[WorthQueryProducerApplicability::new(PROFILE, WorthQueryProducerLifecyclePosture::$posture)];
                 const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-                const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::SourceScopeCascade;
+                const OWNERSHIP: ProducerPublicationOwnership = super::OWNERSHIP;
                 const REUSE_POLICY: &'static str = "exact-source";
             }
             impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
@@ -112,8 +112,8 @@ macro_rules! split_phase {
                         }
                         let retire = select_retirements!(reader, source, input.0.width);
                         Ok(Ok(PublicationDecision { source: reader.mutation_target(&source)?, realization, children, retire,
-                            foreign: if matches!(self.1, Fault::Foreign | Fault::Extra) && TIER == 0 && $preserve {
-                                let output = reader.resolve_entity(RealizationKey::reference(), if self.1 == Fault::Extra { "unrelated" } else { "root.0" }.to_owned())?;
+                            foreign: if matches!(self.1, Fault::Foreign | Fault::Extra | Fault::HiddenDeletion) && TIER == 0 && $preserve {
+                                let output = reader.resolve_entity(RealizationKey::reference(), if self.1 == Fault::Foreign { "root.0" } else { "unrelated" }.to_owned())?;
                                 reader.entity(&output, Realization::reference())?;
                                 reader.relations_from(Realizes::reference(), &output).map_err(HandlerExecutionDenial::new)?;
                                 Some(reader.mutation_target(&output)?)
@@ -156,9 +156,9 @@ macro_rules! split_phase {
                         if let Some(foreign) = decision.foreign {
                             let foreign = writer.projected_entity(&foreign)?;
                             let sibling = writer.projected_entity(decision.children[0].as_ref().unwrap())?;
-                            if self.1 != Fault::Extra { writer.unlink(Realizes::reference(), &foreign, &sibling)?; }
+                            if self.1 == Fault::Foreign { writer.unlink(Realizes::reference(), &foreign, &sibling)?; }
                             writer.delete_entity(Realization::reference(), &foreign)?;
-                            writer.retire_member::<RetiredRealizations>("foreign", &foreign)?;
+                            if self.1 != Fault::HiddenDeletion { writer.retire_member::<RetiredRealizations>("foreign", &foreign)?; }
                         }
                         Ok::<_, WorthQueryApplicationAttemptDenial>(())
                     })();
@@ -172,11 +172,13 @@ macro_rules! split_phase {
     };
 }
 macro_rules! split_family {
-    ($module:ident, $tier:expr, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident) => {
+    ($module:ident, $tier:expr, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident, $ownership:ident) => {
         pub mod $module {
             use super::*;
             const TIER: u8 = $tier;
             const PROFILE: &str = $profile;
+            const OWNERSHIP: ProducerPublicationOwnership =
+                ProducerPublicationOwnership::$ownership;
             pub struct Family;
             impl WorthQueryProducerOutputFamily<Schema> for Family {
                 type Source = ReadBinding;
@@ -267,7 +269,8 @@ split_family!(
     "dispatch.split.parent.initial",
     "dispatch.split.parent.preserve",
     SplitParentInitial,
-    SplitParentPreserve
+    SplitParentPreserve,
+    SourceScopeCascade
 );
 split_family!(
     child,
@@ -276,7 +279,8 @@ split_family!(
     "dispatch.split.child.initial",
     "dispatch.split.child.preserve",
     SplitChildInitial,
-    SplitChildPreserve
+    SplitChildPreserve,
+    SourceScopeCascade
 );
 split_family!(
     leaf,
@@ -285,5 +289,16 @@ split_family!(
     "dispatch.split.leaf.initial",
     "dispatch.split.leaf.preserve",
     SplitLeafInitial,
-    SplitLeafPreserve
+    SplitLeafPreserve,
+    SourceScopeCascade
+);
+split_family!(
+    independent_parent,
+    0,
+    "independent-parent",
+    "dispatch.independent.parent.initial",
+    "dispatch.independent.parent.preserve",
+    IndependentParentInitial,
+    IndependentParentPreserve,
+    Independent
 );

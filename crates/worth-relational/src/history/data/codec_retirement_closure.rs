@@ -24,6 +24,8 @@ pub(crate) use materialization::{
 mod output_correspondence;
 mod payload_reconstruction;
 mod producer_retirement;
+mod publication_failure;
+pub(crate) use publication_failure::PublicationHistoryFailure;
 mod publication_succession;
 mod relation_payload;
 mod relations;
