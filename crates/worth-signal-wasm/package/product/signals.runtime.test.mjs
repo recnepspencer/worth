@@ -42,6 +42,7 @@ import "./signals_runtime/entrypoint/construction/worker_first_root_observation_
 import "./signals_runtime/entrypoint/construction/worker_first_tip_react_notify.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_tip_react_notify_negatives.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_await_settlement_authored_drain.test.mjs";
+import "./signals_runtime/entrypoint/construction/worker_first_pending_authored_shutdown.test.mjs";
 import "./signals_runtime/entrypoint/bridge/worker_runtime_bridge_bootstrap.test.mjs";
 import "./signals_runtime/entrypoint/bridge/worker_runtime_bridge_committed_projection.test.mjs";
 import "./signals_runtime/entrypoint/bridge/worker_runtime_bridge_diagnostics_surface.test.mjs";

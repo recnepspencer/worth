@@ -52,6 +52,13 @@ Package contract note:
 - CommonJS callers should use dynamic `import(...)` instead of `require(...)`
 - **1.5.0 breaking:** default `awaitSettlement()` is tip-status only — see
   [migration-1.5](./migration-1.5.md)
+- **1.6.1:** resource value and summary handles capture native dependencies;
+  form summaries continue following their source after draft edits. Shutdown
+  drains authored work before terminating imported source graphs. Retained
+  native callbacks can use runtime snapshots after borrowed handles are freed;
+  ordinary reads still require a live handle. This release also adds coordinated
+  `form.setFields(...)` updates and preserves `PATCH` methods in request and
+  reconciliation proofs.
 
 ## Stable Entry Points
 

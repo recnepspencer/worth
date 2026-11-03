@@ -101,7 +101,7 @@
       "canonicalDocs": ["resources/index", "api-reference/resources", "api-reference/resource-family-authoring", "api-reference/resource-line"],
       "truthOwners": ["package-src/product/resource", "package-src/product/api"],
       "evidence": ["package/product/resource.runtime.test.mjs"],
-      "baseline": { "declarationCount": 378, "directMemberCount": 1278, "signatureDigest": "c641957b0cb2e46c6983f04ef44ebbd10aed3aacf77d56719870ab7b63d88b69", "declarationFileCount": 56, "declarationFileDigest": "d1cae75fcb23e20fbe768d032836e6b6cf3183bc3363556ba38b9323404ba653" }
+      "baseline": {"declarationCount":378,"directMemberCount":1278,"signatureDigest":"14f8e23dc91ec4ab94a138991fd605264b0027a0353c20b002b331865f2ecbc0","declarationFileCount":56,"declarationFileDigest":"d80d682023ed51a2cf02692797d6040b001bfe5c706e11cd55db999fab485e7c"}
     },
     {
       "id": "forms",
@@ -115,7 +115,7 @@
       "canonicalDocs": ["forms/index", "forms/getting-started/your-first-form", "forms/state/README", "forms/validation/README", "forms/availability/README", "forms/actions/README", "forms/steps/README", "forms/layout/README", "forms/resource-backed/README", "forms/lifecycle/README", "forms/collaboration/README", "forms/diagnostics/README", "api-reference/forms", "api-reference/form-export-catalog"],
       "truthOwners": ["package-src/product/forms"],
       "evidence": ["package/product/signals_runtime/forms/closeout/full_forms_hostile_convergence.test.mjs", "package/product/documentation/form_export_catalog.test.mjs"],
-      "baseline": { "declarationCount": 234, "directMemberCount": 1326, "signatureDigest": "4950f1f6880baee132f41ae25726595ea1487b1f45b981d52a71959731b3e308", "declarationFileCount": 39, "declarationFileDigest": "951480aa843d2336b2aa49f56e11a099efa3f72467e949072c9168764bee1123" }
+      "baseline": {"declarationCount":234,"directMemberCount":1327,"signatureDigest":"cd785ef593721f7a336f4ad70c7c70102684278dd0bbf1d59445a74282ca3c49","declarationFileCount":39,"declarationFileDigest":"3bcfe899b6f3a3739406ef88a3e82c214ef4c49afc3988e1244a66e65549e90b"}
     },
     {
       "id": "router",
