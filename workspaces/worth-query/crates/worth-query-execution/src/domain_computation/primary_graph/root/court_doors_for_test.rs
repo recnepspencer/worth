@@ -7,3 +7,17 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         &self.layout
     }
 }
+
+impl WorthQueryPrimaryGraph {
+    #[doc(hidden)]
+    pub fn integration_handle_for_test(&self) -> WorthQueryPrimaryGraphIntegrationHandle {
+        Self::integration_handle(self)
+    }
+}
+
+impl WorthQueryPrimaryGraph {
+    #[doc(hidden)]
+    pub fn layout_for_test(&self) -> &WorthQueryPrimaryGraphLayout {
+        Self::layout(self)
+    }
+}

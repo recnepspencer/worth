@@ -11,3 +11,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Self::select_product_branch(self, execution, identity)
     }
 }
+
+impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    #[doc(hidden)]
+    pub fn into_parts_for_test(
+        self) -> (
+        &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        WorthQueryProductBranchLease,
+        super::super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
+    ) {
+        Self::into_parts(self)
+    }
+}

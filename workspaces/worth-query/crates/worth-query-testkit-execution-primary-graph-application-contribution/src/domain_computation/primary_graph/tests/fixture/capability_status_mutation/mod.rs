@@ -49,7 +49,7 @@ pub fn revoke_current_capability(
         world,
         WorkerIntentBatch::new("revoke-live-capability").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                entity_id: grant.entity_id(),
+                entity_id: grant.entity_id_for_test(),
                 fields,
             }),
         )),
@@ -67,7 +67,7 @@ pub fn installed_field(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout()
+        .layout_for_test()
         .field_locator(entity, aspect, field)
         .unwrap()
         .clone()

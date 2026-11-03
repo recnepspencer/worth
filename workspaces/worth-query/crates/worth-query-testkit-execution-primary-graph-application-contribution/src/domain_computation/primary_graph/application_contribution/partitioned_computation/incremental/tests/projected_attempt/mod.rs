@@ -111,17 +111,17 @@ pub fn admit(
     phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
 ) -> Admission {
     let phase_custody = phase.test_host_request_for_test();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
-    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, request);
+    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &principal,
             &account,
             &operation,
@@ -165,7 +165,7 @@ where
             let mut outcome = None;
             let mut bill = None;
             let completed = world.invariant.project_admitted_operation(
-                &phase_custody.phase_for_application(&world.application),
+                &phase_custody.phase_for_application_for_test(&world.application),
                 &admission,
                 |reader, root| {
                     outcome = Some((|| -> Outcome {
@@ -236,14 +236,14 @@ let charged = computed.charged_work();
                 world
                     .application
                     .begin_projected_application_read_attempt(
-                        &phase_custody.phase_for_application(&world.application),
+                        &phase_custody.phase_for_application_for_test(&world.application),
                         admission,
                         projection,
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )
                     .map_err(|_| ())
                     .and_then(|attempt| attempt.complete_projected_dependencies(
-                        &phase_custody.phase_for_application(&world.application),
+                        &phase_custody.phase_for_application_for_test(&world.application),
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     ).map_err(|_| ()))
                     .map(|_| SealedComputationRun::kept_in_test_for_test())

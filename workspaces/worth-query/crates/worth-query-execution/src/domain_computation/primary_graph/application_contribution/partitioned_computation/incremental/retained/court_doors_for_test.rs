@@ -7,3 +7,10 @@ impl SealedComputationRun {
         &self.state
     }
 }
+
+impl RetainedComputation {
+    #[doc(hidden)]
+    pub fn facts_for_test(&self) -> &SealedComputationFacts {
+        &self.facts
+    }
+}

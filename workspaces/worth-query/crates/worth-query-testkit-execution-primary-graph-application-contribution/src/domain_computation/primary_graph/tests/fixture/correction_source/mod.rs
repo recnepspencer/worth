@@ -141,7 +141,7 @@ pub fn publish_without_causality(
             let support = world.application.installed_program_support_for_test().unwrap();
             let selected = world.selected_product(&phase.test_host_request_for_test());
             let inspection = selected.inspect_selected_program().unwrap();
-            let presented = support.present(inspection.revision()).unwrap();
+            let presented = support.present_for_test(inspection.revision()).unwrap();
             world
                 .application
                 .compare_and_commit_application_for_program_action(

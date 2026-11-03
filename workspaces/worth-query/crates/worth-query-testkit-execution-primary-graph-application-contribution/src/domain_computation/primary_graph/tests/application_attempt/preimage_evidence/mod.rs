@@ -52,7 +52,7 @@ pub fn demanded_mutation_work(
         .with_host_advancement(|phase| {
             let phase_custody = &phase.test_host_request_for_test();
 
-            authenticated_principal(&(phase_custody).test_host_request(), &world, &request)
+            authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
@@ -61,7 +61,7 @@ pub fn demanded_mutation_work(
             let phase_custody = &phase.test_host_request_for_test();
 
             resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,

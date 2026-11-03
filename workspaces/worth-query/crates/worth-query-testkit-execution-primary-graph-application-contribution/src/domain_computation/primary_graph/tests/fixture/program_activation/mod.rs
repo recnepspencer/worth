@@ -20,10 +20,10 @@ pub fn seed_program_activation(
     world: &AuthorizationWorld,
     revision: &ApplicationProgramRevision,
 ) {
-    let layout = (*world
+    let layout =(* (*world
         .application
         .primary_provider_for_test())
-        .graph
+        .graph_for_test())
         .layout
         .program_activation()
         .clone();
@@ -57,16 +57,16 @@ pub fn seed_program_activation(
         .created_entity(&created)
         .unwrap();
     let basis = performed.commit().basis().relational_basis().clone();
-    drop(performed.consume());
+    drop(performed.consume());(*
     (*world
         .application
         .primary_provider_for_test())
-        .graph
-        .with_runtime_mut(execution, |runtime| {
+        .graph_for_test())
+        .with_runtime_mut(execution, |runtime| {(*
             (*world
                 .application
                 .primary_provider_for_test())
-                .graph
+                .graph_for_test())
                 .ensure_primary_indexes_for_basis(execution, runtime, &basis)
                 .unwrap();
         });

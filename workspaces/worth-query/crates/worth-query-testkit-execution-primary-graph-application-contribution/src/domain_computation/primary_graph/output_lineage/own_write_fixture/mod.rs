@@ -192,7 +192,7 @@ pub fn commit_own_write(
         effects.finish().unwrap().with_output_demand_observation()
     }).expect("the fixture host admits its own-write preparation");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
+    let handle = graph.integration_handle_for_test();
     let (key, dependency) = world
         .application
         .with_host_advancement(|phase| {
@@ -284,7 +284,7 @@ pub fn commit_own_write(
     let completed = (*world
         .application
         .primary_provider_for_test())
-        .observe_completed_application(receipt.commit_reference())
+        .observe_completed_application_for_test(receipt.commit_reference())
         .unwrap();
     assert!(
         completed

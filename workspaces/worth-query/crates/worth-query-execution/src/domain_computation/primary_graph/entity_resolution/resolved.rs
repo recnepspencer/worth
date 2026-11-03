@@ -215,3 +215,5 @@ impl<Schema, Entity> std::fmt::Debug for WorthQueryApplicationEntityIdentity<Sch
             .finish_non_exhaustive()
     }
 }
+
+mod court_doors_for_test;

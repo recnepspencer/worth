@@ -243,3 +243,5 @@ fn check_control(control: StorageControl<'_, '_>) -> Result<(), WorthQueryDecisi
         .check_live()
         .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)
 }
+
+mod court_doors_for_test;

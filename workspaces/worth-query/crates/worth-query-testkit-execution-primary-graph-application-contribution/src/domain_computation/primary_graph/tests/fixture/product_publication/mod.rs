@@ -31,7 +31,7 @@ pub fn publish_relational_mutation_on_application<
     let published_basis = performed.commit().basis().relational_basis().clone();
     drop(performed.consume());
     let graph = (*application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
+    let handle = graph.integration_handle_for_test();
     handle.with_runtime_mut(request_execution, |runtime| {
         let observation = published_basis.observation();
         let head = observation
@@ -79,9 +79,9 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     let selected = application
         .select_product_branch_for_test(execution, application.product_runtime().default_branch_for_test())
         .expect("the fixture product branch remains admitted");
-    let (_, product, application_basis) = selected.into_parts();
+    let (_, product, application_basis) = selected.into_parts_for_test();
     let graph = (*application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
+    let handle = graph.integration_handle_for_test();
     let candidate = handle.with_runtime_mut(execution, |runtime| {
         let mut transaction = runtime
             .begin_branch_transaction(

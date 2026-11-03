@@ -200,3 +200,5 @@ impl RecordedOutput {
 
 #[cfg(test)]
 mod span_tests;
+
+mod court_doors_for_test;

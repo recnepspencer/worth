@@ -294,8 +294,8 @@ pub fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
         .expect("a producer's run retains")
         .state_for_test());
     if moved {
-        let (key, fact) = state
-            .facts
+        let (key, fact) = (*state
+            .facts_for_test())
             .facts()
             .find(|(_, _, readers)| {
                 let partitioner = readers
@@ -308,7 +308,7 @@ pub fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
         let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact else {
             panic!("the status is a field's fact: {fact:?}");
         };
-        state.facts.replace_fact(
+        (*state.facts_for_test()).replace_fact(
             &key,
             WorthQueryApplicationObservedFact::SourceEntity { entity_id },
         );

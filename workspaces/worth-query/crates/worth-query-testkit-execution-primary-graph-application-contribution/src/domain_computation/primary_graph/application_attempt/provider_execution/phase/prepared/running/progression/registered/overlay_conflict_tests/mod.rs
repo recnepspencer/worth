@@ -21,12 +21,12 @@ pub fn assert_second_real_overlay_is_rejected(
     let receipt = (*world
         .application
         .primary_provider_for_test())
-        .capture_application_read_set(execution, &staged.read_authority(), control)
+        .capture_application_read_set_for_test(execution, &staged.read_authority(), control)
         .expect("real registered facts must produce a decision read set");
     let fresh = match (*world
         .application
         .primary_provider_for_test())
-        .compare_application_read_set(execution, &staged.read_authority(), receipt, control)
+        .compare_application_read_set_for_test(execution, &staged.read_authority(), receipt, control)
         .expect("real registered facts must compare")
     {
         WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) => fresh,
@@ -47,7 +47,7 @@ pub fn assert_second_real_overlay_is_rejected(
     );
     let first = staged
         .provisional_provider_for_test()
-        .stage_provisional_overlay(
+        .stage_provisional_overlay_for_test(
             session,
             WorthQueryProvisionalEffectProgramView::new(&lowered, 0),
             first_admission,
@@ -60,7 +60,7 @@ pub fn assert_second_real_overlay_is_rejected(
         lowered.identity(),
         1,
     );
-    let denial = match staged.provisional_provider_for_test().stage_provisional_overlay(
+    let denial = match staged.provisional_provider_for_test().stage_provisional_overlay_for_test(
         session,
         WorthQueryProvisionalEffectProgramView::new(&lowered, 1),
         substitute_admission,
@@ -74,7 +74,7 @@ pub fn assert_second_real_overlay_is_rejected(
     assert_eq!(first.view().physical_overlay_identity(), first_identity);
     staged
         .provisional_provider_for_test()
-        .discard_provisional_overlay(staged.execution_request_for_test(), first.view())
+        .discard_provisional_overlay_for_test(staged.execution_request_for_test(), first.view())
         .expect("the first exact overlay must remain independently discardable");
     let _ = staged.abort();
     assert_eq!(

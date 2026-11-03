@@ -7,3 +7,10 @@ impl WorthQueryProductRuntime {
         Self::default_branch(self)
     }
 }
+
+impl WorthQueryProductRuntime {
+    #[doc(hidden)]
+    pub fn owner_for_test(&self) -> &Arc<RuntimeWorldOwner<(), (), (), (), ()>> {
+        &self.owner
+    }
+}

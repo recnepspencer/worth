@@ -15,3 +15,11 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         Self::installed(roster, activation)
     }
 }
+
+impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
+    #[doc(hidden)]
+    pub fn present_for_test(
+        &self, revision: &ApplicationProgramRevision) -> Option<WorthQueryPresentedProgram<'_>> {
+        Self::present(self, revision)
+    }
+}
