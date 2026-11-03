@@ -4,14 +4,12 @@ mod inspection_terminal;
 mod mutation_progression;
 mod owner_execution;
 mod read_terminal;
-pub(in crate::domain_computation) use inspection_terminal::{
-    WorthQueryInspectionReadCompletion, WorthQueryInspectionReadTerminalDenial,
-};
+pub(in crate::domain_computation) use inspection_terminal::WorthQueryInspectionReadCompletion;
 mod resource_terminal;
 pub(in crate::domain_computation) use resource_terminal::WorthQueryResourceReadCompletion;
 mod session;
+pub use session::WorthQueryManagedGraphWorkSessionStartDenial;
 pub(in crate::domain_computation) use session::{
-    WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
     WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
     WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
     WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
@@ -47,3 +45,7 @@ pub(in crate::domain_computation) use owner_execution::pin_panic;
 
 #[cfg(test)]
 pub(in crate::domain_computation) use owner_execution::pin_control;
+
+pub use session::WorthQueryManagedGraphReadDenial;
+
+pub use inspection_terminal::WorthQueryInspectionReadTerminalDenial;

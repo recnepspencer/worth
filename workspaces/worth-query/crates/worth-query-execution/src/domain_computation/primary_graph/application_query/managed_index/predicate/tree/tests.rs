@@ -113,7 +113,7 @@ fn duplicates_rotations_and_every_removal_preserve_actual_slot_probe_and_summary
         for (index, id) in ids.iter().rev().enumerate() {
             let retired = tree.remove(WatchSlot(*id)).unwrap();
             assert_eq!(
-                retired.record.probe,
+                retired.record_custody.as_ref().unwrap().probe,
                 oracle.remove(&WatchSlot(*id)).unwrap()
             );
             verify(&tree, &oracle);

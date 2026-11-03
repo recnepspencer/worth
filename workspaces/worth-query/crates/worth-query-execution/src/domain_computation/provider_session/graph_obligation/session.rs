@@ -79,7 +79,7 @@ enum WorthQueryGraphWorkBasis {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryManagedGraphWorkSessionStartDenial {
+pub enum WorthQueryManagedGraphWorkSessionStartDenial {
     PlanAffinityMismatch,
     BasisBranchMismatch,
     IdentityExhausted,
@@ -356,7 +356,7 @@ impl WorthQueryManagedGraphWorkSession {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryManagedGraphReadDenial {
+pub enum WorthQueryManagedGraphReadDenial {
     RequestStop(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     SnapshotUnavailable,
     IndexNotInstalled(worth_relational::facade::indexes::DerivedIndexId),
@@ -365,5 +365,4 @@ pub(in crate::domain_computation) enum WorthQueryManagedGraphReadDenial {
     ForeignGraph,
     ForeignReadProof,
     ForeignReadIntent,
-    TerminalReleaseMismatch,
 }

@@ -1,4 +1,7 @@
 //! The real settlement's readonly seed, separate from its operational read lease.
+#[cfg(test)]
+mod court;
+mod provenance;
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
@@ -8,6 +11,7 @@ use crate::domain_computation::primary_graph::{
 
 /// No variant asserts that a query row or field was produced by this source.
 /// Fresh metadata admission and exact revision/output overlap remain necessary.
+#[cfg_attr(test, derive(Clone))]
 pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSource {
     Committed {
         settlement: Option<Arc<RecordedSettlementIdentity>>,

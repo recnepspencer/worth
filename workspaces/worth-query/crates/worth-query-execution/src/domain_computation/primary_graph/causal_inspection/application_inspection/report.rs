@@ -10,7 +10,10 @@ use crate::domain_computation::{
     primary_graph::admitted_capture::{
         checkpoint, run_retained_stage, CaptureStop, RetainedStorageDenial,
     },
-    provider_session::{WorthQueryGraphWorkSessionIdentity, WorthQueryManagedGraphWorkSession},
+    provider_session::{
+        WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
+        WorthQueryManagedGraphWorkSession,
+    },
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
@@ -48,7 +51,11 @@ pub(super) struct InspectionReportPayload {
 pub(super) struct FundedInspectionReport {
     payload: InspectionReportPayload,
     session: WorthQueryGraphWorkSessionIdentity,
+    managed_run: WorthQueryGraphWorkManagedRunIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
+    basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+    capacity_identity:
+        worth_query_admission::integration::WorthQueryGraphCapacityReservationIdentity,
     target: Arc<WorthQueryApplicationInspectionTarget>,
     retained_bytes: u64,
     reference: InspectionOriginalReference,
@@ -112,6 +119,49 @@ pub(super) fn materialize(
         let envelope = request
             .assemble_with_admission(&mut admit)
             .map_err(|cause| MapKernelFailure::Domain(InspectionReportDenial::Bridge(cause)))?;
+        let (bound_target, basis) =
+            session
+                .inspection_binding()
+                .ok_or(MapKernelFailure::Domain(
+                    InspectionReportDenial::ForeignMaterialization,
+                ))?;
+        if !Arc::ptr_eq(target, bound_target) {
+            return Err(MapKernelFailure::Domain(
+                InspectionReportDenial::ForeignMaterialization,
+            ));
+        }
+        let capacity = session
+            .inspection_capacity_identity()
+            .ok_or(MapKernelFailure::Domain(
+                InspectionReportDenial::ForeignMaterialization,
+            ))?;
+        let bytes = basis
+            .retained_clone_heap_bytes()
+            .and_then(|bytes| usize::try_from(bytes).ok())
+            .ok_or(MapKernelFailure::Domain(InspectionReportDenial::Storage(
+                RetainedStorageDenial::Overflow,
+            )))?;
+        let selection_bytes = match basis.selection() {
+            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Relational => 0,
+            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product) => product.branch_identity().name().as_str().len(),
+        };
+        // Fund the clone and both completion comparisons before retaining this basis.
+        // Product selection custody is shared, but its name still has comparison cost.
+        let work = bytes
+            .checked_mul(3)
+            .and_then(|work| {
+                selection_bytes
+                    .checked_mul(2)
+                    .and_then(|selection| work.checked_add(selection))
+            })
+            .ok_or(MapKernelFailure::Domain(InspectionReportDenial::Storage(
+                RetainedStorageDenial::Overflow,
+            )))?;
+        admit(work, bytes).map_err(|cause| {
+            MapKernelFailure::Domain(InspectionReportDenial::Bridge(
+                BridgeQueryObservationReportingStop::Resource(cause),
+            ))
+        })?;
         drop(admit);
         // This is this actual stage's admitted growth, not its prior live backing.
         // Canonical preparation's conservative transient allowance stays funded
@@ -124,7 +174,10 @@ pub(super) fn materialize(
                 availability,
             },
             session: session.identity(),
+            managed_run: session.managed_run_identity(),
             plan: session.plan_identity(),
+            basis: basis.clone(),
+            capacity_identity: capacity,
             target: Arc::clone(target),
             retained_bytes,
             reference,
@@ -133,6 +186,20 @@ pub(super) fn materialize(
 }
 
 impl FundedInspectionReport {
+    pub(super) fn managed_run(&self) -> WorthQueryGraphWorkManagedRunIdentity {
+        self.managed_run
+    }
+    pub(super) fn basis(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity {
+        &self.basis
+    }
+    pub(super) fn capacity_identity(
+        &self,
+    ) -> worth_query_admission::integration::WorthQueryGraphCapacityReservationIdentity {
+        self.capacity_identity
+    }
+
     pub(super) fn reference(&self) -> InspectionOriginalReference {
         self.reference
     }

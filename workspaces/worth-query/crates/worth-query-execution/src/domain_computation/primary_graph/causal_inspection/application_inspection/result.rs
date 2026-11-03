@@ -86,6 +86,41 @@ pub(super) struct PreparedObservedInspection<'original> {
 }
 
 impl CompletedInspection {
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn assert_completion_facts(
+        &mut self,
+        other: &mut Self,
+        execution: &ExecutionRequest<'_, '_>,
+        report: &FundedInspectionReport,
+    ) {
+        assert!(self.validate_report(execution, report).is_ok());
+        for fact in [
+            "session",
+            "managed_run",
+            "plan",
+            "target",
+            "basis",
+            "basis_release",
+            "release",
+        ] {
+            self.completion
+                .exchange_report_fact(&mut other.completion, fact);
+            assert!(
+                matches!(
+                    self.validate_report(execution, report),
+                    Err(InspectionAdmissionDenial::ForeignIssuedAccess)
+                ),
+                "foreign {fact}"
+            );
+            self.completion
+                .exchange_report_fact(&mut other.completion, fact);
+            assert!(
+                self.validate_report(execution, report).is_ok(),
+                "restored {fact}"
+            );
+        }
+    }
+
     pub(super) fn from_terminal(
         completion: WorthQueryInspectionReadCompletion,
         request: WorthQueryRequestScope,
@@ -126,7 +161,14 @@ impl CompletedInspection {
     ) -> Result<(), InspectionAdmissionDenial> {
         require_request(execution, &self.request)?;
         self.completion
-            .matches_report(report.session(), report.plan(), report.target())
+            .matches_report(
+                report.session(),
+                report.managed_run(),
+                report.plan(),
+                report.target(),
+                report.basis(),
+                report.capacity_identity(),
+            )
             .then_some(())
             .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)
     }

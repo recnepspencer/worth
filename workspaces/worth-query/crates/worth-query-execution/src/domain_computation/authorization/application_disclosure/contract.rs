@@ -121,12 +121,12 @@ pub(in crate::domain_computation) enum WorthQueryAdmittedApplicationDisclosureCo
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryApplicationDisclosureContractDenial {
+pub struct WorthQueryApplicationDisclosureContractDenial {
     subject: String,
 }
 
 impl WorthQueryApplicationDisclosureContractDenial {
-    pub(in crate::domain_computation) fn subject(&self) -> &str {
+    pub fn subject(&self) -> &str {
         &self.subject
     }
 }
@@ -134,5 +134,13 @@ impl WorthQueryApplicationDisclosureContractDenial {
 pub(super) fn denial(subject: impl Into<String>) -> WorthQueryApplicationDisclosureContractDenial {
     WorthQueryApplicationDisclosureContractDenial {
         subject: subject.into(),
+    }
+}
+
+#[cfg(test)]
+mod cause_tests {
+    #[test]
+    fn diagnostic_contract_denial_survives_public_inspection() {
+        super::denial("declared diagnostic field contract").assert_inspection_contract_cause();
     }
 }

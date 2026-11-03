@@ -109,7 +109,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn managed_r
         | Cause::ForeignBasis
         | Cause::ForeignGraph
         | Cause::ForeignReadProof
-        | Cause::ForeignReadIntent
-        | Cause::TerminalReleaseMismatch => Ok(Denial::Session),
+        | Cause::ForeignReadIntent => Ok(Denial::Session),
     }
 }

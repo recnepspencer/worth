@@ -63,8 +63,9 @@ pub mod graph_obligation {
         WorthQueryGraphObligationSelectionDenialKind, WorthQueryGraphWorkAdmissionDenial,
         WorthQueryGraphWorkCapacityAdmissionStop, WorthQueryGraphWorkIntent,
         WorthQueryGraphWorkIntentKind, WorthQueryGraphWorkPlanIdentity,
-        WorthQueryPreparedManagedIndexReadGraphWork, WorthQueryPreparedResourceReadGraphWork,
-        WorthQuerySelectedGraphObligationInspection, WorthQuerySelectedGraphObligations,
+        WorthQueryGraphWorkReleaseDenial, WorthQueryPreparedManagedIndexReadGraphWork,
+        WorthQueryPreparedResourceReadGraphWork, WorthQuerySelectedGraphObligationInspection,
+        WorthQuerySelectedGraphObligations,
     };
 }
 

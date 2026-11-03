@@ -100,7 +100,9 @@ fn resource_read_retains_exact_capacity_and_drop_or_late_refusal_releases_it() {
         &mut admit,
     )
     .unwrap();
-    let receipt = plan.release();
+    let receipt = plan
+        .release()
+        .expect("the resource plan retains its reservation");
     assert_eq!(receipt.released_reservation_count(), 1);
     assert_eq!(capacity.active_attempts(), 0);
 }

@@ -23,6 +23,15 @@ impl std::error::Error for DecisionQueryPreparationStop {
     }
 }
 
+pub(in crate::domain_computation::primary_graph) fn native_decision_cause<'a>(
+    error: &'a (dyn std::error::Error + 'static),
+) -> Option<&'a worth_relational::facade::mvcc::CompanionPreflightStop> {
+    match error.downcast_ref::<DecisionQueryPreparationStop>()? {
+        DecisionQueryPreparationStop::Native(cause) => Some(cause),
+        _ => None,
+    }
+}
+
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// Runs an authenticated handler with its declared Parent reads on the
     /// product selected by this admission and the admission's original request.
@@ -134,5 +143,32 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(|cause| {
                 MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause))
             })
+    }
+}
+
+#[cfg(test)]
+mod cause_tests {
+    use super::*;
+    #[test]
+    fn handler_denial_preserves_native_decision_preparation_cause() {
+        let denial = HandlerExecutionDenial::new(DecisionQueryPreparationStop::Native(
+            worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceChanged,
+        ));
+        assert!(matches!(
+            denial.native_decision_refusal(),
+            Some(worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceChanged)
+        ));
+        let retained = denial
+            .source
+            .as_ref()
+            .downcast_ref::<DecisionQueryPreparationStop>()
+            .unwrap();
+        let DecisionQueryPreparationStop::Native(original) = retained else {
+            unreachable!()
+        };
+        assert!(std::ptr::eq(
+            denial.native_decision_refusal().unwrap(),
+            original
+        ));
     }
 }

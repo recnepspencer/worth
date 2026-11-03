@@ -54,7 +54,16 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
             let past = vec![unrebasable.clone(), source_read.clone()];
             let unmoved = OwnEffectOnReads(OwnEffect::Unmoved);
             let moved = OwnEffectOnReads(OwnEffect::Moved);
-            assert_eq!(own_effect(before.clone()), unmoved);
+            let original_effect = own_effect(before.clone());
+            assert_eq!(original_effect, unmoved);
+            assert_eq!(
+                original_effect.at_own_publication(true),
+                FactlessCurrentness::Current
+            );
+            assert_eq!(
+                original_effect.at_own_publication(false),
+                FactlessCurrentness::Superseded
+            );
             assert_eq!(own_effect(past.clone()), unmoved);
             assert_eq!(
                 own_effect(vec![unrebasable]),
@@ -69,7 +78,12 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
                 locator,
                 "moved",
             );
-            assert_eq!(own_effect(before), moved);
+            let changed_effect = own_effect(before);
+            assert_eq!(changed_effect, moved);
+            assert_eq!(
+                changed_effect.at_own_publication(true),
+                FactlessCurrentness::Superseded
+            );
             assert_eq!(
                 own_effect(past),
                 moved,

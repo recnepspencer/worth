@@ -24,6 +24,7 @@ pub use orbit::WorthQueryInvariantProjectionOrbit;
 mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;
+pub(in crate::domain_computation::primary_graph) use operation_reader::native_index_decision_cause;
 pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
 pub use operation_reader::{
     WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,

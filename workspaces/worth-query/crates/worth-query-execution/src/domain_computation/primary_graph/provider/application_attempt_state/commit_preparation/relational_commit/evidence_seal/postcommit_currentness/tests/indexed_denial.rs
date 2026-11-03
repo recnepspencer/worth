@@ -155,14 +155,12 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
             matches!(
                 &outcome,
                 RebasedSourceFacts::VerificationRequired {
-                    reason: RebaseVerificationReason::IndexedSelectionFactDenied(
-                        actual_ordinal,
-                        IndexedSelectionReobserveDenial::Lookup(
-                            BoundedEntityFieldLookupDenialKind::IndexNotInstalled
-                        )
-                    ),
-                    ..
-                } if *actual_ordinal == ordinal
+                    reason, ..
+                } if reason.reason() == &RebaseVerificationReason::IndexedSelectionFactDenied(
+                    IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::IndexNotInstalled))
+                    && crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::from(reason.clone())
+                        == crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::IndexedSelectionFactDenied(ordinal,
+                            IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::IndexNotInstalled))
             ),
             "the native denial and its actual nonzero ordinal must survive rebase: {outcome:?}"
         );

@@ -94,6 +94,9 @@ where
     let capacity = reserve_graph_provider_capacity_admitted(provider, admit)
         .map_err(|cause| match cause {
             WorthQueryCapacityReservationAdmissionStop::Admission(cause) => Stop::Admission(cause),
+            WorthQueryCapacityReservationAdmissionStop::ReservationIdentityExhausted(cause) => {
+                Stop::Denial(Denial::from(cause))
+            }
             WorthQueryCapacityReservationAdmissionStop::AccountingOverflow => {
                 Stop::AccountingOverflow
             }
@@ -104,5 +107,5 @@ where
         selected,
         WorthQueryGraphWorkAdmissionMechanics::ResourceRead { capacity },
     )
-    .ok_or(Stop::Denial(Denial::IdentityExhausted))
+    .map_err(Stop::Denial)
 }
