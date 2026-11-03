@@ -1,0 +1,17 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.claim_batch (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity.idempotency_key (mut)"
+ ],
+ "field_into_doors": [
+  "domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun.state"
+ ],
+ "method_doors": [
+  "equality_type_id::EqualityTypeId::of",
+  "domain_computation::authorization::operation_admission::brand_access::WorthQueryAdmittedApplicationOperation::bind_source_partition",
+  "domain_computation::primary_graph::output_lineage::restoration::WorthQueryApplicationOutputLineage::record_restoration"
+ ],
+ "unplaced": []
+}
