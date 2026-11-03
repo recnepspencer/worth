@@ -58,7 +58,11 @@ fn content_source_cancel_inside_original_borrow_refuses_and_fresh_rebuild_succee
         WorthQueryApplicationMutationOutcome::Committed { .. }
     ));
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        WorthQueryAdmissionClock::system(),
+    );
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
     let find = || source::query::Find {

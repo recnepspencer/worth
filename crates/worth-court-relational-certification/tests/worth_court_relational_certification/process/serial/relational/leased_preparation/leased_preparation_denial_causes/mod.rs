@@ -42,7 +42,9 @@ fn expired_lease_preserves_both_request_causes() {
 
     let _serial = serial();
     let mut request = lease_request(32 * 1024 * 1024, worth_execution::CancellationToken::new());
-    request.deadline = Some(std::time::Instant::now());
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    let held = time.hold();
+    request.deadline = Some(time.clock().deadline_at(held));
     assert_request_cause(execution, request, |cause| {
         cause == worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed
     });

@@ -250,7 +250,11 @@ fn content_original_cancellation_during_encoding_refuses_before_publication_then
     let cancellation = WorthQueryCancellationSource::new();
     let host = world::install_with_control(Some(cancellation.clone()));
     let before = world::pin(&host).selected_commit().clone();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        WorthQueryAdmissionClock::system(),
+    );
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let refused = host
         .runtime()

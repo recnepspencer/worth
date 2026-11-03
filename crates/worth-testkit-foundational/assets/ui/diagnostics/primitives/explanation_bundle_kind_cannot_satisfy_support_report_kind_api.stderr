@@ -1,13 +1,13 @@
 error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/explanation_bundle_kind_cannot_satisfy_support_report_kind_api.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/explanation_bundle_kind_cannot_satisfy_support_report_kind_api.rs:9:31
   |
-  |     needs_support_report_kind(explanation);
+9 |     needs_support_report_kind(explanation);
   |     ------------------------- ^^^^^^^^^^^ expected `FoundationalSupportReportArtifactKind`, found `FoundationalExplanationBundleArtifactKind`
   |     |
   |     arguments to this function are incorrect
   |
 note: function defined here
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/explanation_bundle_kind_cannot_satisfy_support_report_kind_api.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/diagnostics/primitives/explanation_bundle_kind_cannot_satisfy_support_report_kind_api.rs:5:4
   |
-  | fn needs_support_report_kind(_kind: FoundationalSupportReportArtifactKind) {}
+5 | fn needs_support_report_kind(_kind: FoundationalSupportReportArtifactKind) {}
   |    ^^^^^^^^^^^^^^^^^^^^^^^^^ --------------------------------------------

@@ -37,7 +37,8 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     // The first original-controlled evidence/encoding scope enters the SDK before
     // emitting any envelope. Its current framework admission is an independent
     // literal invoice, not the eventual encoded checkpoint length.
-    const FIRST_SCOPE_BYTES: u64 = 408;
+    // The owned monotonic deadline adds 8 bytes to the kernel framework layout.
+    const FIRST_SCOPE_BYTES: u64 = 416;
     const PEAK_BYTES: u64 = 1024 * 1024;
     let authority = crate::tests::support::test_execution_authority();
     let parent = authority
@@ -112,12 +113,9 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     let member_quote = retained
         .members()
         .iter()
-        .map(|member| match member {
+        .filter_map(|member| match member {
             crate::durability::data::RelationalCheckpointMember::New { bytes, .. } => {
-                match bytes.charged_payload_bytes() {
-                    Some(bytes) => bytes,
-                    None => 0,
-                }
+                bytes.charged_payload_bytes()
             }
             _ => panic!("embedded capture resolves every member"),
         })

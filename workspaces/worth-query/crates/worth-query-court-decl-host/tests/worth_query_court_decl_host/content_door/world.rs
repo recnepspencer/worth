@@ -72,7 +72,7 @@ pub fn install_with_calls(
         Schema::declaration().unwrap(),
         ((cancellation, calls),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             graph.bind_principal(
                 &installed.principal_binding(Actor::reference()).unwrap(),
@@ -171,7 +171,7 @@ pub fn restore(
         Schema::declaration().unwrap(),
         ((None, calls),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .unwrap()

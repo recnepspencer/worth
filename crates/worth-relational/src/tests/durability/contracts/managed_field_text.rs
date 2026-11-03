@@ -182,7 +182,8 @@ fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_i
         .unwrap_err();
     // Physical hashing now enters a funded SDK native scope before member
     // copying or managed text. Freeze that first framework admission invoice.
-    const FIRST_SCOPE_BYTES: u64 = 408;
+    // The owned monotonic deadline adds 8 bytes to the kernel framework layout.
+    const FIRST_SCOPE_BYTES: u64 = 416;
     assert_eq!(
         error,
         RelationalRecoveryStop::Request(

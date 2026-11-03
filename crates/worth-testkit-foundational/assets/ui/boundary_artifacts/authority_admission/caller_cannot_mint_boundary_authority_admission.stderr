@@ -1,7 +1,7 @@
 error[E0624]: associated function `milestone_4_phase_2` is private
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/authority_admission/caller_cannot_mint_boundary_authority_admission.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/authority_admission/caller_cannot_mint_boundary_authority_admission.rs:4:53
   |
-  |     let _ = FoundationalBoundaryAuthorityAdmission::milestone_4_phase_2();
+4 |     let _ = FoundationalBoundaryAuthorityAdmission::milestone_4_phase_2();
   |                                                     ^^^^^^^^^^^^^^^^^^^ private associated function
   |
  ::: $WORKSPACE/crates/worth-foundational/src/boundary_artifacts/authority.rs

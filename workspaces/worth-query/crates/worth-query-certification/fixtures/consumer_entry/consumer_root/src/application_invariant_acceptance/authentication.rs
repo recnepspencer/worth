@@ -72,21 +72,38 @@ pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
 pub(super) fn admit<Schema: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
 ) -> authentication::WorthQueryAdmittedAuthenticationAdapter<Schema, LocalIdentityAdapter> {
+    admit_with_clock(schema, authentication::WorthQueryAdmissionClock::system())
+}
+
+pub(super) fn admit_with_clock<Schema: ApplicationSchema>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    clock: authentication::WorthQueryAdmissionClock,
+) -> authentication::WorthQueryAdmittedAuthenticationAdapter<Schema, LocalIdentityAdapter> {
     authentication::admit_authentication_adapter(
         schema,
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
             authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
+            clock,
+        ),
         LocalIdentityAdapter,
     )
     .expect("the local adapter is admitted against the installed consumer schema")
 }
 
 pub(super) fn request_scope() -> authentication::WorthQueryRequestScope {
+    request_scope_with_clock(authentication::WorthQueryAdmissionClock::system())
+}
+
+pub(super) fn request_scope_with_clock(
+    clock: authentication::WorthQueryAdmissionClock,
+) -> authentication::WorthQueryRequestScope {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     authentication::WorthQueryRequestScope::new(
-        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(120)),
-        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+        Some(clock.now() + Duration::from_secs(120)),
+        cancellation.token(),
+        clock,
+    )
 }
 
 pub(super) fn block_on<Output>(future: impl Future<Output = Output>) -> Output {

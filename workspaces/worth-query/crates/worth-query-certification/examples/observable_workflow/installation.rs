@@ -59,6 +59,9 @@ fn roster() -> WorthQueryApplicationProgramRoster<'static, DocumentRetentionSche
         .support(validated_second_program())
         .support(crate::program::validated_second_program())
         .support(crate::document_retention_model::actor_generation::validated_actor_program())
+        .support(
+            crate::document_retention_model::model_lifecycle::validated_model_lifecycle_program(),
+        )
 }
 
 fn seed_host(

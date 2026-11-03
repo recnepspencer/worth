@@ -28,7 +28,10 @@ fn content_equality_shortcuts_obey_original_cancel_deadline_and_work() {
         let cancelled = original(&cancel);
         cancel.cancel();
         let limited = SerialRequest::from_policy(&policy, producer_cancel.token(), None);
-        let expired = original(&producer_cancel).with_deadline(Some(std::time::Instant::now()));
+        let time = worth_execution::MonotonicTimeController::new().unwrap();
+        let held = time.hold();
+        let expired =
+            original(&producer_cancel).with_deadline(Some(time.clock().deadline_at(held)));
         [
             (cancelled, RelationalExecutionDenialCause::Cancelled),
             (limited, RelationalExecutionDenialCause::WorkExhausted),

@@ -1,3 +1,4 @@
+use worth_query_testkit_document_retention::facade::document_retention_model::model_lifecycle::validated_model_lifecycle_program;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::adoption::checkpoint_transition::*;
 
 #[test]
@@ -28,7 +29,8 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
         validated_second_program(),
         installation::WorthQueryApplicationProgramRoster::new()
             .support(validated_first_program())
-            .support(validated_actor_program()),
+            .support(validated_actor_program())
+            .support(validated_model_lifecycle_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
@@ -94,7 +96,8 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         validated_second_program(),
         installation::WorthQueryApplicationProgramRoster::new()
             .support(validated_first_program())
-            .support(validated_actor_program()),
+            .support(validated_actor_program())
+            .support(validated_model_lifecycle_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
