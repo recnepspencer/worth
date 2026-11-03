@@ -33,25 +33,28 @@ pub fn claim_on_superseded(
     let old = key_with_identity("upstream", 5, 1, 90);
     let newest = key_with_identity("upstream", 6, 1, 91);
     let dependent = key_with_identity("dependent", 5, 2, 50);
-    let dependent_record = DemandRecord {
-        prerequisites: vec![Arc::new(old.clone())],
-        ..record(occurrence(), ready(), 1)
+    // A functional update over private fields: start from the base record and set the field.
+    let dependent_record = {
+        let mut base = record(occurrence(), ready(), 1);
+        *base.prerequisites_mut_for_test() = vec![Arc::new(old.clone())];
+        base
     };
     let wake = Arc::clone(&(*dependent_record.wake_for_test()));
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         (*state.records_mut_for_test()).insert_for_test(
             old.clone(),
-            DemandRecord {
-                framework_required_count: 1,
-                ..record(
+            {
+                let mut base = record(
                     occurrence(),
                     DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::Superseded,
                         "",
                     )),
                     0,
-                )
+                );
+                *base.framework_required_count_mut_for_test() = 1;
+                base
             },
         );
         (*state
