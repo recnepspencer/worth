@@ -253,11 +253,12 @@ def write_doors(index, doors):
         node = index[names]
         path = door_file_path(node, index)
         existing = path.read_text(encoding='utf-8') if path.exists() else '//! Sealed test doors over this module\'s private members.\nuse super::*;\n'
-        # A door already present (under any formatting) is not written again.
-        present = set(re.findall(r'\bpub fn (\w+_for_test)\b', existing))
+        # A door already present (under any formatting) is not written again; doors are named
+        # per self type, so the type is part of the key.
+        present = door_keys(existing)
         added = []
         for key, text in sorted(entries.items()):
-            names = set(re.findall(r'\bpub fn (\w+_for_test)\b', text))
+            names = door_keys(text)
             if text not in existing and not names <= present:
                 added.append(text)
                 present |= names
@@ -272,6 +273,15 @@ def write_doors(index, doors):
             text = Path(source).read_text(encoding='utf-8')
             Path(source).write_text(replace_spans(text, [change]), encoding='utf-8', newline='\n')
     return counts
+
+
+def door_keys(text):
+    """{(self type, door name)} of the `impl` blocks in door text."""
+    keys = set()
+    for block in re.finditer(r'impl(?:<[^{]*?>)?\s+([\w:]+)[^{]*\{(.*?)\n\}', text, re.S):
+        for name in re.findall(r'\bpub fn (\w+_for_test)\b', block.group(2)):
+            keys.add((block.group(1), name))
+    return keys
 
 
 def rewrite_sites(sites):
