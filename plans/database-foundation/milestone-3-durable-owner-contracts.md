@@ -3266,3 +3266,50 @@ genuine_release_recovery_moves_one_pool_through_core_seal_and_serving court.
 Core's read-only serving_evidence_backing_bytes reports actual capacity to that
 court, without exposing a constructor or mutator. Its existing type facade is
 unchanged. The new backing type has only internal record_serving facade entries.
+
+### Unmet bounded-history admission gate: owner/authority handoff
+
+The unchanged filesystem bounded-tail court at242e713c1a now reopens, so the
+historical occurrence custody repair closes MissingRecoveredImage. It then
+observes156 Native canonical body reads, against8 tail entries plus32 fixed
+headroom. The selected cut covers36 of41 canonical entries and33 of38 World
+occurrences. Eager World associated-effect admission, predecessor/successor
+component admission and first image materialization reread covered original
+bodies. This is an actual unbounded-history cost, not a counter defect. The
+court, its bound and Native's strict original-source/missing-image guards stay
+unchanged. Request-local caching alone cannot close D12.
+
+Current WRTHRCS1 protocol worth.relational.complete-source v1 carries CHK18,
+initial inputs and normalized original schema/mutation roles. Its exact-only
+DTOs contain neither semantic_result nor the original branch_cell_checkpoint.
+Store WSRCSRC1 v1 wraps that artifact; Host selects ExternalMembers, so original
+canonical singleton bodies remain external. CHK18 headers/image descriptors do
+not establish these missing original admission meanings. Canonical5's envelope
+leaf is a flat hash of the full named authoritative envelope, including those
+fields and patch/merged-plan/lineage. Its three outer leaves do not permit a
+compact field opening. Copying that hash beside invented projection fields is
+insufficient; reconstructing the whole envelope still processes every body.
+
+A format-preserving lazy historical cut needs the held history owners:
+catalog/entry requires a full CompositeRuntimeWorldCommit and retention claim;
+history/commit requires admitted composite basis/component evidence; publication
+readmission requires full Native recovered custody and before/after snapshots.
+The bootstrap occurrence owner constructs each eagerly, while catalog readmission
+has no execution request for deferred source work. Skipping historical rows loses
+public history, and substituting today's head falsifies lineage. P-D owns the
+catalog/publication/bootstrap seams and P-B owns commit/basis. Native would need
+an honest selected-image retention contract distinct from an executable basis.
+
+The alternative is an explicitly specified persisted publication-admission
+projection, authored from actual original artifacts through its real owner's
+durable step and original request. A new sibling artifact is preferred by format
+stability, but it requires a declared authority/binding contract: the landed flat
+envelope leaf cannot independently authenticate a compact projection. Extending
+the exact-only v1 DTO is not an available extension point and would require a
+clean version/old-Home refusal decision. No such contract, format change or held
+owner rewrite is implemented here. This part is blocked pending that coordinated
+owner/authority decision; Complete reopen is not certified.
+
+Evidence: host-original-serving-reopen-controls-direct-unset.log4/1/0, unchanged
+case automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom;
+independent historical-occurrence and canonical-commitment read-only reviews.
