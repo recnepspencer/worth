@@ -101,7 +101,7 @@ fn sample(mode: Mode, scenario: Scenario, ceiling: u64) -> Sample {
         let rule = CustomInvariantRegistration::new(owner::Reader {
             program: program.clone(),
             court: court.clone(),
-            maximum_work: scenario.rule_limit.then(|| std::num::NonZeroU64::MIN),
+            maximum_work: scenario.rule_limit.then_some(std::num::NonZeroU64::MIN),
         })
         .unwrap()
         .with_managed_index_sources(vec![program])
@@ -289,7 +289,7 @@ fn source_preparation_custom_and_native_work_share_one_original_invoice() {
                 stopped.reached, 1,
                 "the actual Source receiver exhausted the original account"
             );
-            assert!(stopped.work <= EXTRA - 1);
+            assert!(stopped.work < EXTRA);
             assert!(stopped.work > base.work);
         }
     }
