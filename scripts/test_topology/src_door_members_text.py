@@ -16,7 +16,7 @@ DOC = '    #[doc(hidden)]\n'
 
 def from_child(text):
     """Text copied from a module, re-rooted for its `court_doors_for_test` child."""
-    text = re.sub(r'\bsuper::', 'super::super::', text)
+    text = re.sub(r'\b((?:super::)+)', r'super::\1', text)
     return re.sub(r'(?<![\w:])self::', 'super::', text)
 
 
