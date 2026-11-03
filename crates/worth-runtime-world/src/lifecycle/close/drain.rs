@@ -14,14 +14,7 @@ pub(super) struct CloseProgress {
 }
 
 impl CloseProgress {
-    #[cfg(test)]
     pub(super) fn prepare_task(
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<std::sync::Arc<std::sync::Mutex<Self>>, Denial> {
-        Self::prepare_task_with_recovered(request, 0)
-    }
-
-    pub(super) fn prepare_task_with_recovered(
         request: &ExecutionRequest<'_, '_>,
         recovered_count: usize,
     ) -> Result<std::sync::Arc<std::sync::Mutex<Self>>, Denial> {

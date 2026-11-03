@@ -49,7 +49,7 @@ where
     let recovered_count = state
         .recovery
         .try_close_recovered_count(state.durable.is_some())?;
-    let task = CloseProgress::prepare_task_with_recovered(request, recovered_count)?;
+    let task = CloseProgress::prepare_task(request, recovered_count)?;
     let gates = gates::borrow(state, request)?;
     if state
         .recovery
