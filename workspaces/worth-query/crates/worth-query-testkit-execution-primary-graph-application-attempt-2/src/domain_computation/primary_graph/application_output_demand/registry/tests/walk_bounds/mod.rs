@@ -121,7 +121,7 @@ pub fn add_custody_with_completion(
                     scope,
                     identity: (*selected.source_for_test()).clone(),
                 }]),
-                consumed_sources: vec![(*selected.source_for_test())],
+                consumed_sources: vec![selected.source_into_for_test()],
                 retired_sources: Vec::new(),
                 retired: None,
                 token_count: 0,

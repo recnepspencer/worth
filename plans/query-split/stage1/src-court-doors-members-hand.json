@@ -9,7 +9,9 @@
   "domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity.idempotency_key (mut)"
  ],
  "field_into_doors": [
-  "domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun.state"
+  "domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun.state",
+  "domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress.checkpoint",
+  "domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey.source"
  ],
  "method_doors": [
   "equality_type_id::EqualityTypeId::of",

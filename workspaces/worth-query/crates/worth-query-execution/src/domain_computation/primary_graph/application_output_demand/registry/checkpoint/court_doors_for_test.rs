@@ -21,3 +21,10 @@ impl WorthQueryOutputProgress {
         Self::stop(self, denial)
     }
 }
+
+impl WorthQueryOutputProgress {
+    #[doc(hidden)]
+    pub fn checkpoint_into_for_test(self) -> Option<WorthQueryOutputCheckpoint> {
+        self.checkpoint
+    }
+}

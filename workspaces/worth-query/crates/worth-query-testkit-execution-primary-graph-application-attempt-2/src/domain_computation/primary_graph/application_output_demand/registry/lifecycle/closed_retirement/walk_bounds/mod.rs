@@ -20,7 +20,7 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
     fn assert_walk_site(site: usize) {
         let ready = crate::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();
         let worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState::Output(output) = ready else { panic!("Ready fixture") };
-        let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = (*output.checkpoint_for_test()) else { panic!("Ready fixture") };
+        let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint_into_for_test() else { panic!("Ready fixture") };
         let receipts = crate::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::receipt_batch();
         let mut tally = 0;
         let mut contacts = Vec::new();

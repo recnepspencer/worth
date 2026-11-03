@@ -59,7 +59,7 @@ pub fn custody_wait(superseded: bool, token: bool) {
         },
         BoundOutputSource {
             scope,
-            identity: (*key("producer", 5, 2).source_for_test()),
+            identity: key("producer", 5, 2).source_into_for_test(),
         },
     ];
     {

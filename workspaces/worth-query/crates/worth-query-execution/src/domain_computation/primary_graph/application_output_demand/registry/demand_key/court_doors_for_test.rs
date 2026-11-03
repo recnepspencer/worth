@@ -35,3 +35,10 @@ impl WorthQueryOutputDemandKey {
         Self::new(family, producer, applicability, source)
     }
 }
+
+impl WorthQueryOutputDemandKey {
+    #[doc(hidden)]
+    pub fn source_into_for_test(self) -> SourceEpoch {
+        self.source
+    }
+}
