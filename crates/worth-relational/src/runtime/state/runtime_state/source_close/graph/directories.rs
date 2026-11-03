@@ -42,7 +42,7 @@ impl NativeSourceGraphRetirement {
         };
         if done {
             self.stage = if selected {
-                Stage::Complete
+                Stage::RetainedDirectory
             } else {
                 Stage::SelectedDirectory
             };

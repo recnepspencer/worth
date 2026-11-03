@@ -176,7 +176,9 @@ pub(super) fn expand(
             .collect(),
         retained_empty_components: manifest.retained_empty_components.clone(),
         directory: None,
-        canonical_directory: Some(directory),
+        canonical_directory: Some(crate::durability::data::NativeCheckpointDirectoryEdge::new(
+            directory,
+        )),
         root_kind_images,
         mirror_kind_images,
         coverage: manifest.coverage,

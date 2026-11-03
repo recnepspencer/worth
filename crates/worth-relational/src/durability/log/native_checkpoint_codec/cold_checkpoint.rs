@@ -45,7 +45,7 @@ pub(super) fn readmit(
         recorded_components: manifest.roots.iter().map(|root| (root.commit_id, root.recorded_components.clone())).collect(),
         retained_empty_components: manifest.retained_empty_components.clone(),
         root_kind_images: Default::default(), mirror_kind_images: Default::default(),
-        directory: Some(directory), canonical_directory:None,
+        directory: Some(crate::durability::data::NativeCheckpointDirectoryEdge::new(directory)), canonical_directory:None,
         coverage: manifest.coverage,
         commit_descriptors: manifest.commits.iter().map(|entry| (entry.commit.commit_id, entry.root.clone())).collect(),
         mirror_schema_digest: manifest.mirror_schema,

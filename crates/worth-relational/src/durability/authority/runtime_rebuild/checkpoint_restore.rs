@@ -45,7 +45,11 @@ pub(super) fn restore_checkpoint_state(
     work: &mut CheckpointRestoreWork,
     original_schemas: Option<&super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<(), RelationalRecoveryStop> {
-    if let Some(directory) = checkpoint.directory.clone() {
+    if let Some(directory) = checkpoint
+        .directory
+        .clone()
+        .map(|edge| edge.into_original())
+    {
         cold_directory::restore(execution, restored, &checkpoint, directory, work)?;
         super::unshared_state(restored)?
             .durability
@@ -56,7 +60,11 @@ pub(super) fn restore_checkpoint_state(
         prepare_checkpoint_state(execution, restored, &checkpoint, work, original_schemas)?;
     let restored = super::unshared_state(restored)?;
     install_checkpoint_state(restored, prepared);
-    if let Some(directory) = checkpoint.canonical_directory.clone() {
+    if let Some(directory) = checkpoint
+        .canonical_directory
+        .clone()
+        .map(|edge| edge.into_original())
+    {
         restored
             .durability
             .checkpoint_selection()

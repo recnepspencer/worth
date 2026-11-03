@@ -110,3 +110,12 @@ impl NativeCheckpointDirectoryEdge {
             .clone()
     }
 }
+
+// Public checkpoint images expose serving directory DATA. A close loan owns
+// the checkpoint exclusively; no public image aliases that retiring edge.
+impl PartialEq for NativeCheckpointDirectoryEdge {
+    fn eq(&self, other: &Self) -> bool {
+        std::ops::Deref::deref(self) == std::ops::Deref::deref(other)
+    }
+}
+impl Eq for NativeCheckpointDirectoryEdge {}

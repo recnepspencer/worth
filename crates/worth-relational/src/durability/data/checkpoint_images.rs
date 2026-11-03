@@ -263,10 +263,10 @@ pub struct DurableCheckpoint {
     pub(crate) mirror_kind_images: crate::storage::residency::CheckpointRegionKindImages,
     pub coverage: CheckpointCoverage,
     /// Deferred selected-medium restoration owns its original cold directory.
-    pub(crate) directory: Option<std::sync::Arc<super::RelationalCheckpointDirectory>>,
+    pub(crate) directory: Option<super::NativeCheckpointDirectoryEdge>,
     /// Eager/Embedded restoration retains ORIGINAL canonical bytes as DATA.
     /// Empty materialized images are valid and cannot select the cold path.
-    pub(crate) canonical_directory: Option<std::sync::Arc<super::RelationalCheckpointDirectory>>,
+    pub(crate) canonical_directory: Option<super::NativeCheckpointDirectoryEdge>,
     pub(crate) commit_descriptors:
         BTreeMap<CommitId, crate::branch::RelationalBranchRootDescriptor>,
     pub(crate) mirror_schema_digest: Option<[u8; 32]>,

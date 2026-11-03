@@ -1,5 +1,6 @@
 //! Authentic publication-binding seal under its existing ownership gate.
 use super::*;
+mod checkpoints;
 use crate::durability::medium::{
     RelationalDurableColdSource, RelationalMediumRetirementDenial as Denial,
     SealedRelationalMediumBinding,

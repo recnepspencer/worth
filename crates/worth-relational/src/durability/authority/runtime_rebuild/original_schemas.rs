@@ -80,7 +80,9 @@ impl OriginalSchemaGraph {
                 // A plan clone retains its original immutable directory. The
                 // attempt owns only this fixed-size binding; intrinsic manifest,
                 // history and actual selected-read custody stay shared.
-                *directory = directory.with_source_schemas(graph.schemas.clone(), request)?;
+                *directory = crate::durability::data::NativeCheckpointDirectoryEdge::new(
+                    directory.with_source_schemas(graph.schemas.clone(), request)?,
+                );
             }
         }
         Ok(Some(graph))

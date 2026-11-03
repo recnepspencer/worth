@@ -1,4 +1,5 @@
 //! Owner-directed source inventory, with constant current-owner storage.
+mod checkpoints;
 mod directories;
 mod members;
 use super::history::NativeHistorySourceRetirement;
@@ -18,6 +19,8 @@ enum Stage {
     IndexMember,
     IndexDirectory,
     SelectedDirectory,
+    RetainedDirectory,
+    RetainedCanonicalDirectory,
     Complete,
 }
 pub(super) struct NativeSourceGraphRetirement {
@@ -29,6 +32,7 @@ pub(super) struct NativeSourceGraphRetirement {
     symbols: Option<RuntimeSymbolTable>,
     member: Option<NativeMemberRetirementHandoff>,
     directory: Option<NativeDirectoryRetirementHandoff>,
+    checkpoint: usize,
 }
 impl NativeSourceGraphRetirement {
     pub(super) fn new(runtime: &RelationalRuntime, pass: NativeSourcePass) -> Self {
@@ -44,6 +48,7 @@ impl NativeSourceGraphRetirement {
             symbols: None,
             member: None,
             directory: None,
+            checkpoint: 0,
         }
     }
     pub(super) fn advance(
@@ -123,6 +128,9 @@ impl NativeSourceGraphRetirement {
             }
             Stage::IndexDirectory | Stage::SelectedDirectory => {
                 self.advance_directory(runtime, request, source)?
+            }
+            Stage::RetainedDirectory | Stage::RetainedCanonicalDirectory => {
+                self.advance_checkpoint_directory(runtime, request, source)?;
             }
             Stage::Complete => return Ok(true),
         }
