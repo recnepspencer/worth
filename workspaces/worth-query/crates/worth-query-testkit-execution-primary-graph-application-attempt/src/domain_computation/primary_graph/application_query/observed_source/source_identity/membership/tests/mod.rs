@@ -13,20 +13,8 @@ pub fn entity(slot: u64) -> EntityId {
     EntityId::new(PartitionId::main(), slot, 1)
 }
 pub fn footprint(endpoints: Vec<EntityId>, revision: u64) -> WorthQueryObservedSourceFootprint {
-    let adjacency = WorthQueryObservedAdjacencyRevision {
-        anchor: entity(1),
-        relation_kind: KindId(7),
-        direction: worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing,
-        native_revision: Some(VersionId(revision)),
-        comparison_work_limit: 8,
-        endpoints,
-    };
-    WorthQueryObservedSourceFootprint {
-        root: entity(1),
-        complete: true,
-        entities: vec![entity(1)],
-        aspects: Vec::new(),
-        root_selection: Some(Arc::new(WorthQueryObservedRootSelection::new(
+    let adjacency = WorthQueryObservedAdjacencyRevision::new_for_test(entity(1), KindId(7), worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing, Some(VersionId(revision)), 8, endpoints);
+    WorthQueryObservedSourceFootprint::new_for_test(entity(1), true, vec![entity(1)], Vec::new(), vec![adjacency], Some(Arc::new(WorthQueryObservedRootSelection::new(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::SourceFacts {
                 entities: vec![entity(1)],
                 aspects: Vec::new(),
@@ -36,9 +24,7 @@ pub fn footprint(endpoints: Vec<EntityId>, revision: u64) -> WorthQueryObservedS
                 allocation: None,
             },
             None,
-        ))),
-        adjacencies: vec![adjacency],
-    }
+        ))))
 }
 pub trait TestsWorthQueryObservedSourceSelectionForTest: Sized {
     fn selecting_for_test(endpoint: u64) -> Self;
@@ -54,16 +40,11 @@ impl TestsWorthQueryObservedSourceSelectionForTest for WorthQueryObservedSourceS
                 &worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Relational,
             )
             .unwrap();
-        Self {
-            runtime_authority: authority.as_u64(),
-            schema_binding: ApplicationSchemaBindingIdentity::from_installed_parts(
+        Self::new_for_test(authority.as_u64(), ApplicationSchemaBindingIdentity::from_installed_parts(
                 1,
                 2,
                 CanonicalDigestId::new([3; 32]),
                 CanonicalDigestId::new([4; 32]),
-            ),
-            meaning,
-            managed: None,
-        }
+            ), meaning, None)
     }
 }

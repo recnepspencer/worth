@@ -245,3 +245,5 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.source_meaning.footprint()
     }
 }
+
+mod court_doors_for_test;

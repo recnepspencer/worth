@@ -266,3 +266,5 @@ fn has_derived_source_path(selection: &WorthQueryObservedRootSelection) -> bool 
                 worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Derived)
     })
 }
+
+mod court_doors_for_test;

@@ -228,28 +228,8 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
         receipt: Option<WorthQueryApplicationCommitReceipt>,
     ) -> Self {
         let original = (*self.observation_for_test()).original_settled_producer_for_test().unwrap();
-        let seed = Arc::new(OriginalSettledProducerObservation {
-            runtime_authority: (*original.runtime_authority_for_test()),
-            schema: (*original.schema_for_test()).clone(),
-            read: (*original.read_for_test()).clone(),
-            source,
-            correspondence: (*original.correspondence_for_test()).clone(),
-            _memory: None,
-        });
-        Self {
-            posture: (*self.posture_for_test()),
-            runtime_authority: (*self.runtime_authority_for_test()),
-            schema_binding: (*self.schema_binding_for_test()).clone(),
-            producer_identity: (*self.producer_identity_for_test()).as_str_for_test().to_owned().into(),
-            output_family_identity: (*self.output_family_identity_for_test()).clone(),
-            receipt: receipt.map(SettlementReceiptCustody::Owned),
-            stable: self.stable.clone(),
-            output_correspondence: self.output_correspondence.clone(),
-            restored_source: self.restored_source.clone(),
-            readiness_delivery: (*self.readiness_delivery_for_test()).clone(),
-            producer_contacts_in_this_demand: (*self.producer_contacts_in_this_demand_for_test()),
-            observation: (*self.observation_for_test()).with_original_producer_for_test(seed),
-        }
+        let seed = Arc::new(OriginalSettledProducerObservation::new_for_test((*original.runtime_authority_for_test()), (*original.schema_for_test()).clone(), (*original.read_for_test()).clone(), source, (*original.correspondence_for_test()).clone(), None));
+        Self::new_for_test((*self.posture_for_test()), (*self.runtime_authority_for_test()), (*self.schema_binding_for_test()).clone(), (*self.producer_identity_for_test()).as_str_for_test().to_owned().into(), (*self.output_family_identity_for_test()).clone(), receipt.map(SettlementReceiptCustody::Owned), self.stable.clone(), self.output_correspondence.clone(), self.restored_source.clone(), (*self.readiness_delivery_for_test()).clone(), (*self.producer_contacts_in_this_demand_for_test()), (*self.observation_for_test()).with_original_producer_for_test(seed))
     }
 }
 

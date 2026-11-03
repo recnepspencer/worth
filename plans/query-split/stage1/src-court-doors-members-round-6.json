@@ -1,0 +1,21 @@
+{
+ "authority_doors": [
+  "domain_computation::artifact_owner::production_authority::WorthQueryArtifactProductionAuthorityParts::new",
+  "domain_computation::operation_binding::authority::WorthQueryExecutionBoundOperationAuthority::new",
+  "domain_computation::operation_binding::authority::WorthQueryWorkflowStageResourceAuthority::new"
+ ],
+ "constructor_doors": [
+  "domain_computation::artifact_owner::production_authority::WorthQueryArtifactProductionAuthorityParts::new",
+  "domain_computation::operation_binding::authority::WorthQueryExecutionBoundOperationAuthority::new",
+  "domain_computation::operation_binding::authority::WorthQueryWorkflowStageResourceAuthority::new",
+  "domain_computation::primary_graph::application_output_demand::settlement::WorthQueryOutputDemandSettlement::new",
+  "domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation::new",
+  "domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint::new",
+  "domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::new",
+  "domain_computation::primary_graph::source_facts::SourceFacts::new",
+  "domain_computation::primary_graph::source_facts::revisions::WorthQueryObservedAdjacencyRevision::new"
+ ],
+ "field_doors": [],
+ "method_doors": [],
+ "unplaced": []
+}

@@ -89,3 +89,5 @@ pub(in crate::domain_computation::primary_graph) const fn adjacency_direction_ra
         worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming => 1,
     }
 }
+
+mod court_doors_for_test;

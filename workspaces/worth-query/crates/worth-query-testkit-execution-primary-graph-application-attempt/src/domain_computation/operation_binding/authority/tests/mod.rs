@@ -34,37 +34,14 @@ pub fn authority(
     plan: &WorthQueryAdmittedExecutionResourcePlan,
 ) -> WorthQueryExecutionBoundOperationAuthority {
     let (basis_identity, semantic_basis) = admitted_test_basis();
-    WorthQueryExecutionBoundOperationAuthority {
-        runtime_authority: runtime.authority_identity(),
-        installation_runtime_ordinal: runtime.installed_packages().runtime_ordinal(),
-        binding_identity: Arc::from(binding_identity),
-        operation_identity: Arc::from("installed-operation"),
-        basis_identity,
-        semantic_basis,
-        canonical_query_digest: Arc::from("installed-query"),
-        operation_resource_contract_identity: Arc::from(contract_identity),
-        provider_plan_declarations: Arc::new(Default::default()),
-        commit_posture:
-            worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly,
-        direct_resource_topology: Default::default(),
-        workflow_stage_resources: None,
-        operation_evidence_contract: None,
-        installed_support: WorthQueryInstalledOperationExecutionSupport::direct(
+    WorthQueryExecutionBoundOperationAuthority::new_for_test(runtime.authority_identity(), runtime.installed_packages().runtime_ordinal(), Arc::from(binding_identity), Arc::from("installed-operation"), basis_identity, semantic_basis, Arc::from("installed-query"), Arc::from(contract_identity), Arc::new(Default::default()), worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly, Default::default(), None, None, WorthQueryInstalledOperationExecutionSupport::direct(
             plan.support_snapshot().clone(),
-        ),
-        installed_domain: WorthQueryInstalledDomainExecutionAuthority::mint_for_test(
+        ), WorthQueryInstalledDomainExecutionAuthority::mint_for_test(
             runtime.authority_identity(),
             "test-domain",
             WorthQueryInstallationGeneration::initial(),
             runtime.retain_current_generation_for_test(),
-        ),
-        graph_work_affinity: None,
-        application_operation_attempt: None,
-        application_operation_slot: None,
-        application_schema_binding: None,
-        application_snapshot: None,
-        application_product_observation: None,
-    }
+        ), None, None, None, None, None, None)
 }
 pub fn direct_authority(
     runtime: &worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntime,
@@ -192,13 +169,7 @@ pub fn workflow_authority(
         .map(|(stage, resources)| {
             (
                 Arc::<str>::from(stage),
-                worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::WorthQueryWorkflowStageResourceAuthority {
-                    contract_identity: Arc::from(resources.contract_identity()),
-                    topology: Default::default(),
-                    predecessors: Arc::from([]),
-                    artifact_contracts:
-                        worth_query_execution::court_doors_for_test::domain_computation::artifact_owner::installed_binding::WorthQueryInstalledWorkflowArtifactContracts::empty_for_test(),
-                },
+                worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::WorthQueryWorkflowStageResourceAuthority::new_for_test(Arc::from(resources.contract_identity()), Default::default(), Arc::from([]), worth_query_execution::court_doors_for_test::domain_computation::artifact_owner::installed_binding::WorthQueryInstalledWorkflowArtifactContracts::empty_for_test()),
             )
         })
         .collect();
@@ -208,35 +179,12 @@ pub fn workflow_authority(
             .map(|(stage, resources)| (stage.to_owned(), resources.support_snapshot().clone())),
     );
     let (basis_identity, semantic_basis) = admitted_test_basis();
-    WorthQueryExecutionBoundOperationAuthority {
-        runtime_authority: runtime.authority_identity(),
-        installation_runtime_ordinal: runtime.installed_packages().runtime_ordinal(),
-        binding_identity: Arc::from(plan.operation().binding_identity()),
-        operation_identity: Arc::from("installed-workflow-operation"),
-        basis_identity,
-        semantic_basis,
-        canonical_query_digest: Arc::from("installed-query"),
-        operation_resource_contract_identity: Arc::from(plan.operation().contract_identity()),
-        provider_plan_declarations: Arc::new(Default::default()),
-        commit_posture:
-            worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly,
-        direct_resource_topology: Default::default(),
-        workflow_stage_resources: Some(stages),
-        operation_evidence_contract: None,
-        installed_support: support,
-        installed_domain: WorthQueryInstalledDomainExecutionAuthority::mint_for_test(
+    WorthQueryExecutionBoundOperationAuthority::new_for_test(runtime.authority_identity(), runtime.installed_packages().runtime_ordinal(), Arc::from(plan.operation().binding_identity()), Arc::from("installed-workflow-operation"), basis_identity, semantic_basis, Arc::from("installed-query"), Arc::from(plan.operation().contract_identity()), Arc::new(Default::default()), worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly, Default::default(), Some(stages), None, support, WorthQueryInstalledDomainExecutionAuthority::mint_for_test(
             runtime.authority_identity(),
             "test-domain",
             WorthQueryInstallationGeneration::initial(),
             runtime.retain_current_generation_for_test(),
-        ),
-        graph_work_affinity: None,
-        application_operation_attempt: None,
-        application_operation_slot: None,
-        application_schema_binding: None,
-        application_snapshot: None,
-        application_product_observation: None,
-    }
+        ), None, None, None, None, None, None)
 }
 pub fn workflow_authority_with_output_artifact(
     runtime: &worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntime,
