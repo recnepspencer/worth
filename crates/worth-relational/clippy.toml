@@ -37,6 +37,11 @@ disallowed-methods = [
 # exact private key; key_ordering_tests proves lookup while that ledger changes.
 # https://clippy.rust-lang.org/rust-1.94.0/index.html#mutable_key_type
 ignore-interior-mutability = [
+  # Stable identity/text/key slices alone define equality and ordering; cache/funding never does.
+  "worth_relational::derived_relation::definition::DerivedRelationHandle",
+  "worth_relational::merge::data::identity::declared_keys::DeclaredIdentityKeys",
+  "worth_relational::validation::data::rule_id::CustomInvariantRuleId",
+
   # Equality uses immutable declared coordinates or fixed allocation identity, never funding/cache state.
   "worth_relational::validation::candidate_source::program::ManagedIndexSourceProgram",
   # Equality uses immutable declared coordinates or fixed allocation identity, never funding/cache state.
