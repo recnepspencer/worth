@@ -45,7 +45,7 @@ thread_local! {
     static PLACEMENT_OWNER: Cell<u64> = const { Cell::new(0) };
     static BUDGET_OWNER: Cell<u64> = const { Cell::new(0) };
     static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
-    static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
+    pub static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
         const { Cell::new(WorthQueryExecutionPlacementForTest::World) };
 }
 
