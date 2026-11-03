@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::ops::Bound::Excluded;
 use std::ops::Bound::Included;
 use std::ops::Bound::Unbounded;
-mod mutation;
+pub(crate) mod mutation;
 pub(super) use mutation::RecordMutation;
 // The two maps are private: insert/From populate both, remove/retain erase both,
 // and mutable row guards never expose keys or index membership. Thus every
@@ -244,7 +244,7 @@ mod observation {
     }
 }
 
-pub(super) struct ObservedRows<I>(I);
+pub struct ObservedRows<I>(I);
 impl<I: Iterator> Iterator for ObservedRows<I> {
     type Item = I::Item;
     fn next(&mut self) -> Option<Self::Item> {
@@ -278,7 +278,7 @@ impl<'a> IntoIterator for &'a mut DemandRecords {
     }
 }
 
-pub(super) struct MutRows<I>(I);
+pub struct MutRows<I>(I);
 impl<'a, I: Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a mut DemandRecord)>> Iterator
     for MutRows<I>
 {

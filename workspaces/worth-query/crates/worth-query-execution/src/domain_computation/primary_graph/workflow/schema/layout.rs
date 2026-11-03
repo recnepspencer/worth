@@ -33,7 +33,7 @@ impl std::ops::Deref for WorthQueryWorkflowLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
+pub struct WorkflowLayoutFields {
     pub(in crate::domain_computation::primary_graph) captured_input: WorkflowCapturedInputLayout,
     pub operation_output: WorkflowOperationOutputLayout,
     pub(in crate::domain_computation::primary_graph) lineage: WorkflowLineageLayout,

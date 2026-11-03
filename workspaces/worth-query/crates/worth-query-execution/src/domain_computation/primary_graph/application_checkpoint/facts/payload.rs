@@ -9,7 +9,7 @@ use worth_execution::MemoryLimitLevel;
 mod chunk;
 mod concatenation;
 mod copied;
-mod iteration;
+pub(crate) mod iteration;
 pub(crate) mod native;
 mod patch;
 mod performed_fields;
