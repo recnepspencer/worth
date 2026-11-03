@@ -45,7 +45,7 @@ mod public_tests {
     }
 }
 
-#[cfg(all(test, feature = "never"))]
+#[cfg(all(test, target_pointer_width = "64"))]
 mod hook_tests {
     macro_rules! twice {
         ($name:ident) => {
