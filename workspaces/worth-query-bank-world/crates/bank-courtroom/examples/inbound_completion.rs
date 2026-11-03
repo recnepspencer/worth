@@ -252,13 +252,15 @@ async fn exercise_completion(
         dispatched.payload.maximum_bytes()
     );
     assert_eq!(original_outbox.payload(), dispatched.payload.bytes());
-    assert_eq!(
-        original_outbox.commit_id(),
-        receipt.commit_reference().commit_id.0
-    );
+    let original_native = closed
+        .completion()
+        .live_receipt()
+        .expect("actual original Native owner")
+        .commit_reference();
+    assert_eq!(original_outbox.commit_id(), original_native.commit_id.0);
     assert_eq!(
         original_outbox.commit_version(),
-        receipt.commit_reference().version_id.0
+        original_native.version_id.0
     );
     let custody = tokio::time::timeout(Duration::from_secs(10), async {
         loop {
