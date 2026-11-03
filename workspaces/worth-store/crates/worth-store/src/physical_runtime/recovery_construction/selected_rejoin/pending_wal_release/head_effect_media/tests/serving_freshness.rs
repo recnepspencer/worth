@@ -30,7 +30,9 @@ fn moved_effect_witness_alone_detects_changed_serving_frame_and_balances_reads()
             .unwrap();
     drop(discovery.finish());
     coordination.install_absent_checkpoint(absent).unwrap();
-    let (residency, ownership) = coordination.into_quiescent_recovery_parts().unwrap();
+    let (residency, ownership, serving_backing) =
+        coordination.into_quiescent_recovery_parts().unwrap();
+    drop(serving_backing);
     assert!(ownership.checkpoint().is_none());
     let first = LifecycleGeneration::from_reopened(NonZeroU64::new(1).unwrap());
     let generation = if origin == first {

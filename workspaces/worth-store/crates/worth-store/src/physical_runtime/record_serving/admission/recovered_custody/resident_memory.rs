@@ -10,11 +10,13 @@ impl RecoveredCheckpointCustodyEvidence {
     /// stay live separately and still participate in the pool's aggregate cap.
     pub(in crate::physical_runtime) fn bootstrap_covered_heap_bytes(&self) -> Option<u64> {
         let funded = self
-            .selected_wal
-            .owned_heap_bytes()?
+            .backing
+            .charged_bytes()
+            .checked_add(self.payload().selected_wal.owned_heap_bytes()?)?
             .checked_add(self.shared_checkpoint_bytes()?)?
             .checked_add(
-                self.selected_controls
+                self.payload()
+                    .selected_controls
                     .as_ref()
                     .map_or(Some(0), |controls| {
                         controls.independently_funded_heap_bytes()
@@ -30,7 +32,7 @@ impl RecoveredCheckpointCustodyEvidence {
     ) -> Result<u64, crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial> {
         self.owned_heap_bytes().ok_or(
             crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-                admitted: self.recovery_allocation.byte_limit(),
+                admitted: self.payload().recovery_allocation.byte_limit(),
             },
         )
     }
@@ -39,7 +41,7 @@ impl RecoveredCheckpointCustodyEvidence {
     /// This is a measurement, not a new recovery admission or Serving grant.
     pub(in crate::physical_runtime) fn owned_heap_bytes(&self) -> Option<u64> {
         let mut bytes =
-            match &self.release {
+            match &self.payload().release {
                 RecoveredReleaseCustody::HeadV2(claim) => claim.owned_heap_bytes()?,
                 RecoveredReleaseCustody::NoRelease(_) => 0,
                 RecoveredReleaseCustody::PendingWal { claim, effective } => claim
@@ -49,10 +51,11 @@ impl RecoveredCheckpointCustodyEvidence {
                     .owned_heap_bytes()?
                     .checked_add(claim.owned_heap_bytes()?)?,
             };
+        bytes = bytes.checked_add(self.backing.owned_heap_bytes()?)?;
         #[cfg(feature = "recovery-runtime-owner")]
         {
-            bytes = bytes.checked_add(self.selected_wal.owned_heap_bytes()?)?;
-            if let Some(controls) = &self.selected_controls {
+            bytes = bytes.checked_add(self.payload().selected_wal.owned_heap_bytes()?)?;
+            if let Some(controls) = &self.payload().selected_controls {
                 bytes = bytes.checked_add(controls.owned_heap_bytes()?)?;
             }
         }
@@ -61,14 +64,14 @@ impl RecoveredCheckpointCustodyEvidence {
     }
 
     fn shared_checkpoint_bytes(&self) -> Option<u64> {
-        match self.checkpoint_ownership.checkpoint() {
+        match self.payload().checkpoint_ownership.checkpoint() {
             Some(shared) => shared.owned_heap_bytes(),
             None => Some(0),
         }
     }
 
     fn shared_history_bytes(&self) -> Option<u64> {
-        let history: Option<&VerifiedOrderedRootHistory> = match &self.release {
+        let history: Option<&VerifiedOrderedRootHistory> = match &self.payload().release {
             RecoveredReleaseCustody::HeadV2(_) => None,
             RecoveredReleaseCustody::NoRelease(_) => None,
             RecoveredReleaseCustody::PendingWal { claim, .. } => claim.ordered_history(),

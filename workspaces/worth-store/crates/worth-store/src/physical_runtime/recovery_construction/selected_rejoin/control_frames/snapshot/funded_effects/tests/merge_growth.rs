@@ -26,7 +26,7 @@ fn repeated_single_effect_merges_reuse_capacity_and_bound_prefix_copying() {
         let donor = funded(&window, ordinal as u64);
         assert_eq!(
             ports.counters().active_operation_bytes_for(Scope::Recovery),
-            previous_charge + slot,
+            SERVING_BACKING_BYTES + previous_charge + slot,
             "the source and donor are both native-funded before merge"
         );
         destination.merge(donor).unwrap();
@@ -38,7 +38,7 @@ fn repeated_single_effect_merges_reuse_capacity_and_bound_prefix_copying() {
         assert_eq!(destination.charged_bytes(), actual_backing);
         assert_eq!(
             ports.counters().active_operation_bytes_for(Scope::Recovery),
-            actual_backing,
+            SERVING_BACKING_BYTES + actual_backing,
             "the donor charge is released after each merge"
         );
         if previous_length < previous_capacity {
@@ -118,7 +118,7 @@ fn bounded_fingerprint_preflights_geometric_effect_backing() {
     assert_eq!(retained.charged_bytes(), 4 * slot);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        4 * slot
+        SERVING_BACKING_BYTES + 4 * slot
     );
 
     let donor = SelectedControlMediaFingerprint::observed_head_effect(funded(&window, 4));
@@ -133,8 +133,11 @@ fn bounded_fingerprint_preflights_geometric_effect_backing() {
     assert_eq!(retained.charged_bytes(), 8 * slot);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        8 * slot
+        SERVING_BACKING_BYTES + 8 * slot
     );
     drop(fingerprint);
-    assert_eq!(ports.counters().active_operation_bytes(), 0);
+    assert_eq!(
+        ports.counters().active_operation_bytes(),
+        SERVING_BACKING_BYTES
+    );
 }

@@ -3225,3 +3225,44 @@ cloning, new public API or funding change is added. Existing genuine serving
 custody court plus direct default-stack acceptance and typed refusal courts
 qualify this cut; compiler sizeof evidence distinguishes layout improvement from
 a runtime frame guarantee. Independent design review approved this plan.
+
+### Original Store admission prepares the serving evidence slot
+
+Compiler sizeof now reports serving handoff32312 bytes (previously60056), while
+the genuine serving pool-transfer court passes and direct default-stack acceptance
+still overflows. Preserve the closed family and move its actual evidence into one
+Store-owned, original-funded slot. Coordination::admit prepares it immediately
+after restricting residency to the original recovery allocation, before semantic
+or scheduler work and before effects. An owned Recovery OperationAllocationGrant
+precedes try_reserve_exact; actual capacity must match the reservation, with typed
+insufficient-memory, allocation and allocator-capacity refusals. Payload storage
+drops before its grant. No later allocation, replacement slot or default is added.
+
+Coordination's actual heap census includes the empty slot capacity. The same slot
+passes through quiescent parts to the sole Core constructor, then the existing
+custody constructors populate its actual payload once. Core requires that backing;
+coordination without an allocation admission remains supported but cannot construct
+a recovered Core. WAL, selected-media and final verification keep the SAME backed
+evidence owner and borrow its payload. Retained custody census counts actual slot
+capacity plus existing nested owners; bootstrap-covered census subtracts the slot's
+independently live grant to avoid reserving it twice. Existing consuming installation
+retires the proof only after ledger lowering. The original pool and grant survive
+all these transfers. Use the existing read-allocation owner's typed reservation and
+denial mapping; widen only its internal constructor reach, without a public door.
+
+Mechanical quiescent-parts callers must keep all assertions and dispose the added
+owner at the same observation boundary. Existing native pool/source-pressure
+fixtures must fund intrinsic backing from the actual owner quote; retain their
+independent pressure/denial/rollback assertions. Qualify through original storage
+quota, actual serving pool-transfer/pressure courts and the direct default-stack
+acceptance control, then the unchanged filesystem reopen courts. Internal facade
+entries remain exact. This Store-only design has independent APPROVE; no numerical
+stack bound is claimed before those controls pass.
+
+Requirement D17 original admission and refusal-before-effects map to
+original_recovery_budget_refuses_serving_evidence_before_effects_and_releases_home;
+actual capacity/charge lifetime and consuming release map to the strengthened
+genuine_release_recovery_moves_one_pool_through_core_seal_and_serving court.
+Core's read-only serving_evidence_backing_bytes reports actual capacity to that
+court, without exposing a constructor or mutator. Its existing type facade is
+unchanged. The new backing type has only internal record_serving facade entries.

@@ -5,6 +5,7 @@ use super::*;
 impl RecoveredPhysicalCheckpointCustody {
     #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn from_verified_no_release(
+        backing: PreparedRecoveredCustodyBacking,
         residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
         checkpoint_ownership: crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
         store: StableStoreIdentity,
@@ -17,7 +18,7 @@ impl RecoveredPhysicalCheckpointCustody {
     ) -> Self {
         Self {
             residency,
-            evidence: RecoveredCheckpointCustodyEvidence {
+            evidence: backing.finish(RecoveredCheckpointCustodyPayload {
                 checkpoint_ownership,
                 store,
                 recovery_allocation,
@@ -26,12 +27,13 @@ impl RecoveredPhysicalCheckpointCustody {
                 tier,
                 selected_wal,
                 selected_controls: Some(selected_controls),
-            },
+            }),
         }
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn from_verified_pending_wal_release(
+        backing: PreparedRecoveredCustodyBacking,
         residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
         checkpoint_ownership: crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
         store: StableStoreIdentity,
@@ -45,7 +47,7 @@ impl RecoveredPhysicalCheckpointCustody {
     ) -> Self {
         Self {
             residency,
-            evidence: RecoveredCheckpointCustodyEvidence {
+            evidence: backing.finish(RecoveredCheckpointCustodyPayload {
                 checkpoint_ownership,
                 store,
                 recovery_allocation,
@@ -57,12 +59,13 @@ impl RecoveredPhysicalCheckpointCustody {
                 tier,
                 selected_wal,
                 selected_controls: Some(selected_controls),
-            },
+            }),
         }
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn from_verified_ordered_historical_release(
+        backing: PreparedRecoveredCustodyBacking,
         residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
         checkpoint_ownership: crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
         store: StableStoreIdentity,
@@ -76,7 +79,7 @@ impl RecoveredPhysicalCheckpointCustody {
     ) -> Self {
         Self {
             residency,
-            evidence: RecoveredCheckpointCustodyEvidence {
+            evidence: backing.finish(RecoveredCheckpointCustodyPayload {
                 checkpoint_ownership,
                 store,
                 recovery_allocation,
@@ -88,12 +91,13 @@ impl RecoveredPhysicalCheckpointCustody {
                 tier,
                 selected_wal,
                 selected_controls: Some(selected_controls),
-            },
+            }),
         }
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn from_verified_head_v2(
+        backing: PreparedRecoveredCustodyBacking,
         residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
         checkpoint_ownership: crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
         store: StableStoreIdentity,
@@ -106,7 +110,7 @@ impl RecoveredPhysicalCheckpointCustody {
     ) -> Self {
         Self {
             residency,
-            evidence: RecoveredCheckpointCustodyEvidence {
+            evidence: backing.finish(RecoveredCheckpointCustodyPayload {
                 checkpoint_ownership,
                 store,
                 recovery_allocation,
@@ -115,7 +119,7 @@ impl RecoveredPhysicalCheckpointCustody {
                 tier,
                 selected_wal,
                 selected_controls: Some(selected_controls),
-            },
+            }),
         }
     }
 }

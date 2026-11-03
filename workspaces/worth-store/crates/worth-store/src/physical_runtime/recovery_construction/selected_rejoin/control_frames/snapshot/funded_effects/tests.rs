@@ -18,6 +18,9 @@ use worth_store_physical_format::{PhysicalRecordFormatDeclaration, RecordArtifac
 #[path = "tests/merge_growth.rs"]
 mod merge_growth;
 
+const SERVING_BACKING_BYTES: u64 =
+    crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes();
+
 fn recovery_world() -> (
     tempfile::TempDir,
     AdmittedRecoveryFilesystemMedia,
@@ -54,6 +57,18 @@ fn recovery_world() -> (
             None,
         )
         .unwrap();
+    assert_eq!(
+        coordination
+            .sampling_allocation_basis()
+            .unwrap()
+            .0
+            .ports()
+            .allocation_events()
+            .snapshot()
+            .for_dimension(Dimension::OperationScope(Scope::Recovery))
+            .active_units(),
+        SERVING_BACKING_BYTES
+    );
     (directory, media, coordination)
 }
 
@@ -86,7 +101,10 @@ fn native_pool_pressure_denies_before_effect_storage_is_allocated() {
     let window = PhysicalRecoveryReadAllocation::for_coordination(&coordination).unwrap();
     let limit = window.recovery_byte_limit();
     let held = ports
-        .begin_operation(Scope::Recovery, NonZeroU64::new(limit - 1).unwrap())
+        .begin_operation(
+            Scope::Recovery,
+            NonZeroU64::new(limit - SERVING_BACKING_BYTES - 1).unwrap(),
+        )
         .unwrap();
     let before = events.snapshot();
     assert!(matches!(
@@ -111,7 +129,7 @@ fn native_pool_pressure_denies_before_effect_storage_is_allocated() {
     }
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        held.bytes()
+        SERVING_BACKING_BYTES + held.bytes()
     );
     drop(held);
     let owner = funded(&window, 1);
@@ -120,7 +138,7 @@ fn native_pool_pressure_denies_before_effect_storage_is_allocated() {
     assert_eq!(owner.owned_heap_bytes(), Some(slot));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        slot
+        SERVING_BACKING_BYTES + slot
     );
     drop(window);
     drop(coordination);
@@ -148,13 +166,14 @@ fn merge_pressure_preserves_destination_and_funds_donor_until_denial() {
     let previous_charge = destination.charged_bytes();
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        2 * slot
+        SERVING_BACKING_BYTES + 2 * slot
     );
     // Replacement needs two fresh slots while both one-slot grants remain.
     let held = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(window.recovery_byte_limit() - 4 * slot + 1).unwrap(),
+            NonZeroU64::new(window.recovery_byte_limit() - SERVING_BACKING_BYTES - 4 * slot + 1)
+                .unwrap(),
         )
         .unwrap();
     assert!(matches!(
@@ -166,12 +185,15 @@ fn merge_pressure_preserves_destination_and_funds_donor_until_denial() {
     assert_eq!(destination.owned_heap_bytes(), Some(previous_charge));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        held.bytes() + previous_charge,
+        SERVING_BACKING_BYTES + held.bytes() + previous_charge,
         "the rejected donor has released its own native grant"
     );
     drop(held);
     drop(destination);
-    assert_eq!(ports.counters().active_operation_bytes(), 0);
+    assert_eq!(
+        ports.counters().active_operation_bytes(),
+        SERVING_BACKING_BYTES
+    );
 }
 
 #[test]
@@ -189,7 +211,7 @@ fn successful_merge_has_exact_native_charge_through_owner_drop() {
     let slot = size_of::<SelectedArtifactSlice>() as u64;
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        2 * slot
+        SERVING_BACKING_BYTES + 2 * slot
     );
     destination.merge(donor).unwrap();
     assert_eq!(destination.slices(), &[slice(1), slice(2)]);
@@ -197,7 +219,7 @@ fn successful_merge_has_exact_native_charge_through_owner_drop() {
     assert_eq!(destination.owned_heap_bytes(), Some(2 * slot));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        destination.charged_bytes()
+        SERVING_BACKING_BYTES + destination.charged_bytes()
     );
     drop(window);
     drop(coordination);
@@ -236,11 +258,17 @@ fn foreign_native_owner_cannot_merge_into_destination() {
     assert_eq!(destination.charged_bytes(), charge);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        charge
+        SERVING_BACKING_BYTES + charge
     );
-    assert_eq!(foreign_ports.counters().active_operation_bytes(), 0);
+    assert_eq!(
+        foreign_ports.counters().active_operation_bytes(),
+        SERVING_BACKING_BYTES
+    );
     drop(destination);
-    assert_eq!(ports.counters().active_operation_bytes(), 0);
+    assert_eq!(
+        ports.counters().active_operation_bytes(),
+        SERVING_BACKING_BYTES
+    );
 }
 
 #[test]
@@ -274,13 +302,13 @@ fn fingerprint_merges_reject_foreign_effect_owner_before_raw_growth() {
         assert_eq!(charge, slot);
         assert_eq!(
             ports.counters().active_operation_bytes_for(Scope::Recovery),
-            slot
+            SERVING_BACKING_BYTES + slot
         );
         assert_eq!(
             foreign_ports
                 .counters()
                 .active_operation_bytes_for(Scope::Recovery),
-            slot
+            SERVING_BACKING_BYTES + slot
         );
         let limit = window.recovery_byte_limit();
         let mut exhausted = StoreRejoinResidentLedger::from_retained_with_limit(
@@ -305,11 +333,17 @@ fn fingerprint_merges_reject_foreign_effect_owner_before_raw_growth() {
         assert_eq!(effects.owned_heap_bytes(), Some(charge));
         assert_eq!(
             ports.counters().active_operation_bytes_for(Scope::Recovery),
-            slot
+            SERVING_BACKING_BYTES + slot
         );
-        assert_eq!(foreign_ports.counters().active_operation_bytes(), 0);
+        assert_eq!(
+            foreign_ports.counters().active_operation_bytes(),
+            SERVING_BACKING_BYTES
+        );
         drop(destination);
-        assert_eq!(ports.counters().active_operation_bytes(), 0);
+        assert_eq!(
+            ports.counters().active_operation_bytes(),
+            SERVING_BACKING_BYTES
+        );
     }
 }
 
@@ -335,7 +369,9 @@ fn serving_observer_generation_preserves_recovery_origin_and_native_pool() {
             .unwrap();
     let _media = discovery.finish();
     coordination.install_absent_checkpoint(absent).unwrap();
-    let (residency, ownership) = coordination.into_quiescent_recovery_parts().unwrap();
+    let (residency, ownership, serving_backing) =
+        coordination.into_quiescent_recovery_parts().unwrap();
+    drop(serving_backing);
     assert!(ownership.checkpoint().is_none());
     let first = LifecycleGeneration::from_reopened(NonZeroU64::new(1).unwrap());
     let observer = if origin == first {

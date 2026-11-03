@@ -12,6 +12,8 @@ use crate::physical_runtime::record_serving::RecoveredNoReleaseCustody;
 use crate::physical_runtime::{CompletedPhysicalRecoveryFreshReopen, RuntimeIdentity};
 
 pub struct RecoveredPhysicalRuntimeCore {
+    pub(super) serving_custody_backing:
+        crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking,
     pub(super) residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
     pub(super) checkpoint_ownership:
         crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
@@ -148,6 +150,12 @@ pub enum PhysicalRecoveryWalResidentStage {
 }
 
 impl RecoveredPhysicalRuntimeCore {
+    /// Actual capacity of the original-funded serving evidence backing.
+    /// This observation grants no allocation or serving authority.
+    pub fn serving_evidence_backing_bytes(&self) -> Option<u64> {
+        self.serving_custody_backing.owned_heap_bytes()
+    }
+
     pub fn checkpoint(&self) -> Option<&crate::physical_runtime::SharedRecoveryCheckpoint> {
         self.checkpoint_ownership.checkpoint()
     }

@@ -31,6 +31,7 @@ impl RecoveredPhysicalRuntimeCore {
     /// together. Neither can be reconstructed from checkpoint bytes.
     pub fn into_serving_handoff(self) -> Option<RecoveredPhysicalServingHandoff> {
         let Self {
+            serving_custody_backing,
             residency,
             checkpoint_ownership,
             store,
@@ -55,25 +56,25 @@ impl RecoveredPhysicalRuntimeCore {
         match (head_v2_custody, no_release_custody, pending_wal_release_custody, historical_release_custody, tier_custody, effective_release_heads) {
             (None, Some(no_release), None, None, tier, None) => Some(RecoveredPhysicalServingHandoff {
                 custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_no_release(
-                    residency, checkpoint_ownership, store, recovery_allocation, root, no_release, tier, selected_wal?, selected_controls?,
+                    serving_custody_backing, residency, checkpoint_ownership, store, recovery_allocation, root, no_release, tier, selected_wal?, selected_controls?,
                 ),
                 media,
             }),
             (None, None, Some(pending), None, tier, Some(effective)) => Some(RecoveredPhysicalServingHandoff {
                 custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_pending_wal_release(
-                    residency, checkpoint_ownership, store, recovery_allocation, root, pending, effective, tier, selected_wal?, selected_controls?,
+                    serving_custody_backing, residency, checkpoint_ownership, store, recovery_allocation, root, pending, effective, tier, selected_wal?, selected_controls?,
                 ),
                 media,
             }),
             (None, None, None, Some(historical), tier, Some(effective)) => Some(RecoveredPhysicalServingHandoff {
                 custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_ordered_historical_release(
-                    residency, checkpoint_ownership, store, recovery_allocation, root, historical, effective, tier, selected_wal?, selected_controls?,
+                    serving_custody_backing, residency, checkpoint_ownership, store, recovery_allocation, root, historical, effective, tier, selected_wal?, selected_controls?,
                 ),
                 media,
             }),
             (Some(head_v2), None, None, None, tier, None) => Some(RecoveredPhysicalServingHandoff {
                 custody: crate::physical_runtime::RecoveredPhysicalCheckpointCustody::from_verified_head_v2(
-                    residency, checkpoint_ownership, store, recovery_allocation, root, head_v2, tier, selected_wal?, selected_controls?,
+                    serving_custody_backing, residency, checkpoint_ownership, store, recovery_allocation, root, head_v2, tier, selected_wal?, selected_controls?,
                 ),
                 media,
             }),

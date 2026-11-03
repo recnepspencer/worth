@@ -57,7 +57,8 @@ fn moved_recovery_owner_matches_heads_despite_distinct_serving_observer_generati
             .unwrap();
     let _media = discovery.finish();
     coordination.install_absent_checkpoint(absent).unwrap();
-    let (owner, ownership) = coordination.into_quiescent_recovery_parts().unwrap();
+    let (owner, ownership, serving_backing) = coordination.into_quiescent_recovery_parts().unwrap();
+    drop(serving_backing);
     assert!(ownership.checkpoint().is_none());
     let first_generation = LifecycleGeneration::from_reopened(NonZeroU64::new(1).unwrap());
     let observer_generation = if origin == first_generation {

@@ -12,11 +12,12 @@ impl RecoveredCheckpointCustodyEvidence {
         use crate::physical_runtime::record_serving::RecordBootstrapDenial as Denial;
         const MAX_CHECKPOINT_BYTES: u64 = 256 << 20;
         if let RecoveredReleaseCustody::NoRelease(RecoveredNoReleaseCustody::GenerationZero(_)) =
-            &self.release
+            &self.payload().release
         {
             return self.verify_funded_absent_checkpoint(media, window);
         }
         let selected = self
+            .payload()
             .release
             .selected_checkpoint()
             .ok_or(Denial::RecoveredCheckpointCustodyMismatch)?;
