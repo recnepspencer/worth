@@ -4,7 +4,7 @@ use super::*;
 // prepaid before publication, including the commit's own deletion version.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct RetirementMetadata {
+pub struct RetirementMetadata {
     pub kind: KindId,
     pub created_at: VersionId,
     pub deleted_at: VersionId,

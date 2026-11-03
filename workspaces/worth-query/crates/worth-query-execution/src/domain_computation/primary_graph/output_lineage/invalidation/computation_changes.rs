@@ -20,7 +20,7 @@ impl ComputationRegistration {
     }
 }
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct ComputationChanges {
+pub struct ComputationChanges {
     pub(in crate::domain_computation::primary_graph::output_lineage) identity:
         Arc<RecordedSettlementIdentity>,
     selected: worth_relational::facade::runtime::PositionedRelationalSnapshot,

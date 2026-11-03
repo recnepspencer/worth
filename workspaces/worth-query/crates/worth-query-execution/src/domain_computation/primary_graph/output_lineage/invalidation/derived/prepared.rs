@@ -24,7 +24,7 @@ pub(super) struct PreparedRegistrationWorkCue {
 /// Only the source owner can prepare a registration. Installation consumes
 /// this exact native image proof; no caller can substitute a cell or payload.
 #[must_use = "prepared source registration must be installed or released"]
-pub(in crate::domain_computation::primary_graph) struct PreparedSettlementRegistration {
+pub struct PreparedSettlementRegistration {
     native: PreparedCompanionDerivedRoot<BranchMarkRoot>,
     work_cue: Option<PreparedRegistrationWorkCue>,
     completion_cues: Option<super::completion_cues::PreparedCompletionCues>,
@@ -32,7 +32,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedSettlementRegist
 
 /// Both old and new image references stay alive until the caller has left its
 /// outer publication guards. Their last-owner Drop cannot run inside cutover.
-pub(in crate::domain_computation::primary_graph) struct SettlementRegistrationCleanup {
+pub struct SettlementRegistrationCleanup {
     _completion_cues: Option<super::completion_cues::PublishedCompletionCues>,
     _image: CompanionBranchImage<BranchMarkRoot>,
     _native: CompanionDerivedRootCleanup<BranchMarkRoot>,

@@ -51,7 +51,7 @@ pub struct NativePriorCheckpointOutput<'a> {
         Option<NativePriorCheckpointIdentity<'a>>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointIdentity<'a> {
+pub struct NativePriorCheckpointIdentity<'a> {
     pub(in crate::domain_computation::primary_graph) producer: &'a str,
     pub(in crate::domain_computation::primary_graph) source: [u8; 32],
     recorded: &'a super::super::RecordedOutput,

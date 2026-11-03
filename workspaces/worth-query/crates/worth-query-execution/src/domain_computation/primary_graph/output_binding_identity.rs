@@ -15,7 +15,7 @@ impl OutputBindingIdentity {
 }
 
 #[derive(Default)]
-pub(super) struct OutputBindingInventory {
+pub struct OutputBindingInventory {
     by_type: HashMap<TypeId, OutputBindingIdentity>,
     by_identity: HashMap<OutputBindingIdentity, TypeId>,
 }

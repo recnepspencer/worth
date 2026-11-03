@@ -74,13 +74,13 @@ impl<'original> WorthQueryObservedApplicationInspection<'original> {
 }
 
 /// The consuming terminal is retained until its matching report is checked.
-pub(super) struct CompletedInspection {
+pub struct CompletedInspection {
     completion: WorthQueryInspectionReadCompletion,
     request: WorthQueryRequestScope,
 }
 
 /// Publication remains private until the caller transfers its original ticket.
-pub(super) struct PreparedObservedInspection<'original> {
+pub struct PreparedObservedInspection<'original> {
     original: &'original WorthQueryApplicationQueryObservation,
     report: InspectionReportPayload,
 }

@@ -14,7 +14,7 @@ use super::fact_key::FactPostingKey;
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct FactPosting {
     pub settlement: Arc<RecordedSettlementIdentity>,
-    pub(super) ordinal: usize,
+    pub ordinal: usize,
 }
 
 /// Why a retained row's first reader compares it in full. Each value is a
@@ -79,7 +79,7 @@ impl DeliveryEpoch {
 /// advances it once without scanning settlements; individual native verification
 /// can then re-establish a row in that exact epoch.
 #[derive(Clone, Debug)]
-pub(super) struct SettlementMarks {
+pub struct SettlementMarks {
     /// Changes since retained computation, preserved by ordinary dirty clearing.
     pub(super) computation_frontier: Option<OrdSet<usize>>,
     pub(super) work_membership: Option<Arc<RequiredWorkMembership>>,

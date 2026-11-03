@@ -47,7 +47,7 @@ struct CompletedPostingRebase {
     after: PositionedRelationalSnapshot,
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct PostingContinuation(
+pub struct PostingContinuation(
     Arc<CompletedPostingRebase>,
 );
 impl PartialEq for PostingContinuation {

@@ -57,7 +57,7 @@ pub const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
 /// the embedded native region; native recovery still owns fresh readmission.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCheckpoint {
-    bytes: worth_execution::ExecutionImmutableBytes,
+    pub bytes: worth_execution::ExecutionImmutableBytes,
 }
 
 pub struct DecodedApplicationCheckpoint {

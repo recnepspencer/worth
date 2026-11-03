@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 /// prepared input and the consumed outputs are still the ones that produced
 /// it. Only the output witness is new: the re-created entities carry new
 /// revisions, sealed at the restoration commit.
-pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
+pub struct RepublishedOutput {
     producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     native_prior_checkpoint:
@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
 }
 
 /// A recorded republication and what its mark row registers.
-pub(in crate::domain_computation::primary_graph) struct RepublishedRecord {
+pub struct RepublishedRecord {
     pub identity: Arc<RecordedSettlementIdentity>,
     /// The suspended record this row continues.
     pub predecessor: Arc<RecordedSettlementIdentity>,

@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph) fn cutoff_declines(
 
 /// A prior performed record and the exact native read basis checked for reuse.
 /// Only the output-lineage owner can consume this at publication.
-pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'selected> {
+pub struct VerifiedInputCutoff<'selected> {
     _computation: super::super::CurrentComputation,
     pub(super) candidate: RetainedInputCutoffCandidate,
     pub(super) selected: &'selected PositionedRelationalSnapshot,
@@ -59,7 +59,7 @@ pub enum InputCutoffDecision<'selected> {
     Reuse(VerifiedInputCutoff<'selected>),
 }
 
-struct VerifiedDependencies {
+pub struct VerifiedDependencies {
     facts: super::super::ComparableSourceFacts,
     consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
 }

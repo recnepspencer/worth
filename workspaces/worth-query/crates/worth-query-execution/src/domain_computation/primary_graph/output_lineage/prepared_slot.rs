@@ -30,37 +30,37 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// sealed output source match this reservation. Drop removes only its vacancy.
 #[must_use = "a prepared output slot must be filled or released"]
 pub struct PreparedOutputLineageSlot {
-    pub(in crate::domain_computation::primary_graph) required_publication:
+    pub required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
-    owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
-    pub(super) source: SemanticSource,
-    pub(super) output_binding_type: TypeId,
-    pub(super) coordinate: ProductCoordinate,
-    pub(super) partition: Option<[u8; 32]>,
-    pub(super) identity: Arc<RecordedSettlementIdentity>,
-    pub(super) record_cell: Arc<OnceLock<RecordedOutput>>,
-    pub(super) partition_cell: Arc<OnceLock<usize>>,
-    cancellation: Option<Box<CancelledLineageSlot>>,
-    pub(super) completed_handler_facts: Option<
+    pub owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    pub source: SemanticSource,
+    pub output_binding_type: TypeId,
+    pub coordinate: ProductCoordinate,
+    pub partition: Option<[u8; 32]>,
+    pub identity: Arc<RecordedSettlementIdentity>,
+    pub record_cell: Arc<OnceLock<RecordedOutput>>,
+    pub partition_cell: Arc<OnceLock<usize>>,
+    pub cancellation: Option<Box<CancelledLineageSlot>>,
+    pub completed_handler_facts: Option<
         crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,
     >,
-    pub(super) completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
-    pub(super) prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
-    pub(super) native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    pub completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
+    pub prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
+    pub native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// A sealed partitioned computation run and the record its prior state
     /// came from. World recovery carries both unchanged to its replacement slot.
     pub computation: PreparedComputationCustody,
     /// A pre-publication work allowance; a larger current fork set is not scanned.
-    pub(super) prior_computation: Option<super::PriorComputationRecord>,
-    pub(super) native_prior_checkpoint:
+    pub prior_computation: Option<super::PriorComputationRecord>,
+    pub native_prior_checkpoint:
         Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
-    filled: bool,
+    pub filled: bool,
 }
 
 pub struct CancelledLineageSlot {
-    identity: Arc<RecordedSettlementIdentity>,
-    partition: Option<[u8; 32]>,
-    pub(super) next: Option<Box<Self>>,
+    pub identity: Arc<RecordedSettlementIdentity>,
+    pub partition: Option<[u8; 32]>,
+    pub next: Option<Box<Self>>,
 }
 
 impl CancelledLineageSlot {

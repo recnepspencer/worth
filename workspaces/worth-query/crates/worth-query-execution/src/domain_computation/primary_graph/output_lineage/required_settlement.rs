@@ -53,8 +53,8 @@ impl From<FullVerificationReason> for Unresolved {
 /// partition lookup cannot substitute a newer row or certify current demand.
 #[derive(Clone)]
 pub struct AcceptedCurrentCandidate {
-    selected: RetainedInputCutoffCandidate,
-    ready: ReadyCompletion,
+    pub selected: RetainedInputCutoffCandidate,
+    pub ready: ReadyCompletion,
 }
 
 impl AcceptedCurrentCandidate {

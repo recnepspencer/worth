@@ -52,7 +52,7 @@ impl From<CompanionPreflightStop> for FullVerificationStop {
 
 /// The observer retains the exact pre-verification image. It grants no edit,
 /// scheduling, equality, or publication authority.
-pub(in crate::domain_computation::primary_graph) struct FullVerificationImage<'selected> {
+pub struct FullVerificationImage<'selected> {
     state: Arc<MarkState>,
     native_only: bool,
     selected: &'selected PositionedRelationalSnapshot,

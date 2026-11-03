@@ -21,7 +21,7 @@ pub(super) use marking::mark_query_reads;
 
 /// Addresses and their allocation only. No source/session/currentness permission.
 #[derive(Debug)]
-pub(super) struct QueryReadProjection {
+pub struct QueryReadProjection {
     keys: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
 }
 #[derive(Debug)]

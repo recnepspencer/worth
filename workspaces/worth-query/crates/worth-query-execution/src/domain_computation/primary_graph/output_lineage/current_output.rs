@@ -19,15 +19,15 @@ use super::WorthQueryProducerLineageHead;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 pub struct RetainedOutputCurrentnessRead {
-    pub(in crate::domain_computation::primary_graph) identity:
+    pub identity:
         Arc<super::RecordedSettlementIdentity>,
     pub facts: Option<super::ComparableSourceFacts>,
-    pub(in crate::domain_computation::primary_graph) consumed_outputs:
+    pub consumed_outputs:
         Arc<[ConsumedOutputEvidence]>,
-    pub(in crate::domain_computation::primary_graph) native_output_witness:
+    pub native_output_witness:
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// The facts and the witness are everything this output depends on.
-    pub(in crate::domain_computation::primary_graph) consumed_nothing: bool,
+    pub consumed_nothing: bool,
     pub verification_requirement:
         Option<super::invalidation::FullVerificationReason>,
 }

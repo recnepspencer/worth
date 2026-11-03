@@ -16,11 +16,11 @@ pub struct PreparedPostingOrdinals {
     pub ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
 }
 pub struct ProjectedKey {
-    hash: u64,
-    key: Arc<FactPostingKey>,
-    ordinal: usize,
+    pub hash: u64,
+    pub key: Arc<FactPostingKey>,
+    pub ordinal: usize,
 }
-struct PostingGroup {
+pub struct PostingGroup {
     pub key: Arc<FactPostingKey>,
     pub ordinals: OrdSet<usize>,
 }

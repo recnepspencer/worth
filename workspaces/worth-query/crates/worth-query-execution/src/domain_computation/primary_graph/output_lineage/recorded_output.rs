@@ -17,7 +17,7 @@ pub struct RecordedOutput {
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     /// The performed computation read a fact that its own effect replaced.
     /// Postcondition facts cannot discharge this knowledge after index loss.
-    pub(super) computation_source: super::ComputationSourceEvidence,
+    pub computation_source: super::ComputationSourceEvidence,
     pub native_prior_checkpoint:
         Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
     /// Stable settlements pin the original performed record, never another

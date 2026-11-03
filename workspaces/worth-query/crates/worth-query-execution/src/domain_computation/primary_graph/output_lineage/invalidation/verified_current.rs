@@ -22,7 +22,7 @@ use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
 
-pub(in crate::domain_computation::primary_graph) enum PreparedVerifiedCurrent {
+pub enum PreparedVerifiedCurrent {
     AlreadyCurrent {
         cell: CompanionBranchCell<BranchMarkRoot>,
         image: CompanionBranchImage<BranchMarkRoot>,
@@ -32,13 +32,13 @@ pub(in crate::domain_computation::primary_graph) enum PreparedVerifiedCurrent {
     LiveEdit(PreparedSettlementRegistration),
 }
 
-pub(in crate::domain_computation::primary_graph) struct StoppedVerifiedCurrent {
+pub struct StoppedVerifiedCurrent {
     reason: CompanionCellEditStop,
     _prepared: Option<StoppedSettlementRegistration>,
     _observed: Option<ObservedCurrentCustody>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct VerifiedCurrentCleanup {
+pub struct VerifiedCurrentCleanup {
     _observed: Option<ObservedCurrentCustody>,
     _edited: Option<SettlementRegistrationCleanup>,
 }

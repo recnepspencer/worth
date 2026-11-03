@@ -43,19 +43,19 @@ pub(super) enum SettlementReadAlignment {
 }
 
 pub struct SettlementRegistration {
-    pub(in crate::domain_computation::primary_graph) computation:
+    pub computation:
         Option<super::ComputationRegistration>,
-    pub(in crate::domain_computation::primary_graph) work_membership:
+    pub work_membership:
         Option<Arc<RequiredWorkMembership>>,
-    pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) facts: super::super::RetainedSourceFacts,
-    pub(in crate::domain_computation::primary_graph) output_facts: Option<RegisteredOutputFacts>,
-    pub(in crate::domain_computation::primary_graph) read_basis: PositionedRelationalSnapshot,
+    pub identity: Arc<RecordedSettlementIdentity>,
+    pub facts: super::super::RetainedSourceFacts,
+    pub output_facts: Option<RegisteredOutputFacts>,
+    pub read_basis: PositionedRelationalSnapshot,
     /// Fact ordinals the registrant already knows are not current at
     /// `read_basis`: no delivery after that basis would ever mark them.
-    pub(in crate::domain_computation::primary_graph) stale_at_read_basis: OrdSet<usize>,
-    pub(in crate::domain_computation::primary_graph) requirement: Option<FullVerificationReason>,
-    pub(in crate::domain_computation::primary_graph) upstream:
+    pub stale_at_read_basis: OrdSet<usize>,
+    pub requirement: Option<FullVerificationReason>,
+    pub upstream:
         OrdSet<Arc<RecordedSettlementIdentity>>,
 }
 

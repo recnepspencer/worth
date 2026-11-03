@@ -2,7 +2,7 @@
 use super::super::admission::rich::PreparedRichMaterialization;
 use super::*;
 use worth_runtime_bridge::facade::BridgeIdentityEvidence;
-pub(in super::super) struct FundedRichInspectionReport {
+pub struct FundedRichInspectionReport {
     pub reference: FundedInspectionReport,
     pub body: PreparedRichMaterialization,
     pub(in super::super) identity: BridgeIdentityEvidence,

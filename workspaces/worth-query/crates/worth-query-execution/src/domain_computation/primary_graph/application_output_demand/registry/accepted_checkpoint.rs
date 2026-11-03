@@ -1,7 +1,7 @@
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
-pub(in crate::domain_computation::primary_graph) enum AcceptedCheckpointFactSource {
+pub enum AcceptedCheckpointFactSource {
     Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
     Stable(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
 }

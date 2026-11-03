@@ -19,8 +19,8 @@ use super::owner::SourceInvalidationOwner;
 /// `every_commit` covers whole-graph dependencies and bootstrap catch-up.
 #[derive(Clone, Copy)]
 pub struct CommitTouchInterest<'a> {
-    pub(in crate::domain_computation::primary_graph) entities: CommitTouchEntities<'a>,
-    pub(in crate::domain_computation::primary_graph) every_commit: bool,
+    pub entities: CommitTouchEntities<'a>,
+    pub every_commit: bool,
 }
 
 /// Borrowed interest uses the same canonical touch stream for sets and bounded read dependencies.
@@ -48,7 +48,7 @@ impl CommitTouchEntities<'_> {
     }
 }
 /// One relevant commit on the branch and the watched entities it touched.
-pub(in crate::domain_computation::primary_graph) struct TouchedCommit {
+pub struct TouchedCommit {
     pub(in crate::domain_computation::primary_graph) position: PatchStreamPosition,
     pub commit: CommitId,
     /// `None` when exact touches were unavailable for the commit.
@@ -64,7 +64,7 @@ impl TouchedCommit {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct TouchedCommits {
+pub struct TouchedCommits {
     pub commits: Vec<TouchedCommit>,
     pub next_cursor: Option<PatchStreamPosition>,
     pub(in crate::domain_computation::primary_graph) work_remaining: bool,

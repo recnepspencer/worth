@@ -25,7 +25,7 @@ enum InspectionOriginal {
     Source(super::source_original::SourceOriginal),
 }
 
-pub(super) enum InspectionTargetDenial {
+pub enum InspectionTargetDenial {
     ForeignBinding,
     Storage(CaptureStop<RetainedStorageDenial>),
 }
