@@ -1,5 +1,6 @@
 //! One real owning transfer attempt and explicit retained replay feed the independent journal model.
 pub use super::*;
+use bank_domain::schema::BankSchema;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequest, WorthQueryCompletedSourceOperation,
     WorthQuerySourceOnlyOperation, WorthQueryTerminalSourceOperation,
