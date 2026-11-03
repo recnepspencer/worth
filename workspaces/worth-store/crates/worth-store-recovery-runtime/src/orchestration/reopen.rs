@@ -6,7 +6,9 @@ use crate::entry::{
     PhysicalRecoveryOutcome, PhysicalRecoveryPublicationIndeterminate,
     PhysicalRecoveryReopenCounters, PhysicalRecoveryReopenFailure,
 };
-use crate::progression::{NamespaceDurablePhysicalRecovery, ReopenedPhysicalRecovery};
+use crate::progression::{
+    NamespaceDurablePayload, NamespaceDurablePhysicalRecovery, ReopenedPhysicalRecovery,
+};
 
 #[path = "reopen/custody_rebind.rs"]
 mod custody_rebind;
@@ -14,12 +16,12 @@ mod custody_rebind;
 pub(crate) fn reopen_recovery(
     durable: NamespaceDurablePhysicalRecovery,
 ) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
-    let NamespaceDurablePhysicalRecovery {
+    let NamespaceDurablePayload {
         state,
         mut expectation,
         publication_counters,
         publication_settlement,
-    } = durable;
+    } = durable.into_payload();
     let format = state.selection.root().selected().selector().format();
     let command = PhysicalRecoveryFreshReopenCommand::new(
         expectation.plan_identity(),

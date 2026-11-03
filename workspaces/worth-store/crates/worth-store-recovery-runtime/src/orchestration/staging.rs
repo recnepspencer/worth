@@ -56,6 +56,7 @@ fn complete(
     let input = input.into_state();
     let base = input.staging.into_base_image();
     Ok(input.staged_backing.finish(StagedRecoveryState {
+        namespace_backing: input.namespace_backing,
         authority: input.authority,
         coordination: input.coordination,
         selection: input.selection,

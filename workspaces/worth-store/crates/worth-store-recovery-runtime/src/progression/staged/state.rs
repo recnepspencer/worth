@@ -19,6 +19,7 @@ use crate::progression::{
 };
 
 pub(crate) struct StagedRecoveryState {
+    pub(crate) namespace_backing: crate::progression::NamespaceDurableBacking,
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) coordination: RecoveryCoordination,
     pub(crate) selection: ResidentSourceSelection,

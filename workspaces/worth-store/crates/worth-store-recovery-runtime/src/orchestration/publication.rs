@@ -3,14 +3,14 @@ use worth_store::physical_runtime::{
     PhysicalRecoveryPublicationCommandOutcome,
 };
 
-use crate::entry::{PhysicalRecoveryOutcome, PhysicalRecoveryPublicationSettlement};
+use crate::entry::PhysicalRecoveryOutcome;
 use crate::progression::{NamespaceDurablePhysicalRecovery, StagedPhysicalRecovery};
 
 mod catalog_repair;
 mod counters;
+mod outcome;
 mod state;
 
-use counters::{completed_counters, denial_counters, indeterminate_counters};
 use state::PublicationState;
 
 pub(crate) fn publish_recovery(
@@ -45,32 +45,13 @@ pub(crate) fn publish_recovery(
     };
     match state.execute(command) {
         PhysicalRecoveryPublicationCommandOutcome::Completed(completed) => {
-            let counters = completed_counters(planned_effects, &completed);
-            let settlement = PhysicalRecoveryPublicationSettlement::Completed(completed);
-            if state.is_ready() {
-                Ok(state.into_namespace(expectation, counters, settlement))
-            } else {
-                Err(state.indeterminate(counters, settlement))
-            }
+            outcome::completed(state, expectation, planned_effects, completed)
         }
         PhysicalRecoveryPublicationCommandOutcome::DeniedBeforeEffect(denial) => {
-            let counters = denial_counters(planned_effects, &denial);
-            let escaped = !denial.candidates().is_empty()
-                || denial.candidate_materialization().is_some()
-                || denial.root_protocol().is_some();
-            let settlement = PhysicalRecoveryPublicationSettlement::DeniedBeforeEffect(denial);
-            if escaped {
-                Err(state.indeterminate(counters, settlement))
-            } else {
-                Err(state.block_settlement(counters, settlement))
-            }
+            Err(outcome::denied(state, planned_effects, denial))
         }
-        PhysicalRecoveryPublicationCommandOutcome::Indeterminate(outcome) => {
-            let counters = indeterminate_counters(planned_effects, &outcome);
-            Err(state.indeterminate(
-                counters,
-                PhysicalRecoveryPublicationSettlement::Indeterminate(outcome),
-            ))
+        PhysicalRecoveryPublicationCommandOutcome::Indeterminate(result) => {
+            Err(outcome::indeterminate(state, planned_effects, result))
         }
     }
 }

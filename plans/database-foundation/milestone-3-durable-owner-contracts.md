@@ -2999,3 +2999,21 @@ The admitted movement peak is the maximum of final planned construction plus its
 original extractions, planned extraction plus input construction/movement, and
 input extraction plus staged construction/movement. Thus unused redo need not
 remain live alongside later settlement storage to avoid stack copies.
+
+
+Published namespace custody uses a fourth checked slot, prepared in the same
+original allowance before effects and carried without optionality through input,
+closed staging and publication state. Its payload is exactly the existing
+namespace state, expectation, counters and settlement. The generic
+NamespaceDurableState<C> remains unchanged. The sole publication constructor
+seals this payload once, including preexisting-namespace success; fresh reopen
+consumes it once. Requested and actual namespace capacity and publication
+construction/extraction overlap join the original aggregate peak. Unused
+backing drops on the existing cancellation/failure paths.
+
+Publication completion, denied-before-effect and indeterminate settlements each
+have a non-inlined receiver. All existing counters, completed-readiness checking,
+exact escaped-effect predicate and owning session postures remain unchanged.
+This removes coexistence of unrelated fate-local temporaries. No numerical stack
+bound follows from this source decomposition; normal-stack filesystem controls
+remain mandatory.

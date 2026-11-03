@@ -9,11 +9,13 @@ use crate::entry::{
     PhysicalRecoveryPublicationSettlement, PhysicalRecoveryPublicationSettlementLedger,
 };
 use crate::progression::{
-    NamespaceDurablePhysicalRecovery, NamespaceDurableState, RecoveryPublicationExpectation,
-    RecoveryPublicationPlan, StagedPhysicalRecovery, StagedRecoveryState,
+    NamespaceDurablePayload, NamespaceDurablePhysicalRecovery, NamespaceDurableState,
+    RecoveryPublicationExpectation, RecoveryPublicationPlan, StagedPhysicalRecovery,
+    StagedRecoveryState,
 };
 
 pub(super) struct PublicationState {
+    namespace_backing: crate::progression::NamespaceDurableBacking,
     authority: AdmittedPlatformAuthority,
     coordination: super::super::RecoveryCoordination,
     selection: crate::orchestration::ResidentSourceSelection,
@@ -38,6 +40,7 @@ pub(super) struct PublicationState {
 impl PublicationState {
     pub(super) fn from_staged(staged: StagedPhysicalRecovery) -> (Self, RecoveryPublicationPlan) {
         let StagedRecoveryState {
+            namespace_backing,
             authority,
             coordination,
             selection,
@@ -60,6 +63,7 @@ impl PublicationState {
         } = staged.into_state();
         (
             Self {
+                namespace_backing,
                 authority,
                 coordination,
                 selection,
@@ -146,8 +150,8 @@ impl PublicationState {
         counters: PhysicalRecoveryPublicationCounters,
         settlement: PhysicalRecoveryPublicationSettlement,
     ) -> NamespaceDurablePhysicalRecovery {
-        NamespaceDurablePhysicalRecovery::new(
-            NamespaceDurableState {
+        self.namespace_backing.finish(NamespaceDurablePayload {
+            state: NamespaceDurableState {
                 authority: self.authority,
                 coordination: self.coordination,
                 selection: self.selection,
@@ -168,9 +172,9 @@ impl PublicationState {
                 staging_settlements: self.staging_settlements,
             },
             expectation,
-            counters,
-            PhysicalRecoveryPublicationSettlementLedger::new(settlement),
-        )
+            publication_counters: counters,
+            publication_settlement: PhysicalRecoveryPublicationSettlementLedger::new(settlement),
+        })
     }
 
     pub(super) fn block_invalid(self) -> PhysicalRecoveryOutcome {

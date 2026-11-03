@@ -25,7 +25,9 @@ pub(crate) use custody::{CustodyState, PendingReleaseReplay, PlanningCustody};
 pub use discovered::{DiscoveredPhysicalRecovery, PhysicalRecoveryDiscoveryCounters};
 pub(crate) use integrity_evidence::RecoveryIntegrityEvidence;
 pub use namespace_durable::NamespaceDurablePhysicalRecovery;
-pub(crate) use namespace_durable::NamespaceDurableState;
+pub(crate) use namespace_durable::{
+    NamespaceDurableBacking, NamespaceDurablePayload, NamespaceDurableState,
+};
 pub use planned::{
     PhysicalRecoveryStagingCancellation, PlannedPhysicalRecovery, RecoveryBaseImageAction,
     RecoveryBaseImagePlan, RecoveryPayloadManifestAction, RecoveryPublicationAction,

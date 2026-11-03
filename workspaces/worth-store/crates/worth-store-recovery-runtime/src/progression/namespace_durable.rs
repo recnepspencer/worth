@@ -16,11 +16,10 @@ use super::{
 };
 
 pub struct NamespaceDurablePhysicalRecovery {
-    pub(crate) state: NamespaceDurableState,
-    pub(crate) expectation: RecoveryPublicationExpectation,
-    pub(crate) publication_counters: PhysicalRecoveryPublicationCounters,
-    pub(crate) publication_settlement: PhysicalRecoveryPublicationSettlementLedger,
+    backing: NamespaceDurableBacking,
 }
+mod storage;
+pub(crate) use storage::{NamespaceDurableBacking, NamespaceDurablePayload};
 
 pub(crate) struct NamespaceDurableState<C = crate::progression::PlanningCustody> {
     pub(crate) authority: AdmittedPlatformAuthority,
@@ -45,84 +44,84 @@ pub(crate) struct NamespaceDurableState<C = crate::progression::PlanningCustody>
 }
 
 impl NamespaceDurablePhysicalRecovery {
-    pub(crate) const fn new(
-        state: NamespaceDurableState,
-        expectation: RecoveryPublicationExpectation,
-        publication_counters: PhysicalRecoveryPublicationCounters,
-        publication_settlement: PhysicalRecoveryPublicationSettlementLedger,
-    ) -> Self {
-        Self {
-            state,
-            expectation,
-            publication_counters,
-            publication_settlement,
-        }
+    pub(crate) fn into_payload(self) -> NamespaceDurablePayload {
+        self.backing.into_payload()
     }
 
     pub fn store_identity(&self) -> StableStoreIdentity {
-        self.state.authority.media.store_identity()
+        self.backing
+            .payload()
+            .state
+            .authority
+            .media
+            .store_identity()
     }
     pub const fn publication_expectation(&self) -> &RecoveryPublicationExpectation {
-        &self.expectation
+        &self.backing.payload().expectation
     }
     pub const fn publication_counters(&self) -> PhysicalRecoveryPublicationCounters {
-        self.publication_counters
+        self.backing.payload().publication_counters
     }
     pub const fn publication_settlement(&self) -> &PhysicalRecoveryPublicationSettlementLedger {
-        &self.publication_settlement
+        &self.backing.payload().publication_settlement
     }
     pub const fn closed_generation(&self) -> ClosedRecoveryStagingGeneration {
-        self.state.closed
+        self.backing.payload().state.closed
     }
     pub const fn operation_fates(&self) -> &RecoveryOperationFateSet {
-        &self.state.fates
+        &self.backing.payload().state.fates
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        self.state.selection.facts()
+        self.backing.payload().state.selection.facts()
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
-        self.state.discovery_counters
+        self.backing.payload().state.discovery_counters
     }
     pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
-        &self.state.root_protocol_denials
+        &self.backing.payload().state.root_protocol_denials
     }
     pub fn wal_integrity_observations(
         &self,
     ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
-        self.state.integrity.observations().wal()
+        self.backing.payload().state.integrity.observations().wal()
     }
     pub const fn freshness_sample(&self) -> &StoreRecoveryBindingFreshnessSample {
-        &self.state.freshness
+        &self.backing.payload().state.freshness
     }
     pub const fn planning_counters(&self) -> RecoveryPlanningCounters {
-        self.state.planning_counters
+        self.backing.payload().state.planning_counters
     }
     pub const fn root_protocol_counters(
         &self,
     ) -> crate::entry::PhysicalRecoveryRootProtocolCounters {
-        self.state.root_protocol_counters
+        self.backing.payload().state.root_protocol_counters
     }
     pub const fn base_image(&self) -> &RecoveryBaseImagePlan {
-        &self.state.base
+        &self.backing.payload().state.base
     }
     pub const fn quiescence_plan(&self) -> RecoveryQuiescencePlan {
-        self.state.quiescence
+        self.backing.payload().state.quiescence
     }
     pub const fn staging_counters(&self) -> PhysicalRecoveryStagingCounters {
-        self.state.staging_counters
+        self.backing.payload().state.staging_counters
     }
     pub const fn staging_settlements(&self) -> &PhysicalRecoveryStagingSettlementLedger {
-        &self.state.staging_settlements
+        &self.backing.payload().state.staging_settlements
     }
     pub fn is_quiescent(&self) -> bool {
-        self.state.coordination.is_ready()
+        self.backing.payload().state.coordination.is_ready()
     }
     pub const fn integrity_observation_count(&self) -> u64 {
-        self.state.integrity_trace.counters().attempted
+        self.backing
+            .payload()
+            .state
+            .integrity_trace
+            .counters()
+            .attempted
     }
 
     pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
-        self.state.integrity_trace.observations()
+        self.backing.payload().state.integrity_trace.observations()
     }
 
     /// Reopens the namespace-durable selector and root through scheduled C4
@@ -138,7 +137,9 @@ impl NamespaceDurablePhysicalRecovery {
         &self,
         stage: worth_store::physical_runtime::PhysicalRecoveryFreshReopenStage,
     ) {
-        self.state
+        self.backing
+            .payload()
+            .state
             .coordination
             .fail_reopen_scheduler_settlement_at_for_certification(stage);
     }
@@ -148,7 +149,9 @@ impl NamespaceDurablePhysicalRecovery {
         &self,
         stage: worth_store::physical_runtime::PhysicalRecoveryFreshReopenStage,
     ) {
-        self.state
+        self.backing
+            .payload()
+            .state
             .coordination
             .fail_reopen_signal_settlement_at_for_certification(stage);
     }
