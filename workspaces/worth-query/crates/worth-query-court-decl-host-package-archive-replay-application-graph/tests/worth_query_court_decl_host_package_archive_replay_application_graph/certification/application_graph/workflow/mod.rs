@@ -116,12 +116,13 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
     let replay = match advance_instance(&application, started.instance().clone(), 33)
         .expect("an exact workflow transition retry must prepare")
     {
-        WorkflowProgressOutcome::Completed(transition) => transition,
-        other => panic!("expected a replayed terminal transition, got {other:?}"),
+        WorkflowProgressOutcome::RecoveredCommitted(recorded) => recorded,
+        other => panic!("expected the recorded terminal transition, got {other:?}"),
     };
-    assert!(replay.replayed());
-    assert!(replay.terminal());
-    assert_eq!(replay.transition(), transition.transition());
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+        &replay,
+        &transition,
+    );
     match advance_instance(&application, started.instance().clone(), 34)
         .expect("a new key must reach transition-head comparison")
     {

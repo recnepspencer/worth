@@ -313,10 +313,15 @@ fn evidence_join_replays_before_a_supported_terminal_successor() {
         .runtime()
         .release_workflow_instance_progress_for_test();
     let before_reconstruction = application.runtime().workflow_instance_progress_counters();
-    assert!(matches!(
-        advance_instance(&application, started.instance().clone(), 477),
-        Ok(WorkflowProgressOutcome::Completed(_))
-    ));
+    let original = match advance_instance(&application, started.instance().clone(), 477)
+        .expect("join settles")
+    {
+        WorkflowProgressOutcome::Completed(performed) => performed,
+        other => panic!("original join must complete: {other:?}"),
+    };
+    assert_eq!(original.node_path(), "checks/join");
+    assert!(!original.terminal());
+    assert!(!original.replayed());
     let after_reconstruction = application.runtime().workflow_instance_progress_counters();
     assert_eq!(
         after_reconstruction.cold_misses(),
@@ -329,9 +334,10 @@ fn evidence_join_replays_before_a_supported_terminal_successor() {
     match advance_instance(&application, started.instance().clone(), 477)
         .expect("join key must replay before its supported successor")
     {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "checks/join");
-            assert!(performed.replayed());
+        WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
+            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+                &recorded, &original,
+            );
         }
         other => panic!("expected replayed join, got {other:?}"),
     }
@@ -342,10 +348,10 @@ fn evidence_join_replays_before_a_supported_terminal_successor() {
     match advance_instance(&application, started.instance().clone(), 477)
         .expect("join key must remain replayable after terminal completion")
     {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "checks/join");
-            assert!(performed.replayed());
-            assert!(!performed.terminal());
+        WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
+            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+                &recorded, &original,
+            );
         }
         other => panic!("expected the historical join replay, got {other:?}"),
     }

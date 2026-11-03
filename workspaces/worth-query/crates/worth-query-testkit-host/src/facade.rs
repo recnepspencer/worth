@@ -6,3 +6,6 @@
 #[path = "host/mod.rs"]
 pub mod host;
 pub(crate) use worth_query_execution::facade::primary_graph;
+
+#[path = "recorded_receipt_comparison.rs"]
+pub mod recorded_receipt_comparison;

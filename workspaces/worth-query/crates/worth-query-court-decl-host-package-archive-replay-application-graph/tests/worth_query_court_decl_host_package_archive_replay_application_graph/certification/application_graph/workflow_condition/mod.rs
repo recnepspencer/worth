@@ -137,13 +137,14 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
         .operand::<DocumentRetentionConditionQueryBinding, _>("retained", condition_result)
         .accept()
         .expect("the exact typed condition result must be accepted");
-    match outcome {
+    let original = match outcome {
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "positive-retention");
             assert!(!performed.replayed());
+            performed
         }
         other => panic!("expected condition settlement, got {other:?}"),
-    }
+    };
 
     let replay_result = runtime
         .request(&principal, &scope)
@@ -168,9 +169,10 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
         .accept()
         .expect("the duplicate condition acceptance must resolve");
     match replay {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "positive-retention");
-            assert!(performed.replayed());
+        WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
+            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+                &recorded, &original,
+            );
         }
         other => panic!("expected replayed condition settlement, got {other:?}"),
     }

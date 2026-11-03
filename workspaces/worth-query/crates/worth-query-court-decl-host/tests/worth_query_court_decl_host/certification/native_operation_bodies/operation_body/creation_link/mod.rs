@@ -38,10 +38,12 @@ fn ordinary_created_to_scope_link_is_traversable_and_exact_replay_keeps_it() {
         .idempotency(&320)
         .execute_in_program(&app, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let Outcome::AlreadyCommitted(replayed) = replay else {
+    let Outcome::RecoveredCommitted(replayed) = replay else {
         panic!("replay")
     };
-    assert_eq!(replayed.outcome_identity(), receipt.outcome_identity());
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+        &replayed, &receipt,
+    );
     assert_eq!(
         app.request(&principal, &scope)
             .query(query::ReadTenant(DOCUMENT_IDENTITY.to_owned()))

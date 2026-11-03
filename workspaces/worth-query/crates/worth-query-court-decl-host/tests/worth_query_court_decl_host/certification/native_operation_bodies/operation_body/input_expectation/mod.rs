@@ -29,8 +29,10 @@ fn input_guard_uses_original_capture_and_replay_does_not_recheck_changed_source(
     assert_eq!(calls.load(Ordering::SeqCst), 1);
     assert_eq!(read_retention(&app), 99);
     match invoke_input(&app, 1100, input(7)) {
-        Outcome::AlreadyCommitted(replay) => {
-            assert_eq!(replay.outcome_identity(), original.outcome_identity())
+        Outcome::RecoveredCommitted(replay) => {
+            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+                &replay, &original,
+            )
         }
         other => panic!("exact replay: {other:?}"),
     }

@@ -71,7 +71,7 @@ fn authored_body_replacement_is_denied_before_any_handler_is_installed() {
 fn authored_body_replay_recovers_original_commit_after_source_guard_changes() {
     let app = install::<8>();
     assert!(matches!(invoke(&app, 85), Outcome::Committed { .. }));
-    assert!(matches!(invoke(&app, 85), Outcome::AlreadyCommitted(_)));
+    assert!(matches!(invoke(&app, 85), Outcome::RecoveredCommitted(_)));
     assert_eq!(read_retention(&app), 8);
 }
 

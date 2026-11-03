@@ -28,7 +28,7 @@ fn a_changed_retention_under_a_reused_key_is_intent_drift_and_the_unchanged_retr
     assert!(
         matches!(
             set_retention(&host, branch, first, key).expect("the unchanged retry settles"),
-            WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+            WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
         ),
         "the unchanged retry replays as already committed"
     );
@@ -68,7 +68,7 @@ fn a_request_encodes_its_input_once_whether_it_commits_or_replays() {
 
     SetRetentionInput::reset_encoding_count();
     let retry = set_retention(&host, branch, retention, key).expect("the retry settles");
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(recovered) = retry else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(recovered) = retry else {
         panic!("the unchanged retry replays: {retry:?}");
     };
     assert_eq!(
@@ -76,7 +76,10 @@ fn a_request_encodes_its_input_once_whether_it_commits_or_replays() {
         1,
         "a replayed request encodes its input once too"
     );
-    assert_request_identity_work(recovered.canonical_work().admission(), 66, 270, 5);
+    // D17 excludes historical work from recovered data; fresh admission still encodes exactly once.
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+        &recovered, &receipt,
+    );
 }
 
 #[test]

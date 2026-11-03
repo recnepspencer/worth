@@ -32,7 +32,7 @@ fn related_output_of_one_target_is_preserved_without_a_dummy_write() {
         7,
         "output-only body has no dummy writes"
     );
-    let Outcome::AlreadyCommitted(replay) = single
+    let Outcome::RecoveredCommitted(replay) = single
         .request(&principal, &scope)
         .advanced()
         .mutate(binding::RelatedIntent(input.clone()))
@@ -43,14 +43,18 @@ fn related_output_of_one_target_is_preserved_without_a_dummy_write() {
     else {
         panic!("replay")
     };
-    assert_eq!(
-        replay
-            .outputs_of::<RelatedOutputs<37>>()
-            .unwrap()
-            .entity::<RelatedOutput<37>>()
-            .unwrap()
-            .entity_id(),
-        selected
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+        &replay, &receipt,
+    );
+    assert!(
+        !replay
+            .semantic_result()
+            .semantic()
+            .changed_records()
+            .contains(&worth_relational::facade::transactions::RecordRef::Entity(
+                selected
+            )),
+        "recorded output-only preservation never writes its selected target"
     );
 }
 

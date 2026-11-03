@@ -73,9 +73,12 @@ fn back_is_one_published_transition_and_reconstructs_without_replaying_an_effect
             .incremental_advances(),
         before.incremental_advances() + 1
     );
-    let duplicate = navigate(2_317).expect("the same Back intent must replay its result");
-    assert_eq!(duplicate.transition(), back.transition());
-    assert!(duplicate.replayed());
+    let Err(WorkflowProgressOutcome::RecoveredCommitted(duplicate)) = navigate(2_317) else {
+        panic!("the same Back intent must return original recorded data");
+    };
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+        &duplicate, &back,
+    );
     assert!(
         matches!(
             navigate(2_318),
@@ -86,9 +89,13 @@ fn back_is_one_published_transition_and_reconstructs_without_replaying_an_effect
     );
 
     runtime.release_workflow_instance_progress_for_test();
-    let cold_duplicate = navigate(2_317).expect("cold replay must reconstruct the Back identity");
-    assert_eq!(cold_duplicate.transition(), back.transition());
-    assert!(cold_duplicate.replayed());
+    let Err(WorkflowProgressOutcome::RecoveredCommitted(cold_duplicate)) = navigate(2_317) else {
+        panic!("the same Back intent must return original recorded data");
+    };
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+        &cold_duplicate,
+        &back,
+    );
     match advance_instance(&application, instance, 2_319)
         .expect("cold reconstruction must admit the unchanged first assessment")
     {

@@ -66,14 +66,13 @@ fn retained_feature_steps_read_original_cell_versions_after_later_local_edits() 
         [(20, 29)],
         "another feature remains unchanged"
     );
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed) =
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed) =
         live_at::edit(&host, 1, 10, 31, 101)
     else {
         panic!("the original key rejoins its commit")
     };
-    assert!(
-        replayed.is_same_authoritative_commit(&step_one),
-        "the retry must identify the original authoritative commit"
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+        &replayed, &step_one,
     );
     assert_eq!(
         replayed.commit_reference().version_id,

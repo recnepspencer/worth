@@ -5,19 +5,21 @@ fn true_expression_selects_satisfied_and_its_retry_replays() {
     let court = Court::open(5, 9_176_100);
     let first = accept!(court, 9_176_110, days: days!(court.application), retained: retained!(court.application))
         .expect("a true expression settles");
-    match first {
+    let original = match first {
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "positive-retention");
             assert!(!performed.replayed());
+            performed
         }
         other => panic!("expected a condition settlement, got {other:?}"),
-    }
+    };
     let retry = accept!(court, 9_176_110, days: days!(court.application), retained: retained!(court.application))
         .expect("the retried acceptance resolves");
     match retry {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "positive-retention");
-            assert!(performed.replayed());
+        WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
+            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+                &recorded, &original,
+            );
         }
         other => panic!("expected a replayed settlement, got {other:?}"),
     }

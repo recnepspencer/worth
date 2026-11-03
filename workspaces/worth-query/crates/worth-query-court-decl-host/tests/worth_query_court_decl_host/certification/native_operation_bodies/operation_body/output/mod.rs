@@ -20,19 +20,14 @@ fn created_and_scope_outputs_name_the_same_real_row_and_replay_keeps_corresponde
         .entity::<AbsentOutput<31>>()
         .unwrap()
         .is_none());
-    let Outcome::AlreadyCommitted(replayed) = create(&app, 310) else {
+    let Outcome::RecoveredCommitted(replayed) = create(&app, 310) else {
         panic!("replay")
     };
-    assert_eq!(
-        replayed
-            .outputs_of::<CreatedOutputs<31>>()
-            .unwrap()
-            .entity::<CreatedOutput<31>>()
-            .unwrap()
-            .expect("replayed Create output is present")
-            .entity_id(),
-        created
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+        &replayed, &receipt,
     );
+    assert!(replayed.semantic_result().semantic().created_entities().iter().any(|row| row.assigned == created),
+        "recorded creation correspondence retains the original real entity without a live projection");
     let Outcome::Committed { receipt, .. } = invoke(&app, 311) else {
         panic!("output-only preserve")
     };
