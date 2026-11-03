@@ -146,7 +146,8 @@ impl RuntimeWorldRetentionOwner<(), (), ()> {
             before.owner_drop_releases()
         );
         assert_eq!(
-            native.branch_basis_cost_counters()
+            native
+                .branch_basis_cost_counters()
                 .external_retention_drop_releases,
             native_before.external_retention_drop_releases
         );
