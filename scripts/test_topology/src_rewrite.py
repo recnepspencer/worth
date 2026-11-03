@@ -14,7 +14,7 @@ import re
 from rust_source import replace_spans, tokens
 from src_occurrences import scan, visibility_markers
 from src_paths import resolve
-from src_glob_words import inherited_words, path_tail
+from src_glob_words import glob_read, inherited_words, path_tail
 from src_parts import leading_inner_attributes, part_text, publicized
 
 LIBRARY = 'worth_query_execution'
@@ -260,7 +260,12 @@ class Rewriter:
         changes = [(start, end, self.visibility('pub(' + inner + ')', reader_crate))
                    for start, end, inner in visibility_markers(text) if inner.startswith('in ')
                    or '-testkit-' in reader_crate]
-        return publicized(replace_spans(text, changes))
+        text = publicized(replace_spans(text, changes))
+        if '-court-' in reader_crate and glob_read(self.model, record.names):
+            # Category placement can put a globbing child outside its parent's subtree; the
+            # parent's imports must then be visible to it, so the court re-exports them.
+            text = re.sub(r'(?m)^use ', 'pub use ', text)
+        return text
 
     def with_door_imports(self, text, record, reader_crate):
         """A module that calls a door method imports the door trait that now provides it."""
@@ -346,6 +351,6 @@ class Rewriter:
         local = alias or segments[-1]
         tail = path.rsplit('::', 1)[-1]
         named = local if local not in ('self',) else None
-        suffix = f' as {named}' if named and named != tail else ''
+        suffix = f' as {named}' if named and named != tail and not glob else ''
         return [prefix + 'use ' + path + ('::*' if glob else '') + suffix + ';']
 
