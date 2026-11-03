@@ -40,7 +40,7 @@ pub fn unhold(
             .records_mut_for_test())
             .get_mut(&(*interest.key_for_test()))
             .unwrap()
-            .claim_batch_for_test())
+            .claim_batch_mut_for_test())
             .take();
         if let Some(batch) = &(*claims.claim_batch_for_test()) {
             batch.deactivate_for_test();

@@ -70,3 +70,10 @@ impl DemandRecord {
         &mut self.state
     }
 }
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn claim_batch_mut_for_test(&mut self) -> &mut Option<claim_readthrough::ClaimBatch> {
+        &mut self.claim_batch
+    }
+}
