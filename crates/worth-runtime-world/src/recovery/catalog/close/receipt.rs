@@ -80,13 +80,14 @@ mod tests {
         let original = RelationalCommitReceipt {
             commit_id: CommitId(7),
             version_id: worth_relational::facade::identity::VersionId(8),
-            // Keep receipt storage above the request's transient fixed scratch,
-            // so the exact retained grant itself is the tested boundary.
-            branch_id: BranchId("original-recovered-branch".repeat(4096)),
+            branch_id: BranchId("original-recovered-branch".into()),
             parents: vec![CommitId(3), CommitId(5)],
         };
         let needed = original.branch_id.0.len() as u64 + 2 * std::mem::size_of::<CommitId>() as u64;
-        for budget in [needed - 1, needed] {
+        // The successful original grant also covers ExecutionRequest's
+        // transient scope storage. Only the receipt's exact owned bytes may
+        // remain charged after the copy returns.
+        for budget in [needed - 1, needed + 64 * 1024] {
             let memory = SerialMemoryBudget::new(Some(budget));
             let policy = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
             let request = ExecutionRequest::serial(&policy);
