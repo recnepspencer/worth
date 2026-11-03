@@ -352,7 +352,7 @@ export interface ResourceMutationResponsePlan {
   readonly source: string;
   readonly planId: string;
   readonly route: string;
-  readonly method: "POST" | "PUT" | "DELETE";
+  readonly method: "POST" | "PUT" | "PATCH" | "DELETE";
   readonly line: ResourceMutationResponseLineDigest;
   readonly request: ResourceMutationResponseRequestDigest;
   readonly submittedTargets: readonly ResourceMutationResponseSubmittedTargetBasis[];

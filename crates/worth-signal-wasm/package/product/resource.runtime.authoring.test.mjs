@@ -59,3 +59,5 @@ import "./resource_runtime/requests/api_scoped_defaults.test.mjs";
 import "./resource_runtime/requests/request_posture_closeout.test.mjs";
 import "./resource_runtime/requests/request_posture.test.mjs";
 import "./resource_runtime/requests/api_effect_profiles.test.mjs";
+
+import "./resource_runtime/authoring/api_route/api_patch_request_method.test.mjs";
