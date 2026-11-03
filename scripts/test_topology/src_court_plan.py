@@ -100,13 +100,15 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
             placement[names]['court'] = (crate, prefix + hoisted(renamed(names, renames)))
         for names, crate in kit_of.items():
             placement[names]['testkit'] = (crate, renamed(names, renames))
+        add_import_shells(model, placement)
         rewriter = Rewriter(model, placement)
         parts = {}
         for names in sorted(model.records):
             for part, (crate, path) in sorted(placement[names].items()):
                 record = model.records[names]
-                text = '' if names in foreign else rewriter.rewrite(record, part, kinds[names], crate)
-                includes = [] if names in foreign or (kinds[names] == 'split' and part == 'testkit') else [
+                shell = part.startswith('imports:')
+                text = '' if names in foreign else rewriter.rewrite(record, part, 'split' if shell else kinds[names], crate)
+                includes = [] if names in foreign or shell or (kinds[names] == 'split' and part == 'testkit') else [
                     (literal, target, rewriter.rewrite(included_record(record, target), part, 'court', crate))
                     for literal, target in record.includes]
                 parts[(names, part)] = {'crate': crate, 'path': path, 'text': text, 'foreign': names in foreign,
@@ -158,6 +160,31 @@ def prepare(model, library_root):
         record.foreign = not record.node.source.resolve().is_relative_to(library_root)
     mark_kept_impls(model)
     door_traits(model)
+
+
+def add_import_shells(model, placement):
+    """Court crates whose modules glob a parent placed elsewhere get the parent's imports.
+
+    `use super::*` reads the parent's imports. A parent's court part lives in one crate; every
+    other court crate holding a globbing child gets an imports-only part at the path its child's
+    glob resolves to there.
+    """
+    from src_paths import resolve, use_trees
+    taken = {where for parts in placement.values() for where in parts.values()}
+    for names, record in sorted(model.records.items()):
+        parent = names[:-1]
+        court = placement.get(names, {}).get('court')
+        if court is None or parent not in model.records or record.foreign:
+            continue
+        crate = court[0]
+        if any(c == crate for c, _p in placement[parent].values()):
+            continue
+        targets = [resolve(segments, names, model.index)
+                   for segments, glob, _alias in use_trees(record.node.own_text()) if glob]
+        where = (crate, court[1][:-1])
+        if where not in taken and any(t is not None and t[0] == parent and not t[1] for t in targets):
+            placement[parent]['imports:' + crate] = where
+            taken.add(where)
 
 
 def foreign_includes(record):

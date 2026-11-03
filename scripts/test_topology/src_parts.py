@@ -43,6 +43,10 @@ def part_text(record, part, disposition):
     if disposition != 'split':
         return text
     inner, start = leading_inner_attributes(text)
+    if part.startswith('imports:'):
+        # An imports-only shell of a parent placed in another crate (see add_import_shells).
+        return inner + ''.join('\n' + text[i.start:i.end] for i in record.items
+                               if i.keyword == 'use' and i.end > start) + '\n'
     pieces = [inner]
     from src_families import macro_generated
     test_macros = {m['macro'] for m in macro_generated(text)}
