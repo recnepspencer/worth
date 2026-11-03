@@ -3,7 +3,7 @@
 
 use worth_store_recovery_physics::VerifiedOrderedRootHistory;
 
-use super::RecoveredCheckpointCustodyEvidence;
+use super::{RecoveredCheckpointCustodyEvidence, RecoveredReleaseCustody};
 
 impl RecoveredCheckpointCustodyEvidence {
     /// Only the remaining heap relies on the bootstrap grant. Native owners
@@ -38,24 +38,17 @@ impl RecoveredCheckpointCustodyEvidence {
     /// Claim-local backing plus each distinct shared Arc target exactly once.
     /// This is a measurement, not a new recovery admission or Serving grant.
     pub(in crate::physical_runtime) fn owned_heap_bytes(&self) -> Option<u64> {
-        let mut bytes = 0_u64;
-        for claim_bytes in [
-            self.head_v2.as_ref().map(|claim| claim.owned_heap_bytes()),
-            self.pending_wal_release
-                .as_ref()
-                .map(|claim| claim.owned_heap_bytes()),
-            self.effective_release_heads
-                .as_ref()
-                .map(|claim| claim.owned_heap_bytes()),
-            self.historical_release
-                .as_ref()
-                .map(|claim| claim.owned_heap_bytes()),
-        ]
-        .into_iter()
-        .flatten()
-        {
-            bytes = bytes.checked_add(claim_bytes?)?;
-        }
+        let mut bytes =
+            match &self.release {
+                RecoveredReleaseCustody::HeadV2(claim) => claim.owned_heap_bytes()?,
+                RecoveredReleaseCustody::NoRelease(_) => 0,
+                RecoveredReleaseCustody::PendingWal { claim, effective } => claim
+                    .owned_heap_bytes()?
+                    .checked_add(effective.owned_heap_bytes()?)?,
+                RecoveredReleaseCustody::OrderedHistorical { effective, claim } => effective
+                    .owned_heap_bytes()?
+                    .checked_add(claim.owned_heap_bytes()?)?,
+            };
         #[cfg(feature = "recovery-runtime-owner")]
         {
             bytes = bytes.checked_add(self.selected_wal.owned_heap_bytes()?)?;
@@ -75,30 +68,19 @@ impl RecoveredCheckpointCustodyEvidence {
     }
 
     fn shared_history_bytes(&self) -> Option<u64> {
-        let histories: [Option<&VerifiedOrderedRootHistory>; 2] = [
-            self.pending_wal_release
-                .as_ref()
-                .and_then(|claim| claim.ordered_history()),
-            self.historical_release
-                .as_ref()
-                .map(|claim| claim.history()),
-        ];
-        let mut bytes = 0_u64;
-        for (index, history) in histories.iter().enumerate() {
-            let Some(history) = history else { continue };
-            if histories[..index]
-                .iter()
-                .flatten()
-                .any(|prior| std::ptr::eq(*prior, *history))
-            {
-                continue;
-            }
-            bytes = bytes
-                .checked_add(history.owned_heap_bytes()?)?
-                .checked_add(u64::try_from(std::mem::size_of_val(*history)).ok()?)?
-                .checked_add(u64::try_from(2 * std::mem::size_of::<usize>()).ok()?)?;
+        let history: Option<&VerifiedOrderedRootHistory> = match &self.release {
+            RecoveredReleaseCustody::HeadV2(_) => None,
+            RecoveredReleaseCustody::NoRelease(_) => None,
+            RecoveredReleaseCustody::PendingWal { claim, .. } => claim.ordered_history(),
+            RecoveredReleaseCustody::OrderedHistorical { claim, .. } => Some(claim.history()),
+        };
+        match history {
+            Some(history) => history
+                .owned_heap_bytes()?
+                .checked_add(u64::try_from(std::mem::size_of_val(history)).ok()?)?
+                .checked_add(u64::try_from(2 * std::mem::size_of::<usize>()).ok()?),
+            None => Some(0),
         }
-        Some(bytes)
     }
 }
 

@@ -3199,3 +3199,29 @@ authority, limit or alternate admission. On non-success the unused custody is
 dropped as before. These private Application phase boundaries and narrow Store
 admission changes preserve source classification and refusal stages. The direct
 default-stack acceptance control remains required evidence.
+
+### Serving custody carries one actual release family
+
+At e7d4d5d46a media admission returns; default-stack failure reaches Store's
+record-open entry. The serving seal still carries four mutually exclusive
+release claims plus an optional effective roster simultaneously in its layout.
+Search finds exactly four evidence construction literals, all in the existing
+recovered_custody/construction owner, each selecting one valid family. Replace
+these five optional fields with private RecoveredReleaseCustody: HeadV2,
+NoRelease, PendingWal { claim, effective }, and OrderedHistorical { effective,
+claim }. This is the owning runtime's custody representation of existing real
+witnesses, not a new witness, issuer or cross-runtime family vocabulary. Tier
+remains orthogonal. Core's current construction representation stays unchanged.
+
+The release_custody child owns that representation and borrowed observations.
+Remove verified_basis's six-option tuple, replacing it with borrowed release
+and tier accessors; migrate the sole publication-ledger consumer exhaustively.
+Checkpoint/media freshness still perform the same absence, fingerprint, head
+walk, historical raw, certificate and tier reads. Pending/historical validators
+receive their mandatory actual effective roster directly. Heap census counts
+the SAME selected claim, effective roster, shared checkpoint and shared history
+once, with historical effective-before-claim drop order preserved. No allocation,
+cloning, new public API or funding change is added. Existing genuine serving
+custody court plus direct default-stack acceptance and typed refusal courts
+qualify this cut; compiler sizeof evidence distinguishes layout improvement from
+a runtime frame guarantee. Independent design review approved this plan.
