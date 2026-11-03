@@ -123,15 +123,47 @@ def inputs(command, cwd, environment, manifests=()):
                           if Path(path).is_file() else None for path in manifests}}
 
 
+def checked_test_roots(command, graph):
+    if command[1] not in ('check', 'clippy'):
+        return ()
+    if '--tests' in command and not any(flag in command for flag in
+            ('--all-targets', '--lib', '--bins', '--examples', '--benches')):
+        return graph['roots']
+    if '--all-targets' not in command and '--tests' not in command:
+        return ()
+    # Cargo erases the harness bit in a check graph. A target's normal stage
+    # can be a dependency; its harness is a leaf root. Preserve both declared
+    # stages, including an otherwise identical pair with no incoming edges.
+    incoming = {edge['index'] for row in graph['units'] for edge in row['dependencies']}
+    groups = {}
+    for index, row in enumerate(graph['units']):
+        if row['mode'] == 'check' and row['target']['kind'] in (['lib'], ['bin']):
+            key = digest({key: value for key, value in row.items() if key != 'dependencies'})
+            groups.setdefault(key, []).append(index)
+    harnesses = []
+    for indices in groups.values():
+        if len(indices) != 2:
+            continue
+        leaves = [index for index in indices if index in graph['roots'] and index not in incoming]
+        if len(leaves) == 1:
+            harnesses.extend(leaves)
+        elif len(leaves) == 2:
+            first, second = (graph['units'][index]['dependencies'] for index in indices)
+            if first == second:
+                harnesses.append(leaves[1])
+            elif all(edge in second for edge in first) and len(first) < len(second):
+                harnesses.append(leaves[1])
+            elif all(edge in first for edge in second) and len(second) < len(first):
+                harnesses.append(leaves[0])
+            else:
+                raise CompilerUnitRefusal('checked target stages have no unique dependency/harness split')
+    return harnesses
+
+
 def declare(command, cwd, environment, observed):
     try:
         graph = json.loads(observed)
-        # Cargo's check graph reports both the library dependency and its checked
-        # unit-test harness as mode=check/kind=lib. The explicit --tests selection
-        # makes its roots test stages; dependency units remain ordinary checks.
-        test_roots = (graph['roots'] if command[1] in ('check', 'clippy') and '--tests' in command
-                      and not any(flag in command for flag in
-                                  ('--all-targets', '--lib', '--bins', '--examples', '--benches')) else ())
+        test_roots = checked_test_roots(command, graph)
         units = declarations(graph, checked_test_roots=test_roots)
     except (KeyError, TypeError, ValueError) as error:
         raise CompilerUnitRefusal(f'could not declare required compiler units: {error}') from error

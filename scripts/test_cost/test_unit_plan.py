@@ -9,6 +9,31 @@ from unit_plan import command_for, declare, verify
 
 
 class RequiredUnitPlanTests(unittest.TestCase):
+    def test_all_targets_checked_harness_cannot_be_charged_as_its_normal_library(self):
+        library = unit('owner', dependencies=[3])
+        source = graph(unit('court', kind='test', dependencies=[1]), library, library, unit('dependency'))
+        source['roots'] = [0, 1, 2]
+        with tempfile.TemporaryDirectory() as temporary:
+            for subcommand in ('check', 'clippy'):
+                plan = declare(['cargo', subcommand, '--all-targets'], temporary, {}, json.dumps(source))
+                ordinary = attribute(event(library), plan)
+                checked = event(library)
+                checked['profile']['test'] = True
+                harness = attribute(checked, plan)
+                self.assertNotEqual(ordinary['identity'], harness['identity'])
+                self.assertFalse(ordinary['test_harness'])
+                self.assertTrue(harness['test_harness'])
+
+    def test_standalone_identical_checked_stages_preserve_both_compiler_obligations(self):
+        library = unit('owner', dependencies=[2])
+        source = graph(library, library, unit('dependency'))
+        source['roots'] = [0, 1]
+        with tempfile.TemporaryDirectory() as temporary:
+            plan = declare(['cargo', 'clippy', '--all-targets'], temporary, {}, json.dumps(source))
+            stages = [row for row in plan['units'] if row['target']['name'] == 'owner']
+            self.assertEqual({row['test_harness'] for row in stages}, {False, True})
+            self.assertEqual(len({row['identity'] for row in stages}), 2)
+
     def test_explicit_checked_tests_distinguish_library_harness_from_dependency(self):
         library = unit('owner', dependencies=[3])
         observed_graph = graph(unit('court', kind='test', dependencies=[1]),
