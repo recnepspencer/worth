@@ -58,11 +58,13 @@ impl ApplicationHomeBridgeComposition {
                     worth_runtime_bridge::facade::BridgeHomeRetirementDenial::NativeAlias(cause),
                 )
             })?;
-        self.conditional
-            .try_write()
-            .map_err(|_| Denial::WorldCompositionRetained)?
-            .preflight_home_retirement(request, native)
-            .map_err(Denial::Bridge)?;
+        if let Some(conditional) = &self.conditional {
+            conditional
+                .try_write()
+                .map_err(|_| Denial::WorldCompositionRetained)?
+                .preflight_home_retirement(request, native)
+                .map_err(Denial::Bridge)?;
+        }
         let mut storage = self
             .retirement
             .try_lock()
@@ -98,15 +100,20 @@ impl HomeBridgeCloseCustody {
                     .into_inner()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .expect("original Bridge composition storage was prepaid before World seal");
+                let stage = if conditional.is_some() {
+                    CompositionRetirementStage::Assembly
+                } else {
+                    CompositionRetirementStage::Ordinary
+                };
                 storage.backing.original = Some(RetiringHomeBridgeComposition {
                     source: Some(source),
                     ordinary: Some(ordinary),
-                    conditional_share: Some(conditional),
+                    conditional_share: conditional,
                     conditional: None,
                     ordinary_task: None,
                     _retired_ordinary: None,
                     _retired_source: None,
-                    stage: CompositionRetirementStage::Assembly,
+                    stage,
                 });
                 Ok((Self::Retiring(storage), Progress::Advanced))
             }

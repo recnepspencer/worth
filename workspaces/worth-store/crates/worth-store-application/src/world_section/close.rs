@@ -55,7 +55,9 @@ impl WorldSealedApplicationHome {
                 .composition
                 .as_ref()
                 .expect("Query Home owns its original composition")
-                .conditional,
+                .conditional
+                .as_ref()
+                .expect("Query owns its original assembly"),
         )
     }
     pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {

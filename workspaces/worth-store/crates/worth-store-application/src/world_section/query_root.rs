@@ -50,6 +50,8 @@ impl WorldReadmittedApplicationHome<(), (), (), (), ()> {
                 .map_err(Denial::NativeBasis)?;
             let signal = composition
                 .conditional
+                .as_ref()
+                .ok_or(Denial::QueryCompositionNotAttached)?
                 .read()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .admitted_signal_basis()

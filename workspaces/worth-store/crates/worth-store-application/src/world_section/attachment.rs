@@ -6,12 +6,14 @@ pub(super) fn attach_bridge(
     section: &worth_store_relational::RelationalStoreSection,
     builder: worth_runtime_bridge::facade::UnattachedRelationalBridgeBuilder,
     graph_role: String,
-) -> Result<
-    worth_runtime_world::facade::RuntimeWorldCorrespondencePort,
-    crate::ApplicationHomeOpenRefusal,
-> {
-    let (_, bridge) = build_bridge(section, builder, graph_role)?;
-    Ok(bridge.runtime_world_correspondence_port())
+) -> Result<ApplicationHomeBridgeComposition, crate::ApplicationHomeOpenRefusal> {
+    let (source, ordinary) = build_bridge(section, builder, graph_role)?;
+    Ok(ApplicationHomeBridgeComposition {
+        source,
+        ordinary,
+        conditional: None,
+        retirement: std::sync::Mutex::new(None),
+    })
 }
 
 fn build_bridge(
@@ -44,7 +46,7 @@ pub(crate) struct ApplicationHomeBridgeComposition {
     pub(super) ordinary: worth_runtime_bridge::facade::RuntimeBridge,
     pub(super) retirement: std::sync::Mutex<Option<super::close::PreparedHomeBridgeRetirement>>,
     pub(super) conditional:
-        Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>,
+        Option<Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>>,
 }
 pub(super) fn attach_query_bridge(
     section: &worth_store_relational::RelationalStoreSection,
@@ -63,7 +65,7 @@ pub(super) fn attach_query_bridge(
     Ok(ApplicationHomeBridgeComposition {
         source,
         ordinary,
-        conditional: Arc::new(std::sync::RwLock::new(conditional)),
+        conditional: Some(Arc::new(std::sync::RwLock::new(conditional))),
         retirement: std::sync::Mutex::new(None),
     })
 }

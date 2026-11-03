@@ -23,6 +23,7 @@ pub(crate) struct ReadmittedPublicationRecord {
 pub(super) enum NativePublicationMeaning {
     Recovered(RelationalRecoveredPublicationCustody),
     Source(worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect),
+    Retiring(worth_relational::facade::durability::RelationalRecoveredPublicationRetirement),
 }
 impl NativePublicationMeaning {
     fn effect(
@@ -31,6 +32,7 @@ impl NativePublicationMeaning {
         match self {
             Self::Recovered(custody) => custody.effect(),
             Self::Source(effect) => effect,
+            Self::Retiring(_) => unreachable!("only serving records expose Native meaning"),
         }
     }
 }

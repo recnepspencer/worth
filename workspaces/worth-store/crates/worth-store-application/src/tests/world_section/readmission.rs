@@ -102,7 +102,11 @@ fn recipe(
         "authority-affinity".to_owned(),
     )
     .unwrap();
-    (builder, bridge, signal)
+    (
+        builder,
+        bridge.ordinary.runtime_world_correspondence_port(),
+        signal,
+    )
 }
 
 #[test]

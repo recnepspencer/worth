@@ -6,7 +6,6 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     branch::RelationalBranchBasisRetirementDenial as BasisDenial,
     change_source::RelationalRetainedObservationRetirementProgress as NativeProgress,
-    durability::{ReadmittedRelationalAssociatedEffect, RelationalRecoveredPublicationRetirement},
     runtime::RelationalRuntime,
 };
 #[derive(Debug)]
@@ -14,8 +13,6 @@ pub(crate) struct ReadmittedPublicationRetirement {
     shared: Option<Arc<ReadmittedPublicationRecord>>,
     original: Option<ReadmittedPublicationRecord>,
     commits: [Option<CompositeCommitRetirement>; 2],
-    native: Option<RelationalRecoveredPublicationRetirement>,
-    _effect: Option<ReadmittedRelationalAssociatedEffect>,
     step: usize,
     complete: bool,
 }
@@ -25,8 +22,6 @@ impl ReadmittedPublicationRetirement {
             shared: Some(shared),
             original: None,
             commits: std::array::from_fn(|_| None),
-            native: None,
-            _effect: None,
             step: 0,
             complete: false,
         }
@@ -45,12 +40,19 @@ impl ReadmittedPublicationRetirement {
                 self.complete = true;
                 return Ok(true);
             };
-            match original.native.take().expect("original admitted meaning") {
-                NativePublicationMeaning::Recovered(native) => {
-                    self.native = Some(native.into_retirement())
-                }
-                NativePublicationMeaning::Source(effect) => self._effect = Some(effect),
-            }
+            original.native = Some(
+                match original.native.take().expect("original admitted meaning") {
+                    NativePublicationMeaning::Recovered(native) => {
+                        NativePublicationMeaning::Retiring(native.into_retirement())
+                    }
+                    NativePublicationMeaning::Source(effect) => {
+                        NativePublicationMeaning::Source(effect)
+                    }
+                    NativePublicationMeaning::Retiring(_) => {
+                        unreachable!("retirement starts from the original serving record")
+                    }
+                },
+            );
             return Ok(false);
         }
         if self.step < 2 {
@@ -81,8 +83,17 @@ impl ReadmittedPublicationRetirement {
             }
             return Ok(false);
         }
-        if let Some(native) = &mut self.native {
-            match native.advance(request) {
+        match self
+            .original
+            .as_mut()
+            .expect("same original recovered record")
+            .native
+            .as_mut()
+            .expect("original Native meaning remains owned")
+        {
+            NativePublicationMeaning::Recovered(_) => return Err(Denial::CloseProgressInvariant),
+            NativePublicationMeaning::Source(_) => {}
+            NativePublicationMeaning::Retiring(native) => match native.advance(request) {
                 NativeProgress::Advanced => return Ok(false),
                 NativeProgress::Busy => return Err(Denial::Busy),
                 NativeProgress::Stopped(cause) => return Err(Denial::Execution(cause)),
@@ -90,7 +101,7 @@ impl ReadmittedPublicationRetirement {
                     return Err(Denial::RecoveredNativeRetirement(cause))
                 }
                 NativeProgress::Complete => {}
-            }
+            },
         }
         self.complete = true;
         Ok(true)

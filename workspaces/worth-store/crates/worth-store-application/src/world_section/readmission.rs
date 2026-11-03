@@ -51,24 +51,36 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     native.consume(|home| {
-        let result = (|| {
-            request
-                .consult()
-                .map_err(crate::ApplicationHomeOpenRefusal::Execution)?;
-            let super::ApplicationWorldDefinition {
-                world: builder,
-                bridge,
-                graph_role,
-            } = definition;
-            let bridge = super::attachment::attach_bridge(&home.relational, bridge, graph_role)?;
-            readmit_attached_world(&home, builder, bridge, request)
-        })();
-        match result {
-            Ok(world) => Ok(finish_attachment(home, world, None)),
+        let super::ApplicationWorldDefinition {
+            world: builder,
+            bridge,
+            graph_role,
+        } = definition;
+        if let Err(cause) = request.consult() {
+            return Err(WorldHomeReadmissionRefused {
+                cause: crate::ApplicationHomeOpenRefusal::Execution(cause),
+                home: Box::new(home),
+                composition: None,
+            });
+        }
+        let composition =
+            match super::attachment::attach_bridge(&home.relational, bridge, graph_role) {
+                Ok(composition) => composition,
+                Err(cause) => {
+                    return Err(WorldHomeReadmissionRefused {
+                        cause,
+                        home: Box::new(home),
+                        composition: None,
+                    })
+                }
+            };
+        let bridge = composition.ordinary.runtime_world_correspondence_port();
+        match readmit_attached_world(&home, builder, bridge, request) {
+            Ok(world) => Ok(finish_attachment(home, world, Some(composition))),
             Err(cause) => Err(WorldHomeReadmissionRefused {
                 cause,
                 home: Box::new(home),
-                composition: None,
+                composition: Some(composition),
             }),
         }
     })

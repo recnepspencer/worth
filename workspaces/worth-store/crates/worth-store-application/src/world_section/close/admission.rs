@@ -26,15 +26,18 @@ where
             Err(RuntimeWorldCloseDenial::AlreadyClosing) => return Ok(()),
             Err(cause) => return Err(Denial::World(RuntimeWorldServiceDenial::Denied(cause))),
         };
-        let mut conditional = composition
-            .conditional
-            .try_write()
-            .map_err(|_| Denial::WorldCompositionRetained)?;
-        conditional
-            .prepare_initial_empty_home_stop(request, self.home.relational().runtime())
-            .map_err(Denial::Bridge)?;
-        // No poll, allocation, callback, I/O or fallible action may intervene.
-        admission.begin();
+        if let Some(conditional) = &composition.conditional {
+            let mut conditional = conditional
+                .try_write()
+                .map_err(|_| Denial::WorldCompositionRetained)?;
+            conditional
+                .prepare_initial_empty_home_stop(request, self.home.relational().runtime())
+                .map_err(Denial::Bridge)?;
+            // No fallible action may intervene before the actual final handoff.
+            admission.begin();
+        } else {
+            admission.begin();
+        }
         Ok(())
     }
     /// This observation does not seal. The actual close reacquires and rechecks
