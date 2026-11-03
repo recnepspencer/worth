@@ -2063,6 +2063,7 @@ Exact commands and final counts belong in target/lane-evidence logs.
 | D17 scalar length authority refuses before visiting an oversized body | `inline_payload_preflight_refuses_oversized_length_before_visiting_payload` |
 | D17 original recovery limit refuses combined state construction before allocation | `planned_backing_refuses_combined_construction_before_allocating` |
 | D17 actual capacity and construction peak survive backing release | `planned_backing_peak_keeps_actual_capacity_and_construction_overlap` |
+| D17 later staging refusal retains measured construction memory without effects | `later_staging_refusal_preserves_the_larger_construction_peak_without_effects` |
 | D17 original request and exact final-frame child funding, retained repair custody | `checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair` |
 | Phase 3 default-stack changed-build existing-source readmission | `changed_host_build_keeps_initializer_closed_and_reaches_native_readmission` |
 | Phase 3 default-stack writer exclusion and killed-owner takeover | `competing_host_processes_admit_exactly_one_writer_until_process_death` |
@@ -2946,3 +2947,19 @@ planned-storage admission additionally funds resolved-state extraction alongside
 planned-state construction and both retained backings. State-owned counters take
 the maximum of capture and subsequent peaks, including early refusal paths.
 Consuming extraction transfers the same proofs and releases the old backing.
+
+
+Execution construction keeps one checked ExecutionBasis payload under the Store
+recovery runtime. The deepest publication closeout prepares backing through the
+original PlanningResidentAllowance, admits backing and movement before reserve,
+checks actual capacity, and seals the actual staging/publication/quiescence
+values once. Derivation and completion carry this compact owner unchanged.
+Cost, publication-effect and planned-storage admission borrow its payload; their
+live census includes owner header, actual backing, and nested allocations once.
+Final construction extracts it only after fallible admission and alongside the
+resolved-state extraction. The original planned-storage window admits both
+extractions together with retained backing and planned-state movement. Existing
+memory/allocation refusal types retain the invoking context and measured peaks.
+This storage changes no publication proof, public plan, source or durable format.
+Default-stack filesystem qualification remains required independently of this
+composition decision.

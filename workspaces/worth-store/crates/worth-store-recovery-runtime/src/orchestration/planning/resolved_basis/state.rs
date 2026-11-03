@@ -74,8 +74,8 @@ impl ResolvedPlanningState {
         &self,
         peak: u64,
     ) -> RecoveryPlanningCounters {
-        self.planning_counters()
-            .with_peak_recovery_bytes(self.capture_peak.max(peak))
+        let counters = self.planning_counters();
+        counters.with_peak_recovery_bytes(counters.peak_recovery_bytes().max(peak))
     }
 
     pub(in crate::orchestration::planning) fn planning_counters(&self) -> RecoveryPlanningCounters {
@@ -106,6 +106,11 @@ impl ResolvedPlanningState {
             self.observed_pages.integrity.owner_projection_entries(),
             self.observed_pages.integrity.owner_decoder_entries(),
         )
-        .with_peak_recovery_bytes(self.capture_peak)
+        .with_peak_recovery_bytes(
+            self.capture_peak.max(
+                self.observed_pages
+                    .historical_publication_peak_scratch_bytes,
+            ),
+        )
     }
 }

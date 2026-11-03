@@ -73,7 +73,7 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         .transient(replacement_headers.max(root_encoding))
         .is_err()
     {
-        return Err(resident_block(context, basis, resident.peak(), &resident));
+        return Err(resident_block(context, basis, &resident));
     }
     let source_custody = std::mem::replace(&mut basis.custody, PlanningCustody::Unresolved);
     let claim = if let PlanningCustody::SourceHeads(base) = source_custody {
@@ -152,7 +152,7 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         .bytes(effective.head_entries_heap_bytes().unwrap_or(u64::MAX))
         .is_err()
     {
-        return Err(resident_block(context, basis, resident.peak(), &resident));
+        return Err(resident_block(context, basis, &resident));
     }
     basis
         .observed_pages
