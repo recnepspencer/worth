@@ -17,7 +17,7 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::retain_commit_basis;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::string;
 pub use worth_query_execution::domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration::hex_bytes;
-pub use WorthQueryCommittedDispatchOutboxReadDenial as Denial;
+pub use worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 pub use worth_relational::facade::transactions::RecordRef;
 pub use worth_query_execution::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout;
 pub use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;

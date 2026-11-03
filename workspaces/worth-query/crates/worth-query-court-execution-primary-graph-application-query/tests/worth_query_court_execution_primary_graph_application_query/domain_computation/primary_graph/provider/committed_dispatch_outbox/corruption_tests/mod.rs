@@ -21,7 +21,7 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::release_commit_snapshot;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::retain_commit_basis;
-use WorthQueryCommittedDispatchOutboxReadDenial as Denial;
+use worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
 use worth_query_execution::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use worth_query_execution::domain_computation::primary_graph::provider::committed_dispatch_outbox::correlation;

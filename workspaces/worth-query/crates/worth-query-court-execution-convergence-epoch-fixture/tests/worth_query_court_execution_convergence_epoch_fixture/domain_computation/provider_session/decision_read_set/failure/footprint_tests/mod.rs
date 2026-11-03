@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_foundational::ChargedBytes;
 use worth_query_execution::facade::domain_computation::WorthQueryDecisionReadSetDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryDecisionReadSetFailure;
 
