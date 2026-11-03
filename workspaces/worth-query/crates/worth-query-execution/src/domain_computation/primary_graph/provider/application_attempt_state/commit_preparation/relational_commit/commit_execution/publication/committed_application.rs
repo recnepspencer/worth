@@ -20,7 +20,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
 }
 
 impl WorthQueryPrimaryGraphCommittedApplication {
-    pub(in crate::domain_computation::primary_graph) fn publication_for_home_retirement(&mut self) -> &mut crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+    pub(in crate::domain_computation::primary_graph) fn publication_for_home_retirement(
+        &mut self,
+    ) -> &mut crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
         &mut self.committed_product_publication
     }
 

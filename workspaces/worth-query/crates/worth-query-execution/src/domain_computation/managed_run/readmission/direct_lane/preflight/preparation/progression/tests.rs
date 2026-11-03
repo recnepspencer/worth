@@ -28,21 +28,28 @@ fn bridge_cleanup_failure_returns_exact_owner_retry_authority() {
             Ok(prepared) => prepared,
             Err(_) => panic!("owner-thread Query phases must reach provider restore"),
         };
-        let recovery = std::thread::spawn(move || {
-            crate::domain_computation::primary_graph::with_test_advancement(|phase| {
-                match restore_direct(
-                    phase.borrowed_request_for_test(),
-                    pending,
-                    &bridge,
-                    progress,
-                ) {
-                    WorthQueryDirectReadmissionOutcome::RecoveryRequired(recovery) => recovery,
-                    _ => panic!("foreign-thread rollback must retain Bridge cleanup authority"),
-                }
-            })
-        })
-        .join()
-        .expect("Bridge cleanup recovery must remain in-process");
+        let recovery = std::thread::scope(|scope| {
+            scope
+                .spawn(move || {
+                    crate::domain_computation::primary_graph::with_test_advancement(|phase| {
+                        match restore_direct(
+                            phase.borrowed_request_for_test(),
+                            pending,
+                            &bridge,
+                            progress,
+                        ) {
+                            WorthQueryDirectReadmissionOutcome::RecoveryRequired(recovery) => {
+                                recovery
+                            }
+                            _ => panic!(
+                                "foreign-thread rollback must retain Bridge cleanup authority"
+                            ),
+                        }
+                    })
+                })
+                .join()
+                .expect("Bridge cleanup recovery must remain in-process")
+        });
 
         assert_eq!(
             recovery.kind(),

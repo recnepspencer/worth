@@ -1,8 +1,7 @@
 //! Keep original evidence indexes while their live publication custody retires.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    WorthQueryHomeRetirementDenial as Denial,
-    WorthQueryOperationHomeRetirementProgress as Progress,
+    WorthQueryHomeRetirementDenial as Denial, WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
