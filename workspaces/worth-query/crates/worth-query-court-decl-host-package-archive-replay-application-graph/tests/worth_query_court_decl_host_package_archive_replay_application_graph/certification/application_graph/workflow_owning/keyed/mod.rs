@@ -32,7 +32,8 @@ fn workflow_owning_indeterminate_resolves_original_key_without_handler_retry() {
         WorthQueryWorkflowOperationAdvance::Completed(done) => done,
         _ => panic!("fresh native original-key resolution"),
     };
-    assert!(matches!(completed.evidence(),WorthQuerySourceCompletion::Recovered{initial_posture:Some(worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_)),..}));
+    assert!(matches!(completed.evidence(),WorthQuerySourceCompletion::Recorded{initial_posture:Some(worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_)),..}));
+    assert!(completed.evidence().live_receipt().is_none());
     assert_eq!(
         model::readback::read_retention(runtime, instance.branch()),
         8

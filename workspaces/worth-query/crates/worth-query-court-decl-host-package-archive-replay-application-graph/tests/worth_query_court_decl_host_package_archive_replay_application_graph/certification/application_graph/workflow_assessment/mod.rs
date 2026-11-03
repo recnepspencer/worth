@@ -71,7 +71,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
 
     let accepted = accept_assessment(&application, started.instance().clone(), &settled, 448)
         .expect("the exact retained output must publish assessment evidence");
-    match accepted {
+    let original_assessment = match accepted {
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "checks/structural");
             assert!(!performed.terminal());
@@ -110,9 +110,10 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
             assert_eq!(evidence.source_identity().len(), 64);
             assert!(!evidence.publication_identity().is_empty());
             assert_eq!(evidence.output_content_identity().len(), 64);
+            performed
         }
         other => panic!("expected performed assessment evidence, got {other:?}"),
-    }
+    };
 
     let before_assessment = application.runtime().workflow_instance_progress_counters();
     match advance_instance(&application, started.instance().clone(), 449)
@@ -137,11 +138,11 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     match accept_assessment(&application, started.instance().clone(), &settled, 448)
         .expect("the original acceptance key must replay its exact evidence")
     {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "checks/structural");
-            assert!(performed.replayed());
-            assert!(!performed.terminal());
-            assert!(performed.assessment_evidence().is_some());
+        WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
+            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+                &recorded,
+                &original_assessment,
+            );
         }
         other => panic!("expected replayed assessment evidence, got {other:?}"),
     }
@@ -152,15 +153,20 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     ));
 
     let second_settlement = settle_assessment(&application, started.instance().clone(), 451);
-    assert!(matches!(
-        accept_assessment(
-            &application,
-            started.instance().clone(),
-            &second_settlement,
-            452,
-        ),
-        Ok(WorkflowProgressOutcome::Completed(_))
-    ));
+    let second_original = match accept_assessment(
+        &application,
+        started.instance().clone(),
+        &second_settlement,
+        452,
+    )
+    .expect("the second assessment publishes its exact evidence")
+    {
+        WorkflowProgressOutcome::Completed(performed) => {
+            assert_eq!(performed.node_path(), "checks/compliance");
+            performed
+        }
+        other => panic!("expected performed second assessment evidence: {other:?}"),
+    };
     match accept_assessment(
         &application,
         started.instance().clone(),
@@ -169,24 +175,27 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     )
     .expect("an exact assessment retry must resolve through a non-assessment successor head")
     {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "checks/compliance");
-            assert!(performed.replayed());
+        WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
+            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+                &recorded,
+                &second_original,
+            );
         }
         other => panic!("expected replay through successor head, got {other:?}"),
     }
 
     let before_join = application.runtime().workflow_instance_progress_counters();
-    match advance_instance(&application, started.instance().clone(), 453)
+    let original_join = match advance_instance(&application, started.instance().clone(), 453)
         .expect("the evidence join must reconstruct from committed assessment facts")
     {
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "checks/evidence");
             assert!(!performed.replayed());
             assert!(performed.assessment_evidence().is_none());
+            performed
         }
         other => panic!("expected the complete evidence join to settle, got {other:?}"),
-    }
+    };
     let after_join = application.runtime().workflow_instance_progress_counters();
     assert_eq!(
         after_join.warm_core_hits(),
@@ -199,9 +208,11 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     match advance_instance(&application, started.instance().clone(), 453)
         .expect("the committed evidence join key must replay beyond its successor head")
     {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "checks/evidence");
-            assert!(performed.replayed());
+        WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
+            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+                &recorded,
+                &original_join,
+            );
         }
         other => panic!("expected the evidence join replay, got {other:?}"),
     }

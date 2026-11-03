@@ -14,13 +14,15 @@ fn a_key_committed_before_capture_keeps_its_intent_after_restore() {
     else {
         panic!("the first request commits");
     };
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(before) =
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(before) =
         set_retention(&host, host.current_world(), RETENTION, KEY)
             .expect("the retry before capture settles")
     else {
         panic!("the retry before capture replays");
     };
-    assert!(before.is_same_authoritative_commit(&original));
+    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+        &before, &original,
+    );
     let commit = original.committed_changes().commit_reference().commit_id;
     let checkpoint = host
         .with_host_advancement(|host_phase| {
