@@ -3085,3 +3085,21 @@ path, predicate/read order and claim/topology mutations on denial are preserved.
 No full namespace-state Result or media placeholder exists. Original construction
 admission and independent quota assertions include two optional-roster movement
 temporaries in addition to namespace plus two reopened payloads.
+
+
+### Owned tier observation returns the same backing before conversion
+
+The remaining owned continuation combined discovery with custody conversion and
+two reopened constructions. Split observation from conversion. A non-inlined
+observation receiver inspects the real borrowed tier claim, returning the compact
+namespace owner immediately when absent. Otherwise it takes the actual payload
+and SAME emptied NamespaceDurableBacking, preserving capacity. Consuming media
+observation/restoration and tier rebind run in this receiver, which reseals that
+same slot without allocation and returns before conversion. The thin caller keeps
+the actual optional pending roster. The final non-inlined converter extracts once,
+handles NoCheckpoint through its common exhaustive custody conversion, and seals
+one ReopenedPayload. Refusal restores the original planning custody before the
+unchanged indeterminate outcome. Original movement admission and both independent
+quota assertions cover three namespace payloads plus two live optional rosters,
+while counting already-funded backing capacity once. No numerical stack guarantee
+is claimed without the direct default-stack acceptance case.

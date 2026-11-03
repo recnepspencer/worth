@@ -60,7 +60,8 @@ mod tests {
                 .max(staged + 2 * namespace)
                 .max(staged + 2 * publication)
                 .max(publication + 2 * namespace)
-                .max(namespace + 2 * reopened + 2 * roster);
+                .max(namespace + 2 * reopened + 2 * roster)
+                .max(3 * namespace + 2 * roster);
             let required =
                 17 + payload + staged + input + namespace + publication + reopened + movement;
             let mut allowance = PlanningResidentAllowance::new(17, required - 1).unwrap();
@@ -98,7 +99,8 @@ mod tests {
                 .max(staged + 2 * namespace)
                 .max(staged + 2 * publication)
                 .max(publication + 2 * namespace)
-                .max(namespace + 2 * reopened + 2 * roster);
+                .max(namespace + 2 * reopened + 2 * roster)
+                .max(3 * namespace + 2 * roster);
             let input_backing = backing.input.backing_bytes().unwrap();
             let namespace_backing = backing.namespace.backing_bytes().unwrap();
             let publication_backing = backing.publication.backing_bytes().unwrap();
@@ -244,6 +246,11 @@ fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
             .max(
                 namespace
                     .checked_add(reopened.checked_mul(2)?)?
+                    .checked_add(roster.checked_mul(2)?)?,
+            )
+            .max(
+                namespace
+                    .checked_mul(3)?
                     .checked_add(roster.checked_mul(2)?)?,
             ),
     )

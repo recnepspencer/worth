@@ -10,7 +10,10 @@ pub(super) fn completed(
     completed: worth_store::physical_runtime::CompletedPhysicalRecoveryFreshReopen,
 ) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
     match durable.prepare_selected_custody_rebind(&completed) {
-        Ok(pending_effective) => custody_rebind::complete(durable, completed, pending_effective),
+        Ok(pending_effective) => {
+            let durable = custody_rebind::observe_selected_tier(durable, &completed)?;
+            custody_rebind::complete(durable, completed, pending_effective)
+        }
         Err(()) => custody_denied(durable),
     }
 }

@@ -135,6 +135,9 @@ pub(crate) fn prepare_selected_custody_rebind(
 #[path = "custody_rebind/completion.rs"]
 mod completion;
 pub(super) use completion::complete;
+#[path = "custody_rebind/tier_observation.rs"]
+mod tier_observation;
+pub(super) use tier_observation::observe_selected_tier;
 
 /// This phase conversion is private to the successful selected-root rebind.
 fn into_reopened_state(

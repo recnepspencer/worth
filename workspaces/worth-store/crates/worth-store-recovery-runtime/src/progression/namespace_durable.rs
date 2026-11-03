@@ -54,6 +54,9 @@ impl NamespaceDurablePhysicalRecovery {
     {
         self.backing.prepare_selected_custody_rebind(completed)
     }
+    pub(crate) fn into_parts(self) -> (NamespaceDurablePayload, NamespaceDurableBacking) {
+        self.backing.into_parts()
+    }
     pub(crate) fn into_payload(self) -> NamespaceDurablePayload {
         self.backing.into_payload()
     }
