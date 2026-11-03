@@ -90,7 +90,7 @@ where
     pub(super) signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
     pub(super) signal_definition_publication:
         worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
-    pub(super) bridge: RuntimeWorldCorrespondencePort,
+    pub(super) bridge: Option<RuntimeWorldCorrespondencePort>,
     pub(super) execution: super::execution::InstalledExecution,
     pub(super) clock: RuntimeWorldClock,
     pub(super) history: CompositeHistoryCatalog,
@@ -169,7 +169,7 @@ where
                 relational,
                 signal,
                 signal_definition_publication,
-                bridge,
+                bridge: Some(bridge),
                 execution,
                 clock,
                 history,

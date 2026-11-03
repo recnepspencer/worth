@@ -143,7 +143,22 @@ fn recovered_receipt_copy_observes_the_original_work_stop_before_allocating() {
 #[test]
 fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_retires_without_drop()
 {
-    let (fixture, root) = owner();
+    let (fixture, mut root) = owner();
+    let drops = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    struct PayloadClock(Arc<std::sync::atomic::AtomicUsize>);
+    impl crate::lifecycle::RuntimeWorldClockSource for PayloadClock {
+        fn now(&self) -> crate::lifecycle::RuntimeWorldInstant {
+            crate::lifecycle::RuntimeWorldInstant::from_ticks(0)
+        }
+    }
+    impl Drop for PayloadClock {
+        fn drop(&mut self) {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+    Arc::get_mut(&mut root.state).unwrap().clock =
+        crate::lifecycle::RuntimeWorldClock::from_source(PayloadClock(drops.clone()));
+    let retention = root.state.retention.clone();
     let serial = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationToken::new(),
@@ -154,10 +169,7 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
         root.bootstrap_root(fixture.bootstrap_intent()),
         crate::branch::RuntimeWorldBootstrapOutcome::Performed(_)
     ));
-    let world = crate::lifecycle::RuntimeWorldOwner {
-        transferred_to_home_retirement: false,
-        root: Arc::new(root),
-    };
+    let world = crate::lifecycle::RuntimeWorldOwner::from_root(root);
     let weak = Arc::downgrade(&world.root);
     let report = world.root.close(&request).unwrap();
     let mut cleanup = world.result_snapshot_cleanup_after_close(&request).unwrap();
@@ -189,6 +201,20 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
         .retirement_task()
         .unwrap();
     let native = fixture.relational_runtime().branch_basis_cost_counters();
+    let original_root_alias = world.root.clone();
+    let (world, cleanup, cause) = world
+        .into_home_retirement(&report, cleanup)
+        .expect_err("an actual original public Root alias refuses the consuming handoff");
+    assert!(matches!(
+        cause,
+        crate::lifecycle::RuntimeWorldHomeRetirementDenial::Close(Denial::Busy)
+    ));
+    assert!(
+        world.root.owner_is_present(),
+        "refusal retains its original public presence"
+    );
+    assert_eq!(drops.load(std::sync::atomic::Ordering::SeqCst), 0);
+    drop(original_root_alias);
     let mut original = world
         .into_home_retirement(&report, cleanup)
         .unwrap_or_else(|_| panic!("same actual closed owner"));
@@ -200,10 +226,7 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
         ))
     ));
     drop(guard);
-    assert_eq!(
-        weak.upgrade().unwrap().state.retention.cost_snapshot(),
-        counters
-    );
+    assert_eq!(retention.cost_snapshot(), counters);
     assert_eq!(
         fixture.relational_runtime().branch_basis_cost_counters(),
         native
@@ -217,10 +240,7 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
             fixture.relational_runtime()
         )
         .is_err());
-    assert_eq!(
-        weak.upgrade().unwrap().state.retention.cost_snapshot(),
-        counters
-    );
+    assert_eq!(retention.cost_snapshot(), counters);
     loop {
         match original
             .advance(&request, fixture.relational_runtime())
@@ -231,12 +251,18 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
         }
     }
     let retired = original.into_retired().unwrap();
-    let root = weak
-        .upgrade()
-        .expect("same actual World allocation stays alive");
-    assert_eq!(root.state.retention.active_component_obligation_count(), 0);
+    assert!(
+        weak.upgrade().is_none(),
+        "public Root ports cannot serve the retired state"
+    );
     assert_eq!(
-        root.state.retention.cost_snapshot().owner_drop_releases(),
+        drops.load(std::sync::atomic::Ordering::SeqCst),
+        0,
+        "the same original World payload stays alive through retirement"
+    );
+    assert_eq!(retention.active_component_obligation_count(), 0);
+    assert_eq!(
+        retention.cost_snapshot().owner_drop_releases(),
         counters.owner_drop_releases()
     );
     assert_eq!(
@@ -246,10 +272,10 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
             .external_retention_drop_releases,
         native.external_retention_drop_releases
     );
-    drop(root);
     retired.reclaim();
-    assert!(
-        weak.upgrade().is_none(),
-        "actual World destruction belongs to explicit unbudgeted reclaim"
+    assert_eq!(
+        drops.load(std::sync::atomic::Ordering::SeqCst),
+        1,
+        "actual World payload destruction belongs to explicit unbudgeted reclaim"
     );
 }

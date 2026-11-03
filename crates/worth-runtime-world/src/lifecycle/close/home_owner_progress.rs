@@ -11,6 +11,7 @@ use worth_relational::facade::{
 #[derive(Debug, Default)]
 pub(super) struct HomeOwnerRetirementProgress {
     root_started: bool,
+    correspondence: Option<worth_runtime_bridge::facade::RetiringWorldCorrespondence>,
     root: Option<crate::history::CompositeCommitRetirement>,
     after: Option<crate::identity::CompositeCommitIdentity>,
     pending: Option<crate::history::HistoryHomeRetirement>,
@@ -57,7 +58,7 @@ impl HomeOwnerRetirementProgress {
     }
 }
 pub(super) fn advance<D, I, E, Ctx, T>(
-    state: &RuntimeWorldOwnerState<D, I, E, Ctx, T>,
+    state: &mut RuntimeWorldOwnerState<D, I, E, Ctx, T>,
     request: &ExecutionRequest<'_, '_>,
     native: &RelationalRuntime,
 ) -> Result<bool, Denial>
@@ -111,6 +112,25 @@ where
             .map_err(Denial::Close)?;
         progress.pending_complete = false;
         if progress.pending.is_none() {
+            if let Some(original) = state.bridge.take() {
+                match original.into_home_retirement(request, native) {
+                    Ok(task) => progress.correspondence = Some(task),
+                    Err((original, cause)) => {
+                        state.bridge = Some(original);
+                        return Err(Denial::Bridge(cause));
+                    }
+                }
+                return Ok(false);
+            }
+            if let Some(correspondence) = &mut progress.correspondence {
+                if correspondence
+                    .advance(request, native)
+                    .map_err(Denial::Bridge)?
+                    != worth_runtime_bridge::facade::BridgeHomeRetirementProgress::Complete
+                {
+                    return Ok(false);
+                }
+            }
             if let Some(binding) = &state.durable {
                 binding
                     .retire_medium_for_home(request)

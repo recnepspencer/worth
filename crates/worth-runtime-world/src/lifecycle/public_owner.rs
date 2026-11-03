@@ -1,3 +1,4 @@
+mod presence;
 use super::builder::{MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder};
 use super::service_ports::{
     RuntimeWorldBranchPort, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
@@ -17,8 +18,9 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    // Presence relinquishes admission before the ordinary Root field is dropped.
+    pub(super) presence: presence::PublicWorldPresence,
     pub(super) root: Arc<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
-    pub(super) transferred_to_home_retirement: bool,
 }
 impl RuntimeWorldOwner<(), (), (), (), ()> {
     pub fn builder() -> RuntimeWorldOwnerBuilder<
@@ -40,6 +42,14 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub(in crate::lifecycle) fn from_root(root: RuntimeWorldOwnerRoot<D, I, E, Ctx, T>) -> Self {
+        let root = Arc::new(root);
+        Self {
+            presence: presence::PublicWorldPresence::new(&root),
+            root,
+        }
+    }
+
     /// Initialize constant-size cleanup custody after this actual owner sealed.
     pub fn result_snapshot_cleanup_after_close(
         &self,
@@ -198,10 +208,7 @@ where
     pub(super) fn from_inputs(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
-        Ok(Self {
-            root: Arc::new(RuntimeWorldOwnerRoot::new(inputs)?),
-            transferred_to_home_retirement: false,
-        })
+        Ok(Self::from_root(RuntimeWorldOwnerRoot::new(inputs)?))
     }
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.root.owner_identity()
@@ -261,19 +268,5 @@ where
             .durable
             .as_ref()
             .map(crate::durability::WorldCheckpointPort::new)
-    }
-}
-impl<D, I, E, Ctx, T> Drop for RuntimeWorldOwner<D, I, E, Ctx, T>
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    E: Send + Sync + 'static,
-    Ctx: Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    fn drop(&mut self) {
-        if !self.transferred_to_home_retirement {
-            self.root.release_public_owner();
-        }
     }
 }

@@ -65,6 +65,8 @@ translation is permitted. New public owner ports use their existing facades.
 | D11 kill without close preserves acknowledged results | `killed_host_without_close_reopens_its_acknowledged_value_and_original_idempotency_record`; exact P-A refusal is retained if blocked |
 | D11 cold/materialized Native and independent inert metadata | `cold_and_materialized_original_sources_physically_close_while_metadata_and_retired_payloads_live` |
 | D11 authentic source-capable fork veto and retry | `an_original_source_capable_fork_refuses_before_native_seal_and_same_home_retry_closes` |
+| D11 actual World root/history and Bridge custody, deferred after Query | `closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_retires_without_drop` and `killed_native_effect_reopens_original_world_custody_releases_and_reopens_again` |
+| D17 actual bounded World retirement storage beside optional checkpoint capture | `host_checkpoint_memory_failure_is_reported_while_original_retired_owners_remain_physically_closed`; 1 MiB is below the observed 1,261,232-byte mandatory custody floor; the 1.5 MiB fixture preserves real capture exhaustion and physical Closed |
 | D17 original member callback custody | `completed_member_callback_survives_a_busy_original_return_slot_without_replay`, `cancelled_member_handoff_returns_original_custody_and_a_live_request_continues_it` |
 | D17 prepaid close storage | `prepaid_close_storage_retains_original_backings_through_exhaustion_and_public_moveout`, `prepaid_slot_denial_targets_actual_backing_and_preserves_cancellation` |
 | D17 no service after seal; terminal custody consumed once | Prepared/retiring/retired owner types and sealed `query-home-retirement` caller |

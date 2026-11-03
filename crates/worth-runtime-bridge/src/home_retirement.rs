@@ -12,7 +12,7 @@ use crate::{
     structural::AdmittedStructuralRegistry,
     subscription::FrozenSubscriptionFamilyRegistry,
 };
-pub(crate) use correspondence::RetiringWorldCorrespondence;
+pub use correspondence::RetiringWorldCorrespondence;
 use std::{any::Any, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{

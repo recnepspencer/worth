@@ -111,6 +111,8 @@ where
         let bridge = match self
             .state
             .bridge
+            .as_ref()
+            .expect("serving World owns correspondence")
             .export_recorded_runtime_world_baseline_in(execution, intent.correspondence_basis())
         {
             Ok(recorded) => recorded,

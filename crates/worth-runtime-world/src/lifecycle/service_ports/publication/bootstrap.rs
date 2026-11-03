@@ -56,7 +56,12 @@ where
                 RuntimeWorldBootstrapNoEffectCause::ForeignBasis,
             ));
         };
-        let correspondence = owner.state.bridge.admit_runtime_baseline(graph);
+        let correspondence = owner
+            .state
+            .bridge
+            .as_ref()
+            .expect("serving World owns correspondence")
+            .admit_runtime_baseline(graph);
         owner.begin_durable_bootstrap(
             execution,
             RuntimeWorldBootstrapIntent::new(creation, relational, signal, correspondence),

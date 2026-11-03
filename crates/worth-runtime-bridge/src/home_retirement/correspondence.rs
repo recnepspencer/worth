@@ -11,7 +11,7 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
 
-pub(crate) struct RetiringWorldCorrespondence {
+pub struct RetiringWorldCorrespondence {
     bridge: RetiringRuntimeBridge,
     _inspection: Arc<RuntimeWorldCorrespondenceInspectionLedger>,
 }
@@ -23,7 +23,7 @@ impl RuntimeWorldCorrespondencePort {
     ) -> Result<(), Denial> {
         self.runtime.preflight_home_retirement(native, request)
     }
-    pub(crate) fn into_home_retirement(
+    pub fn into_home_retirement(
         self,
         request: &ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,
@@ -48,11 +48,18 @@ impl RuntimeWorldCorrespondencePort {
     }
 }
 impl RetiringWorldCorrespondence {
-    pub(crate) fn advance(
+    pub fn advance(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,
     ) -> Result<Progress, Denial> {
         self.bridge.advance(request, native)
+    }
+}
+
+impl std::fmt::Debug for RetiringWorldCorrespondence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RetiringWorldCorrespondence")
+            .finish_non_exhaustive()
     }
 }

@@ -104,7 +104,7 @@ pub use request::BridgeRouteRequest;
 pub use runtime::RuntimeBridge;
 pub use runtime::{
     BridgeHomeRetirementDenial, BridgeHomeRetirementProgress, RetiredRuntimeBridge,
-    RetiringRuntimeBridge,
+    RetiringRuntimeBridge, RetiringWorldCorrespondence,
 };
 pub use runtime_world::{
     RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal,

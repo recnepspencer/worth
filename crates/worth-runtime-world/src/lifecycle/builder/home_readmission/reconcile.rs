@@ -55,6 +55,8 @@ where
         let bridge = root
             .state
             .bridge
+            .as_ref()
+            .expect("serving World owns correspondence")
             .readmit_recorded_runtime_world_baseline(&components.bridge, &signal)
             .map_err(Denial::BridgeBaseline)?;
         custody.root = Some(

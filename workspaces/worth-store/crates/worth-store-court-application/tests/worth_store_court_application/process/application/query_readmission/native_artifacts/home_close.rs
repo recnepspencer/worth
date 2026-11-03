@@ -155,10 +155,12 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
         ));
     }
     assert_eq!(balance(home.runtime()), 8);
-    // 256 KiB and 512 KiB stopped in mandatory Query retirement admission,
-    // before optional checkpoint capture. Fund the actual D17 retirement
-    // backing beside capture; the authentic tail still exercises its refusal.
-    let bounded = serial(Some(1024 * 1024), None);
+    // D17 requires the actual World and Query retirement storage before seal:
+    // 584,296 retained bytes + 17,576 fixed task + 659,360 history rows already
+    // exceed 1 MiB. Fund that custody with 1.5 MiB; the remaining capture budget
+    // is smaller than the earlier authentic failed capture. D11 still requires
+    // that exact checkpoint failure and physical Closed with retired owners live.
+    let bounded = serial(Some(1536 * 1024), None);
     let closed = home
         .close(&ExecutionRequest::serial(&bounded))
         .unwrap_or_else(|refused| {

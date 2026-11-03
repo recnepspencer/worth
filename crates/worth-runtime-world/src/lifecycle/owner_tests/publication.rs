@@ -179,7 +179,11 @@ pub(super) fn resolve_post_effect_retention_denial() -> PendingRetentionDenial {
             .unwrap_or_else(|error| error.into_inner()),
         &owner.state.relational.basis_port(),
         &owner.state.signal.basis_port(),
-        &owner.state.bridge,
+        owner
+            .state
+            .bridge
+            .as_ref()
+            .expect("serving World owns correspondence"),
         expected.basis().relational_basis().clone(),
         successor_signal,
         expected.basis().correspondence_basis().clone(),
