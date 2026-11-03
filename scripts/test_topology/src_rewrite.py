@@ -291,13 +291,16 @@ class Rewriter:
         # Children that glob this fragment read the names it holds elsewhere too.
         heads |= inherited_words(self.model, record.names, self.__dict__.setdefault('_inherited', {}))
         own = self.module_path(record.names, reader_crate) + '::'
+        children = {child.names[-1] for child in record.node.children}
         defined = {item.name for item in items_of(text)}
         uses, _paths = scan(text)
         bound = {alias or segments[-1] for d in uses for segments, glob, alias in d.leaves if segments and not glob}
         lines = []
         for name in sorted((heads & self.model.visible(record.names)) - defined - bound):
             path = self.resolve_path(('self', name), record.names, reader_crate)
-            if path is None or path == name or path == own + name:
+            # Child modules are mounted, not imported; a testkit never reads a court.
+            if path is None or path == name or path == own + name or name in children \
+                    or ('-testkit-' in reader_crate and path.startswith('worth_query_court_')):
                 continue
             lines.append('use ' + path + ('' if path.rsplit('::', 1)[-1] == name else f' as {name}') + ';')
         if not lines:
