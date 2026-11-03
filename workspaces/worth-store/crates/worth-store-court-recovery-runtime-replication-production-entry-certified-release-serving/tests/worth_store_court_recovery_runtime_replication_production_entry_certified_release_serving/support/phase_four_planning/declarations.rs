@@ -84,6 +84,13 @@ pub(crate) fn publish_secured_synthetic_checkpoint(
 pub(crate) fn prepare_ordinary_recovery_root(
     name: &str,
 ) -> worth_store_test_support::TemporaryDirectory {
+    prepare_ordinary_recovery_root_with_pending_record(name, b"post-checkpoint-c8-redo")
+}
+
+pub(crate) fn prepare_ordinary_recovery_root_with_pending_record(
+    name: &str,
+    pending_record: &[u8],
+) -> worth_store_test_support::TemporaryDirectory {
     let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery(name).unwrap();
     let retained_root = world.retained_root();
     let acknowledgment =
@@ -110,7 +117,7 @@ pub(crate) fn prepare_ordinary_recovery_root(
     };
     assert!(checkpoint.retained_wal_tail().segment_count().get() > 0);
     canonical_rooted_mutation_without_acknowledgment(&world, [0x43; 32], b"rooted-c8-redo");
-    canonical_durable_wal_attempt_without_execution(&world, [0x44; 32], b"post-checkpoint-c8-redo");
+    canonical_durable_wal_attempt_without_execution(&world, [0x44; 32], pending_record);
     drop(world);
     retained_root
 }

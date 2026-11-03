@@ -1,11 +1,9 @@
-use crate::phase_four_planning::ordinary_recovery_declaration;
+use crate::phase_four_planning::{
+    ordinary_recovery_declaration, prepare_ordinary_recovery_root_with_pending_record,
+};
 use worth_store_recovery_physics::RecoveryPlanCostDenial;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits, PhysicalRecoveryPlanningDenial,
-};
-use worth_store_test_support::harness::physical_residency::{
-    canonical_durable_wal_attempt_without_execution, canonical_physical_mutation_acknowledgment,
-    PhysicalResidencyStoreWorld,
 };
 use worth_store_testkit_recovery_runtime::phase_three_support::{
     admitted_recovery_with_limits, expect_blocked,
@@ -13,17 +11,15 @@ use worth_store_testkit_recovery_runtime::phase_three_support::{
 
 #[test]
 fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects() {
-    let world =
-        PhysicalResidencyStoreWorld::initialize_for_recovery("planning-construction-refusal-peak")
-            .unwrap();
-    let root = world.retained_root();
-    canonical_physical_mutation_acknowledgment(&world, [0x71; 32], b"selected-root");
-    // A genuine extent supplies several pending frames in one durable WAL attempt.
-    canonical_durable_wal_attempt_without_execution(&world, [0x72; 32], &[0x5a; 16_384]);
-    drop(world);
+    // Preserve the ordinary checkpoint/root/WAL lineage, with a genuine
+    // multi-frame pending extent instead of the ordinary singleton page.
+    let root = prepare_ordinary_recovery_root_with_pending_record(
+        "planning-construction-refusal-peak",
+        &[0x5a; 16_384],
+    );
 
     let mut early = ordinary_recovery_declaration(4_096);
-    early.staging_bytes = 1;
+    early.staging_bytes = 3_276_799;
     let mut later = ordinary_recovery_declaration(4_096);
     later.dirty_frames = 1;
     let mut peaks = Vec::new();
@@ -53,7 +49,8 @@ fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects(
         };
         assert_eq!(
             blocked.evidence().planning_denial,
-            Some(PhysicalRecoveryPlanningDenial::Cost(expected))
+            Some(PhysicalRecoveryPlanningDenial::Cost(expected)),
+            "unexpected refusal: {blocked:?}"
         );
         assert_eq!(blocked.cause().limit().unwrap().dimension(), dimension);
         assert_eq!(blocked.recovery_effects(), 0);
