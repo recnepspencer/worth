@@ -224,7 +224,7 @@ def with_docs(text, start):
 GATE = re.compile(r'#\s*\[\s*cfg\s*\(\s*test\s*\)\s*\]\s*')
 
 
-def residual_gates(text, skip_spans, kept_names):
+def residual_gates(text, skip_spans, kept_names, removed_gates=()):
     """Remaining exact `#[cfg(test)]` attributes to remove, outside test code and kept items."""
     result = []
     for match in GATE.finditer(text):
@@ -238,7 +238,8 @@ def residual_gates(text, skip_spans, kept_names):
         result.append((match.start(), match.end(), ''))
     ungated_fns = {m.group(1) for m in re.finditer(
         r'#\s*\[\s*cfg\s*\(\s*test\s*\)\s*\]\s*(?:pub(?:\s*\([^)]*\))?\s+)?fn\s+(\w+)', text)
-        if (m.start(), m.start() + len(GATE.match(text, m.start()).group(0)), '') in result}
+        if (m.start(), m.start() + len(GATE.match(text, m.start()).group(0)), '') in result
+        or m.start() in removed_gates}
     for match in re.finditer(r'#\s*\[\s*cfg\s*\(\s*not\s*\(\s*test\s*\)\s*\)\s*\]\s*'
                              r'(?:pub(?:\s*\([^)]*\))?\s+)?fn\s+(\w+)', text):
         if match.group(1) in ungated_fns:

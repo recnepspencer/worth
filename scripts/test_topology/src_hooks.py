@@ -151,7 +151,7 @@ def impl_target(text):
     return next((t.value for t in header if t.kind == 'ident' and t.value not in ('dyn', 'mut', 'const')), None)
 
 
-def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
+def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=(), method_edges=None):
     """Partition the gated production closure of `seeds` and `family_seeds`.
 
     referenced: items the moved code names (paths and called methods); only test-dependent
@@ -198,6 +198,13 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
         for names, text in texts:
             if dev_aliases and crate_uses(text, set(dev_aliases)):
                 nodes[key][1].add(('<test>', 'dev-dependency'))
+            # Compiler evidence: code in this module calls a method a test-only module defines.
+            for module, families in (method_edges or {}).items():
+                if names[:len(module)] == module:
+                    for family in families:
+                        target = ('<family>', family)
+                        nodes[key][1].add(target)
+                        pending.append(target)
             for dependency in dependencies(model, names, text, key):
                 nodes[key][1].add(dependency)
                 pending.append(dependency)

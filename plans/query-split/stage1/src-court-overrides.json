@@ -2,6 +2,20 @@
   "categories": {
     "domain_computation::primary_graph::tests::inbound_admission::fixture::cost": ""
   },
+  "compiler_method_edges": {
+    "domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::retained_activation_read_tests": [
+      "domain_computation::authorization::decision_facts::authorization::durable_dependencies::cancellation_tests"
+    ],
+    "domain_computation::primary_graph::application_contribution::producer::demand::own_effect_assertions": [
+      "domain_computation::primary_graph::application_contribution::producer::demand::progression::required_fresh::admission_court"
+    ],
+    "domain_computation::primary_graph::application_output_demand::settlement::observation::court": [
+      "domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::certification"
+    ],
+    "domain_computation::primary_graph::causal_inspection::application_inspection::result": [
+      "domain_computation::provider_session::graph_obligation::inspection_terminal::court"
+    ]
+  },
   "renames": {
     "domain_computation::primary_graph::tests::inbound_admission::fixture::cost": "scoped_dispatch"
   }

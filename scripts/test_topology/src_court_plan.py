@@ -11,7 +11,7 @@ from cargo_inventory import metadata
 from court_partition import CEILING, classification
 from frontier_adapter import frontiers
 from rust_source import tokens
-from src_hooks import all_gated_seeds, classify, method_seeds
+from src_hooks import all_gated_seeds, classify, method_seeds, staying_support
 from src_move_model import MoveModel, add_extracted
 from src_ownership import dispositions
 from src_placement import named_products, place_courts, place_testkits
@@ -108,6 +108,8 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
 
     prepare(model, library_root)
     forced, excluded = set(), set()
+    method_edges = {tuple(m.split('::')): [tuple(f.split('::')) for f in fs]
+                    for m, fs in overrides.get('compiler_method_edges', {}).items()}
     dev = dev_only_aliases(Path(lib).resolve().parent.parent / 'Cargo.toml')
     for _attempt in range(6):
         first = placed(None)
@@ -115,7 +117,8 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
         method_items, method_families = method_seeds(model, called)
         referenced = set(first['ledger'].hooks) | set(first['ledger'].widen_items) | method_items
         # Staying support modules compile only when the moved code calls into them.
-        classes = classify(model, all_gated_seeds(model) | referenced, method_families, referenced, dev)
+        classes = classify(model, all_gated_seeds(model) | referenced, staying_support(model) | method_families,
+                           referenced, dev, method_edges)
         readers = extracted_readers(model, classes) | (classes.family_reads - set(model.moving))
         new = {'::'.join(f) for f in readers} - forced
         anchored = {'::'.join(f) for f in classes.anchored} - excluded

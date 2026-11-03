@@ -200,7 +200,8 @@ def residual_sweep(model, classes, edits, dev_aliases=()):
         text = filesystem_path(source).read_text(encoding='utf-8')
         if 'cfg(test)' not in text.replace(' ', ''):
             continue
-        result[source].extend(residual_gates(text, skip[source], kept))
+        removed = {a for a, b, replacement in edits.get(source, []) if replacement == '' and text[a:b].lstrip().startswith('#')}
+        result[source].extend(residual_gates(text, skip[source], kept, removed))
     return result
 
 
