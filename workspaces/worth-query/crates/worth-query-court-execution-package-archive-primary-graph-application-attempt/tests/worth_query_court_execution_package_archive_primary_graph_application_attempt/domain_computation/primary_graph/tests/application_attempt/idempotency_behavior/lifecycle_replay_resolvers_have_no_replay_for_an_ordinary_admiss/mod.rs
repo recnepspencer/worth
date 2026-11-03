@@ -110,7 +110,7 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
             .with_host_advancement(|phase| {
                 let operation = application
                     .installed_schema()
-                    .installed_operation(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::TouchAccountOperation::reference())
+                    .installed_operation(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::TouchAccountOperation::reference())
                     .unwrap();
                 let admission = world
                     .selected_product(&(phase).test_host_request())
@@ -132,7 +132,7 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
                             reader
                                 .require_decision_field(
                                     projected,
-                                    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::AccountStatus::reference(),
+                                    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::reference(),
                                 )
                                 .unwrap();
                         },

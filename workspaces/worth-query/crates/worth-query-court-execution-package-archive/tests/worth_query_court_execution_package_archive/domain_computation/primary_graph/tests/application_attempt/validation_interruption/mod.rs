@@ -19,7 +19,7 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     let installed = world
         .application
         .installed_schema()
-        .installed_operation(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::TouchAccountOperation::reference())
+        .installed_operation(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::TouchAccountOperation::reference())
         .unwrap();
     assert_eq!(installed.contracts().execution_strategy().unwrap().envelope()
         .optional_scale_ceiling(worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis::WorkItems), None);
