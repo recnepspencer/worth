@@ -4,7 +4,6 @@ use worth_query_execution::domain_computation::primary_graph::output_lineage::pr
     use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::sealed_run_for_lineage_test;
     use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention;
     use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
     use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
     use worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;

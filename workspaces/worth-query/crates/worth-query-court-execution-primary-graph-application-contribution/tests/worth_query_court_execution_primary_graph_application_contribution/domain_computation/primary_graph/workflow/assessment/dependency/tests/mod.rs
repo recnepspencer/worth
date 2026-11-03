@@ -8,7 +8,6 @@ use worth_foundational::facade::AspectValue;
     use worth_foundational::facade::AspectFieldLocator;
     use worth_foundational::facade::CanonicalFieldPath;
     use worth_foundational::facade::LocatorAuthority;
-    use worth_relational::facade::identity::EntityId;
     use worth_relational::facade::identity::PartitionId;
     use worth_relational::facade::identity::VersionId;
     use worth_relational::facade::runtime::RelationalFieldPresence;

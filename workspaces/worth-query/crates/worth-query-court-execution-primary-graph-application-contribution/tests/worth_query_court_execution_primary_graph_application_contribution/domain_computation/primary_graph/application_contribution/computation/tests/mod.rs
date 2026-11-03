@@ -22,7 +22,6 @@ pub use worth_query_declaration::facade::application_schema::ApplicationSchemaDe
 pub use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial;
 pub use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 
-pub use worth_query_installation::facade::ApplicationSchema;
 pub use std::sync::Arc;
 pub use worth_query_execution::facade::application_contribution::WorthQueryInstalledManagedComputation;
 pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationCheckpoint;
