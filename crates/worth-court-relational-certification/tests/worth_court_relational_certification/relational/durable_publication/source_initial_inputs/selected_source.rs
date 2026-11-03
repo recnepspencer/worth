@@ -77,6 +77,12 @@ impl RelationalDurableColdSource for SelectedSource {
         self.canonical_reads.lock().unwrap().push(member);
         self.medium.observe_canonical_member_read(member);
     }
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<RelationalDurableMemberCustody, RelationalStorageUnavailableCause> {
+        self.medium.retain_members(members)
+    }
     fn retain_members_for_request(
         &self,
         request: &ExecutionRequest<'_, '_>,
