@@ -109,7 +109,8 @@ def without_duplicate_imports(text, generated):
     seen, out = set(), []
     for line in text.split('\n'):
         stripped = line.strip()
-        if stripped.startswith(('use ', 'pub use ', 'pub(crate) use ')) and stripped.endswith(';'):
+        # Module-level imports only: statements inside function bodies are indented.
+        if line == stripped and stripped.startswith(('use ', 'pub use ', 'pub(crate) use ')) and stripped.endswith(';'):
             if stripped in seen:
                 continue
             seen.add(stripped)
