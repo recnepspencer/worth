@@ -14,8 +14,14 @@ from src_door_traits import generic_arguments, method_signatures, without_patter
 DOC = '    #[doc(hidden)]\n'
 
 
+def from_child(text):
+    """Text copied from a module, re-rooted for its `court_doors_for_test` child."""
+    text = re.sub(r'\bsuper::', 'super::super::', text)
+    return re.sub(r'(?<![\w:])self::', 'super::', text)
+
+
 def impl_header(generics, self_type, where):
-    return f'impl{generics} {self_type}' + (f' {where}' if where else '') + ' {\n'
+    return from_child(f'impl{generics} {self_type}' + (f' {where}' if where else '')) + ' {\n'
 
 
 def method_door(header, name):
@@ -39,7 +45,7 @@ def method_door(header, name):
             call = f'unsafe {{ {call} }}'
         door_signature = door_signature.replace('const fn', 'fn', 1)
         return (impl_header(generics, self_type, where) + DOC +
-                f'    pub {door_signature} {{\n        {call}\n    }}\n}}')
+                f'    pub {from_child(door_signature)} {{\n        {call}\n    }}\n}}')
     return None
 
 
@@ -135,7 +141,7 @@ def self_type(shape):
 
 
 def field_door(shape, field, mutable):
-    ty = shape['fields'][field]
+    ty = from_child(shape['fields'][field])
     suffix, receiver, borrow = ('_mut_for_test', '&mut self', '&mut ') if mutable else ('_for_test', '&self', '&')
     return (impl_header(shape['generics'], self_type(shape), shape['where']) + DOC +
             f'    pub fn {field}{suffix}({receiver}) -> {borrow}{ty} {{\n        {borrow}self.{field}\n    }}\n}}')
@@ -144,7 +150,7 @@ def field_door(shape, field, mutable):
 def constructor_door(shape):
     fields = shape['fields']
     positional = all(name.isdigit() for name in fields)
-    params = ', '.join(f'{"field" + n if positional else n}: {t}' for n, t in fields.items())
+    params = ', '.join(f'{"field" + n if positional else n}: {from_child(t)}' for n, t in fields.items())
     body = ('Self(' + ', '.join('field' + n for n in fields) + ')') if positional else \
         ('Self { ' + ', '.join(fields) + ' }')
     return (impl_header(shape['generics'], self_type(shape), shape['where']) + DOC +
@@ -170,7 +176,8 @@ def door_file_path(node, index):
 
 def mount_edit(node):
     """(source, change) that mounts the door module at the end of the module, once."""
-    if re.search(r'(?m)^\s*mod court_doors_for_test;', node.own_text()):
+    # `own_text` drops child module declarations, the door's own included.
+    if re.search(r'(?m)^\s*mod court_doors_for_test;', node.text):
         return None
     end = node.offset + len(node.text)
     return node.source, (end, end, '\nmod court_doors_for_test;\n')

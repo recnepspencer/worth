@@ -112,7 +112,8 @@ def method_signatures(body):
 def without_patterns(signature):
     """Trait method declarations take plain parameter names: `mut x` -> `x`, patterns -> `_argN`."""
     import re
-    signature = re.sub(r'\bmut\s+self\b', 'self', signature)
+    # Only a by-value `mut self` receiver is a pattern; `&mut self` is a type.
+    signature = re.sub(r'([(,]\s*)mut\s+self\b', r'\1self', signature)
     start = signature.find('(')
     depth, end = 0, None
     for i in range(start, len(signature)):
