@@ -98,7 +98,8 @@ def plan_items(files, index, surface):
                 if reference.glob:
                     aliases = glob_uses(text, module, surface)
                 for name in aliases:
-                    add_door(result, surface, published, module, name)
+                    # Named through the door module's path: doored even when the facade has it.
+                    add_door(result, surface, {} if not reference.glob else published, module, name)
                 if reference.glob:
                     result.rewrites[path].append((reference, module, None, sorted(aliases)))
                 elif not aliases and is_import(text, reference) and 'worth-query-certification/' not in text:
@@ -137,9 +138,10 @@ def mounted_foreign_text(path, text):
         target = (path.parent / literal).resolve()
         if target.is_file():
             result.append(target.read_text(encoding='utf-8'))
-            # Mounted directories (`mod.rs` siblings) are read too.
-            if target.name == 'mod.rs':
-                result += [f.read_text(encoding='utf-8') for f in sorted(target.parent.rglob('*.rs'))]
+            # Their child module files (beside a `mod.rs`, or under `<stem>/`) are read too.
+            children = target.parent if target.name == 'mod.rs' else target.with_suffix('')
+            if children.is_dir():
+                result += [f.read_text(encoding='utf-8') for f in sorted(children.rglob('*.rs'))]
     for literal in re.findall(r'include!\(\s*"([^"]*worth-query-certification/[^"]*)"', text):
         target = (path.parent / literal).resolve()
         if target.is_file():
