@@ -1,9 +1,9 @@
 //! Placement arms restore only their live owner.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::ExecutionBudget;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::NonZeroUsize;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::WorthQueryExecutionPlacementForTest;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::bound_advancement_requests_on_this_thread_for_test;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::place_managed_computations_on_this_thread_for_test;
+use worth_foundational::ExecutionBudget;
+use std::num::NonZeroUsize;
+use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest;
+use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test;
+use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test;
 use worth_foundational::ExecutionBudget;
 use std::num::NonZeroUsize;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest;

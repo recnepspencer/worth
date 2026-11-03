@@ -1,14 +1,14 @@
 //! Diagnostic interruption preserves the request cause rather than panicking.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::ExecutionMap;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::ExecutionPosture;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::ExecutionReport;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::MapKernelContext;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::MapKernelFailure;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::NonZeroUsize;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::ReduceCertificationFailure;
+use worth_execution::ExecutionMap;
+use worth_foundational::ExecutionPosture;
+use worth_foundational::ExecutionReport;
+use worth_execution::MapKernelContext;
+use worth_execution::MapKernelFailure;
+use std::num::NonZeroUsize;
+use worth_execution::ReduceCertificationFailure;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::certification_failure;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::certify;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::query_test_execution_authority_for_test;
+use worth_query_execution::facade::domain_computation::query_test_execution_authority_for_test;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
 use worth_execution::ExecutionMap;
 use worth_execution::MapKernelContext;

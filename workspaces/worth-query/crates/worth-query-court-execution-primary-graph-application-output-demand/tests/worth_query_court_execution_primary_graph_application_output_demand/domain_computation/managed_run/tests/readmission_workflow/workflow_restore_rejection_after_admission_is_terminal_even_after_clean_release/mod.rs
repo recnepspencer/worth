@@ -1,6 +1,6 @@
 //! Workflow restore rejection after admission is terminal even after clean release.
 
-use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
+use worth_query_execution::court_doors_for_test::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome;
 
 use crate::domain_computation::managed_run::tests::readmission_workflow::*;
 

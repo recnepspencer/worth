@@ -1,5 +1,5 @@
-use worth_query_execution::court_doors_for_test::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
-use worth_query_execution::court_doors_for_test::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationResources;
+use worth_query_execution::facade::domain_computation::WorthQueryInvalidationEquivalenceForTest;
+use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
 use worth_query_execution::facade::domain_computation::WorthQueryInvalidationEquivalenceForTest;
 use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
 pub fn resources() -> WorthQueryInvalidationResources {
