@@ -76,12 +76,12 @@ fn field_denial(
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FieldExpectation {
     pub(super) binding: NativeFieldBindingExpectation,
-    pub(super) aspect: domain::AspectContract,
-    pub(super) native_binding: domain::AspectBinding,
+    pub aspect: domain::AspectContract,
+    pub native_binding: domain::AspectBinding,
 }
 
 impl FieldExpectation {
-    pub(super) fn declared<S, E, A, F, V: 'static, W, Q, U>(
+    pub fn declared<S, E, A, F, V: 'static, W, Q, U>(
         declaration: &schema::ErasedApplicationSchemaDeclaration,
         field: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
     ) -> Result<Self, NativeFieldContractDenial>
@@ -145,7 +145,7 @@ impl NativeFieldBindingExpectation {
 }
 
 impl FieldExpectation {
-    pub(super) fn seal<S: schema::ApplicationSchema>(
+    pub fn seal<S: schema::ApplicationSchema>(
         &self,
         installed: &domain::WorthQueryInstalledApplicationSchema<S>,
     ) -> Result<(), NativeFieldContractDenial> {

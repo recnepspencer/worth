@@ -13,7 +13,7 @@ pub struct CompiledWorkflowDispatch {
 }
 
 impl CompiledWorkflowDispatch {
-    pub(in super::super) fn build(
+    pub fn build(
         node_count: usize,
         connections: &[CompiledWorkflowSemanticConnection],
     ) -> Self {

@@ -170,7 +170,7 @@ impl ReadyCompletion {
 }
 
 impl PreparedReadyBacking {
-    pub(in crate::domain_computation::primary_graph) fn for_registry_test() -> Self {
+    pub fn for_registry_test() -> Self {
         Self::new()
     }
 }

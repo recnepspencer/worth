@@ -26,7 +26,7 @@ impl FieldExpectation {
                 )
             })
     }
-    fn mask(&self) -> domain::AspectMask<domain::ProjectionMask> {
+    pub fn mask(&self) -> domain::AspectMask<domain::ProjectionMask> {
         if matches!(
             self.aspect.shape(),
             worth_foundational::facade::AspectShape::Scalar(_)
@@ -37,7 +37,7 @@ impl FieldExpectation {
             domain::FieldKey::new(self.binding.locus.field()).expect("declared field key"),
         )])
     }
-    fn dependency(
+    pub fn dependency(
         &self,
     ) -> Result<domain::WorthQuerySemanticTruthDependency, WorthQueryOutputReadinessContractDenial>
     {
@@ -146,8 +146,8 @@ impl WorthQueryOutputReadinessContractBuilder {
 
 pub struct WorthQueryOutputReadinessContract<D, O, F> {
     definition: domain::WorthQueryDomainOperationDefinition<D, O, F>,
-    fields: Vec<FieldExpectation>,
-    delivery_fields: std::collections::BTreeSet<schema::ApplicationFieldBindingLocus>,
+    pub fields: Vec<FieldExpectation>,
+    pub delivery_fields: std::collections::BTreeSet<schema::ApplicationFieldBindingLocus>,
     node: String,
 }
 impl<D, O, F> WorthQueryOutputReadinessContract<D, O, F> {

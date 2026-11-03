@@ -31,42 +31,42 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallation
 pub struct DeclaredProducerBinding
 {
     pub(in crate::domain_computation::primary_graph::application_contribution) owner: String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) identity: String,
+    pub identity: String,
     pub(in crate::domain_computation::primary_graph::application_contribution) source_selector:
         String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_family:
+    pub output_family:
         String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_family_type:
+    pub output_family_type:
         TypeId,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_role_descriptors:
+    pub output_role_descriptors:
         Vec<worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_role_families:
+    pub output_role_families:
         Vec<ApplicationMutationOutputRoleFamilyDescriptor>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_role: String,
+    pub output_role: String,
     pub(in crate::domain_computation::primary_graph::application_contribution) operation: String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) handler_identity:
+    pub handler_identity:
         String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) provider_identity:
+    pub provider_identity:
         String,
     pub(in crate::domain_computation::primary_graph::application_contribution) applicability:
         Vec<WorthQueryProducerApplicability>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) supported:
+    pub supported:
         Vec<WorthQueryProducerApplicability>,
     pub(in crate::domain_computation::primary_graph::application_contribution) required_invariants:
         Vec<WorthQueryProducerInvariantRequirement>,
     pub(in crate::domain_computation::primary_graph::application_contribution) reuse_policy: String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) ownership:
+    pub ownership:
         worth_foundational::facade::ProducerPublicationOwnership,
-    pub(in crate::domain_computation::primary_graph::application_contribution) owned_scope_entity: Option<String>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_equivalence:
+    pub owned_scope_entity: Option<String>,
+    pub output_equivalence:
         Option<super::super::native_field_contract::NativeFieldBindingExpectation>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) installed_output_equivalence:
+    pub installed_output_equivalence:
         Option<Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) input_reuse:
+    pub input_reuse:
         Option<super::WorthQueryProducerInputReuseContract>,
     pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) source_type: TypeId,
-    pub(in crate::domain_computation::primary_graph::application_contribution) operation_binding_type:
+    pub operation_binding_type:
         TypeId,
     /// The operation the producer's mutation binding runs.
     pub(in crate::domain_computation::primary_graph::application_contribution) operation_type: TypeId,

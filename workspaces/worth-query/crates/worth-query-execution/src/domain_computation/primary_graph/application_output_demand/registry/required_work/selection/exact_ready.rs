@@ -14,7 +14,7 @@ impl SelectedReadyReadmission {
     }
 
     /// The registry row this Ready belongs to.
-    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &WorthQueryOutputDemandKey {
+    pub fn key(&self) -> &WorthQueryOutputDemandKey {
         self.membership.key()
     }
 

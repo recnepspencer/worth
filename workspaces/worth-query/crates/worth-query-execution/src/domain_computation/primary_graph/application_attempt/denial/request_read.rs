@@ -36,7 +36,7 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
-    pub(in crate::domain_computation) fn relational_read_stopped(
+    pub fn relational_read_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         subject: &str,
     ) -> Self {

@@ -143,7 +143,7 @@ impl WorthQueryOutputDemandDenialKind {
     }
 
     /// Execution observed an interruption after the advancement opened.
-    pub(super) const fn of_execution_interruption(
+    pub const fn of_execution_interruption(
         interruption: crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption,
     ) -> Self {
         use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Interruption;

@@ -110,7 +110,7 @@ impl PublicationHeads {
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn publication_head_selection(
+    pub fn publication_head_selection(
         &self,
         occurrence: ProductBranchIncarnation,
     ) -> Result<PublicationHeadSelection, WorthQueryOutputDemandDenial> {

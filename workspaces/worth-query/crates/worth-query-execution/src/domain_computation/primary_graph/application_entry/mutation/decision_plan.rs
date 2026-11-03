@@ -166,7 +166,7 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn run(
+    pub fn run(
         self,
         execution: &QueryRequestExecution<'_>,
     ) -> HandlerResult<Value, Denial> {

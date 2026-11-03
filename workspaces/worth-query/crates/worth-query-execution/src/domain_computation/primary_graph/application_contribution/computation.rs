@@ -78,7 +78,7 @@ where
     Computation: ApplicationManagedComputation<Schema, Feature>,
     Owner: WorthQueryManagedComputationOwner<Schema, Feature, Computation>,
 {
-    pub(in crate::domain_computation::primary_graph) fn new(owner: Owner) -> Self {
+    pub fn new(owner: Owner) -> Self {
         Self {
             owner: Arc::new(owner),
             marker: PhantomData,

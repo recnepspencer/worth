@@ -28,7 +28,7 @@ impl<'authority> QueryRequestExecution<'authority> {
             form,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn wave(
+    pub fn wave(
         &self,
     ) -> WaveRequestExecution<'authority> {
         WaveRequestExecution {

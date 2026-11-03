@@ -9,7 +9,7 @@ pub struct WorkflowTransitionLocator {
 }
 
 impl WorkflowTransitionLocator {
-    pub(in crate::domain_computation::primary_graph) const fn new(
+    pub const fn new(
         entity: EntityId,
         settlement: SettledWorkflowTransition,
     ) -> Self {
@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
 }
 
 impl WorkflowAssessmentEvidenceLocator {
-    pub(in crate::domain_computation::primary_graph) const fn new(
+    pub const fn new(
         transition: WorkflowTransitionLocator,
         evidence: EntityId,
     ) -> Self {
@@ -64,7 +64,7 @@ pub struct WorkflowTransitionProgressObservation {
 }
 
 impl WorkflowTransitionProgressObservation {
-    pub(in crate::domain_computation::primary_graph) const fn new(
+    pub const fn new(
         transition: WorkflowTransitionLocator,
         assessment_evidence: Option<EntityId>,
     ) -> Self {
@@ -106,7 +106,7 @@ impl WorkflowTransitionProgressObservation {
 }
 
 impl WorkflowInstanceProgress {
-    pub(in crate::domain_computation::primary_graph) fn latest_transition(
+    pub fn latest_transition(
         &self,
         node: EntityId,
     ) -> Option<WorkflowTransitionLocator> {
@@ -120,7 +120,7 @@ impl WorkflowInstanceProgress {
         self.latest_assessment_evidence.get(&node).copied()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_observation(
+    pub fn retain_observation(
         &mut self,
         observation: WorkflowTransitionProgressObservation,
     ) {

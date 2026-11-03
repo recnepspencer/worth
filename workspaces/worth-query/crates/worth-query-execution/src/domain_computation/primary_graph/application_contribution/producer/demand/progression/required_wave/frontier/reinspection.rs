@@ -5,7 +5,7 @@ pub(in super::super) struct QueuedMember<'frontier, Ready> {
     member: &'frontier mut RequiredMember<Ready>,
 }
 impl<Ready> RequiredFrontier<Ready> {
-    pub(in super::super) fn queued_member(
+    pub fn queued_member(
         &mut self,
         index: usize,
     ) -> Option<QueuedMember<'_, Ready>> {

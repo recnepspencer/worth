@@ -8,7 +8,7 @@ pub struct PartitionMetadata<Key> {
     entries: ExecutionOrderedMap<PartitionIdentity, RetainedPartition<Key>>,
 }
 impl<Key> PartitionMetadata<Key> {
-    pub(super) fn from_recorded(
+    pub fn from_recorded(
         entries:BTreeMap<PartitionIdentity,(Arc<Key>,crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge)>,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, ExecutionOrderedMapDenial> {

@@ -23,7 +23,7 @@ pub struct WorthQueryConditionalCommitWatchSet {
 }
 
 struct WatchEntries {
-    entities: BTreeSet<EntityId>,
+    pub entities: BTreeSet<EntityId>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -57,7 +57,7 @@ impl WorthQueryConditionalCommitWatchSet {
         Ok(watch)
     }
 
-    fn retain_entities(
+    pub fn retain_entities(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         predecessor: Option<&Self>,
         incoming: impl Iterator<Item = EntityId>,
@@ -105,7 +105,7 @@ impl WorthQueryConditionalCommitWatchSet {
         }))
     }
 
-    pub(super) fn entities(&self) -> &BTreeSet<EntityId> {
+    pub fn entities(&self) -> &BTreeSet<EntityId> {
         static EMPTY: BTreeSet<EntityId> = BTreeSet::new();
         self.entities
             .as_ref()

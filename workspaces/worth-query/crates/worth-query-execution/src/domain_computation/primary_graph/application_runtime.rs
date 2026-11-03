@@ -123,7 +123,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub authorization: Arc<WorthQueryInstalledAuthorizationRegistry>,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     authentication_clock: WorthQueryAuthenticationClock,
-    pub(super) relational_branch_identity:
+    pub relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
     pub bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
     pub product_runtime:
@@ -165,7 +165,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
     pub(super) installed_producers:
         super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
-    pub(super) output_producer_routes:
+    pub output_producer_routes:
         super::application_contribution::WorthQueryInstalledOutputProducerRoutes,
     pub(super) output_readiness_routes:
         super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,

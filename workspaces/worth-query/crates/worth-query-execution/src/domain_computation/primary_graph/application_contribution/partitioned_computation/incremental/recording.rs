@@ -32,7 +32,7 @@ pub struct FullRecording<Key, Item> {
 
 impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// Records a full run that retains under `basis`, when a producer runs it.
-    pub(in super::super) fn new(basis: RetainedBasisToken) -> Self {
+    pub fn new(basis: RetainedBasisToken) -> Self {
         Self {
             basis,
             membership: None,
@@ -46,7 +46,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// The membership's call and the declared work its items' digests
     /// spent, or `None` when either did not measure, with the items and
     /// their digests.
-    pub(in super::super) fn membership(
+    pub fn membership(
         &mut self,
         call: Option<(ComputationCallCharge, Option<u64>)>,
         items: &Items<Item>,
@@ -107,7 +107,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
 
     /// The completed run keeps native kernel cost receipts and its reduced tree.
     /// A context-dependent or nested kernel leaves no reusable receipt.
-    pub(in super::super) fn complete<Reduced, Stopped>(
+    pub fn complete<Reduced, Stopped>(
         self,
         results: Option<worth_execution::ExecutionRetainedRun<Reduced>>,
         tree: NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,

@@ -54,7 +54,7 @@ pub enum ErasedClockObservationOutcome {
 }
 
 impl ErasedClockObservationOutcome {
-    pub(in crate::domain_computation::primary_graph::conditional_operation) fn typed<Clock>(
+    pub fn typed<Clock>(
         self,
         installation: crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation,
         source_read_basis: Option<
@@ -85,7 +85,7 @@ impl ErasedClockObservationOutcome {
 }
 
 impl ErasedClockObservationReceipt {
-    pub(in crate::domain_computation::primary_graph::conditional_operation) fn typed<Clock>(
+    pub fn typed<Clock>(
         self,
         granular_invalidation_installation: crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation,
         granular_source_read_basis: Option<

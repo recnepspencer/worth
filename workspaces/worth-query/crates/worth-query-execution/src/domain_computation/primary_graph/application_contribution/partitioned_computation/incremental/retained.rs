@@ -204,28 +204,28 @@ pub struct RetainedPartition<Key> {
 /// the membership, the unchanged items' keys and routes, and the unchanged
 /// partitions.
 pub struct RetainedPartitions<Key, Item, Reduced> {
-    pub(super) items: Items<Item>,
-    pub(super) digests: ItemDigests,
+    pub items: Items<Item>,
+    pub digests: ItemDigests,
     /// The membership's call, and the declared work its items' digests spent.
-    pub(super) membership: RetainedCall,
-    pub(super) item_keys: Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
-    pub(super) call_sequence: Arc<
+    pub membership: RetainedCall,
+    pub item_keys: Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
+    pub call_sequence: Arc<
         crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
     >,
     /// Every item's partition: the one routing a partition's members are read
     /// from.
-    pub(super) routing: Arc<ComputationPartitionRouting>,
-    pub(super) partitions: super::partition_metadata::PartitionMetadata<Key>,
+    pub routing: Arc<ComputationPartitionRouting>,
+    pub partitions: super::partition_metadata::PartitionMetadata<Key>,
     pub(super) native_run: worth_execution::ExecutionRetainedRun<Reduced>,
-    pub(super) tree: NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
+    pub tree: NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
 }
 
 pub(super) use super::typed_prior::TypedPrior;
 
 /// One run's state, retained on the record its attempt published.
 pub struct RetainedComputation {
-    pub(super) basis: RetainedBasis,
-    pub(super) typed: Arc<dyn Any + Send + Sync>,
+    pub basis: RetainedBasis,
+    pub typed: Arc<dyn Any + Send + Sync>,
     pub facts: SealedComputationFacts,
     pub(super) checked_calls:
         Option<crate::domain_computation::primary_graph::application_attempt::CheckedCallShape>,
@@ -248,7 +248,7 @@ pub struct SealedComputationRun {
     pub cloned_from: Option<Arc<RetainedComputation>>,
     /// The request memory the state's tree and routing hold until the
     /// lineage charges the state.
-    pub(in crate::domain_computation::primary_graph) attribution_memory:
+    pub attribution_memory:
         Option<QueryMemoryReservation>,
 }
 

@@ -45,7 +45,7 @@ impl<E> From<E> for MemberComputeFailure<E> {
 impl<E> MemberComputeFailure<E> {
     /// The owner's public denial already carries the specific value and identity.
     /// Consume its transport proof only as the completed request becomes data.
-    pub(in crate::domain_computation::primary_graph) fn into_failure(self) -> E {
+    pub fn into_failure(self) -> E {
         match self {
             Self::Own(failure) => failure,
             Self::Nested(TakenNestedFailure { cause, failure }) => match cause {

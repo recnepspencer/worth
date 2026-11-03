@@ -129,7 +129,7 @@ impl WorthQueryProviderSessionFailure {
         }
     }
 
-    pub(in crate::domain_computation) fn with_output_verification_capacity_stop(
+    pub fn with_output_verification_capacity_stop(
         mut self,
         stop: crate::domain_computation::primary_graph::VerificationCapacityStop,
     ) -> Self {

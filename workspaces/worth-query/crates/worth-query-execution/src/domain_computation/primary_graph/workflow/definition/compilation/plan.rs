@@ -126,9 +126,9 @@ pub enum CompiledWorkflowConnectionKind {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct CompiledWorkflowSemanticConnection {
-    pub(super) source: usize,
-    pub(super) target: usize,
-    pub(super) kind: Arc<CompiledWorkflowConnectionKind>,
+    pub source: usize,
+    pub target: usize,
+    pub kind: Arc<CompiledWorkflowConnectionKind>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -143,7 +143,7 @@ pub(super) struct CompiledWorkflowSemanticPlan {
 }
 
 impl CompiledWorkflowNode {
-    pub(in crate::domain_computation::primary_graph) const fn entity(&self) -> EntityId {
+    pub const fn entity(&self) -> EntityId {
         self.entity
     }
 
@@ -157,11 +157,11 @@ impl CompiledWorkflowNode {
 }
 
 impl CompiledWorkflowDefinition {
-    pub(in crate::domain_computation::primary_graph) fn lineage(&self) -> EntityId {
+    pub fn lineage(&self) -> EntityId {
         self.publication.lineage
     }
 
-    pub(in crate::domain_computation::primary_graph) fn definition(&self) -> EntityId {
+    pub fn definition(&self) -> EntityId {
         self.publication.definition
     }
 

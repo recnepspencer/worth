@@ -52,7 +52,7 @@ pub use advancement::{
 pub struct QueryRequestExecution<'a> {
     cancellation: worth_execution::CancellationToken,
     deadline: Option<std::time::Instant>,
-    declared_work: Option<u64>,
+    pub declared_work: Option<u64>,
     certified_seed: Option<u64>,
     form: Form<'a>,
 }
@@ -73,7 +73,7 @@ enum Form<'a> {
 impl<'a> QueryRequestExecution<'a> {
     /// The actual current lease funds new persistent cells; the policy is
     /// borrowed for allocation only and is never stored in retained state.
-    pub(in crate::domain_computation::primary_graph) fn allocation_policy(
+    pub fn allocation_policy(
         &self,
     ) -> Result<worth_execution::ExecutionAllocationPolicy<'_, 'a>, Resource> {
         match &self.form {
@@ -128,7 +128,7 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// A safe point outside any pattern: the stop a kernel would make here.
-    pub(super) fn checkpoint(&self) -> Result<(), MapKernelStop> {
+    pub fn checkpoint(&self) -> Result<(), MapKernelStop> {
         self.interruption()
             .map_or(Ok(()), |interruption| Err(interruption_stop(interruption)))
     }
@@ -150,7 +150,7 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// Every run, including serial placement, descends from the request's lease.
-    pub(super) fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
+    pub fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
             Form::Leased { lease, policy } | Form::Serial { lease, policy } => {
                 let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;

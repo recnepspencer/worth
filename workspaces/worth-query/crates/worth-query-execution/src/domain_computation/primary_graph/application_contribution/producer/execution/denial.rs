@@ -26,7 +26,7 @@ pub enum ProducerExecutionStop {
 }
 
 impl ProducerExecutionStop {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn into_output_denial(
+    pub fn into_output_denial(
         self,
     ) -> WorthQueryOutputDemandDenial {
         match self {
@@ -56,7 +56,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 }
 
 impl ProducerRequestAdmissionRejection {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn into_denial(
+    pub fn into_denial(
         self,
     ) -> WorthQueryOutputDemandDenial {
         self.denial

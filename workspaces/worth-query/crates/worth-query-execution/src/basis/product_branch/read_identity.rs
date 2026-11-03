@@ -37,7 +37,7 @@ impl WorthQueryProductBranchReadIdentity {
         &self.position
     }
 
-    pub(crate) fn matches_observation(&self, observation: &ProductBranchObservation) -> bool {
+    pub fn matches_observation(&self, observation: &ProductBranchObservation) -> bool {
         self.same_branch_occurrence_observation(observation)
             && self.position.generation() == observation.reference_generation()
             && self.position.commit() == observation.selected_commit()

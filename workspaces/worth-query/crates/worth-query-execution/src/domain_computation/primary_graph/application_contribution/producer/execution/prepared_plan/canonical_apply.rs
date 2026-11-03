@@ -12,7 +12,7 @@ pub struct CanonicalApplyCursor<
 > {
     basis: Option<&'owner worth_relational::facade::runtime::PositionedRelationalSnapshot>,
     keys: CanonicalUniqueVec<Key>,
-    slots: Vec<(
+    pub slots: Vec<(
         OwnerPlan<'owner, Value, Stop>,
         Result<
             crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember,
@@ -32,7 +32,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         cursor
     }
 
-    fn compute(
+    pub fn compute(
         keys: CanonicalUniqueVec<Key>,
         mut plans: Vec<OwnerPlan<'owner, Value, Stop>>,
         execution: &QueryRequestExecution<'_>,
@@ -62,7 +62,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
 
     /// The owner classifies each completion: holding a queued failure continues
     /// the cursor. A caller failure or request stop drops the inaccessible suffix.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn apply(
+    pub fn apply(
         self,
 
         mut published: impl FnMut(Key, Result<Value, Stop>) -> Result<(), Stop>,

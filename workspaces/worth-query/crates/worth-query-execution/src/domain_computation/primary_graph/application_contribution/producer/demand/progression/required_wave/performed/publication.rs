@@ -33,7 +33,7 @@ impl<'record> PublicationHandoff<'record> {
 }
 
 impl PerformedMembers {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn publication<
+    pub fn publication<
         'record,
     >(
         &'record mut self,

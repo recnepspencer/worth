@@ -15,7 +15,7 @@ pub enum PriorAbsence {
 }
 
 impl PriorAbsence {
-    pub(in crate::domain_computation) const fn full_cause(&self) -> Cause {
+    pub const fn full_cause(&self) -> Cause {
         match self {
             Self::FirstRun => Cause::FirstRun,
             Self::Restored => Cause::Restored,

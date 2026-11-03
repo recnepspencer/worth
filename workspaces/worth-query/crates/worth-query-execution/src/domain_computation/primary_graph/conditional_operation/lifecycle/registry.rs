@@ -152,7 +152,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph::conditional_operation) fn install(
+    pub fn install(
         &mut self,
         operation: Box<dyn WorthQueryInstalledConditionalOperation<Schema>>,
     ) -> Result<(), ()> {
@@ -165,7 +165,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn admit_clock(
+    pub fn admit_clock(
         &self,
         identity: &str,
         lease: &Arc<ConditionalClockLease>,

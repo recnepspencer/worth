@@ -78,7 +78,7 @@ impl PerformedMembers {
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn fresh<
+    pub fn fresh<
         Schema: ApplicationSchema + 'static,
     >(
         &mut self,

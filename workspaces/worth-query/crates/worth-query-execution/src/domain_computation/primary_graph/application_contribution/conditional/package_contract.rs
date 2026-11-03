@@ -45,7 +45,7 @@ impl WorthQueryApplicationConditionalPackageContract {
         &self.domain_operation
     }
 
-    pub(in super::super) fn operation_binding(
+    pub fn operation_binding(
         &self,
     ) -> &WorthQueryPortableApplicationConditionalOperationBinding {
         &self.operation_binding
@@ -55,7 +55,7 @@ impl WorthQueryApplicationConditionalPackageContract {
         self.target.node_identity()
     }
 
-    pub(in super::super) fn target(&self) -> &WorthQueryConditionalNodeLocation {
+    pub fn target(&self) -> &WorthQueryConditionalNodeLocation {
         &self.target
     }
 

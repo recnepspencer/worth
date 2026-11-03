@@ -13,7 +13,7 @@ pub(super) struct MemberStop {
     recording: StopRecording,
 }
 impl MemberStop {
-    pub(super) fn member(index: usize, stop: WorthQueryOutputDemandDenial) -> Self {
+    pub fn member(index: usize, stop: WorthQueryOutputDemandDenial) -> Self {
         Self {
             index,
             stop,
@@ -45,7 +45,7 @@ impl StopRecording {
         Self(Recording::Successor)
     }
 
-    pub(super) fn member() -> Self {
+    pub fn member() -> Self {
         Self(Recording::Member)
     }
     pub(super) fn record_if_needed(

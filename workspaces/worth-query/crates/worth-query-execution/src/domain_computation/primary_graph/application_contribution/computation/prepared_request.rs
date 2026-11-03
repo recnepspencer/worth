@@ -51,7 +51,7 @@ pub struct ComputedSlot {
     value: Box<dyn Any + Send>,
 }
 impl ComputedSlot {
-    pub(in crate::domain_computation::primary_graph) fn into_value<T: Any + Send>(self) -> T {
+    pub fn into_value<T: Any + Send>(self) -> T {
         *self
             .value
             .downcast::<T>()
@@ -60,7 +60,7 @@ impl ComputedSlot {
 }
 
 impl PreparedCompute {
-    pub(in crate::domain_computation::primary_graph) fn declared_test_request(
+    pub fn declared_test_request(
         rank: usize,
         fails: bool,
     ) -> Self {

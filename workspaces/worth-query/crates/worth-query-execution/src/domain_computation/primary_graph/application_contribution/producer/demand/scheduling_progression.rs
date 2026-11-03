@@ -23,7 +23,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema + 'static,
 {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn schedule_selected_output_producer<
+    pub fn schedule_selected_output_producer<
         Query,
     >(
         &self,

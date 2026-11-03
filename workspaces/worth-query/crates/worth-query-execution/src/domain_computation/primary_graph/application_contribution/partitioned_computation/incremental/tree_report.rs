@@ -123,8 +123,8 @@ impl WorthQueryPartitionedTreeRun {
 
 /// Each path returns its outcome and work together; terminal construction consumes both.
 pub struct ReportedTree<Tree, Stopped> {
-    pub(super) outcome: Result<Tree, WorthQueryPartitionedComputationDenial<Stopped>>,
-    pub(super) report: WorthQueryPartitionedTreeRun,
+    pub outcome: Result<Tree, WorthQueryPartitionedComputationDenial<Stopped>>,
+    pub report: WorthQueryPartitionedTreeRun,
 }
 
 pub(super) fn rebuild_cause<E>(

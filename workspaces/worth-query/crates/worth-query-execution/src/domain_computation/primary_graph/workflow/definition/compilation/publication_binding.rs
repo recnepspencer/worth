@@ -68,7 +68,7 @@ impl WorkflowDefinitionPublicationBinding {
             )
     }
 
-    pub(super) fn bind(
+    pub fn bind(
         &self,
         semantic: Arc<CompiledWorkflowSemanticPlan>,
         content_identity: worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity,

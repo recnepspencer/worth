@@ -23,7 +23,7 @@ impl WorkflowAdmittedActor {
     ) -> Self {
         Self(receipt.principal())
     }
-    pub(in crate::domain_computation) const fn entity(self) -> EntityId {
+    pub const fn entity(self) -> EntityId {
         self.0
     }
     pub fn append_fields(

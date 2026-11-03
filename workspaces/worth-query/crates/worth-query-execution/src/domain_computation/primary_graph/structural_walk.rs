@@ -75,7 +75,7 @@ impl StructuralWalkObservation {
     pub(in crate::domain_computation::primary_graph) fn commitment(&self) -> [u8; 32] {
         self.commitment
     }
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
+    pub fn source(&self) -> &SnapshotHandle {
         &self.snapshot
     }
     pub(in crate::domain_computation::primary_graph) fn checkpoint(

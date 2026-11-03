@@ -30,7 +30,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Workf
 pub struct WorkflowStepAllowance(());
 
 impl WorkflowStepAllowance {
-    pub(in crate::domain_computation::primary_graph) fn for_test() -> Self {
+    pub fn for_test() -> Self {
         Self(())
     }
 

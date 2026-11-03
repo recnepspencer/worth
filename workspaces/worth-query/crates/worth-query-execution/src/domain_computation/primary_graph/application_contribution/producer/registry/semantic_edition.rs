@@ -60,7 +60,7 @@ impl InstalledProducerEdition {
         self.retains_computation
     }
 
-    pub(super) fn from_declaration(
+    pub fn from_declaration(
         declaration: &DeclaredProducerBinding,
         build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial> {
@@ -226,11 +226,11 @@ impl InstalledProducerEdition {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn digest(self) -> [u8; 32] {
+    pub const fn digest(self) -> [u8; 32] {
         self.digest
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn build_identity(
+    pub const fn build_identity(
         self,
     ) -> worth_foundational::facade::ApplicationBuildIdentity {
         self.build_identity

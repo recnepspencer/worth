@@ -110,7 +110,7 @@ pub struct WorthQueryPrimaryGraphProvider {
         branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,
     pub live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
     pub attempts: Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>>,
-    pub(super) application_attempt_operation_control:
+    pub application_attempt_operation_control:
         super::application_runtime::WorthQueryApplicationAttemptOperationControl,
     application_attempt_work: application_attempt_work::WorthQueryApplicationAttemptWorkLedger,
     completed_commit_evidence: Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>,

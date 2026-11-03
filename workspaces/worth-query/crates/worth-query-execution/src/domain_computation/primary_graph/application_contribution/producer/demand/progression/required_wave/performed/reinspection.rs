@@ -7,10 +7,10 @@ pub(in super::super) struct ReinspectionCredit {
     _publication: InspectionStamp,
 }
 impl PerformedMembers {
-    pub(in super::super) fn inspection(&self) -> InspectionStamp {
+    pub fn inspection(&self) -> InspectionStamp {
         InspectionStamp(self.commit_generation)
     }
-    pub(in super::super) fn reinspection(
+    pub fn reinspection(
         &self,
         key: &WorthQueryOutputDemandKey,
         inspected: InspectionStamp,

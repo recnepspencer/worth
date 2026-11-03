@@ -136,8 +136,8 @@ where
 
 #[doc(hidden)]
 pub struct WorthQueryApplicationContractCatalog<Schema> {
-    producers: BTreeMap<String, DeclaredProducerBinding>,
-    conditionals: BTreeMap<String, DeclaredConditionalBinding>,
+    pub producers: BTreeMap<String, DeclaredProducerBinding>,
+    pub conditionals: BTreeMap<String, DeclaredConditionalBinding>,
     marker: PhantomData<fn() -> Schema>,
 }
 
@@ -155,7 +155,7 @@ impl<Schema> WorthQueryApplicationContractCatalog<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn validate(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    pub fn validate(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         let mut family_types = BTreeMap::new();
         let mut families: BTreeMap<
             (&str, &str),
@@ -282,7 +282,7 @@ where
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn compose_package(
+    pub fn compose_package(
         &self,
         mut package: WorthQueryPortableDomainPackage,
     ) -> WorthQueryPortableDomainPackage {

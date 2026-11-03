@@ -44,7 +44,7 @@ impl<'a, Schema: ApplicationSchema + 'static> RefusingMember<'a, Schema> {
         }
     }
 
-    pub(super) fn end(
+    pub fn end(
         self,
         stop: WorthQueryOutputDemandDenial,
         recording: StopRecording,
@@ -96,7 +96,7 @@ pub(super) fn member_stop(
 impl RefusalEnd {
     /// The caller's refusal returns before this door. A held queue row leaves
     /// its cursor open; a queue-budget stop invokes the owner's canonical end.
-    pub(super) fn finish<T>(self, finish_cursor: impl FnOnce() -> T) -> Option<T> {
+    pub fn finish<T>(self, finish_cursor: impl FnOnce() -> T) -> Option<T> {
         match self {
             Self::Held => None,
             Self::QueueBudget => Some(finish_cursor()),

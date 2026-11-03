@@ -134,7 +134,7 @@ where
         }
     }
 
-    fn deliver_output_checkpoint_with_finish(
+    pub fn deliver_output_checkpoint_with_finish(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 

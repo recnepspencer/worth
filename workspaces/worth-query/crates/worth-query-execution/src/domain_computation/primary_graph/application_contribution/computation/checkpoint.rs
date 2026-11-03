@@ -9,7 +9,7 @@ use super::{
 /// The request a managed computation runs for: its cancellation, its
 /// deadline and how its patterns are placed.
 pub struct WorthQueryManagedComputationExecution<'request> {
-    pub(in super::super) request: &'request QueryRequestExecution<'request>,
+    pub request: &'request QueryRequestExecution<'request>,
 }
 
 impl<'request> WorthQueryManagedComputationExecution<'request> {
@@ -26,7 +26,7 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
 }
 
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
-    pub(super) charge:
+    pub charge:
         Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
     pub(super) poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
     pub(super) refused: Option<WorthQueryManagedComputationCheckpointDenial>,

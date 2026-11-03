@@ -12,7 +12,7 @@ use super::{
 impl CompiledWorkflowDefinition {
     /// The same definition read from `path` as its first node. Progress,
     /// replay and history of a migration successor all begin there.
-    pub(in crate::domain_computation::primary_graph) fn resumed_at(
+    pub fn resumed_at(
         &self,
         path: &str,
     ) -> Option<Self> {

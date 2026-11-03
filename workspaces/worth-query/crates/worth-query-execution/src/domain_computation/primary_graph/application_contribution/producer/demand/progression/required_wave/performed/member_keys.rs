@@ -4,7 +4,7 @@ use super::*;
 impl PerformedMembers {
     /// Only admission of the actual successor may join another demand key.
     /// The sealed result is required by the selected publication handoff.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn attach_successor(
+    pub fn attach_successor(
         &mut self,
         readiness: FreshReadiness,
         successor: &WorthQueryOutputDemandKey,

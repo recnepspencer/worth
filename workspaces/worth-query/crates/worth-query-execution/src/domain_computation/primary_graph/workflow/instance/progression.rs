@@ -46,7 +46,7 @@ pub struct SettledWorkflowTransition {
 }
 
 impl SettledWorkflowTransition {
-    pub(in crate::domain_computation::primary_graph) const fn new(
+    pub const fn new(
         node: EntityId,
         occurrence: u64,
         outcome: ApplicationWorkflowControlOutcome,
@@ -92,14 +92,14 @@ pub struct WorkflowInstanceProgress {
     captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
     head: EntityId,
     next_occurrence: u64,
-    retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
-    path_depth: u64,
-    path: OrdMap<u64, WorkflowPathFrame>,
+    pub retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
+    pub path_depth: u64,
+    pub path: OrdMap<u64, WorkflowPathFrame>,
     back_blocked_by_operation: bool,
-    back_edge_iterations: OrdMap<(EntityId, EntityId), u64>,
-    latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
+    pub back_edge_iterations: OrdMap<(EntityId, EntityId), u64>,
+    pub latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
     latest_transition_identities: OrdMap<EntityId, (u64, String)>,
-    latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
+    pub latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
     /// Assessment evidence bytes this instance's own history retains.
     retained_evidence_bytes: u64,
 }
@@ -129,7 +129,7 @@ impl WorkflowInstanceProgress {
         }
     }
 
-    pub(super) fn retained_charge_bytes(&self) -> usize {
+    pub fn retained_charge_bytes(&self) -> usize {
         std::mem::size_of::<Self>()
             .saturating_add(self.captured_input_charge_bytes())
             .saturating_add(accounting::map_charge_bytes(&self.retry_counts))
@@ -174,11 +174,11 @@ impl WorkflowInstanceProgress {
         Ok(progress)
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn head(&self) -> EntityId {
+    pub const fn head(&self) -> EntityId {
         self.head
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn next_occurrence(&self) -> u64 {
+    pub const fn next_occurrence(&self) -> u64 {
         self.next_occurrence
     }
 

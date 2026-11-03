@@ -48,7 +48,7 @@ impl ProducerCommitReceipt {
         matches!(self.publication, CommitPublication::PublishedNow)
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn record_publication(
+    pub fn record_publication(
         self,
         record: impl FnOnce(),
     ) -> Self {

@@ -12,7 +12,7 @@ pub enum MemberInput<Ready> {
 }
 impl<Ready> MemberInput<Ready> {
     /// The actual owner that issued this native pin has paid for its selection.
-    pub(in super::super) fn native(ready: Ready) -> Self {
+    pub fn native(ready: Ready) -> Self {
         Self::Selected(ready)
     }
     pub(in super::super) fn selected(&self) -> &Ready {

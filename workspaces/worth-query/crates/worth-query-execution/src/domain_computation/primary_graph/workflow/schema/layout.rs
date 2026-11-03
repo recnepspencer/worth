@@ -68,7 +68,7 @@ pub struct WorkflowLayoutFields {
     pub(in crate::domain_computation::primary_graph) transition_approval_relation: KindId,
     pub(in crate::domain_computation::primary_graph) approval_proposal_relation: KindId,
     pub(in crate::domain_computation::primary_graph) approval_evidence_relation: KindId,
-    pub(in crate::domain_computation::primary_graph) evidence_dependency_relation: KindId,
+    pub evidence_dependency_relation: KindId,
     /// Successor instance to the instance its migration ended.
     pub(in crate::domain_computation::primary_graph) instance_migrated_from_relation: KindId,
     /// Fresh lifecycle episode to its completed predecessor; not migrated effects.
@@ -122,9 +122,9 @@ pub struct WorkflowEvidenceDependencyLayout {
     pub(in crate::domain_computation::primary_graph) entity_partition: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) entity_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) entity_generation: AspectFieldLocator,
-    pub(in crate::domain_computation::primary_graph) native_entity_kind: AspectFieldLocator,
-    pub(in crate::domain_computation::primary_graph) aspect: AspectFieldLocator,
-    pub(in crate::domain_computation::primary_graph) field: AspectFieldLocator,
+    pub native_entity_kind: AspectFieldLocator,
+    pub aspect: AspectFieldLocator,
+    pub field: AspectFieldLocator,
     pub field_presence: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) relation_kind: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) direction: AspectFieldLocator,
@@ -173,7 +173,7 @@ pub struct WorkflowApprovalLayout {
 #[derive(Clone, Debug)]
 pub struct WorkflowAssessmentEvidenceLayout {
     pub entity_kind: KindId,
-    pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
+    pub identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) producer: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) family: AspectFieldLocator,
@@ -287,7 +287,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowBackActionLayout
 
 #[derive(Clone, Debug)]
 pub struct WorkflowInstanceLayout {
-    pub(in crate::domain_computation::primary_graph) start_advancer:
+    pub start_advancer:
         super::super::actor::record::WorkflowActorFields,
     pub(in crate::domain_computation::primary_graph) end_advancer:
         super::super::actor::record::WorkflowActorFields,
@@ -296,13 +296,13 @@ pub struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) branch_occurrence: AspectFieldLocator,
     /// Immutable canonical revision of this occurrence's genuine start.
-    pub(in crate::domain_computation::primary_graph) started_program_revision: AspectFieldLocator,
+    pub started_program_revision: AspectFieldLocator,
     /// Mutable execution revision; Carry may advance it.
-    pub(in crate::domain_computation::primary_graph) program_revision: AspectFieldLocator,
+    pub program_revision: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) definition_content_identity:
         AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) subject_partition: AspectFieldLocator,
-    pub(in crate::domain_computation::primary_graph) subject_slot: AspectFieldLocator,
+    pub subject_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) subject_generation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) state: AspectFieldLocator,
     /// Where a migration successor began, when not at its definition's start.
