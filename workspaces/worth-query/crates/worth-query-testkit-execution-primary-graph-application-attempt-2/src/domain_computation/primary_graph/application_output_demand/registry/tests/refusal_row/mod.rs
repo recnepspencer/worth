@@ -29,8 +29,8 @@ impl RefusalRowWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDemandR
             limits: worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(), retained_program_basis: None,
         }));
         // This local lifetime fixture declares an already delivered answer;
-        // only the ending's custody and row attribution are under (*test.
-        self.state_for_test())
+        // only the ending's custody and row attribution are under test.
+        (*self.state_for_test())
             .lock()
             .unwrap()
             .records
