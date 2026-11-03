@@ -23,13 +23,15 @@ fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects(
     let format = AdmittedPhysicalRecordFormat::admit(
         PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
     );
-    let world = PhysicalResidencyStoreWorld::initialize_for_recovery_with_operation_budget(
-        "planning-construction-refusal-peak",
-        format,
-        64,
-        std::num::NonZeroU64::new(128 * 1024 * 1024).unwrap(),
-    )
-    .unwrap();
+    let world =
+        PhysicalResidencyStoreWorld::initialize_for_recovery_with_operation_and_wal_budgets(
+            "planning-construction-refusal-peak",
+            format,
+            64,
+            std::num::NonZeroU64::new(256 * 1024 * 1024).unwrap(),
+            std::num::NonZeroU64::new(32 * 1024 * 1024).unwrap(),
+        )
+        .unwrap();
     let root = world.retained_root();
     canonical_physical_mutation_acknowledgment(&world, [0x71; 32], b"checkpoint-source");
     let checkpoint = PhysicalCheckpointRequest::fuzzy(
@@ -45,8 +47,8 @@ fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects(
         handle.wait(),
         PhysicalCheckpointOutcome::Completed(_)
     ));
-    // Stay within the existing 16 MiB WAL segment while retaining enough real
-    // frame identities for staging scratch to exceed capture's common peak.
+    // The encoded redo carries payload and frames; the original 32 MiB WAL
+    // declaration admits that real frame while staging scratch crosses capture.
     append_pending_extent(&world, &vec![0x5a; 14 * 1024 * 1024]);
     drop(world);
 
@@ -54,8 +56,8 @@ fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects(
     early.staging_bytes = 3_276_799;
     early.wal_bytes = 32 * 1024 * 1024;
     early.redo_bytes = 32 * 1024 * 1024;
-    early.recovery_memory_bytes = 128 * 1024 * 1024;
-    early.observation_bytes = 128 * 1024 * 1024;
+    early.recovery_memory_bytes = 256 * 1024 * 1024;
+    early.observation_bytes = 256 * 1024 * 1024;
     let mut later = ordinary_recovery_declaration(4_096);
     later.dirty_frames = 1;
     later.wal_bytes = early.wal_bytes;

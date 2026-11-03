@@ -24,6 +24,24 @@ impl PhysicalResidencyStoreWorld {
         )
     }
 
+    pub fn initialize_for_recovery_with_operation_and_wal_budgets(
+        label: &str,
+        format: AdmittedPhysicalRecordFormat,
+        manifest_capacity: u16,
+        operation_bytes: NonZeroU64,
+        wal_segment_bytes: NonZeroU64,
+    ) -> Result<Self, PhysicalResidencyStoreWorldConstructionFailure> {
+        Self::initialize_with_configuration(
+            label,
+            super::super::configuration::recovery_planning_configuration_with_operation_budget(
+                format,
+                manifest_capacity,
+                operation_bytes,
+            ),
+            wal_segment_bytes,
+        )
+    }
+
     pub fn initialize_for_recovery_with_recovery_scope(
         label: &str,
         format: AdmittedPhysicalRecordFormat,
