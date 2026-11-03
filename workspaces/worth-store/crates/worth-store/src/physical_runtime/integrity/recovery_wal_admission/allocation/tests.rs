@@ -45,6 +45,8 @@ fn inventory_backing_funds_overlap_settles_and_survives_coordination_disposal() 
     let (_directory, media, coordination) = fixture();
     let (owner, _, _) = coordination.sampling_allocation_basis().unwrap();
     let ports = owner.ports().clone();
+    let serving = ports.counters().active_operation_bytes_for(Scope::Recovery);
+    assert_eq!(serving, crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes());
     let observer = ports.allocation_events();
     let mut backing = coordination
         .admit_wal_inventory_backing(NonZeroU64::new(64).unwrap())
@@ -60,7 +62,7 @@ fn inventory_backing_funds_overlap_settles_and_survives_coordination_disposal() 
     next.extend_from_slice(&old);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        (old.capacity() + next.capacity()) as u64
+        serving + (old.capacity() + next.capacity()) as u64
     );
     drop(old);
     backing
@@ -112,11 +114,13 @@ fn original_ceiling_denies_initial_and_growth_without_admission_or_late_settleme
     let (_directory, _media, coordination) = fixture();
     let (owner, original, _) = coordination.sampling_allocation_basis().unwrap();
     let ports = owner.ports().clone();
+    let serving = ports.counters().active_operation_bytes_for(Scope::Recovery);
+    assert_eq!(serving, crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes());
     let observer = ports.allocation_events();
     let before = observer.snapshot();
     assert!(matches!(
         coordination.admit_wal_inventory_backing(
-            NonZeroU64::new(original.byte_limit() + 1).unwrap()
+            NonZeroU64::new(original.byte_limit() - serving + 1).unwrap()
         ),
         Err(Denial::Backing {
             cause: PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted },
@@ -130,7 +134,7 @@ fn original_ceiling_denies_initial_and_growth_without_admission_or_late_settleme
     let held = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(original.byte_limit() - 65).unwrap(),
+            NonZeroU64::new(original.byte_limit() - serving - 65).unwrap(),
         )
         .unwrap();
     let before = observer.snapshot();
@@ -156,9 +160,11 @@ fn original_ceiling_denies_initial_and_growth_without_admission_or_late_settleme
     backing.grow_total(66).unwrap();
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        66
+        serving + 66
     );
     drop(backing);
+    assert_eq!(ports.counters().active_operation_bytes(), serving);
+    drop(coordination);
     assert_eq!(ports.counters().active_operation_bytes(), 0);
 }
 
@@ -167,6 +173,8 @@ fn aggregate_pressure_preserves_native_cause_charge_and_admission_counters() {
     let (_directory, _media, coordination) = fixture();
     let (owner, _, generation) = coordination.sampling_allocation_basis().unwrap();
     let ports = owner.ports().clone();
+    let serving = ports.counters().active_operation_bytes_for(Scope::Recovery);
+    assert_eq!(serving, crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes());
     let policy = owner.admitted_policy();
     // Recovery must leave the declared protected progress bytes available,
     // even though the competing Maintenance grant may spend that headroom.
@@ -178,7 +186,10 @@ fn aggregate_pressure_preserves_native_cause_charge_and_admission_counters() {
         .admit_wal_inventory_backing(NonZeroU64::new(64).unwrap())
         .unwrap();
     let held = ports
-        .begin_operation(Scope::Maintenance, NonZeroU64::new(limit - 65).unwrap())
+        .begin_operation(
+            Scope::Maintenance,
+            NonZeroU64::new(limit - serving - 65).unwrap(),
+        )
         .unwrap();
     let before = ports.allocation_events().snapshot();
     let Denial::Backing {
@@ -201,8 +212,10 @@ fn aggregate_pressure_preserves_native_cause_charge_and_admission_counters() {
     backing.grow_total(66).unwrap();
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        66
+        serving + 66
     );
     drop(backing);
+    assert_eq!(ports.counters().active_operation_bytes(), serving);
+    drop(coordination);
     assert_eq!(ports.counters().active_operation_bytes(), 0);
 }

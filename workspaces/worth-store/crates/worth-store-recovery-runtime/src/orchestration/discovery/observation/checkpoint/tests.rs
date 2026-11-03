@@ -67,7 +67,9 @@ fn resealed_checkpoint_zero_root_is_denied_before_addressed_source_read() {
             &media,
             PhysicalRecoveryCoordinationCapacity::admit(1, 4096, 1, 4096)
                 .unwrap()
-                .with_recovery_allocation_bytes(4096)
+                .with_recovery_allocation_bytes(
+                    PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes() + 4096,
+                )
                 .unwrap(),
             AdmittedPhysicalRecordResidencyPolicy::canonical(format),
             None,

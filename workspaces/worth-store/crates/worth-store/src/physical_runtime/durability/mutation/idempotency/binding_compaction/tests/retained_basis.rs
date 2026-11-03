@@ -76,7 +76,10 @@ fn retained_binding_evidence_keeps_native_charge_after_builder_and_owner_disposa
             &media,
             PhysicalRecoveryCoordinationCapacity::admit(1, 4096, 1, 4096)
                 .unwrap()
-                .with_recovery_allocation_bytes(16 * 1024)
+                .with_recovery_allocation_bytes(
+                    PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes()
+                        + 16 * 1024,
+                )
                 .unwrap(),
             AdmittedPhysicalRecordResidencyPolicy::canonical(format),
             None,
@@ -84,6 +87,11 @@ fn retained_binding_evidence_keeps_native_charge_after_builder_and_owner_disposa
         .unwrap();
     let observer = coordination.certification_residency_allocations();
     let dimension = Dimension::OperationScope(Scope::Recovery);
+    let serving = observer.snapshot().for_dimension(dimension).active_units();
+    assert_eq!(
+        serving,
+        PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes()
+    );
     let basis = with_binding(source, &payload, |assembly, binding, exact| {
         let shared = coordination.admit_shared_checkpoint(assembly).unwrap();
         let shared_bytes = shared.owned_heap_bytes().unwrap();
@@ -92,7 +100,7 @@ fn retained_binding_evidence_keeps_native_charge_after_builder_and_owner_disposa
         window.reserve_total(prior).unwrap();
         let mut builder = window.begin_checkpoint_binding_rebuild(&shared, 1).unwrap();
         let prepared = observer.snapshot().for_dimension(dimension);
-        let builder_bytes = prepared.active_units() - shared_bytes - prior;
+        let builder_bytes = prepared.active_units() - serving - shared_bytes - prior;
         let evidence_bytes = core::mem::size_of::<StoreRecoveryOperationEvidence>() as u64;
         assert!(
             builder_bytes > evidence_bytes,
@@ -114,7 +122,7 @@ fn retained_binding_evidence_keeps_native_charge_after_builder_and_owner_disposa
         let finished = observer.snapshot().for_dimension(dimension);
         assert_eq!(
             finished.active_units(),
-            shared_bytes + prior + evidence_bytes
+            serving + shared_bytes + prior + evidence_bytes
         );
         assert_eq!(
             finished.released_units() - consumed.released_units(),
@@ -123,12 +131,12 @@ fn retained_binding_evidence_keeps_native_charge_after_builder_and_owner_disposa
         drop(window);
         assert_eq!(
             observer.snapshot().for_dimension(dimension).active_units(),
-            shared_bytes + evidence_bytes
+            serving + shared_bytes + evidence_bytes
         );
         drop(shared);
         assert_eq!(
             observer.snapshot().for_dimension(dimension).active_units(),
-            evidence_bytes
+            serving + evidence_bytes
         );
         basis
     });

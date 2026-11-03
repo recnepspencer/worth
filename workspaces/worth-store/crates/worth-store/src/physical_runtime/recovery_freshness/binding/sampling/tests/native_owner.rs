@@ -234,7 +234,7 @@ fn native_sample_owner_funds_all_retained_capacities_and_releases_scratch_then_r
             drop(shared);
             assert_eq!(
                 observer.snapshot().for_dimension(dimension).active_units(),
-                0
+                PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes()
             );
         });
         let final_bytes = observer.snapshot().for_dimension(dimension);

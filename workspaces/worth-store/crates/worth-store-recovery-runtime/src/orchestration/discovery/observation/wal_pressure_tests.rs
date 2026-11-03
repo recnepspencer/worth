@@ -17,10 +17,10 @@ use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     ObservedWalArtifact, PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey,
     PhysicalCheckpointOutcome, PhysicalCheckpointRequest,
-    PhysicalOperationAllocationScope as Scope, PhysicalRecoveryFreshnessPort,
-    PhysicalRecoveryObservationAllocationDenial, PhysicalRecoveryRejoinResidentDenial,
-    PhysicalResidencyDimension as Dimension, QualifiedRecoveryFilesystemMedia,
-    RecoveryWalArtifactView, RecoveryWalReadFailureView,
+    PhysicalOperationAllocationScope as Scope, PhysicalRecoveryCoordinationCapacity,
+    PhysicalRecoveryFreshnessPort, PhysicalRecoveryObservationAllocationDenial,
+    PhysicalRecoveryRejoinResidentDenial, PhysicalResidencyDimension as Dimension,
+    QualifiedRecoveryFilesystemMedia, RecoveryWalArtifactView, RecoveryWalReadFailureView,
 };
 use worth_store_test_support::harness::physical_residency::{
     canonical_durable_wal_attempt_without_execution, canonical_physical_mutation_acknowledgment,
@@ -267,7 +267,9 @@ fn run() {
     drop(checkpoint);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        observation_bytes + error_bytes
+        PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes()
+            + observation_bytes
+            + error_bytes
     );
     let media = discovery.finish();
     assert_eq!(media.recovery_effect_count(), 0);
