@@ -220,6 +220,10 @@ def public(text):
     head = re.match(r'\s*(?:#\s*\[[^\]]*\]\s*)*', text).end()
     if re.match(r'(?:fn|struct|enum|const|static|type|trait|union)\b', text[head:]):
         text = text[:head] + 'pub ' + text[head:]
+    if re.match(r'(?:pub\s+)?struct\b', text[head:]) and '{' in text:
+        # Kept structs are built and read by the moved code: their named fields become `pub`.
+        brace = text.index('{')
+        text = text[:brace] + re.sub(r'(?m)^(\s+)(?!pub\b)(?=[A-Za-z_]\w*\s*:)', r'\1pub ', text[brace:])
     if re.match(r'thread_local\s*!', text[head:]):
         text = re.sub(r'(?<!pub )\bstatic\s+(?=[A-Za-z_])', 'pub static ', text)
     if re.match(r'impl\b', text[head:]) and not re.search(r'\bfor\b', text[head:text.find('{')]):

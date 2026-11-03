@@ -37,6 +37,24 @@ FIELD = re.compile(r'field `(\w+)` of (?:struct|union|variant) `(?:[\w:]*::)?(\w
 PRIVATE_FIELDS = re.compile(r'fields? (`\w+`(?:, `\w+`)*(?: and `\w+`)?) of (?:struct|variant) `(?:[\w:]*::)?(\w+)')
 
 
+PRIVATE_TYPE = re.compile(r'^type `([\w:]+)` is private')
+
+
+def declaration_of(tree, path):
+    """The one library module declaring `path[-1]` whose module names end with `path[:-1]`."""
+    from src_scope import scope_items
+    *qualifier, name = [p for p in path if p not in ('worth_query_execution', 'crate')]
+    declaring = [node.names for node in tree.walk()
+                 if any(item == name and keyword in ('struct', 'enum', 'union', 'type', 'trait')
+                        for _a, _v, keyword, item, _s, _e in scope_items(node.own_text()))]
+    # The path may name a re-export: fall back to the one declaration of the name.
+    qualified = [n for n in declaring if qualifier and n[len(n) - len(qualifier):] == tuple(qualifier)]
+    for found in (qualified, declaring):
+        if len(found) == 1:
+            return found[0] + (name,)
+    return None
+
+
 def widenings(check_json, root, tree):
     """Declarations the moved code needs public, from E0446/E0603/E0624/E0616/E0451 evidence."""
     items, methods, fields = set(), set(), set()
@@ -68,6 +86,11 @@ def widenings(check_json, root, tree):
                     # An indented fn declaration is a method inside an impl block.
                     is_method = code == 'E0624' or (text[:1].isspace() and declared.group(0).startswith('fn'))
                     (methods if is_method else items).add('::'.join(module + (declared.group(1),)))
+        elif code is None and PRIVATE_TYPE.search(diagnostic['message']):
+            # `type `a::b::X` is private`: an inferred or signature type, no declaration span.
+            found = declaration_of(tree, PRIVATE_TYPE.search(diagnostic['message']).group(1).split('::'))
+            if found is not None:
+                items.add('::'.join(found))
         elif code in ('E0616', 'E0451'):
             match = FIELD.search(diagnostic['message'])
             if match:
