@@ -37,3 +37,11 @@ impl WorthQueryProviderPlanDeclarations {
         Self::test_workflow_stage(stage_identity, graph_role, read_access)
     }
 }
+
+impl WorthQueryProviderPlanDeclarations {
+    #[doc(hidden)]
+    pub fn decision_fact_families_for_test(
+        &self) -> &[worth_query_installation::facade::WorthQueryDecisionFactFamily] {
+        Self::decision_fact_families(self)
+    }
+}

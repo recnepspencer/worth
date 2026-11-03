@@ -27,7 +27,7 @@ impl CertificationWorthQueryApplicationCommitReceiptForTest for WorthQueryApplic
         disclosure: std::sync::Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure>,
     ) -> Self {
         (*self.authority_binding_for_test())
-            .corrupt_original_disclosure(disclosure);
+            .corrupt_original_disclosure_for_test(disclosure);
         self
     }
 

@@ -15,10 +15,10 @@ pub fn unhold(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner::new(
             WorthQueryInvalidationResources::new(),
             1,
-        );
+        );(*
     (*interest
         .owner_for_test())
-        .state
+        .state_for_test())
         .lock()
         .unwrap()
         .records
@@ -30,12 +30,12 @@ pub fn unhold(
         .required_context_for_test("registry-fixture-family", &owner)
         .unwrap();
     let mut claims = context
-        .prepare_prerequisites(std::iter::empty(), &owner)
+        .prepare_prerequisites_for_test(std::iter::empty(), &owner)
         .unwrap();
     if cancel {
         // The admitted edge's vector and credit change owners, not capacity.
         // This fixture models a claim still held by its unpublished ticket.
-        let mut state = (*interest.owner_for_test()).state.lock().unwrap();
+        let mut state =(* (*interest.owner_for_test()).state_for_test()).lock().unwrap();
         claims.claim_batch = state
             .records
             .get_mut(&(*interest.key_for_test()))

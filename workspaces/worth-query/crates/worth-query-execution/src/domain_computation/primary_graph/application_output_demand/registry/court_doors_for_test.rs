@@ -14,3 +14,10 @@ impl WorthQueryOutputDemandInterest {
         &self.owner
     }
 }
+
+impl WorthQueryOutputDemandRegistry {
+    #[doc(hidden)]
+    pub fn state_for_test(&self) -> &Arc<Mutex<DemandRegistryState>> {
+        &self.state
+    }
+}

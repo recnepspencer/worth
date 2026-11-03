@@ -266,10 +266,12 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         self.original_inspection_disclosure = Some(disclosure);
     }
 
-    pub(crate) fn replace_idempotency_binding_for_test(
+    pub fn replace_idempotency_binding_for_test(
         &mut self,
         binding: WorthQueryApplicationIdempotencyBinding,
     ) {
         self.idempotency_binding = binding;
     }
 }
+
+mod court_doors_for_test;

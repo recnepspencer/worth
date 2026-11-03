@@ -43,7 +43,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
         foreign_disclosure: Option<Arc<OriginalSourceInspectionDisclosure>>,
         mut check: impl FnMut(&Self) -> Result<(), WorthQueryOutputDemandDenial>,
     ) {
-        let original = (*self.observation_for_test()).original_settled_producer().unwrap();
+        let original = (*self.observation_for_test()).original_settled_producer_for_test().unwrap();
         let mut sources = Vec::new();
         match original.source() {
             OriginalSettledProducerSource::Committed {
@@ -195,7 +195,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
         );
         let mut source = (*self
             .observation_for_test())
-            .original_settled_producer()
+            .original_settled_producer_for_test()
             .unwrap()
             .source
             .clone();
@@ -228,7 +228,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
         source: OriginalSettledProducerSource,
         receipt: Option<WorthQueryApplicationCommitReceipt>,
     ) -> Self {
-        let original = (*self.observation_for_test()).original_settled_producer().unwrap();
+        let original = (*self.observation_for_test()).original_settled_producer_for_test().unwrap();
         let seed = Arc::new(OriginalSettledProducerObservation {
             runtime_authority: original.runtime_authority,
             schema: original.schema.clone(),
@@ -241,7 +241,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             posture: (*self.posture_for_test()),
             runtime_authority: (*self.runtime_authority_for_test()),
             schema_binding: (*self.schema_binding_for_test()).clone(),
-            producer_identity: (*self.producer_identity_for_test()).as_str().to_owned().into(),
+            producer_identity: (*self.producer_identity_for_test()).as_str_for_test().to_owned().into(),
             output_family_identity: (*self.output_family_identity_for_test()).clone(),
             receipt: receipt.map(SettlementReceiptCustody::Owned),
             stable: self.stable.clone(),
@@ -249,7 +249,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             restored_source: self.restored_source.clone(),
             readiness_delivery: (*self.readiness_delivery_for_test()).clone(),
             producer_contacts_in_this_demand: (*self.producer_contacts_in_this_demand_for_test()),
-            observation: (*self.observation_for_test()).with_original_producer(seed),
+            observation: (*self.observation_for_test()).with_original_producer_for_test(seed),
         }
     }
 }

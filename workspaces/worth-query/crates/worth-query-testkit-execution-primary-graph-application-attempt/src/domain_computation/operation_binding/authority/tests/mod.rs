@@ -177,7 +177,7 @@ pub fn direct_authority_with_graph_effect_decision_facts_and_invariants(
     (*authority.provider_plan_declarations_mut_for_test()) = Arc::new(
         worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts_and_invariants_for_test(
             graph.role(),
-            (*authority.provider_plan_declarations_for_test()).decision_fact_families().to_vec(),
+            (*authority.provider_plan_declarations_for_test()).decision_fact_families_for_test().to_vec(),
             invariants,
         ),
     );

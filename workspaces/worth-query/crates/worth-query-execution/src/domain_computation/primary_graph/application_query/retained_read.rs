@@ -205,3 +205,5 @@ where
             .map(|selected| selected.with_original_settled_producer(observation.producer.clone()))
     }
 }
+
+mod court_doors_for_test;
