@@ -18,6 +18,9 @@ mod publication_effects;
 mod rewrite_materialization;
 #[path = "completion/source_copy.rs"]
 mod source_copy;
+#[path = "completion/verified_inputs.rs"]
+mod verified_inputs;
+pub(super) use verified_inputs::verify_inputs;
 
 use crate::progression::PlannedPhysicalRecovery;
 
@@ -28,10 +31,6 @@ pub(super) fn complete(
     mut context: PlanningContext,
     mut basis: ResolvedPlanningBasis,
 ) -> Result<PlannedPhysicalRecovery, crate::entry::PhysicalRecoveryOutcome> {
-    context = rewrite_materialization::install(context, &mut basis)?;
-    context = source_copy::verify(context, &mut basis)?;
-    context = blob_expiry::verify(context, &mut basis)?;
-    context = blob_reclaim::verify(context, &mut basis)?;
     let execution;
     (context, execution) = execution_basis::derive(context, &mut basis)?;
     let (backing, backing_peak);

@@ -31,7 +31,7 @@ use super::super::resolved_basis::ResolvedPlanningBasis;
 use super::historical_publication;
 use record::selected_record;
 
-pub(super) fn verify(
+pub(super) fn verify_wal_drops(
     mut context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
@@ -281,6 +281,13 @@ pub(super) fn verify(
             return Err(context.redo_block(basis.planning_counters(), None));
         }
     }
+    Ok(context)
+}
+
+pub(super) fn verify_selected_custody(
+    mut context: PlanningContext,
+    basis: &mut ResolvedPlanningBasis,
+) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     context = selected_release_gate::verify(context, basis)?;
     let context = manifest_residue::verify(context, basis)?;
     post_verification::admit(context, basis)

@@ -28,7 +28,8 @@ pub(crate) fn plan_recovery(
     let mut context = context::PlanningContext::from_selected(selected);
     let admitted;
     (context, admitted) = admitted_basis::admit(context)?;
-    let resolved;
+    let mut resolved;
     (context, resolved) = resolved_basis::resolve(context, admitted)?;
+    context = completion::verify_inputs(context, &mut resolved)?;
     completion::complete(context, resolved)
 }

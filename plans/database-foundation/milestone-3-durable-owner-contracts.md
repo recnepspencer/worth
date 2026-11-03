@@ -2915,3 +2915,14 @@ underlying selection's heaps, so the payload removed from inline parents stays
 counted. SourceSelection is the exact typed allocation boundary. Source facts,
 selection/refusal order, coordination custody and const borrowing remain unchanged.
 This is a named construction allowance, not a measurement of the complete stack.
+
+Recovery planning finishes selected-input verification while its driver owns the
+same mutable ResolvedPlanningBasis. Verification returns before execution-product
+construction starts. WAL-drop traversal also returns before the final selected
+release gate, manifest-residue verification and historical-consumed admission.
+The in-loop pending-WAL admission remains in that traversal; no work or refusal
+is reordered. These returns prevent unrelated construction and traversal frames
+from staying active across the subsequent owners. They add no allocation or
+phase issuer and retain every existing proof in the same basis. Qualification
+must establish the resulting stack behavior; source decomposition alone proves
+no numerical bound.
