@@ -134,5 +134,5 @@ where
 }
 
 pub(in crate::domain_computation) use authority_validation::{
-    BrandTag, WorthQueryAdmittedOperation,
+    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };

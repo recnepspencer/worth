@@ -51,4 +51,6 @@ where
     access.transition_operation(execution, runtime, operation, preconditions)
 }
 
-pub(in crate::domain_computation) use admitted_operation::{BrandTag, WorthQueryAdmittedOperation};
+pub(in crate::domain_computation) use admitted_operation::{
+    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
+};

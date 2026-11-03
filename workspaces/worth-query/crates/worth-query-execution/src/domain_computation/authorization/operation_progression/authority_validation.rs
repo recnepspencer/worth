@@ -144,5 +144,5 @@ where
 }
 
 pub(in crate::domain_computation) use precondition_binding::{
-    BrandTag, WorthQueryAdmittedOperation,
+    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };

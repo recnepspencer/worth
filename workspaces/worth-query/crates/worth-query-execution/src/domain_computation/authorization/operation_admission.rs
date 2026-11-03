@@ -34,6 +34,9 @@ mod authorization_basis;
 mod brand_access;
 #[path = "operation_admission/brand_custody.rs"]
 mod brand_custody;
+#[path = "operation_admission/read_completion_loan.rs"]
+mod read_completion_loan;
+pub(in crate::domain_computation) use read_completion_loan::ReadCompletionAdmission;
 #[path = "operation_admission/brand_phases.rs"]
 mod brand_phases;
 #[path = "operation_admission/brand_tag.rs"]
