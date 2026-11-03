@@ -35,13 +35,21 @@ pub(super) struct NativeSourceGraphRetirement {
     checkpoint: usize,
 }
 impl NativeSourceGraphRetirement {
-    pub(super) fn new(runtime: &RelationalRuntime, pass: NativeSourcePass) -> Self {
-        Self {
+    pub(super) fn new(
+        runtime: &RelationalRuntime,
+        pass: NativeSourcePass,
+    ) -> Result<Self, RelationalSourceCloseDenial> {
+        let recovered = runtime
+            .durability
+            .source_root_inventory()
+            .map_err(|()| RelationalSourceCloseDenial::Busy)?;
+        Ok(Self {
             pass,
             stage: Stage::History,
             history: Some(NativeHistorySourceRetirement::new(
                 runtime.history.source_retirement_binding(),
                 pass,
+                recovered,
             )),
             partition: None,
             cell: None,
@@ -49,7 +57,7 @@ impl NativeSourceGraphRetirement {
             member: None,
             directory: None,
             checkpoint: 0,
-        }
+        })
     }
     pub(super) fn advance(
         &mut self,
@@ -80,7 +88,7 @@ impl NativeSourceGraphRetirement {
                     .indexes
                     .source_retirement_history()
                     .map_err(|()| Denial::Busy)?
-                    .map(|original| NativeHistorySourceRetirement::new(original, self.pass));
+                    .map(|original| NativeHistorySourceRetirement::new(original, self.pass, None));
                 self.stage = Stage::DeferredHistory;
             }
             Stage::DeferredHistory => self.stage = Stage::Edition,

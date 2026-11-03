@@ -11,6 +11,7 @@ use crate::runtime::state::subsystems::{
 enum Stage {
     LiveRoots,
     RetiredRoots,
+    RecoveredRoots,
     Performed,
     CheckpointCatalog,
     Ledger,
@@ -19,6 +20,8 @@ enum Stage {
 }
 pub(super) struct NativeHistorySourceRetirement {
     original: RelationalSourceHistoryBinding,
+    recovered: Option<Arc<crate::durability::RecoveredRootInventory>>,
+    recovered_after: Option<CommitId>,
     pass: NativeSourcePass,
     stage: Stage,
     live: usize,
@@ -32,10 +35,16 @@ pub(super) struct NativeHistorySourceRetirement {
     handoff: Option<NativeDirectoryRetirementHandoff>,
 }
 impl NativeHistorySourceRetirement {
-    pub(super) fn new(original: RelationalSourceHistoryBinding, pass: NativeSourcePass) -> Self {
+    pub(super) fn new(
+        original: RelationalSourceHistoryBinding,
+        pass: NativeSourcePass,
+        recovered: Option<Arc<crate::durability::RecoveredRootInventory>>,
+    ) -> Self {
         let performed = original.performed_walk();
         Self {
             original,
+            recovered,
+            recovered_after: None,
             pass,
             stage: Stage::LiveRoots,
             live: 0,
@@ -98,8 +107,26 @@ impl NativeHistorySourceRetirement {
                     self.retired = Some(key);
                     self.select_root(root);
                 }
-                None => self.stage = Stage::Performed,
+                None => self.stage = Stage::RecoveredRoots,
             },
+            Stage::RecoveredRoots => {
+                let next = self
+                    .recovered
+                    .as_ref()
+                    .map(|roots| roots.source_retirement_root(self.recovered_after))
+                    .transpose()
+                    .map_err(|()| RelationalSourceCloseDenial::Busy)?
+                    .flatten();
+                match next {
+                    Some((commit, root)) => {
+                        self.recovered_after = Some(commit);
+                        if let Some(root) = root {
+                            self.select_root(root);
+                        }
+                    }
+                    None => self.stage = Stage::Performed,
+                }
+            }
             Stage::Performed => match self.performed.next() {
                 Some(cell) => self.envelope = Some(cell),
                 None => self.stage = Stage::CheckpointCatalog,

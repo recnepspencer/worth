@@ -7,6 +7,18 @@ use crate::durability::medium::{
 };
 use worth_execution::ExecutionRequest;
 impl DurabilitySubsystem {
+    pub(crate) fn install_source_root_inventory(
+        &self,
+        roots: Arc<crate::durability::RecoveredRootInventory>,
+    ) {
+        self.state.write().source_roots = Some(roots);
+    }
+    pub(crate) fn source_root_inventory(
+        &self,
+    ) -> Result<Option<Arc<crate::durability::RecoveredRootInventory>>, ()> {
+        Ok(self.state.try_read().ok_or(())?.source_roots.clone())
+    }
+
     pub(crate) fn preflight_source_retirement(
         &self,
         source: &dyn RelationalDurableColdSource,

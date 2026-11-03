@@ -1,4 +1,5 @@
 pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
+pub(crate) use runtime_rebuild::RecoveredRootInventory;
 mod associated_effects;
 mod authority_continuity;
 pub use associated_effects::{
@@ -74,7 +75,7 @@ pub struct DurabilityRecoveryAuthority<'runtime> {
 #[derive(Debug)]
 pub struct RecoveredRelationalRuntimeAuthority {
     runtime_instance_id: u64,
-    recovered_roots: runtime_rebuild::RecoveredRootInventory,
+    recovered_roots: std::sync::Arc<runtime_rebuild::RecoveredRootInventory>,
     recovered_branch_images: std::collections::BTreeMap<
         BranchId,
         (

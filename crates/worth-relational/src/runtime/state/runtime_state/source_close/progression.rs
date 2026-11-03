@@ -67,7 +67,7 @@ impl RelationalSourceClose {
                 state.graph = Some(graph::NativeSourceGraphRetirement::new(
                     &state.runtime,
                     NativeSourcePass::Validate,
-                ));
+                )?);
                 state.stage = Stage::Validate;
             }
             Stage::Validate => {
@@ -82,6 +82,10 @@ impl RelationalSourceClose {
                 }
             }
             Stage::Seal => {
+                let graph = graph::NativeSourceGraphRetirement::new(
+                    &state.runtime,
+                    NativeSourcePass::Retire,
+                )?;
                 state.medium = Some(
                     state
                         .runtime
@@ -90,10 +94,7 @@ impl RelationalSourceClose {
                         .map_err(Denial::Medium)?,
                 );
                 // No fallible operation or callback separates this cut and posture.
-                state.graph = Some(graph::NativeSourceGraphRetirement::new(
-                    &state.runtime,
-                    NativeSourcePass::Retire,
-                ));
+                state.graph = Some(graph);
                 state.stage = Stage::Retire;
             }
             Stage::Cache => {

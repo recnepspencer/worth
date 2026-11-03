@@ -42,10 +42,11 @@ struct RecoveredRootImage {
 /// axes that selected each root. It acquires no observation/component pin until
 /// a recorded subject is admitted for exposure.
 #[derive(Debug, Default)]
-pub(in crate::durability::authority) struct RecoveredRootInventory {
+pub(crate) struct RecoveredRootInventory {
     roots: BTreeMap<CommitId, RecoveredRootImage>,
     directory: Option<Weak<crate::durability::data::RelationalCheckpointDirectory>>,
     empty: Vec<RecoveredRootImage>,
+    _sharing_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl RecoveredRootInventory {
@@ -76,7 +77,10 @@ impl RecoveredRootInventory {
     /// The actual runtime retains materialized roots. After reconstruction,
     /// descriptive authority must not invisibly retain Home source/Serving
     /// ownership. Demanded admission upgrades a real root and acquires pins.
-    pub(in crate::durability::authority) fn into_readmission(mut self) -> Self {
+    pub(in crate::durability::authority) fn into_readmission(
+        mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, crate::durability::data::RelationalRecoveryStop> {
         for image in self.roots.values_mut() {
             if let RecoveredRootHold::Reconstructing(root) = &image.root {
                 image.root = RecoveredRootHold::Owner(Arc::downgrade(root));
@@ -87,7 +91,44 @@ impl RecoveredRootInventory {
                 image.root = RecoveredRootHold::Empty(root.retained_schema_authority());
             }
         }
-        self
+        let layout = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .map_err(|_| {
+                crate::durability::data::RelationalRecoveryStop::Request(
+                    crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                )
+            })?
+            .0
+            .pad_to_align();
+        self._sharing_memory = request
+            .reserve_retained_memory(layout.size() as u64)
+            .map_err(|cause| {
+                crate::durability::data::RelationalRecoveryStop::Request(cause.into())
+            })?;
+        Ok(Arc::new(self))
+    }
+
+    /// The same admitted image inventory participates in Native source close.
+    /// Weak image rows never keep a root alive or reconstruct one during close.
+    pub(crate) fn source_retirement_root(
+        &self,
+        after: Option<CommitId>,
+    ) -> Result<Option<(CommitId, Option<Arc<RelationalBranchRoot>>)>, ()> {
+        use std::ops::Bound::{Excluded, Unbounded};
+        let row = match after {
+            Some(after) => self.roots.range((Excluded(after), Unbounded)).next(),
+            None => self.roots.first_key_value(),
+        };
+        let Some((&commit, image)) = row else {
+            return Ok(None);
+        };
+        let root = match &image.root {
+            RecoveredRootHold::Reconstructing(root) => Some(root.clone()),
+            RecoveredRootHold::Owner(root) => root.upgrade(),
+            RecoveredRootHold::Checkpoint(root) => root.try_lock().map_err(|_| ())?.upgrade(),
+            RecoveredRootHold::Empty(_) => None,
+        };
+        Ok(Some((commit, root)))
     }
 
     pub(in crate::durability::authority) fn exact_image(

@@ -32,7 +32,7 @@ use recovered_counter_capacity::{
 use recovered_lineage_artifacts::{
     reconcile_recovered_lineage_artifacts, validate_recovered_lineage_artifacts,
 };
-pub(super) use root_inventory::RecoveredRootInventory;
+pub(crate) use root_inventory::RecoveredRootInventory;
 
 /// The exclusive state of a runtime this rebuild constructed and has not yet
 /// handed to anyone.
