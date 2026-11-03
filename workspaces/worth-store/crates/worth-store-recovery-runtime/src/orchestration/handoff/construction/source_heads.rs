@@ -20,7 +20,7 @@ impl RejoinConstruction {
             #[cfg(feature = "certification-test-authority")]
             if crate::certification::enabled() {
                 let descriptor = claim.selected_heads().iter().find_map(|head| {
-                    selection
+                    _selection
                         .page_facts()
                         .placements()
                         .iter()

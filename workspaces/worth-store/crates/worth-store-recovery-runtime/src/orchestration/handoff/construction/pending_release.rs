@@ -18,7 +18,7 @@ impl RejoinConstruction {
 
         #[cfg(feature = "certification-test-authority")]
         if crate::certification::enabled() {
-            let reservation = selection
+            let reservation = _selection
                 .page_facts()
                 .placements()
                 .iter()
@@ -58,7 +58,7 @@ impl RejoinConstruction {
 
         #[cfg(feature = "certification-test-authority")]
         if crate::certification::enabled() {
-            let reservation = selection
+            let reservation = _selection
                 .page_facts()
                 .placements()
                 .iter()
