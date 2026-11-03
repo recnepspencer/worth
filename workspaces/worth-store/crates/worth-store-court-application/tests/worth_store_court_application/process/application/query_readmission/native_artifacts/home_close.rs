@@ -155,11 +155,10 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
         ));
     }
     assert_eq!(balance(home.runtime()), 8);
-    // The original 256 KiB grant stopped during mandatory retirement backing
-    // admission (10,128 required versus 6,016 remaining), before checkpoint
-    // failure could be tested. Fund that real D17 backing and retain a larger
-    // authentic journal tail so optional capture must still refuse.
-    let bounded = serial(Some(512 * 1024), None);
+    // 256 KiB and 512 KiB stopped in mandatory Query retirement admission,
+    // before optional checkpoint capture. Fund the actual D17 retirement
+    // backing beside capture; the authentic tail still exercises its refusal.
+    let bounded = serial(Some(1024 * 1024), None);
     let closed = home
         .close(&ExecutionRequest::serial(&bounded))
         .unwrap_or_else(|refused| {
