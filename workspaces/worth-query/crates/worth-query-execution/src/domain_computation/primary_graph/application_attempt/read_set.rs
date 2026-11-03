@@ -26,7 +26,7 @@ mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
 pub(crate) mod application_projection;
 pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
-mod original_read;
+pub(crate) mod original_read;
 pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
 pub(crate) mod admitted_arrays;
 mod completed_facts;

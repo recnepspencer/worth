@@ -1,21 +1,6 @@
 {
  "interface_items": [
-  "domain_computation::authorization::decision_facts::principal_currentness::WorthQueryPrincipalCurrentnessDependency",
-  "domain_computation::managed_run::admission::WorthQueryManagedRunAdmissionRejection",
-  "domain_computation::primary_graph::application_attempt::read_set::application_projection::CompletedFactProjection",
-  "domain_computation::primary_graph::application_output_demand::registry::DiscoveredSourceRecovery",
-  "domain_computation::primary_graph::application_output_demand::registry::cleanup::closed_notes::ClosedCleanupLinks",
-  "domain_computation::primary_graph::application_output_demand::registry::cleanup::custody_notes::CustodyCleanupLinks",
-  "domain_computation::primary_graph::application_output_demand::registry::join_observation::PauseState",
-  "domain_computation::primary_graph::application_output_demand::registry::lifecycle::selected_execution_finish::PreparedSelectedExecutionFinish",
-  "domain_computation::primary_graph::application_output_demand::registry::progression::selected_finish::PreparedSelectedSchedulingFinish",
-  "domain_computation::primary_graph::application_output_demand::registry::required_members::PreparedRequiredMember",
-  "domain_computation::primary_graph::application_output_demand::registry::required_work::claim::RequiredWorkClaim",
-  "domain_computation::primary_graph::application_query::managed_index::configuration::ManagedIndexProviderCatalog",
-  "domain_computation::primary_graph::invariant_projection::realized_scope::WorthQueryRealizedProjectionScope",
-  "domain_computation::primary_graph::product_operation::shared_query_basis::SharedSelectedProductOperation",
-  "domain_computation::primary_graph::provider::application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore",
-  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout",
-  "domain_computation::provider_session::protocol::session_affinity::WorthQueryProviderSessionAffinityView"
+  "domain_computation::primary_graph::application_attempt::read_set::original_read::CompletedOriginalRead",
+  "domain_computation::primary_graph::application_query::managed_index::refinement::RefinementCallbacks"
  ]
 }
