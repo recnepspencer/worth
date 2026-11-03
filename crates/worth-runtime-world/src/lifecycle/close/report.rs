@@ -6,12 +6,12 @@ use crate::recovery::{
 
 /// Original cold custody retained by the owner at close. This row is data;
 /// the catalog, rather than this report, owns the actual Native capability.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RuntimeWorldRecoveredCustodyReport {
     pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(crate) attempt: crate::identity::CompositePublicationAttemptIdentity,
     pub(crate) commit: crate::identity::CompositeCommitIdentity,
-    pub(crate) native_receipt: Option<worth_relational::facade::history::RelationalCommitReceipt>,
+    pub(crate) native_receipt: Option<crate::recovery::RecoveredCloseReceipt>,
 }
 impl RuntimeWorldRecoveredCustodyReport {
     pub fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
@@ -26,7 +26,9 @@ impl RuntimeWorldRecoveredCustodyReport {
     pub fn native_receipt(
         &self,
     ) -> Option<&worth_relational::facade::history::RelationalCommitReceipt> {
-        self.native_receipt.as_ref()
+        self.native_receipt
+            .as_ref()
+            .map(crate::recovery::RecoveredCloseReceipt::receipt)
     }
 }
 

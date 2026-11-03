@@ -1,4 +1,5 @@
 mod catalog;
+pub(crate) use catalog::RecoveredCloseReceipt;
 mod cleanup;
 mod continuation;
 mod product_unpublished;

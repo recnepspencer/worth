@@ -69,8 +69,29 @@ where
         }
         state
             .recovery
-            .try_close_recovered_count(state.durable.is_some())
-            .map_err(|_| Denial::InconsistentSealedCatalog)?;
+            .try_close_recovered_count(state.durable.is_some(), request)
+            .map_err(|cause| match cause {
+                super::RuntimeWorldCloseDenial::Busy => Denial::Busy,
+                super::RuntimeWorldCloseDenial::Stopped(cause) => {
+                    Denial::Stopped(worth_execution::WorkCeilingDenial::Stopped(cause))
+                }
+                super::RuntimeWorldCloseDenial::Execution(cause) => Denial::Stopped(cause),
+                super::RuntimeWorldCloseDenial::CloseNotCompleted
+                | super::RuntimeWorldCloseDenial::OwnerUnavailable
+                | super::RuntimeWorldCloseDenial::PublicationFrontierChanged
+                | super::RuntimeWorldCloseDenial::UnresolvedBusinessCustody
+                | super::RuntimeWorldCloseDenial::CleanupRequired
+                | super::RuntimeWorldCloseDenial::CloseProgressPoisoned
+                | super::RuntimeWorldCloseDenial::CloseProgressInvariant
+                | super::RuntimeWorldCloseDenial::ReportAllocationFailed
+                | super::RuntimeWorldCloseDenial::UndeliveredPublication
+                | super::RuntimeWorldCloseDenial::AlreadyClosing
+                | super::RuntimeWorldCloseDenial::AlreadyClosed
+                | super::RuntimeWorldCloseDenial::InFlightCriticalSection
+                | super::RuntimeWorldCloseDenial::DurablePublicationUnsettled => {
+                    Denial::InconsistentSealedCatalog
+                }
+            })?;
         let frontier = state.history.try_result_snapshot_cleanup_frontier()?;
         Ok(super::RuntimeWorldResultSnapshotCleanup::from_closed_owner(
             state.relational.basis_port(),

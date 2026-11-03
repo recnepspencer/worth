@@ -37,6 +37,7 @@ pub enum RuntimeWorldCloseDenial {
     CleanupRequired,
     CloseProgressPoisoned,
     CloseProgressInvariant,
+    ReportAllocationFailed,
     UndeliveredPublication,
     AlreadyClosing,
     AlreadyClosed,

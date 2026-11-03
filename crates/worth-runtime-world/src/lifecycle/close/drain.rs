@@ -16,7 +16,7 @@ pub(super) struct CloseProgress {
 impl CloseProgress {
     pub(super) fn prepare_task(
         request: &ExecutionRequest<'_, '_>,
-        recovered_count: usize,
+        recovery: &crate::recovery::RecoveryCatalog,
     ) -> Result<std::sync::Arc<std::sync::Mutex<Self>>, Denial> {
         let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
             .extend(std::alloc::Layout::new::<std::sync::Mutex<Self>>())
@@ -24,19 +24,7 @@ impl CloseProgress {
         let funding = request
             .reserve_retained_memory(layout.pad_to_align().size() as u64)
             .map_err(Denial::Execution)?;
-        let bytes = recovered_count
-            .checked_mul(std::mem::size_of::<super::RuntimeWorldRecoveredCustodyReport>())
-            .ok_or(Denial::CloseProgressInvariant)?;
-        let recovered_funding = request
-            .reserve_retained_memory(bytes as u64)
-            .map_err(Denial::Execution)?;
-        let mut recovered = Vec::new();
-        recovered
-            .try_reserve_exact(recovered_count)
-            .map_err(|_| Denial::CloseProgressInvariant)?;
-        if recovered.capacity() != recovered_count {
-            return Err(Denial::CloseProgressInvariant);
-        }
+        let (recovered, recovered_funding) = recovery.prepare_close_reports(request)?;
         Ok(std::sync::Arc::new(std::sync::Mutex::new(Self {
             pending: None,
             released_heads: 0,
@@ -45,6 +33,14 @@ impl CloseProgress {
             recovered_funding,
             _metadata_funding: funding,
         })))
+    }
+
+    pub(super) fn validate_recovered(
+        &self,
+        recovery: &crate::recovery::RecoveryCatalog,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        recovery.validate_close_reports(&self.recovered, request)
     }
 }
 
@@ -120,7 +116,7 @@ where
         }
         state
             .recovery
-            .append_close_reports(&mut progress.recovered, request)?;
+            .validate_close_reports(&progress.recovered, request)?;
         progress.report = Some(RuntimeWorldCloseReport::new(
             Vec::new(),
             std::mem::take(&mut progress.recovered),

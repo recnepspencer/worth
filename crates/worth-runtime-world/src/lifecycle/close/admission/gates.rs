@@ -51,7 +51,7 @@ where
     }
     state
         .recovery
-        .try_close_recovered_count(state.durable.is_some())?;
+        .try_close_recovered_count(state.durable.is_some(), request)?;
     if state
         .custody
         .try_has_close_custody()
