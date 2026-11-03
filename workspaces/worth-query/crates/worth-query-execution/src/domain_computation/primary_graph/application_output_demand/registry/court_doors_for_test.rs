@@ -35,3 +35,38 @@ impl DemandRegistryState {
         &mut self.records
     }
 }
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn claim_batch_for_test(&self) -> &Option<claim_readthrough::ClaimBatch> {
+        &self.claim_batch
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn prerequisites_for_test(&self) -> &Vec<Arc<WorthQueryOutputDemandKey>> {
+        &self.prerequisites
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn state_for_test(&self) -> &DemandState {
+        &self.state
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn prerequisites_mut_for_test(&mut self) -> &mut Vec<Arc<WorthQueryOutputDemandKey>> {
+        &mut self.prerequisites
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn state_mut_for_test(&mut self) -> &mut DemandState {
+        &mut self.state
+    }
+}
