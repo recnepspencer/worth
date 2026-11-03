@@ -10,7 +10,7 @@ from collections import defaultdict
 from court_packing import area_suffix, first_fit_decreasing, whole_areas
 from court_partition import CEILING
 from frontier_adapter import surface
-from rust_source import crate_uses
+from rust_source import crate_uses, tokens
 
 STEM = 'worth-query'
 
@@ -33,10 +33,18 @@ def support_graph(model, kinds):
     support = sorted(n for n, k in kinds.items() if k in ('testkit', 'split'))
     members = set(support)
     edges = defaultdict(set)
+    door_owner = {method: names for names in support for door in model.records[names].doors
+                  for method in door.methods}
     for names in support:
         for _reference, origin in model.records[names].uses:
             if origin and origin[0] in members and origin[0] != names:
                 edges[names].add(origin[0])
+        # Calling a door method imports its trait: a dependency on the door's owner.
+        stream = tokens(model.records[names].node.own_text())
+        for i in range(len(stream) - 1):
+            owner = door_owner.get(stream[i + 1].value) if stream[i].value in ('.', ':') else None
+            if owner is not None and owner != names:
+                edges[names].add(owner)
     return support, edges
 
 
