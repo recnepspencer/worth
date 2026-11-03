@@ -72,8 +72,15 @@ fn case(cancel: bool, check_entry: bool) {
     }
     if cancel {
         let cancellation = authentication::WorthQueryCancellationSource::new();
-        let stopped_scope =
-            authentication::WorthQueryRequestScope::new(scope.deadline(), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
+        let stopped_scope = authentication::WorthQueryRequestScope::new(
+            scope.deadline().map(|deadline| {
+                deadline
+                    .instant_on(scope.clock())
+                    .expect("the request deadline retains its clock")
+            }),
+            cancellation.token(),
+            scope.clock().clone(),
+        );
         let stopped_request = application.request(&principal, &stopped_scope);
         cancellation.cancel();
         let stopped = owner.advance(&stopped_request);

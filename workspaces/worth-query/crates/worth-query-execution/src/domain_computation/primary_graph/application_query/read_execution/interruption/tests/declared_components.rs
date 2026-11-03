@@ -8,21 +8,25 @@ use crate::domain_computation::primary_graph::{
 fn original_query_cancellation_and_deadline_survive_native_component_entry() {
     let _isolation =
         crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner();
-    let world = declared_queries::world();
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    time.hold();
+    let world = declared_queries::world_on_clock(time.clock());
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for deadline_stop in [false, true] {
         let cancellation = WorthQueryCancellationSource::new();
-        let deadline = Instant::now()
+        let deadline = time.clock().now()
             + if deadline_stop {
                 Duration::from_secs(1)
             } else {
                 Duration::from_secs(60)
             };
-        let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        let request =
+            WorthQueryRequestScope::new(Some(deadline), cancellation.token(), time.clock());
         let entered = native_entries();
         let visits = Rc::new(Cell::new(0));
         let observed = Rc::clone(&visits);
+        let advancing_time = time.clone();
         CHECKPOINT.with(|slot| {
             *slot.borrow_mut() = Some(Box::new(move |subject| {
                 // Definition validation precedes acquisition. Stop only after the
@@ -33,10 +37,7 @@ fn original_query_cancellation_and_deadline_survive_native_component_entry() {
                 observed.set(observed.get() + 1);
                 if observed.get() == 1 {
                     if deadline_stop {
-                        std::thread::sleep(
-                            deadline.saturating_duration_since(Instant::now())
-                                + Duration::from_millis(1),
-                        );
+                        advancing_time.advance(Duration::from_secs(1)).unwrap();
                     } else {
                         cancellation.cancel();
                     }

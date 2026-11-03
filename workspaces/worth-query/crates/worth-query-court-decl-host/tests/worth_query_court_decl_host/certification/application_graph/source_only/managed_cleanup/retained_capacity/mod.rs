@@ -1,6 +1,10 @@
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::source_only::managed_cleanup::retained_capacity::*;
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: managed_no_effect_capacity_retains_actual_cleanup_failure joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn managed_no_effect_capacity_retains_actual_cleanup_failure() {
     let host = host::install_program::<RetainedProgram>();
     let scope = request_scope();

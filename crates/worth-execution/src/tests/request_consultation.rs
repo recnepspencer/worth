@@ -31,7 +31,11 @@ fn consultation_reads_both_backings() {
         );
     }
     let expired = Instant::now() - Duration::from_secs(1);
-    let serial = SerialRequest::from_policy(&policy, CancellationToken::new(), Some(expired));
+    let serial = SerialRequest::from_policy(
+        &policy,
+        CancellationToken::new(),
+        Some(crate::MonotonicClock::system().deadline_at(expired)),
+    );
     let lease = authority()
         .request_lease(LeaseRequest {
             policy,

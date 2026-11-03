@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,

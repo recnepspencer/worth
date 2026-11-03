@@ -20,7 +20,9 @@ fn live_query_cancellation_registration_stops_execution_token_until_scope_drop()
 
     let later = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        request.deadline(),
+        request
+            .deadline()
+            .map(|deadline| deadline.instant_on(request.clock()).unwrap()),
         later.token(),
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );

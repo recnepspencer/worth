@@ -15,7 +15,7 @@ pub(in super::super) fn retain_read<Schema: ApplicationSchema + 'static>(
 > {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let scope = authentication::WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() + std::time::Duration::from_secs(120)),
+        None,
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     application
         .with_application_advancement(&scope, |phase| request.retain_read(&phase))
@@ -30,7 +30,7 @@ pub(in super::super) fn host_call<Schema: ApplicationSchema + 'static, Output>(
 ) -> Output {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let scope = authentication::WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() + std::time::Duration::from_secs(120)),
+        None,
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     application
         .with_application_advancement(&scope, |phase| operation(&phase))

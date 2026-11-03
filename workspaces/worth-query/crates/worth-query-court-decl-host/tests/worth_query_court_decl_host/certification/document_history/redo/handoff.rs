@@ -15,6 +15,10 @@ enum Change {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: assembled_redo_hints_cannot_escape_a_stop_or_move_and_a_cancelled_cursor_can_retry joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn assembled_redo_hints_cannot_escape_a_stop_or_move_and_a_cancelled_cursor_can_retry() {
     for change in [Change::Cancel, Change::SelectChild, Change::OutsideWrite] {
         let host = publish_on_first_program();

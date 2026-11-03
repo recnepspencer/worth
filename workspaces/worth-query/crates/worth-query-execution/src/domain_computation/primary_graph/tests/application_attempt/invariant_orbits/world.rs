@@ -32,19 +32,37 @@ pub(super) fn install_with_probe(graph: Graph, observer: probe::Probe<false>) ->
     install(graph, observer)
 }
 fn install<const O: bool>(graph: Graph, observer: probe::Probe<O>) -> World<O> {
-    install_with_visibility(graph, observer, Vec::new())
+    install_with_visibility(
+        graph,
+        observer,
+        Vec::new(),
+        worth_execution::MonotonicClock::system(),
+    )
 }
 pub(super) fn install_orbit_with_component_visibility(
     graph: Graph,
     observer: probe::Probe,
     extra_visibility: Vec<(u64, u64)>,
 ) -> World {
-    install_with_visibility(graph, observer, extra_visibility)
+    install_with_visibility(
+        graph,
+        observer,
+        extra_visibility,
+        worth_execution::MonotonicClock::system(),
+    )
+}
+pub(super) fn install_orbit_on_clock(
+    graph: Graph,
+    observer: probe::Probe,
+    clock: worth_execution::MonotonicClock,
+) -> World {
+    install_with_visibility(graph, observer, Vec::new(), clock)
 }
 fn install_with_visibility<const O: bool>(
     graph: Graph,
     observer: probe::Probe<O>,
     extra_visibility: Vec<(u64, u64)>,
+    clock: worth_execution::MonotonicClock,
 ) -> World<O> {
     let observation = probe::Observation::default();
     with_test_advancement(|phase| {
@@ -102,7 +120,7 @@ fn install_with_visibility<const O: bool>(
                 worth_relational::facade::runtime::RelationalRuntimeApi::builder()
                     .build()
                     .expect("valid native fixture configuration"),
-                product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+                product_world::test_product_world_resources(clock.clone()),
                 factories,
             )
             .unwrap();
@@ -160,12 +178,13 @@ fn install_with_visibility<const O: bool>(
         super::decision::components::handler::install(&schema, &mut bootstrap);
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
-            .publish_application_runtime(
+            .publish_application_runtime_with_authorization_time_source(
                 &phase.bootstrap_for_test(),
                 runtime,
                 authority,
                 schema,
                 worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+                crate::domain_computation::primary_graph::tests::fixture::AuthorizationTimeController::on_clock(clock),
             )
             .unwrap();
         World {

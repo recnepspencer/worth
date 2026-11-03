@@ -85,7 +85,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::NestedLeaseMisuse
                             | Resource::NestedAdvancementOpening
                             | Resource::ForeignAdmissionClock
-                | Resource::ForeignAdvancementPhase
+                            | Resource::ForeignAdvancementPhase
                             | Resource::NoActiveExecutionScope
                             | Resource::EquivalenceContractUnavailable,
                         ..
@@ -164,7 +164,7 @@ fn classify_kind(kind: Kind) -> Outcome {
                 Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
             }
             // A phase from another installed runtime is a caller defect, never pressure.
-            Resource::ForeignAdvancementPhase => {
+            Resource::ForeignAdvancementPhase | Resource::ForeignAdmissionClock => {
                 Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
             }
             // Unreachable at HEAD: Relational's remaining-work child retains the

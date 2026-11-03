@@ -167,18 +167,12 @@ impl WorthQueryRequestScope {
     }
 
     pub fn remaining(&self) -> WorthQueryRequestTimeRemaining {
-        self.remaining_at(self.clock.now())
-    }
-
-    fn remaining_at(&self, now: Instant) -> WorthQueryRequestTimeRemaining {
-        match self.deadline.as_ref().map(|deadline| {
-            deadline
-                .instant_on(&self.clock)
-                .expect("scope constructor retains its own clock")
-        }) {
+        match self.deadline.as_ref() {
             None => WorthQueryRequestTimeRemaining::Unbounded,
-            Some(deadline) if deadline <= now => WorthQueryRequestTimeRemaining::Elapsed,
-            Some(deadline) => WorthQueryRequestTimeRemaining::Remaining(deadline - now),
+            Some(deadline) => match deadline.remaining() {
+                Duration::ZERO => WorthQueryRequestTimeRemaining::Elapsed,
+                remaining => WorthQueryRequestTimeRemaining::Remaining(remaining),
+            },
         }
     }
 

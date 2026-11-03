@@ -86,7 +86,10 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                 let mut canceled = request();
                 canceled.cancellation = source.token();
                 let mut expired = request();
-                expired.deadline = Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now());
+                expired.deadline = Some({
+                    let clock = worth_execution::MonotonicClock::system();
+                    clock.deadline_at(clock.now())
+                });
                 let refusals = [
                     (
                         work_refusal(execution),

@@ -22,7 +22,11 @@ fn authentication_expiry_denies_resume_without_a_basis() {
         .expect("the fixture read owns its installed host call");
     let acquisitions = context.basis_acquisitions();
     time.advance(Duration::from_secs(2)).unwrap();
-    let request = WorthQueryRequestScope::new(Some(time.clock().now() + Duration::from_secs(60)), WorthQueryCancellationSource::new().token(), time.clock());
+    let request = WorthQueryRequestScope::new(
+        Some(time.clock().now() + Duration::from_secs(60)),
+        WorthQueryCancellationSource::new().token(),
+        time.clock(),
+    );
 
     let denial = context
         .world

@@ -4,33 +4,36 @@ use crate::{ExecutionAllocationDenialKind, ExecutionAllocationPolicy, ExecutionA
 #[test]
 fn controlled_child_inherits_policy_and_exact_minimum_deadline_without_parent_mutation() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let parent_deadline = Instant::now() + Duration::from_secs(60);
+    let time = crate::MonotonicTimeController::new().unwrap();
+    let now = time.hold();
+    let clock = time.clock();
+    let parent_deadline = now + Duration::from_secs(60);
     let mut parent_request = request(2, 8, 19);
-    parent_request.deadline = Some(crate::MonotonicClock::system().deadline_at(parent_deadline));
+    parent_request.deadline = Some(clock.deadline_at(parent_deadline));
     let parent_source = CancellationSource::new();
     parent_request.cancellation = parent_source.token();
     let parent_token = parent_source.token();
     let parent = authority().request_lease(parent_request).unwrap();
     let earlier = parent_deadline - Duration::from_secs(1);
     let stop = CancellationSource::new();
-    let child = parent.controlled_child(stop.token(), Some(earlier));
+    let child = parent.controlled_child(stop.token(), Some(clock.deadline_at(earlier)));
     assert_eq!(child.policy(), parent.policy());
-    assert_eq!(child.deadline(), Some(earlier));
-    assert_eq!(parent.deadline(), Some(parent_deadline));
+    assert_eq!(child.deadline(), Some(clock.deadline_at(earlier)));
+    assert_eq!(parent.deadline(), Some(clock.deadline_at(parent_deadline)));
     assert_eq!(
         parent
             .controlled_child(
                 CancellationToken::new(),
-                Some(parent_deadline + Duration::from_secs(1))
+                Some(clock.deadline_at(parent_deadline + Duration::from_secs(1)))
             )
             .deadline(),
-        Some(parent_deadline)
+        Some(clock.deadline_at(parent_deadline))
     );
     assert_eq!(
         parent
             .controlled_child(CancellationToken::new(), None)
             .deadline(),
-        Some(parent_deadline)
+        Some(clock.deadline_at(parent_deadline))
     );
 
     let mut builder =
@@ -67,9 +70,10 @@ fn controlled_child_inherits_policy_and_exact_minimum_deadline_without_parent_mu
     parent_source.cancel();
     assert!(inherited.is_cancelled());
     let unrestricted = authority().request_lease(request(1, 0, 1)).unwrap();
-    let expired = Instant::now() - Duration::from_secs(1);
-    let elapsed = unrestricted.controlled_child(CancellationToken::new(), Some(expired));
-    assert_eq!(elapsed.deadline(), Some(expired));
+    let expired = now - Duration::from_secs(1);
+    let elapsed =
+        unrestricted.controlled_child(CancellationToken::new(), Some(clock.deadline_at(expired)));
+    assert_eq!(elapsed.deadline(), Some(clock.deadline_at(expired)));
     assert!(elapsed.deadline_elapsed());
     assert_eq!(
         ExecutionAllocationPolicy::Execution(&elapsed)

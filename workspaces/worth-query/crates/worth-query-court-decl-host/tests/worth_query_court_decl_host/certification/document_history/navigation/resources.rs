@@ -320,6 +320,10 @@ fn retired_candidate_cleanup_keeps_its_original_slot_until_a_real_retained_reade
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=2 scoped-thread-spawn=4: concurrent_distinct_keys_share_one_document_slot_and_duplicate_keys_share_one_attempt joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn concurrent_distinct_keys_share_one_document_slot_and_duplicate_keys_share_one_attempt() {
     let host = publish_on_first_program();
     let document = attach_bounded(&host, DOCUMENT_IDENTITY);

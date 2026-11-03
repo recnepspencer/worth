@@ -70,7 +70,8 @@ fn tracked_lease(
                 DeterminismContract::CanonicalBitwise,
                 ExecutionBudget::new(NonZeroUsize::MIN, None, work),
             ),
-            deadline,
+            deadline: deadline
+                .map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)),
             cancellation,
         })
         .unwrap()

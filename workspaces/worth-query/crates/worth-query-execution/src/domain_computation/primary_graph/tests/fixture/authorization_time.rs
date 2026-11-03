@@ -22,6 +22,15 @@ enum AuthorizationTimeState {
 }
 
 impl AuthorizationTimeController {
+    pub(in crate::domain_computation::primary_graph) fn on_clock(
+        admission_clock: worth_execution::MonotonicClock,
+    ) -> Self {
+        Self {
+            admission_clock,
+            ..Default::default()
+        }
+    }
+
     /// Return one explicit deterministic owner sample for every observation.
     /// Use `script` when sample order or exhaustion is part of the test.
     pub(in crate::domain_computation::primary_graph) fn hold(&self, sample: SystemTime) {

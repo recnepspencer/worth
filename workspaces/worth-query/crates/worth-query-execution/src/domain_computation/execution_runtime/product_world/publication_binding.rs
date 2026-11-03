@@ -53,6 +53,13 @@ impl WorthQueryProductPublicationBinding {
         Arc::clone(&self.root_identity)
     }
 
+    pub(super) fn admits_clock(
+        &self,
+        clock: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    ) -> bool {
+        self.clock.admission_clock.same_clock(clock)
+    }
+
     pub(crate) fn deadline(
         &self,
         deadline: worth_execution::MonotonicDeadline,

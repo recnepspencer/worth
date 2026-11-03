@@ -10,7 +10,10 @@
 
 mod monotonic_clock;
 mod monotonic_deadline;
-pub use monotonic_clock::{MonotonicClock, MonotonicTimeAdvanceDenial, MonotonicTimeController, MonotonicTimeConstructionDenial};
+pub use monotonic_clock::{
+    MonotonicClock, MonotonicTimeAdvanceDenial, MonotonicTimeConstructionDenial,
+    MonotonicTimeController,
+};
 pub use monotonic_deadline::MonotonicDeadline;
 
 mod authority;

@@ -5,7 +5,7 @@
 //! Mounted from the application-attempt tests, whose installed worlds and
 //! entries it drives; the doors it uses live beside the brand.
 
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use super::{
     authenticated_principal, idempotency, installed_authorization_world, live_scope,

@@ -24,7 +24,9 @@ use worth_query_host::facade::{
 };
 
 use super::*;
+mod admission_time;
 mod installation;
+pub(super) use installation::install_on_clock;
 pub(super) use installation::{install_configured_in_bootstrap, install_program_in_bootstrap};
 pub(super) mod observed;
 mod principal_bootstrap;
@@ -265,6 +267,7 @@ pub(super) fn limits_with_history_room(
         invalidation,
         history_metadata_bytes,
         execution_policy::CHECKPOINT_EXECUTION_POLICY,
+        authentication::WorthQueryAdmissionClock::system(),
     )
 }
 
@@ -282,6 +285,7 @@ pub(super) fn limits_with_policy(
         invalidation,
         524_288,
         policy,
+        authentication::WorthQueryAdmissionClock::system(),
     )
 }
 
@@ -292,6 +296,7 @@ pub(super) fn limits_with_history_and_policy(
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
     history_metadata_bytes: u64,
     policy: worth_foundational::ExecutionRequestPolicy,
+    clock: authentication::WorthQueryAdmissionClock,
 ) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
@@ -321,7 +326,7 @@ pub(super) fn limits_with_history_and_policy(
                     owner_created_component_custody_records: 16,
                 },
             },
-            WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            WorthQueryProductWorldClock::start(clock),
             invalidation,
             policy,
         )

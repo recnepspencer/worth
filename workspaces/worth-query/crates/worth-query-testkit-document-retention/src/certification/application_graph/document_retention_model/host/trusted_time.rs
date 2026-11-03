@@ -78,11 +78,15 @@ impl WorthQueryRuntimeTimeSource for CertificationTrustedTime {
 pub fn publish_on_first_program_with_trusted_time(
     time: impl WorthQueryRuntimeTimeSource + 'static,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
+    let initial = validated_first_program();
+    let roster = super::auxiliary_programs::include(
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        initial.identity(),
+        initial.revision(),
+    );
     in_memory_rostered_program_with_authorization_time_source(
-        validated_first_program(),
-        WorthQueryApplicationProgramRoster::new()
-            .support(validated_second_program())
-            .support(super::super::actor_generation::validated_actor_program()),
+        initial,
+        roster,
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),

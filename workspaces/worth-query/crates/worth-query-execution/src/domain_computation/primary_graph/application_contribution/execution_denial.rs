@@ -153,7 +153,7 @@ pub(super) fn kernel_failure<Stopped>(
             | Resource::NestedLeaseMisuse
             | Resource::NestedAdvancementOpening
             | Resource::ForeignAdmissionClock
-                | Resource::ForeignAdvancementPhase
+            | Resource::ForeignAdvancementPhase
             | Resource::NoActiveExecutionScope
             | Resource::EquivalenceContractUnavailable => {
                 MapKernelFailure::Domain(PartitionRefusal::Resource(denial))

@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::tests::fixture::correction_source;
 
 #[test]
 fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read() {
-    let world = correction_source::install();
+    let world = correction_source::install(worth_execution::MonotonicClock::system());
     let source = correction_source::edit(&world, "snapshot-source", "edited-label");
     let prepared = correction_source::prepare(&world, &source, "snapshot-correction");
     let pending = prepared.pending();

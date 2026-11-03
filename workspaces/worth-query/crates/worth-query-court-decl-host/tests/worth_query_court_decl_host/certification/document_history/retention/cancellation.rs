@@ -68,6 +68,10 @@ fn cancelled<T>(result: Result<T, Failure>) {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_before_the_admitted_window_effect_preserves_eligibility_target_and_cursor joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_before_the_admitted_window_effect_preserves_eligibility_target_and_cursor() {
     let host = publish_on_first_program();
     let (mut document, root) = filled(&host);
@@ -134,6 +138,10 @@ fn cancellation_before_the_admitted_window_effect_preserves_eligibility_target_a
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_after_one_window_batch_preserves_its_prefix_and_original_disposal_owners joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_after_one_window_batch_preserves_its_prefix_and_original_disposal_owners() {
     let host = publish_on_first_program();
     let (mut document, root) = filled(&host);

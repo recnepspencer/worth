@@ -43,7 +43,11 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
             )])),
         }),
     ));
-    let request = super::live_scope();
+    let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
+        None,
+        worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(),
+        world.application.product_runtime().clock.admission_clock.clone(),
+    );
     let prepared =
         prepare_relational_mutation_on_application(execution, &world.application, batch, &request);
     let Ok(PublicationOutcome::Performed(performed)) = prepared.execute(*execution) else {

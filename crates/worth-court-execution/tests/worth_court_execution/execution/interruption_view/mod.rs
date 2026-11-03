@@ -9,6 +9,7 @@ use worth_foundational::{
 };
 
 mod lineage;
+mod owned_time;
 mod retention;
 mod stop_settlement;
 
@@ -101,7 +102,11 @@ fn shared_controls_are_send_sync_and_static_and_release_only_at_the_final_owner(
 
 #[test]
 fn view_keeps_the_earliest_actual_serial_ancestor_deadline() {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    let held = time.hold();
+    let deadline = time
+        .clock()
+        .deadline_at(held + std::time::Duration::from_secs(1));
     let parent_memory = SerialMemoryBudget::new(None);
     let child_memory = SerialMemoryBudget::new(None);
     let parent = SerialRequest::from_memory(
@@ -112,7 +117,10 @@ fn view_keeps_the_earliest_actual_serial_ancestor_deadline() {
     let child = SerialRequest::from_memory(
         child_memory.clone(),
         CancellationSource::new().token(),
-        Some(deadline + std::time::Duration::from_secs(60)),
+        Some(
+            time.clock()
+                .deadline_at(held + std::time::Duration::from_secs(61)),
+        ),
     );
     let mut view = None;
     ExecutionRequest::serial(&parent)
@@ -130,7 +138,7 @@ fn view_keeps_the_earliest_actual_serial_ancestor_deadline() {
         parent_memory.charged_memory_bytes(),
         child_memory.charged_memory_bytes()
     );
-    std::thread::sleep(deadline.saturating_duration_since(std::time::Instant::now()));
+    time.advance(std::time::Duration::from_secs(1)).unwrap();
     assert_eq!(view.check_live(), Err(MapKernelStop::DeadlineElapsed));
     drop(view);
     assert_eq!(parent_memory.charged_memory_bytes(), 0);

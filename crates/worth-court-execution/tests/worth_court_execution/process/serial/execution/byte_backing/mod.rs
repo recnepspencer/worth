@@ -132,11 +132,9 @@ fn stopped_builder_retains_checked_quote_and_releases_actual_backing_charge() {
     );
     assert_eq!(denied.requested_payload_bytes(), Some(8));
     stop_request.cancellation = worth_execution::CancellationToken::new();
-    stop_request.deadline = Some(
-        std::time::Instant::now()
-            .checked_sub(std::time::Duration::from_secs(1))
-            .unwrap(),
-    );
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    let held = time.hold();
+    stop_request.deadline = Some(time.clock().deadline_at(held));
     let expired = parent.child(stop_request).unwrap();
     let policy = worth_execution::ExecutionAllocationPolicy::Execution(&expired);
     assert_eq!(

@@ -1,6 +1,10 @@
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_workflow_operations::capability::grant_commands::*;
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: product_stale_command_releases_each_managed_owner_before_native_progression joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn product_stale_command_releases_each_managed_owner_before_native_progression() {
     use std::{num::NonZeroUsize, time::Duration};
     use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::request_scope;

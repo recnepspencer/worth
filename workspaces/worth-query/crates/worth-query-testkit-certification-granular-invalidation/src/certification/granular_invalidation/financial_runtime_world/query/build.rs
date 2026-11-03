@@ -73,7 +73,7 @@ pub fn build(
         },
     );
     let mut workspace = runtime::WorthQueryRuntime::builder(
-        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
     )
     .primary_runtime_granular_invalidations(installation.clone())
     .domain_package(query_domain::package(profile))

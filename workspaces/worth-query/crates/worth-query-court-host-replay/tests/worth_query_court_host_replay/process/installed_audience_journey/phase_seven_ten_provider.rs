@@ -18,11 +18,11 @@ use worth_query_host::facade::installed::provider_session as provider;
 
 pub(super) fn exercise_combined_builder() {
     let _ = worth_query::facade::runtime::WorthQueryRuntimeBuilder::new(
-        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
     )
     .convergent_invariant_graph_participation_provider(ConsumerGraph, ConsumerCombinedProvider);
     let _ = worth_query::facade::runtime::WorthQueryRuntimeBuilder::new(
-        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
     )
     .atomic_convergent_invariant_graph_participation_provider(
         ConsumerGraph,

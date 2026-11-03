@@ -42,7 +42,6 @@ impl ExpiryClock {
     pub fn expire_during_progression(&self, deadline: Instant) {
         // Admission samples first; the existing owner's currentness refresh samples
         // next. The time owner advances its real admission observer at that sample.
-        self.time.hold();
         *self.scheduled.lock().unwrap() = VecDeque::from([None, Some(deadline)]);
     }
     pub fn assert_serviced(&self) {
@@ -102,5 +101,12 @@ pub fn programs_publication(
 }
 
 impl Default for ExpiryClock {
-    fn default() -> Self { Self { scheduled: Default::default(), time: WorthQueryAdmissionTimeController::new().unwrap() } }
+    fn default() -> Self {
+        let time = WorthQueryAdmissionTimeController::new().unwrap();
+        time.hold();
+        Self {
+            scheduled: Default::default(),
+            time,
+        }
+    }
 }

@@ -19,7 +19,9 @@ struct ControlledClock {
 static NEXT_CLOCK_IDENTITY: Mutex<u64> = Mutex::new(1);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum MonotonicTimeConstructionDenial { IdentityExhausted }
+pub enum MonotonicTimeConstructionDenial {
+    IdentityExhausted,
+}
 
 #[derive(Debug)]
 enum ClockState {
@@ -43,7 +45,10 @@ impl MonotonicClock {
     }
 
     pub(crate) fn identity(&self) -> u64 {
-        match &self.controlled { None => 0, Some(clock) => clock.identity }
+        match &self.controlled {
+            None => 0,
+            Some(clock) => clock.identity,
+        }
     }
 
     pub fn same_clock(&self, other: &Self) -> bool {
@@ -70,11 +75,20 @@ pub enum MonotonicTimeAdvanceDenial {
 
 impl MonotonicTimeController {
     pub fn new() -> Result<Self, MonotonicTimeConstructionDenial> {
-        let mut next = NEXT_CLOCK_IDENTITY.lock().expect("clock identity owner poisoned");
-        let following = next.checked_add(1).ok_or(MonotonicTimeConstructionDenial::IdentityExhausted)?;
+        let mut next = NEXT_CLOCK_IDENTITY
+            .lock()
+            .expect("clock identity owner poisoned");
+        let following = next
+            .checked_add(1)
+            .ok_or(MonotonicTimeConstructionDenial::IdentityExhausted)?;
         let identity = *next;
         *next = following;
-        Ok(Self { state: Arc::new(ControlledClock { identity, state: Mutex::new(ClockState::Running) }) })
+        Ok(Self {
+            state: Arc::new(ControlledClock {
+                identity,
+                state: Mutex::new(ClockState::Running),
+            }),
+        })
     }
 
     pub fn clock(&self) -> MonotonicClock {

@@ -125,6 +125,10 @@ fn cancellation_between_completed_members_preserves_the_first_publication_and_re
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_guarded_adoption joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_guarded_adoption() {
     let (host, contacts) =
         SetRetentionHandler::observe_installation_for_test(publish_on_first_program);

@@ -1,6 +1,6 @@
 use std::num::{NonZeroU64, NonZeroUsize};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::*;
 use crate::validation::custom_rule::{CustomInvariantInterruption, CustomPreparationBudget};
@@ -12,7 +12,7 @@ use worth_foundational::{
 fn lease(
     memory: Option<u64>,
     cancellation: CancellationToken,
-    deadline: Option<Instant>,
+    deadline: Option<worth_execution::MonotonicDeadline>,
 ) -> worth_execution::ExecutionResourceLease<'static> {
     crate::tests::support::test_execution_authority()
         .request_lease(LeaseRequest {
@@ -50,11 +50,13 @@ fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
         ] {
             let cancellation = CancellationSource::new();
             let seen = Arc::new(AtomicUsize::new(0));
+            let time = worth_execution::MonotonicTimeController::new().unwrap();
+            let held = time.hold();
             let deadline = (stop == Some(CustomInvariantInterruption::DeadlineElapsed))
-                .then(|| Instant::now() + Duration::from_secs(1));
+                .then(|| time.clock().deadline_at(held + Duration::from_secs(1)));
             let host = crate::test_execution_policy::serial_request()
                 .with_cancellation(cancellation.token())
-                .with_deadline(deadline);
+                .with_deadline(deadline.clone());
             let lease = lease(None, cancellation.token(), deadline);
             let execution = if leased {
                 ExecutionRequest::leased(&lease)
@@ -74,11 +76,7 @@ fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
                         match stop {
                             Some(CustomInvariantInterruption::Cancelled) => cancellation.cancel(),
                             Some(CustomInvariantInterruption::DeadlineElapsed) => {
-                                let deadline = deadline.unwrap();
-                                std::thread::sleep(
-                                    deadline.saturating_duration_since(Instant::now())
-                                        + Duration::from_millis(1),
-                                );
+                                time.advance(Duration::from_secs(1)).unwrap();
                             }
                             None => {}
                         }

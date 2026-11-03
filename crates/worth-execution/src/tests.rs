@@ -394,6 +394,3 @@ fn no_lease_uses_caller_thread_and_serial_posture() {
     assert_eq!(result.report.resolved_posture(), ExecutionPosture::Serial);
     assert_eq!(result.report.physical().active_workers_high_watermark(), 0);
 }
-
-#[path = "tests/owned_time.rs"]
-mod owned_time;

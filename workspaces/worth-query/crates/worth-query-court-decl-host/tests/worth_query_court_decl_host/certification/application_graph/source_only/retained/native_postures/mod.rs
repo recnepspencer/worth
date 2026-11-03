@@ -1,6 +1,10 @@
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::source_only::retained::native_postures::*;
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: retained_native_no_effect_capacity_keeps_terminal_custody_until_fresh_close joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn retained_native_no_effect_capacity_keeps_terminal_custody_until_fresh_close() {
     let host = host::install_program::<RetainedProgram>();
     let scope = request_scope();

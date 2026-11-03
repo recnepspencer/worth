@@ -33,6 +33,10 @@ fn cancelled<T>(result: Result<T, WorthQueryHistoryGroupDenial>) {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: stopped_reservation_and_candidate_handoffs_keep_the_original_group_abortable joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn stopped_reservation_and_candidate_handoffs_keep_the_original_group_abortable() {
     for point in [Point::Reservation, Point::Candidate] {
         let host = publish_on_first_program();
@@ -98,6 +102,10 @@ fn stopped_reservation_and_candidate_handoffs_keep_the_original_group_abortable(
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: delivery_stop_after_group_adoption_retains_the_selected_result_for_its_original_retry joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn delivery_stop_after_group_adoption_retains_the_selected_result_for_its_original_retry() {
     let host = publish_on_first_program();
     let document = attach(&host, head(&host), DOCUMENT_IDENTITY);

@@ -93,7 +93,9 @@ fn a_serial_request_cancelled_mid_reduction_stops_at_a_combine() {
 
 #[test]
 fn a_serial_request_past_its_deadline_refuses_before_the_computation() {
-    let request = funded_serial_request().with_deadline(Some(std::time::Instant::now()));
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    let held = time.hold();
+    let request = funded_serial_request().with_deadline(Some(time.clock().deadline_at(held)));
     let ran =
         worth_execution::ExecutionWorkCeiling::new(Some(u64::MAX)).run_serial(&request, || ());
     assert_eq!(

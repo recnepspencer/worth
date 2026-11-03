@@ -1,6 +1,10 @@
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::source_only::managed_cleanup::*;
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=2 scoped-thread-spawn=2: managed_product_stale_retains_native_failure_until_owner_thread_close joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
     let host = install();
     let branch = host.current_world();

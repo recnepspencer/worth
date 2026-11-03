@@ -1,6 +1,10 @@
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::source_only::native_postures::*;
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: source_only_product_stale_terminal_preserves_original_meaning_and_close joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn source_only_product_stale_terminal_preserves_original_meaning_and_close() {
     let host = install();
     let branch = host.current_world();

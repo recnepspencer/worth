@@ -21,6 +21,7 @@ pub fn install() -> App {
             256,
             4 * 1024 * 1024,
             256,
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).unwrap(),

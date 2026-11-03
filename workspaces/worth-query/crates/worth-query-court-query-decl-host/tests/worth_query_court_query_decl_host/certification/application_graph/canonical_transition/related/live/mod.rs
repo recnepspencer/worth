@@ -112,7 +112,16 @@ fn changed_codec_live_swallowed_refusal_and_cancelled_domain_error_cannot_ack() 
         let mut live = successor::live_native::open(&target);
         publish_target(&target, 180313 + u64::from(reject));
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(request_scope().deadline(), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
+        let original_scope = request_scope();
+        let scope = WorthQueryRequestScope::new(
+            original_scope.deadline().map(|deadline| {
+                deadline
+                    .instant_on(original_scope.clock())
+                    .expect("the request deadline retains its clock")
+            }),
+            cancellation.token(),
+            original_scope.clock().clone(),
+        );
         let _guard = successor::projection::Guard::arm(cancellation, reject);
         let (denied, _) = successor::live_native::next(&target, &mut live, &scope, 8_000_000);
         assert_eq!(successor::projection::count(), 1);

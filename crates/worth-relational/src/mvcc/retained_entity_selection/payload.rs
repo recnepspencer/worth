@@ -17,7 +17,7 @@ pub(in crate::mvcc) fn prepare(
 ) -> Result<PreparedRetainedEntityPayload, Error> {
     let current = SelectedRelationalBranchState::from_admitted_basis(&input.transaction.basis);
     let historical = SelectedRelationalBranchState::from_admitted_basis(&input.historical);
-    let source = crate::storage::residency::probe_head(
+    crate::storage::residency::probe_head(
         execution,
         &historical.with_symbol_admission(&runtime.services.symbols),
         |source| {
@@ -30,8 +30,7 @@ pub(in crate::mvcc) fn prepare(
             .map_err(Error::Admission)
         },
     )
-    .map_err(|failure| storage(&input.historical, failure))?;
-    source
+    .map_err(|failure| storage(&input.historical, failure))?
 }
 
 fn read(

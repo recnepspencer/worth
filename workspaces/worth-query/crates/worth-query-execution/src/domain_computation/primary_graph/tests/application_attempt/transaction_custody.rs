@@ -60,10 +60,7 @@ fn transaction_application_mismatch_precedes_fresh_and_lapsed_admission_checks()
     let time = worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
     time.hold();
     let source = installed_authorization_world(true, time.clock());
-    let target = installed_authorization_world(
-        true,
-        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
-    );
+    let target = installed_authorization_world(true, time.clock());
     for lapsed in [false, true] {
         let program = candidate(&source, lapsed, &time);
         let outcome = target

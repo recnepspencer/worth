@@ -68,6 +68,10 @@ fn cancellation_before_fork_leaves_no_candidate_and_permits_explicit_disposal() 
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_while_real_adoption_waits_preserves_the_performed_candidate_without_selecting_it joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_while_real_adoption_waits_preserves_the_performed_candidate_without_selecting_it() {
     let host = publish_on_first_program();
     let document = attach(&host, head(&host), DOCUMENT_IDENTITY);

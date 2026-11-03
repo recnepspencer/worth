@@ -147,7 +147,9 @@ impl WorthQueryProductPublicationBinding {
         &self,
         request: &WorthQueryRequestScope,
     ) -> Option<WorthQueryProductPublicationRequestControl> {
-        if !self.clock.admission_clock.same_clock(request.clock()) { return None; }
+        if !self.admits_clock(request.clock()) {
+            return None;
+        }
         let cancellation = Arc::new(PublicationCancellation(
             RuntimeWorldCancellationSource::new(),
         ));

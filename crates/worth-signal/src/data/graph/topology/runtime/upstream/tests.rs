@@ -187,14 +187,21 @@ fn absent_upstream_limit_keeps_original_attempt_checkpoint_and_edge_visits() {
     assert!(work.visits() > 0);
     assert_eq!(work.maximum_visits(), None);
     for expired in [false, true] {
+        let time = worth_execution::MonotonicTimeController::new().unwrap();
+        let held = time.hold();
         let cancellation = CancellationSource::new();
         let serial = SerialRequest::from_memory(
             SerialMemoryBudget::new(None),
             cancellation.token(),
-            expired.then(std::time::Instant::now),
+            expired.then(|| {
+                time.clock()
+                    .deadline_at(held + std::time::Duration::from_secs(1))
+            }),
         );
         let request = ExecutionRequest::serial(&serial);
-        if !expired {
+        if expired {
+            time.advance(std::time::Duration::from_secs(1)).unwrap();
+        } else {
             cancellation.cancel();
         }
         let expected = request.check_live().unwrap_err();

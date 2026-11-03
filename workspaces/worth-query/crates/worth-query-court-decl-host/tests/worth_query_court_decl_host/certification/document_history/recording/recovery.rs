@@ -9,6 +9,10 @@ use worth_query_host::facade::{
 };
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: unpublished_candidate_keeps_its_original_recovery_until_one_recorded_selection joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn unpublished_candidate_keeps_its_original_recovery_until_one_recorded_selection() {
     let host = publish_on_first_program();
     let document = attach(&host, head(&host), DOCUMENT_IDENTITY);

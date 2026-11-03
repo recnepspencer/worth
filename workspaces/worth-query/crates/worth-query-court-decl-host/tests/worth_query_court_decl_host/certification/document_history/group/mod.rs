@@ -151,7 +151,7 @@ fn two_ordinary_edits_select_one_history_edge_and_undo_redo_its_complete_endpoin
     };
     assert_eq!(
         second.commit_reference().parents,
-        [first.commit_reference().commit_id.clone()]
+        [first.commit_reference().commit_id]
     );
     assert_eq!(
         second.commit_reference().branch_id,

@@ -6,6 +6,10 @@ use worth_query_testkit_document_retention::facade::document_retention_model::op
 };
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: source_change_after_proof_keeps_the_original_context_for_retry joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn source_change_after_proof_keeps_the_original_context_for_retry() {
     let host = publish_on_first_program();
     let mut document = attach(&host, head(&host), DOCUMENT_IDENTITY);
@@ -37,6 +41,10 @@ fn source_change_after_proof_keeps_the_original_context_for_retry() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_after_proof_keeps_the_same_document_retryable joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_after_proof_keeps_the_same_document_retryable() {
     let host = publish_on_first_program();
     let mut document = attach(&host, head(&host), DOCUMENT_IDENTITY);

@@ -67,6 +67,10 @@ fn unpublished_snapshot_candidate_recovers_without_replaying_an_edit_or_moving_t
         .is_empty());
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: interrupted_publication joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 pub(super) fn interrupted_publication<'d, 'r>(host: &App, owner: Owner<'d, 'r>) -> Owner<'d, 'r> {
     let cancellation = WorthQueryCancellationSource::new();
     let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());

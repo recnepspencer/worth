@@ -10,16 +10,18 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
     let _listener =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for (expired, reject_cleanup) in [(false, false), (true, false), (false, true), (true, true)] {
-        let world = correction_source::install();
+        let time = worth_execution::MonotonicTimeController::new().unwrap();
+        let held = time.hold();
+        let world = correction_source::install(time.clock());
         let source = correction_source::edit(&world, "sealing-source", "edited-label");
         let prepared = correction_source::prepare(&world, &source, "sealing-correction");
         let cancellation = WorthQueryCancellationSource::new();
-        let deadline =
-            expired.then(|| std::time::Instant::now() + std::time::Duration::from_secs(2));
-        let request = WorthQueryRequestScope::new(deadline, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        world
-            .faults
-            .interrupt_next_aftermath_seal(cancellation, deadline);
+        let deadline = expired.then(|| held + std::time::Duration::from_secs(2));
+        let request = WorthQueryRequestScope::new(deadline, cancellation.token(), time.clock());
+        world.faults.interrupt_next_aftermath_seal(
+            cancellation,
+            deadline.map(|instant| (time.clone(), instant)),
+        );
         let _cleanup_guard = reject_cleanup.then(|| {
             world
                 .application
@@ -83,11 +85,12 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
     let _listener =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for expired in [false, true] {
-        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        let time = worth_execution::MonotonicTimeController::new().unwrap();
+        let held = time.hold();
+        let world = installed_authorization_world(true, time.clock());
         let source = WorthQueryCancellationSource::new();
-        let deadline =
-            expired.then(|| std::time::Instant::now() + std::time::Duration::from_secs(2));
-        let request = WorthQueryRequestScope::new(deadline, source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        let deadline = expired.then(|| held + std::time::Duration::from_secs(2));
+        let request = WorthQueryRequestScope::new(deadline, source.token(), time.clock());
         let setup = request.clone();
         let program = world
             .application
@@ -104,9 +107,10 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
                 )
             })
             .unwrap();
-        let interruption = world
-            .faults
-            .interrupt_next_native_preparation_for_test(source, deadline);
+        let interruption = world.faults.interrupt_next_native_preparation_for_test(
+            source,
+            deadline.map(|instant| (time.clone(), instant)),
+        );
         let _cleanup = world
             .application
             .schedule_next_managed_cleanup_on_worker_for_test()

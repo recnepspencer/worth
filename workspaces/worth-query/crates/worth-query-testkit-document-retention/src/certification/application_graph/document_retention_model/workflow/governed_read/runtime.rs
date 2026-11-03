@@ -14,7 +14,7 @@ pub fn install() -> GovernedRuntime {
         std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
     );
     retain(host::publish_on_first_program_with_limits(
-        host::with_query_resources(queries),
+        host::with_query_resources(queries, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
     ))
 }
 pub fn retain(

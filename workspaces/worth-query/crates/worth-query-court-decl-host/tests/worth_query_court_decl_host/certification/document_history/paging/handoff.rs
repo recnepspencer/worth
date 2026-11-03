@@ -8,6 +8,10 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 };
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_after_assembly_preserves_the_cursor_for_a_fresh_read joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_after_assembly_preserves_the_cursor_for_a_fresh_read() {
     let host = publish_on_first_program();
     let (mut document, expected) = chain(&host);
@@ -45,6 +49,10 @@ fn cancellation_after_assembly_preserves_the_cursor_for_a_fresh_read() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: an_outside_head_move_after_assembly_refuses_the_staged_page joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn an_outside_head_move_after_assembly_refuses_the_staged_page() {
     let host = publish_on_first_program();
     let mut document = attach(&host, head(&host), DOCUMENT_IDENTITY);

@@ -74,21 +74,18 @@ fn a_request_without_a_deadline_still_honors_cancellation() {
 #[test]
 fn absent_and_elapsed_deadlines_have_distinct_remaining_values() {
     let source = WorthQueryCancellationSource::new();
-    let now = crate::authenticated_principal::WorthQueryAdmissionClock::system().now();
-    let unbounded = WorthQueryRequestScope::new(
-        None,
-        source.token(),
-        crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
-    );
+    let time = crate::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+    let now = time.hold();
+    let unbounded = WorthQueryRequestScope::new(None, source.token(), time.clock());
     let elapsed = WorthQueryRequestScope::new(
         Some(now - Duration::from_secs(1)),
         source.token(),
-        crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+        time.clock(),
     );
     let bounded = WorthQueryRequestScope::new(
         Some(now + Duration::from_secs(60)),
         source.token(),
-        crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+        time.clock(),
     );
     assert_eq!(
         unbounded.remaining(),
@@ -96,16 +93,11 @@ fn absent_and_elapsed_deadlines_have_distinct_remaining_values() {
     );
     assert_eq!(elapsed.remaining(), WorthQueryRequestTimeRemaining::Elapsed);
     assert_eq!(
-        bounded.remaining_at(now),
+        bounded.remaining(),
         WorthQueryRequestTimeRemaining::Remaining(Duration::from_secs(60))
     );
     assert_eq!(
-        WorthQueryRequestScope::new(
-            Some(now),
-            source.token(),
-            crate::facade::authenticated_principal::WorthQueryAdmissionClock::system()
-        )
-        .remaining_at(now),
+        WorthQueryRequestScope::new(Some(now), source.token(), time.clock()).remaining(),
         WorthQueryRequestTimeRemaining::Elapsed
     );
     assert_ne!(unbounded.remaining(), elapsed.remaining());

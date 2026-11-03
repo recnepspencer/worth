@@ -15,10 +15,7 @@ pub(super) fn publish_authorization_world(
     super::super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
 
     let invariant = bootstrap.retain_invariant_projection_authority();
-    let authorization_time = AuthorizationTimeController {
-        admission_clock,
-        ..Default::default()
-    };
+    let authorization_time = AuthorizationTimeController::on_clock(admission_clock);
     let faults = std::sync::Arc::new(
         crate::domain_computation::primary_graph::tests::fault_controller::PrimaryGraphFaultController::default(),
     );

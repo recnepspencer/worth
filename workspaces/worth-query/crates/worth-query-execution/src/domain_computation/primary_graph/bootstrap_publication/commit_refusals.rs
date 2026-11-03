@@ -7,7 +7,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as QueryKind,
 };
-use std::{num::NonZeroUsize, time::Instant};
+use std::num::NonZeroUsize;
 use worth_execution::{CancellationSource, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -175,7 +175,10 @@ fn bootstrap_commit_preserves_real_control_stops() {
             let mut canceled = request();
             canceled.cancellation = cancellation.token();
             let mut expired = request();
-            expired.deadline = Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now());
+            expired.deadline = Some({
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            });
             for (request, expected) in
                 [(canceled, Control::Cancelled), (expired, Control::TimedOut)]
             {
@@ -200,7 +203,10 @@ fn bootstrap_operation_interruption_keeps_heads_generic_commit_rejection() {
     let source = RelationalCancellationSource::new();
     source.cancel();
     let canceled: RelationalOperationControl = source.token().into();
-    let expired = RelationalOperationControl::uninterrupted().with_deadline(Instant::now());
+    let expired = RelationalOperationControl::uninterrupted().with_deadline({
+        let clock = worth_execution::MonotonicClock::system();
+        clock.deadline_at(clock.now())
+    });
     for control in [canceled, expired] {
         let event = control
             .observe(RelationalInterruptionBoundary::CandidatePreparation)
