@@ -34,7 +34,7 @@ impl WorthQueryInstalledTransportCompletionBinding {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryTransportCompletionBindingDenial {
+pub enum WorthQueryTransportCompletionBindingDenial {
     OutboxWithoutInboundContract,
     OutboxContractMismatch,
     OutboxOperationUnbound,
