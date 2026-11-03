@@ -268,7 +268,7 @@ impl WorthQueryApplicationOutputLineage {
             .and_then(|cell| cell.get())
     }
 
-    pub(super) fn matching_output_in_partition_budgeted(
+    pub fn matching_output_in_partition_budgeted(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
@@ -315,7 +315,7 @@ impl WorthQueryApplicationOutputLineage {
         Ok((None, work))
     }
 
-    pub(super) fn matching_legacy_output_budgeted(
+    pub fn matching_legacy_output_budgeted(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,

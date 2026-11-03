@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct RequiredPublicationPrede
 }
 
 impl SelectedRequiredPublicationHead {
-    pub(super) fn retain(selected: &Arc<OnceLock<RecordedOutput>>) -> Result<Self, Stop> {
+    pub fn retain(selected: &Arc<OnceLock<RecordedOutput>>) -> Result<Self, Stop> {
         let row = selected.get().ok_or(Stop::SelectedSourceMismatch)?;
         let origin = match &row.performed_origin {
             Some(alias) => {
@@ -44,13 +44,13 @@ impl SelectedRequiredPublicationHead {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn warm_publication(
+    pub fn warm_publication(
         &self,
     ) -> Option<RelationalRequiredOutputPublication> {
         self.origin().required_publication.clone()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn cold_predecessor(
+    pub fn cold_predecessor(
         &self,
     ) -> Result<RequiredPublicationPredecessor, Stop> {
         let origin = self.origin();

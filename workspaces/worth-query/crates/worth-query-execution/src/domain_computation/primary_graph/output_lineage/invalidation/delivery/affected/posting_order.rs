@@ -13,7 +13,7 @@ pub struct LogicalPostings {
 }
 impl LogicalPostings {
     /// One cursor per matched physical projection, never all matching ordinals.
-    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn prepare(
+    pub fn prepare(
         state: &MarkState,
         key: &FactPostingKey,
 
@@ -57,7 +57,7 @@ impl LogicalPostings {
         }
         Ok(Some(Self { ready }))
     }
-    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn next(
+    pub fn next(
         &mut self,
         state: &MarkState,
         key: &FactPostingKey,

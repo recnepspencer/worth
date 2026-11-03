@@ -21,7 +21,7 @@ pub(in crate::domain_computation) struct WorthQueryIssuedSelectedPrincipal<
 impl<Schema, Principal, PrincipalIdentity>
     WorthQueryIssuedSelectedPrincipal<'_, '_, Schema, Principal, PrincipalIdentity>
 {
-    pub(in crate::domain_computation) fn principal(
+    pub fn principal(
         &self,
     ) -> &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
         &self.principal

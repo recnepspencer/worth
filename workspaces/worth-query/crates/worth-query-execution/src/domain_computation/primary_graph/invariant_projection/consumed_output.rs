@@ -120,7 +120,7 @@ impl ConsumedOutputEvidence {
     /// Only the recovered root actually verified by a native reader may be
     /// retained without an executable source row. This is static settlement
     /// custody, never permission to reconstruct or refresh a source query.
-    pub(in crate::domain_computation::primary_graph) fn claim_verified_checkpoint_root(
+    pub fn claim_verified_checkpoint_root(
         &self,
         owner: &SourceInvalidationOwner,
     ) -> Result<bool, SettlementRegistrationStop> {
@@ -145,7 +145,7 @@ impl ConsumedOutputEvidence {
     /// only a branch identity to minting; Native selects its true head. A
     /// contended Native publication or changed lookup declines this derived
     /// registration, leaving the commit to compare the root in full again.
-    pub(in crate::domain_computation::primary_graph) fn establish_restored_before_commit(
+    pub fn establish_restored_before_commit(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_owner: &WorthQueryRelationalSourceOwner,

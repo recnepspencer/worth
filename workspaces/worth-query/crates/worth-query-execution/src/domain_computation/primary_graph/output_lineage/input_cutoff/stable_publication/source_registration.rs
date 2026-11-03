@@ -51,7 +51,7 @@ pub struct StableEqualityConsequence<'selected> {
 }
 
 impl<'selected> StableEqualityConsequence<'selected> {
-    pub(in crate::domain_computation::primary_graph) fn native_actor_fixture(
+    pub fn native_actor_fixture(
         predecessor: Arc<RecordedSettlementIdentity>,
         successor: Arc<RecordedSettlementIdentity>,
         selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,

@@ -193,7 +193,7 @@ pub struct WorthQueryApplicationBasisObservation {
     acquisitions: usize,
 }
 
-pub(crate) enum WorthQueryApplicationBasisRegistrationDenial {
+pub enum WorthQueryApplicationBasisRegistrationDenial {
     Basis(worth_relational::facade::branch::RelationalBranchBasisDenial),
     Snapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
 }

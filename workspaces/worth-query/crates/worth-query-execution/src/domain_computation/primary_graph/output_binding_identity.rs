@@ -9,7 +9,7 @@ impl OutputBindingIdentity {
     pub fn declared(name: &str) -> Self {
         Self(Arc::from(name))
     }
-    pub(super) fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         &self.0
     }
 }

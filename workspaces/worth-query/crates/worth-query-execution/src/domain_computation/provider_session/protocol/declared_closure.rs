@@ -31,8 +31,8 @@ pub struct WorthQueryProviderPlanDeclarations {
 
 #[derive(Clone, Debug, Default)]
 pub struct WorthQueryProviderPlanDeclaredClosure {
-    pub(super) read: Vec<String>,
-    pub(super) touch: Vec<String>,
+    pub read: Vec<String>,
+    pub touch: Vec<String>,
     pub effect: Vec<String>,
     pub invariant: Vec<String>,
 }

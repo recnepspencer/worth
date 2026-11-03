@@ -245,7 +245,7 @@ pub struct SealedComputationRun {
     /// The custodied prior an incremental run built from. Publication consumes
     /// this holder before testing whether its exact displaced record is sole
     /// and unpinned; shared or pinned prior custody remains intact.
-    pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<RetainedComputation>>,
+    pub cloned_from: Option<Arc<RetainedComputation>>,
     /// The request memory the state's tree and routing hold until the
     /// lineage charges the state.
     pub(in crate::domain_computation::primary_graph) attribution_memory:

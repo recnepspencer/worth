@@ -8,22 +8,22 @@ pub enum WorthQueryAcceptedOutputCheckpointPosture {
 pub struct WorthQueryAcceptedOutputCheckpointIdentity {
     pub implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub producer: std::sync::Arc<String>,
-    pub(in crate::domain_computation::primary_graph) posture:
+    pub posture:
         WorthQueryAcceptedOutputCheckpointPosture,
     pub source: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) scope:
+    pub scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub source_partition: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) producer_dependency: Option<[u8; 32]>,
+    pub producer_dependency: Option<[u8; 32]>,
     pub idempotency_key: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) roles:
+    pub roles:
         std::sync::Arc<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>,
     /// Authenticated encoding of the complete rebased producer fact set.
     /// Its source wire version travels with recovered bytes across later captures.
-    pub(in crate::domain_computation::primary_graph) producer_facts: Option<std::sync::Arc<Vec<u8>>>,
-    pub(in crate::domain_computation::primary_graph) producer_fact_wire_version: u16,
+    pub producer_facts: Option<std::sync::Arc<Vec<u8>>>,
+    pub producer_fact_wire_version: u16,
     // Last to drop; clones share the exact immutable heaps AND their original payer.
-    pub(in crate::domain_computation::primary_graph) metadata: Option<std::sync::Arc<
+    pub metadata: Option<std::sync::Arc<
         crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding>>,
 }
 

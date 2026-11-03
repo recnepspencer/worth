@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Regist
     );
 }
 
-pub(in crate::domain_computation::primary_graph) struct PreparedManagedViewPublication {
+pub struct PreparedManagedViewPublication {
     views: Vec<(Arc<dyn RegisteredDerivedView>, Option<Box<dyn Any + Send>>)>,
 }
 

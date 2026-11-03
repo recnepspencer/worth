@@ -71,7 +71,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Revisit only evidence already admitted by this owner. Raw correlation
     /// selection stays inside the custodian; source retries enter through the
     /// installed verifier with the exact signed envelope.
-    pub(in crate::domain_computation) fn progress_retained_inbound_occurrence(
+    pub fn progress_retained_inbound_occurrence(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

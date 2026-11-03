@@ -47,7 +47,7 @@ pub struct NativePriorCheckpointOutput<'a> {
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) partition: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) entity: Option<EntityId>,
-    pub(in crate::domain_computation::primary_graph) identity:
+    pub identity:
         Option<NativePriorCheckpointIdentity<'a>>,
 }
 
@@ -59,7 +59,7 @@ pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointIde
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub(in crate::domain_computation::primary_graph) fn checkpoint_prior_outputs(
+    pub fn checkpoint_prior_outputs(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime_authority: u64,

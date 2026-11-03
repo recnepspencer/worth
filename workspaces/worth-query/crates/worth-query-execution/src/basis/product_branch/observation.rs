@@ -82,7 +82,7 @@ impl WorthQueryProductBranchLease {
         self.read
     }
 
-    pub(crate) const fn read_lease_ref(&self) -> &WorthQueryProductObservationLease {
+    pub const fn read_lease_ref(&self) -> &WorthQueryProductObservationLease {
         &self.read
     }
     pub fn retained_clone(&self) -> Self {

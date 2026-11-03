@@ -15,7 +15,7 @@ use worth_relational::facade::transactions::RecordRef;
 mod aspect;
 mod source_authorization;
 
-pub(super) struct Selection {
+pub struct Selection {
     pub keys: ExecutionArray<Key>,
     pub(super) managed: ExecutionArray<RelationalAuthoredManagedSourceSelector>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,

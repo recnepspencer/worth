@@ -24,7 +24,7 @@ pub struct WorthQueryRelationalSourceOwner {
     pub(in crate::domain_computation) runtime_instance_id: u64,
     pub(super) source: RuntimeBridgeRelationalSource,
     pub(super) bridge_head: Arc<Mutex<Option<RelationalBridgeBranchHeadLease>>>,
-    pub(in crate::domain_computation) invalidation_owner:
+    pub invalidation_owner:
         Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
     canonical_subscription: RelationalBridgeCanonicalSubscription,
     read_acquisitions: Arc<std::sync::atomic::AtomicU64>,

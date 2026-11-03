@@ -80,7 +80,7 @@ impl WorthQueryApplicationOutputLineage {
     /// reason is the inner one: without a candidate, Ready takes Fresh, where
     /// this advance's record refuses a published member without evidence of change.
     #[allow(clippy::type_complexity)]
-    pub(in crate::domain_computation::primary_graph) fn resolve_required_settlement(
+    pub fn resolve_required_settlement(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,

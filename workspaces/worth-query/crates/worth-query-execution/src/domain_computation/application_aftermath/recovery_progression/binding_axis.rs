@@ -75,7 +75,7 @@ impl WorthQueryRecoveryBindingCurrentTruth {
         }
     }
 
-    pub(crate) fn check(
+    pub fn check(
         &self,
         binding: &WorthQueryRecoveryHandleBinding,
     ) -> Result<(), WorthQueryRecoveryHandleDenial> {
@@ -85,7 +85,7 @@ impl WorthQueryRecoveryBindingCurrentTruth {
             .map_err(|drift| map_binding_drift(drift, self, binding))
     }
 
-    pub(crate) fn axis_probe(binding: &WorthQueryRecoveryHandleBinding) -> Self {
+    pub fn axis_probe(binding: &WorthQueryRecoveryHandleBinding) -> Self {
         Self::from_handle_binding(binding)
     }
 }

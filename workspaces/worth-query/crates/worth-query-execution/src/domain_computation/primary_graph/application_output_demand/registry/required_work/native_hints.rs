@@ -23,13 +23,13 @@ pub(in crate::domain_computation::primary_graph) struct NativeBranch {
 }
 
 impl NativeBranch {
-    pub(in crate::domain_computation::primary_graph) fn branch_id(&self) -> &BranchId {
+    pub fn branch_id(&self) -> &BranchId {
         &self.branch
     }
 }
 
 impl RequiredWorkMembership {
-    pub(in crate::domain_computation::primary_graph) fn prepared_native_branch(
+    pub fn prepared_native_branch(
         branch: BranchId,
     ) -> Arc<NativeBranch> {
         Arc::new(NativeBranch { branch })
@@ -37,7 +37,7 @@ impl RequiredWorkMembership {
 
     /// Construction happens only after native preflight pays the Box and
     /// retained ticket. Installation only links this already-owned node.
-    pub(in crate::domain_computation::primary_graph) fn prepared_native_hint(
+    pub fn prepared_native_hint(
         observer: CompanionPublicationCompletionObserver,
         branch: Arc<NativeBranch>,
     ) -> Box<NativeHint> {

@@ -93,7 +93,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         Self::observe_image(&image, selected)
     }
 
-    pub(super) fn observe_image(
+    pub fn observe_image(
         image: &CompanionBranchImage<BranchMarkRoot>,
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Result<Self, FullVerificationReason> {
@@ -148,7 +148,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         }
     }
 
-    pub(super) fn currentness(
+    pub fn currentness(
         &self,
         settlement: &RecordedSettlementIdentity,
     ) -> SettlementCurrentness<'_> {

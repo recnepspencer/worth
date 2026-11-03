@@ -18,7 +18,7 @@ pub struct WorthQueryRecoveredOutputs {
     _metadata: Option<CheckpointMetadataFunding>,
 }
 impl WorthQueryRecoveredOutputs {
-    pub(in crate::domain_computation::primary_graph) fn from_checkpoint(
+    pub fn from_checkpoint(
         checkpoint: DecodedApplicationCheckpoint,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut readmit: impl FnMut(

@@ -30,7 +30,7 @@ impl PartialOrd for RecordedSettlementIdentity {
 }
 
 impl RecordedSettlementIdentity {
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SemanticSource {
+    pub fn source(&self) -> &SemanticSource {
         &self.source
     }
     pub const fn address(
@@ -46,13 +46,13 @@ impl RecordedSettlementIdentity {
             self.slot,
         )
     }
-    pub(super) const fn coordinate(&self) -> ProductCoordinate {
+    pub const fn coordinate(&self) -> ProductCoordinate {
         self.coordinate
     }
     pub(super) const fn slot(&self) -> usize {
         self.slot
     }
-    pub(super) fn retain(
+    pub fn retain(
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         slot: usize,

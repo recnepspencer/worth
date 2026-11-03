@@ -98,7 +98,7 @@ pub(in super::super) fn capture_original_query(
     .assemble(execution, memory)
 }
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
-    pub(in super::super) fn materialize_rich<Q, P, R, S>(
+    pub fn materialize_rich<Q, P, R, S>(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         query: &WorthQueryInstalledApplicationQuery<Schema, Q, P, R, S>,

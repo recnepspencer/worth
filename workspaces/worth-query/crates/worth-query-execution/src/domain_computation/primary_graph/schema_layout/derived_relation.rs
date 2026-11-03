@@ -18,7 +18,7 @@ mod expression;
 mod laws;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct DerivedRelationLayout {
+pub struct DerivedRelationLayout {
     pub(in crate::domain_computation::primary_graph) orbit_definition:
         Option<worth_foundational::facade::AggregateDefinitionIdentity>,
     pub from: ApplicationGraphMemberMeaning,

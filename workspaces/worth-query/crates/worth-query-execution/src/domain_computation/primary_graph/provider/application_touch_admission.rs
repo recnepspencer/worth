@@ -329,7 +329,7 @@ impl From<()> for TouchAdmissionFailure {
     }
 }
 impl TouchAdmissionFailure {
-    pub(super) fn into_invariant_failure(
+    pub fn into_invariant_failure(
         self,
     ) -> crate::domain_computation::WorthQueryInvariantExecutionFailure {
         use worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError as Error;

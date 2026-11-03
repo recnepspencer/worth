@@ -98,7 +98,7 @@ pub enum SelectedRequiredWorkKind {
     UnresolvedInitial,
 }
 
-pub(in crate::domain_computation::primary_graph) struct ReplacedRequiredWorkHint {
+pub struct ReplacedRequiredWorkHint {
     _native: Option<Box<NativeHint>>,
     _settlement: Option<Arc<RecordedSettlementIdentity>>,
 }
@@ -141,7 +141,7 @@ impl RequiredWorkMembership {
 
     /// The native prepared effect owns this observer. Publish its hint before
     /// testing active membership so a simultaneous activation cannot miss it.
-    pub(in crate::domain_computation::primary_graph) fn prepare_hint(
+    pub fn prepare_hint(
         self: &Arc<Self>,
         mut hint: Box<NativeHint>,
     ) {

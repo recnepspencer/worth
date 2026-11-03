@@ -48,7 +48,7 @@ struct PlannedSlots {
     roots: usize,
 }
 
-pub(in crate::domain_computation::primary_graph) struct PlannedBatchItem {
+pub struct PlannedBatchItem {
     plan: Arc<Mutex<InstalledBatchPlan>>,
 }
 

@@ -11,7 +11,7 @@ pub struct StableFactSpans {
     witness_end: usize,
 }
 impl StableFactSpans {
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn new(
+    pub fn new(
         body: FactPayload,
         handler_count: usize,
         witness_count: usize,

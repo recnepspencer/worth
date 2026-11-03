@@ -28,7 +28,7 @@ pub struct ExternalEffectCorrelationIdentity {
 }
 
 impl ExternalEffectCorrelationIdentity {
-    pub(crate) const fn from_digest(digest: CanonicalDigestId) -> Self {
+    pub const fn from_digest(digest: CanonicalDigestId) -> Self {
         Self { digest }
     }
 

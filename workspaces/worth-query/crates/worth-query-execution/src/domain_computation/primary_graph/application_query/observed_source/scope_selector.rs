@@ -30,7 +30,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.parameters.row_footprints()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn original_binding(
+    pub fn original_binding(
         &self,
     ) -> Option<
         &worth_query_installation::facade::WorthQueryInstalledApplicationQueryBindingObservation,

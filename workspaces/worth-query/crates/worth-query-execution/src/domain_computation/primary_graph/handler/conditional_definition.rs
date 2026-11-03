@@ -18,7 +18,7 @@ pub struct ConditionalDefinitionAdmission<'a, Schema> {
     product: Option<&'a WorthQueryProductBranchLease>,
 }
 impl<'a, Schema> ConditionalDefinitionAdmission<'a, Schema> {
-    pub(in crate::domain_computation::primary_graph) fn new(
+    pub fn new(
         application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         product: Option<&'a WorthQueryProductBranchLease>,
     ) -> Self {

@@ -50,7 +50,7 @@ enum PortableSupportRole {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalSupportBasis {
+pub struct WorthQueryWorkflowApprovalSupportBasis {
     data: Arc<ApprovalSupportData>,
 }
 struct ApprovalSupportData {

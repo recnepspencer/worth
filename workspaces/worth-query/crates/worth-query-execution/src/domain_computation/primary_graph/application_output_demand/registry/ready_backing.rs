@@ -24,7 +24,7 @@ struct ReadyCell {
 
 /// Identity of the actual prepaid cell, retained without retaining its answer.
 /// Its weak control block prevents address reuse while an old row exists.
-pub(super) struct OutputCheckpointGeneration(Weak<ReadyCell>);
+pub struct OutputCheckpointGeneration(Weak<ReadyCell>);
 impl OutputCheckpointGeneration {
     pub fn same(&self, other: &Self) -> bool {
         Weak::ptr_eq(&self.0, &other.0)

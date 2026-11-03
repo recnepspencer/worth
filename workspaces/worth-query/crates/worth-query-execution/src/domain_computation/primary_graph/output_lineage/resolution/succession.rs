@@ -6,7 +6,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 type Publication<'a> = ((Reverse<usize>, u64), &'a RecordedOutput);
 
 impl WorthQueryApplicationOutputLineage {
-    pub(in crate::domain_computation::primary_graph) fn resolve_binding_succession<
+    pub fn resolve_binding_succession<
         Preserve: 'static,
         Create: 'static,
     >(

@@ -49,7 +49,7 @@ pub struct PreparedOutputLineageSlot {
     pub(super) native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// A sealed partitioned computation run and the record its prior state
     /// came from. World recovery carries both unchanged to its replacement slot.
-    pub(super) computation: PreparedComputationCustody,
+    pub computation: PreparedComputationCustody,
     /// A pre-publication work allowance; a larger current fork set is not scanned.
     pub(super) prior_computation: Option<super::PriorComputationRecord>,
     pub(super) native_prior_checkpoint:
@@ -123,7 +123,7 @@ impl PreparedOutputLineageSlot {
         self.completed_handler_facts = Some(boundary);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_computation(
+    pub fn retain_computation(
         &mut self,
         sealed: SealedComputationRetention,
         prior: Option<super::PriorComputationRecord>,

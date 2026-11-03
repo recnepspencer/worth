@@ -25,7 +25,7 @@ pub struct WorthQueryApplicationCommittedChanges {
 }
 
 impl WorthQueryApplicationCommittedChanges {
-    pub(in crate::domain_computation::primary_graph) fn shares_original(
+    pub fn shares_original(
         &self,
         other: &Self,
     ) -> bool {

@@ -96,18 +96,18 @@ pub struct WorthQueryApplicationOutputLineage {
             BTreeMap<u64, RecordedGeneration>,
         >,
     >,
-    binding_identities: super::output_binding_identity::OutputBindingInventory,
-    partition_index: partition_index::OutputPartitionIndex,
-    origins: BTreeMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
+    pub binding_identities: super::output_binding_identity::OutputBindingInventory,
+    pub partition_index: partition_index::OutputPartitionIndex,
+    pub origins: BTreeMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
     live_occurrences: BTreeSet<worth_runtime_world::facade::ProductBranchIncarnation>,
-    cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
-    output_families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
+    pub cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
+    pub output_families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     source_publication_coverage: source_publication::SourcePublicationCoverage,
 }
 
 type RecordedGeneration = Vec<Arc<OnceLock<RecordedOutput>>>;
 
-pub(super) struct WorthQueryExactRecordedOutput {
+pub struct WorthQueryExactRecordedOutput {
     pub producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
@@ -141,14 +141,14 @@ pub struct ProductCoordinate {
 }
 
 pub struct WorthQueryPriorOutputBindingResolution {
-    pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
+    pub correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
 }
 
-pub(super) struct WorthQueryCurrentOutputCandidate {
-    pub(super) consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
+pub struct WorthQueryCurrentOutputCandidate {
+    pub consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
     pub verification_requirement: Option<invalidation::FullVerificationReason>,
-    pub(super) settlement_identity: Arc<RecordedSettlementIdentity>,
-    pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub settlement_identity: Arc<RecordedSettlementIdentity>,
+    pub correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     /// The role the producer of this correspondence outputs to its family.
     pub(super) output_role: String,
     pub observed_source_facts: RetainedSourceFacts,
@@ -157,7 +157,7 @@ pub(super) struct WorthQueryCurrentOutputCandidate {
 
 pub struct WorthQueryCurrentOutputFamilyResolution {
     pub(super) family_installed: bool,
-    pub(super) ambiguous_publication: bool,
+    pub ambiguous_publication: bool,
     pub candidates: Vec<WorthQueryCurrentOutputCandidate>,
 }
 

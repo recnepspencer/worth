@@ -6,7 +6,7 @@ use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as 
 impl WorthQueryApplicationCommittedChanges {
     /// O(record patches + matching patch grammar), diagnostic only and allocation-free.
     /// Full-GEN identity and one original patch are required. Retirement supplies no field.
-    pub(in crate::domain_computation::primary_graph) fn field_effect(
+    pub fn field_effect(
         &self,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         entity: EntityId,

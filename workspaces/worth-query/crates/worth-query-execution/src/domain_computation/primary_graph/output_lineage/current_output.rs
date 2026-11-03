@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt
 pub struct RetainedOutputCurrentnessRead {
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) facts: Option<super::ComparableSourceFacts>,
+    pub facts: Option<super::ComparableSourceFacts>,
     pub(in crate::domain_computation::primary_graph) consumed_outputs:
         Arc<[ConsumedOutputEvidence]>,
     pub(in crate::domain_computation::primary_graph) native_output_witness:
@@ -97,7 +97,7 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn source_facts_for_receipt(
+    pub fn source_facts_for_receipt(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
@@ -220,7 +220,7 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn current_output_matches_receipt(
+    pub fn current_output_matches_receipt(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,

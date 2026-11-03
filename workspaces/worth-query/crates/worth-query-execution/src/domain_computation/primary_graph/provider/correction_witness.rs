@@ -6,7 +6,7 @@ use worth_execution::{
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
-pub(in crate::domain_computation::primary_graph) struct CorrectionPerformedWitness {
+pub struct CorrectionPerformedWitness {
     pub world: CompositeCommitIdentity,
     pub aftermath: Option<WorthQueryCommittedAftermathCausality>,
     // Last: copied causality and the Arc allocation drop before their payer.

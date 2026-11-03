@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::IndexedSelect
 use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason as Registration;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct RebaseVerificationFailure {
+pub struct RebaseVerificationFailure {
     reason: Reason,
     registration: Registration,
 }

@@ -204,7 +204,7 @@ where
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn project_operation_on_product<
+    pub fn project_operation_on_product<
         Operation,
         Output,
     >(

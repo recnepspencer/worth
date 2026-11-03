@@ -223,7 +223,7 @@ where
         self.select_with_request(&request)
     }
 
-    pub(in crate::domain_computation) fn select_with_request(
+    pub fn select_with_request(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<

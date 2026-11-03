@@ -106,7 +106,7 @@ impl SourceInvalidationOwner {
 
     /// The source snapshot is selected by the native reader before this method
     /// reads any mark image. There is no latest-head substitution or floor lookup.
-    pub(in crate::domain_computation::primary_graph) fn currentness(
+    pub fn currentness(
         &self,
         selected: &PositionedRelationalSnapshot,
         identity: &RecordedSettlementIdentity,
@@ -176,7 +176,7 @@ impl SourceInvalidationOwner {
     /// A sealed image comparison publishes this derived edit at the same source
     /// position. A racing native preflight returns a typed retry; it cannot be
     /// overwritten by a settlement that prepared against the previous image.
-    pub(in crate::domain_computation::primary_graph) fn register_settlement(
+    pub fn register_settlement(
         &self,
         registration: SettlementRegistration,
     ) -> Result<(), SettlementRegistrationStop> {

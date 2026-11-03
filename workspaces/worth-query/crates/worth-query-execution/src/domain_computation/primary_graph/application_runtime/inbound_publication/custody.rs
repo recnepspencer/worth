@@ -162,7 +162,7 @@ impl InstalledTransportCompletionCustody {
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Retain the actual completed observation before any completion publication.
-    pub(in crate::domain_computation::primary_graph) fn record_installed_transport_completion(
+    pub fn record_installed_transport_completion(
         &self,
         evidence: InstalledTransportCompletion,
         in_flight: OutstandingDispatchInFlightLease,
@@ -174,7 +174,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     /// Dispatch admission consults this before authorizing another physical send.
-    pub(in crate::domain_computation::primary_graph) fn has_retained_installed_transport_completion(
+    pub fn has_retained_installed_transport_completion(
         &self,
         correlation: &ExternalEffectCorrelationIdentity,
     ) -> bool {

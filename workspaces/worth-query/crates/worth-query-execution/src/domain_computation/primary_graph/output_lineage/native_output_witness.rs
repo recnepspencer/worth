@@ -50,7 +50,7 @@ struct AspectProbe {
 #[must_use = "the prepared output witness must be sealed or dropped"]
 pub struct PreparedNativeOutputWitness {
     cell: Arc<OnceLock<SealedNativeOutputWitness>>,
-    roles: Vec<RoleProbe>,
+    pub roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
 }
 
@@ -106,7 +106,7 @@ impl PreparedNativeOutputWitness {
     /// The committed correspondence supplies created IDs. All storage was
     /// allocated by `prepare`; an unavailable native projection only makes
     /// this optional reuse proof ineligible.
-    pub(in crate::domain_computation::primary_graph) fn finish(
+    pub fn finish(
         mut self,
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         runtime: &RelationalRuntime,
@@ -161,7 +161,7 @@ impl SealedNativeOutputWitness {
     /// Claim the actual role/aspect traversal and initialized name copies
     /// before a stable alias materializes its observed-fact row. An unfilled
     /// witness cannot be promoted into reusable output authority.
-    pub(in crate::domain_computation::primary_graph) fn prepare_fact_projection(
+    pub fn prepare_fact_projection(
         &self,
     ) -> Result<Option<PreparedNativeOutputFacts<'_>>, CompanionPreflightStop> {
         let mut count = 0usize;
@@ -219,7 +219,7 @@ impl SealedNativeOutputWitness {
         Ok(true)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn unchanged_in(
+    pub fn unchanged_in(
         &self,
         runtime: &RelationalRuntime,
         selected: &SnapshotHandle,

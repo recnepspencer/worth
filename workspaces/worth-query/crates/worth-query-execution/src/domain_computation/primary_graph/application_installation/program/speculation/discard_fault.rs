@@ -1,6 +1,6 @@
 //! Scoped receiver-owned residue refusal for readmission's cleanup proof.
 use super::WorthQueryApplicationPreviewSession;
-pub(super) struct PreviewDiscardFaultForTest(std::rc::Rc<std::cell::Cell<bool>>);
+pub struct PreviewDiscardFaultForTest(std::rc::Rc<std::cell::Cell<bool>>);
 impl Drop for PreviewDiscardFaultForTest {
     fn drop(&mut self) {
         self.0.set(false);

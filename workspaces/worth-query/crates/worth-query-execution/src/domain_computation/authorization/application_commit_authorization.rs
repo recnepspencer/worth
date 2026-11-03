@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationBranchCommitCoordination,
 };
 
-pub(in crate::domain_computation) struct WorthQueryApplicationCommitAuthorization<
+pub struct WorthQueryApplicationCommitAuthorization<
     'serialization,
     'admission,
     Schema,

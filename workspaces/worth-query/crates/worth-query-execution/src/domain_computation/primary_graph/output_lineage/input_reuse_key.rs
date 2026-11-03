@@ -32,7 +32,7 @@ impl PreparedInputReuseKey {
 
     /// The prepared input a republished output continues: the same selected
     /// membership, input and installed producer that performed it.
-    pub(in crate::domain_computation::primary_graph) fn continued_by_republication(&self) -> Self {
+    pub fn continued_by_republication(&self) -> Self {
         Self {
             selection: self.selection.clone(),
             input_identity: self.input_identity,
@@ -40,7 +40,7 @@ impl PreparedInputReuseKey {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn same_prepared_input_as(
+    pub fn same_prepared_input_as(
         &self,
         other: &Self,
         admit: &mut impl FnMut(

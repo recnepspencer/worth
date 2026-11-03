@@ -84,7 +84,7 @@ impl WorthQueryApplicationGovernanceBinding {
             .checked_add(u64::try_from(names).ok()?)
     }
 
-    pub(in crate::domain_computation) fn from_inspection_session(
+    pub fn from_inspection_session(
         graph_work: &WorthQueryManagedGraphWorkSession,
         target: &Arc<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>,
         parameters: CanonicalDigestId,

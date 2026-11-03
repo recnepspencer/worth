@@ -70,7 +70,7 @@ impl WorthQueryPrimaryGraphLayout {
     }
 
     /// Resolve an already issued query footprint through the same installed inventory.
-    pub(in crate::domain_computation::primary_graph) fn resolve_declared_field_coordinate<'a>(
+    pub fn resolve_declared_field_coordinate<'a>(
         &'a self,
         contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog,
         entity: &str,

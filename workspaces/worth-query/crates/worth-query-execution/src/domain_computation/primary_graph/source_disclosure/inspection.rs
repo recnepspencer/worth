@@ -30,13 +30,13 @@ impl OriginalSourceInspectionDisclosure {
     ) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {
         &self.schema
     }
-    pub(in crate::domain_computation) fn association(&self) -> &InstalledSourceDisclosureBinding {
+    pub fn association(&self) -> &InstalledSourceDisclosureBinding {
         &self.association
     }
-    pub(in crate::domain_computation) fn scope(&self) -> &WorthQueryObservedScopeSelector {
+    pub fn scope(&self) -> &WorthQueryObservedScopeSelector {
         &self.scope
     }
-    pub(in crate::domain_computation) fn disclosure(&self) -> &OriginalSourceDisclosure {
+    pub fn disclosure(&self) -> &OriginalSourceDisclosure {
         &self.disclosure
     }
 }

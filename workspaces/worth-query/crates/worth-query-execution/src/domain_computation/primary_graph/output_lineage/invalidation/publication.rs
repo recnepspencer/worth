@@ -184,7 +184,7 @@ fn own_effect_stale_ordinals(
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub(in crate::domain_computation::primary_graph) fn require_settlement_verification(
+    pub fn require_settlement_verification(
         &mut self,
         identity: &RecordedSettlementIdentity,
         reason: FullVerificationReason,

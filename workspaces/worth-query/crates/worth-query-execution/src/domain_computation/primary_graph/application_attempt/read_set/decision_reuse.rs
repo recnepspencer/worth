@@ -85,7 +85,7 @@ impl PreparedDecisionReuseContext {
 
     /// A fresh invocation can compare its descriptive admitted context with
     /// prior completed evidence without pretending the new handler ran.
-    pub(in crate::domain_computation::primary_graph) fn matches_completed(
+    pub fn matches_completed(
         &self,
         prior: &CompletedDecisionReuseProof,
     ) -> bool {

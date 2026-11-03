@@ -31,7 +31,7 @@ pub(super) enum InspectionTargetDenial {
 }
 
 impl WorthQueryApplicationInspectionTarget {
-    pub(super) fn capture(
+    pub fn capture(
         execution: &ExecutionRequest<'_, '_>,
         original: &WorthQueryApplicationQueryObservation,
         before: Option<&WorthQueryApplicationQueryObservation>,
@@ -112,7 +112,7 @@ impl WorthQueryApplicationInspectionTarget {
                 .as_ref()
                 .is_some_and(|source| Arc::ptr_eq(source, target))
     }
-    pub(in crate::domain_computation) fn original_subject(
+    pub fn original_subject(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
         match &self.original {
@@ -152,7 +152,7 @@ impl WorthQueryApplicationInspectionTarget {
             _ => None,
         }
     }
-    pub(super) fn parameters(&self) -> worth_foundational::facade::CanonicalDigestId {
+    pub fn parameters(&self) -> worth_foundational::facade::CanonicalDigestId {
         match &self.original {
             InspectionOriginal::Query { original, .. } => {
                 original.source.parameter_binding_identity

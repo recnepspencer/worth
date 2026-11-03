@@ -13,7 +13,7 @@ use super::fact_key::FactPostingKey;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct FactPosting {
-    pub(super) settlement: Arc<RecordedSettlementIdentity>,
+    pub settlement: Arc<RecordedSettlementIdentity>,
     pub(super) ordinal: usize,
 }
 
@@ -62,7 +62,7 @@ impl FullVerificationReason {
 pub(super) struct DeliveryEpoch(Option<CommitId>);
 
 impl DeliveryEpoch {
-    pub(super) const fn initial() -> Self {
+    pub const fn initial() -> Self {
         Self(None)
     }
 
@@ -140,10 +140,10 @@ pub struct MarkState {
     pub(super) source_publication_posting_count: usize,
     pub(super) source_publication_head_count: usize,
 
-    pub(super) posting_count: usize,
+    pub posting_count: usize,
 
     pub(super) next_posting_projection: u64,
-    pub(super) posting_bindings: OrdMap<u64, Arc<super::settlement::PostingBindings>>,
+    pub posting_bindings: OrdMap<u64, Arc<super::settlement::PostingBindings>>,
     /// Whole-index upper bound for carried basis allocations. Registration's
     /// initial basis has its own fact ticket; a carried clone is index-owned.
 
@@ -153,7 +153,7 @@ pub struct MarkState {
     pub(super) pending_edge_count: usize,
     pub(super) delivery_epoch: DeliveryEpoch,
     pub(super) last_discontinuity: Option<FullVerificationReason>,
-    pub(super) postings: OrdMap<Arc<FactPostingKey>, OrdSet<u64>>,
+    pub postings: OrdMap<Arc<FactPostingKey>, OrdSet<u64>>,
     pub(super) settlements: OrdMap<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>,
     pub(super) downstream:
         OrdMap<Arc<RecordedSettlementIdentity>, OrdSet<Arc<RecordedSettlementIdentity>>>,
@@ -180,7 +180,7 @@ impl MarkState {
         Ok(id)
     }
 
-    pub(super) fn initial() -> Self {
+    pub fn initial() -> Self {
         Self {
             source_publications: OrdMap::new(),
             source_publication_postings: OrdMap::new(),

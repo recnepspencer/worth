@@ -36,10 +36,10 @@ struct CommittedOutputBinding {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryCheckpointOutputRole {
-    pub(in crate::domain_computation::primary_graph) role: String,
-    pub(in crate::domain_computation::primary_graph) posture: WorthQueryApplicationOutputPosture,
-    pub(in crate::domain_computation::primary_graph) entity_name: String,
-    pub(in crate::domain_computation::primary_graph) entity: EntityId,
+    pub role: String,
+    pub posture: WorthQueryApplicationOutputPosture,
+    pub entity_name: String,
+    pub entity: EntityId,
 }
 
 /// Sealed role-to-identity correspondence resolved from one Relational commit.
@@ -85,7 +85,7 @@ impl WorthQueryApplicationOutputCorrespondence {
             .collect()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn workflow_content_identity(
+    pub fn workflow_content_identity(
         &self,
     ) -> [u8; 32] {
         use sha2::Digest;
@@ -210,7 +210,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn entity_for_binding_role<
+    pub fn entity_for_binding_role<
         Binding: 'static,
     >(
         &self,

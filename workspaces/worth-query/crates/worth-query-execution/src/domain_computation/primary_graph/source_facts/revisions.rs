@@ -8,7 +8,7 @@ pub struct WorthQueryObservedFieldRevision {
     pub entity_name: String,
     pub aspect: AspectKey,
     pub field: FieldKey,
-    pub(in crate::domain_computation::primary_graph) contract_revision: AspectContractRevision,
+    pub contract_revision: AspectContractRevision,
     pub native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
 }
 

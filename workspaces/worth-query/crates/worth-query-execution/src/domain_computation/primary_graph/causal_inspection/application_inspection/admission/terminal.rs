@@ -23,7 +23,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
 }
 
 impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Schema, Scope> {
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn terminal(
+    pub fn terminal(
         mut self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<InspectionTerminal<'storage>, InspectionAdmissionDenial> {

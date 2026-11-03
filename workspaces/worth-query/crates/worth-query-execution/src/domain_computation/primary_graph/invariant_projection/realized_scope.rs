@@ -96,7 +96,7 @@ impl WorthQueryRealizedProjectionScope {
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn contains(
+    pub fn contains(
         &self,
         entity_id: EntityId,
     ) -> bool {

@@ -87,7 +87,7 @@ pub enum WorthQueryManagedGraphWorkSessionStartDenial {
 }
 
 /// Live authority opened from exactly one sealed, capacity-reserved plan.
-pub(in crate::domain_computation) struct WorthQueryManagedGraphWorkSession {
+pub struct WorthQueryManagedGraphWorkSession {
     identity: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
     runtime: WorthQueryRuntimeAuthorityIdentity,

@@ -5,9 +5,9 @@ use super::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct RetirementMetadata {
-    pub(super) kind: KindId,
-    pub(super) created_at: VersionId,
-    pub(super) deleted_at: VersionId,
+    pub kind: KindId,
+    pub created_at: VersionId,
+    pub deleted_at: VersionId,
 }
 
 pub fn native_metadata(

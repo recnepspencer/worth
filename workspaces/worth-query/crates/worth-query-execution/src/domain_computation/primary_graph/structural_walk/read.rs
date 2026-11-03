@@ -12,13 +12,13 @@ use worth_relational::facade::{
 
 /// Exact query meaning, not an admission or permission to manufacture evidence.
 pub struct StructuralWalkQuery<'a> {
-    pub(in crate::domain_computation::primary_graph) relation: &'a str,
-    pub(in crate::domain_computation::primary_graph) roots: &'a [EntityId],
-    pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
-    pub(in crate::domain_computation::primary_graph) relation_kind: KindId,
-    pub(in crate::domain_computation::primary_graph) direction: RelationDirection,
-    pub(in crate::domain_computation::primary_graph) maximum_work: Option<usize>,
-    pub(in crate::domain_computation::primary_graph) control:
+    pub relation: &'a str,
+    pub roots: &'a [EntityId],
+    pub entity_kind: KindId,
+    pub relation_kind: KindId,
+    pub direction: RelationDirection,
+    pub maximum_work: Option<usize>,
+    pub control:
         Option<&'a dyn Fn() -> Result<(), Cause>>,
 }
 

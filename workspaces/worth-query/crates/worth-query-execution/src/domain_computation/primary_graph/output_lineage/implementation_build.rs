@@ -2,7 +2,7 @@
 use super::{RecordedOutput, WorthQueryApplicationOutputLineage};
 use worth_foundational::facade::ApplicationBuildIdentity;
 impl WorthQueryApplicationOutputLineage {
-    pub(in crate::domain_computation::primary_graph) fn bind_implementation_build(
+    pub fn bind_implementation_build(
         &mut self,
         build: ApplicationBuildIdentity,
     ) {

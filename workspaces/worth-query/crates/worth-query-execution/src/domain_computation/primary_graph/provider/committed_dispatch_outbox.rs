@@ -34,7 +34,7 @@ pub struct WorthQueryCommittedDispatchOutboxObservation {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct WorthQueryCommittedDispatchOutboxOwnerObservation {
+pub struct WorthQueryCommittedDispatchOutboxOwnerObservation {
     record: WorthQueryDispatchOutboxRecord,
     commit: RelationalCommitReceipt,
     record_ref: RecordRef,

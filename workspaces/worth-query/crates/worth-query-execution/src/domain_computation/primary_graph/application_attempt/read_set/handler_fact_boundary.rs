@@ -13,7 +13,7 @@ impl CompletedHandlerFactBoundary {
         Self::from_completed_read(handler_fact_count)
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn handler_fact_count(&self) -> usize {
+    pub const fn handler_fact_count(&self) -> usize {
         self.handler_fact_count
     }
 

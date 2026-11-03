@@ -62,7 +62,7 @@ pub struct WorthQueryApplicationCheckpoint {
 
 pub struct DecodedApplicationCheckpoint {
     pub native: worth_relational::facade::durability::RelationalNativeCheckpoint,
-    pub(super) bootstrap_commit_id: worth_relational::facade::history::CommitId,
+    pub bootstrap_commit_id: worth_relational::facade::history::CommitId,
     pub accepted_outputs:
         Vec<super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     pub(super) metadata: CheckpointMetadataFunding,

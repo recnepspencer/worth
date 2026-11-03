@@ -113,7 +113,7 @@ impl SourceInvalidationOwner {
 
     /// Only the sealed stable-publication relation may discharge an old
     /// consumed identity in the same prepared current source image.
-    pub(in crate::domain_computation::primary_graph) fn prepare_current_stable_settlement<
+    pub fn prepare_current_stable_settlement<
         'selected,
     >(
         &self,

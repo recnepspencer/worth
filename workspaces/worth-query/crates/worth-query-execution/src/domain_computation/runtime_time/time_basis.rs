@@ -46,7 +46,7 @@ impl WorthQueryRuntimeClock {
         }
     }
 
-    pub(in crate::domain_computation) fn from_source(
+    pub fn from_source(
         source: impl WorthQueryRuntimeTimeSource,
     ) -> Self {
         Self {

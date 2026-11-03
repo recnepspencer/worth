@@ -29,7 +29,7 @@ impl InstalledTransportCompletion {
     /// Admit only the actual result of a runtime-admitted dispatch attempt.
     /// `WorthQueryExternalEffectDispatch` is sealed by the dispatch owner; the
     /// source row is independently sealed by the Relational observation owner.
-    pub(in crate::domain_computation::primary_graph) fn from_observed_dispatch(
+    pub fn from_observed_dispatch(
         committed: WorthQueryCommittedDispatchOutboxObservation,
         dispatch: &WorthQueryExternalEffectDispatch,
     ) -> Result<Self, InstalledTransportCompletionDenial> {

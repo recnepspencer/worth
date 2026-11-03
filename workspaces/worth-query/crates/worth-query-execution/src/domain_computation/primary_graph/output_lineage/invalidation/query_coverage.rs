@@ -39,11 +39,11 @@ pub(in crate::domain_computation::primary_graph) struct QueryFactCoverage {
 }
 #[derive(Clone, Debug)]
 pub struct QueryReadBinding {
-    projection: QueryReadBacking,
-    identity: Weak<QueryReadIdentity>,
+    pub projection: QueryReadBacking,
+    pub identity: Weak<QueryReadIdentity>,
     established: Option<PatchStreamPosition>,
     epoch: super::mark_state::DeliveryEpoch,
-    dirty: Option<usize>,
+    pub dirty: Option<usize>,
     // Weak identity allocation survives until the LAST historical binding drops.
 }
 impl QueryReadBinding {

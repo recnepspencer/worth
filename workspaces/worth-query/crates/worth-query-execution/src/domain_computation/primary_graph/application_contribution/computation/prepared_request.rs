@@ -47,7 +47,7 @@ impl PreparedCompute {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct ComputedSlot {
+pub struct ComputedSlot {
     value: Box<dyn Any + Send>,
 }
 impl ComputedSlot {

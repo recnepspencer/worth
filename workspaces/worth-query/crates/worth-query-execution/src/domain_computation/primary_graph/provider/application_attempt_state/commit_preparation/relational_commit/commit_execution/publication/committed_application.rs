@@ -136,7 +136,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         &self.commit_evidence.commit_reference().branch_id
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn commit_reference(
+    pub const fn commit_reference(
         &self,
     ) -> &RelationalCommitReceipt {
         self.commit_evidence.commit_reference()

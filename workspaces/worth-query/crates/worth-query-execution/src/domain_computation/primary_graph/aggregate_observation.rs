@@ -61,7 +61,7 @@ impl AggregateObservation {
             _allocation: query.allocation.cloned(),
         }))
     }
-    pub(in crate::domain_computation::primary_graph) fn same_truth_with_poll<E>(
+    pub fn same_truth_with_poll<E>(
         &self,
         other: &Self,
         mut poll: impl FnMut() -> Result<(), E>,

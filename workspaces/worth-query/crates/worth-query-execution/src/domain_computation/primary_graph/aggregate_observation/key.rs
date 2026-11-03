@@ -5,7 +5,7 @@ use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct AggregateKey<Member = EntityId> {
+pub struct AggregateKey<Member = EntityId> {
     pub(super) subject: Arc<str>,
     pub(super) entity_kind: KindId,
     pub(super) selection: AggregateSelection,

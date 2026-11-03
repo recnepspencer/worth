@@ -18,7 +18,7 @@ pub enum IndexedSelectionReobserveDenial {
 
 /// Why an indexed lookup yields no selection fact.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryIndexedSelectionRefusal {
+pub enum WorthQueryIndexedSelectionRefusal {
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// More entities hold the value than the lookup's candidate limit.
     Overflowed,

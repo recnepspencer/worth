@@ -52,7 +52,7 @@ impl PreparedOutputLineageSlot {
                 ))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_recovery_metadata(
+    pub fn into_recovery_metadata(
         mut self,
     ) -> PreparedLineageRecoveryMetadata {
         let metadata = PreparedLineageRecoveryMetadata {
@@ -66,7 +66,7 @@ impl PreparedOutputLineageSlot {
         metadata
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_recovery_metadata(
+    pub fn retain_recovery_metadata(
         &mut self,
         mut metadata: PreparedLineageRecoveryMetadata,
     ) {

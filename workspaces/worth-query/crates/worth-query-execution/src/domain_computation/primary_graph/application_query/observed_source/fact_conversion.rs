@@ -77,7 +77,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retained_checkpoint_facts(
+    pub fn retained_checkpoint_facts(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
         request: Option<

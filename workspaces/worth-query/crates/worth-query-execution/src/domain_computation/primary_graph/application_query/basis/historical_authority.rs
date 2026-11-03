@@ -42,13 +42,13 @@ impl WorthQueryApplicationHistoricalRead {
 }
 
 /// Move-only Query authority for one exact historical application snapshot.
-pub(crate) struct WorthQueryApplicationHistoricalBasis<Schema> {
+pub struct WorthQueryApplicationHistoricalBasis<Schema> {
     pub(super) lease: WorthQueryApplicationBasisLease,
     pub(super) _schema: PhantomData<fn() -> Schema>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryApplicationHistoricalBasisReleaseReceipt {
+pub struct WorthQueryApplicationHistoricalBasisReleaseReceipt {
     released: bool,
 }
 

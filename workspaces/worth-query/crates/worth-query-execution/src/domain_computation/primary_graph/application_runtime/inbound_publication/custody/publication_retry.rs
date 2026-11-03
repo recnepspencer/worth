@@ -4,7 +4,7 @@ use super::InstalledTransportPendingReason as Pending;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 
 impl Denial {
-    pub(in crate::domain_computation::primary_graph) fn pending_reason(self) -> Pending {
+    pub fn pending_reason(self) -> Pending {
         match self {
             Denial::ExecutionDenied(cause) => Pending::ExecutionRequest(cause),
             Denial::CompletionPreparation(preparation) => match preparation {

@@ -26,7 +26,7 @@ impl PublishedStableLineage {
     ) -> bool {
         Arc::ptr_eq(&self.cell, &other.cell) && self.observation == other.observation
     }
-    pub(in crate::domain_computation::primary_graph) fn exact_settlement(
+    pub fn exact_settlement(
         &self,
     ) -> &Arc<super::super::super::RecordedSettlementIdentity> {
         &self.recorded().settlement_identity

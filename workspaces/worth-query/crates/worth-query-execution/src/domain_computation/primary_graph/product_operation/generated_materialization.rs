@@ -44,26 +44,26 @@ use crate::domain_computation::primary_graph::{
 
 pub struct ProducerQualification {
 
-    binding_type: TypeId,
-    output_binding_type: TypeId,
-    binding_identity: &'static str,
-    provider_identity: &'static str,
-    runtime_source_identity:
+    pub binding_type: TypeId,
+    pub output_binding_type: TypeId,
+    pub binding_identity: &'static str,
+    pub provider_identity: &'static str,
+    pub runtime_source_identity:
         crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
-    checkpoint_source_identity:
+    pub checkpoint_source_identity:
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
-    recorded_source_identity:
+    pub recorded_source_identity:
         crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity,
-    source_partition_identity: [u8; 32],
-    producer_dependency_identity: Option<[u8; 32]>,
-    producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
-    idempotency_key_identity: [u8; 32],
-    runtime_authority: u64,
-    schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    output_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    output_generation: u64,
-    observed_source_facts:
+    pub source_partition_identity: [u8; 32],
+    pub producer_dependency_identity: Option<[u8; 32]>,
+    pub producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
+    pub idempotency_key_identity: [u8; 32],
+    pub runtime_authority: u64,
+    pub schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    pub scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub output_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    pub output_generation: u64,
+    pub observed_source_facts:
         crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts,
 }
 

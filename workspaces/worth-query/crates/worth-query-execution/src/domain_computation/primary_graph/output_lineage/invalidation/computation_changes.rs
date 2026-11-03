@@ -15,7 +15,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 #[derive(Clone, Copy)]
 pub struct ComputationRegistration(());
 impl ComputationRegistration {
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn retained() -> Self {
+    pub fn retained() -> Self {
         Self(())
     }
 }

@@ -63,7 +63,7 @@ pub enum WorkflowApprovalRequestEncodingDenial {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorkflowApprovalRequestDecodingDenial {
+pub enum WorkflowApprovalRequestDecodingDenial {
     InvalidRequest,
     Actor(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
 }

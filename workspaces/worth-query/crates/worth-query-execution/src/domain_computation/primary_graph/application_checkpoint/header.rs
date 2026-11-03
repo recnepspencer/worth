@@ -48,7 +48,7 @@ impl CheckpointDecodeDenial {
             worth_execution::LeaseDenial::ChargedBytesOverflow,
         ))
     }
-    pub(in crate::domain_computation::primary_graph) fn from_fact(cause: FactDecodeDenial) -> Self {
+    pub fn from_fact(cause: FactDecodeDenial) -> Self {
         use super::super::application_attempt::retained_decision_facts::StoreDenial;
         use worth_execution::{ExecutionAllocationDenialClass, MapKernelStop, WorkCeilingDenial};
         match cause {
@@ -87,7 +87,7 @@ impl CheckpointDecodeDenial {
             message: format!("checkpoint producer fact wire version {observed} is unsupported"),
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn into_installation_denial(self) -> Denial {
+    pub fn into_installation_denial(self) -> Denial {
         Denial::new(self.kind, self.message)
     }
 }

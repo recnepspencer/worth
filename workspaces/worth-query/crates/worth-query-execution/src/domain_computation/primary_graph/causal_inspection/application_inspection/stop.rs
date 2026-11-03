@@ -46,7 +46,7 @@ pub enum WorthQueryApplicationInspectionStopKind {
 
 /// Owns the exact failing cause and the same original request's ticket, last.
 pub struct WorthQueryApplicationInspectionDenial {
-    pub(super) cause: InspectionCause,
+    pub cause: InspectionCause,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -167,7 +167,7 @@ impl WorthQueryApplicationInspectionDenial {
         }
     }
 
-    pub(super) fn new(cause: InspectionCause, memory: Option<ExecutionMemoryReservation>) -> Self {
+    pub fn new(cause: InspectionCause, memory: Option<ExecutionMemoryReservation>) -> Self {
         Self {
             cause,
             _memory: memory,

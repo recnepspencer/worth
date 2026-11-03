@@ -346,12 +346,12 @@ pub struct WorthQueryOutputDemandInterest {
 #[derive(Clone)]
 pub struct WorthQueryReadmittedAcceptedOutput {
     pub checkpoint: WorthQueryAcceptedOutputCheckpointIdentity,
-    pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
+    pub correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutputSourcePreparation {
+pub struct WorthQueryRequiredOutputSourcePreparation {
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     owner: WorthQueryOutputDemandRegistry,
 }

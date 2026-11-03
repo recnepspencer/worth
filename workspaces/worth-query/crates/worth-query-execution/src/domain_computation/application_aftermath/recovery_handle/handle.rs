@@ -129,7 +129,7 @@ impl WorthQueryRecoveryHandle {
         }
     }
 
-    pub(crate) fn consume(
+    pub fn consume(
         mut self,
         terminal: WorthQueryRecoveryResourceTerminal,
     ) -> Result<WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial> {
@@ -158,7 +158,7 @@ impl WorthQueryRecoveryHandle {
         Self::axis_probe_in_registry(binding, registry)
     }
 
-    pub(crate) fn axis_probe_in_registry(
+    pub fn axis_probe_in_registry(
         binding: WorthQueryRecoveryHandleBinding,
         registry: Arc<WorthQueryRecoveryHandleRegistry>,
     ) -> Self {

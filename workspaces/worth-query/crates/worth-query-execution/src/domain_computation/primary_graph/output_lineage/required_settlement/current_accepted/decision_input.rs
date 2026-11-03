@@ -2,7 +2,7 @@
 use super::*;
 
 impl AcceptedCurrentCandidate {
-    pub(in crate::domain_computation::primary_graph) fn decision_input_changed_at(
+    pub fn decision_input_changed_at(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,

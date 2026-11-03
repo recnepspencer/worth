@@ -14,7 +14,7 @@ pub enum WorthQuerySourceCurrentnessFailure {
 impl WorthQueryApplicationObservedFact {
     /// The extent retains actual bodies and its one admitted pin. It cannot
     /// answer for another runtime/image or omit an original control poll.
-    pub(in crate::domain_computation::primary_graph) fn source_currentness_with<'runtime>(
+    pub fn source_currentness_with<'runtime>(
         &self,
         runtime: &'runtime worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

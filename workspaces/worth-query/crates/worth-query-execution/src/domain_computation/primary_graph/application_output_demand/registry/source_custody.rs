@@ -12,7 +12,7 @@ pub enum PreparedOutputRootKind {
 }
 
 #[derive(Default)]
-pub(super) struct SourcePreparationState {
+pub struct SourcePreparationState {
     pub(super) active: usize,
     pub retired: bool,
 }

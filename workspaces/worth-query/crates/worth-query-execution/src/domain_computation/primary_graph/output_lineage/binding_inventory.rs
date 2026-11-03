@@ -15,7 +15,7 @@ impl WorthQueryApplicationOutputLineage {
     pub fn binding_identity(&self, binding: TypeId) -> Option<OutputBindingIdentity> {
         self.binding_identities.identity(binding)
     }
-    pub(super) fn binding_type(&self, identity: &OutputBindingIdentity) -> TypeId {
+    pub fn binding_type(&self, identity: &OutputBindingIdentity) -> TypeId {
         self.binding_identities
             .binding_type(identity)
             .expect("lineage binding is installed")

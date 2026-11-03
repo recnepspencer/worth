@@ -278,7 +278,7 @@ impl WorthQueryApplicationOutputLineage {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn record_recovered_prior_output(
+    pub fn record_recovered_prior_output(
         &mut self,
         output_binding: TypeId,
         runtime_authority: u64,

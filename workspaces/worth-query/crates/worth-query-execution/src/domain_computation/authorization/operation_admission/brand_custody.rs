@@ -83,7 +83,7 @@ impl<Schema, Operation, Input, Scope>
 
     /// Ownership precedes lapse and every read; a brand whose core is not
     /// the one it was minted for is refused in the same slot.
-    pub(in crate::domain_computation) fn validate_runtime_ownership(
+    pub fn validate_runtime_ownership(
         &self,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
@@ -93,7 +93,7 @@ impl<Schema, Operation, Input, Scope>
         self.tag.admits(&self.core)
     }
 
-    pub(in crate::domain_computation) fn belongs_to(
+    pub fn belongs_to(
         &self,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
@@ -111,7 +111,7 @@ impl<Schema, Operation, Input, Scope>
         self.core.validate_current_authority()
     }
 
-    pub(in crate::domain_computation) fn validate_installed_mutation_binding(
+    pub fn validate_installed_mutation_binding(
         &self,
         descriptor: Option<&ApplicationMutationBindingDescriptor>,
     ) -> Result<(), MutationHandlerExecutionDenial> {

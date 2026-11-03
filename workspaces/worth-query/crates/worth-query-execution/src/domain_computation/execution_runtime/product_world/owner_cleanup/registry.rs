@@ -23,7 +23,7 @@ pub enum CleanupScope {
     ApplicationRetirement(WorthQueryRetiredProductOccurrence),
 }
 
-struct CleanupRegistryState {
+pub struct CleanupRegistryState {
     maximum: Option<usize>,
     next_identity: u64,
     pub reserved: usize,
@@ -289,7 +289,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
 // install consumes self and disarms Drop before callbacks; Drop decrements only
 // an armed reservation. Each decrement therefore owns one distinct reserved slot.
 #[must_use = "cleanup capacity must be installed or released"]
-pub(crate) struct WorthQueryProductBranchOwnerCleanupReservation {
+pub struct WorthQueryProductBranchOwnerCleanupReservation {
     registry: WorthQueryProductBranchOwnerCleanupRegistry,
     identity: u64,
     entry: Arc<CleanupEntry>,

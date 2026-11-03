@@ -129,7 +129,7 @@ pub enum ConsumedOutputVerificationStop {
 }
 
 impl ConsumedOutputEvidence {
-    pub(in crate::domain_computation::primary_graph) fn verify_many_with_admission(
+    pub fn verify_many_with_admission(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: &[Self],
         owner: &SourceInvalidationOwner,

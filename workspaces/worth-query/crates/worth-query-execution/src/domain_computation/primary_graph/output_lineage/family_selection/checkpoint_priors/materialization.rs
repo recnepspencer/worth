@@ -12,7 +12,7 @@ impl NativePriorCheckpointOutput<'_> {
         self.producing_implementation
     }
 
-    pub(in crate::domain_computation::primary_graph) fn materialize_identity(
+    pub fn materialize_identity(
         &self,
     ) -> Result<Option<WorthQueryAcceptedOutputCheckpointIdentity>, Denial> {
         let Some(locator) = self.identity.as_ref() else {

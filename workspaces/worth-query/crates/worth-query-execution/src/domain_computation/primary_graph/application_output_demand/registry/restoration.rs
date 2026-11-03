@@ -16,20 +16,20 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 pub struct WorthQueryRestoredAcceptedOutput {
     pub checkpoint:
         super::WorthQueryAcceptedOutputCheckpointIdentity,
-    pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
+    pub correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
-    pub(in crate::domain_computation::primary_graph) observation:
+    pub observation:
         worth_runtime_world::facade::ProductBranchObservation,
-    pub(in crate::domain_computation::primary_graph) source_scope:
+    pub source_scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(in crate::domain_computation::primary_graph) source_identity:
+    pub source_identity:
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
-    pub(in crate::domain_computation::primary_graph) observed_source_facts:
+    pub observed_source_facts:
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     /// Only a reconstruction verified against the authentic recovered Native
     /// snapshot may populate this original-output witness.
-    pub(in crate::domain_computation::primary_graph) native_output_witness: Option<
+    pub native_output_witness: Option<
         std::sync::Arc<std::sync::OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>,
     >,
 }

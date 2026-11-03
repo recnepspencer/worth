@@ -7,9 +7,9 @@ use crate::domain_computation::primary_graph::{
 /// Descriptive original evidence only: no receipt authority, Ready cell or reader.
 /// No link to another publication is retained.
 pub(in crate::domain_computation::primary_graph) struct OriginalProducingPublication {
-    pub(in crate::domain_computation::primary_graph) changes: WorthQueryApplicationCommittedChanges,
+    pub changes: WorthQueryApplicationCommittedChanges,
     pub(in crate::domain_computation::primary_graph) inputs: FactPayload,
-    pub(in crate::domain_computation::primary_graph) correspondence:
+    pub correspondence:
         Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(in crate::domain_computation::primary_graph) conditional:
         Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,

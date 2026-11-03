@@ -68,7 +68,7 @@ impl RetainedInputCutoffCandidate {
     /// A fresh selected input replaces the obsolete source-query suffix. The
     /// performed handler prefix and actually consumed upstream outputs still
     /// require proof at this exact native root. The candidate's own dirty marks remain intact.
-    pub(in crate::domain_computation::primary_graph) fn verify_for_reuse<'selected>(
+    pub fn verify_for_reuse<'selected>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh_key: PreparedInputReuseKey,
@@ -113,7 +113,7 @@ impl RetainedInputCutoffCandidate {
         )
     }
 
-    fn eligible_for_reuse(
+    pub fn eligible_for_reuse(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh_key: &PreparedInputReuseKey,

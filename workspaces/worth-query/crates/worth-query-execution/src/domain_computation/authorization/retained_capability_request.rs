@@ -23,27 +23,27 @@ pub(in crate::domain_computation) use portable::{
 
 #[derive(Clone)]
 pub struct WorthQueryRetainedCapabilityRequest {
-    pub(super) recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
-    principal: worth_relational::facade::identity::EntityId,
-    capability_identity: [u8; 32],
-    resource: worth_relational::facade::identity::EntityId,
+    pub recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
+    pub principal: worth_relational::facade::identity::EntityId,
+    pub capability_identity: [u8; 32],
+    pub resource: worth_relational::facade::identity::EntityId,
     pub data: Arc<RetainedCapabilityRequestData>,
 }
 pub struct RetainedCapabilityRequestData {
-    resource_entity: Arc<str>,
+    pub resource_entity: Arc<str>,
     pub elevation: Option<worth_relational::facade::identity::EntityId>,
     pub action: AspectValue,
-    purpose: AspectValue,
-    related_relation: Option<ApplicationCapabilityRelationBinding>,
+    pub purpose: AspectValue,
+    pub related_relation: Option<ApplicationCapabilityRelationBinding>,
     pub related: Option<worth_relational::facade::identity::EntityId>,
-    field: Option<AspectValue>,
-    magnitude: Option<AspectValue>,
-    cardinality: u32,
-    context_name: Arc<str>,
-    context_type: Arc<str>,
+    pub field: Option<AspectValue>,
+    pub magnitude: Option<AspectValue>,
+    pub cardinality: u32,
+    pub context_name: Arc<str>,
+    pub context_type: Arc<str>,
     pub context: RetainedContext,
     // Payload fields are destroyed before their original admission.
-    _codec_funding: Option<(
+    pub _codec_funding: Option<(
         Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
         Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
     )>,

@@ -274,7 +274,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     /// The facts this commit retains, each one a verifier can compare, or
     /// the rebase that failed and left it none.
-    pub(in crate::domain_computation::primary_graph) fn rebased_source_facts(
+    pub fn rebased_source_facts(
         &self,
     ) -> Result<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,

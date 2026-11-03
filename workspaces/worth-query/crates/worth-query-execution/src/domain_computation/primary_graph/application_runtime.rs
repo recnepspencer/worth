@@ -161,7 +161,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Instance-local recovery-handle live set (Q8.9 / R8.29).
     pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
     pub(super) mutation_handlers: super::handler::InstalledMutationHandlerRegistry<Schema>,
-    pub(super) mutation_projection:
+    pub mutation_projection:
         super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
     pub(super) installed_producers:
         super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,

@@ -95,7 +95,7 @@ impl WorthQueryApplicationOutputLineage {
     /// this preparation was not admitted: the restoration is then recorded as
     /// a restored row, Fresh until verified.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn prepare_republication(
+    pub fn prepare_republication(
         &self,
         output_binding: TypeId,
         runtime_authority: u64,
@@ -187,7 +187,7 @@ impl WorthQueryApplicationOutputLineage {
     /// already recorded or is owned by a selected World publication, exactly
     /// as for any restored row.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn record_republished_restoration(
+    pub fn record_republished_restoration(
         &mut self,
         output_binding: TypeId,
         runtime_authority: u64,

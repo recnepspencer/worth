@@ -13,7 +13,7 @@ pub struct ValidatedCheckpointSize {
 }
 
 impl ValidatedCheckpointSize {
-    pub(super) fn new(
+    pub fn new(
         native_len: usize,
         accepted_outputs: &[WorthQueryAcceptedOutputCheckpointIdentity],
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
@@ -60,7 +60,7 @@ impl ValidatedCheckpointSize {
         Ok(Self { total, accepted })
     }
 
-    pub(super) fn total(&self) -> usize {
+    pub fn total(&self) -> usize {
         self.total
     }
     pub(super) fn accepted(&self) -> usize {

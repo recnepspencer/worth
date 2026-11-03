@@ -48,7 +48,7 @@ where
     /// Resolve the operation slot co-committed in the original outbox through
     /// the existing installed-operation registry. A transport result cannot
     /// select a different operation after the external effect has occurred.
-    pub(in crate::domain_computation) fn resolve_installed_transport_completion_binding(
+    pub fn resolve_installed_transport_completion_binding(
         &self,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
     ) -> Result<

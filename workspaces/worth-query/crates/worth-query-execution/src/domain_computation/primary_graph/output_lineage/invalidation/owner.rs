@@ -10,7 +10,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::mvcc::PublicationCompanionPreflight;
 pub struct SourceInvalidationOwner {
     pub(super) runtime_instance_id: u64,
-    pub(super) resources: WorthQueryInvalidationResources,
+    pub resources: WorthQueryInvalidationResources,
     pub(in crate::domain_computation::primary_graph) managed_views:
         Arc<crate::domain_computation::primary_graph::application_query::derived_view::ManagedDerivedViewRegistry>,
     pub(super) branches: Mutex<BranchCells>,

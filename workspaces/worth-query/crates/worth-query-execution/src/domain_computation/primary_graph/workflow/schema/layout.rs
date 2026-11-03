@@ -133,7 +133,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowEvidenceDependen
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalLayout {
+pub struct WorkflowApprovalLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
@@ -329,7 +329,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLayout {
-    pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
+    pub identity_index_id: DerivedIndexId,
     pub(in crate::domain_computation::primary_graph) output_binding: AspectFieldLocator,
     pub output_count: AspectFieldLocator,
     pub advancer: super::super::actor::record::WorkflowActorFields,

@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct StructuralWalkKey(
+pub struct StructuralWalkKey(
     pub(super) Arc<Parameters>,
 );
 

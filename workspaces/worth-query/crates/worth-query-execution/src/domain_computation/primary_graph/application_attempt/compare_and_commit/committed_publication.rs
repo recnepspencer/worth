@@ -186,7 +186,7 @@ impl WorthQueryCommittedProductPublication {
     /// Whether `observation` still selects this publication: nothing has been
     /// published on its branch since, so the effect it committed is current
     /// with nothing to compare.
-    pub(in crate::domain_computation::primary_graph) fn is_selected_at(
+    pub fn is_selected_at(
         &self,
         observation: &ProductBranchObservation,
     ) -> bool {

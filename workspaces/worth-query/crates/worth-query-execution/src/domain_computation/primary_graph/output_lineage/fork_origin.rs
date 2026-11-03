@@ -1,7 +1,7 @@
 //! Captured fork origins; registration copies no computation state.
 use super::{ProductCoordinate, WorthQueryApplicationOutputLineage};
 impl WorthQueryApplicationOutputLineage {
-    pub(crate) fn register_fork(
+    pub fn register_fork(
         &mut self,
         source: &worth_runtime_world::facade::ProductBranchObservation,
         destination: &worth_runtime_world::facade::ProductBranchObservation,

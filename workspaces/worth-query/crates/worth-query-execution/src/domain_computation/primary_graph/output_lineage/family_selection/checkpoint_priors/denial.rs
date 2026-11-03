@@ -44,7 +44,7 @@ impl CheckpointPriorSelectionDenial {
         Self::CheckedArithmetic { phase }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_capture_denial(
+    pub fn into_capture_denial(
         self,
     ) -> worth_relational::facade::durability::DurabilityError {
         use worth_relational::facade::durability::{DurabilityError, RecoveryFailureClass};

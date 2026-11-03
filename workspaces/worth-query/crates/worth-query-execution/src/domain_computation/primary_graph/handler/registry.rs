@@ -53,7 +53,7 @@ pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRe
     _schema: PhantomData<fn() -> Schema>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandlerRegistry<Schema> {
+pub struct InstalledMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
     _schema: PhantomData<fn() -> Schema>,
 }

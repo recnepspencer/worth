@@ -39,7 +39,7 @@ pub(crate) struct WorthQueryRetainedPreImageSeal {
     total_encoded_bytes: usize,
 }
 
-pub(super) struct WorthQueryRetainedPreImageSelection {
+pub struct WorthQueryRetainedPreImageSelection {
     retained: WorthQueryRetainedPreImage,
     candidates_materialized: usize,
 }

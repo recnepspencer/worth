@@ -1,7 +1,7 @@
 //! Equal output correspondence and installed revisions across exact settlements.
 use super::*;
 impl SealedNativeOutputWitness {
-    pub(in crate::domain_computation::primary_graph) fn same_output_as(
+    pub fn same_output_as(
         &self,
         other: &Self,
     ) -> Result<bool, CompanionPreflightStop> {

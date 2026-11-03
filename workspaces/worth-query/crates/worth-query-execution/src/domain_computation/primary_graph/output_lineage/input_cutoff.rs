@@ -44,7 +44,7 @@ pub struct RetainedInputCutoffCandidate {
 }
 
 impl RetainedInputCutoffCandidate {
-    pub(super) fn from_exact_cell(cell: Arc<OnceLock<RecordedOutput>>) -> Self {
+    pub fn from_exact_cell(cell: Arc<OnceLock<RecordedOutput>>) -> Self {
         Self { cell }
     }
 
@@ -66,7 +66,7 @@ impl RetainedInputCutoffCandidate {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn prepared_input_key(
+    pub fn prepared_input_key(
         &self,
     ) -> Option<&PreparedInputReuseKey> {
         self.recorded().prepared_input_reuse_key.as_ref()
@@ -89,7 +89,7 @@ impl RetainedInputCutoffCandidate {
             .as_ref()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn native_output_witness(
+    pub fn native_output_witness(
         &self,
     ) -> Option<&SealedNativeOutputWitness> {
         self.originating_recorded()?.native_output_witness()
@@ -119,7 +119,7 @@ impl RetainedInputCutoffCandidate {
         Ok(self.recorded().verification_requirement())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
+    pub fn observed_source_facts(
         &self,
     ) -> Result<Option<super::ComparableSourceFacts>, CompanionPreflightStop> {
         Ok(self
@@ -133,7 +133,7 @@ impl WorthQueryApplicationOutputLineage {
     /// Follow the same product partition and fork ancestry as `producer_head`.
     /// Every index descent, ancestor lookup and Arc pin consumes the caller's
     /// existing admission before the read, including on a later denial.
-    pub(in crate::domain_computation::primary_graph) fn prior_input_cutoff_candidate<
+    pub fn prior_input_cutoff_candidate<
         Binding: 'static,
     >(
         &self,

@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::application_query::{
 /// admit the installed binding, principal, scope and disclosure.
 #[derive(Clone)]
 pub struct WorthQueryApplicationQueryObservation {
-    pub(in crate::domain_computation::primary_graph::causal_inspection) source:
+    pub source:
         WorthQueryObservedSource<()>,
     pub(in crate::domain_computation::primary_graph::causal_inspection) basis:
         WorthQueryApplicationBasisIdentity,

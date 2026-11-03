@@ -17,7 +17,7 @@ impl<'snapshot> PreparedInputCutoffBasis<'snapshot> {
     pub(super) fn into_positioned(self) -> PositionedRelationalSnapshot {
         self.positioned
     }
-    pub(in crate::domain_computation::primary_graph) fn prepare(
+    pub fn prepare(
         runtime: &RelationalRuntime,
         snapshot: &'snapshot SnapshotHandle,
     ) -> Result<Self, InputCutoffVerificationStop> {

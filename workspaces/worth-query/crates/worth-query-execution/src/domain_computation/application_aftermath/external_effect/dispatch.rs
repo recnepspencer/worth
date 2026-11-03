@@ -137,7 +137,7 @@ impl WorthQueryExternalEffectDispatch {
     /// Verify the sealed dispatch ladder against the exact original Query
     /// owner observation. A matching correlation alone cannot substitute a
     /// different outbox or product publication.
-    pub(in crate::domain_computation) fn matches_committed_owner(
+    pub fn matches_committed_owner(
         &self,
         runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         committed: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,

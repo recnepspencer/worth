@@ -207,7 +207,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.output_correspondence.as_ref()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_output_correspondence(
+    pub fn retain_output_correspondence(
         &self,
     ) -> std::sync::Arc<WorthQueryApplicationOutputCorrespondence> {
         std::sync::Arc::clone(&self.output_correspondence)

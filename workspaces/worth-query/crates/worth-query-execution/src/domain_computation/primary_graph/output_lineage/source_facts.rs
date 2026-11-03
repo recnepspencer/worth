@@ -18,7 +18,7 @@ pub struct RetainedSourceFacts {
     posting_continuation: Option<super::invalidation::PostingContinuation>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct ComparableSourceFacts {
+pub struct ComparableSourceFacts {
     computation: CurrentComputation,
     facts: FactPayload,
 }
@@ -31,7 +31,7 @@ impl RetainedSourceFacts {
             posting_continuation: None,
         }
     }
-    pub(super) fn with_posting_continuation(
+    pub fn with_posting_continuation(
         mut self,
         continuation: Option<super::invalidation::PostingContinuation>,
     ) -> Self {
@@ -69,7 +69,7 @@ impl RetainedSourceFacts {
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.facts.is_empty()
     }
-    pub(in crate::domain_computation::primary_graph) fn for_test(
+    pub fn for_test(
         stale: bool,
         facts: Arc<[Fact]>,
     ) -> Self {
@@ -80,7 +80,7 @@ impl ComparableSourceFacts {
     pub(in crate::domain_computation::primary_graph) fn computation(&self) -> CurrentComputation {
         self.computation
     }
-    pub(in crate::domain_computation::primary_graph) fn facts(&self) -> &FactPayload {
+    pub fn facts(&self) -> &FactPayload {
         &self.facts
     }
     pub(in crate::domain_computation::primary_graph) fn retained(&self) -> RetainedSourceFacts {

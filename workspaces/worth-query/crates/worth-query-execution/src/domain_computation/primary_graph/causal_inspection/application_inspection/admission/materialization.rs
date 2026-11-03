@@ -7,7 +7,7 @@ use super::*;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn materialize(
+    pub fn materialize(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<FundedInspectionReport, InspectionAdmissionDenial> {

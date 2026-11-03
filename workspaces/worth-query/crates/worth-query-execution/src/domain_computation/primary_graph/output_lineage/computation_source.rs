@@ -45,7 +45,7 @@ impl ComputationSourceEvidence {
         Self(Origin::CheckpointFacts)
     }
 
-    pub(super) fn unavailable() -> Self {
+    pub fn unavailable() -> Self {
         Self(Origin::Unavailable)
     }
 

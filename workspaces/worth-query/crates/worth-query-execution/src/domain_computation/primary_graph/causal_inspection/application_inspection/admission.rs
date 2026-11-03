@@ -67,17 +67,17 @@ pub enum InspectionAdmissionDenial {
 
 pub struct InspectionRead<'a, 'storage, Schema, Scope> {
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    pub scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     request: &'a WorthQueryRequestScope,
-    principal: worth_relational::facade::identity::EntityId,
+    pub principal: worth_relational::facade::identity::EntityId,
     basis: WorthQueryApplicationBasisIdentity,
-    target: Arc<WorthQueryApplicationInspectionTarget>,
-    session: WorthQueryManagedGraphWorkSession,
+    pub target: Arc<WorthQueryApplicationInspectionTarget>,
+    pub session: WorthQueryManagedGraphWorkSession,
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     governance: WorthQueryApplicationQueryGovernance,
     diagnostic: Option<WorthQueryApplicationQueryGovernance>,
     source: Option<connected::SourceRead<'a>>,
-    memory: &'storage mut Option<ExecutionMemoryReservation>,
+    pub memory: &'storage mut Option<ExecutionMemoryReservation>,
 }
 
 pub(super) struct InspectionComparisonPreparation<'original> {

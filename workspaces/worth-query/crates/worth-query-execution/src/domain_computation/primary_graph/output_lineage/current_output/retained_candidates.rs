@@ -34,7 +34,7 @@ impl WorthQueryApplicationOutputLineage {
     /// Each binding's latest retained output, with every lookup reserved on
     /// the request's meter before it reads. A lookup that runs out keeps its
     /// reservation spent.
-    pub(in crate::domain_computation::primary_graph) fn retained_output_candidates_metered(
+    pub fn retained_output_candidates_metered(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,

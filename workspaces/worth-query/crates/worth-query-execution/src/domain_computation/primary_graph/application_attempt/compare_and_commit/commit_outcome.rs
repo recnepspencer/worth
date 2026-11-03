@@ -227,7 +227,7 @@ pub enum WorthQueryApplicationCommitRecoveryKind {
 }
 
 impl WorthQueryApplicationUnresolvedCommitEvidence {
-    pub(in crate::domain_computation::primary_graph) fn from_provider_session_failure(
+    pub fn from_provider_session_failure(
         recovery: WorthQueryApplicationCommitRecoveryKind,
         failure: &crate::domain_computation::provider_session::WorthQueryProviderSessionFailure,
     ) -> Self {
@@ -251,7 +251,7 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
         self
     }
 
-    pub(in crate::domain_computation::primary_graph) fn with_cleanup_failure(mut self) -> Self {
+    pub fn with_cleanup_failure(mut self) -> Self {
         self.cleanup_failure = Some(WorthQueryApplicationManagedCleanupFailure::RunFinishRejected);
         self
     }

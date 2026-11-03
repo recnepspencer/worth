@@ -38,7 +38,7 @@ impl WorthQueryPrimaryGraphLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation) struct WorthQueryPrimaryPrincipalBindingLayout {
+pub struct WorthQueryPrimaryPrincipalBindingLayout {
     pub mapping_kind: KindId,
     pub identity_locator: AspectFieldLocator,
     pub status_locator: AspectFieldLocator,

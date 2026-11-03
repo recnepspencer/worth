@@ -53,7 +53,7 @@ pub enum WorthQueryProductBranchCloseScope {
     Application,
 }
 
-pub(crate) struct WorthQueryPendingProductBranchClose {
+pub struct WorthQueryPendingProductBranchClose {
     runtime: WorthQueryProductRuntime,
     branch: WorthQueryProductBranch,
     occurrence: WorthQueryRetiredProductOccurrence,

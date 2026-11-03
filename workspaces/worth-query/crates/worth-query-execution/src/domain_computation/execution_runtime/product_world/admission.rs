@@ -89,7 +89,7 @@ impl WorthQueryProductRuntime {
         })
     }
 
-    pub(crate) fn lease_from_observation(
+    pub fn lease_from_observation(
         &self,
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {

@@ -28,7 +28,7 @@ enum WorthQueryObservedSourceOccurrence {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceCoordinate {
+pub struct WorthQueryObservedSourceCoordinate {
     query: [u8; 32],
     parameters: [u8; 32],
     occurrence: WorthQueryObservedSourceOccurrence,
@@ -99,7 +99,7 @@ impl Drop for WorthQueryObservedSourceMeaning {
     }
 }
 
-struct WorthQueryObservedSourceMeaningRegistryState {
+pub struct WorthQueryObservedSourceMeaningRegistryState {
     pub next_ordinal: u64,
     pub meanings:
         BTreeMap<WorthQueryObservedSourceCoordinate, material_storage::CoordinateMeanings>,

@@ -56,7 +56,7 @@ impl ComponentSelection {
                 .iter()
                 .any(|facts| facts.entities.binary_search(&entity).is_ok())
     }
-    pub(in crate::domain_computation::primary_graph) fn remains_equal(
+    pub fn remains_equal(
         &self,
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,

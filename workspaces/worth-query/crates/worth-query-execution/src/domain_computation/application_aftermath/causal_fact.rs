@@ -80,7 +80,7 @@ impl WorthQueryPendingAftermathCausality {
         self.role
     }
 
-    pub(crate) const fn parent(&self) -> &RelationalCommitReceipt {
+    pub const fn parent(&self) -> &RelationalCommitReceipt {
         &self.parent
     }
     pub(crate) fn target_branch(&self) -> &worth_relational::facade::history::BranchId {

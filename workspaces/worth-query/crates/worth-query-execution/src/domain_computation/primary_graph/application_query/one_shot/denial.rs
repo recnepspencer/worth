@@ -87,16 +87,16 @@ pub enum WorthQueryApplicationOneShotDenialKind {
 /// authorization causes, [`Self::authorization_denial`] carries the full denial.
 #[derive(Clone, Debug)]
 pub struct WorthQueryApplicationOneShotDenial {
-    kind: WorthQueryApplicationOneShotDenialKind,
-    payload: std::sync::Arc<OneShotDenialPayload>,
+    pub kind: WorthQueryApplicationOneShotDenialKind,
+    pub payload: std::sync::Arc<OneShotDenialPayload>,
 }
 
 #[derive(Debug)]
 pub struct OneShotDenialPayload {
-    authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
-    query: String,
-    subject: String,
-    custody: std::sync::OnceLock<worth_execution::ExecutionMemoryReservation>,
+    pub authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
+    pub query: String,
+    pub subject: String,
+    pub custody: std::sync::OnceLock<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl PartialEq for WorthQueryApplicationOneShotDenial {

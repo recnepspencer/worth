@@ -30,7 +30,7 @@ struct WorthQueryBufferedLiveCause {
     occupancy: BridgeManagedQueueOccupancy,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryLiveCauseFillPosture {
+pub enum WorthQueryLiveCauseFillPosture {
     Pending,
     Overflow(u64),
     Closed,

@@ -112,7 +112,7 @@ impl WorthQueryOperationScopeBinding {
     }
 
     /// Raw scope parts for per-axis drift proof (R8.28). Not production.
-    pub(crate) fn axis_probe_scope(
+    pub fn axis_probe_scope(
         runtime_authority: u64,
         binding_identity: ApplicationSchemaBindingIdentity,
         operation_authority_identity: &str,

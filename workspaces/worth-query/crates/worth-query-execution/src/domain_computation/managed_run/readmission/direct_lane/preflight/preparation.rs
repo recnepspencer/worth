@@ -71,7 +71,7 @@ struct WorthQueryDirectBridgeReadmissionAttempt {
     contract: WorthQueryAdmittedManagedStepContract,
 }
 
-pub(super) struct WorthQueryDirectBridgeReadmissionPending {
+pub struct WorthQueryDirectBridgeReadmissionPending {
     state: WorthQueryDirectRetainedState,
     execution: WorthQueryRetainedManagedGraphExecution,
     resource: WorthQueryDirectRunReadmissionPending,
