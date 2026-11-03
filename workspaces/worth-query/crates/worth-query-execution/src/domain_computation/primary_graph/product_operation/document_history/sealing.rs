@@ -13,10 +13,8 @@ use crate::{
     publication_boundary::WorthQueryProgramPublicationAccess,
 };
 use worth_query_declaration::facade::{
-    application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},
-    application_operation::{
-        ApplicationMutationBinding, ApplicationMutationScopeBinding, NoApplicationMutationSource,
-    },
+    application_history::ApplicationHistoryBinding,
+    application_operation::{ApplicationMutationBinding, NoApplicationMutationSource},
     application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
@@ -110,7 +108,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryAdoptionFailure<'runtime, S>>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         self.adopt_recording::<M>(
             phase,
@@ -138,7 +135,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryAdoptionFailure<'runtime, S>>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         self.adopt_recording::<M>(
             phase,
@@ -163,7 +159,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryAdoptionFailure<'runtime, S>>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         let current =
             self.readmit_history_record::<M>(phase, access, installed, operation, &reserved);
@@ -254,7 +249,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::HeadDiverged);
         }
         let receipt = completion.receipt();
-        if !self.model.matches_receipt(receipt)
+        if !reserved.operation_scope()?.matches_receipt(receipt)
             || receipt.idempotency_binding().canonical_key() != reserved.meaning.canonical_key()
             || !receipt
                 .idempotency_binding()

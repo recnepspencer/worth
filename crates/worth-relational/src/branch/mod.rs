@@ -21,7 +21,12 @@ pub use retained_fork_source::AdmittedRelationalRetainedForkSource;
 mod identity;
 mod lifecycle;
 mod materialization;
+mod model_ownership;
 mod owner_services;
+pub use model_ownership::{
+    RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
+    RelationalModelOwnershipDomain,
+};
 mod record_advance;
 mod reference;
 pub use record_advance::{

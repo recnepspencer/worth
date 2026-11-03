@@ -49,7 +49,7 @@ impl WorthQueryDocumentHistoryOperationConstraint {
                         .unwrap();
                     let binding = idempotency(190, 191);
                     let restriction = Self {
-                        model: HistoryModelIdentity::from_resolved(&other),
+                        operation_scope: HistoryOperationScope::from_resolved(&other),
                         source: world
                             .application
                             .product_runtime()

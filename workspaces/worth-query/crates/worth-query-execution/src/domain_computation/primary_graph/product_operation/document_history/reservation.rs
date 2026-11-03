@@ -12,12 +12,8 @@ use crate::{
     publication_boundary::WorthQueryProgramPublicationAccess,
 };
 use worth_query_declaration::facade::{
-    application_history::{
-        ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,
-    },
-    application_operation::{
-        ApplicationMutationBinding, ApplicationMutationScopeBinding, NoApplicationMutationSource,
-    },
+    application_history::{ApplicationHistoryAccessBinding, ApplicationHistoryBinding},
+    application_operation::{ApplicationMutationBinding, NoApplicationMutationSource},
     application_query::ApplicationQueryBinding,
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
@@ -29,6 +25,7 @@ type Rows<S, H> = <<Access<S, H> as ApplicationQueryBinding<S>>::ResultBinding a
 
 #[must_use = "consume the reservation through actual adoption or explicit no-effect disposal"]
 pub struct WorthQueryDocumentHistoryReservation {
+    pub(super) operation_scope: Option<super::HistoryOperationScope>,
     pub(super) record: ReservedHistoryRecord,
     pub(super) expected: WorthQueryProductBranchReadIdentity,
     pub(super) meaning: WorthQueryApplicationIdempotencyBinding,
@@ -57,7 +54,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<WorthQueryDocumentHistoryRecordPreparation, Denial>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
         Rows<S, H>: crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
             S,
             Query<S, H>,
@@ -115,6 +111,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let record = selected.journal.reserve(&execution, meaning, label)?;
         Ok(WorthQueryDocumentHistoryRecordPreparation::Reserved(
             WorthQueryDocumentHistoryReservation {
+                operation_scope: Some(super::HistoryOperationScope::from_admitted(admitted)),
                 record,
                 expected: selected.expected.clone(),
                 meaning,
@@ -139,9 +136,14 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<(), Denial>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         self.validate_reservation(reserved)?;
+        if !reserved
+            .operation_scope()?
+            .matches_operation(operation.admitted)
+        {
+            return Err(Denial::ForeignModel);
+        }
         self.application()
             .assess_document_history_operation::<H, M>(
                 phase,
@@ -193,5 +195,13 @@ impl<S> super::selection::HistorySelection<'_, S> {
             return Err(Denial::HeadDiverged);
         }
         Ok(())
+    }
+}
+
+impl WorthQueryDocumentHistoryReservation {
+    pub(super) fn operation_scope(&self) -> Result<&super::HistoryOperationScope, Denial> {
+        self.operation_scope
+            .as_ref()
+            .ok_or(Denial::ForeignRecording)
     }
 }

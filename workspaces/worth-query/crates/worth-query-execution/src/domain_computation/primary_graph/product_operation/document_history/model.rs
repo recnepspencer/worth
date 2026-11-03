@@ -13,7 +13,14 @@ pub(in crate::domain_computation::primary_graph) struct HistoryModelIdentity {
 }
 
 impl HistoryModelIdentity {
-    pub(super) fn entity(&self) -> EntityId {
+    pub(super) fn matches_runtime(
+        &self,
+        runtime: WorthQueryRuntimeAuthorityIdentity,
+        binding: &ApplicationSchemaBindingIdentity,
+    ) -> bool {
+        self.runtime == runtime && &self.binding == binding
+    }
+    pub(in crate::domain_computation::primary_graph) fn entity(&self) -> EntityId {
         self.entity
     }
     pub(super) fn kind(&self) -> KindId {
@@ -36,17 +43,6 @@ impl HistoryModelIdentity {
     ) -> worth_relational::facade::transactions::RecordRef {
         worth_relational::facade::transactions::RecordRef::Entity(self.entity)
     }
-    pub(super) fn matches_receipt(
-        &self,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    ) -> bool {
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
-            self.entity,
-        ) == receipt.principal_scope().scope()
-            && self.runtime == receipt.authority_binding().runtime_authority()
-            && &self.binding == receipt.principal_scope().binding_identity()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn matches_operation<S, O, I, E>(
         &self,
         admitted: &crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<

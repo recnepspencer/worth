@@ -59,7 +59,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::HeadDiverged);
         }
         Ok(WorthQueryDocumentHistoryOperationConstraint::for_group(
-            self.model.clone(),
+            group.scopes[member].clone(),
             candidate.retained_expected_source(),
             candidate.branch(),
             meaning,
@@ -114,7 +114,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .members
             .get(group.completed.len())
             .ok_or(Denial::GroupMemberMismatch)?;
-        if !self.model.matches_receipt(receipt)
+        if !group.scopes[group.completed.len()].matches_receipt(receipt)
             || receipt.idempotency_binding().canonical_key() != expected.canonical_key()
             || !receipt.idempotency_binding().has_same_intent(*expected)
         {

@@ -54,6 +54,7 @@ impl WorthQueryInstalledApplicationHistoryCatalog {
                 || descriptor.history_type() != &parts.history_type
                 || !parts.access.matches_descriptor(descriptor.access())
                 || descriptor.operations().len() != parts.operations.len()
+                || descriptor.ownership() != parts.ownership
                 || descriptor
                     .navigation()
                     .map(|navigation| navigation.declaration())
@@ -69,6 +70,7 @@ impl WorthQueryInstalledApplicationHistoryCatalog {
                 .get_binding(descriptor.access().identity())
                 .filter(|binding| binding.descriptor() == descriptor.access())
                 .ok_or_else(|| Denial::new(Kind::AccessBindingMismatch, &parts.identity))?;
+            super::ownership::validate(parts, schema.installed_declaration().members())?;
             for (declared, operation) in parts.operations.iter().zip(descriptor.operations()) {
                 let installed = schema
                     .mutation_catalog
@@ -78,8 +80,11 @@ impl WorthQueryInstalledApplicationHistoryCatalog {
                         Denial::new(Kind::OperationBindingMismatch, &declared.binding)
                     })?;
                 if declared.binding != operation.identity()
-                    || installed.descriptor().scope_entity()
-                        != access.descriptor().scope().field().locus().entity()
+                    || !worth_query_declaration::facade::application_history::history_ownership_reaches(
+                        &parts.ownership,
+                        access.descriptor().scope().field().locus().entity(),
+                        installed.descriptor().scope_entity(),
+                    )
                 {
                     return Err(Denial::new(
                         Kind::OperationBindingMismatch,

@@ -1,6 +1,6 @@
 //! A history restriction never replaces the ordinary operation's fresh native admission.
 use super::{
-    confirm_document_head, HistoryModelIdentity, WorthQueryDocumentHistory,
+    confirm_document_head, HistoryOperationScope, WorthQueryDocumentHistory,
     WorthQueryDocumentHistoryDenial as Denial, WorthQueryDocumentHistoryReservation,
 };
 use crate::{
@@ -23,7 +23,7 @@ mod ownership_tests;
 
 #[must_use = "retain the original restriction for every native attempt preparation"]
 pub struct WorthQueryDocumentHistoryOperationConstraint {
-    model: HistoryModelIdentity,
+    operation_scope: HistoryOperationScope,
     source: WorthQueryProductObservationLease,
     candidate: WorthQueryProductBranch,
     meaning: WorthQueryApplicationIdempotencyBinding,
@@ -32,14 +32,14 @@ pub struct WorthQueryDocumentHistoryOperationConstraint {
 
 impl WorthQueryDocumentHistoryOperationConstraint {
     pub(super) fn for_group(
-        model: HistoryModelIdentity,
+        operation_scope: HistoryOperationScope,
         source: WorthQueryProductObservationLease,
         candidate: WorthQueryProductBranch,
         meaning: WorthQueryApplicationIdempotencyBinding,
         candidate_predecessor: crate::basis::WorthQueryProductBranchReadIdentity,
     ) -> Self {
         Self {
-            model,
+            operation_scope,
             source,
             candidate,
             meaning,
@@ -72,7 +72,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::HeadDiverged);
         }
         Ok(WorthQueryDocumentHistoryOperationConstraint {
-            model: self.model.clone(),
+            operation_scope: reserved.operation_scope()?.clone(),
             source: candidate.retained_expected_source(),
             candidate: candidate.branch(),
             meaning: reserved.meaning,
@@ -117,7 +117,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ) {
             return Err(Denial::ForeignRuntime);
         }
-        if !restriction.model.matches_operation(admitted) {
+        if !restriction.operation_scope.matches_operation(admitted) {
             return Err(Denial::ForeignModel);
         }
         admitted

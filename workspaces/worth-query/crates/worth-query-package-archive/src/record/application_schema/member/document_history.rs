@@ -29,7 +29,10 @@ pub(super) fn write(
 ) -> Result<(), Denial> {
     let parts = definition.parts();
     let retention = parts.window.is_some() || parts.bookmarks.is_some();
-    output.u16(if retention {
+    let ownership = !parts.ownership.is_empty();
+    output.u16(if ownership {
+        4
+    } else if retention {
         3
     } else if parts.navigation.is_some() {
         2
@@ -49,7 +52,7 @@ pub(super) fn write(
         output.text(&operation.binding)?;
         output.text(&operation.label)
     })?;
-    if retention {
+    if retention || ownership {
         output.u16(
             u16::from(parts.navigation.is_some())
                 | (u16::from(parts.window.is_some()) << 1)
@@ -72,6 +75,13 @@ pub(super) fn write(
         output.text(&policy.operation)?;
         wire_vocabulary::write_type_identity(output, &policy.input_type)?;
     }
+    if ownership {
+        write_sequence(output, &parts.ownership, |output, relation| {
+            output.text(&relation.relation)?;
+            output.text(&relation.from)?;
+            output.text(&relation.to)
+        })?;
+    }
     Ok(())
 }
 
@@ -80,7 +90,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=3) {
+    if !matches!(version, 1..=4) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     budget.require_nesting_depth(2)?;
@@ -99,9 +109,9 @@ pub(super) fn decode(
             label: input.text()?.to_owned(),
         })
     })?;
-    let flags = if version == 3 {
+    let flags = if version >= 3 {
         let flags = input.u16()?;
-        if flags & !7 != 0 || flags & 6 == 0 {
+        if flags & !7 != 0 || (version == 3 && flags & 6 == 0) {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
         flags
@@ -131,6 +141,20 @@ pub(super) fn decode(
     } else {
         None
     };
+    let ownership = if version == 4 {
+        decode_sequence(input, budget, 8, |input, _| {
+            Ok(worth_query_declaration::facade::application_history::ApplicationHistoryOwnershipRelation {
+                relation: input.text()?.to_owned(),
+                from: input.text()?.to_owned(),
+                to: input.text()?.to_owned(),
+            })
+        })?
+    } else {
+        Vec::new()
+    };
+    if version == 4 && ownership.is_empty() {
+        return Err(Denial::new(Kind::InvalidRecordShape));
+    }
     let member = ApplicationSchemaMember::ApplicationHistory {
         definition: Definition::from_untrusted_parts(Parts {
             identity,
@@ -139,6 +163,7 @@ pub(super) fn decode(
             metadata_disclosure,
             model_domain,
             operations,
+            ownership,
             navigation,
             window,
             bookmarks,

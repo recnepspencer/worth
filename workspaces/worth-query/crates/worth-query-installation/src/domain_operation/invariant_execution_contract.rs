@@ -17,6 +17,7 @@ impl WorthQueryInvariantEnforcement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledInvariantExecutionRequirement {
+    model_ownership: bool,
     slot: String,
     family: String,
     version: NonZeroU32,
@@ -80,6 +81,7 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
             return Err("invalid-invariant-execution-bounds");
         }
         Ok(Self {
+            model_ownership: false,
             slot,
             family,
             version,
@@ -151,6 +153,10 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
         }
     }
 
+    pub fn requires_model_ownership(&self) -> bool {
+        self.model_ownership
+    }
+
     pub(crate) fn canonical_parts(&self) -> Vec<String> {
         let mut parts = [
             vec![
@@ -168,6 +174,9 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
             parts.push("installed-application-invariant".to_owned());
             parts.extend(invariant.canonical_parts());
         }
+        if self.model_ownership {
+            parts.push("installed-model-ownership-v1".to_owned());
+        }
         parts
     }
 }
@@ -181,6 +190,13 @@ pub enum WorthQueryInvariantExecutionContract {
 }
 
 impl WorthQueryInvariantExecutionContract {
+    pub(crate) fn require_model_ownership(&mut self) {
+        if let Self::Declared { requirements } = self {
+            for requirement in requirements {
+                requirement.model_ownership = true;
+            }
+        }
+    }
     pub fn declared(
         requirements: impl IntoIterator<Item = WorthQueryInstalledInvariantExecutionRequirement>,
     ) -> Result<Self, &'static str> {

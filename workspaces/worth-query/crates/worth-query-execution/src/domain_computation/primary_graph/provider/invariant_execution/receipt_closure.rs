@@ -40,6 +40,9 @@ pub(super) fn validate_receipt_closure(
         .iter()
         .map(|receipt| receipt_fact(receipt, evidence))
         .collect::<Vec<_>>();
+    let model_ownership = requirements
+        .iter()
+        .any(|required| required.requires_model_ownership());
     let mut requirements = requirements
         .iter()
         .filter_map(|requirement| requirement.application_invariant())
@@ -56,6 +59,17 @@ pub(super) fn validate_receipt_closure(
         ),
         maximum_work,
     });
+    if model_ownership {
+        requirements.push(RequirementFact {
+            key: (
+                "worth.model-ownership.exclusivity",
+                1,
+                0,
+                InvariantExecutionPoint::CommitBoundary,
+            ),
+            maximum_work: None,
+        });
+    }
     close(&receipts, &requirements, semantic_work)
 }
 

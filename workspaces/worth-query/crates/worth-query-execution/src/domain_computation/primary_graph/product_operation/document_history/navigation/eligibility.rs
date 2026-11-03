@@ -35,7 +35,9 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .navigation
         .as_ref()
         .ok_or_else(|| correction(Eligibility::NotDeclared))?;
-    if definition.model_domain != ApplicationHistoryModelDomain::ScopeEntityRecord {
+    if definition.model_domain != ApplicationHistoryModelDomain::ScopeEntityRecord
+        || !definition.ownership.is_empty()
+    {
         return Err(correction(Eligibility::ModelDomain));
     }
     if source.model != *model {

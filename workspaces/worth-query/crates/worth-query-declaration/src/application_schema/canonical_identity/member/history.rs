@@ -33,6 +33,18 @@ pub(super) fn append(
         worth_foundational::facade::CanonicalBasisEntryKind::Identity,
     );
     basis.usize(format!("{prefix}.operation-count"), parts.operations.len());
+    // Preserve the existing canonical basis for every unowned definition.
+    if !parts.ownership.is_empty() {
+        basis.usize(format!("{prefix}.ownership-count"), parts.ownership.len());
+        for (index, relation) in parts.ownership.iter().enumerate() {
+            basis.text(
+                format!("{prefix}.ownership[{index}].relation"),
+                &relation.relation,
+            );
+            basis.text(format!("{prefix}.ownership[{index}].from"), &relation.from);
+            basis.text(format!("{prefix}.ownership[{index}].to"), &relation.to);
+        }
+    }
     if let Some(navigation) = &parts.navigation {
         for (field, value) in navigation.canonical_fields() {
             basis.text(format!("{prefix}.snapshot-navigation.{field}"), value);

@@ -7,6 +7,7 @@ mod group;
 mod membership;
 mod metadata;
 mod navigation;
+mod owned_model;
 mod page_descriptions;
 mod paging;
 mod payload;

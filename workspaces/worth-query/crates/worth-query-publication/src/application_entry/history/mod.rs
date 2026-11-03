@@ -82,10 +82,12 @@ mod edit;
 mod edit_builder;
 mod group;
 pub use group::{
-    WorthQueryGroupedHistoryDocument, WorthQueryHistoryGroupCompletionIter,
-    WorthQueryHistoryGroupCompletionKind, WorthQueryHistoryGroupCompletions,
-    WorthQueryHistoryGroupDenial, WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish,
-    WorthQueryHistoryGroupPosture,
+    WorthQueryGroupedHistoryDocument, WorthQueryHistoryGestureCompletion,
+    WorthQueryHistoryGestureIntent, WorthQueryHistoryGestureMembers,
+    WorthQueryHistoryGroupCompletionIter, WorthQueryHistoryGroupCompletionKind,
+    WorthQueryHistoryGroupCompletions, WorthQueryHistoryGroupDenial,
+    WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish, WorthQueryHistoryGroupMembers,
+    WorthQueryHistoryGroupPosture, WorthQueryHistoryTypedMembers,
 };
 #[doc(hidden)]
 pub use group::{

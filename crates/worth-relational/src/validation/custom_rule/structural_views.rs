@@ -3,7 +3,9 @@ use worth_foundational::facade::AuthoritativeRecordAspectState;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::validation::engine::state_view::InvariantStateView;
 mod derived_admission;
+mod record_presence;
 pub(crate) use derived_admission::DerivedAdmissionCache;
+pub(crate) use record_presence::StructuralPresenceDenial;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StructuralRelationRecord {

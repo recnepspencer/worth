@@ -16,7 +16,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryGroupAdoptionFailure<'runtime, S>>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         use WorthQueryDocumentHistoryDenial as Denial;
         let prepared = (|| {
@@ -89,6 +88,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let WorthQueryDocumentHistoryGroupReservation {
             reservation,
             members,
+            scopes,
             completed,
             candidate: bound_candidate,
             _allocation,
@@ -101,6 +101,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                     reservation: WorthQueryDocumentHistoryGroupReservation {
                         reservation,
                         members,
+                        scopes,
                         completed,
                         candidate: bound_candidate,
                         _allocation,

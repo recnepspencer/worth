@@ -1,9 +1,6 @@
 //! Selection leaves the original completion outside the checked request handoff.
 use super::*;
-use worth_query_declaration::facade::{
-    application_history::ApplicationHistoryModel,
-    application_operation::{ApplicationMutationScopeBinding, NoApplicationMutationSource},
-};
+use worth_query_declaration::facade::application_operation::NoApplicationMutationSource;
 use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperation;
 
 impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
@@ -17,8 +14,6 @@ where
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     I::Binding: crate::application_entry::WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-        ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {

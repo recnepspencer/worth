@@ -16,9 +16,13 @@ type Group<'a, Outputs = WorthQueryHistoryNoOutputs> = WorthQueryGroupedHistoryD
     'a,
     ConsumerSchema,
     History,
-    Original,
     FixedProgram,
-    FixedAction,
+    worth_query_host::facade::application_entry::WorthQueryHistoryTypedMembers<
+        ConsumerSchema,
+        Original,
+        FixedProgram,
+        FixedAction,
+    >,
     OrdinaryHistoryPayload,
     Outputs,
 >;

@@ -23,11 +23,12 @@ pub use crate::branch::{
     RelationalMaterializationCustody, RelationalMaterializationError,
     RelationalMaterializationPort, RelationalMaterializationRecord,
     RelationalMaterializationSuspension, RelationalMaterializationSuspensionCompletion,
-    RelationalOwnerLifecycleObservation, RelationalOwnerServicePorts,
-    RelationalRelationMaterialization, RelationalRematerializationCompletion,
-    RelationalRematerializationFailure, RelationalRootCorrectnessIndex,
-    ResolvedRelationalBasisDescriptor, SuspendRelationalMaterialization,
-    RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
+    RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
+    RelationalModelOwnershipDomain, RelationalOwnerLifecycleObservation,
+    RelationalOwnerServicePorts, RelationalRelationMaterialization,
+    RelationalRematerializationCompletion, RelationalRematerializationFailure,
+    RelationalRootCorrectnessIndex, ResolvedRelationalBasisDescriptor,
+    SuspendRelationalMaterialization, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
 pub use crate::branch::{
     RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,

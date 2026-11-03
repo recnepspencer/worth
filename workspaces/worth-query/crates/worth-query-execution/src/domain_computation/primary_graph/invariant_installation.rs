@@ -57,6 +57,9 @@ type Factory<Schema> = Box<
 >;
 
 pub struct WorthQueryApplicationInvariantFactories<Schema> {
+    histories: Vec<
+        worth_query_declaration::facade::application_history::ErasedApplicationHistoryDefinition,
+    >,
     binding_identity: ApplicationSchemaBindingIdentity,
     expected: BTreeMap<
         (String, ApplicationInvariantExecutionPoint),
@@ -88,6 +91,11 @@ where
             })
             .collect();
         Self {
+            histories: schema.installed_declaration().members().iter().filter_map(|member| {
+                if let worth_query_installation::facade::ApplicationSchemaMember::ApplicationHistory { definition } = member {
+                    Some(definition.clone())
+                } else { None }
+            }).collect(),
             binding_identity: schema.binding_identity(),
             expected,
             factories: BTreeMap::new(),
@@ -270,6 +278,23 @@ where
             lowered.push(registration);
         }
         lowered.push(workflow_publication::registration(layout.workflow())?);
+        if self
+            .histories
+            .iter()
+            .any(|history| !history.parts().ownership.is_empty())
+        {
+            lowered.push(
+                layout
+                    .all_history_ownership()
+                    .invariant_registration()
+                    .map_err(|cause| {
+                        denial(
+                            WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
+                            format!("model ownership: {cause:?}"),
+                        )
+                    })?,
+            );
+        }
         Ok((lowered, sources, initializer))
     }
 }

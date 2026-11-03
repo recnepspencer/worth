@@ -24,6 +24,7 @@ fn definition(domain: Domain, governed: bool) -> Definition {
             ApplicationQueryDisclosureContract::public()
         },
         model_domain: domain,
+        ownership: Vec::new(),
         navigation: None,
         window: None,
         bookmarks: None,
@@ -134,6 +135,36 @@ fn unknown_history_headers_refuse_before_reading_body_fields() {
             Kind::UnsupportedRecordVariant
         );
     }
+}
+
+#[test]
+fn declared_ownership_has_distinct_wire_meaning_and_preserves_exact_endpoints() {
+    use worth_query_declaration::facade::application_history::ApplicationHistoryOwnershipRelation;
+    let original = definition(Domain::WholeComposite, false);
+    let unowned = encode_member(&ApplicationSchemaMember::ApplicationHistory {
+        definition: original.clone(),
+    });
+    let mut parts = original.parts().clone();
+    parts.ownership = vec![
+        ApplicationHistoryOwnershipRelation {
+            relation: "OwnsMember".into(),
+            from: "Model".into(),
+            to: "Member".into(),
+        },
+        ApplicationHistoryOwnershipRelation {
+            relation: "OwnsChild".into(),
+            from: "Member".into(),
+            to: "Member".into(),
+        },
+    ];
+    let owned = ApplicationSchemaMember::ApplicationHistory {
+        definition: Definition::from_untrusted_parts(parts),
+    };
+    let encoded = encode_member(&owned);
+    assert_eq!(&unowned[..4], &[0, 51, 0, 1]);
+    assert_eq!(&encoded[..4], &[0, 51, 0, 4]);
+    assert_eq!(decode_member(&encoded), owned);
+    assert_eq!(encode_member(&decode_member(&unowned)), unowned);
 }
 
 #[test]

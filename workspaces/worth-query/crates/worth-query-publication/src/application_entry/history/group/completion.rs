@@ -5,32 +5,23 @@ pub struct WorthQueryHistoryGroupFinish<
     'runtime,
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
-    I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
+    M: WorthQueryHistoryGroupMembers<S, H, P>,
     Payload: WorthQueryHistoryPayloadMode<S, H> = OrdinaryHistoryPayload,
     Outputs = WorthQueryHistoryNoOutputs,
-> where
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
-{
+> {
     pub document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     pub step: WorthQueryHistoryStep,
     pub kind: WorthQueryHistoryGroupCompletionKind,
-    pub completions: WorthQueryHistoryGroupCompletions<Completion<S, I, P, A>>,
+    pub completions: WorthQueryHistoryGroupCompletions<M::Completion>,
 }
 
-impl<'runtime, S, H, I, P, A> WorthQueryHistoryGroupExecution<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, P, M> WorthQueryHistoryGroupExecution<'runtime, S, H, P, M>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
-    I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
-    I::Binding: WorthQuerySourceOperationBinding<S>
-        + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-        ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+    M: WorthQueryHistoryGroupMembers<S, H, P>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
@@ -69,30 +60,17 @@ where
                     scope: request.scope,
                     branch: document.owner.branch(),
                 };
-                let Member::Completed(Some(completed)) = self.members.last().unwrap() else {
-                    unreachable!("all members completed")
-                };
-                let (prepared, selected) = Mode::<S, I, A>::prepare_completed(
-                    completed, &phase, &current,
-                )
-                .map_err(|cause| {
-                    Denial::History(WorthQueryApplicationHistoryDenial::Mutation(cause))
-                })?;
                 let installed = runtime
                     .installed_schema()
                     .installed_history::<H>()
                     .map_err(|cause| {
                         Denial::History(WorthQueryApplicationHistoryDenial::Installation(cause))
                     })?;
-                let adopted = document.owner.adopt_history_group::<I::Binding>(
+                let adopted = self.members.member(self.members.len() - 1).adopt(
                     &phase,
-                    &program_publication_access(),
+                    &current,
+                    &document.owner,
                     &installed,
-                    WorthQueryDocumentHistoryOperation::new(
-                        &selected,
-                        &prepared.admission,
-                        prepared.idempotency,
-                    ),
                     self.reservation.take().expect("reserved group"),
                     self.candidate.take().expect("actual candidate"),
                 );
@@ -102,12 +80,10 @@ where
                         self.posture = WorthQueryHistoryGroupPosture::Selected;
                         self.pause_at(WorthQueryHistoryGroupHandoffPointForTest::Adoption);
                     }
-                    Err(failure) => {
-                        self.reservation = Some(failure.reservation);
-                        self.candidate = Some(failure.candidate);
-                        return Err(Denial::History(
-                            WorthQueryApplicationHistoryDenial::Document(failure.denial),
-                        ));
+                    Err((reservation, candidate, denial)) => {
+                        self.reservation = Some(reservation);
+                        self.candidate = Some(candidate);
+                        return Err(denial);
                     }
                 }
                 document
@@ -128,24 +104,21 @@ where
     }
 }
 
-impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
-    WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A, Payload, Outputs>
+impl<'runtime, S, H, P, M, Payload, Outputs>
+    WorthQueryGroupedHistoryDocument<'runtime, S, H, P, M, Payload, Outputs>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
-    I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
-    I::Binding: WorthQuerySourceOperationBinding<S>
-        + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+    M: WorthQueryHistoryGroupMembers<S, H, P>,
+    Payload: WorthQueryHistoryPayloadMode<S, H>,
 {
     /// Discharge every actual source result before returning the ordinary document.
     pub fn finish(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
-        WorthQueryHistoryGroupFinish<'runtime, S, H, I, P, A, Payload, Outputs>,
+        WorthQueryHistoryGroupFinish<'runtime, S, H, P, M, Payload, Outputs>,
         (Self, WorthQueryHistoryGroupDenial),
     > {
         if self.execution.document_identity
@@ -180,38 +153,7 @@ where
         }
         while self.execution.closing < self.execution.members.len() {
             let index = self.execution.closing;
-            let member = std::mem::replace(&mut self.execution.members[index], Member::Closed);
-            let result = match member {
-                Member::Completed(Some(completed)) => {
-                    let current = WorthQueryApplicationRequest {
-                        application: request.application,
-                        principal: request.principal,
-                        scope: request.scope,
-                        branch: Mode::<S, I, A>::completed_target(&completed),
-                    };
-                    match Mode::<S, I, A>::finish_group_member(completed, &current) {
-                        Ok(completion) => {
-                            self.execution.completed.push(completion);
-                            Ok(())
-                        }
-                        Err((completed, cause)) => Err((Member::Completed(Some(completed)), cause)),
-                    }
-                }
-                Member::Unbound(Some(operation)) => {
-                    let current = WorthQueryApplicationRequest {
-                        application: request.application,
-                        principal: request.principal,
-                        scope: request.scope,
-                        branch: Mode::<S, I, A>::target(&operation),
-                    };
-                    Mode::<S, I, A>::close_operation(operation, &current)
-                        .map(|_| ())
-                        .map_err(|(operation, cause)| (Member::Unbound(Some(operation)), cause))
-                }
-                _ => unreachable!("selected or original replay owner"),
-            };
-            if let Err((member, cause)) = result {
-                self.execution.members[index] = member;
+            if let Err(cause) = self.execution.members.finish_member(index, request) {
                 return Err((self, WorthQueryHistoryGroupDenial::Close(cause)));
             }
             self.execution.closing += 1;
@@ -225,7 +167,7 @@ where
                 WorthQueryHistoryGroupCompletionKind::AlreadyRecorded
             },
             completions: WorthQueryHistoryGroupCompletions::new(
-                self.execution.completed,
+                self.execution.members.into_completions(),
                 self.execution._memory,
             ),
         })

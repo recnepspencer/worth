@@ -19,10 +19,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         let domain = read.history.definition().parts().model_domain;
+        let owned_graph = !read.history.definition().parts().ownership.is_empty();
         // This is the same original admitted READ and metadata purpose; only
         // this receiver can propose a new physical context after that read.
         let observed = read.observe_metadata_read(self, phase, document, access)?;
-        if domain != ApplicationHistoryModelDomain::ScopeEntityRecord {
+        if domain != ApplicationHistoryModelDomain::ScopeEntityRecord || owned_graph {
             return Err(Denial::UnsupportedContextRefresh);
         }
         let (before, previous_expected) = {

@@ -10,10 +10,8 @@ use crate::{
 };
 use std::sync::Arc;
 use worth_query_declaration::facade::{
-    application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},
-    application_operation::{
-        ApplicationMutationBinding, ApplicationMutationScopeBinding, NoApplicationMutationSource,
-    },
+    application_history::ApplicationHistoryBinding,
+    application_operation::{ApplicationMutationBinding, NoApplicationMutationSource},
     application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
@@ -24,6 +22,7 @@ mod sealing;
 
 /// Exact ordinary admission narrowed to one document before any group effect.
 pub struct WorthQueryHistoryGroupMemberAdmission {
+    operation_scope: HistoryOperationScope,
     parent: WorthQueryHistoryNodeId,
     expected: WorthQueryProductBranchReadIdentity,
     model: HistoryModelIdentity,
@@ -35,6 +34,7 @@ pub struct WorthQueryHistoryGroupMemberAdmission {
 pub struct WorthQueryDocumentHistoryGroupReservation {
     reservation: WorthQueryDocumentHistoryReservation,
     members: Box<[WorthQueryApplicationIdempotencyBinding]>,
+    scopes: Box<[HistoryOperationScope]>,
     completed: Vec<CapturedMember>,
     candidate: Option<(
         crate::basis::WorthQueryProductBranch,

@@ -9,53 +9,7 @@ impl<
         Outputs,
     > WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>
 {
-    /// A group cannot enroll an operation whose scope is unrelated to its model.
-    /// ```compile_fail,E0271
-    /// use worth_query_publication::facade::application_entry::*;
-    /// use worth_query_declaration::facade::{
-    ///     application_history::{ApplicationHistoryBinding,ApplicationHistoryModel},
-    ///     application_operation::{ApplicationMutationBinding,ApplicationMutationIntent,ApplicationMutationScopeBinding,NoApplicationMutationSource},
-    ///     application_program::{ApplicationAction,ApplicationActionDelivery,ApplicationProgramDefinition,ApplicationSourceCompletion},
-    ///     application_schema::ApplicationSchema,
-    /// };
-    /// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
-    /// fn open<S,H,I,P,A>(
-    ///     document:WorthQueryApplicationHistoryDocument<'_,S,H>,
-    ///     program:&WorthQueryProgramApplicationRuntime<S,P>,
-    ///     request:&WorthQueryApplicationRequest<'_, '_, '_,S>,
-    ///     member:(I,<I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey),
-    /// )
-    /// where S:ApplicationSchema+'static,H:ApplicationHistoryBinding<S>,
-    ///     I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,A:ApplicationAction<S,I::Binding>,
-    ///     A::Delivery:ApplicationActionDelivery<S,I::Binding,Mode=ApplicationSourceCompletion>,
-    ///     I::Binding:WorthQuerySourceOperationBinding<S>+ApplicationMutationBinding<S,SourceExpectation=NoApplicationMutationSource>,
-    ///     <I::Binding as ApplicationMutationBinding<S>>::Input:Clone+Send+Sync,
-    /// { let _=document.group_edits::<I,P,A,1>(program,request,1,[member]); }
-    /// ```
-    /// The binding's exact model scope is the lawful counterpart.
-    /// ```
-    /// use worth_query_publication::facade::application_entry::*;
-    /// use worth_query_declaration::facade::{
-    ///     application_history::{ApplicationHistoryBinding,ApplicationHistoryModel},
-    ///     application_operation::{ApplicationMutationBinding,ApplicationMutationIntent,ApplicationMutationScopeBinding,NoApplicationMutationSource},
-    ///     application_program::{ApplicationAction,ApplicationActionDelivery,ApplicationProgramDefinition,ApplicationSourceCompletion},
-    ///     application_schema::ApplicationSchema,
-    /// };
-    /// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
-    /// fn open<S,H,I,P,A>(
-    ///     document:WorthQueryApplicationHistoryDocument<'_,S,H>,
-    ///     program:&WorthQueryProgramApplicationRuntime<S,P>,
-    ///     request:&WorthQueryApplicationRequest<'_, '_, '_,S>,
-    ///     member:(I,<I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey),
-    /// )
-    /// where S:ApplicationSchema+'static,H:ApplicationHistoryBinding<S>,
-    ///     I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,A:ApplicationAction<S,I::Binding>,
-    ///     A::Delivery:ApplicationActionDelivery<S,I::Binding,Mode=ApplicationSourceCompletion>,
-    ///     I::Binding:WorthQuerySourceOperationBinding<S>+ApplicationMutationBinding<S,SourceExpectation=NoApplicationMutationSource>,
-    ///     <I::Binding as ApplicationMutationBinding<S>>::Input:Clone+Send+Sync,
-    ///     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:ApplicationMutationScopeBinding<S,Scope=ApplicationHistoryModel<S,H>>,
-    /// { let _=document.group_edits::<I,P,A,1>(program,request,1,[member]); }
-    /// ```
+    /// Each member must satisfy installed history membership and stored ownership.
     /// A group lends shared document access; it cannot enroll a nested group.
     /// ```compile_fail,E0507
     /// use worth_query_publication::facade::application_entry::*;
@@ -67,7 +21,7 @@ impl<
     /// };
     /// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
     /// fn nested<S, H, I, P, A>(
-    ///     group: &mut WorthQueryGroupedHistoryDocument<'_, S, H, I, P, A>,
+    ///     group: &mut WorthQueryGroupedHistoryDocument<'_, S, H, P, WorthQueryHistoryTypedMembers<S,I,P,A>>,
     ///     program: &WorthQueryProgramApplicationRuntime<S, P>,
     ///     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ///     member: (I, <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey),
@@ -94,11 +48,11 @@ impl<
     /// };
     /// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
     /// fn abort_then_open<'r, S, H, I, P, A>(
-    ///     group: WorthQueryGroupedHistoryDocument<'r, S, H, I, P, A>,
+    ///     group: WorthQueryGroupedHistoryDocument<'r, S, H, P, WorthQueryHistoryTypedMembers<S,I,P,A>>,
     ///     program: &WorthQueryProgramApplicationRuntime<S, P>,
     ///     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ///     member: (I, <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey),
-    /// ) -> WorthQueryGroupedHistoryDocument<'r, S, H, I, P, A>
+    /// ) -> WorthQueryGroupedHistoryDocument<'r, S, H, P, WorthQueryHistoryTypedMembers<S,I,P,A>>
     /// where S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>,
     ///     I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>, A: ApplicationAction<S, I::Binding>,
     ///     A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
@@ -117,7 +71,15 @@ impl<
         key: u128,
         members: [(I, Key<S, I>); N],
     ) -> Result<
-        WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A, Payload, Outputs>,
+        WorthQueryGroupedHistoryDocument<
+            'runtime,
+            S,
+            H,
+            P,
+            WorthQueryHistoryTypedMembers<S, I, P, A>,
+            Payload,
+            Outputs,
+        >,
         (Self, WorthQueryHistoryGroupDenial),
     >
     where
@@ -127,8 +89,6 @@ impl<
         I::Binding: WorthQuerySourceOperationBinding<S>
             + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
         <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
-        <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-            ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
         Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
     {
         use WorthQueryHistoryGroupDenial as Denial;
@@ -235,8 +195,10 @@ impl<
                 key,
                 handoff: None,
                 document_identity,
-                members: descriptions,
-                completed: Vec::with_capacity(N),
+                members: WorthQueryHistoryTypedMembers {
+                    items: descriptions,
+                    completed: Vec::with_capacity(N),
+                },
                 reservation: None,
                 candidate: None,
                 recovery: None,
@@ -246,7 +208,8 @@ impl<
                 next: 0,
                 closing: 0,
                 posture: WorthQueryHistoryGroupPosture::Constructing,
-                _memory: memory,
+                _memory: memory.into_iter().collect(),
+                frozen: false,
                 marker: std::marker::PhantomData,
             },
         })

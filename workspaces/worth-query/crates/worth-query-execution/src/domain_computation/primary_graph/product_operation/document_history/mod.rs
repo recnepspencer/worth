@@ -51,6 +51,8 @@ pub use navigation::{
 };
 mod observation;
 mod operation_context;
+mod operation_scope;
+pub(in crate::domain_computation::primary_graph) use operation_scope::HistoryOperationScope;
 mod page_pause;
 mod paging;
 mod preview;

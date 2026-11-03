@@ -5,7 +5,6 @@ use crate::application_entry::{
     WorthQueryOperationInputCaptureDenial,
 };
 use worth_query_declaration::facade::{
-    application_history::ApplicationHistoryModel,
     application_operation::{
         ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
         NoApplicationMutationSource,
@@ -121,8 +120,6 @@ impl<
     where
         I: ApplicationMutationIntent<S>,
         I::Binding: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-            ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         WorthQueryHistoryEditBuilder {
             document: self,

@@ -8,6 +8,20 @@ use worth_query_declaration::facade::application_schema::ApplicationReadableScal
 use worth_relational::facade::runtime::CustomInvariantRefusal;
 
 impl WorthQueryApplicationCommitDenial {
+    /// Exact full-generation subject from the installed
+    /// ownership invariant. Other invariant refusals have their own codecs.
+    pub fn model_ownership_conflict(
+        &self,
+    ) -> Option<worth_relational::facade::branch::RelationalModelOwnershipConflict> {
+        use worth_relational::facade::branch::RelationalModelOwnershipConflict as Conflict;
+        match self.invariant_refusal().ok()? {
+            CustomInvariantRefusal::DeclaredValue {
+                value_identity,
+                bytes,
+            } if value_identity == Conflict::VALUE_IDENTITY => Conflict::decode(bytes).ok(),
+            _ => None,
+        }
+    }
     /// Decode with the installed rule's declared value binding. A different
     /// binding is refused before its decoder runs.
     pub fn decode_invariant_refusal<Binding: ApplicationReadableScalarValueBinding>(

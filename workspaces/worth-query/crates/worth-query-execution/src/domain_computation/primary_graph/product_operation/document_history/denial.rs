@@ -12,6 +12,11 @@ pub enum WorthQueryDocumentHistoryDenial {
     InstalledBindingMismatch,
     UnsupportedReadMode,
     ForeignModel,
+    UnownedOperationScope {
+        subject: worth_relational::facade::identity::EntityId,
+        model: worth_relational::facade::identity::EntityId,
+    },
+    Ownership(worth_relational::facade::branch::RelationalModelOwnershipDenial),
     ForeignHistoryNode,
     HistoryNodeUnavailable,
     HistoryNodeExcluded,
@@ -58,6 +63,26 @@ pub enum WorthQueryDocumentHistoryDenial {
 }
 
 impl WorthQueryDocumentHistoryDenial {
+    pub fn ownership_interruption(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption>
+    {
+        use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as I;
+        use worth_execution::{MapKernelStop as S, WorkCeilingDenial as W};
+        match self {
+            Self::Ownership(
+                worth_relational::facade::branch::RelationalModelOwnershipDenial::Request(
+                    W::Stopped(S::Cancelled),
+                ),
+            ) => Some(I::Cancelled),
+            Self::Ownership(
+                worth_relational::facade::branch::RelationalModelOwnershipDenial::Request(
+                    W::Stopped(S::DeadlineElapsed),
+                ),
+            ) => Some(I::DeadlineExceeded),
+            _ => None,
+        }
+    }
     /// Project the Native basis owner's interruption without exposing its type
     /// as a dependency of the ordinary publication frontend.
     pub fn native_basis_interruption(
