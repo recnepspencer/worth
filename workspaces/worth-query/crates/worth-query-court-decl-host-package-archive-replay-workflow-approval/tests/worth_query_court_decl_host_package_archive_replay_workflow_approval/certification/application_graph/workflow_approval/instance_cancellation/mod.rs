@@ -10,13 +10,13 @@ fn a_cancel_before_the_effect_refuses_the_admitted_step_as_cancelled() {
     };
 
     let done = cancelled(cancel_instance(&application, instance.clone(), 88_012));
-    assert!(!done.replayed());
     assert_eq!(done.instance(), &instance);
     assert!(done.performed_node_paths().is_empty());
-    let replay = cancelled(cancel_instance(&application, instance.clone(), 88_012));
-    assert!(replay.replayed(), "the same key replays exactly");
+    let replay =
+        crate::recorded_receipt::cancelled(cancel_instance(&application, instance.clone(), 88_012));
+    crate::recorded_receipt::assert_agrees(&replay, done.receipt());
     assert_eq!(
-        replay.receipt().outcome_identity(),
+        Some(replay.outcome_identity()),
         done.receipt().outcome_identity()
     );
     assert_eq!(
@@ -79,13 +79,9 @@ fn a_cancel_after_the_effect_reports_it_and_leaves_it_performed() {
 
     let done = cancelled(cancel_instance(&application, instance.clone(), 88_113));
     assert_eq!(done.performed_node_paths(), ["apply".to_owned()]);
-    let replay = cancelled(cancel_instance(&application, instance.clone(), 88_113));
-    assert!(replay.replayed());
-    assert_eq!(
-        replay.performed_node_paths(),
-        ["apply".to_owned()],
-        "a replay reports the same performed effect from settled history",
-    );
+    let replay =
+        crate::recorded_receipt::cancelled(cancel_instance(&application, instance.clone(), 88_113));
+    crate::recorded_receipt::assert_agrees(&replay, done.receipt());
     assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
 }
 
@@ -105,7 +101,6 @@ fn a_cancel_prepared_before_the_effect_goes_stale_when_the_effect_lands_first() 
     // The stale attempt claimed no key: the same key now cancels afresh and
     // reports the effect that won the race.
     let done = cancelled(cancel_instance(&application, instance.clone(), 88_211));
-    assert!(!done.replayed());
     assert_eq!(done.performed_node_paths(), ["apply".to_owned()]);
     assert_eq!(read_retention(application.runtime(), instance.branch()), 8);
 }
@@ -149,13 +144,11 @@ fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
         ),
     );
 
-    let replay = cancelled(cancel_instance(&application, instance.clone(), 88_410));
-    assert!(
-        replay.replayed(),
-        "the key replays under the adopted program"
-    );
+    let replay =
+        crate::recorded_receipt::cancelled(cancel_instance(&application, instance.clone(), 88_410));
+    crate::recorded_receipt::assert_agrees(&replay, done.receipt());
     assert_eq!(
-        replay.receipt().outcome_identity(),
+        Some(replay.outcome_identity()),
         done.receipt().outcome_identity()
     );
     assert_eq!(
@@ -188,13 +181,13 @@ fn a_cancellation_replays_after_adoption_leaves_its_retired_definition_behind() 
         ),
     );
 
-    let replay = cancelled(cancel_instance(&application, instance.clone(), 88_513));
-    assert!(replay.replayed(), "the key replays from recorded history");
+    let replay =
+        crate::recorded_receipt::cancelled(cancel_instance(&application, instance.clone(), 88_513));
+    crate::recorded_receipt::assert_agrees(&replay, done.receipt());
     assert_eq!(
-        replay.receipt().outcome_identity(),
+        Some(replay.outcome_identity()),
         done.receipt().outcome_identity()
     );
-    assert_eq!(replay.performed_node_paths(), ["apply".to_owned()]);
     let refused = cancel_instance(&application, instance, 88_515);
     let stale = refused.as_ref().expect_err("another key is refused");
     assert!(stale

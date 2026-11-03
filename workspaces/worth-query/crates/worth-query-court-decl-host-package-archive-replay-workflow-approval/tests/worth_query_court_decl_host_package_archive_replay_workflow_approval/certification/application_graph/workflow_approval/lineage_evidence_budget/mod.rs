@@ -10,11 +10,7 @@ fn evidence_past_the_ceiling_is_refused_and_leaves_the_instance_waiting() {
         .release_workflow_instance_progress_for_test();
     evidence_refused(&application, &instance, 95_020);
     assert_awaiting(&application, &instance, 95_030);
-    let ended = cancelled(cancel_instance(&application, instance, 95_040));
-    assert!(
-        !ended.replayed(),
-        "a refused assessment leaves the instance live"
-    );
+    let _ended = cancelled(cancel_instance(&application, instance, 95_040));
 }
 
 #[test]

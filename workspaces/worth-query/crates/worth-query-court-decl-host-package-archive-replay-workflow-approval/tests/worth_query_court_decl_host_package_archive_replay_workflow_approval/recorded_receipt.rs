@@ -1,0 +1,69 @@
+//! Compare recorded workflow meaning against the independently held original owner.
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitReceipt, WorthQueryRecoveredApplicationCommitReceipt,
+};
+
+pub fn assert_agrees(
+    data: &WorthQueryRecoveredApplicationCommitReceipt,
+    live: &WorthQueryApplicationCommitReceipt,
+) {
+    assert_eq!(data.commit_reference(), live.commit_reference());
+    assert_eq!(Some(data.outcome_identity()), live.outcome_identity());
+    assert_eq!(
+        data.idempotency_key_identity(),
+        live.idempotency_binding().key_identity()
+    );
+    assert_eq!(data.changed_record_count(), live.changed_record_count());
+    assert_eq!(data.emitted_effect_count(), live.emitted_effect_count());
+    assert_eq!(
+        data.exact_output_settlement(),
+        live.recorded_output_settlement()
+    );
+    let publication = live.committed_product_publication();
+    let head = data
+        .new_product_head()
+        .memory()
+        .expect("the fixture has a real memory owner");
+    assert_eq!(
+        head.owner(),
+        publication.product_branch().owner_identity().get()
+    );
+    assert_eq!(head.branch(), publication.product_branch().name().as_str());
+    assert_eq!(
+        head.incarnation(),
+        publication.product_incarnation().ordinal()
+    );
+    assert_eq!(head.generation(), publication.product_generation().get());
+    assert_eq!(
+        head.selected_commit(),
+        publication.composite_commit().ordinal()
+    );
+    assert_eq!(
+        data.attempt_identity().ordinal(),
+        publication.publication_attempt().ordinal()
+    );
+}
+
+use worth_query_host::facade::application_entry::{
+    WorkflowInstanceCancellationOutcome, WorkflowInstanceStartOutcome,
+    WorthQueryWorkflowInstancePreparationDenial,
+};
+pub fn cancelled(
+    outcome: Result<
+        WorkflowInstanceCancellationOutcome,
+        WorthQueryWorkflowInstancePreparationDenial,
+    >,
+) -> WorthQueryRecoveredApplicationCommitReceipt {
+    match outcome.expect("the exact original cancellation remains admitted") {
+        WorkflowInstanceCancellationOutcome::RecoveredCommitted(data) => data,
+        other => panic!("a keyed cancellation returns original data: {other:?}"),
+    }
+}
+pub fn started(
+    outcome: Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstancePreparationDenial>,
+) -> WorthQueryRecoveredApplicationCommitReceipt {
+    match outcome.expect("the exact original start remains admitted") {
+        WorkflowInstanceStartOutcome::RecoveredCommitted(data) => data,
+        other => panic!("a keyed start returns original data: {other:?}"),
+    }
+}

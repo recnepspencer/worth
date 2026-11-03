@@ -5,3 +5,6 @@
 mod certification;
 #[path = "worth_query_court_decl_host_package_archive_replay_workflow_approval/process/mod.rs"]
 mod process;
+
+#[path = "worth_query_court_decl_host_package_archive_replay_workflow_approval/recorded_receipt.rs"]
+mod recorded_receipt;
