@@ -906,6 +906,7 @@
     "domain_computation::primary_graph::application_query::read_execution::work_observation::OneShotReadWorkObservation",
     "domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::WorthQueryApplicationBasisRegistrationDenial",
     "domain_computation::primary_graph::application_runtime::inbound_occurrence::transport_binding::WorthQueryInstalledTransportCompletionBinding",
+    "domain_computation::primary_graph::application_runtime::inbound_occurrence::transport_binding::WorthQueryTransportCompletionBindingDenial",
     "domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportCustodyDenial",
     "domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletionDenial",
     "domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportPublicationDenial",
